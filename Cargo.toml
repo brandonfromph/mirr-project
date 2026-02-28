@@ -1,0 +1,15 @@
+[package]
+name = "nasa-rust-project"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[profile.release]
+codegen-units = 1
+debug = true
+incremental = false
+opt-level = "s"
+panic = "abort"
+lto = "fat"
+

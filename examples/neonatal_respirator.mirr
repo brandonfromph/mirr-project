@@ -1,0 +1,16 @@
+module neonatal_respirator {
+    signal respirator_enable: in bool;
+    signal airway_pressure:   in u16;
+    signal clamp_valve:       out bool;
+
+    guard sustained_pressure_drop {
+        when airway_pressure < 50
+        for  1000 cycles;
+    }
+
+    reflex emergency_clamp {
+        on sustained_pressure_drop {
+            clamp_valve = true;
+        }
+    }
+}

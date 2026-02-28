@@ -1,0 +1,58 @@
+   0.465053300s  INFO prepare_target{force=false package_id=nasa-rust-project v0.1.0 (C:\Users\elvie\nasa-rust-project) target="nasa-rust-project"}: cargo::core::compiler::fingerprint: fingerprint error for nasa-rust-project v0.1.0 (C:\Users\elvie\nasa-rust-project)/Check { test: false }/TargetInner { name: "nasa-rust-project", doc: true, ..: with_path("C:\\Users\\elvie\\nasa-rust-project\\src\\main.rs", Edition2021) }
+   0.465230600s  INFO prepare_target{force=false package_id=nasa-rust-project v0.1.0 (C:\Users\elvie\nasa-rust-project) target="nasa-rust-project"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\elvie\nasa-rust-project\target\debug\.fingerprint\nasa-rust-project-ba1cc40840ddc100\bin-nasa-rust-project`
+
+Caused by:
+    The system cannot find the file specified. (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+   0.490751300s  INFO prepare_target{force=false package_id=nasa-rust-project v0.1.0 (C:\Users\elvie\nasa-rust-project) target="nasa-rust-project"}: cargo::core::compiler::fingerprint: fingerprint error for nasa-rust-project v0.1.0 (C:\Users\elvie\nasa-rust-project)/Check { test: true }/TargetInner { name: "nasa-rust-project", doc: true, ..: with_path("C:\\Users\\elvie\\nasa-rust-project\\src\\main.rs", Edition2021) }
+   0.490799700s  INFO prepare_target{force=false package_id=nasa-rust-project v0.1.0 (C:\Users\elvie\nasa-rust-project) target="nasa-rust-project"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\elvie\nasa-rust-project\target\debug\.fingerprint\nasa-rust-project-dbefea0b46d5a2a6\test-bin-nasa-rust-project`
+
+Caused by:
+    The system cannot find the file specified. (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+    Checking nasa-rust-project v0.1.0 (C:\Users\elvie\nasa-rust-project)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.88s
