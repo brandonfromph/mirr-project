@@ -1,0 +1,4 @@
+case,expected_success,observed_success,return_code,summary_status,first_failed_stage,summary_line
+canonical_example,True,True,0,PASS,,[SELF-HOST PASS] 5/5 stages passed â€” C:\Users\elvie\nasa-rust-project\examples\neonatal_respirator.mirr
+malformed_parse_error,False,False,1,FAIL,,[SELF-HOST FAIL] 1/2 stages passed â€” C:\Users\elvie\nasa-rust-project\artifacts\research\tmp_inputs\malformed_input.mirr
+missing_file_read_error,False,False,1,FAIL,,[SELF-HOST FAIL] 0/1 stages passed â€” C:\Users\elvie\nasa-rust-project\artifacts\research\tmp_inputs\missing_file_should_fail.mirr

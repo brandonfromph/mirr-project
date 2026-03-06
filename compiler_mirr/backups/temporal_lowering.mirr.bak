@@ -1,0 +1,914 @@
+/// compiler_mirr/temporal_lowering.mirr
+/// Task 7 — MIRR-CORE Temporal Guard Lowering Module
+///
+/// Mirrors the logic in:
+///   src/temporal/compiler.rs   (TemporalCompiler)
+///   src/temporal/low_level_ir.rs (TemporalNetlist / CompiledGuard / GeneratedSignal)
+///
+/// MIRR-CORE constraints enforced:
+///   • No dynamic allocation — all buffers are fixed-size.
+///   • No recursion — all traversals use explicit iteration stacks.
+///   • Bounded loops — every loop has a statically-known maximum iteration count.
+///   • NASA safety rule: unsupported condition forms are explicit errors, never
+///     silently synthesised (P2-REQ-013).
+///
+/// Self-hosting contract:
+///   Input  — ParsedModule from compiler_mirr/parser.mirr
+///   Output — TLResult containing TLNetlist + DiagnosticList
+///
+/// DiagCode range: 300–399  (temporal lowering)
+
+module temporal_lowering {
+
+    // -----------------------------------------------------------------------
+    // Capacity limits (must match or exceed parser.mirr limits)
+    // -----------------------------------------------------------------------
+    const MAX_GUARDS:    u32 = 32;
+    const MAX_SIGNALS:   u32 = 256;    // SR stages (≤16) + counter + cmp + out per guard
+    const MAX_NAME_LEN:  u32 = 128;    // bytes per generated signal name
+    const NAME_ARENA_LEN: u32 = 8192;  // total name arena bytes
+
+    // -----------------------------------------------------------------------
+    // Adaptive threshold (mirrors SHIFT_REGISTER_THRESHOLD in compiler.rs)
+    // -----------------------------------------------------------------------
+    const SHIFT_REGISTER_THRESHOLD: u64 = 16;
+
+    // -----------------------------------------------------------------------
+    // Strategy discriminants
+    // -----------------------------------------------------------------------
+    const STRATEGY_SHIFT_REGISTER: u8 = 0;
+    const STRATEGY_COUNTER:        u8 = 1;
+
+    // -----------------------------------------------------------------------
+    // Signal type discriminants  (mirrors SignalType in ast/types.rs)
+    // -----------------------------------------------------------------------
+    const SIG_TY_BOOL:     u8 = 0;
+    const SIG_TY_UNSIGNED: u8 = 1;
+
+    // -----------------------------------------------------------------------
+    // Signal kind discriminants  (mirrors GeneratedSignalKind)
+    // -----------------------------------------------------------------------
+    const SIG_KIND_SHIFT_REG:  u8 = 0;
+    const SIG_KIND_COUNTER:    u8 = 1;
+    const SIG_KIND_COMPARATOR: u8 = 2;
+    const SIG_KIND_LOGIC_GATE: u8 = 3;
+
+    // -----------------------------------------------------------------------
+    // Condition-kind discriminants  (mirrors ConditionKind enum)
+    // -----------------------------------------------------------------------
+    const COND_SIMPLE_SIGNAL:   u8 = 0;
+    const COND_NEGATED_SIGNAL:  u8 = 1;
+    const COND_COMPARISON:      u8 = 2;
+
+    // -----------------------------------------------------------------------
+    // ExprNode tag discriminants  (mirrors parser.mirr output)
+    //   0 = Literal, 1 = Signal, 2 = Unary, 3 = Binary
+    // -----------------------------------------------------------------------
+    const EXPR_LITERAL: u8 = 0;
+    const EXPR_SIGNAL:  u8 = 1;
+    const EXPR_UNARY:   u8 = 2;
+    const EXPR_BINARY:  u8 = 3;
+
+    // -----------------------------------------------------------------------
+    // Binary-operator codes used in ExprNode (matches parser.mirr op encoding)
+    //   OP_OR=0, OP_AND=1, OP_EQ=2, OP_NE=3
+    //   OP_LT=4, OP_LE=5, OP_GT=6, OP_GE=7
+    //   OP_ADD=8, OP_SUB=9, OP_XOR=10, OP_MUL=11, OP_SHL=12, OP_SHR=13
+    // -----------------------------------------------------------------------
+    const OP_OR:  u8 = 0;
+    const OP_AND: u8 = 1;
+    const OP_EQ:  u8 = 2;
+    const OP_NE:  u8 = 3;
+    const OP_LT:  u8 = 4;
+    const OP_LE:  u8 = 5;
+    const OP_GT:  u8 = 6;
+    const OP_GE:  u8 = 7;
+
+    // Unary-operator codes
+    const OP_NOT: u8 = 0;
+
+    // -----------------------------------------------------------------------
+    // Diagnostic codes for temporal lowering (range 300–399)
+    // -----------------------------------------------------------------------
+    const DIAG_TL_UNSUPPORTED_CONDITION: u32 = 300;
+    const DIAG_TL_GUARD_OVERFLOW:        u32 = 301;
+    const DIAG_TL_SIGNAL_OVERFLOW:       u32 = 302;
+    const DIAG_TL_NAME_OVERFLOW:         u32 = 303;
+
+    // Sentinel for "not found"
+    const NOT_FOUND: u32 = 4294967295;   // u32::MAX
+
+    // -----------------------------------------------------------------------
+    // Public structures
+    // -----------------------------------------------------------------------
+
+    /// A lowered guard (Counter or ShiftRegister).
+    /// All fields that do not apply to a given strategy are zeroed.
+    struct LoweredGuard {
+        /// STRATEGY_SHIFT_REGISTER or STRATEGY_COUNTER
+        strategy: u8,
+
+        /// Guard name: byte slice [name_offset .. name_offset + name_len] in
+        /// TLNetlist.name_arena.
+        name_offset: u32,
+        name_len:    u32,
+
+        /// Index of the primary input signal in TLNetlist.signals[].
+        /// This is the first signal pushed for this guard.
+        input_signal_idx: u32,
+
+        /// Index of the output (_out) signal in TLNetlist.signals[].
+        output_signal_idx: u32,
+
+        /// Condition-kind discriminant.
+        cond_kind: u8,
+
+        /// Primary condition signal name (byte slice in name_arena).
+        cond_signal_offset: u32,
+        cond_signal_len:    u32,
+
+        /// Comparison operator code (only valid when cond_kind = COND_COMPARISON).
+        cond_op: u8,
+
+        /// Comparison literal value (only valid when cond_kind = COND_COMPARISON).
+        cond_value: u64,
+
+        /// True if cond_value is a bool literal (always false for integer comparisons).
+        cond_is_bool: bool,
+
+        /// Cycle delay / target count.
+        delay_cycles: u64,
+
+        // --- ShiftRegister fields ---
+        /// Index of the first stage signal (stages are contiguous in signals[]).
+        first_stage_idx: u32,
+
+        // --- Counter fields ---
+        /// Minimum bit-width of the counter register.
+        counter_width: u32,
+
+        /// Index of the counter register signal in TLNetlist.signals[].
+        counter_signal_idx: u32,
+
+        /// Index of the comparator signal in TLNetlist.signals[].
+        comparator_signal_idx: u32,
+    }
+
+    /// One generated hardware signal.
+    struct TLSignal {
+        /// Name: byte slice [name_offset .. name_offset + name_len] in name_arena.
+        name_offset: u32,
+        name_len:    u32,
+
+        /// SIG_TY_BOOL or SIG_TY_UNSIGNED.
+        ty_kind: u8,
+
+        /// Bit width (only valid when ty_kind = SIG_TY_UNSIGNED).
+        ty_width: u32,
+
+        /// SIG_KIND_SHIFT_REG / COUNTER / COMPARATOR / LOGIC_GATE.
+        sig_kind: u8,
+    }
+
+    /// Compilation statistics (mirrors CompilationStatistics in low_level_ir.rs).
+    struct TLStatistics {
+        shift_registers_used: u32,
+        counters_used:        u32,
+        logic_gates_used:     u32,
+        max_delay_cycles:     u64,
+        total_signals:        u32,
+    }
+
+    /// The output temporal netlist produced by this module.
+    struct TLNetlist {
+        guards:      [LoweredGuard; 32],
+        guard_count: u32,
+
+        signals:      [TLSignal; 256],
+        signal_count: u32,
+
+        /// Flat byte arena storing all generated signal names.
+        name_arena:     [u8; 8192],
+        name_arena_len: u32,
+
+        stats: TLStatistics,
+    }
+
+    /// One diagnostic entry (mirrors DiagnosticList entry in other MIRR modules).
+    struct TLDiag {
+        code:       u32,
+        guard_idx:  u32,   // which guard triggered the error (NOT_FOUND if global)
+        ok:         bool,
+    }
+
+    /// Return value of lower_temporal_guards.
+    struct TLResult {
+        netlist: TLNetlist,
+        diag:    TLDiag,
+        ok:      bool,
+    }
+
+    // -----------------------------------------------------------------------
+    // ExprNode (mirrors parser.mirr ParsedModule.expr_nodes layout)
+    // -----------------------------------------------------------------------
+    struct ExprNode {
+        tag: u8,                 // EXPR_LITERAL / SIGNAL / UNARY / BINARY
+        // Literal fields
+        lit_value:   u64,
+        lit_is_bool: bool,
+        // Signal field
+        sig_name_offset: u32,
+        sig_name_len:    u32,
+        // Unary fields
+        unary_op:      u8,
+        unary_child:   u32,      // index into expr_nodes
+        // Binary fields
+        binary_op:    u8,
+        binary_left:  u32,
+        binary_right: u32,
+    }
+
+    /// One guard declaration from the parser (mirrors GuardDecl in parser.mirr).
+    struct GuardDecl {
+        name_offset:   u32,
+        name_len:      u32,
+        cycles:        u64,
+        condition_idx: u32,      // root ExprNode index
+    }
+
+    /// Minimal ParsedModule view needed by temporal lowering.
+    /// Only the fields consumed by this module are listed.
+    struct ParsedModule {
+        name_arena:       [u8; 4096],
+        name_arena_len:   u32,
+        guards:           [GuardDecl; 32],
+        guard_count:      u32,
+        expr_nodes:       [ExprNode; 256],
+        expr_node_count:  u32,
+    }
+
+    // -----------------------------------------------------------------------
+    // Entry point
+    // -----------------------------------------------------------------------
+
+    /// Lower all temporal guards in `module` to hardware primitives.
+    ///
+    /// Returns TLResult { ok: false } on the first error encountered.
+    /// All signals generated before the error are retained in the netlist for
+    /// diagnostic use — they must not be trusted as correct output.
+    fn lower_temporal_guards(module: &ParsedModule) -> TLResult {
+        let mut result: TLResult = TLResult {
+            netlist: make_empty_netlist(),
+            diag:    TLDiag { code: 0, guard_idx: NOT_FOUND, ok: true },
+            ok:      true,
+        };
+
+        let mut g: u32 = 0;
+        loop {
+            if g >= module.guard_count { break; }
+            if g >= MAX_GUARDS         { break; }
+
+            let guard: &GuardDecl = &module.guards[g as usize];
+
+            // ---------- classify condition ----------
+            let cond_result: CondResult =
+                classify_condition(guard.condition_idx, module);
+
+            if !cond_result.ok {
+                result.diag = TLDiag {
+                    code:      DIAG_TL_UNSUPPORTED_CONDITION,
+                    guard_idx: g,
+                    ok:        false,
+                };
+                result.ok = false;
+                return result;
+            }
+
+            // ---------- choose strategy ----------
+            if guard.cycles <= SHIFT_REGISTER_THRESHOLD {
+                let sr_ok: bool = emit_shift_register_guard(
+                    g, guard, &cond_result, module, &mut result.netlist
+                );
+                if !sr_ok {
+                    result.diag = TLDiag {
+                        code:      DIAG_TL_SIGNAL_OVERFLOW,
+                        guard_idx: g,
+                        ok:        false,
+                    };
+                    result.ok = false;
+                    return result;
+                }
+            } else {
+                let ctr_ok: bool = emit_counter_guard(
+                    g, guard, &cond_result, module, &mut result.netlist
+                );
+                if !ctr_ok {
+                    result.diag = TLDiag {
+                        code:      DIAG_TL_SIGNAL_OVERFLOW,
+                        guard_idx: g,
+                        ok:        false,
+                    };
+                    result.ok = false;
+                    return result;
+                }
+            }
+
+            g = g + 1;
+        }
+
+        update_statistics(&mut result.netlist);
+        result
+    }
+
+    // -----------------------------------------------------------------------
+    // Condition classification
+    // -----------------------------------------------------------------------
+
+    struct CondResult {
+        ok:                bool,
+        cond_kind:         u8,
+        /// Primary signal name slice in the *module* name_arena.
+        sig_name_offset:   u32,
+        sig_name_len:      u32,
+        /// Comparison operator (only valid for COND_COMPARISON).
+        cond_op:           u8,
+        /// Comparison literal value.
+        cond_value:        u64,
+        cond_is_bool:      bool,
+    }
+
+    /// Inspect the ExprNode at `cond_idx` and classify the condition.
+    ///
+    /// Supported forms (mirrors ConditionKind::try_from_expr):
+    ///   EXPR_SIGNAL                            → COND_SIMPLE_SIGNAL
+    ///   EXPR_UNARY(NOT, EXPR_SIGNAL)           → COND_NEGATED_SIGNAL
+    ///   EXPR_BINARY(cmp_op, SIGNAL, LITERAL)   → COND_COMPARISON
+    ///       where cmp_op ∈ {EQ, NE, LT, LE, GT, GE}
+    ///
+    /// Everything else returns ok = false  (P2-REQ-013).
+    fn classify_condition(cond_idx: u32, module: &ParsedModule) -> CondResult {
+        let mut res: CondResult = CondResult {
+            ok:              false,
+            cond_kind:       COND_SIMPLE_SIGNAL,
+            sig_name_offset: 0,
+            sig_name_len:    0,
+            cond_op:         0,
+            cond_value:      0,
+            cond_is_bool:    false,
+        };
+
+        if cond_idx >= module.expr_node_count {
+            return res;
+        }
+
+        let node: &ExprNode = &module.expr_nodes[cond_idx as usize];
+
+        if node.tag == EXPR_SIGNAL {
+            // `when <signal>`
+            res.cond_kind       = COND_SIMPLE_SIGNAL;
+            res.sig_name_offset = node.sig_name_offset;
+            res.sig_name_len    = node.sig_name_len;
+            res.ok              = true;
+            return res;
+        }
+
+        if node.tag == EXPR_UNARY {
+            if node.unary_op != OP_NOT {
+                return res;   // only NOT is supported
+            }
+            let child_idx: u32 = node.unary_child;
+            if child_idx >= module.expr_node_count {
+                return res;
+            }
+            let child: &ExprNode = &module.expr_nodes[child_idx as usize];
+            if child.tag != EXPR_SIGNAL {
+                return res;   // NOT of non-signal not supported
+            }
+            res.cond_kind       = COND_NEGATED_SIGNAL;
+            res.sig_name_offset = child.sig_name_offset;
+            res.sig_name_len    = child.sig_name_len;
+            res.ok              = true;
+            return res;
+        }
+
+        if node.tag == EXPR_BINARY {
+            let op: u8 = node.binary_op;
+            // Only comparison operators are supported (P2-REQ-015)
+            let is_cmp: bool = (op == OP_EQ) | (op == OP_NE) |
+                               (op == OP_LT) | (op == OP_LE) |
+                               (op == OP_GT) | (op == OP_GE);
+            if !is_cmp {
+                return res;
+            }
+
+            let left_idx:  u32 = node.binary_left;
+            let right_idx: u32 = node.binary_right;
+
+            if left_idx  >= module.expr_node_count { return res; }
+            if right_idx >= module.expr_node_count { return res; }
+
+            let left:  &ExprNode = &module.expr_nodes[left_idx  as usize];
+            let right: &ExprNode = &module.expr_nodes[right_idx as usize];
+
+            if left.tag  != EXPR_SIGNAL  { return res; }
+            if right.tag != EXPR_LITERAL { return res; }
+
+            res.cond_kind       = COND_COMPARISON;
+            res.sig_name_offset = left.sig_name_offset;
+            res.sig_name_len    = left.sig_name_len;
+            res.cond_op         = op;
+            res.cond_value      = right.lit_value;
+            res.cond_is_bool    = right.lit_is_bool;
+            res.ok              = true;
+            return res;
+        }
+
+        res   // Literal at root or other unsupported form
+    }
+
+    // -----------------------------------------------------------------------
+    // ShiftRegister strategy  (mirrors compile_shift_register_guard)
+    // -----------------------------------------------------------------------
+
+    /// Emit signals and a LoweredGuard for a shift-register strategy.
+    /// Returns false if the signal or name arena would overflow.
+    fn emit_shift_register_guard(
+        guard_idx:  u32,
+        guard:      &GuardDecl,
+        cond:       &CondResult,
+        module:     &ParsedModule,
+        netlist:    &mut TLNetlist,
+    ) -> bool {
+        // Copy guard name into netlist name arena
+        let g_name_offset: u32 = netlist.name_arena_len;
+        let g_name_len:    u32 = guard.name_len;
+        if !arena_copy_from_module(
+                &module.name_arena, guard.name_offset, g_name_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+
+        // Copy condition signal name into netlist name arena
+        let cs_offset: u32 = netlist.name_arena_len;
+        let cs_len:    u32 = cond.sig_name_len;
+        if !arena_copy_from_module(
+                &module.name_arena, cond.sig_name_offset, cs_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+
+        // Emit stage signals: <guard_name>_sr_<i>  for i in 0..delay_cycles
+        let first_stage_idx: u32 = netlist.signal_count;
+        let mut stage: u64 = 0;
+        loop {
+            if stage >= guard.cycles { break; }
+            if netlist.signal_count >= MAX_SIGNALS { return false; }
+
+            // Build stage name: guard_name + "_sr_" + decimal(stage)
+            let stage_name_offset: u32 = netlist.name_arena_len;
+            if !arena_copy_from_module(
+                    &module.name_arena, guard.name_offset, g_name_len,
+                    &mut netlist.name_arena, &mut netlist.name_arena_len) {
+                return false;
+            }
+            let suffix_sr: [u8; 4] = [95u8, 115u8, 114u8, 95u8]; // "_sr_"
+            if !arena_write_bytes(&suffix_sr, 4, &mut netlist.name_arena, &mut netlist.name_arena_len) {
+                return false;
+            }
+            if !arena_write_decimal(stage, &mut netlist.name_arena, &mut netlist.name_arena_len) {
+                return false;
+            }
+            let stage_name_len: u32 = netlist.name_arena_len - stage_name_offset;
+
+            let sig: TLSignal = TLSignal {
+                name_offset: stage_name_offset,
+                name_len:    stage_name_len,
+                ty_kind:     SIG_TY_BOOL,
+                ty_width:    0,
+                sig_kind:    SIG_KIND_SHIFT_REG,
+            };
+            netlist.signals[netlist.signal_count as usize] = sig;
+            netlist.signal_count = netlist.signal_count + 1;
+
+            stage = stage + 1;
+        }
+
+        // Emit output signal: <guard_name>_out
+        if netlist.signal_count >= MAX_SIGNALS { return false; }
+        let out_name_offset: u32 = netlist.name_arena_len;
+        if !arena_copy_from_module(
+                &module.name_arena, guard.name_offset, g_name_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        let suffix_out: [u8; 4] = [95u8, 111u8, 117u8, 116u8]; // "_out"
+        if !arena_write_bytes(&suffix_out, 4, &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        let out_name_len:    u32 = netlist.name_arena_len - out_name_offset;
+        let output_signal_idx: u32 = netlist.signal_count;
+        let out_sig: TLSignal = TLSignal {
+            name_offset: out_name_offset,
+            name_len:    out_name_len,
+            ty_kind:     SIG_TY_BOOL,
+            ty_width:    0,
+            sig_kind:    SIG_KIND_LOGIC_GATE,
+        };
+        netlist.signals[netlist.signal_count as usize] = out_sig;
+        netlist.signal_count = netlist.signal_count + 1;
+
+        // Build LoweredGuard
+        if netlist.guard_count >= MAX_GUARDS { return false; }
+        let lg: LoweredGuard = LoweredGuard {
+            strategy:             STRATEGY_SHIFT_REGISTER,
+            name_offset:          g_name_offset,
+            name_len:             g_name_len,
+            input_signal_idx:     first_stage_idx,   // first stage = "input"
+            output_signal_idx:    output_signal_idx,
+            cond_kind:            cond.cond_kind,
+            cond_signal_offset:   cs_offset,
+            cond_signal_len:      cs_len,
+            cond_op:              cond.cond_op,
+            cond_value:           cond.cond_value,
+            cond_is_bool:         cond.cond_is_bool,
+            delay_cycles:         guard.cycles,
+            first_stage_idx:      first_stage_idx,
+            counter_width:        0,
+            counter_signal_idx:   NOT_FOUND,
+            comparator_signal_idx:NOT_FOUND,
+        };
+        netlist.guards[netlist.guard_count as usize] = lg;
+        netlist.guard_count = netlist.guard_count + 1;
+
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // Counter strategy  (mirrors compile_counter_guard)
+    // -----------------------------------------------------------------------
+
+    /// Emit signals and a LoweredGuard for a counter strategy.
+    /// Returns false if the signal or name arena would overflow.
+    fn emit_counter_guard(
+        guard_idx:  u32,
+        guard:      &GuardDecl,
+        cond:       &CondResult,
+        module:     &ParsedModule,
+        netlist:    &mut TLNetlist,
+    ) -> bool {
+        // Copy guard name into netlist name arena
+        let g_name_offset: u32 = netlist.name_arena_len;
+        let g_name_len:    u32 = guard.name_len;
+        if !arena_copy_from_module(
+                &module.name_arena, guard.name_offset, g_name_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+
+        // Copy condition signal name into netlist name arena
+        let cs_offset: u32 = netlist.name_arena_len;
+        let cs_len:    u32 = cond.sig_name_len;
+        if !arena_copy_from_module(
+                &module.name_arena, cond.sig_name_offset, cs_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+
+        let ctr_width: u32 = compute_counter_width(guard.cycles);
+
+        // Emit counter register signal: <guard_name>_counter
+        if netlist.signal_count >= MAX_SIGNALS { return false; }
+        let ctr_name_offset: u32 = netlist.name_arena_len;
+        if !arena_copy_from_module(
+                &module.name_arena, guard.name_offset, g_name_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        // "_counter" = [95,99,111,117,110,116,101,114]
+        let suffix_counter: [u8; 8] = [95u8,99u8,111u8,117u8,110u8,116u8,101u8,114u8];
+        if !arena_write_bytes(&suffix_counter, 8, &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        let ctr_name_len: u32 = netlist.name_arena_len - ctr_name_offset;
+        let counter_signal_idx: u32 = netlist.signal_count;
+        let ctr_sig: TLSignal = TLSignal {
+            name_offset: ctr_name_offset,
+            name_len:    ctr_name_len,
+            ty_kind:     SIG_TY_UNSIGNED,
+            ty_width:    ctr_width,
+            sig_kind:    SIG_KIND_COUNTER,
+        };
+        netlist.signals[netlist.signal_count as usize] = ctr_sig;
+        netlist.signal_count = netlist.signal_count + 1;
+
+        // Emit comparator signal: <guard_name>_cmp
+        if netlist.signal_count >= MAX_SIGNALS { return false; }
+        let cmp_name_offset: u32 = netlist.name_arena_len;
+        if !arena_copy_from_module(
+                &module.name_arena, guard.name_offset, g_name_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        // "_cmp" = [95,99,109,112]
+        let suffix_cmp: [u8; 4] = [95u8,99u8,109u8,112u8];
+        if !arena_write_bytes(&suffix_cmp, 4, &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        let cmp_name_len: u32 = netlist.name_arena_len - cmp_name_offset;
+        let comparator_signal_idx: u32 = netlist.signal_count;
+        let cmp_sig: TLSignal = TLSignal {
+            name_offset: cmp_name_offset,
+            name_len:    cmp_name_len,
+            ty_kind:     SIG_TY_BOOL,
+            ty_width:    0,
+            sig_kind:    SIG_KIND_COMPARATOR,
+        };
+        netlist.signals[netlist.signal_count as usize] = cmp_sig;
+        netlist.signal_count = netlist.signal_count + 1;
+
+        // Emit output signal: <guard_name>_out
+        if netlist.signal_count >= MAX_SIGNALS { return false; }
+        let out_name_offset: u32 = netlist.name_arena_len;
+        if !arena_copy_from_module(
+                &module.name_arena, guard.name_offset, g_name_len,
+                &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        // "_out" = [95,111,117,116]
+        let suffix_out: [u8; 4] = [95u8,111u8,117u8,116u8];
+        if !arena_write_bytes(&suffix_out, 4, &mut netlist.name_arena, &mut netlist.name_arena_len) {
+            return false;
+        }
+        let out_name_len:    u32 = netlist.name_arena_len - out_name_offset;
+        let output_signal_idx: u32 = netlist.signal_count;
+        let out_sig: TLSignal = TLSignal {
+            name_offset: out_name_offset,
+            name_len:    out_name_len,
+            ty_kind:     SIG_TY_BOOL,
+            ty_width:    0,
+            sig_kind:    SIG_KIND_LOGIC_GATE,
+        };
+        netlist.signals[netlist.signal_count as usize] = out_sig;
+        netlist.signal_count = netlist.signal_count + 1;
+
+        // Build LoweredGuard
+        if netlist.guard_count >= MAX_GUARDS { return false; }
+        let lg: LoweredGuard = LoweredGuard {
+            strategy:              STRATEGY_COUNTER,
+            name_offset:           g_name_offset,
+            name_len:              g_name_len,
+            input_signal_idx:      counter_signal_idx,   // counter is the "primary" generated signal
+            output_signal_idx:     output_signal_idx,
+            cond_kind:             cond.cond_kind,
+            cond_signal_offset:    cs_offset,
+            cond_signal_len:       cs_len,
+            cond_op:               cond.cond_op,
+            cond_value:            cond.cond_value,
+            cond_is_bool:          cond.cond_is_bool,
+            delay_cycles:          guard.cycles,
+            first_stage_idx:       NOT_FOUND,
+            counter_width:         ctr_width,
+            counter_signal_idx:    counter_signal_idx,
+            comparator_signal_idx: comparator_signal_idx,
+        };
+        netlist.guards[netlist.guard_count as usize] = lg;
+        netlist.guard_count = netlist.guard_count + 1;
+
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // Counter width calculation
+    //
+    // Mirrors CounterGuard::counter_width() in low_level_ir.rs:
+    //   if n == 0 { 1 } else { ceil(log2(n)) + 1 }
+    //
+    // Iterative implementation:
+    //   1. Count bits in n (= floor(log2(n)) + 1).
+    //   2. If n is a power of two, that count equals ceil(log2(n)) + 1.
+    //      Otherwise add one more to account for the ceiling.
+    // -----------------------------------------------------------------------
+    fn compute_counter_width(cycles: u64) -> u32 {
+        if cycles == 0u64 {
+            return 1u32;
+        }
+
+        // Count how many right-shifts until zero → floor(log2(n)) + 1
+        let mut bit_count: u32 = 0;
+        let mut val: u64 = cycles;
+        loop {
+            if val == 0u64 { break; }
+            val = val >> 1;
+            bit_count = bit_count + 1;
+        }
+
+        // Check if cycles is a power of two: (cycles & (cycles - 1)) == 0
+        let prev: u64 = cycles - 1u64;
+        let masked: u64 = cycles & prev;
+        if masked == 0u64 {
+            // Exact power of two: bit_count = floor(log2(n)) + 1 = ceil(log2(n)) + 1
+            return bit_count;
+        }
+
+        // Not a power of two: ceil(log2(n)) = floor(log2(n)) + 1 = bit_count, so +1 more
+        bit_count + 1u32
+    }
+
+    // -----------------------------------------------------------------------
+    // Statistics (mirrors TemporalNetlist::update_statistics)
+    // -----------------------------------------------------------------------
+
+    fn update_statistics(netlist: &mut TLNetlist) {
+        let mut sr:    u32 = 0;
+        let mut ctr:   u32 = 0;
+        let mut gates: u32 = 0;
+        let mut max_d: u64 = 0u64;
+
+        let mut i: u32 = 0;
+        loop {
+            if i >= netlist.signal_count { break; }
+            let sig: &TLSignal = &netlist.signals[i as usize];
+            if sig.sig_kind == SIG_KIND_SHIFT_REG  { sr    = sr    + 1; }
+            if sig.sig_kind == SIG_KIND_COUNTER    { ctr   = ctr   + 1; }
+            if sig.sig_kind == SIG_KIND_LOGIC_GATE { gates = gates + 1; }
+            i = i + 1;
+        }
+
+        let mut g: u32 = 0;
+        loop {
+            if g >= netlist.guard_count { break; }
+            let guard: &LoweredGuard = &netlist.guards[g as usize];
+            if guard.delay_cycles > max_d {
+                max_d = guard.delay_cycles;
+            }
+            g = g + 1;
+        }
+
+        netlist.stats.shift_registers_used = sr;
+        netlist.stats.counters_used        = ctr;
+        netlist.stats.logic_gates_used     = gates;
+        netlist.stats.max_delay_cycles     = max_d;
+        netlist.stats.total_signals        = netlist.signal_count;
+    }
+
+    // -----------------------------------------------------------------------
+    // Arena / name-generation helpers
+    //
+    // These functions manage the flat byte arenas that hold all signal names.
+    // No heap allocation, no recursion, bounds-checked.
+    // -----------------------------------------------------------------------
+
+    /// Copy `len` bytes from `src_arena[src_offset..]` into `dst_arena` at its
+    /// current write head `dst_len`.  Returns false on overflow.
+    fn arena_copy_from_module(
+        src_arena:  &[u8; 4096],
+        src_offset: u32,
+        len:        u32,
+        dst_arena:  &mut [u8; 8192],
+        dst_len:    &mut u32,
+    ) -> bool {
+        if src_offset + len > 4096u32    { return false; }
+        if *dst_len + len  > NAME_ARENA_LEN { return false; }
+
+        let mut i: u32 = 0;
+        loop {
+            if i >= len { break; }
+            dst_arena[(*dst_len + i) as usize] = src_arena[(src_offset + i) as usize];
+            i = i + 1;
+        }
+        *dst_len = *dst_len + len;
+        true
+    }
+
+    /// Append `len` bytes from a fixed byte literal into `dst_arena`.
+    /// Returns false on overflow.
+    fn arena_write_bytes(
+        bytes:    &[u8],
+        len:      u32,
+        dst_arena: &mut [u8; 8192],
+        dst_len:   &mut u32,
+    ) -> bool {
+        if *dst_len + len > NAME_ARENA_LEN { return false; }
+        let mut i: u32 = 0;
+        loop {
+            if i >= len { break; }
+            dst_arena[(*dst_len + i) as usize] = bytes[i as usize];
+            i = i + 1;
+        }
+        *dst_len = *dst_len + len;
+        true
+    }
+
+    /// Append the decimal representation of `n` (u64) into `dst_arena`.
+    /// Maximum 20 ASCII digits.  Returns false on overflow.
+    fn arena_write_decimal(
+        n:         u64,
+        dst_arena: &mut [u8; 8192],
+        dst_len:   &mut u32,
+    ) -> bool {
+        // Fast path: single digit
+        if n < 10u64 {
+            if *dst_len + 1u32 > NAME_ARENA_LEN { return false; }
+            dst_arena[*dst_len as usize] = (48u64 + n) as u8; // '0' + digit
+            *dst_len = *dst_len + 1u32;
+            return true;
+        }
+
+        // General path: produce digits in reverse then flip
+        let mut tmp: [u8; 20] = [48u8; 20];   // '0'
+        let mut digit_count: u32 = 0;
+        let mut val: u64 = n;
+
+        loop {
+            if val == 0u64 { break; }
+            if digit_count >= 20u32 { break; }  // bounded; u64 max is 20 digits
+            tmp[digit_count as usize] = (48u64 + (val % 10u64)) as u8;
+            digit_count = digit_count + 1;
+            val = val / 10u64;
+        }
+
+        if *dst_len + digit_count > NAME_ARENA_LEN { return false; }
+
+        // Write digits in reverse (they are in reverse order in tmp)
+        let mut i: u32 = digit_count;
+        loop {
+            if i == 0u32 { break; }
+            i = i - 1u32;
+            dst_arena[*dst_len as usize] = tmp[i as usize];
+            *dst_len = *dst_len + 1u32;
+        }
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // Constructor helpers
+    // -----------------------------------------------------------------------
+
+    fn make_empty_netlist() -> TLNetlist {
+        TLNetlist {
+            guards:          [LoweredGuard {
+                strategy:             STRATEGY_SHIFT_REGISTER,
+                name_offset:          0,
+                name_len:             0,
+                input_signal_idx:     NOT_FOUND,
+                output_signal_idx:    NOT_FOUND,
+                cond_kind:            COND_SIMPLE_SIGNAL,
+                cond_signal_offset:   0,
+                cond_signal_len:      0,
+                cond_op:              0,
+                cond_value:           0,
+                cond_is_bool:         false,
+                delay_cycles:         0,
+                first_stage_idx:      NOT_FOUND,
+                counter_width:        0,
+                counter_signal_idx:   NOT_FOUND,
+                comparator_signal_idx:NOT_FOUND,
+            }; MAX_GUARDS],
+            guard_count:     0,
+            signals:         [TLSignal {
+                name_offset: 0,
+                name_len:    0,
+                ty_kind:     SIG_TY_BOOL,
+                ty_width:    0,
+                sig_kind:    SIG_KIND_LOGIC_GATE,
+            }; MAX_SIGNALS],
+            signal_count:    0,
+            name_arena:      [0u8; NAME_ARENA_LEN],
+            name_arena_len:  0,
+            stats:           TLStatistics {
+                shift_registers_used: 0,
+                counters_used:        0,
+                logic_gates_used:     0,
+                max_delay_cycles:     0,
+                total_signals:        0,
+            },
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Verification cases (MIRR-CORE inline test annotations)
+// ---------------------------------------------------------------------------
+//
+// Case 1 — sustained_pressure_drop (neonatal_respirator.mirr)
+//   Guard:   name="sustained_pressure_drop", cycles=1000
+//   Condition: EXPR_BINARY(OP_LT, EXPR_SIGNAL("airway_pressure"), EXPR_LITERAL(50))
+//   Strategy:  STRATEGY_COUNTER (1000 > 16)
+//   Signals:   sustained_pressure_drop_counter  Unsigned(11)  SIG_KIND_COUNTER
+//              sustained_pressure_drop_cmp      Bool          SIG_KIND_COMPARATOR
+//              sustained_pressure_drop_out      Bool          SIG_KIND_LOGIC_GATE
+//   Counter width: compute_counter_width(1000)
+//     → bit_count(1000) = 10 (1000 >> 10 == 0)
+//     → 1000 & 999 = 0b1111101000 & 0b1111100111 = 0b1111100000 ≠ 0
+//     → not power-of-two → return 10 + 1 = 11  ✓
+//   stats: counters_used=1, logic_gates_used=1, max_delay_cycles=1000, total_signals=3
+//
+// Case 2 — short_delay_guard, cycles=4
+//   Strategy:  STRATEGY_SHIFT_REGISTER (4 ≤ 16)
+//   Signals:   short_delay_guard_sr_0 .. _sr_3   SIG_KIND_SHIFT_REG (×4)
+//              short_delay_guard_out              SIG_KIND_LOGIC_GATE
+//   stats: shift_registers_used=4, logic_gates_used=1, max_delay_cycles=4, total_signals=5
+//
+// Case 3 — unsupported AND condition
+//   EXPR_BINARY(OP_AND, EXPR_SIGNAL("a"), EXPR_SIGNAL("b"))
+//   classify_condition → ok=false  → TLResult { ok=false, diag.code=300 }

@@ -1,0 +1,15 @@
+module sweep_delay_1000 {
+    signal input_signal: in bool;
+    signal output_signal: out bool;
+
+    guard delay_guard_1000 {
+        when input_signal
+        for 1000 cycles;
+    }
+
+    reflex r_1000 {
+        on delay_guard_1000 {
+            output_signal = input_signal;
+        }
+    }
+}

@@ -1,0 +1,6 @@
+module broken_syntax {
+    signal x: in bool
+    guard missing_brace {
+        when x
+        for 10 cycles
+}

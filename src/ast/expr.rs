@@ -6,8 +6,10 @@
 
 use super::types::{BinaryOp, LiteralValue, UnaryOp};
 
+use serde::{Deserialize, Serialize};
+
 /// Expression tree node.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Expr {
     Literal(LiteralValue),
     Signal(String),

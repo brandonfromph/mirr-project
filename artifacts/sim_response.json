@@ -1,0 +1,1 @@
+{"exitCode":0,"stdout":"{\n  \"Binary\": {\n    \"op\": \"And\",\n    \"left\": {\n      \"Signal\": \"eeg_spike\"\n    },\n    \"right\": {\n      \"Unary\": {\n        \"op\": \"Not\",\n        \"operand\": {\n          \"Signal\": \"artifact_noise\"\n        }\n      }\n    }\n  }\n}\n","stderr":""}

@@ -1,0 +1,16 @@
+module mirr_parser {
+    signal p_in_a: in bool;
+    signal p_in_b: in u16;
+    signal p_out_x: out bool;
+
+    guard p_guard {
+        when p_in_a
+        for 1 cycles;
+    }
+
+    reflex p_reflex {
+        on p_guard {
+            p_out_x = true;
+        }
+    }
+}

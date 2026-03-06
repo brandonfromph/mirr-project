@@ -1,0 +1,28 @@
+# Rust build outputs
+/target/
+
+# Rust/Tooling local backups
+**/*.rs.bk
+
+# Local logs / installers
+*.log
+*.msi
+
+# Root-local generated files
+/package-lock.json
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# OS cruft
+Thumbs.db
+.DS_Store
+
+# Local scratch/work dirs
+/.memory/
+/-p/
+
+# Python cache (for scripts)
+__pycache__/
+*.pyc

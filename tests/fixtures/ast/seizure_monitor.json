@@ -1,0 +1,40 @@
+{
+  "ir_version": "1.0",
+  "module": {
+    "name": "seizure_monitor",
+    "signals": [
+      { "name": "eeg_spike",      "kind": "Input",    "ty": "Bool" },
+      { "name": "artifact_noise", "kind": "Input",    "ty": "Bool" },
+      { "name": "alert",          "kind": "Output",   "ty": "Bool" },
+      { "name": "pattern_active", "kind": "Internal", "ty": "Bool" }
+    ],
+    "guards": [
+      {
+        "name": "seizure_pattern",
+        "condition": {
+          "Binary": {
+            "op": "And",
+            "left":  { "Signal": "eeg_spike" },
+            "right": {
+              "Unary": {
+                "op": "Not",
+                "operand": { "Signal": "artifact_noise" }
+              }
+            }
+          }
+        },
+        "cycles": 32
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "raise_alert",
+        "guard_names": [ "seizure_pattern" ],
+        "assignments": [
+          { "target": "alert",          "value": { "Literal": { "Bool": true } } },
+          { "target": "pattern_active", "value": { "Literal": { "Bool": true } } }
+        ]
+      }
+    ]
+  }
+}

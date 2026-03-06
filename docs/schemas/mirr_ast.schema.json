@@ -1,0 +1,166 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "mirr_ast.schema.json",
+  "title": "MIRR AST",
+  "description": "Canonical JSON schema for the MIRR Abstract Syntax Tree (Level 1 IR). Version 1.0.",
+  "type": "object",
+  "required": ["ir_version", "module"],
+  "additionalProperties": false,
+  "properties": {
+    "ir_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "module": { "$ref": "#/definitions/Module" }
+  },
+  "definitions": {
+    "Module": {
+      "type": "object",
+      "required": ["name", "signals", "guards", "reflexes"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "signals": { "type": "array", "items": { "$ref": "#/definitions/SignalDecl" } },
+        "guards":  { "type": "array", "items": { "$ref": "#/definitions/Guard" } },
+        "reflexes":{ "type": "array", "items": { "$ref": "#/definitions/Reflex" } }
+      }
+    },
+    "SignalDecl": {
+      "type": "object",
+      "required": ["name", "kind", "ty"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "$ref": "#/definitions/SignalKind" },
+        "ty":   { "$ref": "#/definitions/SignalType" }
+      }
+    },
+    "SignalKind": {
+      "type": "string",
+      "enum": ["Input", "Output", "Internal"]
+    },
+    "SignalType": {
+      "oneOf": [
+        { "type": "string", "const": "Bool" },
+        {
+          "type": "object",
+          "required": ["Unsigned"],
+          "additionalProperties": false,
+          "properties": {
+            "Unsigned": { "type": "integer", "minimum": 1, "maximum": 64 }
+          }
+        }
+      ]
+    },
+    "Guard": {
+      "type": "object",
+      "required": ["name", "condition", "cycles"],
+      "additionalProperties": false,
+      "properties": {
+        "name":      { "type": "string", "minLength": 1 },
+        "condition": { "$ref": "#/definitions/Expr" },
+        "cycles":    { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Reflex": {
+      "type": "object",
+      "required": ["name", "guard_names", "assignments"],
+      "additionalProperties": false,
+      "properties": {
+        "name":        { "type": "string", "minLength": 1 },
+        "guard_names": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "assignments": { "type": "array", "items": { "$ref": "#/definitions/Assignment" } }
+      }
+    },
+    "Assignment": {
+      "type": "object",
+      "required": ["target", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "value":  { "$ref": "#/definitions/Expr" }
+      }
+    },
+    "Expr": {
+      "oneOf": [
+        {
+          "description": "Literal value",
+          "type": "object",
+          "required": ["Literal"],
+          "additionalProperties": false,
+          "properties": {
+            "Literal": { "$ref": "#/definitions/LiteralValue" }
+          }
+        },
+        {
+          "description": "Signal reference",
+          "type": "object",
+          "required": ["Signal"],
+          "additionalProperties": false,
+          "properties": {
+            "Signal": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "description": "Unary expression",
+          "type": "object",
+          "required": ["Unary"],
+          "additionalProperties": false,
+          "properties": {
+            "Unary": {
+              "type": "object",
+              "required": ["op", "operand"],
+              "additionalProperties": false,
+              "properties": {
+                "op":      { "$ref": "#/definitions/UnaryOp" },
+                "operand": { "$ref": "#/definitions/Expr" }
+              }
+            }
+          }
+        },
+        {
+          "description": "Binary expression",
+          "type": "object",
+          "required": ["Binary"],
+          "additionalProperties": false,
+          "properties": {
+            "Binary": {
+              "type": "object",
+              "required": ["op", "left", "right"],
+              "additionalProperties": false,
+              "properties": {
+                "op":    { "$ref": "#/definitions/BinaryOp" },
+                "left":  { "$ref": "#/definitions/Expr" },
+                "right": { "$ref": "#/definitions/Expr" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LiteralValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["Bool"],
+          "additionalProperties": false,
+          "properties": { "Bool": { "type": "boolean" } }
+        },
+        {
+          "type": "object",
+          "required": ["Integer"],
+          "additionalProperties": false,
+          "properties": { "Integer": { "type": "integer", "minimum": 0 } }
+        }
+      ]
+    },
+    "BinaryOp": {
+      "type": "string",
+      "enum": ["And", "Or", "Xor", "Lt", "Le", "Gt", "Ge", "Eq", "Ne", "Add", "Sub", "Mul", "Shl", "Shr"]
+    },
+    "UnaryOp": {
+      "type": "string",
+      "enum": ["Not"]
+    }
+  }
+}

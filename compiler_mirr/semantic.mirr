@@ -1,0 +1,15 @@
+module mirr_semantic {
+    signal s_in: in bool;
+    signal s_out: out bool;
+
+    guard simple_guard {
+        when s_in
+        for 1 cycles;
+    }
+
+    reflex simple_reflex {
+        on simple_guard {
+            s_out = true;
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "Binary": {
+    "op": "And",
+    "left": { "Signal": "eeg_spike" },
+    "right": {
+      "Unary": {
+        "op": "Not",
+        "operand": { "Signal": "artifact_noise" }
+      }
+    }
+  }
+}

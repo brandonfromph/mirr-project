@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIRR Temporal Netlist Viewer — Neonatal Respirator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --orange: #ffa657;
+      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 32px 24px;
+    }
+    a { color: var(--accent); }
+    h1 { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    h2 { font-size: 15px; font-weight: 600; color: var(--accent); margin: 28px 0 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .badge-sr   { background: #1f4b8e; color: #79c0ff; }
+    .badge-ctr  { background: #3b2300; color: var(--orange); }
+    .badge-bool { background: #1a3a1a; color: var(--green); }
+    .badge-u16  { background: #2d1f5e; color: var(--purple); }
+
+    /* stat cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .stat-card .value { font-size: 28px; font-weight: 700; color: var(--accent); }
+    .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+    /* tables */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); background: var(--surface); }
+    tr:hover { background: #1c2128; }
+    .mono { font-family: var(--font-mono); font-size: 12px; }
+
+    /* pipeline diagram */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+      padding: 6px 0;
+    }
+    .pipe-node {
+      background: #1f4b8e;
+      color: #79c0ff;
+      border: 1px solid #2f6bc4;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .pipe-node.input { background: #1a3a1a; color: var(--green); border-color: #3fb950; }
+    .pipe-node.output { background: #3b2300; color: var(--orange); border-color: #ffa657; }
+    .pipe-node.counter { background: #2d1f5e; color: var(--purple); border-color: #bc8cff; }
+    .pipe-node.cmp { background: #3b1a1a; color: var(--red); border-color: #f85149; }
+    .pipe-arrow { color: var(--muted); padding: 0 6px; font-size: 16px; }
+
+    /* collapsible JSON */
+    details { margin-top: 24px; }
+    summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-size: 13px;
+      user-select: none;
+      padding: 6px 0;
+    }
+    summary:hover { color: #fff; }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      overflow-x: auto;
+      color: #e6edf3;
+      margin-top: 8px;
+      white-space: pre;
+    }
+
+    /* section wrappers */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .section-body { padding: 16px; }
+
+    /* dot source */
+    .dot-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #e6edf3;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.5;
+    }
+
+    /* callout */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: #121d2f;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .callout strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<h1>🛡️ MIRR Temporal Netlist Viewer</h1>
+<p class="subtitle">
+  R-SPU MIRR Compiler · Phase 2 Step 2.2 · Module: <strong>neonatal_respirator</strong>
+</p>
+
+<div class="callout">
+  <strong>Source file:</strong> <code>examples/neonatal_respirator.mirr</code> —
+  compiled with <code>cargo run -- --compile --json examples/neonatal_respirator.mirr</code>.
+  This page shows what the MIRR Temporal Guard Compiler actually produces for that module.
+</div>
+
+<!-- ─── RESOURCE STATISTICS ─────────────────────────────────────────────── -->
+<h2>Resource Statistics</h2>
+<div class="stats-grid">
+  <div class="stat-card"><div class="value">1</div><div class="label">Guards</div></div>
+  <div class="stat-card"><div class="value">0</div><div class="label">Shift Registers</div></div>
+  <div class="stat-card"><div class="value">1</div><div class="label">Counter</div></div>
+  <div class="stat-card"><div class="value">3</div><div class="label">Generated Signals</div></div>
+  <div class="stat-card"><div class="value">1 000</div><div class="label">Max Delay (cycles)</div></div>
+  <div class="stat-card"><div class="value">11</div><div class="label">Counter Width (bits)</div></div>
+</div>
+
+<!-- ─── COMPILED GUARDS ──────────────────────────────────────────────────── -->
+<h2>Compiled Guards</h2>
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th>Guard Name</th>
+        <th>Strategy</th>
+        <th>Condition</th>
+        <th>Delay</th>
+        <th>Input Signal</th>
+        <th>Output Signal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono">sustained_pressure_drop</td>
+        <td><span class="badge badge-ctr">Counter</span></td>
+        <td class="mono">when airway_pressure &lt; 50</td>
+        <td>1 000 cycles</td>
+        <td class="mono">airway_pressure</td>
+        <td class="mono">sustained_pressure_drop_out</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── HARDWARE PIPELINE ────────────────────────────────────────────────── -->
+<h2>Hardware Pipeline — <span style="color:var(--orange)">Counter Strategy</span></h2>
+<div class="section">
+  <div class="section-body">
+    <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">
+      N = 1000 &gt; 16 → Counter-comparator. An 11-bit counter increments while
+      <code>airway_pressure &lt; 50</code> is sustained; the comparator fires when
+      the count reaches 1000, asserting the output to trigger <code>emergency_clamp</code>.
+    </p>
+    <div class="pipeline">
+      <div class="pipe-node input">airway_pressure<br/><span style="font-size:10px;opacity:.7">in u16</span></div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-node counter">sustained_pressure_drop_counter<br/><span style="font-size:10px;opacity:.7">u11 counter</span></div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-node cmp">sustained_pressure_drop_cmp<br/><span style="font-size:10px;opacity:.7">bool comparator (== 1000)</span></div>
+      <span class="pipe-arrow">→</span>
+      <div class="pipe-node output">sustained_pressure_drop_out<br/><span style="font-size:10px;opacity:.7">bool output</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── GENERATED SIGNALS ────────────────────────────────────────────────── -->
+<h2>Generated Signals</h2>
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th>Signal Name</th>
+        <th>Type</th>
+        <th>Kind</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono">sustained_pressure_drop_counter</td>
+        <td><span class="badge badge-u16">Unsigned(11)</span></td>
+        <td>Counter register</td>
+      </tr>
+      <tr>
+        <td class="mono">sustained_pressure_drop_cmp</td>
+        <td><span class="badge badge-bool">Bool</span></td>
+        <td>Comparator output</td>
+      </tr>
+      <tr>
+        <td class="mono">sustained_pressure_drop_out</td>
+        <td><span class="badge badge-bool">Bool</span></td>
+        <td>Logic gate (final output)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── MODULE SIGNALS ───────────────────────────────────────────────────── -->
+<h2>Module Signals (from MIRR source)</h2>
+<div class="section">
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Direction</th><th>Type</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono">respirator_enable</td>
+        <td>in</td>
+        <td><span class="badge badge-bool">bool</span></td>
+      </tr>
+      <tr>
+        <td class="mono">airway_pressure</td>
+        <td>in</td>
+        <td><span class="badge badge-u16">u16</span></td>
+      </tr>
+      <tr>
+        <td class="mono">clamp_valve</td>
+        <td>out</td>
+        <td><span class="badge badge-bool">bool</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── JSON OUTPUT ──────────────────────────────────────────────────────── -->
+<details>
+  <summary>▶ Raw JSON netlist (what <code>--json</code> emits)</summary>
+  <pre>{
+  "guards": [
+    {
+      "Counter": {
+        "name": "sustained_pressure_drop",
+        "input_signal": "airway_pressure",
+        "output_signal": "sustained_pressure_drop_out",
+        "counter_signal": "sustained_pressure_drop_counter",
+        "comparator_signal": "sustained_pressure_drop_cmp",
+        "target_count": 1000,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "airway_pressure",
+            "op": "Lt",
+            "value": {
+              "Integer": 50
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "sustained_pressure_drop_counter",
+      "ty": { "Unsigned": 11 },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "sustained_pressure_drop_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "sustained_pressure_drop_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 0,
+    "counters_used": 1,
+    "logic_gates_used": 1,
+    "max_delay_cycles": 1000,
+    "total_signals": 3,
+    "compilation_time_us": null
+  }
+}</pre>
+</details>
+
+<!-- ─── DOT OUTPUT ───────────────────────────────────────────────────────── -->
+<details>
+  <summary>▶ Graphviz DOT output (what <code>--dot</code> emits)</summary>
+  <div class="dot-box" style="margin-top:8px;">digraph TemporalNetlist {
+  rankdir=LR;
+  node [shape=box];
+
+  "sustained_pressure_drop_counter" [shape=diamond label="sustained_pressure_drop_counter\nUnsigned(11)"];
+  "sustained_pressure_drop_cmp" [shape=ellipse label="sustained_pressure_drop_cmp\nBool"];
+  "sustained_pressure_drop_out" [shape=box label="sustained_pressure_drop_out\nBool"];
+
+  subgraph cluster_sustained_pressure_drop {
+    label="Counter: sustained_pressure_drop\nwhen airway_pressure &lt; 50\nfor 1000 cycles";
+    "airway_pressure" -&gt; "sustained_pressure_drop_counter";
+    "sustained_pressure_drop_counter" -&gt; "sustained_pressure_drop_cmp";
+    "sustained_pressure_drop_cmp" -&gt; "sustained_pressure_drop_out";
+  }
+}</div>
+</details>
+
+<!-- ─── HOW TO REGENERATE ────────────────────────────────────────────────── -->
+<h2>Regenerate from CLI</h2>
+<div class="section">
+  <div class="section-body">
+    <p style="color:var(--muted);font-size:13px;margin-bottom:10px;">
+      Run these commands from the project root to produce the real output:
+    </p>
+    <pre style="margin:0;">cargo run -- --compile --json examples/neonatal_respirator.mirr
+cargo run -- --compile --dot  examples/neonatal_respirator.mirr</pre>
+  </div>
+</div>
+
+<p style="color:var(--muted);font-size:11px;margin-top:32px;text-align:center;">
+  MIRR Temporal Guard Compiler · Phase 2 Step 2.2 · MIRR-PHASE2-001 rev 1.2 · 
+  98 tests passing · 0 clippy warnings
+</p>
+
+</body>
+</html>

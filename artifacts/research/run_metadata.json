@@ -1,0 +1,42 @@
+{
+  "timestamp_utc": "2026-03-01T14:49:11.797094+00:00",
+  "git_commit": "9c95157",
+  "binary": "C:\\Users\\elvie\\nasa-rust-project\\target\\release\\nasa-rust-project.exe",
+  "strategy_threshold_cycles": 16,
+  "delays": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    16,
+    17,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1000,
+    2000
+  ],
+  "determinism_runs": 20,
+  "warmup_runs": 3,
+  "benchmark_runs": 10,
+  "fixtures": [
+    "examples\\neonatal_respirator.mirr"
+  ],
+  "strategy_summary": {
+    "total_cases": 14,
+    "matched_cases": 14,
+    "accuracy": 1.0,
+    "threshold_cycles": 16
+  },
+  "determinism_summary": {
+    "runs": 20,
+    "unique_hashes": 1,
+    "dominant_hash": "fcd7ec70ccc62b304d0d976213ed43abaf2ce5e7811332b2d29c739dafea72a6",
+    "dominant_count": 20,
+    "mismatch_count": 0,
+    "deterministic": true
+  }
+}

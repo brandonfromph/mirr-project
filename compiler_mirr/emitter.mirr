@@ -1,0 +1,15 @@
+module mirr_emitter {
+    signal e_in: in bool;
+    signal e_out: out bool;
+
+    guard e_guard {
+        when e_in
+        for 1 cycles;
+    }
+
+    reflex e_reflex {
+        on e_guard {
+            e_out = true;
+        }
+    }
+}

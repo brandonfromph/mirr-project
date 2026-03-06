@@ -1,0 +1,15 @@
+module temporal_lowering {
+    signal t_in: in bool;
+    signal t_out: out bool;
+
+    guard simple_tl_guard {
+        when t_in
+        for 1 cycles;
+    }
+
+    reflex simple_tl_reflex {
+        on simple_tl_guard {
+            t_out = true;
+        }
+    }
+}

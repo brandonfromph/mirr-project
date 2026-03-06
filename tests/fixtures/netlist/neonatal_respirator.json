@@ -1,0 +1,50 @@
+{
+  "ir_version": "1.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "sustained_pressure_drop",
+        "input_signal": "airway_pressure",
+        "output_signal": "sustained_pressure_drop_out",
+        "counter_signal": "sustained_pressure_drop_counter",
+        "comparator_signal": "sustained_pressure_drop_cmp",
+        "target_count": 1000,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "airway_pressure",
+            "op": "Lt",
+            "value": { "Integer": 50 }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "sustained_pressure_drop_counter",
+      "ty": { "Unsigned": 11 },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "sustained_pressure_drop_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "sustained_pressure_drop_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 0,
+    "counters_used": 1,
+    "logic_gates_used": 1,
+    "max_delay_cycles": 1000,
+    "total_signals": 3,
+    "compilation_time_us": null
+  }
+}

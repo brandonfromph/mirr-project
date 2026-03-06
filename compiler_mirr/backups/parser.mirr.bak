@@ -1,0 +1,1008 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Compiler — Parser
+// ---------------------------------------------------------------------------
+// Module: compiler_mirr/parser.mirr
+// Purpose: Parse a TokenBuffer (produced by mirr_lexer) into a flat AST
+//          representation of a MIRR module.
+// NASA-CORE rules: no dynamic alloc, no recursion, bounded loops,
+//                  explicit error returns via DiagnosticList.
+//
+// Depends on:
+//   stdlib/mirr_core/token_buffer.mirr  (TokenBuffer, Token, token_buffer_get)
+//   stdlib/mirr_core/diagnostics.mirr   (DiagnosticList, diag_push, …)
+//   compiler_mirr/lexer.mirr            (TOKEN_* constants)
+// ---------------------------------------------------------------------------
+
+module mirr_parser {
+
+    // -----------------------------------------------------------------------
+    // Capacity constants — all arrays are stack-allocated and bounded.
+    // -----------------------------------------------------------------------
+    const MAX_SIGNALS:     usize = 64;
+    const MAX_GUARDS:      usize = 32;
+    const MAX_REFLEXES:    usize = 32;
+    const MAX_ASSIGNMENTS: usize = 128;  // total across all reflexes
+    const MAX_GUARD_REFS:  usize = 128;  // total guard-name refs across all reflexes
+    const MAX_NAME_LEN:    usize = 64;   // maximum identifier byte length
+    const MAX_EXPR_NODES:  usize = 256;  // total expression AST nodes
+
+    // -----------------------------------------------------------------------
+    // DiagCode constants for parser errors
+    // -----------------------------------------------------------------------
+    const DIAG_PARSE_EMPTY_SOURCE:           u32 = 1;
+    const DIAG_PARSE_EXPECTED_MODULE:        u32 = 2;
+    const DIAG_PARSE_MODULE_NOT_CLOSED:      u32 = 3;
+    const DIAG_PARSE_SIGNAL_MISSING_COLON:   u32 = 4;
+    const DIAG_PARSE_SIGNAL_MISSING_KIND:    u32 = 5;
+    const DIAG_PARSE_SIGNAL_MISSING_TYPE:    u32 = 6;
+    const DIAG_PARSE_SIGNAL_MISSING_SEMI:    u32 = 7;
+    const DIAG_PARSE_SIGNAL_UNKNOWN_KIND:    u32 = 8;
+    const DIAG_PARSE_SIGNAL_UNKNOWN_TYPE:    u32 = 9;
+    const DIAG_PARSE_GUARD_MISSING_WHEN:     u32 = 10;
+    const DIAG_PARSE_GUARD_MISSING_FOR:      u32 = 11;
+    const DIAG_PARSE_GUARD_INVALID_CYCLES:   u32 = 12;
+    const DIAG_PARSE_GUARD_NOT_CLOSED:       u32 = 13;
+    const DIAG_PARSE_REFLEX_MISSING_ON:      u32 = 14;
+    const DIAG_PARSE_REFLEX_EMPTY_ON:        u32 = 15;
+    const DIAG_PARSE_REFLEX_NOT_CLOSED:      u32 = 16;
+    const DIAG_PARSE_ASSIGN_MISSING_EQ:      u32 = 17;
+    const DIAG_PARSE_CAPACITY_EXCEEDED:      u32 = 18;
+    const DIAG_PARSE_UNEXPECTED_TOKEN:       u32 = 19;
+    const DIAG_PARSE_EXPR_UNEXPECTED:        u32 = 20;
+
+    // -----------------------------------------------------------------------
+    // Token-kind discriminant constants (mirror lexer.mirr)
+    // -----------------------------------------------------------------------
+    const TOKEN_IDENT:       u32 = 0;
+    const TOKEN_INTEGER:     u32 = 1;
+    const TOKEN_BOOL_TRUE:   u32 = 2;
+    const TOKEN_BOOL_FALSE:  u32 = 3;
+    const TOKEN_KW_MODULE:   u32 = 4;
+    const TOKEN_KW_SIGNAL:   u32 = 5;
+    const TOKEN_KW_GUARD:    u32 = 6;
+    const TOKEN_KW_REFLEX:   u32 = 7;
+    const TOKEN_KW_WHEN:     u32 = 8;
+    const TOKEN_KW_FOR:      u32 = 9;
+    const TOKEN_KW_CYCLES:   u32 = 10;
+    const TOKEN_KW_ON:       u32 = 11;
+    const TOKEN_KW_AND:      u32 = 12;
+    const TOKEN_KW_IN:       u32 = 13;
+    const TOKEN_KW_OUT:      u32 = 14;
+    const TOKEN_KW_INTERNAL: u32 = 15;
+    const TOKEN_KW_BOOL:     u32 = 16;
+    const TOKEN_AMP_AMP:     u32 = 30;
+    const TOKEN_PIPE_PIPE:   u32 = 31;
+    const TOKEN_LT_LT:       u32 = 32;
+    const TOKEN_GT_GT:       u32 = 33;
+    const TOKEN_LT_EQ:       u32 = 34;
+    const TOKEN_GT_EQ:       u32 = 35;
+    const TOKEN_EQ_EQ:       u32 = 36;
+    const TOKEN_BANG_EQ:     u32 = 37;
+    const TOKEN_BANG:        u32 = 40;
+    const TOKEN_CARET:       u32 = 41;
+    const TOKEN_PLUS:        u32 = 42;
+    const TOKEN_MINUS:       u32 = 43;
+    const TOKEN_STAR:        u32 = 44;
+    const TOKEN_LT:          u32 = 46;
+    const TOKEN_GT:          u32 = 47;
+    const TOKEN_EQ:          u32 = 48;
+    const TOKEN_LBRACE:      u32 = 53;
+    const TOKEN_RBRACE:      u32 = 54;
+    const TOKEN_COLON:       u32 = 57;
+    const TOKEN_SEMICOLON:   u32 = 58;
+    const TOKEN_EOF:         u32 = 61;
+
+    // -----------------------------------------------------------------------
+    // SignalKind discriminants
+    // -----------------------------------------------------------------------
+    const SIGNAL_KIND_INPUT:    u32 = 0;
+    const SIGNAL_KIND_OUTPUT:   u32 = 1;
+    const SIGNAL_KIND_INTERNAL: u32 = 2;
+
+    // -----------------------------------------------------------------------
+    // SignalType discriminants
+    // -----------------------------------------------------------------------
+    const SIGNAL_TYPE_BOOL:     u32 = 0;
+    const SIGNAL_TYPE_UNSIGNED: u32 = 1;  // width stored in signal.type_width
+
+    // -----------------------------------------------------------------------
+    // ExprNode — one node in the flat expression table
+    // -----------------------------------------------------------------------
+    // tag discriminants:
+    //   0 = Literal (u64 in int_value)
+    //   1 = Signal  (name index → names table)
+    //   2 = Unary   (op in op_kind, left = child index)
+    //   3 = Binary  (op in op_kind, left/right = child indices)
+    const EXPR_LITERAL: u32 = 0;
+    const EXPR_SIGNAL:  u32 = 1;
+    const EXPR_UNARY:   u32 = 2;
+    const EXPR_BINARY:  u32 = 3;
+
+    struct ExprNode {
+        tag:       u32,   // EXPR_* discriminant
+        op_kind:   u32,   // token kind of operator (for Unary/Binary)
+        left:      u32,   // index into expr_nodes (child or only operand)
+        right:     u32,   // index into expr_nodes (right operand for Binary)
+        int_value: u64,   // literal value (for EXPR_LITERAL)
+        name_idx:  u32,   // index into name_store (for EXPR_SIGNAL)
+    }
+
+    // -----------------------------------------------------------------------
+    // SignalDecl — parsed signal declaration
+    // -----------------------------------------------------------------------
+    struct SignalDecl {
+        name_idx:   u32,   // index into name_store
+        kind:       u32,   // SIGNAL_KIND_*
+        type_tag:   u32,   // SIGNAL_TYPE_*
+        type_width: u32,   // bit-width for Unsigned; 0 for Bool
+    }
+
+    // -----------------------------------------------------------------------
+    // GuardDecl — parsed guard declaration
+    // -----------------------------------------------------------------------
+    struct GuardDecl {
+        name_idx:      u32,   // index into name_store
+        condition_idx: u32,   // root index into expr_nodes
+        cycles:        u64,
+    }
+
+    // -----------------------------------------------------------------------
+    // ReflexDecl — parsed reflex declaration
+    // -----------------------------------------------------------------------
+    struct ReflexDecl {
+        name_idx:         u32,   // index into name_store
+        guard_refs_start: u32,   // first index in guard_ref_store
+        guard_refs_len:   u32,   // number of guard name indices
+        assignments_start: u32,  // first index in assignment_store
+        assignments_len:  u32,
+    }
+
+    // -----------------------------------------------------------------------
+    // AssignmentDecl — parsed assignment inside a reflex
+    // -----------------------------------------------------------------------
+    struct AssignmentDecl {
+        target_name_idx: u32,   // index into name_store
+        value_expr_idx:  u32,   // root index into expr_nodes
+    }
+
+    // -----------------------------------------------------------------------
+    // NameStore — fixed-capacity byte arena for identifier text
+    // -----------------------------------------------------------------------
+    const NAME_STORE_BYTES: usize = 4096;
+
+    struct NameStore {
+        bytes:  [u8; NAME_STORE_BYTES],
+        starts: [u16; 256],   // byte offset of each name
+        lens:   [u8;  256],   // byte length of each name (max 255)
+        count:  u32,
+    }
+
+    // -----------------------------------------------------------------------
+    // ParsedModule — the complete flat AST of one MIRR module
+    // -----------------------------------------------------------------------
+    struct ParsedModule {
+        // Module name.
+        module_name_idx: u32,
+
+        // Signal table.
+        signals:     [SignalDecl; MAX_SIGNALS],
+        signal_count: u32,
+
+        // Guard table.
+        guards:      [GuardDecl; MAX_GUARDS],
+        guard_count: u32,
+
+        // Reflex table.
+        reflexes:    [ReflexDecl; MAX_REFLEXES],
+        reflex_count: u32,
+
+        // Assignment store (all assignments from all reflexes, in order).
+        assignments: [AssignmentDecl; MAX_ASSIGNMENTS],
+        assign_count: u32,
+
+        // Guard-name ref store (all guard references from all reflexes).
+        guard_refs:  [u32; MAX_GUARD_REFS],   // indices into name_store
+        guard_ref_count: u32,
+
+        // Expression node table.
+        expr_nodes:  [ExprNode; MAX_EXPR_NODES],
+        expr_count:  u32,
+
+        // Identifier arena.
+        names: NameStore,
+    }
+
+    // -----------------------------------------------------------------------
+    // ParseResult — returned by parse_tokens
+    // -----------------------------------------------------------------------
+    struct ParseResult {
+        module: ParsedModule,
+        diags:  DiagnosticList,
+        ok:     bool,
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_tokens — entry point
+    // --------------------------
+    // Parses the token stream in `buf` (produced by lex_source) against the
+    // raw source bytes `src` and returns a ParseResult.
+    //
+    // The parser is a single-pass, top-down recursive-descent design
+    // implemented iteratively (no actual recursion — no call stack growth).
+    // Termination: pos advances by ≥ 1 token on every iteration of each
+    // bounded while-loop.
+    // -----------------------------------------------------------------------
+    fn parse_tokens(buf: &TokenBuffer, src: &[u8], src_len: usize) -> ParseResult {
+        let mut module: ParsedModule = parsed_module_new();
+        let mut diags: DiagnosticList = diag_list_new();
+        let mut ok: bool = true;
+        let mut pos: u32 = 0;  // token cursor in buf
+
+        // ------------------------------------------------------------------
+        // 1. Skip to first non-EOF token; reject empty streams.
+        // ------------------------------------------------------------------
+        let first: Token = peek(buf, pos);
+        if first.kind == TOKEN_EOF {
+            diag_push(&mut diags, diag_make_error(DIAG_PARSE_EMPTY_SOURCE, 0));
+            ok = false;
+            return ParseResult { module, diags, ok };
+        }
+
+        // ------------------------------------------------------------------
+        // 2. Require `module <name> {`
+        // ------------------------------------------------------------------
+        if first.kind != TOKEN_KW_MODULE {
+            diag_push(&mut diags, diag_make_error(DIAG_PARSE_EXPECTED_MODULE, first.start));
+            ok = false;
+            return ParseResult { module, diags, ok };
+        }
+        pos = pos + 1;
+
+        // Expect module name (Ident).
+        let name_tok: Token = peek(buf, pos);
+        if name_tok.kind != TOKEN_IDENT {
+            diag_push(&mut diags, diag_make_error(DIAG_PARSE_EXPECTED_MODULE, name_tok.start));
+            ok = false;
+            return ParseResult { module, diags, ok };
+        }
+        module.module_name_idx = intern_name(&mut module.names, src, name_tok.start, name_tok.len);
+        pos = pos + 1;
+
+        // Expect `{`.
+        let lbrace: Token = peek(buf, pos);
+        if lbrace.kind != TOKEN_LBRACE {
+            diag_push(&mut diags, diag_make_error(DIAG_PARSE_EXPECTED_MODULE, lbrace.start));
+            ok = false;
+            return ParseResult { module, diags, ok };
+        }
+        pos = pos + 1;
+
+        // ------------------------------------------------------------------
+        // 3. Main body loop: parse signal / guard / reflex / `}`.
+        // Termination: pos advances by ≥ 1 every iteration; token count
+        // is finite.
+        // ------------------------------------------------------------------
+        let mut body_done: bool = false;
+        while !body_done {
+            let tok: Token = peek(buf, pos);
+
+            if tok.kind == TOKEN_EOF {
+                diag_push(&mut diags, diag_make_error(DIAG_PARSE_MODULE_NOT_CLOSED, tok.start));
+                ok = false;
+                body_done = true;
+            } else if tok.kind == TOKEN_RBRACE {
+                pos = pos + 1;  // consume `}`
+                body_done = true;
+            } else if tok.kind == TOKEN_KW_SIGNAL {
+                pos = pos + 1;
+                let res: bool = parse_signal(buf, src, &mut module, &mut diags, &mut pos);
+                if !res { ok = false; }
+            } else if tok.kind == TOKEN_KW_GUARD {
+                pos = pos + 1;
+                let res: bool = parse_guard(buf, src, &mut module, &mut diags, &mut pos);
+                if !res { ok = false; }
+            } else if tok.kind == TOKEN_KW_REFLEX {
+                pos = pos + 1;
+                let res: bool = parse_reflex(buf, src, &mut module, &mut diags, &mut pos);
+                if !res { ok = false; }
+            } else {
+                diag_push(&mut diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, tok.start));
+                ok = false;
+                pos = pos + 1;  // skip unknown token and continue
+            }
+        }
+
+        ParseResult { module, diags, ok }
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_signal
+    // -------------
+    // Expects: <name> : <kind> <type> ;
+    // (The leading `signal` keyword has already been consumed.)
+    // -----------------------------------------------------------------------
+    fn parse_signal(
+        buf:    &TokenBuffer,
+        src:    &[u8],
+        module: &mut ParsedModule,
+        diags:  &mut DiagnosticList,
+        pos:    &mut u32,
+    ) -> bool {
+        // name
+        let name_tok: Token = peek(buf, *pos);
+        if name_tok.kind != TOKEN_IDENT {
+            diag_push(diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, name_tok.start));
+            return false;
+        }
+        let name_idx: u32 = intern_name(&mut module.names, src, name_tok.start, name_tok.len);
+        *pos = *pos + 1;
+
+        // `:`
+        let colon: Token = peek(buf, *pos);
+        if colon.kind != TOKEN_COLON {
+            diag_push(diags, diag_make_error(DIAG_PARSE_SIGNAL_MISSING_COLON, colon.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // kind: in | out | internal
+        let kind_tok: Token = peek(buf, *pos);
+        let kind: u32;
+        if kind_tok.kind == TOKEN_KW_IN {
+            kind = SIGNAL_KIND_INPUT;
+        } else if kind_tok.kind == TOKEN_KW_OUT {
+            kind = SIGNAL_KIND_OUTPUT;
+        } else if kind_tok.kind == TOKEN_KW_INTERNAL {
+            kind = SIGNAL_KIND_INTERNAL;
+        } else {
+            diag_push(diags, diag_make_error(DIAG_PARSE_SIGNAL_UNKNOWN_KIND, kind_tok.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // type: bool | uN (an Ident starting with 'u' followed by digits)
+        let type_tok: Token = peek(buf, *pos);
+        let type_tag: u32;
+        let type_width: u32;
+        if type_tok.kind == TOKEN_KW_BOOL {
+            type_tag = SIGNAL_TYPE_BOOL;
+            type_width = 0;
+        } else if type_tok.kind == TOKEN_IDENT {
+            // Must be "uN" where N is a decimal width.
+            // Check first byte is 'u' (117).
+            if src[type_tok.start] != 117 || type_tok.len < 2 {
+                diag_push(diags, diag_make_error(DIAG_PARSE_SIGNAL_UNKNOWN_TYPE, type_tok.start));
+                return false;
+            }
+            // Parse width from remaining bytes.
+            let width: u64 = parse_decimal_src(src, type_tok.start + 1, type_tok.len - 1);
+            if width == 0 || width > 65535 {
+                diag_push(diags, diag_make_error(DIAG_PARSE_SIGNAL_UNKNOWN_TYPE, type_tok.start));
+                return false;
+            }
+            type_tag = SIGNAL_TYPE_UNSIGNED;
+            type_width = width as u32;
+        } else {
+            diag_push(diags, diag_make_error(DIAG_PARSE_SIGNAL_UNKNOWN_TYPE, type_tok.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // `;`
+        let semi: Token = peek(buf, *pos);
+        if semi.kind != TOKEN_SEMICOLON {
+            diag_push(diags, diag_make_error(DIAG_PARSE_SIGNAL_MISSING_SEMI, semi.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // Capacity check.
+        if module.signal_count as usize >= MAX_SIGNALS {
+            diag_push(diags, diag_make_error(DIAG_PARSE_CAPACITY_EXCEEDED, name_tok.start));
+            return false;
+        }
+
+        let idx: usize = module.signal_count as usize;
+        module.signals[idx] = SignalDecl { name_idx, kind, type_tag, type_width };
+        module.signal_count = module.signal_count + 1;
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_guard
+    // ------------
+    // Expects: <name> { when <expr> for <integer> cycles ; }
+    // (The leading `guard` keyword has already been consumed.)
+    // -----------------------------------------------------------------------
+    fn parse_guard(
+        buf:    &TokenBuffer,
+        src:    &[u8],
+        module: &mut ParsedModule,
+        diags:  &mut DiagnosticList,
+        pos:    &mut u32,
+    ) -> bool {
+        // name
+        let name_tok: Token = peek(buf, *pos);
+        if name_tok.kind != TOKEN_IDENT {
+            diag_push(diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, name_tok.start));
+            return false;
+        }
+        let name_idx: u32 = intern_name(&mut module.names, src, name_tok.start, name_tok.len);
+        *pos = *pos + 1;
+
+        // `{`
+        let lbrace: Token = peek(buf, *pos);
+        if lbrace.kind != TOKEN_LBRACE {
+            diag_push(diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, lbrace.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // `when`
+        let when_tok: Token = peek(buf, *pos);
+        if when_tok.kind != TOKEN_KW_WHEN {
+            diag_push(diags, diag_make_error(DIAG_PARSE_GUARD_MISSING_WHEN, when_tok.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // condition expression — parse until `for` token
+        let condition_idx: u32 = module.expr_count;
+        let expr_ok: bool = parse_expr(buf, src, module, diags, pos, TOKEN_KW_FOR);
+        if !expr_ok { return false; }
+
+        // `for`
+        let for_tok: Token = peek(buf, *pos);
+        if for_tok.kind != TOKEN_KW_FOR {
+            diag_push(diags, diag_make_error(DIAG_PARSE_GUARD_MISSING_FOR, for_tok.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // cycle count (integer literal)
+        let cycles_tok: Token = peek(buf, *pos);
+        if cycles_tok.kind != TOKEN_INTEGER {
+            diag_push(diags, diag_make_error(DIAG_PARSE_GUARD_INVALID_CYCLES, cycles_tok.start));
+            return false;
+        }
+        let cycles: u64 = cycles_tok.int_value;
+        *pos = *pos + 1;
+
+        // optional `cycles` keyword
+        let maybe_cycles: Token = peek(buf, *pos);
+        if maybe_cycles.kind == TOKEN_KW_CYCLES {
+            *pos = *pos + 1;
+        }
+
+        // `;`
+        let semi: Token = peek(buf, *pos);
+        if semi.kind != TOKEN_SEMICOLON {
+            diag_push(diags, diag_make_error(DIAG_PARSE_GUARD_MISSING_FOR, semi.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // `}`
+        let rbrace: Token = peek(buf, *pos);
+        if rbrace.kind != TOKEN_RBRACE {
+            diag_push(diags, diag_make_error(DIAG_PARSE_GUARD_NOT_CLOSED, rbrace.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // Capacity check.
+        if module.guard_count as usize >= MAX_GUARDS {
+            diag_push(diags, diag_make_error(DIAG_PARSE_CAPACITY_EXCEEDED, name_tok.start));
+            return false;
+        }
+
+        let idx: usize = module.guard_count as usize;
+        module.guards[idx] = GuardDecl { name_idx, condition_idx, cycles };
+        module.guard_count = module.guard_count + 1;
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_reflex
+    // -------------
+    // Expects: <name> { on <guard> [and <guard>]* { <assignment>* } }
+    // (The leading `reflex` keyword has already been consumed.)
+    // -----------------------------------------------------------------------
+    fn parse_reflex(
+        buf:    &TokenBuffer,
+        src:    &[u8],
+        module: &mut ParsedModule,
+        diags:  &mut DiagnosticList,
+        pos:    &mut u32,
+    ) -> bool {
+        // name
+        let name_tok: Token = peek(buf, *pos);
+        if name_tok.kind != TOKEN_IDENT {
+            diag_push(diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, name_tok.start));
+            return false;
+        }
+        let name_idx: u32 = intern_name(&mut module.names, src, name_tok.start, name_tok.len);
+        *pos = *pos + 1;
+
+        // `{`
+        let lbrace: Token = peek(buf, *pos);
+        if lbrace.kind != TOKEN_LBRACE {
+            diag_push(diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, lbrace.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // `on`
+        let on_tok: Token = peek(buf, *pos);
+        if on_tok.kind != TOKEN_KW_ON {
+            diag_push(diags, diag_make_error(DIAG_PARSE_REFLEX_MISSING_ON, on_tok.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // guard name list: <ident> (and <ident>)*
+        let guard_refs_start: u32 = module.guard_ref_count;
+        let mut guard_refs_len: u32 = 0;
+
+        // First guard name.
+        let first_guard: Token = peek(buf, *pos);
+        if first_guard.kind != TOKEN_IDENT {
+            diag_push(diags, diag_make_error(DIAG_PARSE_REFLEX_EMPTY_ON, first_guard.start));
+            return false;
+        }
+        // Bounded: at most MAX_GUARD_REFS iterations total across all reflexes.
+        let mut parsing_guards: bool = true;
+        while parsing_guards {
+            let g_tok: Token = peek(buf, *pos);
+            if g_tok.kind != TOKEN_IDENT {
+                break;
+            }
+            if module.guard_ref_count as usize >= MAX_GUARD_REFS {
+                diag_push(diags, diag_make_error(DIAG_PARSE_CAPACITY_EXCEEDED, g_tok.start));
+                return false;
+            }
+            let g_name_idx: u32 = intern_name(&mut module.names, src, g_tok.start, g_tok.len);
+            let gr_idx: usize = module.guard_ref_count as usize;
+            module.guard_refs[gr_idx] = g_name_idx;
+            module.guard_ref_count = module.guard_ref_count + 1;
+            guard_refs_len = guard_refs_len + 1;
+            *pos = *pos + 1;
+
+            // `and` continues the list; anything else stops it.
+            let maybe_and: Token = peek(buf, *pos);
+            if maybe_and.kind != TOKEN_KW_AND {
+                parsing_guards = false;
+            } else {
+                *pos = *pos + 1;  // consume `and`
+            }
+        }
+
+        if guard_refs_len == 0 {
+            diag_push(diags, diag_make_error(DIAG_PARSE_REFLEX_EMPTY_ON, on_tok.start));
+            return false;
+        }
+
+        // `{`
+        let inner_lbrace: Token = peek(buf, *pos);
+        if inner_lbrace.kind != TOKEN_LBRACE {
+            diag_push(diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, inner_lbrace.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // Assignments: <ident> = <expr> ;  until `}`
+        let assignments_start: u32 = module.assign_count;
+        let mut assignments_len: u32 = 0;
+
+        // Bounded: at most MAX_ASSIGNMENTS iterations.
+        let mut parsing_assigns: bool = true;
+        while parsing_assigns {
+            let a_tok: Token = peek(buf, *pos);
+            if a_tok.kind == TOKEN_RBRACE || a_tok.kind == TOKEN_EOF {
+                parsing_assigns = false;
+            } else if a_tok.kind == TOKEN_IDENT {
+                let target_name_idx: u32 = intern_name(&mut module.names, src, a_tok.start, a_tok.len);
+                *pos = *pos + 1;
+
+                // `=`
+                let eq_tok: Token = peek(buf, *pos);
+                if eq_tok.kind != TOKEN_EQ {
+                    diag_push(diags, diag_make_error(DIAG_PARSE_ASSIGN_MISSING_EQ, eq_tok.start));
+                    return false;
+                }
+                *pos = *pos + 1;
+
+                // RHS expression — parse until `;`
+                let value_expr_idx: u32 = module.expr_count;
+                let expr_ok: bool = parse_expr(buf, src, module, diags, pos, TOKEN_SEMICOLON);
+                if !expr_ok { return false; }
+
+                // `;`
+                let semi: Token = peek(buf, *pos);
+                if semi.kind != TOKEN_SEMICOLON {
+                    diag_push(diags, diag_make_error(DIAG_PARSE_SIGNAL_MISSING_SEMI, semi.start));
+                    return false;
+                }
+                *pos = *pos + 1;
+
+                if module.assign_count as usize >= MAX_ASSIGNMENTS {
+                    diag_push(diags, diag_make_error(DIAG_PARSE_CAPACITY_EXCEEDED, a_tok.start));
+                    return false;
+                }
+                let ai: usize = module.assign_count as usize;
+                module.assignments[ai] = AssignmentDecl { target_name_idx, value_expr_idx };
+                module.assign_count = module.assign_count + 1;
+                assignments_len = assignments_len + 1;
+            } else {
+                diag_push(diags, diag_make_error(DIAG_PARSE_UNEXPECTED_TOKEN, a_tok.start));
+                *pos = *pos + 1;  // skip and continue
+            }
+        }
+
+        // inner `}`
+        let inner_rbrace: Token = peek(buf, *pos);
+        if inner_rbrace.kind != TOKEN_RBRACE {
+            diag_push(diags, diag_make_error(DIAG_PARSE_REFLEX_NOT_CLOSED, inner_rbrace.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // outer `}`
+        let outer_rbrace: Token = peek(buf, *pos);
+        if outer_rbrace.kind != TOKEN_RBRACE {
+            diag_push(diags, diag_make_error(DIAG_PARSE_REFLEX_NOT_CLOSED, outer_rbrace.start));
+            return false;
+        }
+        *pos = *pos + 1;
+
+        // Capacity check.
+        if module.reflex_count as usize >= MAX_REFLEXES {
+            diag_push(diags, diag_make_error(DIAG_PARSE_CAPACITY_EXCEEDED, name_tok.start));
+            return false;
+        }
+
+        let ri: usize = module.reflex_count as usize;
+        module.reflexes[ri] = ReflexDecl {
+            name_idx,
+            guard_refs_start,
+            guard_refs_len,
+            assignments_start,
+            assignments_len,
+        };
+        module.reflex_count = module.reflex_count + 1;
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_expr
+    // -----------
+    // Parse a binary/unary expression from `buf` into module.expr_nodes.
+    // Stops when the next token matches `stop_kind` (without consuming it).
+    // Returns true on success; the root node index is (expr_count_before_call).
+    //
+    // Grammar (precedence in ascending order):
+    //   expr     ::= or_expr
+    //   or_expr  ::= and_expr  ( '||' and_expr )*
+    //   and_expr ::= eq_expr   ( ('=='|'!=') eq_expr )*
+    //   eq_expr  ::= cmp_expr  ( ('<'|'<='|'>'|'>='|'<<'|'>>') add_expr )*
+    //   cmp_expr ::= add_expr  ( ('+'|'-'|'^') mul_expr )*
+    //   add_expr ::= mul_expr  ( ('+'|'-'|'^') mul_expr )*
+    //   mul_expr ::= unary     ( '*' unary )*
+    //   unary    ::= '!' unary | primary
+    //   primary  ::= INTEGER | 'true' | 'false' | IDENT
+    //
+    // Implemented iteratively using an explicit 16-slot operator stack
+    // (Dijkstra's shunting-yard), avoiding actual recursion.
+    // -----------------------------------------------------------------------
+    fn parse_expr(
+        buf:       &TokenBuffer,
+        src:       &[u8],
+        module:    &mut ParsedModule,
+        diags:     &mut DiagnosticList,
+        pos:       &mut u32,
+        stop_kind: u32,
+    ) -> bool {
+        // Shunting-yard with explicit stacks.
+        // operator_stack: stores token kinds of pending binary/unary operators.
+        // operand_stack: stores expr_node indices.
+        const OP_STACK_CAP: usize = 16;
+        const VAL_STACK_CAP: usize = 32;
+        let mut op_stack:  [u32; OP_STACK_CAP] = intrinsic_zero_init_u32_array_16();
+        let mut val_stack: [u32; VAL_STACK_CAP] = intrinsic_zero_init_u32_array_32();
+        let mut op_top:  usize = 0;
+        let mut val_top: usize = 0;
+
+        let mut expect_primary: bool = true;  // true when next token should be a value/unary
+
+        // Bounded: at most token_buffer_len(buf) iterations.
+        let mut running: bool = true;
+        while running {
+            let tok: Token = peek(buf, *pos);
+
+            if tok.kind == stop_kind || tok.kind == TOKEN_EOF {
+                running = false;
+            } else if expect_primary {
+                if tok.kind == TOKEN_INTEGER {
+                    let node_idx: u32 = emit_literal(module, tok.int_value);
+                    val_stack[val_top] = node_idx;
+                    val_top = val_top + 1;
+                    *pos = *pos + 1;
+                    expect_primary = false;
+                } else if tok.kind == TOKEN_BOOL_TRUE {
+                    let node_idx: u32 = emit_literal(module, 1);
+                    val_stack[val_top] = node_idx;
+                    val_top = val_top + 1;
+                    *pos = *pos + 1;
+                    expect_primary = false;
+                } else if tok.kind == TOKEN_BOOL_FALSE {
+                    let node_idx: u32 = emit_literal(module, 0);
+                    val_stack[val_top] = node_idx;
+                    val_top = val_top + 1;
+                    *pos = *pos + 1;
+                    expect_primary = false;
+                } else if tok.kind == TOKEN_IDENT {
+                    let name_idx: u32 = intern_name(&mut module.names, src, tok.start, tok.len);
+                    let node_idx: u32 = emit_signal(module, name_idx);
+                    val_stack[val_top] = node_idx;
+                    val_top = val_top + 1;
+                    *pos = *pos + 1;
+                    expect_primary = false;
+                } else if tok.kind == TOKEN_BANG {
+                    // Unary `!` — push onto op stack.
+                    op_stack[op_top] = TOKEN_BANG;
+                    op_top = op_top + 1;
+                    *pos = *pos + 1;
+                    // expect_primary stays true
+                } else {
+                    diag_push(diags, diag_make_error(DIAG_PARSE_EXPR_UNEXPECTED, tok.start));
+                    return false;
+                }
+            } else {
+                // After a primary, expect a binary operator or stop.
+                let prec: u32 = binary_precedence(tok.kind);
+                if prec == 0 {
+                    // Not a binary operator — flush and stop.
+                    running = false;
+                } else {
+                    // Flush higher-precedence operators from op_stack.
+                    let mut flushing: bool = true;
+                    while op_top > 0 && flushing {
+                        let top_op: u32 = op_stack[op_top - 1];
+                        let top_prec: u32 = op_prec(top_op);
+                        if top_prec >= prec && top_op != TOKEN_BANG {
+                            op_top = op_top - 1;
+                            let right_idx: u32 = val_stack[val_top - 1];
+                            val_top = val_top - 1;
+                            let left_idx: u32 = val_stack[val_top - 1];
+                            val_top = val_top - 1;
+                            let node_idx: u32 = emit_binary(module, top_op, left_idx, right_idx);
+                            val_stack[val_top] = node_idx;
+                            val_top = val_top + 1;
+                        } else {
+                            flushing = false;
+                        }
+                    }
+                    op_stack[op_top] = tok.kind;
+                    op_top = op_top + 1;
+                    *pos = *pos + 1;
+                    expect_primary = true;
+                }
+            }
+        }
+
+        // Flush remaining operators.
+        // Bounded: op_top ≤ OP_STACK_CAP.
+        while op_top > 0 {
+            op_top = op_top - 1;
+            let op: u32 = op_stack[op_top];
+            if op == TOKEN_BANG {
+                // Unary NOT.
+                let operand_idx: u32 = val_stack[val_top - 1];
+                val_top = val_top - 1;
+                let node_idx: u32 = emit_unary(module, op, operand_idx);
+                val_stack[val_top] = node_idx;
+                val_top = val_top + 1;
+            } else {
+                let right_idx: u32 = val_stack[val_top - 1];
+                val_top = val_top - 1;
+                let left_idx: u32 = val_stack[val_top - 1];
+                val_top = val_top - 1;
+                let node_idx: u32 = emit_binary(module, op, left_idx, right_idx);
+                val_stack[val_top] = node_idx;
+                val_top = val_top + 1;
+            }
+        }
+
+        // Exactly one value must remain.
+        if val_top != 1 {
+            diag_push(diags, diag_make_error(DIAG_PARSE_EXPR_UNEXPECTED, 0));
+            return false;
+        }
+
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // binary_precedence — returns precedence level (1–6), or 0 if not binary
+    // -----------------------------------------------------------------------
+    fn binary_precedence(kind: u32) -> u32 {
+        if kind == TOKEN_PIPE_PIPE                                       { return 1; }
+        if kind == TOKEN_AMP_AMP                                         { return 2; }
+        if kind == TOKEN_EQ_EQ || kind == TOKEN_BANG_EQ                  { return 3; }
+        if kind == TOKEN_LT || kind == TOKEN_LT_EQ ||
+           kind == TOKEN_GT || kind == TOKEN_GT_EQ ||
+           kind == TOKEN_LT_LT || kind == TOKEN_GT_GT                    { return 4; }
+        if kind == TOKEN_PLUS || kind == TOKEN_MINUS || kind == TOKEN_CARET { return 5; }
+        if kind == TOKEN_STAR                                             { return 6; }
+        0
+    }
+
+    // -----------------------------------------------------------------------
+    // op_prec — returns precedence for an op already on the stack
+    // -----------------------------------------------------------------------
+    fn op_prec(kind: u32) -> u32 {
+        binary_precedence(kind)
+    }
+
+    // -----------------------------------------------------------------------
+    // Expr node emitters
+    // -----------------------------------------------------------------------
+    fn emit_literal(module: &mut ParsedModule, value: u64) -> u32 {
+        let idx: u32 = module.expr_count;
+        let ni: usize = idx as usize;
+        module.expr_nodes[ni] = ExprNode {
+            tag: EXPR_LITERAL, op_kind: 0, left: 0, right: 0,
+            int_value: value, name_idx: 0,
+        };
+        module.expr_count = module.expr_count + 1;
+        idx
+    }
+
+    fn emit_signal(module: &mut ParsedModule, name_idx: u32) -> u32 {
+        let idx: u32 = module.expr_count;
+        let ni: usize = idx as usize;
+        module.expr_nodes[ni] = ExprNode {
+            tag: EXPR_SIGNAL, op_kind: 0, left: 0, right: 0,
+            int_value: 0, name_idx,
+        };
+        module.expr_count = module.expr_count + 1;
+        idx
+    }
+
+    fn emit_unary(module: &mut ParsedModule, op: u32, operand: u32) -> u32 {
+        let idx: u32 = module.expr_count;
+        let ni: usize = idx as usize;
+        module.expr_nodes[ni] = ExprNode {
+            tag: EXPR_UNARY, op_kind: op, left: operand, right: 0,
+            int_value: 0, name_idx: 0,
+        };
+        module.expr_count = module.expr_count + 1;
+        idx
+    }
+
+    fn emit_binary(module: &mut ParsedModule, op: u32, left: u32, right: u32) -> u32 {
+        let idx: u32 = module.expr_count;
+        let ni: usize = idx as usize;
+        module.expr_nodes[ni] = ExprNode {
+            tag: EXPR_BINARY, op_kind: op, left, right,
+            int_value: 0, name_idx: 0,
+        };
+        module.expr_count = module.expr_count + 1;
+        idx
+    }
+
+    // -----------------------------------------------------------------------
+    // peek — return the token at position `pos` in buf, or EOF sentinel
+    // -----------------------------------------------------------------------
+    fn peek(buf: &TokenBuffer, pos: u32) -> Token {
+        let mut t: Token = intrinsic_zero_init_token();
+        token_buffer_get(buf, pos as usize, &mut t);
+        t
+    }
+
+    // -----------------------------------------------------------------------
+    // intern_name — intern a byte slice into the name store; return index.
+    // If an identical name already exists, return its existing index.
+    // Bounded: iterates at most names.count times.
+    // -----------------------------------------------------------------------
+    fn intern_name(
+        names: &mut NameStore,
+        src:   &[u8],
+        start: usize,
+        len:   usize,
+    ) -> u32 {
+        // Search for existing entry.
+        let mut i: u32 = 0;
+        while i < names.count {
+            let ii: usize = i as usize;
+            if names.lens[ii] as usize == len {
+                let existing_start: usize = names.starts[ii] as usize;
+                if intrinsic_bytes_eq(names.bytes, existing_start, src, start, len) {
+                    return i;
+                }
+            }
+            i = i + 1;
+        }
+
+        // New entry.
+        let new_idx: u32 = names.count;
+        let byte_offset: usize = if new_idx == 0 {
+            0
+        } else {
+            let prev: usize = (new_idx - 1) as usize;
+            names.starts[prev] as usize + names.lens[prev] as usize
+        };
+
+        // Copy bytes (bounded: len ≤ MAX_NAME_LEN).
+        let mut j: usize = 0;
+        while j < len && j < MAX_NAME_LEN {
+            names.bytes[byte_offset + j] = src[start + j];
+            j = j + 1;
+        }
+
+        let ni: usize = new_idx as usize;
+        names.starts[ni] = byte_offset as u16;
+        names.lens[ni]   = len as u8;
+        names.count = names.count + 1;
+        new_idx
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_decimal_src — parse decimal integer from source bytes
+    // Returns 0 on empty input, u64::MAX on overflow.
+    // -----------------------------------------------------------------------
+    fn parse_decimal_src(src: &[u8], start: usize, len: usize) -> u64 {
+        if len == 0 { return 0; }
+        let mut value: u64 = 0;
+        let mut i: usize = 0;
+        while i < len {
+            let b: u8 = src[start + i];
+            if b < 48 || b > 57 { return 0; }  // non-digit
+            let d: u64 = (b as u64) - 48;
+            if value > (18446744073709551615 - d) / 10 {
+                return 18446744073709551615;
+            }
+            value = value * 10 + d;
+            i = i + 1;
+        }
+        value
+    }
+
+    // -----------------------------------------------------------------------
+    // parsed_module_new — zero-initialize a ParsedModule
+    // -----------------------------------------------------------------------
+    fn parsed_module_new() -> ParsedModule {
+        ParsedModule {
+            module_name_idx: 0,
+            signals: intrinsic_zero_init_signal_array(),
+            signal_count: 0,
+            guards: intrinsic_zero_init_guard_array(),
+            guard_count: 0,
+            reflexes: intrinsic_zero_init_reflex_array(),
+            reflex_count: 0,
+            assignments: intrinsic_zero_init_assignment_array(),
+            assign_count: 0,
+            guard_refs: intrinsic_zero_init_u32_array_128(),
+            guard_ref_count: 0,
+            expr_nodes: intrinsic_zero_init_expr_array(),
+            expr_count: 0,
+            names: name_store_new(),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // name_store_new — zero-initialize a NameStore
+    // -----------------------------------------------------------------------
+    fn name_store_new() -> NameStore {
+        NameStore {
+            bytes:  intrinsic_zero_init_byte_array_4096(),
+            starts: intrinsic_zero_init_u16_array_256(),
+            lens:   intrinsic_zero_init_byte_array_256(),
+            count:  0,
+        }
+    }
+
+}
+// ---------------------------------------------------------------------------
+// End of compiler_mirr/parser.mirr
+// ---------------------------------------------------------------------------

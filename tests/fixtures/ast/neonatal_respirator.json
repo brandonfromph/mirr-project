@@ -1,0 +1,36 @@
+{
+  "ir_version": "1.0",
+  "module": {
+    "name": "neonatal_respirator",
+    "signals": [
+      { "name": "respirator_enable", "kind": "Input",  "ty": "Bool" },
+      { "name": "airway_pressure",   "kind": "Input",  "ty": { "Unsigned": 16 } },
+      { "name": "clamp_valve",       "kind": "Output", "ty": "Bool" }
+    ],
+    "guards": [
+      {
+        "name": "sustained_pressure_drop",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left":  { "Signal": "airway_pressure" },
+            "right": { "Literal": { "Integer": 50 } }
+          }
+        },
+        "cycles": 1000
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "emergency_clamp",
+        "guard_names": [ "sustained_pressure_drop" ],
+        "assignments": [
+          {
+            "target": "clamp_valve",
+            "value": { "Literal": { "Bool": true } }
+          }
+        ]
+      }
+    ]
+  }
+}

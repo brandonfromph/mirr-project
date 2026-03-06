@@ -1,0 +1,62 @@
+// ---------------------------------------------------------------------------
+// MIRR-in-MIRR Compiler Driver
+// ---------------------------------------------------------------------------
+// Module: compiler_mirr/main.mirr
+// Purpose: Entry point for self-hosting MIRR compiler pipeline.
+// Usage: main(<input_file>, <output_file>)
+// ---------------------------------------------------------------------------
+
+module mirr_main {
+    fn main(input_path: &str, output_path: &str, diags: &mut DiagnosticList) -> bool {
+        // 1. Read input file
+        let mut input_buf: [u8; 65536];
+        let mut input_len: usize = 0;
+        if !read_file(input_path, &mut input_buf, &mut input_len, diags) {
+            diag_push(diags, "Failed to read input file");
+            return false;
+        }
+
+        // 2. Lexing
+        let mut tokens: TokenBuffer;
+        if !mirr_lexer::lex(&input_buf, input_len, &mut tokens, diags) {
+            diag_push(diags, "Lexing failed");
+            return false;
+        }
+
+        // 3. Parsing
+        let mut parsed: ParsedModule;
+        if !mirr_parser::parse(&tokens, &mut parsed, diags) {
+            diag_push(diags, "Parsing failed");
+            return false;
+        }
+
+        // 4. Semantic validation
+        if !mirr_semantic::validate(&parsed, diags) {
+            diag_push(diags, "Semantic validation failed");
+            return false;
+        }
+
+        // 5. Temporal lowering
+        let mut netlist: TLNetlist;
+        if !temporal_lowering::lower(&parsed, &mut netlist, diags) {
+            diag_push(diags, "Temporal lowering failed");
+            return false;
+        }
+
+        // 6. Emission (MIRR source or binary)
+        let mut output_buf: [u8; 65536];
+        let mut output_len: usize = 0;
+        if !mirr_emitter::emit_mirr_source(&netlist, &mut output_buf, &mut output_len, diags) {
+            diag_push(diags, "Emission failed");
+            return false;
+        }
+
+        // 7. Write output file
+        if !write_file(output_path, &output_buf, output_len, diags) {
+            diag_push(diags, "Failed to write output file");
+            return false;
+        }
+
+        true
+    }
+}

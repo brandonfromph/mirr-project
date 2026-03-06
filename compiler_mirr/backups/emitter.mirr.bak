@@ -1,0 +1,53 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Compiler — Emitter (Scaffold)
+// ---------------------------------------------------------------------------
+// Module: compiler_mirr/emitter.mirr
+// Purpose: Emit MIRR source code or binary from TLNetlist IR.
+// NASA-CORE rules: no dynamic alloc, no recursion, bounded loops,
+//                  explicit error returns via DiagnosticList.
+//
+// Depends on:
+//   compiler_mirr/temporal_lowering.mirr (TLNetlist)
+//   stdlib/mirr_core/diagnostics.mirr    (DiagnosticList)
+//
+// Usage:
+//   Call emit_mirr_source or emit_binary with a TLNetlist to produce output.
+// ---------------------------------------------------------------------------
+
+module mirr_emitter {
+
+    // -----------------------------------------------------------------------
+    // Constants for output buffer sizes, etc.
+    // -----------------------------------------------------------------------
+    const MAX_OUTPUT_LEN: usize = 16384; // bytes
+
+    // -----------------------------------------------------------------------
+    // Emit MIRR source code from TLNetlist
+    // -----------------------------------------------------------------------
+    fn emit_mirr_source(
+        netlist: &TLNetlist,
+        output: &mut [u8; MAX_OUTPUT_LEN],
+        output_len: &mut usize,
+        diags: &mut DiagnosticList
+    ) -> bool {
+        // TODO: Walk netlist and write MIRR source to output buffer.
+        //       Use only bounded loops, no recursion, no heap alloc.
+        //       On error, push to diags and return false.
+        false // stub
+    }
+
+    // -----------------------------------------------------------------------
+    // Emit binary/intermediate format from TLNetlist
+    // -----------------------------------------------------------------------
+    fn emit_binary(
+        netlist: &TLNetlist,
+        output: &mut [u8; MAX_OUTPUT_LEN],
+        output_len: &mut usize,
+        diags: &mut DiagnosticList
+    ) -> bool {
+        // TODO: Serialize netlist to binary/intermediate format.
+        //       Use only bounded loops, no recursion, no heap alloc.
+        //       On error, push to diags and return false.
+        false // stub
+    }
+}

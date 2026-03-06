@@ -1,0 +1,17 @@
+{
+  "description": "Golden semantic validation fixture for examples/neonatal_respirator.mirr",
+  "source_file": "examples/neonatal_respirator.mirr",
+  "expected_ok": true,
+  "expected_error_count": 0,
+  "diagnostics": [],
+  "notes": [
+    "neonatal_respirator.mirr has no semantic errors",
+    "All signals are uniquely named",
+    "All guards are uniquely named",
+    "All reflexes are uniquely named",
+    "Guard condition (airway_pressure < 50) references only declared signals",
+    "Reflex 'on' clause references declared guard 'sustained_pressure_drop'",
+    "Assignment target 'clamp_valve' is an output signal (writable)",
+    "Assignment RHS 'true' (literal) has no signal references"
+  ]
+}

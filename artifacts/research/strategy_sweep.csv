@@ -1,0 +1,15 @@
+delay_cycles,expected_strategy,chosen_strategy,matches_expected,shift_registers_used,counters_used,logic_gates_used,total_signals
+0,ShiftRegister,ShiftRegister,True,0,0,1,1
+1,ShiftRegister,ShiftRegister,True,1,0,1,2
+2,ShiftRegister,ShiftRegister,True,2,0,1,3
+4,ShiftRegister,ShiftRegister,True,4,0,1,5
+8,ShiftRegister,ShiftRegister,True,8,0,1,9
+16,ShiftRegister,ShiftRegister,True,16,0,1,17
+17,Counter,Counter,True,0,1,1,3
+32,Counter,Counter,True,0,1,1,3
+64,Counter,Counter,True,0,1,1,3
+128,Counter,Counter,True,0,1,1,3
+256,Counter,Counter,True,0,1,1,3
+512,Counter,Counter,True,0,1,1,3
+1000,Counter,Counter,True,0,1,1,3
+2000,Counter,Counter,True,0,1,1,3

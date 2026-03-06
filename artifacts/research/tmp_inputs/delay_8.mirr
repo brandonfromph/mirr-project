@@ -1,0 +1,15 @@
+module sweep_delay_8 {
+    signal input_signal: in bool;
+    signal output_signal: out bool;
+
+    guard delay_guard_8 {
+        when input_signal
+        for 8 cycles;
+    }
+
+    reflex r_8 {
+        on delay_guard_8 {
+            output_signal = input_signal;
+        }
+    }
+}

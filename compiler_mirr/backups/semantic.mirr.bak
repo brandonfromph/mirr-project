@@ -1,0 +1,310 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Compiler — Semantic Validator
+// ---------------------------------------------------------------------------
+// Module: compiler_mirr/semantic.mirr
+// Purpose: Validate a ParsedModule for semantic correctness.
+// NASA-CORE rules: no dynamic alloc, no recursion, bounded loops,
+//                  explicit error returns via DiagnosticList.
+//
+// Checks performed (mirrors src/validation/semantic.rs):
+//   1. No duplicate signal names.
+//   2. No duplicate guard names.
+//   3. No duplicate reflex names.
+//   4. Guard conditions only reference declared signals.
+//   5. Reflex `on` clauses only reference declared guards.
+//   6. Assignment targets are declared output or internal signals.
+//   7. Assignment RHS expressions only reference declared signals.
+//
+// Depends on:
+//   compiler_mirr/parser.mirr  (ParsedModule, ExprNode, EXPR_*)
+//   stdlib/mirr_core/diagnostics.mirr
+// ---------------------------------------------------------------------------
+
+module mirr_semantic {
+
+    // -----------------------------------------------------------------------
+    // DiagCode constants — semantic class (matches diagnostics.mirr DiagCode)
+    // -----------------------------------------------------------------------
+    const DIAG_SEM_DUPLICATE_SIGNAL:         u32 = 200;
+    const DIAG_SEM_DUPLICATE_GUARD:          u32 = 201;
+    const DIAG_SEM_DUPLICATE_REFLEX:         u32 = 202;
+    const DIAG_SEM_UNDECLARED_SIGNAL:        u32 = 203;
+    const DIAG_SEM_UNDECLARED_GUARD:         u32 = 204;
+    const DIAG_SEM_ASSIGN_TO_INPUT:          u32 = 205;
+    const DIAG_SEM_ASSIGN_TO_UNDECLARED:     u32 = 206;
+    const DIAG_SEM_EXPR_UNDECLARED_SIGNAL:   u32 = 207;
+
+    // -----------------------------------------------------------------------
+    // ExprNode tag constants (mirror parser.mirr)
+    // -----------------------------------------------------------------------
+    const EXPR_LITERAL: u32 = 0;
+    const EXPR_SIGNAL:  u32 = 1;
+    const EXPR_UNARY:   u32 = 2;
+    const EXPR_BINARY:  u32 = 3;
+
+    // -----------------------------------------------------------------------
+    // SignalKind constants (mirror parser.mirr)
+    // -----------------------------------------------------------------------
+    const SIGNAL_KIND_INPUT:    u32 = 0;
+    const SIGNAL_KIND_OUTPUT:   u32 = 1;
+    const SIGNAL_KIND_INTERNAL: u32 = 2;
+
+    // -----------------------------------------------------------------------
+    // NAMES_NOT_FOUND sentinel — returned when name lookup fails
+    // -----------------------------------------------------------------------
+    const NAME_NOT_FOUND: u32 = 4294967295;  // u32::MAX
+
+    // -----------------------------------------------------------------------
+    // SemanticResult — returned by validate_module
+    // -----------------------------------------------------------------------
+    struct SemanticResult {
+        diags: DiagnosticList,
+        ok:    bool,
+    }
+
+    // -----------------------------------------------------------------------
+    // validate_module — entry point
+    // ------------------------------
+    // Runs all seven semantic checks on `module`.  All checks are fully
+    // executed; errors are accumulated in DiagnosticList.
+    //
+    // Termination: every inner loop is bounded by one of the MAX_* constants
+    // from parser.mirr (MAX_SIGNALS=64, MAX_GUARDS=32, MAX_REFLEXES=32, …).
+    // -----------------------------------------------------------------------
+    fn validate_module(module: &ParsedModule) -> SemanticResult {
+        let mut diags: DiagnosticList = diag_list_new();
+        let mut ok: bool = true;
+
+        // ------------------------------------------------------------------
+        // 1. Duplicate signal names.
+        // Quadratic scan is acceptable for MAX_SIGNALS = 64.
+        // ------------------------------------------------------------------
+        let mut si: u32 = 0;
+        while si < module.signal_count {
+            let sj: u32 = si + 1;
+            let mut sj2: u32 = sj;
+            while sj2 < module.signal_count {
+                if names_equal(module, module.signals[si as usize].name_idx,
+                                       module.signals[sj2 as usize].name_idx) {
+                    diag_push(&mut diags, diag_make_error(DIAG_SEM_DUPLICATE_SIGNAL,
+                        module.signals[si as usize].name_idx));
+                    ok = false;
+                }
+                sj2 = sj2 + 1;
+            }
+            si = si + 1;
+        }
+
+        // ------------------------------------------------------------------
+        // 2. Duplicate guard names.
+        // ------------------------------------------------------------------
+        let mut gi: u32 = 0;
+        while gi < module.guard_count {
+            let mut gj: u32 = gi + 1;
+            while gj < module.guard_count {
+                if names_equal(module, module.guards[gi as usize].name_idx,
+                                       module.guards[gj as usize].name_idx) {
+                    diag_push(&mut diags, diag_make_error(DIAG_SEM_DUPLICATE_GUARD,
+                        module.guards[gi as usize].name_idx));
+                    ok = false;
+                }
+                gj = gj + 1;
+            }
+            gi = gi + 1;
+        }
+
+        // ------------------------------------------------------------------
+        // 3. Duplicate reflex names.
+        // ------------------------------------------------------------------
+        let mut ri: u32 = 0;
+        while ri < module.reflex_count {
+            let mut rj: u32 = ri + 1;
+            while rj < module.reflex_count {
+                if names_equal(module, module.reflexes[ri as usize].name_idx,
+                                       module.reflexes[rj as usize].name_idx) {
+                    diag_push(&mut diags, diag_make_error(DIAG_SEM_DUPLICATE_REFLEX,
+                        module.reflexes[ri as usize].name_idx));
+                    ok = false;
+                }
+                rj = rj + 1;
+            }
+            ri = ri + 1;
+        }
+
+        // ------------------------------------------------------------------
+        // 4. Guard conditions reference only declared signals.
+        // Walk each guard's expression subtree iteratively.
+        // ------------------------------------------------------------------
+        let mut g: u32 = 0;
+        while g < module.guard_count {
+            let guard = module.guards[g as usize];
+            let cond_root: u32 = guard.condition_idx;
+            let bad_idx: u32 = find_undeclared_signal_ref(module, cond_root);
+            if bad_idx != NAME_NOT_FOUND {
+                diag_push(&mut diags, diag_make_error(DIAG_SEM_UNDECLARED_SIGNAL, bad_idx));
+                ok = false;
+            }
+            g = g + 1;
+        }
+
+        // ------------------------------------------------------------------
+        // 5–7. Reflex validation: guard refs, assignment targets, RHS exprs.
+        // ------------------------------------------------------------------
+        let mut r: u32 = 0;
+        while r < module.reflex_count {
+            let reflex = module.reflexes[r as usize];
+
+            // 5. Each guard name in the `on` clause must be declared.
+            let mut gref: u32 = 0;
+            while gref < reflex.guard_refs_len {
+                let gr_store_idx: usize = (reflex.guard_refs_start + gref) as usize;
+                let g_name_idx: u32 = module.guard_refs[gr_store_idx];
+                if !is_declared_guard(module, g_name_idx) {
+                    diag_push(&mut diags, diag_make_error(DIAG_SEM_UNDECLARED_GUARD, g_name_idx));
+                    ok = false;
+                }
+                gref = gref + 1;
+            }
+
+            // 6 & 7. Each assignment: target must be writable; RHS valid.
+            let mut a: u32 = 0;
+            while a < reflex.assignments_len {
+                let assign_idx: usize = (reflex.assignments_start + a) as usize;
+                let assignment = module.assignments[assign_idx];
+                let target_idx: u32 = assignment.target_name_idx;
+
+                // 6a. Target must be a declared signal.
+                let signal_pos: u32 = find_signal_by_name(module, target_idx);
+                if signal_pos == NAME_NOT_FOUND {
+                    diag_push(&mut diags, diag_make_error(DIAG_SEM_ASSIGN_TO_UNDECLARED, target_idx));
+                    ok = false;
+                } else {
+                    // 6b. Target must not be an input.
+                    let sig_kind: u32 = module.signals[signal_pos as usize].kind;
+                    if sig_kind == SIGNAL_KIND_INPUT {
+                        diag_push(&mut diags, diag_make_error(DIAG_SEM_ASSIGN_TO_INPUT, target_idx));
+                        ok = false;
+                    }
+                }
+
+                // 7. RHS expression must only reference declared signals.
+                let val_root: u32 = assignment.value_expr_idx;
+                let bad_sig: u32 = find_undeclared_signal_ref(module, val_root);
+                if bad_sig != NAME_NOT_FOUND {
+                    diag_push(&mut diags, diag_make_error(DIAG_SEM_EXPR_UNDECLARED_SIGNAL, bad_sig));
+                    ok = false;
+                }
+
+                a = a + 1;
+            }
+
+            r = r + 1;
+        }
+
+        SemanticResult { diags, ok }
+    }
+
+    // -----------------------------------------------------------------------
+    // find_undeclared_signal_ref
+    // ---------------------------
+    // Walk the expression subtree rooted at `root_idx` iteratively using an
+    // explicit 32-slot work stack.  Return the name_idx of the first Signal
+    // node whose name is not declared in module.signals, or NAME_NOT_FOUND.
+    //
+    // Termination: bounded by MAX_EXPR_NODES = 256.
+    // -----------------------------------------------------------------------
+    fn find_undeclared_signal_ref(module: &ParsedModule, root_idx: u32) -> u32 {
+        const STACK_CAP: usize = 32;
+        let mut stack: [u32; STACK_CAP] = intrinsic_zero_init_u32_array_32();
+        let mut top: usize = 0;
+
+        stack[0] = root_idx;
+        top = 1;
+
+        // Bounded: each iteration pops one node; at most MAX_EXPR_NODES pushed.
+        while top > 0 {
+            top = top - 1;
+            let node_idx: u32 = stack[top];
+            let node = module.expr_nodes[node_idx as usize];
+
+            if node.tag == EXPR_SIGNAL {
+                if find_signal_by_name(module, node.name_idx) == NAME_NOT_FOUND {
+                    return node.name_idx;
+                }
+            } else if node.tag == EXPR_UNARY {
+                if top < STACK_CAP {
+                    stack[top] = node.left;
+                    top = top + 1;
+                }
+            } else if node.tag == EXPR_BINARY {
+                if top < STACK_CAP - 1 {
+                    stack[top] = node.left;
+                    top = top + 1;
+                    stack[top] = node.right;
+                    top = top + 1;
+                }
+            }
+            // EXPR_LITERAL: no children, nothing to push.
+        }
+
+        NAME_NOT_FOUND
+    }
+
+    // -----------------------------------------------------------------------
+    // find_signal_by_name
+    // --------------------
+    // Return the index (0-based) of the signal with the given name_idx, or
+    // NAME_NOT_FOUND if no such signal exists.
+    // Bounded: iterates at most signal_count ≤ MAX_SIGNALS = 64 times.
+    // -----------------------------------------------------------------------
+    fn find_signal_by_name(module: &ParsedModule, name_idx: u32) -> u32 {
+        let mut i: u32 = 0;
+        while i < module.signal_count {
+            if module.signals[i as usize].name_idx == name_idx {
+                return i;
+            }
+            i = i + 1;
+        }
+        NAME_NOT_FOUND
+    }
+
+    // -----------------------------------------------------------------------
+    // is_declared_guard
+    // ------------------
+    // True iff a guard with the given name_idx exists.
+    // Bounded: iterates at most guard_count ≤ MAX_GUARDS = 32 times.
+    // -----------------------------------------------------------------------
+    fn is_declared_guard(module: &ParsedModule, name_idx: u32) -> bool {
+        let mut i: u32 = 0;
+        while i < module.guard_count {
+            if module.guards[i as usize].name_idx == name_idx {
+                return true;
+            }
+            i = i + 1;
+        }
+        false
+    }
+
+    // -----------------------------------------------------------------------
+    // names_equal
+    // ------------
+    // True iff name at index `a` and name at index `b` in module.names are
+    // byte-for-byte identical.
+    // Bounded: iterates at most MAX_NAME_LEN = 64 times.
+    // -----------------------------------------------------------------------
+    fn names_equal(module: &ParsedModule, a: u32, b: u32) -> bool {
+        if a == b { return true; }  // same intern slot — trivially equal
+        let ai: usize = a as usize;
+        let bi: usize = b as usize;
+        let la: usize = module.names.lens[ai] as usize;
+        let lb: usize = module.names.lens[bi] as usize;
+        if la != lb { return false; }
+        let sa: usize = module.names.starts[ai] as usize;
+        let sb: usize = module.names.starts[bi] as usize;
+        intrinsic_bytes_eq(module.names.bytes, sa, module.names.bytes, sb, la)
+    }
+
+}
+// ---------------------------------------------------------------------------
+// End of compiler_mirr/semantic.mirr
+// ---------------------------------------------------------------------------

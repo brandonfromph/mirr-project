@@ -1,0 +1,15 @@
+module sweep_delay_256 {
+    signal input_signal: in bool;
+    signal output_signal: out bool;
+
+    guard delay_guard_256 {
+        when input_signal
+        for 256 cycles;
+    }
+
+    reflex r_256 {
+        on delay_guard_256 {
+            output_signal = input_signal;
+        }
+    }
+}

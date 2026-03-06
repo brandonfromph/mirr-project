@@ -151,21 +151,19 @@ fn is_whitespace_byte(b: u8) -> bool {
 /// NASA-style optimization: direct byte comparison for speed.
 #[inline]
 fn is_digit_byte(b: u8) -> bool {
-    b >= b'0' && b <= b'9'
+    b.is_ascii_digit()
 }
 
 /// Helper function to check if a byte can start an identifier.
-/// NASA-style optimization: direct byte comparison for speed.
 #[inline]
 fn is_identifier_start_byte(b: u8) -> bool {
-    (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || b == b'_'
+    b.is_ascii_lowercase() || b.is_ascii_uppercase() || b == b'_'
 }
 
 /// Helper function to check if a byte can be part of an identifier.
-/// NASA-style optimization: direct byte comparison for speed.
 #[inline]
 fn is_identifier_byte(b: u8) -> bool {
-    (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9') || b == b'_'
+    b.is_ascii_lowercase() || b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_'
 }
 
 /// Lookup table for two-character operators.

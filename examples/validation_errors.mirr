@@ -1,0 +1,16 @@
+module duplicate_signals {
+    signal sensor_a: in bool;
+    signal sensor_a: in u16;
+    signal output_x: out bool;
+
+    guard undefined_ref {
+        when nonexistent_signal
+        for 5 cycles;
+    }
+
+    reflex bad_guard_ref {
+        on no_such_guard {
+            output_x = true;
+        }
+    }
+}

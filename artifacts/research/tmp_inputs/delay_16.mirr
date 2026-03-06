@@ -1,0 +1,15 @@
+module sweep_delay_16 {
+    signal input_signal: in bool;
+    signal output_signal: out bool;
+
+    guard delay_guard_16 {
+        when input_signal
+        for 16 cycles;
+    }
+
+    reflex r_16 {
+        on delay_guard_16 {
+            output_signal = input_signal;
+        }
+    }
+}

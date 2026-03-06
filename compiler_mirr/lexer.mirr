@@ -1,0 +1,387 @@
+module mirr_lexer {
+    // Incremental lexer port: two-character operator primitives + digit detect.
+    signal input_tick: in bool;
+    signal input_byte_is_whitespace: in bool;
+    signal input_byte_is_digit: in bool;
+
+    // Two-char operator inputs (asserted by harness when next byte forms two-char op)
+    signal input_two_eq: in bool;
+    signal input_two_ne: in bool;
+    signal input_two_le: in bool;
+    signal input_two_ge: in bool;
+    signal input_arrow: in bool;
+    signal input_dotdot: in bool;
+
+    // Identifier length-class inputs (incremental)
+    signal input_ident_len5: in bool;
+    signal input_ident_len6: in bool;
+    signal input_ident_len8: in bool;
+
+    // Specific identifier inputs (len==5) — harness asserts these when the
+    // identifier bytes match the corresponding keyword.
+    signal input_ident_guard: in bool;
+    signal input_ident_false: in bool;
+    signal input_ident_break: in bool;
+    signal input_ident_while: in bool;
+    signal input_ident_match: in bool;
+    signal input_ident_const: in bool;
+
+    // Specific identifier inputs (len==6) — harness asserts these when the
+    // identifier bytes match the corresponding keyword.
+    signal input_ident_module: in bool;
+    signal input_ident_signal: in bool;
+    signal input_ident_reflex: in bool;
+    signal input_ident_return: in bool;
+    signal input_ident_struct: in bool;
+    signal input_ident_cycles: in bool;
+
+    // Specific identifier inputs (len==8)
+    signal input_ident_internal: in bool;
+
+    // Outputs
+    signal skip_byte: out bool;
+    signal emit_digit_token: out bool;
+    signal emit_tok_integer: out bool;
+    signal emit_tok_ident: out bool;
+    signal emit_tok_eq_eq: out bool;
+    signal emit_tok_excl_eq: out bool;
+    signal emit_tok_le: out bool;
+    signal emit_tok_ge: out bool;
+    signal emit_tok_arrow: out bool;
+    signal emit_tok_dot_dot: out bool;
+    // Keyword / identifier emits
+    signal emit_kw_when: out bool;
+    signal emit_kw_bool: out bool;
+    signal emit_tok_true: out bool;
+    signal emit_kw_else: out bool;
+    signal emit_kw_loop: out bool;
+    signal emit_kw_enum: out bool;
+    // Length-class emits (to be refined into specific keywords)
+    signal emit_ident_len5: out bool;
+    signal emit_ident_len6: out bool;
+    signal emit_ident_len8: out bool;
+    // Len==5 specific emits
+    signal emit_kw_guard: out bool;
+    signal emit_tok_false: out bool;
+    signal emit_kw_break: out bool;
+    signal emit_kw_while: out bool;
+    signal emit_kw_match: out bool;
+    signal emit_kw_const: out bool;
+    // Len==6 specific emits
+    signal emit_kw_module: out bool;
+    signal emit_kw_signal: out bool;
+    signal emit_kw_reflex: out bool;
+    signal emit_kw_return: out bool;
+    signal emit_kw_struct: out bool;
+    signal emit_kw_cycles: out bool;
+    // Len==8 specific emits
+    signal emit_kw_internal: out bool;
+
+    // Thin token-buffer push wrapper signals (harness will perform actual pushes)
+    signal emit_push_integer: out bool;
+    signal emit_push_ident: out bool;
+    signal emit_push_eq_eq: out bool;
+    signal emit_push_excl_eq: out bool;
+    signal emit_push_le: out bool;
+    signal emit_push_ge: out bool;
+    signal emit_push_arrow: out bool;
+    signal emit_push_dot_dot: out bool;
+    signal emit_push_kw_when: out bool;
+    signal emit_push_kw_bool: out bool;
+    signal emit_push_tok_true: out bool;
+    signal emit_push_kw_else: out bool;
+    signal emit_push_kw_loop: out bool;
+    signal emit_push_kw_enum: out bool;
+    // Len==5 pushes
+    signal emit_push_kw_guard: out bool;
+    signal emit_push_tok_false: out bool;
+    signal emit_push_kw_break: out bool;
+    signal emit_push_kw_while: out bool;
+    signal emit_push_kw_match: out bool;
+    signal emit_push_kw_const: out bool;
+    // Len==6 pushes
+    signal emit_push_kw_module: out bool;
+    signal emit_push_kw_signal: out bool;
+    signal emit_push_kw_reflex: out bool;
+    signal emit_push_kw_return: out bool;
+    signal emit_push_kw_struct: out bool;
+    signal emit_push_kw_cycles: out bool;
+    // Len==8 pushes
+    signal emit_push_kw_internal: out bool;
+
+    // Whitespace guard
+    guard whitespace_guard {
+        when input_byte_is_whitespace
+        for 1 cycles;
+    }
+
+    // Digit guard
+    guard digit_guard {
+        when input_byte_is_digit
+        for 1 cycles;
+    }
+
+    // Two-char guards
+    guard two_eq_guard {
+        when input_two_eq
+        for 1 cycles;
+    }
+    guard two_ne_guard {
+        when input_two_ne
+        for 1 cycles;
+    }
+    guard two_le_guard {
+        when input_two_le
+        for 1 cycles;
+    }
+    guard two_ge_guard {
+        when input_two_ge
+        for 1 cycles;
+    }
+    guard arrow_guard {
+        when input_arrow
+        for 1 cycles;
+    }
+    guard dotdot_guard {
+        when input_dotdot
+        for 1 cycles;
+    }
+
+    // Identifier length-class guards
+    guard ident_len5_guard {
+        when input_ident_len5
+        for 1 cycles;
+    }
+    guard ident_len6_guard {
+        when input_ident_len6
+        for 1 cycles;
+    }
+    guard ident_len8_guard {
+        when input_ident_len8
+        for 1 cycles;
+    }
+
+    // Specific len==5 identifier guards (asserted by harness when bytes match)
+    guard ident_guard_guard {
+        when input_ident_guard
+        for 1 cycles;
+    }
+    guard ident_false_guard {
+        when input_ident_false
+        for 1 cycles;
+    }
+    guard ident_break_guard {
+        when input_ident_break
+        for 1 cycles;
+    }
+    guard ident_while_guard {
+        when input_ident_while
+        for 1 cycles;
+    }
+    guard ident_match_guard {
+        when input_ident_match
+        for 1 cycles;
+    }
+    guard ident_const_guard {
+        when input_ident_const
+        for 1 cycles;
+    }
+
+    // Tick guard
+    guard tick_guard {
+        when input_tick
+        for 1 cycles;
+    }
+
+    // Reflexes: whitespace / digit
+    reflex whitespace_reflex {
+        on whitespace_guard {
+            skip_byte = true;
+        }
+    }
+
+    reflex digit_reflex {
+        on digit_guard {
+            emit_digit_token = true;
+            emit_tok_integer = true;
+        }
+    }
+
+    // Reflexes: two-char tokens
+    reflex two_eq_reflex {
+        on two_eq_guard {
+            emit_tok_eq_eq = true;
+        }
+    }
+    reflex two_ne_reflex {
+        on two_ne_guard {
+            emit_tok_excl_eq = true;
+        }
+    }
+    reflex two_le_reflex {
+        on two_le_guard {
+            emit_tok_le = true;
+        }
+    }
+    reflex two_ge_reflex {
+        on two_ge_guard {
+            emit_tok_ge = true;
+        }
+    }
+    reflex arrow_reflex {
+        on arrow_guard {
+            emit_tok_arrow = true;
+        }
+    }
+    reflex dotdot_reflex {
+        on dotdot_guard {
+            emit_tok_dot_dot = true;
+        }
+    }
+
+    // Thin token-buffer push reflexes (map token emits to push requests)
+    reflex push_integer_reflex {
+        on digit_guard {
+            emit_push_integer = true;
+        }
+    }
+
+    reflex push_eq_eq_reflex {
+        on two_eq_guard {
+            emit_push_eq_eq = true;
+        }
+    }
+    reflex push_excl_eq_reflex {
+        on two_ne_guard {
+            emit_push_excl_eq = true;
+        }
+    }
+    reflex push_le_reflex {
+        on two_le_guard {
+            emit_push_le = true;
+        }
+    }
+    reflex push_ge_reflex {
+        on two_ge_guard {
+            emit_push_ge = true;
+        }
+    }
+    reflex push_arrow_reflex {
+        on arrow_guard {
+            emit_push_arrow = true;
+        }
+    }
+    reflex push_dotdot_reflex {
+        on dotdot_guard {
+            emit_push_dot_dot = true;
+        }
+    }
+
+    // Reflexes: identifier length classes (placeholders for keyword mapping)
+    reflex ident_len5_reflex {
+        on ident_len5_guard {
+            emit_ident_len5 = true;
+            emit_push_ident = true;
+        }
+    }
+    reflex ident_len6_reflex {
+        on ident_len6_guard {
+            emit_ident_len6 = true;
+            emit_push_ident = true;
+        }
+    }
+    reflex ident_len8_reflex {
+        on ident_len8_guard {
+            emit_ident_len8 = true;
+            emit_push_ident = true;
+        }
+    }
+
+    // Reflexes: len==5 specific keyword matches -> emit keyword token + push wrapper
+    reflex ident_guard_reflex {
+        on ident_guard_guard {
+            emit_kw_guard = true;
+            emit_push_kw_when = true; // map to 'when' push for now (host can select correct kind)
+        }
+    }
+    reflex ident_false_reflex {
+        on ident_false_guard {
+            emit_tok_false = true;
+            emit_push_ident = true; // push as ident/false; host can map to boolean token
+        }
+    }
+    reflex ident_break_reflex {
+        on ident_break_guard {
+            emit_kw_break = true;
+            emit_push_ident = true;
+        }
+    }
+    reflex ident_while_reflex {
+        on ident_while_guard {
+            emit_kw_while = true;
+            emit_push_ident = true;
+        }
+    }
+    reflex ident_match_reflex {
+        on ident_match_guard {
+            emit_kw_match = true;
+            emit_push_ident = true;
+        }
+    }
+    reflex ident_const_reflex {
+        on ident_const_guard {
+            emit_kw_const = true;
+            emit_push_ident = true;
+        }
+    }
+
+    reflex clear_reflex {
+        on tick_guard {
+            skip_byte = false;
+            emit_digit_token = false;
+            emit_tok_integer = false;
+            emit_tok_ident = false;
+
+            emit_kw_when = false;
+            emit_kw_bool = false;
+            emit_tok_true = false;
+            emit_kw_else = false;
+            emit_kw_loop = false;
+            emit_kw_enum = false;
+
+            emit_ident_len5 = false;
+            emit_ident_len6 = false;
+            emit_ident_len8 = false;
+
+            emit_kw_guard = false;
+            emit_tok_false = false;
+            emit_kw_break = false;
+            emit_kw_while = false;
+            emit_kw_match = false;
+            emit_kw_const = false;
+
+            emit_tok_eq_eq = false;
+            emit_tok_excl_eq = false;
+            emit_tok_le = false;
+            emit_tok_ge = false;
+            emit_tok_arrow = false;
+            emit_tok_dot_dot = false;
+
+            // Clear push wrapper signals
+            emit_push_integer = false;
+            emit_push_ident = false;
+            emit_push_eq_eq = false;
+            emit_push_excl_eq = false;
+            emit_push_le = false;
+            emit_push_ge = false;
+            emit_push_arrow = false;
+            emit_push_dot_dot = false;
+            emit_push_kw_when = false;
+            emit_push_kw_bool = false;
+            emit_push_tok_true = false;
+            emit_push_kw_else = false;
+            emit_push_kw_loop = false;
+            emit_push_kw_enum = false;
+        }
+    }
+}

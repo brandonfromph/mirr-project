@@ -1,0 +1,12 @@
+{
+  "description": "Golden token fixture for expression: airway_pressure < 50",
+  "source": "airway_pressure < 50",
+  "source_len": 20,
+  "token_count": 4,
+  "tokens": [
+    { "kind_name": "Ident",     "kind_id": 0,  "start": 0,  "len": 15, "int_value": 0  },
+    { "kind_name": "Lt",        "kind_id": 46, "start": 16, "len": 1,  "int_value": 0  },
+    { "kind_name": "Integer",   "kind_id": 1,  "start": 18, "len": 2,  "int_value": 50 },
+    { "kind_name": "Eof",       "kind_id": 61, "start": 20, "len": 0,  "int_value": 0  }
+  ]
+}

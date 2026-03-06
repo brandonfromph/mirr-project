@@ -1,0 +1,91 @@
+{
+  "description": "Golden parse fixture for examples/neonatal_respirator.mirr",
+  "source_file": "examples/neonatal_respirator.mirr",
+  "module_name": "neonatal_respirator",
+  "signal_count": 3,
+  "guard_count": 1,
+  "reflex_count": 1,
+  "signals": [
+    {
+      "index": 0,
+      "name": "respirator_enable",
+      "kind": "Input",
+      "kind_id": 0,
+      "type": "Bool",
+      "type_tag": 0,
+      "type_width": 0
+    },
+    {
+      "index": 1,
+      "name": "airway_pressure",
+      "kind": "Input",
+      "kind_id": 0,
+      "type": "Unsigned",
+      "type_tag": 1,
+      "type_width": 16
+    },
+    {
+      "index": 2,
+      "name": "clamp_valve",
+      "kind": "Output",
+      "kind_id": 1,
+      "type": "Bool",
+      "type_tag": 0,
+      "type_width": 0
+    }
+  ],
+  "guards": [
+    {
+      "index": 0,
+      "name": "sustained_pressure_drop",
+      "cycles": 1000,
+      "condition": {
+        "tag": "Binary",
+        "tag_id": 3,
+        "op": "Lt",
+        "op_kind_id": 46,
+        "left": {
+          "tag": "Signal",
+          "tag_id": 1,
+          "name": "airway_pressure"
+        },
+        "right": {
+          "tag": "Literal",
+          "tag_id": 0,
+          "int_value": 50
+        }
+      }
+    }
+  ],
+  "reflexes": [
+    {
+      "index": 0,
+      "name": "emergency_clamp",
+      "guard_refs": ["sustained_pressure_drop"],
+      "assignments": [
+        {
+          "target": "clamp_valve",
+          "value": {
+            "tag": "Literal",
+            "tag_id": 0,
+            "int_value": 1
+          }
+        }
+      ]
+    }
+  ],
+  "flat_expr_nodes": [
+    { "index": 0, "tag_id": 1, "op_kind_id": 0,  "left": 0, "right": 0, "int_value": 0,  "comment": "Signal: airway_pressure (guard condition LHS)" },
+    { "index": 1, "tag_id": 0, "op_kind_id": 0,  "left": 0, "right": 0, "int_value": 50, "comment": "Literal: 50 (guard condition RHS)" },
+    { "index": 2, "tag_id": 3, "op_kind_id": 46, "left": 0, "right": 1, "int_value": 0,  "comment": "Binary Lt: airway_pressure < 50 (guard root)" },
+    { "index": 3, "tag_id": 0, "op_kind_id": 0,  "left": 0, "right": 0, "int_value": 1,  "comment": "Literal: true = 1 (reflex assignment value)" }
+  ],
+  "expr_count": 4,
+  "notes": [
+    "tag_id: 0=Literal, 1=Signal, 2=Unary, 3=Binary",
+    "op_kind_id 46 = TOKEN_LT (<)",
+    "int_value for BoolTrue literal is 1 (parser converts 'true' → 1)",
+    "Flat expr layout: guard conditions first, then reflex assignment values",
+    "Name intern order: names are interned in first-encountered order"
+  ]
+}

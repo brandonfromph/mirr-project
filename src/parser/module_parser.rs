@@ -286,6 +286,12 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
 /// Parse a single assignment line like `clamp_valve = true;` into an
 /// Assignment struct with a parsed expression on the RHS.
 fn parse_assignment(line: &str) -> Result<Assignment, MirrError> {
+    // Strip inline comments before processing.
+    let line = if let Some(pos) = line.find("//") {
+        line[..pos].trim_end()
+    } else {
+        line
+    };
     let stripped = line.strip_suffix(';').unwrap_or(line).trim();
 
     let (lhs, rhs) = stripped

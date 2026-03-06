@@ -1,0 +1,29 @@
+module patient_monitor {
+    signal heart_rate:      in u16;
+    signal blood_pressure:  in u16;
+    signal alarm_active:    out bool;
+    signal pump_override:   out bool;
+    signal status_flag:     internal bool;
+
+    guard bradycardia {
+        when heart_rate < 60
+        for  500 cycles;
+    }
+
+    guard hypotension {
+        when blood_pressure < 90
+        for  12 cycles;
+    }
+
+    reflex cardiac_alarm {
+        on bradycardia {
+            alarm_active = true;
+        }
+    }
+
+    reflex emergency_override {
+        on bradycardia and hypotension {
+            pump_override = true;
+        }
+    }
+}

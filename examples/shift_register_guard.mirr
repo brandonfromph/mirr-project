@@ -1,0 +1,15 @@
+module short_delay_monitor {
+    signal sensor_active: in bool;
+    signal alert_lamp:    out bool;
+
+    guard brief_activation {
+        when sensor_active
+        for  8 cycles;
+    }
+
+    reflex activate_alert {
+        on brief_activation {
+            alert_lamp = true;
+        }
+    }
+}

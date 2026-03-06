@@ -1,0 +1,445 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Compiler — Lexer
+// ---------------------------------------------------------------------------
+// Module: compiler_mirr/lexer.mirr
+// Purpose: Lex a MIRR source file into a TokenBuffer.
+// NASA-CORE rules: no dynamic alloc, no recursion, bounded loops,
+//                  explicit error returns via DiagnosticList.
+//
+// Depends on:
+//   stdlib/mirr_core/token_buffer.mirr  (TokenBuffer, Token, token_buffer_*)
+//   stdlib/mirr_core/str.mirr           (is_whitespace_byte, is_digit_byte, …)
+//   stdlib/mirr_core/diagnostics.mirr   (DiagnosticList, diag_push, …)
+// ---------------------------------------------------------------------------
+
+module mirr_lexer {
+
+    // -----------------------------------------------------------------------
+    // Token-kind discriminant constants
+    // Must stay in sync with TokenKind enum in stdlib/mirr_core/token_buffer.mirr
+    // -----------------------------------------------------------------------
+    const TOKEN_IDENT:        u32 = 0;
+    const TOKEN_INTEGER:      u32 = 1;
+    const TOKEN_BOOL_TRUE:    u32 = 2;
+    const TOKEN_BOOL_FALSE:   u32 = 3;
+    const TOKEN_KW_MODULE:    u32 = 4;
+    const TOKEN_KW_SIGNAL:    u32 = 5;
+    const TOKEN_KW_GUARD:     u32 = 6;
+    const TOKEN_KW_REFLEX:    u32 = 7;
+    const TOKEN_KW_WHEN:      u32 = 8;
+    const TOKEN_KW_FOR:       u32 = 9;
+    const TOKEN_KW_CYCLES:    u32 = 10;
+    const TOKEN_KW_ON:        u32 = 11;
+    const TOKEN_KW_AND:       u32 = 12;
+    const TOKEN_KW_IN:        u32 = 13;
+    const TOKEN_KW_OUT:       u32 = 14;
+    const TOKEN_KW_INTERNAL:  u32 = 15;
+    const TOKEN_KW_BOOL:      u32 = 16;
+    const TOKEN_KW_FN:        u32 = 17;
+    const TOKEN_KW_LET:       u32 = 18;
+    const TOKEN_KW_MUT:       u32 = 19;
+    const TOKEN_KW_RETURN:    u32 = 20;
+    const TOKEN_KW_BREAK:     u32 = 21;
+    const TOKEN_KW_IF:        u32 = 22;
+    const TOKEN_KW_ELSE:      u32 = 23;
+    const TOKEN_KW_LOOP:      u32 = 24;
+    const TOKEN_KW_WHILE:     u32 = 25;
+    const TOKEN_KW_MATCH:     u32 = 26;
+    const TOKEN_KW_CONST:     u32 = 27;
+    const TOKEN_KW_STRUCT:    u32 = 28;
+    const TOKEN_KW_ENUM:      u32 = 29;
+    const TOKEN_AMP_AMP:      u32 = 30;
+    const TOKEN_PIPE_PIPE:    u32 = 31;
+    const TOKEN_LT_LT:        u32 = 32;
+    const TOKEN_GT_GT:        u32 = 33;
+    const TOKEN_LT_EQ:        u32 = 34;
+    const TOKEN_GT_EQ:        u32 = 35;
+    const TOKEN_EQ_EQ:        u32 = 36;
+    const TOKEN_BANG_EQ:      u32 = 37;
+    const TOKEN_ARROW:        u32 = 38;
+    const TOKEN_DOT_DOT:      u32 = 39;
+    const TOKEN_BANG:         u32 = 40;
+    const TOKEN_CARET:        u32 = 41;
+    const TOKEN_PLUS:         u32 = 42;
+    const TOKEN_MINUS:        u32 = 43;
+    const TOKEN_STAR:         u32 = 44;
+    const TOKEN_SLASH:        u32 = 45;
+    const TOKEN_LT:           u32 = 46;
+    const TOKEN_GT:           u32 = 47;
+    const TOKEN_EQ:           u32 = 48;
+    const TOKEN_AMP:          u32 = 49;
+    const TOKEN_PIPE:         u32 = 50;
+    const TOKEN_LPAREN:       u32 = 51;
+    const TOKEN_RPAREN:       u32 = 52;
+    const TOKEN_LBRACE:       u32 = 53;
+    const TOKEN_RBRACE:       u32 = 54;
+    const TOKEN_LBRACKET:     u32 = 55;
+    const TOKEN_RBRACKET:     u32 = 56;
+    const TOKEN_COLON:        u32 = 57;
+    const TOKEN_SEMICOLON:    u32 = 58;
+    const TOKEN_COMMA:        u32 = 59;
+    const TOKEN_DOT:          u32 = 60;
+    const TOKEN_EOF:          u32 = 61;
+    const TOKEN_UNKNOWN:      u32 = 62;
+
+    // -----------------------------------------------------------------------
+    // DiagCode constants for lexer errors (must match diagnostics.mirr)
+    // -----------------------------------------------------------------------
+    const DIAG_LEX_UNEXPECTED_CHAR: u32 = 101;
+    const DIAG_LEX_INTEGER_OVERFLOW: u32 = 102;
+    const DIAG_LEX_BUFFER_FULL: u32 = 103;
+    const DIAG_LINE_COMMENT_START: u8 = 47; // '/'
+
+    // -----------------------------------------------------------------------
+    // LexResult — returned by lex_source
+    // -----------------------------------------------------------------------
+    struct LexResult {
+        // Accumulated token stream.
+        buf: TokenBuffer,
+        // Accumulated diagnostics (errors + warnings).
+        diags: DiagnosticList,
+        // true iff no error-severity diagnostics were emitted.
+        ok: bool,
+    }
+
+    // -----------------------------------------------------------------------
+    // lex_source
+    // -----------
+    // Entry point. Lexes `src_len` bytes from `src` into a fresh TokenBuffer.
+    // On success, result.ok is true. On any lexical error, the error is
+    // recorded in result.diags, the offending byte is skipped, and lexing
+    // continues (error-recovery mode).
+    //
+    // Termination guarantee: the outer while-loop advances `pos` by ≥ 1 byte
+    // on every iteration; the source is finite; therefore termination is
+    // guaranteed within src_len+1 iterations (MIRR-CORE bounded-loop rule).
+    // -----------------------------------------------------------------------
+    fn lex_source(src: &[u8], src_len: usize) -> LexResult {
+        let mut buf: TokenBuffer = token_buffer_new();
+        let mut diags: DiagnosticList = diag_list_new();
+        let mut ok: bool = true;
+
+        let mut pos: usize = 0;
+
+        // Outer loop — bounded by src_len (each iteration advances pos ≥ 1).
+        while pos < src_len {
+            let b0: u8 = src[pos];
+
+            // ----------------------------------------------------------
+            // 1. Skip whitespace.
+            // ----------------------------------------------------------
+            if is_whitespace_byte(b0) {
+                pos = pos + 1;
+                continue;
+            }
+
+            // ----------------------------------------------------------
+            // 2. Skip line comments: // until end-of-line.
+            // ----------------------------------------------------------
+            if b0 == DIAG_LINE_COMMENT_START {
+                if pos + 1 < src_len {
+                    let b1: u8 = src[pos + 1];
+                    if b1 == DIAG_LINE_COMMENT_START {
+                        // Skip bytes until newline or end-of-source.
+                        // Bounded: at most src_len - pos iterations.
+                        while pos < src_len {
+                            let cb: u8 = src[pos];
+                            pos = pos + 1;
+                            if cb == 10 { // '\n'
+                                break;
+                            }
+                        }
+                        continue;
+                    }
+                }
+                // Single '/' — fall through to single-char-op handler.
+            }
+
+            // ----------------------------------------------------------
+            // 3. Two-character operators (must check before single-char).
+            // ----------------------------------------------------------
+            if pos + 1 < src_len {
+                let b1: u8 = src[pos + 1];
+                let two_kind: u32 = lex_two_char_op(b0, b1);
+                if two_kind != TOKEN_UNKNOWN {
+                    let tok: Token = token_make(two_kind, pos, 2, 0);
+                    if !token_buffer_push(&mut buf, tok) {
+                        diag_push(&mut diags, diag_make_error(DIAG_LEX_BUFFER_FULL, pos));
+                        ok = false;
+                        // Cannot continue — buffer is full.
+                        break;
+                    }
+                    pos = pos + 2;
+                    continue;
+                }
+            }
+
+            // ----------------------------------------------------------
+            // 4. Single-character operators and punctuation.
+            // ----------------------------------------------------------
+            let single_kind: u32 = lex_single_char_op(b0);
+            if single_kind != TOKEN_UNKNOWN {
+                let tok: Token = token_make(single_kind, pos, 1, 0);
+                if !token_buffer_push(&mut buf, tok) {
+                    diag_push(&mut diags, diag_make_error(DIAG_LEX_BUFFER_FULL, pos));
+                    ok = false;
+                    break;
+                }
+                pos = pos + 1;
+                continue;
+            }
+
+            // ----------------------------------------------------------
+            // 5. Integer literal.
+            // ----------------------------------------------------------
+            if is_digit_byte(b0) {
+                let start: usize = pos;
+                // Scan digit run — bounded by src_len.
+                while pos < src_len && is_digit_byte(src[pos]) {
+                    pos = pos + 1;
+                }
+                let digit_len: usize = pos - start;
+                let int_val: u64 = parse_decimal(src, start, digit_len);
+                // Overflow guard: parse_decimal returns u64::MAX on overflow.
+                if int_val == 18446744073709551615 {
+                    diag_push(&mut diags, diag_make_error(DIAG_LEX_INTEGER_OVERFLOW, start));
+                    ok = false;
+                    // Emit unknown token so the parser can resync.
+                    let tok: Token = token_make(TOKEN_UNKNOWN, start, digit_len, 0);
+                    let _ = token_buffer_push(&mut buf, tok);
+                    continue;
+                }
+                let tok: Token = token_make(TOKEN_INTEGER, start, digit_len, int_val);
+                if !token_buffer_push(&mut buf, tok) {
+                    diag_push(&mut diags, diag_make_error(DIAG_LEX_BUFFER_FULL, start));
+                    ok = false;
+                    break;
+                }
+                continue;
+            }
+
+            // ----------------------------------------------------------
+            // 6. Identifier or keyword.
+            // ----------------------------------------------------------
+            if is_ident_start_byte(b0) {
+                let start: usize = pos;
+                // Scan ident run — bounded by src_len.
+                while pos < src_len && is_ident_byte(src[pos]) {
+                    pos = pos + 1;
+                }
+                let word_len: usize = pos - start;
+                let kind: u32 = classify_ident_kind(src, start, word_len);
+                let tok: Token = token_make(kind, start, word_len, 0);
+                if !token_buffer_push(&mut buf, tok) {
+                    diag_push(&mut diags, diag_make_error(DIAG_LEX_BUFFER_FULL, start));
+                    ok = false;
+                    break;
+                }
+                continue;
+            }
+
+            // ----------------------------------------------------------
+            // 7. Unknown byte — emit diagnostic, skip, continue.
+            // ----------------------------------------------------------
+            diag_push(&mut diags, diag_make_error(DIAG_LEX_UNEXPECTED_CHAR, pos));
+            ok = false;
+            let tok: Token = token_make(TOKEN_UNKNOWN, pos, 1, 0);
+            let _ = token_buffer_push(&mut buf, tok);
+            pos = pos + 1;
+        }
+
+        // Always append an EOF sentinel so the parser never reads past end.
+        let eof_tok: Token = token_make(TOKEN_EOF, src_len, 0, 0);
+        let _ = token_buffer_push(&mut buf, eof_tok);
+
+        LexResult { buf, diags, ok }
+    }
+
+    // -----------------------------------------------------------------------
+    // classify_ident_kind
+    // --------------------
+    // Given a byte slice `src` and an identifier window [start, start+len),
+    // return the token-kind discriminant (keyword or TOKEN_IDENT).
+    //
+    // Strategy: branch on length first (O(1) compare count for most words),
+    // then byte-level comparison.  No recursion, no heap allocation.
+    //
+    // Words are compared using intrinsic_bytes_eq which returns true iff
+    // the two byte slices of equal length are identical.
+    // -----------------------------------------------------------------------
+    fn classify_ident_kind(src: &[u8], start: usize, len: usize) -> u32 {
+        if len == 2 {
+            // "in", "on", "fn", "if"
+            if intrinsic_bytes_eq(src, start, b"in", 0, 2) { return TOKEN_KW_IN; }
+            if intrinsic_bytes_eq(src, start, b"on", 0, 2) { return TOKEN_KW_ON; }
+            if intrinsic_bytes_eq(src, start, b"fn", 0, 2) { return TOKEN_KW_FN; }
+            if intrinsic_bytes_eq(src, start, b"if", 0, 2) { return TOKEN_KW_IF; }
+            return TOKEN_IDENT;
+        }
+        if len == 3 {
+            // "for", "out", "mut", "let", "and"
+            if intrinsic_bytes_eq(src, start, b"for", 0, 3) { return TOKEN_KW_FOR; }
+            if intrinsic_bytes_eq(src, start, b"out", 0, 3) { return TOKEN_KW_OUT; }
+            if intrinsic_bytes_eq(src, start, b"mut", 0, 3) { return TOKEN_KW_MUT; }
+            if intrinsic_bytes_eq(src, start, b"let", 0, 3) { return TOKEN_KW_LET; }
+            if intrinsic_bytes_eq(src, start, b"and", 0, 3) { return TOKEN_KW_AND; }
+            return TOKEN_IDENT;
+        }
+        if len == 4 {
+            // "when", "bool", "true", "else", "loop", "enum"
+            if intrinsic_bytes_eq(src, start, b"when", 0, 4) { return TOKEN_KW_WHEN; }
+            if intrinsic_bytes_eq(src, start, b"bool", 0, 4) { return TOKEN_KW_BOOL; }
+            if intrinsic_bytes_eq(src, start, b"true", 0, 4) { return TOKEN_BOOL_TRUE; }
+            if intrinsic_bytes_eq(src, start, b"else", 0, 4) { return TOKEN_KW_ELSE; }
+            if intrinsic_bytes_eq(src, start, b"loop", 0, 4) { return TOKEN_KW_LOOP; }
+            if intrinsic_bytes_eq(src, start, b"enum", 0, 4) { return TOKEN_KW_ENUM; }
+            return TOKEN_IDENT;
+        }
+        if len == 5 {
+            // "guard", "false", "break", "while", "match", "const"
+            if intrinsic_bytes_eq(src, start, b"guard", 0, 5) { return TOKEN_KW_GUARD; }
+            if intrinsic_bytes_eq(src, start, b"false", 0, 5) { return TOKEN_BOOL_FALSE; }
+            if intrinsic_bytes_eq(src, start, b"break", 0, 5) { return TOKEN_KW_BREAK; }
+            if intrinsic_bytes_eq(src, start, b"while", 0, 5) { return TOKEN_KW_WHILE; }
+            if intrinsic_bytes_eq(src, start, b"match", 0, 5) { return TOKEN_KW_MATCH; }
+            if intrinsic_bytes_eq(src, start, b"const", 0, 5) { return TOKEN_KW_CONST; }
+            return TOKEN_IDENT;
+        }
+        if len == 6 {
+            // "module", "signal", "reflex", "return", "struct", "cycles"
+            if intrinsic_bytes_eq(src, start, b"module", 0, 6) { return TOKEN_KW_MODULE; }
+            if intrinsic_bytes_eq(src, start, b"signal", 0, 6) { return TOKEN_KW_SIGNAL; }
+            if intrinsic_bytes_eq(src, start, b"reflex", 0, 6) { return TOKEN_KW_REFLEX; }
+            if intrinsic_bytes_eq(src, start, b"return", 0, 6) { return TOKEN_KW_RETURN; }
+            if intrinsic_bytes_eq(src, start, b"struct", 0, 6) { return TOKEN_KW_STRUCT; }
+            if intrinsic_bytes_eq(src, start, b"cycles", 0, 6) { return TOKEN_KW_CYCLES; }
+            return TOKEN_IDENT;
+        }
+        if len == 8 {
+            // "internal"
+            if intrinsic_bytes_eq(src, start, b"internal", 0, 8) { return TOKEN_KW_INTERNAL; }
+            return TOKEN_IDENT;
+        }
+        TOKEN_IDENT
+    }
+
+    // -----------------------------------------------------------------------
+    // lex_two_char_op
+    // ----------------
+    // Given two consecutive bytes, return the two-char operator token kind,
+    // or TOKEN_UNKNOWN if no match.
+    // -----------------------------------------------------------------------
+    fn lex_two_char_op(b0: u8, b1: u8) -> u32 {
+        // '&' + '&' = AmpAmp
+        if b0 == 38 && b1 == 38 { return TOKEN_AMP_AMP; }
+        // '|' + '|' = PipePipe
+        if b0 == 124 && b1 == 124 { return TOKEN_PIPE_PIPE; }
+        // '<' + '<' = LtLt
+        if b0 == 60 && b1 == 60 { return TOKEN_LT_LT; }
+        // '>' + '>' = GtGt
+        if b0 == 62 && b1 == 62 { return TOKEN_GT_GT; }
+        // '<' + '=' = LtEq
+        if b0 == 60 && b1 == 61 { return TOKEN_LT_EQ; }
+        // '>' + '=' = GtEq
+        if b0 == 62 && b1 == 61 { return TOKEN_GT_EQ; }
+        // '=' + '=' = EqEq
+        if b0 == 61 && b1 == 61 { return TOKEN_EQ_EQ; }
+        // '!' + '=' = BangEq
+        if b0 == 33 && b1 == 61 { return TOKEN_BANG_EQ; }
+        // '-' + '>' = Arrow
+        if b0 == 45 && b1 == 62 { return TOKEN_ARROW; }
+        // '.' + '.' = DotDot
+        if b0 == 46 && b1 == 46 { return TOKEN_DOT_DOT; }
+        TOKEN_UNKNOWN
+    }
+
+    // -----------------------------------------------------------------------
+    // lex_single_char_op
+    // -------------------
+    // Given one byte, return the single-char operator/punctuation kind,
+    // or TOKEN_UNKNOWN if no match.
+    // -----------------------------------------------------------------------
+    fn lex_single_char_op(b: u8) -> u32 {
+        if b == 33  { return TOKEN_BANG; }       // '!'
+        if b == 94  { return TOKEN_CARET; }      // '^'
+        if b == 43  { return TOKEN_PLUS; }       // '+'
+        if b == 45  { return TOKEN_MINUS; }      // '-'
+        if b == 42  { return TOKEN_STAR; }       // '*'
+        if b == 47  { return TOKEN_SLASH; }      // '/'
+        if b == 60  { return TOKEN_LT; }         // '<'
+        if b == 62  { return TOKEN_GT; }         // '>'
+        if b == 61  { return TOKEN_EQ; }         // '='
+        if b == 38  { return TOKEN_AMP; }        // '&'
+        if b == 124 { return TOKEN_PIPE; }       // '|'
+        if b == 40  { return TOKEN_LPAREN; }     // '('
+        if b == 41  { return TOKEN_RPAREN; }     // ')'
+        if b == 123 { return TOKEN_LBRACE; }     // '{'
+        if b == 125 { return TOKEN_RBRACE; }     // '}'
+        if b == 91  { return TOKEN_LBRACKET; }   // '['
+        if b == 93  { return TOKEN_RBRACKET; }   // ']'
+        if b == 58  { return TOKEN_COLON; }      // ':'
+        if b == 59  { return TOKEN_SEMICOLON; }  // ';'
+        if b == 44  { return TOKEN_COMMA; }      // ','
+        if b == 46  { return TOKEN_DOT; }        // '.'
+        TOKEN_UNKNOWN
+    }
+
+    // -----------------------------------------------------------------------
+    // parse_decimal
+    // --------------
+    // Parse `len` decimal digits from `src[start..]` into a u64.
+    // Returns u64::MAX (18446744073709551615) on overflow.
+    // Bounded: iterates exactly `len` times.
+    // -----------------------------------------------------------------------
+    fn parse_decimal(src: &[u8], start: usize, len: usize) -> u64 {
+        let mut value: u64 = 0;
+        let mut i: usize = 0;
+        while i < len {
+            let digit: u8 = src[start + i];
+            let d: u64 = (digit as u64) - 48; // '0' = 48
+            // Overflow check before multiply: if value > (MAX - d) / 10 → overflow
+            if value > (18446744073709551615 - d) / 10 {
+                return 18446744073709551615;
+            }
+            value = value * 10 + d;
+            i = i + 1;
+        }
+        value
+    }
+
+    // -----------------------------------------------------------------------
+    // is_ident_start_byte
+    // --------------------
+    // A byte that can begin an identifier: ASCII letter or underscore.
+    // -----------------------------------------------------------------------
+    fn is_ident_start_byte(b: u8) -> bool {
+        intrinsic_is_ascii_alpha(b) || b == 95  // '_' = 95
+    }
+
+    // -----------------------------------------------------------------------
+    // is_ident_byte
+    // --------------
+    // A byte that can continue an identifier: ASCII letter, digit, or underscore.
+    // -----------------------------------------------------------------------
+    fn is_ident_byte(b: u8) -> bool {
+        intrinsic_is_ascii_alpha(b) || intrinsic_is_ascii_digit(b) || b == 95
+    }
+
+    // -----------------------------------------------------------------------
+    // is_digit_byte — true iff b is '0'..'9'
+    // -----------------------------------------------------------------------
+    fn is_digit_byte(b: u8) -> bool {
+        intrinsic_is_ascii_digit(b)
+    }
+
+    // -----------------------------------------------------------------------
+    // is_whitespace_byte — true iff b is space, tab, CR, or LF
+    // -----------------------------------------------------------------------
+    fn is_whitespace_byte(b: u8) -> bool {
+        b == 32 || b == 9 || b == 13 || b == 10  // ' ' '\t' '\r' '\n'
+    }
+
+}
+// ---------------------------------------------------------------------------
+// End of compiler_mirr/lexer.mirr
+// ---------------------------------------------------------------------------

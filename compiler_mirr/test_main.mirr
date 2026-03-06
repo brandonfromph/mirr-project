@@ -1,0 +1,34 @@
+// ---------------------------------------------------------------------------
+// MIRR-in-MIRR Compiler Driver Test Harness
+// ---------------------------------------------------------------------------
+// Module: compiler_mirr/test_main.mirr
+// Purpose: Test the main entrypoint with sample input and error handling.
+// ---------------------------------------------------------------------------
+
+module mirr_test_main {
+    fn test_main_entrypoint() -> bool {
+        let input_path: &str = "tests/fixtures/parse/neonatal_respirator_parsed.json";
+        let output_path: &str = "tmp/test_main_output.mirr";
+        let mut diags: DiagnosticList;
+        let ok = mirr_main::main(input_path, output_path, &mut diags);
+        if !ok {
+            print("[TEST FAIL] main.mirr failed\n");
+            print_diagnostics(&diags);
+            return false;
+        }
+        if diags.len > 0 {
+            print("[TEST WARN] main.mirr completed with diagnostics:\n");
+            print_diagnostics(&diags);
+            return false;
+        }
+        print("[TEST PASS] main.mirr entrypoint works\n");
+        true
+    }
+
+    fn print_diagnostics(diags: &DiagnosticList) {
+        // Print all diagnostics for debugging
+        for i in 0..diags.len {
+            print(diags[i]);
+        }
+    }
+}
