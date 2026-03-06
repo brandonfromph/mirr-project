@@ -10,7 +10,7 @@ fn python_stress_generator_outputs_valid_mirr() {
     // Invoke the Rust binary shipping with the workspace.  `cargo run` is
     // convenient because it builds the binary if needed and prints to stdout.
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--bin", "generate_mirr_stress", "--", "--type", "mux_forest", "--size", "10"])
+        .args(["run", "--quiet", "--bin", "generate_mirr_stress", "--", "--type", "mux_forest", "--size", "10"])
         .output()
         .expect("failed to run rust generator");
     assert!(output.status.success(), "generator binary failed to run");

@@ -227,9 +227,10 @@ module test_module {
 // ---------------------------------------------------------------------------
 #[test]
 fn test_unsupported_condition_is_rejected() {
-    // A binary AND of two signals is not reducible to a 1-bit hardware condition
-    // by the current lowering pass.  The compiler MUST return an explicit error
-    // rather than silently inventing a synthetic signal name.
+    // AND/OR conditions are now handled via ComplexGuard decomposition, but
+    // a binary XOR of two signals is still not reducible by the lowering pass.
+    // The compiler MUST return an explicit error rather than silently
+    // producing incorrect hardware.
     let src = r#"
 module test_module {
     signal sig_a: in bool;
@@ -254,10 +255,10 @@ module test_module {
     // Manually inject an unsupported condition to bypass the parser's valid
     // subset (the parser only produces supported forms today).
     let mut module = program.module;
-    // Replace the guard condition with `sig_a AND sig_b` — unsupported by the lowering pass.
+    // Replace the guard condition with `sig_a XOR sig_b` — unsupported by the lowering pass.
     if let Some(guard) = module.guards.first_mut() {
         guard.condition = Expr::Binary {
-            op: BinaryOp::And,
+            op: BinaryOp::Xor,
             left: Box::new(Expr::Signal("sig_a".to_string())),
             right: Box::new(Expr::Signal("sig_b".to_string())),
         };

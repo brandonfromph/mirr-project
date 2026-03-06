@@ -5,7 +5,7 @@ use nasa_rust_project::mirr_executor;
 use nasa_rust_project::mirr_driver::collect_tokens_from_pushes;
 
 fn run_case_from_path(path: &str) {
-    let txt = fs::read_to_string(path).expect(&format!("Failed to read {}", path));
+    let txt = fs::read_to_string(path).unwrap_or_else(|_| panic!("Failed to read {}", path));
     let input = txt.as_bytes();
 
     // Smoke-test: verify the interpreter runs without panicking on real MIRR source

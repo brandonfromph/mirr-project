@@ -26,3 +26,12 @@ Thumbs.db
 # Python cache (for scripts)
 __pycache__/
 *.pyc
+
+# MCP server local artifacts
+mcp_server/node_modules/
+mcp_server/dist/
+mcp_server/.tsbuildinfo
+mcp_server/*.bak
+
+# Local MCP / tool state
+.mcp_*

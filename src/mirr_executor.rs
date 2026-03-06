@@ -1,4 +1,5 @@
 use crate::mirr_driver::ObservedPush;
+use crate::mirr_runtime::Value;
 use crate::parser::parse_mirr;
 use crate::ast::{Expr, LiteralValue};
 use crate::ast::types::SignalKind;
@@ -33,28 +34,6 @@ fn load_lexer_module() -> Option<&'static crate::ast::MirrProgram> {
         return opt.as_ref();
     }
     None
-}
-
-#[derive(Clone, Debug)]
-enum Value {
-    Bool(bool),
-    Integer(u64),
-}
-
-impl Value {
-    fn as_bool(&self) -> bool {
-        match self {
-            Value::Bool(b) => *b,
-            Value::Integer(i) => *i != 0,
-        }
-    }
-
-    fn as_int(&self) -> u64 {
-        match self {
-            Value::Integer(i) => *i,
-            Value::Bool(b) => if *b { 1 } else { 0 },
-        }
-    }
 }
 
 /// RuntimePools: reusable, preallocated collections used by the interpreter
