@@ -106,13 +106,12 @@ fn stress_deep_expression_nesting_error() {
     );
     let result = parse_mirr(&source);
     assert!(result.is_err());
-    // Check for either "depth exceeds limit" or "Expression depth exceeds limit"
     let error_msg = format!("{}", result.unwrap_err());
-    println!("Error message: {}", error_msg);
-    // The error is now caught by the balanced parentheses check, not depth check
-    assert!(error_msg.contains("depth exceeds limit") || 
-            error_msg.contains("Expression depth exceeds limit") ||
-            error_msg.contains("Unbalanced parentheses"));
+    assert!(
+        error_msg.contains("Unbalanced parentheses"),
+        "expected 'Unbalanced parentheses' error, got: {}",
+        error_msg
+    );
 }
 
 #[test]

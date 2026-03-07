@@ -19,6 +19,7 @@ pub mod temporal;
 pub mod mirr_runtime;
 pub mod mirr_driver;
 pub mod mirr_executor;
+pub mod width;
 
 // Top-level re-exports for ergonomic access.
 pub use ast::{MirrAstJson, MirrProgram};
@@ -28,3 +29,4 @@ pub use parser::parse_mirr;
 pub use validation::validate_module;
 pub use simplify::SimplifyStats;
 pub use temporal::{TemporalGuardCompiler, low_level_ir::TemporalNetlist, low_level_ir::TemporalNetlistJson};
+pub use width::types::{WidthStats, WidthDiag, WidthExpr};

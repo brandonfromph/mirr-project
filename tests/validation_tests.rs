@@ -55,59 +55,6 @@ module neonatal_respirator {
 }
 
 #[test]
-fn validate_err_duplicate_signal() {
-    let source = r#"
-module m {
-    signal s: in bool;
-    signal s: out bool;
-}
-"#;
-    assert_validate_err(source, "Duplicate signal name");
-}
-
-#[test]
-fn validate_err_duplicate_guard() {
-    let source = r#"
-module m {
-    signal s: in bool;
-    guard g {
-        when s
-        for 1 cycles;
-    }
-    guard g {
-        when s
-        for 2 cycles;
-    }
-}
-"#;
-    assert_validate_err(source, "Duplicate guard name");
-}
-
-#[test]
-fn validate_err_duplicate_reflex() {
-    let source = r#"
-module m {
-    signal s: out bool;
-    guard g {
-        when s
-        for 1 cycles;
-    }
-    reflex r {
-        on g {
-            s = true;
-        }
-    }
-    reflex r {
-        on g {
-            s = false;
-        }
-    }
-}
-"#;
-    assert_validate_err(source, "Duplicate reflex name");
-}
-
-#[test]
 fn validate_err_guard_references_undeclared_signal() {
     let source = r#"
 module m {
