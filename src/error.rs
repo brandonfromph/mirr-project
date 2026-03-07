@@ -1,8 +1,19 @@
 // ---------------------------------------------------------------------------
-// Centralized error authority
-// ---------------------------------------------------------------------------
-// NASA/JPL Rule: All error variants for the subsystem are catalogued in one
-// place — critical for mission-critical diagnostics.
+//! Centralized error authority for the MIRR compiler.
+//!
+//! All error variants are catalogued here — NASA/JPL rule for
+//! mission-critical diagnostics traceability.
+//!
+//! ## Error Code Scheme
+//!
+//! | Prefix | Range     | Category                |
+//! |--------|-----------|-------------------------|
+//! | E1xx   | 100–199   | Parse errors            |
+//! | E2xx   | 200–299   | Semantic errors         |
+//! | E3xx   | 300–399   | Temporal errors         |
+//! | E4xx   | 400–499   | Pattern errors          |
+//!
+//! See `docs/error_codes.md` for the full catalogue.
 // ---------------------------------------------------------------------------
 
 use std::error::Error;
@@ -10,16 +21,14 @@ use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum MirrError {
-    /// General parsing error
+    /// Parse/lexical error (E1xx).
     ParseError { message: String },
-    /// Lexical analysis error
-    LexicalError { message: String },
-    /// Semantic analysis error
+    /// Semantic analysis error (E2xx).
     SemanticError { message: String },
-    /// Temporal causality violation error
-    TemporalCausalityViolation { cause: String, effect: String, constraint_type: String },
-    /// Temporal compilation error
+    /// Temporal compilation error (E3xx).
     TemporalCompilationError { message: String },
+    /// Pattern expansion error (E4xx).
+    PatternError { message: String },
 }
 
 impl MirrError {
@@ -31,18 +40,15 @@ impl MirrError {
 impl fmt::Display for MirrError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MirrError::ParseError { message } => write!(f, "Parse error: {}", message),
-            MirrError::LexicalError { message } => write!(f, "Lexical error: {}", message),
-            MirrError::SemanticError { message } => write!(f, "Semantic error: {}", message),
-            MirrError::TemporalCausalityViolation { cause, effect, constraint_type } => {
-                write!(
-                    f,
-                    "Temporal causality violation: {} cannot cause {} ({})",
-                    cause, effect, constraint_type
-                )
+            MirrError::ParseError { message } => write!(f, "[E100] Parse error: {}", message),
+            MirrError::SemanticError { message } => {
+                write!(f, "[E200] Semantic error: {}", message)
             }
             MirrError::TemporalCompilationError { message } => {
-                write!(f, "Temporal compilation error: {}", message)
+                write!(f, "[E300] Temporal compilation error: {}", message)
+            }
+            MirrError::PatternError { message } => {
+                write!(f, "[E400] Pattern error: {}", message)
             }
         }
     }

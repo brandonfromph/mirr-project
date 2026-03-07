@@ -1,3 +1,8 @@
+//! Lexer-level driver for the MIRR tokenizer.
+//!
+//! Provides byte-level and push-based interfaces for driving the lexer,
+//! collecting tokens, and observing tokenization events.
+
 use crate::lexer::tokenizer::Token;
 use crate::mirr_runtime;
 use std::str;
@@ -18,7 +23,7 @@ impl ObservedPush {
     }
 }
 
-/// Convert a slice of observed pushes into a Vec<Token> using the runtime
+/// Convert a slice of observed pushes into a `Vec<Token>` using the runtime
 /// mapping helpers. This is a small, testable building-block that a later
 /// driver can call while actually exercising MIRR modules.
 pub fn collect_tokens_from_pushes(pushes: &[ObservedPush]) -> Vec<Token> {

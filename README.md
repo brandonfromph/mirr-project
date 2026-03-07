@@ -7,6 +7,7 @@ Write a rule in plain code. Get nanosecond-speed hardware logic — no OS, no sc
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=for-the-badge)](LICENSE)
 [![Build](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)]()
+[![Tests](https://img.shields.io/badge/tests-632%20passing-brightgreen?style=for-the-badge)]()
 [![Language: Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Target: Verilog RTL](https://img.shields.io/badge/Target-Verilog%20RTL-blueviolet?style=for-the-badge)]()
 
@@ -25,6 +26,8 @@ Write a rule in plain code. Get nanosecond-speed hardware logic — no OS, no sc
    * [Signals](#signals)
    * [Guards](#guards)
    * [Reflexes](#reflexes)
+   * [Properties](#properties)
+   * [Patterns (def / reflect)](#patterns-def--reflect)
    * [Types](#types)
    * [Expressions](#expressions)
    * [A complete program](#a-complete-program)
@@ -221,6 +224,96 @@ You cannot put loops, function calls, or conditionals inside a reflex. A reflex 
 
 ---
 
+### Properties
+
+A property declares a safety invariant that the compiler emits as a SystemVerilog Assertion (SVA). Properties do not affect the generated hardware — they produce verification assertions that can be checked by simulation or formal tools.
+
+Three forms are supported:
+
+**Always** — the condition must hold at every clock cycle:
+
+```mirr
+property pressure_in_range {
+    always (airway_pressure > 10);
+}
+```
+
+**Never** — the condition must never be true:
+
+```mirr
+property no_spurious_clamp {
+    never (clamp_valve && alarm_active == false);
+}
+```
+
+**Implication** — whenever the antecedent is true, the consequent must also be true:
+
+```mirr
+property pressure_response {
+    always (airway_pressure < 50 -> clamp_valve);
+}
+```
+
+The compiler emits these as SVA `assert property` blocks. If the module declares a `rst_n` input signal, the assertion includes `disable iff (!rst_n)` automatically.
+
+All signal references in a property are validated at compile time — referencing an undeclared signal is a hard error.
+
+---
+
+### Patterns (def / reflect)
+
+A pattern defines a reusable hardware template that expands at compile time. Define it once with `def`, call it many times inside any module.
+
+```mirr
+def monitor_sensor(
+    sensor: signal in u16,
+    low:    u16,
+    high:   u16,
+    cycles: u32,
+    alarm:  signal out bool
+) {
+    reflect {
+        guard ${sensor}_too_low {
+            when ${sensor} < ${low}
+            for  ${cycles} cycles;
+        }
+
+        guard ${sensor}_too_high {
+            when ${sensor} > ${high}
+            for  ${cycles} cycles;
+        }
+
+        reflex ${sensor}_response {
+            on ${sensor}_too_low {
+                ${alarm} = true;
+            }
+        }
+
+        property ${sensor}_alarm_correct {
+            always (${sensor} < ${low} -> ${alarm});
+        }
+    }
+}
+```
+
+Call the pattern inside a module — each call expands into prefixed, collision-proof hardware:
+
+```mirr
+module ventilator {
+    signal airway_pressure: in  u16;
+    signal heart_rate:      in  u16;
+    signal pressure_alarm:  out bool;
+    signal heartrate_alarm: out bool;
+
+    monitor_sensor(airway_pressure, 50, 200, 1000, pressure_alarm);
+    monitor_sensor(heart_rate, 40, 180, 500, heartrate_alarm);
+}
+```
+
+Parameters can be signals (`signal in u16`, `signal out bool`) or compile-time constants (`u16`, `u32`, `bool`). The `${param}` markers are substituted before re-parsing. Each expansion gets a unique name prefix (`monitor_sensor_0_`, `monitor_sensor_1_`) and an `origin` tag for DO-178C traceability.
+
+---
+
 ### Types
 
 MIRR has a small, explicit type system. Every signal has a physical width. There are no implicit conversions.
@@ -302,7 +395,7 @@ module neonatal_respirator {
     // ── Outputs ─────────────────────────────────────────────────────────────
     signal clamp_valve:      out bool; // true = emergency closed
     signal alarm_active:     out bool; // true = audible/visual alarm
-    signal status_code:      out u8;   // 0x00 = ok, 0xFF = critical fault
+    signal status_code:      out u8;   // 0 = ok, nonzero = fault code
 
     // ── Guards ──────────────────────────────────────────────────────────────
 
@@ -331,7 +424,7 @@ module neonatal_respirator {
         on sustained_low_pressure {
             clamp_valve   = true;
             alarm_active  = true;
-            status_code   = 0x01;
+            status_code   = 1;
         }
     }
 
@@ -339,7 +432,7 @@ module neonatal_respirator {
     reflex battery_warning {
         on critical_battery {
             alarm_active  = true;
-            status_code   = 0x02;
+            status_code   = 2;
         }
     }
 
@@ -348,7 +441,7 @@ module neonatal_respirator {
         on sensor_lost {
             clamp_valve   = true;
             alarm_active  = true;
-            status_code   = 0x03;
+            status_code   = 3;
         }
     }
 }
@@ -523,6 +616,9 @@ cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit dot -o 
 # Emit JSON netlist
 cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit json
 
+# Emit SVA assertions only (no module wrapper)
+cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit sva
+
 # Full AST detail in DOT output
 cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit dot --dot-detail expr
 ```
@@ -546,6 +642,8 @@ cargo test
 - [x] Phase 4 — Bit-width inference: constraint propagation, SCC handling, truncation errors (`mirr-width`)
 - [x] Phase 5 — MAPE-K simulation: autonomic feedback loop harness (`mirr-simulate`)
 - [x] Phase 6 — Integration: unified pipeline, SystemVerilog/DOT/JSON emit (`mirr-compile`)
+- [x] Phase 7a — Safety properties: `property` keyword, SVA assertion emission, JSON/DOT property support
+- [x] Phase 7b — Homoiconic pattern system: `def`/`reflect` keywords, compile-time pattern expansion, origin tagging
 - [ ] Phase 7 — Formal verification: Rocq proofs, verified width inference
 - [ ] Phase 8 — R-SPU RTL: full Reflexive Processing Unit hardware architecture
 - [ ] Phase 9 — Multi-core fabric

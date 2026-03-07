@@ -11,6 +11,7 @@ fn test_guard_counter_lifetime() {
     // - a reflex that sets `emit_push_integer = true` while the guard is active
     // - a clear/tick reflex that resets `emit_push_integer = false`
     let prog = MirrProgram {
+        patterns: Vec::new(),
         module: Module {
             name: "test".to_string(),
             signals: vec![
@@ -18,17 +19,20 @@ fn test_guard_counter_lifetime() {
                     name: "input_byte_is_digit".to_string(),
                     kind: SignalKind::Input,
                     ty: SignalType::Bool,
+                    origin: None,
                 },
                 SignalDecl {
                     name: "emit_push_integer".to_string(),
                     kind: SignalKind::Internal,
                     ty: SignalType::Bool,
+                    origin: None,
                 },
             ],
             guards: vec![Guard {
                 name: "digit_guard".to_string(),
                 condition: Expr::Signal("input_byte_is_digit".to_string()),
                 cycles: 3,
+                origin: None,
             }],
             reflexes: vec![
                 Reflex {
@@ -38,6 +42,7 @@ fn test_guard_counter_lifetime() {
                         target: "emit_push_integer".to_string(),
                         value: Expr::Literal(LiteralValue::Bool(true)),
                     }],
+                    origin: None,
                 },
                 Reflex {
                     name: "clear_tick".to_string(),
@@ -46,8 +51,12 @@ fn test_guard_counter_lifetime() {
                         target: "emit_push_integer".to_string(),
                         value: Expr::Literal(LiteralValue::Bool(false)),
                     }],
+                    origin: None,
                 },
             ],
+            properties: Vec::new(),
+            pattern_calls: Vec::new(),
+            pattern_origins: Vec::new(),
         },
     };
 

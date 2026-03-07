@@ -1,14 +1,14 @@
-// ---------------------------------------------------------------------------
-// Semantic validation
-// ---------------------------------------------------------------------------
-// Single responsibility: validate a parsed module for semantic correctness.
-// No parsing logic lives here — only post-parse analysis.
-// ---------------------------------------------------------------------------
+//! Semantic validation for MIRR modules and pattern definitions.
+//!
+//! Checks for duplicate names, undeclared signal references, guard-reflex
+//! consistency, property formula validity, and pattern definition constraints.
 
 use std::collections::HashSet;
 
 use crate::ast::expr::Expr;
+use crate::ast::pattern::PatternDef;
 use crate::ast::program::Module;
+
 use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 
@@ -145,6 +145,9 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
         }
     }
 
+    // Validate property declarations.
+    validate_properties(&module.properties, &signal_names)?;
+
     Ok(())
 }
 
@@ -210,4 +213,127 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
     }
 
     refs
+}
+
+/// Validate property declarations: no duplicate names, all signal refs declared.
+fn validate_properties(
+    properties: &[crate::ast::property::PropertyDecl],
+    signal_names: &HashSet<&str>,
+) -> Result<(), MirrError> {
+    let mut property_names: HashSet<&str> = HashSet::with_capacity(properties.len());
+    for prop in properties {
+        if !property_names.insert(&prop.name) {
+            return Err(MirrError::SemanticError {
+                message: format!("Duplicate property name: '{}'.", prop.name),
+            });
+        }
+        validate_property_signals(prop, signal_names)?;
+        validate_property_prev_delays(prop)?;
+    }
+    Ok(())
+}
+
+/// Check that all signal references in a property formula are declared.
+fn validate_property_signals(
+    prop: &crate::ast::property::PropertyDecl,
+    signal_names: &HashSet<&str>,
+) -> Result<(), MirrError> {
+    for expr in prop.formula.exprs() {
+        let refs = collect_signal_refs(expr);
+        for sig_ref in &refs {
+            if !signal_names.contains(sig_ref.as_str()) {
+                return Err(MirrError::SemanticError {
+                    message: format!(
+                        "Property '{}' references undeclared signal '{}'.",
+                        prop.name, sig_ref
+                    ),
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Validate that all Prev nodes in a property formula have delay >= 1.
+fn validate_property_prev_delays(
+    prop: &crate::ast::property::PropertyDecl,
+) -> Result<(), MirrError> {
+    for expr in prop.formula.exprs() {
+        validate_prev_delays(expr, &prop.name)?;
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Pattern definition validation (Phase 7b)
+// ---------------------------------------------------------------------------
+
+/// Maximum parameters allowed in a single pattern definition.
+const MAX_PATTERN_PARAMS: usize = 32;
+
+/// Maximum body lines allowed in a reflect block.
+const MAX_PATTERN_BODY_LINES: usize = 512;
+
+/// Validate pattern definitions for structural correctness.
+///
+/// Called BEFORE pattern expansion. Checks:
+/// - No duplicate pattern names.
+/// - No duplicate parameter names within a pattern.
+/// - Reflect body is non-empty.
+/// - Parameter count <= MAX_PATTERN_PARAMS.
+/// - Body line count <= MAX_PATTERN_BODY_LINES.
+///
+/// Post-expansion, the standard `validate_module` catches all signal/guard/
+/// reflex/property reference issues in the expanded result.
+///
+/// Bounded: iterates over patterns (max 64) and params (max 32).
+pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
+    let mut names: HashSet<&str> = HashSet::with_capacity(patterns.len());
+    for pat in patterns {
+        if !names.insert(&pat.name) {
+            return Err(MirrError::PatternError {
+                message: format!("Duplicate pattern definition: '{}'.", pat.name),
+            });
+        }
+
+        // Check for duplicate parameter names within this pattern.
+        let mut param_names: HashSet<&str> = HashSet::with_capacity(pat.params.len());
+        for p in &pat.params {
+            if !param_names.insert(&p.name) {
+                return Err(MirrError::PatternError {
+                    message: format!(
+                        "Pattern '{}' has duplicate parameter name: '{}'.",
+                        pat.name, p.name
+                    ),
+                });
+            }
+        }
+
+        if pat.params.len() > MAX_PATTERN_PARAMS {
+            return Err(MirrError::PatternError {
+                message: format!(
+                    "Pattern '{}' has {} parameters (max {MAX_PATTERN_PARAMS}).",
+                    pat.name,
+                    pat.params.len()
+                ),
+            });
+        }
+
+        if pat.body.raw_lines.is_empty() {
+            return Err(MirrError::PatternError {
+                message: format!("Pattern '{}' has empty reflect body.", pat.name),
+            });
+        }
+
+        if pat.body.raw_lines.len() > MAX_PATTERN_BODY_LINES {
+            return Err(MirrError::PatternError {
+                message: format!(
+                    "Pattern '{}' reflect body has {} lines (max {MAX_PATTERN_BODY_LINES}).",
+                    pat.name,
+                    pat.body.raw_lines.len()
+                ),
+            });
+        }
+    }
+    Ok(())
 }

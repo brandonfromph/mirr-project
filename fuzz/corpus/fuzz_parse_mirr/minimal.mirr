@@ -1,0 +1,15 @@
+module minimal {
+    signal sensor: in u16;
+    signal alarm: out bool;
+
+    guard g {
+        when sensor > 100
+        for 3 cycles;
+    }
+
+    reflex r {
+        on g {
+            alarm = true;
+        }
+    }
+}

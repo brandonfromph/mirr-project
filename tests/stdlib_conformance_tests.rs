@@ -59,10 +59,9 @@ mod diag_code {
 fn error_class(e: &MirrError) -> &'static str {
     match e {
         MirrError::ParseError { .. } => "parse",
-        MirrError::LexicalError { .. } => "lexical",
         MirrError::SemanticError { .. } => "semantic",
         MirrError::TemporalCompilationError { .. } => "temporal",
-        MirrError::TemporalCausalityViolation { .. } => "temporal_causality",
+        MirrError::PatternError { .. } => "pattern",
     }
 }
 

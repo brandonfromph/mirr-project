@@ -1,0 +1,29 @@
+[package]
+name = "nasa-rust-project-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.nasa-rust-project]
+path = ".."
+
+[[bin]]
+name = "fuzz_parse_mirr"
+path = "fuzz_targets/fuzz_parse_mirr.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_pipeline"
+path = "fuzz_targets/fuzz_pipeline.rs"
+test = false
+doc = false
+
+[workspace]
+members = ["."]

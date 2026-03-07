@@ -236,16 +236,57 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 6 – Integration and Visualization (Not Started)
+## Phase 6 – Integration and Visualization (Completed)
 
 - **Goal:** Integrate all previous tools into a cohesive, auditable "mini-EDA" flow.
 - **Scope:**
-  - End-to-end pipeline: parse MIRR source → simplify logic → assign bit-widths → emit netlist and temporal guards.
-  - Generate Graphviz `.dot` files from IR/netlist for visualization and debugging.
-  - Emit Verilog/VHDL/SystemVerilog RTL from the IR.
-  - Single driver binary or workspace for the entire compile-and-analyze pipeline.
+  - End-to-end pipeline: parse MIRR source → validate → simplify logic → assign bit-widths → temporal lowering → emit output.
+  - `PipelineConfig` with toggles for simplification, width inference, and temporal compilation.
+  - Generate Graphviz `.dot` files from IR/netlist for visualization and debugging (with `--dot-detail expr` for full AST subgraphs).
+  - Emit SystemVerilog RTL, JSON netlist, and DOT graph from the unified pipeline.
+  - Single driver binary `mirr-compile` with `--emit verilog|dot|json` flags.
+  - Bootstrap runner (`mirr-parse`) with parity checks against the unified pipeline.
+  - 632 tests passing, zero clippy warnings, zero unsafe code.
 
-**Result artifact:** Unified driver binary (or cargo workspace) that performs a full compile-analyze run, suitable as the engine for future R-SPU toolchains.
+**Result artifact:** Unified driver binary `mirr-compile` that performs a full compile-analyze run with multiple output formats.
+
+---
+
+## Phase 7a – Safety Properties & SVA Assertion Emission (Completed)
+
+- **Goal:** Add a `property` keyword to the MIRR DSL that compiles to SystemVerilog Assertions (SVA), enabling formal verification of safety invariants without affecting generated hardware.
+
+- **Scope (Completed):**
+  - **AST:** `PropertyFormula` enum (`Always(Expr)`, `Never(Expr)`, `AlwaysImplies { antecedent, consequent }`) and `PropertyDecl` struct in `src/ast/property.rs`. `Module` extended with `properties: Vec<PropertyDecl>` (`#[serde(default)]` for backward compatibility).
+  - **Parser:** `property` keyword dispatch in `module_parser.rs`. Multi-line block syntax matching `guard`/`reflex` pattern. `->` implication handled at property parser level (string split), not in tokenizer or expression parser — avoids ripple to simplifier, width inference, etc.
+  - **Validation:** Duplicate property name detection. Signal reference validation — all signals referenced in property formulas must be declared in the module.
+  - **Pipeline:** Property expressions simplified through the existing `simplify_expr_with_stats` pass.
+  - **SVA emission:** `assert property (@(posedge clk) ...)` blocks in SystemVerilog output. `disable iff (!rst_n)` emitted only when `rst_n` is declared as an input signal. Three SVA forms: `always(P)` → `assert P`, `never(P)` → `assert !(P)`, `always(P -> Q)` → `assert P |-> Q`.
+  - **JSON emission:** `"properties"` array in JSON netlist with `name`, `kind`, `formula_text` fields.
+  - **DOT emission:** Property nodes (`shape=note`, lightblue fill) with dotted blue edges from referenced signals.
+  - **CLI:** `--emit sva` for standalone SVA output (no module wrapper). `emit_sva_only()` public API.
+  - 40 new tests (520 total). Zero clippy warnings, zero unsafe code.
+
+**Result artifact:** MIRR programs can now declare safety properties that compile to industry-standard SVA assertions, usable by any SystemVerilog simulation or formal verification tool.
+
+---
+
+## Phase 7b – Homoiconic Pattern System (Completed)
+
+- **Goal:** Add compile-time pattern expansion to MIRR via the `def`/`reflect` keywords, enabling reusable hardware structure definitions with DO-178C traceability.
+
+- **Scope (Completed):**
+  - `def` keyword for pattern definitions with signal (`signal in u16`, `signal out bool`) and constant (`u16`, `u32`, `bool`) parameters.
+  - `reflect` block contains a template body with `${param}` interpolation markers. Body is stored as raw text, substituted at compile time, then re-parsed by the existing module parser.
+  - Name prefixing scheme: `{pattern_name}_{call_index}_{original_name}` for collision-proof naming across multiple calls.
+  - Origin tagging: `origin: Option<String>` on `Guard`, `Reflex`, `SignalDecl`, `PropertyDecl` for DO-178C traceability. Verilog emitter outputs `// Pattern: monitor_sensor_0` comments. DOT emitter adds tooltips. JSON omits the field when `None` (serde `skip_serializing_if`).
+  - Internal signal scoping: pattern-internal signals (`SignalKind::Internal`) cannot be referenced outside their expansion. Cross-expansion references also blocked.
+  - Bounded expansion: `MAX_EXPANSION_DEPTH=4`, `MAX_EXPANDED_ITEMS=256`, `MAX_PARAMS=32`, `MAX_ARGS=32`, `MAX_REFLECT_LINES=512`, `MAX_BRACE_DEPTH=16`.
+  - Pipeline ordering: parse → `validate_pattern_defs` → `expand_patterns` → validate_module → simplify → width → temporal → emit.
+  - New modules: `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs`.
+  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **632 total tests, zero clippy warnings.**
+
+**Result artifact:** Reusable pattern definitions that expand at compile time into validated, origin-tagged hardware structures.
 
 ---
 
@@ -364,23 +405,34 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 │   ├── error.rs                   # Shared error types
 │   ├── bootstrap_runner.rs        # Self-host bootstrap pipeline
 │   ├── simplify.rs                # Logic simplifier — 33 algebraic rules (Phase 3)
+│   ├── pipeline.rs                # Unified compilation pipeline (Phase 6)
 │   ├── mirr_executor.rs           # Signal evaluator used by MAPE-K harness (Phase 5)
 │   ├── bin/
+│   │   ├── mirr-compile.rs        # Unified pipeline CLI: --emit verilog|dot|json|sva (Phase 6)
 │   │   ├── mirr-simplify.rs       # Standalone simplifier CLI
 │   │   ├── mirr-width.rs          # Bit-width inference CLI; --scc enables Phase 4b
 │   │   ├── mirr-simulate.rs       # MAPE-K simulation harness CLI (Phase 5)
 │   │   └── generate_mirr_stress.rs
 │   ├── ast/
+│   │   ├── mod.rs                 # Module declarations and re-exports
 │   │   ├── types.rs
 │   │   ├── expr.rs                # Includes Expr::Prev for temporal back-references
-│   │   └── program.rs
+│   │   ├── program.rs             # MirrProgram, Module (includes properties field)
+│   │   ├── property.rs            # PropertyDecl, PropertyFormula (Phase 7a)
+│   │   └── pattern.rs             # PatternDef, PatternCall, PatternOrigin (Phase 7b)
 │   ├── lexer/
 │   │   └── tokenizer.rs
 │   ├── parser/
 │   │   ├── expr_parser.rs
-│   │   └── module_parser.rs
+│   │   ├── module_parser.rs       # Includes property parsing (Phase 7a)
+│   │   └── pattern_parser.rs      # Pattern definition and call parsing (Phase 7b)
 │   ├── validation/
-│   │   └── semantic.rs
+│   │   └── semantic.rs            # Includes property validation (Phase 7a)
+│   ├── emit/                      # Output emitters (Phase 6)
+│   │   ├── mod.rs
+│   │   ├── verilog.rs             # SystemVerilog RTL + SVA assertions (Phase 7a)
+│   │   ├── dot.rs                 # Graphviz DOT with property nodes (Phase 7a)
+│   │   └── json_netlist.rs        # JSON netlist with properties key (Phase 7a)
 │   ├── temporal/
 │   │   ├── compiler.rs
 │   │   ├── emit.rs
@@ -402,8 +454,13 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 │       ├── analyzer.rs
 │       ├── planner.rs
 │       └── sensor.rs
+├── src/expand/                    # Pattern expansion engine (Phase 7b)
+│   └── mod.rs                     # expand_patterns(), name prefixing, scoping validation
 ├── tests/
-│   ├── *_tests.rs                 # Unit/integration suites
+│   ├── *_tests.rs                 # Unit/integration suites (632 tests)
+│   ├── property_tests.rs          # Property/SVA tests (Phase 7a)
+│   ├── pattern_tests.rs           # Pattern system tests (Phase 7b)
+│   ├── pattern_coverage_tests.rs  # Pattern coverage gap tests (Phase 7b)
 │   └── fixtures/
 ├── compiler_mirr/                 # MIRR-in-MIRR self-hosting port (incremental)
 ├── stdlib/mirr_core/              # Standard library primitives in MIRR
@@ -421,11 +478,15 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 | Area | Files |
 |---|---|
 | Syntax / tokens | `src/lexer/*`, `src/parser/*` |
-| AST / data model | `src/ast/*`; temporal back-refs: `Expr::Prev` in `expr.rs` |
+| AST / data model | `src/ast/*`; temporal back-refs: `Expr::Prev` in `expr.rs`; properties: `property.rs` |
 | Semantic rules | `src/validation/semantic.rs` |
 | Temporal lowering | `src/temporal/*` |
 | Logic simplification | `src/simplify.rs` |
 | Bit-width inference (acyclic) | `src/width/solver.rs`, `constraint.rs`, `flatten.rs` |
 | Bit-width inference (cyclic SCC) | `src/width/graph.rs`, `scc.rs`, `scc_solver.rs`, `verify.rs` |
+| Output emission | `src/emit/verilog.rs`, `src/emit/dot.rs`, `src/emit/json_netlist.rs` |
+| Unified pipeline | `src/pipeline.rs` |
+| Safety properties / SVA | `src/ast/property.rs`, `src/emit/verilog.rs` (SVA), `src/validation/semantic.rs` |
+| Pattern expansion | `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs` |
 | MAPE-K harness | `src/mape_k/`, `src/mirr_executor.rs` |
 | Self-hosting pipeline | `src/bootstrap_runner.rs` |

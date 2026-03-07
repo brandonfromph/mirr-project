@@ -58,6 +58,12 @@ pub fn run_pipeline(source: &str, config: &PipelineConfig) -> Result<PipelineRes
     // Stage 1: Parse.
     let mut program = crate::parser::parse_mirr(source)?;
 
+    // Stage 1.5: Validate pattern definitions, then expand pattern calls.
+    // This runs BEFORE module validation so expanded items are validated as
+    // part of the normal module (the emission pipeline never sees patterns).
+    crate::validation::validate_pattern_defs(&program.patterns)?;
+    crate::expand::expand_patterns(&mut program)?;
+
     // Stage 2: Validate.
     crate::validation::validate_module(&program.module)?;
 
@@ -103,5 +109,27 @@ fn simplify_program(program: &mut MirrProgram) -> SimplifyStats {
         }
     }
 
+    simplify_properties(&mut program.module.properties, &mut total);
+
     total
+}
+
+/// Simplify expressions inside property formulas.
+fn simplify_properties(
+    properties: &mut [crate::ast::property::PropertyDecl],
+    total: &mut SimplifyStats,
+) {
+    for p in properties.iter_mut() {
+        for expr in p.formula.exprs_mut() {
+            simplify_one(expr, total);
+        }
+    }
+}
+
+fn simplify_one(expr: &mut crate::ast::Expr, total: &mut SimplifyStats) {
+    let (simplified, stats) = crate::simplify::simplify_expr_with_stats(expr.clone());
+    *expr = simplified;
+    total.rules_applied += stats.rules_applied;
+    total.nodes_before += stats.nodes_before;
+    total.nodes_after += stats.nodes_after;
 }

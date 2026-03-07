@@ -1,0 +1,38 @@
+// Safety property example — demonstrates all property forms and directives.
+// Compile: cargo run --bin mirr-compile -- --emit sva examples/safety_property.mirr
+
+module pressure_monitor {
+    signal airway_pressure: in  u16;
+    signal clamp_valve:     out bool;
+
+    guard pressure_low {
+        when airway_pressure < 50
+        for 3 cycles;
+    }
+
+    reflex engage_clamp {
+        on pressure_low {
+            clamp_valve = true;
+        }
+    }
+
+    property pressure_bounded {
+        always (airway_pressure > 10);
+    }
+
+    property no_spurious_clamp {
+        never (clamp_valve && airway_pressure > 200);
+    }
+
+    property low_triggers_clamp {
+        always (airway_pressure < 50 -> clamp_valve);
+    }
+
+    property clamp_reachable {
+        cover eventually within 100 (clamp_valve);
+    }
+
+    property clamp_follows_drop {
+        always (airway_pressure < 50 followed_by 5 clamp_valve);
+    }
+}

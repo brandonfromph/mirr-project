@@ -1,0 +1,81 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "MIRR",
+  "scopeName": "source.mirr",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords-control" },
+    { "include": "#keywords-signal" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#numbers" },
+    { "include": "#template-params" },
+    { "include": "#identifiers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.mirr",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "keywords-control": {
+      "patterns": [
+        {
+          "name": "keyword.control.mirr",
+          "match": "\\b(module|guard|reflex|property|def|reflect|when|for|on|always|never|cycles|and)\\b"
+        }
+      ]
+    },
+    "keywords-signal": {
+      "patterns": [
+        {
+          "name": "keyword.other.mirr",
+          "match": "\\b(signal|in|out|internal)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.mirr",
+          "match": "\\b(bool|u8|u16|u32|u64)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.mirr",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.decimal.mirr",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "template-params": {
+      "patterns": [
+        {
+          "name": "variable.parameter.template.mirr",
+          "match": "\\$\\{[a-zA-Z_][a-zA-Z0-9_]*\\}"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "entity.name.function.mirr",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+        }
+      ]
+    }
+  }
+}

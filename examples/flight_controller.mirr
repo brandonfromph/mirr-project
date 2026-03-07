@@ -1,0 +1,59 @@
+// Flight controller — aerospace altitude/speed/attitude monitoring.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/flight_controller.mirr
+
+module flight_controller {
+    signal altitude:       in  u32;
+    signal airspeed:       in  u16;
+    signal pitch_angle:    in  u16;
+    signal roll_angle:     in  u16;
+    signal throttle_cut:   out bool;
+    signal stabilise:      out bool;
+    signal terrain_warn:   out bool;
+    signal status_code:    internal u8;
+
+    guard altitude_low {
+        when altitude < 500
+        for  10 cycles;
+    }
+
+    guard overspeed {
+        when airspeed > 340
+        for  5 cycles;
+    }
+
+    guard excessive_pitch {
+        when pitch_angle > 30
+        for  8 cycles;
+    }
+
+    guard excessive_roll {
+        when roll_angle > 60
+        for  4 cycles;
+    }
+
+    reflex terrain_alert {
+        on altitude_low {
+            terrain_warn = true;
+        }
+    }
+
+    reflex cut_throttle {
+        on overspeed {
+            throttle_cut = true;
+        }
+    }
+
+    reflex auto_stabilise {
+        on excessive_pitch and excessive_roll {
+            stabilise = true;
+        }
+    }
+
+    property speed_bounded {
+        always (airspeed < 400);
+    }
+
+    property low_alt_warns {
+        always (altitude < 500 -> terrain_warn);
+    }
+}

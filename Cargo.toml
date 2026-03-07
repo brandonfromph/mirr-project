@@ -2,6 +2,14 @@
 name = "nasa-rust-project"
 version = "0.1.0"
 edition = "2021"
+description = "MIRR compiler — a safety-critical DSL for hardware-software co-design targeting SystemVerilog RTL"
+authors = ["Brandon <brandonfromph@users.noreply.github.com>"]
+license = "GPL-3.0"
+repository = "https://github.com/brandonfromph/mirr-project"
+readme = "README.md"
+keywords = ["compiler", "hardware", "safety-critical", "verilog", "dsl"]
+categories = ["compilers", "embedded", "hardware-support"]
+rust-version = "1.70"
 
 [dependencies]
 clap = { version = "4.4.0", features = ["derive"] }
@@ -9,6 +17,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 [dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3"
 
 [profile.release]
@@ -22,4 +31,8 @@ lto = "fat"
 [[bin]]
 name = "mirr-compile"
 path = "src/bin/mirr-compile.rs"
+
+[[bench]]
+name = "pipeline_bench"
+harness = false
 

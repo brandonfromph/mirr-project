@@ -100,7 +100,7 @@ fn pipeline_semantic_error_for_duplicate_signal() {
         Ok(_) => panic!("expected semantic error for duplicate signal"),
     };
     let msg = err.to_string();
-    assert_eq!(msg, "Semantic error: Duplicate signal name: 'x'.");
+    assert_eq!(msg, "[E200] Semantic error: Duplicate signal name: 'x'.");
 }
 
 // ---------------------------------------------------------------------------

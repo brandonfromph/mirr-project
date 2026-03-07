@@ -1,31 +1,10 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-// ---------------------------------------------------------------------------
-// MIRR PHASE 3 — Temporal Emit Module
-// ---------------------------------------------------------------------------
-// Purpose: Emit TemporalNetlist representations with strict resource/verification
-// guarantees required by Phase 3.
-//
-// Constraints & requirements (summary):
-// - Follow NASA Power-of-10 rules (no recursion; small functions; bounded loops).
-// - Hot-path code must avoid dynamic heap allocation after initialization.
-// - Preallocate buffers and data structures used during emission where feasible.
-// - Provide explicit worst-case bounds in docs/architecture/resource_budgets.csv.
-// - Maintain assertion density and explicit parameter validation per module.
-// - Exit criteria for this module: allocation-audit passes; temporal guard
-//   determinism tests pass; CI enforces clippy -D warnings.
-//
-// See: docs/architecture/resource_budgets.csv, docs/architecture/loop_and_alloc_scan.md
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Temporal Guard Netlist Emitters
-// ---------------------------------------------------------------------------
-// Single responsibility: serialize a TemporalNetlist to external formats.
-// Supports JSON (via serde_json) and Graphviz DOT.
-// Ref: MIRR-PHASE2-001 §2 (emission scope), P2-REQ-007, P2-REQ-008
-// ---------------------------------------------------------------------------
+//! Temporal netlist emission utilities.
+//!
+//! Provides display and formatting for compiled temporal guard structures,
+//! including shift register chains and counter-comparator blocks.
 
 use crate::ast::types::SignalType;
 use crate::error::MirrError;

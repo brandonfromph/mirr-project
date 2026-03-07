@@ -71,8 +71,9 @@ fn prev_guard_result() -> PipelineResult {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(8),
+                origin: None,
             },
-            SignalDecl { name: "y".to_string(), kind: SignalKind::Output, ty: SignalType::Bool },
+            SignalDecl { name: "y".to_string(), kind: SignalKind::Output, ty: SignalType::Bool, origin: None },
         ],
         guards: vec![Guard {
             name: "g".to_string(),
@@ -82,6 +83,7 @@ fn prev_guard_result() -> PipelineResult {
                 right: Box::new(Expr::Literal(LiteralValue::Integer(10))),
             },
             cycles: 5,
+            origin: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -90,11 +92,15 @@ fn prev_guard_result() -> PipelineResult {
                 target: "y".to_string(),
                 value: Expr::Literal(LiteralValue::Bool(true)),
             }],
+            origin: None,
         }],
+        properties: Vec::new(),
+        pattern_calls: Vec::new(),
+        pattern_origins: Vec::new(),
     };
 
     PipelineResult {
-        program: MirrProgram { module },
+        program: MirrProgram { patterns: Vec::new(), module },
         simplify_stats: None,
         width_result: None,
         temporal_netlist: None,

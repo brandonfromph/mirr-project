@@ -1,16 +1,8 @@
-// Minimal MIRR runtime harness scaffolding.
-//
-// Purpose:
-// - Provide small, Rust-side helpers to map lexer "push" events (from
-//   compiler_mirr/lexer.mirr emit_push_* signals) into host Token values.
-// - This file is a non-invasive scaffold: it does not yet drive MIRR modules.
-// - Implemented so the next ACT-mode change can call these helpers from the
-//   bootstrap runner or a dedicated mirr runtime module.
-//
-// Notes:
-// - The Token enum is defined in crate::lexer::tokenizer; we map known push
-//   kinds to that enum. Unknown push kinds are converted into Ident tokens
-//   with the push-kind string so they are observable in tests.
+//! Minimal MIRR runtime harness scaffolding.
+//!
+//! Provides Rust-side helpers to map lexer "push" events (from
+//! `compiler_mirr/lexer.mirr` `emit_push_*` signals) into host `Token` values.
+//! Unknown push kinds are converted into `Ident` tokens for test observability.
 use crate::lexer::tokenizer::Token;
 
 /// Map a lexer push-kind (as observed from MIRR emit_push_* signals)
@@ -93,7 +85,7 @@ pub fn token_buffer_push(buf: &mut TokenBuffer, tok: Token) -> bool {
     }
 }
 
-/// Keep the existing helper for Vec<Token> for backwards compatibility/tests.
+/// Keep the existing helper for `Vec<Token>` for backwards compatibility/tests.
 pub fn push_mapped_token(
     vec: &mut Vec<Token>,
     push_kind: &str,
@@ -155,7 +147,7 @@ impl Value {
 
 /// RuntimePools: preallocated, index-based storage for hot-path values.
 ///
-/// Replaces per-tick HashMap<String,Value> lookups with index-based Vec<Value>
+/// Replaces per-tick `HashMap<String,Value>` lookups with index-based `Vec<Value>`
 /// accesses. The `index_map` is populated at init-time (allowed). All hot-path
 /// reads/writes use indices into preallocated Vecs avoiding further heap ops.
 pub struct RuntimePools {

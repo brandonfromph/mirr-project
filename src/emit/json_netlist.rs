@@ -24,6 +24,11 @@ pub struct JsonNetlist {
     pub width_stats: Option<WidthStatsJson>,
     /// Temporal netlist (null if skipped).
     pub temporal: Option<TemporalNetlistJson>,
+    /// Safety property declarations.
+    pub properties: Vec<PropertyJson>,
+    /// Pattern expansion provenance (Phase 7b).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pattern_origins: Vec<PatternOriginJson>,
 }
 
 /// Serializable wrapper for SimplifyStats.
@@ -44,6 +49,22 @@ pub struct WidthStatsJson {
     pub expansive_count: usize,
     pub nonexpansive_count: usize,
     pub has_errors: bool,
+}
+
+/// Serializable wrapper for a property declaration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PropertyJson {
+    pub name: String,
+    pub directive: String,
+    pub kind: String,
+    pub formula_text: String,
+}
+
+/// Serializable wrapper for pattern origin annotation (Phase 7b).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PatternOriginJson {
+    pub pattern_name: String,
+    pub args_summary: String,
 }
 
 /// Emit a JSON netlist string from pipeline results.
@@ -77,5 +98,121 @@ pub fn build_netlist(result: &PipelineResult) -> JsonNetlist {
         .as_ref()
         .map(crate::temporal::low_level_ir::TemporalNetlistJson::from_netlist);
 
-    JsonNetlist { ir_version: "1.0".to_string(), program, simplify_stats, width_stats, temporal }
+    let properties: Vec<PropertyJson> =
+        result.program.module.properties.iter().map(property_to_json).collect();
+
+    let pattern_origins: Vec<PatternOriginJson> = result
+        .program
+        .module
+        .pattern_origins
+        .iter()
+        .map(|o| PatternOriginJson {
+            pattern_name: o.pattern_name.clone(),
+            args_summary: o.call_args_summary.clone(),
+        })
+        .collect();
+
+    JsonNetlist {
+        ir_version: "1.0".to_string(),
+        program,
+        simplify_stats,
+        width_stats,
+        temporal,
+        properties,
+        pattern_origins,
+    }
+}
+
+/// Convert a PropertyDecl into its JSON representation.
+fn property_to_json(prop: &crate::ast::property::PropertyDecl) -> PropertyJson {
+    use crate::ast::property::{PropertyDirective, PropertyFormula};
+
+    let directive_str = match prop.directive {
+        PropertyDirective::Assert => "assert",
+        PropertyDirective::Cover => "cover",
+        PropertyDirective::Assume => "assume",
+    };
+
+    let (kind, formula_text) = match &prop.formula {
+        PropertyFormula::Always(expr) => {
+            ("always".to_string(), format!("always ({})", expr_text(expr)))
+        }
+        PropertyFormula::Never(expr) => {
+            ("never".to_string(), format!("never ({})", expr_text(expr)))
+        }
+        PropertyFormula::AlwaysImplies { antecedent, consequent } => (
+            "always_implies".to_string(),
+            format!("always ({} -> {})", expr_text(antecedent), expr_text(consequent)),
+        ),
+        PropertyFormula::NeverImplies { antecedent, consequent } => (
+            "never_implies".to_string(),
+            format!("never ({} -> {})", expr_text(antecedent), expr_text(consequent)),
+        ),
+        PropertyFormula::EventuallyWithin { expr, cycles } => (
+            "eventually_within".to_string(),
+            format!("eventually within {} ({})", cycles, expr_text(expr)),
+        ),
+        PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => (
+            "always_followed_by".to_string(),
+            format!(
+                "always ({} followed_by {} {})",
+                expr_text(trigger),
+                delay_cycles,
+                expr_text(response),
+            ),
+        ),
+    };
+    PropertyJson {
+        name: prop.name.clone(),
+        directive: directive_str.to_string(),
+        kind,
+        formula_text,
+    }
+}
+
+/// Render an expression in MIRR-like text form for JSON output.
+fn expr_text(expr: &crate::ast::Expr) -> String {
+    let mut iters = 0usize;
+    expr_text_bounded(expr, &mut iters)
+}
+
+fn expr_text_bounded(expr: &crate::ast::Expr, iters: &mut usize) -> String {
+    use crate::ast::expr::Expr;
+    use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+    const MAX: usize = 512;
+    *iters += 1;
+    if *iters > MAX {
+        return "...".to_string();
+    }
+    match expr {
+        Expr::Literal(LiteralValue::Bool(true)) => "true".to_string(),
+        Expr::Literal(LiteralValue::Bool(false)) => "false".to_string(),
+        Expr::Literal(LiteralValue::Integer(n)) => format!("{n}"),
+        Expr::Signal(name) => name.clone(),
+        Expr::Prev { signal, delay } => format!("prev({signal}, {delay})"),
+        Expr::Unary { op: UnaryOp::Not, operand } => {
+            format!("!{}", expr_text_bounded(operand, iters))
+        }
+        Expr::Binary { op, left, right } => {
+            let l = expr_text_bounded(left, iters);
+            let r = expr_text_bounded(right, iters);
+            let op_str = match op {
+                BinaryOp::And => "&&",
+                BinaryOp::Or => "||",
+                BinaryOp::Xor => "^",
+                BinaryOp::Lt => "<",
+                BinaryOp::Le => "<=",
+                BinaryOp::Gt => ">",
+                BinaryOp::Ge => ">=",
+                BinaryOp::Eq => "==",
+                BinaryOp::Ne => "!=",
+                BinaryOp::Add => "+",
+                BinaryOp::Sub => "-",
+                BinaryOp::Mul => "*",
+                BinaryOp::Shl => "<<",
+                BinaryOp::Shr => ">>",
+            };
+            format!("({l} {op_str} {r})")
+        }
+    }
 }

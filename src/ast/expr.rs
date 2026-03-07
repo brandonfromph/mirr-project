@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
-// Expression AST node
-// ---------------------------------------------------------------------------
-// Single responsibility: the recursive expression tree structure.
+//! Expression AST for MIRR guard conditions and reflex assignments.
+//!
+//! Supports signals, literals, binary/unary operations, and temporal
+//! back-references (`Prev`). All variants are `Serialize`/`Deserialize`.
 // ---------------------------------------------------------------------------
 
 use super::types::{BinaryOp, LiteralValue, UnaryOp};

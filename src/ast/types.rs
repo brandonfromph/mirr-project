@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
-// AST primitive types
-// ---------------------------------------------------------------------------
-// Single responsibility: enumeration types used throughout the AST.
+//! Core type definitions for the MIRR AST.
+//!
+//! Defines signal kinds (input/output/internal), signal types (bool, unsigned),
+//! binary and unary operators, and literal values.
 // ---------------------------------------------------------------------------
 
 use serde::{Deserialize, Serialize};

@@ -24,13 +24,13 @@ fn expr_err(input: &str) -> String {
 #[test]
 fn unbalanced_parens_open_pinned() {
     let msg = expr_err("(a + b");
-    assert_eq!(msg, "Parse error: Unbalanced parentheses in expression.");
+    assert_eq!(msg, "[E100] Parse error: Unbalanced parentheses in expression.");
 }
 
 #[test]
 fn unbalanced_parens_extra_close_pinned() {
     let msg = expr_err("a + b)");
-    assert_eq!(msg, "Parse error: Unbalanced parentheses in expression.");
+    assert_eq!(msg, "[E100] Parse error: Unbalanced parentheses in expression.");
 }
 
 #[test]
@@ -78,7 +78,7 @@ module too_many {
 }
 "#;
     let msg = parse_err(source);
-    assert_eq!(msg, "Parse error: Too many tokens in signal declaration.");
+    assert_eq!(msg, "[E100] Parse error: Too many tokens in signal declaration.");
 }
 
 #[test]

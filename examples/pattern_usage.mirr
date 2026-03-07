@@ -1,0 +1,49 @@
+// Pattern usage example — demonstrates def/reflect with ${param} substitution.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/pattern_usage.mirr
+
+def threshold_guard(
+    sensor: signal in u16,
+    limit:  u16,
+    delay:  u32,
+    alarm:  signal out bool
+) {
+    reflect {
+        guard ${sensor}_over {
+            when ${sensor} > ${limit}
+            for  ${delay} cycles;
+        }
+
+        reflex ${sensor}_trigger {
+            on ${sensor}_over {
+                ${alarm} = true;
+            }
+        }
+
+        property ${sensor}_safety {
+            always (${sensor} > ${limit} -> ${alarm});
+        }
+    }
+}
+
+module dual_sensor {
+    signal temperature:    in  u16;
+    signal pressure:       in  u16;
+    signal temp_alarm:     out bool;
+    signal pressure_alarm: out bool;
+
+    // Each call expands with a unique prefix: threshold_guard_0_, threshold_guard_1_
+    threshold_guard(temperature, 100, 5, temp_alarm);
+    threshold_guard(pressure, 300, 3, pressure_alarm);
+
+    // Hand-written guard alongside pattern-expanded ones
+    guard manual_check {
+        when temperature > 0
+        for 1 cycles;
+    }
+
+    reflex manual_response {
+        on manual_check {
+            temp_alarm = true;
+        }
+    }
+}

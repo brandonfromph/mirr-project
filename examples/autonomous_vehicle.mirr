@@ -1,0 +1,58 @@
+// Autonomous vehicle — sensor fusion guards and emergency brake.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/autonomous_vehicle.mirr
+
+module autonomous_vehicle {
+    signal lidar_range:     in  u32;
+    signal radar_range:     in  u32;
+    signal camera_conf:     in  u16;
+    signal vehicle_speed:   in  u16;
+    signal brake_cmd:       out bool;
+    signal lane_alert:      out bool;
+    signal speed_reduce:    out bool;
+
+    guard lidar_close {
+        when lidar_range < 500
+        for  3 cycles;
+    }
+
+    guard radar_close {
+        when radar_range < 800
+        for  3 cycles;
+    }
+
+    guard low_confidence {
+        when camera_conf < 40
+        for  10 cycles;
+    }
+
+    guard over_speed_limit {
+        when vehicle_speed > 120
+        for  5 cycles;
+    }
+
+    reflex emergency_brake {
+        on lidar_close and radar_close {
+            brake_cmd = true;
+        }
+    }
+
+    reflex reduce_speed {
+        on over_speed_limit {
+            speed_reduce = true;
+        }
+    }
+
+    reflex lane_departure {
+        on low_confidence {
+            lane_alert = true;
+        }
+    }
+
+    property speed_limit_enforced {
+        always (vehicle_speed > 120 -> speed_reduce);
+    }
+
+    property no_spurious_brake {
+        never (brake_cmd && lidar_range > 1000);
+    }
+}

@@ -1,0 +1,69 @@
+// Industrial safety — temperature, pressure, vibration monitoring.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/industrial_safety.mirr
+
+module industrial_safety {
+    signal temperature:     in  u16;
+    signal pressure:        in  u32;
+    signal vibration:       in  u16;
+    signal flow_rate:       in  u16;
+    signal shutdown_cmd:    out bool;
+    signal pressure_relief: out bool;
+    signal vibration_alarm: out bool;
+    signal flow_alarm:      out bool;
+
+    guard over_temp {
+        when temperature > 450
+        for  20 cycles;
+    }
+
+    guard over_pressure {
+        when pressure > 10000
+        for  5 cycles;
+    }
+
+    guard high_vibration {
+        when vibration > 800
+        for  15 cycles;
+    }
+
+    guard low_flow {
+        when flow_rate < 10
+        for  30 cycles;
+    }
+
+    reflex emergency_shutdown {
+        on over_temp and over_pressure {
+            shutdown_cmd = true;
+        }
+    }
+
+    reflex relief_valve {
+        on over_pressure {
+            pressure_relief = true;
+        }
+    }
+
+    reflex vibration_alert {
+        on high_vibration {
+            vibration_alarm = true;
+        }
+    }
+
+    reflex flow_alert {
+        on low_flow {
+            flow_alarm = true;
+        }
+    }
+
+    property pressure_triggers_relief {
+        always (pressure > 10000 -> pressure_relief);
+    }
+
+    property temp_bounded {
+        always (temperature < 600);
+    }
+
+    property no_spurious_shutdown {
+        never (shutdown_cmd && temperature < 400);
+    }
+}

@@ -27,7 +27,7 @@ use nasa_rust_project::width::WidthInferenceResult;
 // ---------------------------------------------------------------------------
 
 fn sig(name: &str, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty }
+    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty, origin: None }
 }
 
 fn lit(v: u64) -> Expr {
@@ -711,6 +711,7 @@ fn program_width_inference_basic() {
     use nasa_rust_project::ast::program::*;
 
     let program = nasa_rust_project::MirrProgram {
+        patterns: Vec::new(),
         module: Module {
             name: "test_mod".to_string(),
             signals: vec![
@@ -721,6 +722,7 @@ fn program_width_inference_basic() {
                 name: "g1".to_string(),
                 condition: binary(BinaryOp::Lt, signal("in_a"), lit(100)),
                 cycles: 1,
+                origin: None,
             }],
             reflexes: vec![Reflex {
                 name: "r1".to_string(),
@@ -729,7 +731,11 @@ fn program_width_inference_basic() {
                     target: "out_b".to_string(),
                     value: signal("in_a"),
                 }],
+                origin: None,
             }],
+            properties: Vec::new(),
+            pattern_calls: Vec::new(),
+            pattern_origins: Vec::new(),
         },
     };
 
@@ -744,6 +750,7 @@ fn program_detects_truncation_in_reflex() {
     use nasa_rust_project::ast::program::*;
 
     let program = nasa_rust_project::MirrProgram {
+        patterns: Vec::new(),
         module: Module {
             name: "trunc_mod".to_string(),
             signals: vec![
@@ -759,7 +766,11 @@ fn program_detects_truncation_in_reflex() {
                     target: "out".to_string(),
                     value: binary(BinaryOp::Add, signal("a"), signal("b")),
                 }],
+                origin: None,
             }],
+            properties: Vec::new(),
+            pattern_calls: Vec::new(),
+            pattern_origins: Vec::new(),
         },
     };
 

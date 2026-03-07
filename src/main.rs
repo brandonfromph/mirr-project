@@ -1,3 +1,8 @@
+//! CLI entry point for the MIRR compiler toolchain.
+//!
+//! Provides `mirr-parse` functionality: reads `.mirr` source files and emits
+//! structured JSON, DOT graphs, or pretty-printed IR to stdout.
+
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 

@@ -1,9 +1,7 @@
-// ---------------------------------------------------------------------------
-// Expression parser (Pratt / precedence-climbing)
-// ---------------------------------------------------------------------------
-// Single responsibility: parse a token stream into an expression AST.
-// Uses a Pratt parser with bounded recursion depth.
-// ---------------------------------------------------------------------------
+//! Expression parser for MIRR guard conditions and reflex RHS.
+//!
+//! Recursive-descent parser producing `Expr` AST nodes from token streams.
+//! Supports comparisons, arithmetic, boolean operators, and parenthesized groups.
 
 use crate::ast::expr::Expr;
 use crate::ast::types::BinaryOp;
@@ -148,10 +146,9 @@ impl ExprParser {
         // NASA-style: minimize function calls in hot loop
         while let Some(tok) = self.current_token() {
             let op = token_to_binop(tok);
-            if op.is_none() {
+            let Some(op) = op else {
                 break; // Not an infix operator; stop.
-            }
-            let op = op.unwrap();
+            };
 
             let (left_bp, right_bp) = infix_binding_power(&op);
             if left_bp < min_bp {

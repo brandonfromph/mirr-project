@@ -1,0 +1,75 @@
+// ICU patient monitor — heart rate, SpO2, blood pressure interlock.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/icu_monitor.mirr
+
+module icu_monitor {
+    signal heart_rate:      in  u16;
+    signal spo2:            in  u16;
+    signal systolic_bp:     in  u16;
+    signal diastolic_bp:    in  u16;
+    signal cardiac_alarm:   out bool;
+    signal hypoxia_alarm:   out bool;
+    signal bp_alarm:        out bool;
+    signal code_blue:       out bool;
+
+    guard bradycardia {
+        when heart_rate < 50
+        for  300 cycles;
+    }
+
+    guard tachycardia {
+        when heart_rate > 150
+        for  120 cycles;
+    }
+
+    guard low_spo2 {
+        when spo2 < 90
+        for  60 cycles;
+    }
+
+    guard hypotension {
+        when systolic_bp < 80
+        for  200 cycles;
+    }
+
+    reflex cardiac_alert {
+        on bradycardia {
+            cardiac_alarm = true;
+        }
+    }
+
+    reflex tachy_alert {
+        on tachycardia {
+            cardiac_alarm = true;
+        }
+    }
+
+    reflex hypoxia_alert {
+        on low_spo2 {
+            hypoxia_alarm = true;
+        }
+    }
+
+    reflex bp_alert {
+        on hypotension {
+            bp_alarm = true;
+        }
+    }
+
+    reflex code_blue_alert {
+        on bradycardia and low_spo2 {
+            code_blue = true;
+        }
+    }
+
+    property spo2_bounded {
+        always (spo2 < 101);
+    }
+
+    property no_silent_hypoxia {
+        always (spo2 < 90 -> hypoxia_alarm);
+    }
+
+    property no_spurious_code_blue {
+        never (code_blue && heart_rate > 60);
+    }
+}

@@ -1,13 +1,10 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-// ---------------------------------------------------------------------------
-// Temporal Guard Compiler — public façade
-// ---------------------------------------------------------------------------
-// Single responsibility: expose the Phase 2 public API and delegate to
-// focused sub-modules. No business logic lives here.
-// Ref: MIRR-PHASE2-001 §3 (module structure)
-// ---------------------------------------------------------------------------
+//! Temporal guard compilation module (Cement2-inspired).
+//!
+//! Compiles high-level MIRR guards into low-level hardware primitives:
+//! shift registers for short delays, counter-comparators for long delays.
 
 pub mod compiler;
 pub mod emit;

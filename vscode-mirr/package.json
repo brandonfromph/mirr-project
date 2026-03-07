@@ -1,0 +1,35 @@
+{
+  "name": "mirr-lang",
+  "displayName": "MIRR Language Support",
+  "description": "Syntax highlighting for the MIRR hardware-safety DSL",
+  "version": "0.1.0",
+  "publisher": "mirr-project",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "mirr",
+        "aliases": [
+          "MIRR",
+          "mirr"
+        ],
+        "extensions": [
+          ".mirr"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mirr",
+        "scopeName": "source.mirr",
+        "path": "./syntaxes/mirr.tmLanguage.json"
+      }
+    ]
+  }
+}

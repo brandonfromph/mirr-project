@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
-// Lexer module — public interface
-// ---------------------------------------------------------------------------
+//! Lexical analysis module for MIRR source code.
+//!
+//! Re-exports the tokenizer and `Token` enum.
 
 pub mod tokenizer;
 

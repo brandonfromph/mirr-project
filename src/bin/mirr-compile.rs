@@ -115,8 +115,10 @@ fn main() {
                 process::exit(1);
             }
         },
+        "sva" => emit::verilog::emit_sva_only(&result),
+        "firrtl" => emit::firrtl::emit_firrtl(&result),
         other => {
-            eprintln!("Unknown emit format: '{other}'. Use dot, verilog, or json.");
+            eprintln!("Unknown emit format: '{other}'. Use dot, verilog, json, sva, or firrtl.");
             process::exit(1);
         }
     };
@@ -184,7 +186,7 @@ fn print_help() {
     println!("  mirr-compile <file.mirr> [OPTIONS]");
     println!();
     println!("Options:");
-    println!("  --emit FORMAT       Output format: dot, verilog, json (default: dot)");
+    println!("  --emit FORMAT       Output format: dot, verilog, json, sva, firrtl (default: dot)");
     println!("  --output FILE, -o   Write output to FILE (default: stdout)");
     println!("  --dot-detail expr   Show full AST trees in DOT output");
     println!("  --stats             Print detailed pipeline statistics");

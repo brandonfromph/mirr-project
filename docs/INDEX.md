@@ -1,7 +1,7 @@
 # MIRR Project Documentation Index
 
 > **Maintainer:** MIRR Core Team  
-> **Last updated:** 2026-03-01  
+> **Last updated:** 2026-03-07
 > **Rule:** Every document in `docs/` MUST be listed here with its status.  
 > New PRs that add or modify docs must update this index.
 
@@ -65,6 +65,7 @@
 |----------|------|--------|-------------|
 | Fixture Matrix | [`testing/fixture_matrix.md`](testing/fixture_matrix.md) | 🟡 Draft | Test fixture taxonomy and coverage map |
 | Benchmark Protocol | [`benchmarks/benchmark_protocol.md`](benchmarks/benchmark_protocol.md) | 🟡 Draft | Performance measurement methodology |
+| Error Code Reference | [`error_codes.md`](error_codes.md) | 🔵 Active | Complete catalogue of all MIRR compiler error codes (E1xx–E4xx) |
 
 ## 6. Runbooks (Operational)
 
@@ -88,6 +89,16 @@
 | Demo Viewer | [`demo_viewer.html`](demo_viewer.html) | 🔵 Active | Browser-based AST/netlist viewer |
 | MIRR Logo Guide | [`branding/mirr_logo.md`](branding/mirr_logo.md) | 🟡 Draft | Canonical three-snake ouroboros logo and `.mirr` icon usage guidance |
 | MCP Server | [`mcp_server/README.md`](../mcp_server/README.md) | 🔵 Active | stdio‑direct protocol server for agents (TypeScript project) |
+| Logic Simplification | [`logic_simplification.md`](logic_simplification.md) | 🟢 Frozen | Logic simplification design notes |
+| MCP API | [`mcp_api.md`](mcp_api.md) | 🟡 Draft | MCP server API specification |
+| MCP Phase 1 Tasks | [`mcp_phase1_tasks.md`](mcp_phase1_tasks.md) | 🟢 Frozen | MCP Phase 1 task list |
+| MCP Roadmap | [`mcp_roadmap.md`](mcp_roadmap.md) | 🟡 Draft | MCP server feature roadmap |
+| NASA Coding Guidelines | [`nasa_coding_guidelines.md`](nasa_coding_guidelines.md) | 🟢 Frozen | NASA/JPL Power-of-10 coding standards reference |
+| Phase 3 Hazard Analysis | [`phase3_hazard_analysis.md`](phase3_hazard_analysis.md) | 🟢 Frozen | Phase 3 hazard analysis notes |
+| Phase 3 Plan | [`phase3_plan.md`](phase3_plan.md) | 🟢 Frozen | Phase 3 implementation plan |
+| Phase 3 Task Actions | [`phase3_task1_actions.md`](phase3_task1_actions.md) | 🟢 Frozen | Phase 3 task action items |
+| Phase 3 Tasks | [`phase3_tasks.md`](phase3_tasks.md) | 🟢 Frozen | Phase 3 task list |
+| Requirements RTM | [`requirements_rtm.md`](requirements_rtm.md) | 🟡 Draft | Requirements traceability matrix |
 
 ## 9. Research Scripts
 

@@ -119,11 +119,13 @@ fn prev_in_reflex_result() -> PipelineResult {
                 name: "sensor".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(16),
+                origin: None,
             },
             SignalDecl {
                 name: "delta".to_string(),
                 kind: SignalKind::Output,
                 ty: SignalType::Unsigned(16),
+                origin: None,
             },
         ],
         guards: vec![Guard {
@@ -134,6 +136,7 @@ fn prev_in_reflex_result() -> PipelineResult {
                 right: Box::new(Expr::Literal(LiteralValue::Integer(0))),
             },
             cycles: 1,
+            origin: None,
         }],
         reflexes: vec![Reflex {
             name: "compute".to_string(),
@@ -146,11 +149,15 @@ fn prev_in_reflex_result() -> PipelineResult {
                     right: Box::new(Expr::Prev { signal: "sensor".to_string(), delay: 1 }),
                 },
             }],
+            origin: None,
         }],
+        properties: Vec::new(),
+        pattern_calls: Vec::new(),
+        pattern_origins: Vec::new(),
     };
 
     PipelineResult {
-        program: MirrProgram { module },
+        program: MirrProgram { patterns: Vec::new(), module },
         simplify_stats: None,
         width_result: None,
         temporal_netlist: None,

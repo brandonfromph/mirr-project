@@ -104,11 +104,13 @@ impl TemporalCompiler {
                             name: left_name.clone(),
                             condition: (*left.clone()),
                             cycles: guard.cycles,
+                            origin: None,
                         };
                         let right_guard = Guard {
                             name: right_name.clone(),
                             condition: (*right.clone()),
                             cycles: guard.cycles,
+                            origin: None,
                         };
 
                         let left_comp = self.compile_guard(&left_guard)?;
@@ -335,6 +337,7 @@ mod tests {
             name: name.to_string(),
             condition: crate::ast::Expr::Signal(signal.to_string()),
             cycles,
+            origin: None,
         }
     }
 

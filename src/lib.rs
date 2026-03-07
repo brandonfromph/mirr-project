@@ -1,3 +1,11 @@
+//! MIRR compiler — a safety-critical DSL for hardware-software co-design.
+//!
+//! MIRR compiles temporal behavioral specifications into SystemVerilog RTL,
+//! JSON netlists, and Graphviz DOT graphs. The pipeline:
+//! parse → validate → expand patterns → simplify → width inference → temporal compile → emit.
+//!
+//! See the [README](https://github.com/brandonfromph/mirr-project) for language documentation.
+
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
@@ -12,6 +20,7 @@ pub mod ast;
 pub mod bootstrap_runner;
 pub mod emit;
 pub mod error;
+pub mod expand;
 pub mod lexer;
 pub mod mape_k;
 pub mod mirr_driver;
@@ -25,6 +34,8 @@ pub mod validation;
 pub mod width;
 
 // Top-level re-exports for ergonomic access.
+pub use ast::pattern::{PatternDef, PatternOrigin};
+pub use ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
 pub use ast::{MirrAstJson, MirrProgram};
 pub use bootstrap_runner::{BootstrapOpts, BootstrapResult, BootstrapRunner, StageResult};
 pub use emit::json_netlist::JsonNetlist;

@@ -25,11 +25,11 @@ use nasa_rust_project::width;
 // =========================================================================
 
 fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind, ty }
+    SignalDecl { name: name.to_string(), kind, ty, origin: None }
 }
 
 fn guard(name: &str, cond: Expr, cycles: u64) -> Guard {
-    Guard { name: name.to_string(), condition: cond, cycles }
+    Guard { name: name.to_string(), condition: cond, cycles, origin: None }
 }
 
 fn reflex(name: &str, guard_names: &[&str], assignments: Vec<Assignment>) -> Reflex {
@@ -37,6 +37,7 @@ fn reflex(name: &str, guard_names: &[&str], assignments: Vec<Assignment>) -> Ref
         name: name.to_string(),
         guard_names: guard_names.iter().map(|s| s.to_string()).collect(),
         assignments,
+        origin: None,
     }
 }
 
@@ -70,7 +71,18 @@ fn program(
     guards: Vec<Guard>,
     reflexes: Vec<Reflex>,
 ) -> MirrProgram {
-    MirrProgram { module: Module { name: name.to_string(), signals, guards, reflexes } }
+    MirrProgram {
+        patterns: Vec::new(),
+        module: Module {
+            name: name.to_string(),
+            signals,
+            guards,
+            reflexes,
+            properties: Vec::new(),
+            pattern_calls: Vec::new(),
+            pattern_origins: Vec::new(),
+        },
+    }
 }
 
 // =========================================================================

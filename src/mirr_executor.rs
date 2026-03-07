@@ -1,3 +1,8 @@
+//! MIRR signal evaluator and interpreter engine.
+//!
+//! Drives the execution of parsed MIRR modules by evaluating guard conditions,
+//! firing reflexes, and updating signal state. Used by the MAPE-K simulation harness.
+
 use crate::ast::types::SignalKind;
 use crate::ast::{Expr, LiteralValue};
 use crate::mirr_driver::ObservedPush;
@@ -273,6 +278,7 @@ fn init_pools_for_program(
     p
 }
 
+/// Drive a parsed MIRR module through the interpreter, evaluating guards and firing reflexes.
 pub fn drive_parsed_module_with_interpreter(
     prog: &crate::ast::MirrProgram,
     input: &[u8],
@@ -725,6 +731,7 @@ pub fn drive_parsed_module_with_interpreter(
     out
 }
 
+/// Drive raw MIRR source bytes through the lexer and interpreter pipeline.
 pub fn drive_lexer_with_interpreter(input: &[u8]) -> Vec<ObservedPush> {
     let prog = match load_lexer_module() {
         Some(p) => p,

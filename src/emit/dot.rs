@@ -14,6 +14,7 @@ use crate::ast::program::Module;
 use crate::ast::types::{SignalKind, SignalType};
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
+use crate::validation::collect_signal_refs;
 
 /// Maximum nodes to emit before truncating (prevents runaway on huge IR).
 const MAX_DOT_NODES: usize = 4096;
@@ -28,10 +29,12 @@ pub fn emit_module_dot(result: &PipelineResult) -> String {
     out.push_str("  rankdir=LR;\n");
     out.push_str("  node [fontname=\"monospace\"];\n\n");
 
+    emit_pattern_origin_comments(module, &mut out);
     emit_signal_nodes(module, &mut out);
     emit_guard_nodes(module, &mut out);
     emit_guard_edges(module, &mut out);
     emit_reflex_edges(module, &mut out);
+    emit_property_nodes(module, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
         emit_temporal_subgraph(netlist, &mut out);
@@ -85,6 +88,21 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
 // Internal helpers
 // -----------------------------------------------------------------------
 
+/// Emit DOT comments listing pattern expansions applied to this module.
+fn emit_pattern_origin_comments(module: &Module, out: &mut String) {
+    if module.pattern_origins.is_empty() {
+        return;
+    }
+    out.push_str("  // ── Pattern Expansions ──\n");
+    for origin in &module.pattern_origins {
+        out.push_str(&format!(
+            "  // Expanded from pattern: {}({})\n",
+            origin.pattern_name, origin.call_args_summary
+        ));
+    }
+    out.push('\n');
+}
+
 fn emit_signal_nodes(module: &Module, out: &mut String) {
     out.push_str("  // Signals\n");
     for s in &module.signals {
@@ -97,12 +115,15 @@ fn emit_signal_nodes(module: &Module, out: &mut String) {
             SignalType::Bool => "bool".to_string(),
             SignalType::Unsigned(w) => format!("u{w}"),
         };
+        let tooltip = match &s.origin {
+            Some(origin) => format!(" tooltip=\"Pattern: {origin}\""),
+            None => String::new(),
+        };
         out.push_str(&format!(
-            "  {} [label=\"{}: {}\" shape={}];\n",
+            "  {} [label=\"{}: {}\" shape={shape}{tooltip}];\n",
             sanitize_id(&s.name),
             s.name,
             width_label,
-            shape,
         ));
     }
     out.push('\n');
@@ -111,8 +132,12 @@ fn emit_signal_nodes(module: &Module, out: &mut String) {
 fn emit_guard_nodes(module: &Module, out: &mut String) {
     out.push_str("  // Guards\n");
     for g in &module.guards {
+        let tooltip = match &g.origin {
+            Some(origin) => format!(" tooltip=\"Pattern: {origin}\""),
+            None => String::new(),
+        };
         out.push_str(&format!(
-            "  {} [label=\"{} ({}c)\" shape=diamond style=filled fillcolor=lightyellow];\n",
+            "  {} [label=\"{} ({}c)\" shape=diamond style=filled fillcolor=lightyellow{tooltip}];\n",
             guard_node_id(&g.name),
             g.name,
             g.cycles,
@@ -321,3 +346,38 @@ fn sanitize_id(name: &str) -> String {
 fn guard_node_id(name: &str) -> String {
     format!("guard_{}", sanitize_id(name))
 }
+
+/// Emit property nodes and edges to referenced signals.
+fn emit_property_nodes(module: &Module, out: &mut String) {
+    if module.properties.is_empty() {
+        return;
+    }
+
+    out.push_str("  // ── Safety Properties ──\n");
+    for prop in &module.properties {
+        let prop_id = format!("prop_{}", sanitize_id(&prop.name));
+        let fillcolor = match prop.directive {
+            crate::ast::property::PropertyDirective::Assert => "lightblue",
+            crate::ast::property::PropertyDirective::Cover => "lightyellow",
+            crate::ast::property::PropertyDirective::Assume => "lightgreen",
+        };
+        out.push_str(&format!(
+            "  {prop_id} [shape=note style=filled fillcolor={fillcolor} label=\"{}\"];\n",
+            prop.name,
+        ));
+
+        let exprs = prop.formula.exprs();
+        for expr in exprs {
+            let refs = collect_signal_refs(expr);
+            for sig in &refs {
+                out.push_str(&format!(
+                    "  {} -> {prop_id} [style=dotted color=blue];\n",
+                    sanitize_id(sig),
+                ));
+            }
+        }
+    }
+    out.push('\n');
+}
+
+

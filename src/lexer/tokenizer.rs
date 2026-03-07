@@ -1,9 +1,7 @@
-// ---------------------------------------------------------------------------
-// Expression tokenizer
-// ---------------------------------------------------------------------------
-// Single responsibility: convert a raw expression string into a sequence
-// of tokens. No parsing logic lives here.
-// ---------------------------------------------------------------------------
+//! Hand-written tokenizer for the MIRR language.
+//!
+//! Scans MIRR source bytes into a sequence of `Token` values. Bounded iteration
+//! (NASA P10 rule #1): the main loop is bounded by input length.
 
 use crate::error::MirrError;
 
