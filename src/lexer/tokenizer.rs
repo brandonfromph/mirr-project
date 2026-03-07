@@ -82,7 +82,9 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
 
         // Two-character operators (check before single-char).
         // NASA-style optimization: use lookup table for faster matching.
-        if pos + 1 < len {
+        // Safety: only attempt the str slice if both positions are on ASCII
+        // (single-byte) chars, so we never panic on multi-byte UTF-8 boundaries.
+        if pos + 1 < len && b.is_ascii() && bytes[pos + 1].is_ascii() {
             let pair = &input[pos..pos + 2];
             if let Some(tok) = match_two_char_operator(pair) {
                 arena.push(tok);
@@ -130,9 +132,17 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
             continue;
         }
 
+        // Safety: reconstruct the character from the byte rather than slicing
+        // the original &str, which would panic on multi-byte UTF-8 boundaries
+        // (e.g., em dash U+2014 is 3 bytes: 0xE2 0x80 0x94).
+        let ch_display = if b.is_ascii() {
+            (b as char).to_string()
+        } else {
+            format!("0x{:02X}", b)
+        };
         return Err(MirrError::new(format!(
             "Unexpected character '{}' in expression.",
-            &input[pos..pos + 1]
+            ch_display
         )));
     }
 

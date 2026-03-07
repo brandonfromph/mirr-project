@@ -111,9 +111,12 @@ fn main() {
         }
     };
 
-    // Remove any leading BOM (UTF-8 or UTF-16) that might confuse the parser
-    if source.starts_with('\u{FEFF}') || source.starts_with('\u{FFFE}') {
-        source.remove(0);
+    // Remove leading UTF-8 BOM (U+FEFF) if present. The UTF-16 code path above
+    // already handles the UTF-16 BOM during decoding, so only U+FEFF needs
+    // stripping here. U+FFFE is a noncharacter, not a BOM — removing it was
+    // incorrect (MED-03 fix). Use strip_prefix to avoid O(n) String::remove(0).
+    if let Some(stripped) = source.strip_prefix('\u{FEFF}') {
+        source = stripped.to_string();
     }
 
     // Parse the MIRR file

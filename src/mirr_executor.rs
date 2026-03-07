@@ -40,6 +40,8 @@ fn load_lexer_module() -> Option<&'static crate::ast::MirrProgram> {
 /// to avoid repeated heap allocations during hot-path execution.
 /// - Constructed once per interpreted module run (init-time)
 /// - Cleared and reused per tick
+/// - Tracks program_fingerprint to detect when a different program is loaded
+///   and reinitialize pools accordingly (HIGH-01 fix).
 struct RuntimePools {
     env: HashMap<String, Value>,
     signal_env: HashMap<String, Value>,
@@ -54,6 +56,13 @@ struct RuntimePools {
     sr_signal_names: Vec<Vec<String>>,
     /// Pre-collected output signal names for zero-alloc per-tick reset in signal_env.
     output_signal_names: Vec<String>,
+    /// Fingerprint of the program this pool was initialized for (module name
+    /// length + signal count + guard count + reflex count). When a new program
+    /// is loaded with a different shape, pools must be reinitialized. This
+    /// prevents stale INPUT_KEYS / guard_counters / sr_signal_names from
+    /// causing silent executor/driver divergence (HIGH-01 fix).
+    /// Uses lengths only (no String) to avoid hot-path heap allocation.
+    program_fingerprint: (usize, usize, usize, usize),
 }
 
 impl RuntimePools {
@@ -69,6 +78,7 @@ impl RuntimePools {
             next_vals: Vec::new(),
             sr_signal_names: Vec::new(),
             output_signal_names: Vec::new(),
+            program_fingerprint: (0, 0, 0, 0),
         }
     }
 
@@ -126,8 +136,16 @@ fn eval_expr(e: &Expr, env_get: &impl Fn(&str) -> Value) -> Value {
                 BinaryOp::Add => Value::Integer(l.as_int().wrapping_add(r.as_int())),
                 BinaryOp::Sub => Value::Integer(l.as_int().wrapping_sub(r.as_int())),
                 BinaryOp::Mul => Value::Integer(l.as_int().wrapping_mul(r.as_int())),
-                BinaryOp::Shl => Value::Integer(l.as_int() << r.as_int()),
-                BinaryOp::Shr => Value::Integer(l.as_int() >> r.as_int()),
+                // Clamp shift amount to 63 to prevent panic on u64 overflow
+                // (Rust panics in debug, wraps in release — both wrong for hardware).
+                BinaryOp::Shl => {
+                    let amt = r.as_int().min(63);
+                    Value::Integer(l.as_int() << amt)
+                }
+                BinaryOp::Shr => {
+                    let amt = r.as_int().min(63);
+                    Value::Integer(l.as_int() >> amt)
+                }
             }
         }
     }
@@ -150,16 +168,105 @@ static ALLOC_HOOK: AllocHookLock = OnceLock::new();
 /// Set callback for allocation checkpoints (tests only).
 pub fn set_alloc_hook(h: fn(&str)) {
     let m = ALLOC_HOOK.get_or_init(|| Mutex::new(None));
-    let mut guard = m.lock().unwrap();
+    // Recover from poisoned Mutex rather than panicking — a previous test
+    // panic must not cascade into every subsequent lock() call (HIGH-04 fix).
+    let mut guard = m.lock().unwrap_or_else(|e| e.into_inner());
     *guard = Some(h);
 }
 
 fn maybe_hook(label: &str) {
     if let Some(m) = ALLOC_HOOK.get() {
-        if let Some(h) = *m.lock().unwrap() {
+        if let Some(h) = *m.lock().unwrap_or_else(|e| e.into_inner()) {
             h(label);
         }
     }
+}
+
+/// Build a fully initialized RuntimePools for the given program (init-time only).
+/// Dynamically seeds input signal keys from the program's signal declarations
+/// instead of a hardcoded list (HIGH-03 fix). Stores the fingerprint so future
+/// calls can detect when a different program is loaded (HIGH-01 fix).
+fn init_pools_for_program(
+    prog: &crate::ast::MirrProgram,
+    fingerprint: (usize, usize, usize, usize),
+) -> RuntimePools {
+    let mut p = RuntimePools::new(
+        prog.module.guards.len(),
+        prog.module.signals.len(),
+        prog.module.reflexes.len(),
+    );
+    p.program_fingerprint = fingerprint;
+
+    // Populate clear reflex names.
+    for r in &prog.module.reflexes {
+        if r.name.contains("clear") || r.name.contains("tick") {
+            p.clear_reflex_names.push(r.name.clone());
+        }
+    }
+    // Dynamically seed input signal keys from the parsed program's signal
+    // declarations. This replaces the former hardcoded INPUT_KEYS list, ensuring
+    // new input signals added to lexer.mirr are automatically recognized (HIGH-03).
+    for s in &prog.module.signals {
+        if s.kind == crate::ast::types::SignalKind::Input {
+            p.env.insert(s.name.clone(), Value::Bool(false));
+        }
+    }
+    p.clear_reflex_names_snapshot = Arc::new(p.clear_reflex_names.clone());
+
+    // Initialize guard counters and active map.
+    // SAFETY: These maps are freshly constructed (init-time only). Using clear()
+    // here is harmless but explicit. Do NOT move this logic to a per-tick path —
+    // clear() would nuke pre-seeded keys (MED-02 note).
+    p.guard_counters.clear();
+    for g in &prog.module.guards {
+        p.guard_counters.insert(g.name.clone(), 0);
+        p.guard_active.insert(g.name.clone(), false);
+    }
+    // Persistent signal state for all signals.
+    // SAFETY: clear() on freshly constructed map — see MED-02 note above.
+    p.persistent_env.clear();
+    for s in &prog.module.signals {
+        match s.ty {
+            crate::ast::types::SignalType::Bool => {
+                p.persistent_env.insert(s.name.clone(), Value::Bool(false));
+            }
+            crate::ast::types::SignalType::Unsigned(_) => {
+                p.persistent_env.insert(s.name.clone(), Value::Integer(0));
+            }
+        }
+    }
+    p.signal_env = p.persistent_env.clone();
+
+    // Collect output signal names for zero-alloc per-tick reset.
+    p.output_signal_names.clear();
+    for s in &prog.module.signals {
+        if s.kind == crate::ast::types::SignalKind::Output {
+            p.output_signal_names.push(s.name.clone());
+        }
+    }
+
+    // Precompute shift-register signal lists per guard.
+    p.sr_signal_names.clear();
+    for g in &prog.module.guards {
+        let prefix = format!("{}_sr_", g.name);
+        let mut names: Vec<(usize, String)> = Vec::new();
+        for sig in &prog.module.signals {
+            if sig.name.starts_with(&prefix) {
+                if let Ok(idx) = sig.name[prefix.len()..].parse::<usize>() {
+                    names.push((idx, sig.name.clone()));
+                }
+            }
+        }
+        names.sort_by_key(|(i, _)| *i);
+        let mut ordered: Vec<String> = Vec::with_capacity(names.len());
+        for (_, n) in names.into_iter() {
+            ordered.push(n);
+        }
+        p.sr_signal_names.push(ordered);
+    }
+    let max_sr = p.sr_signal_names.iter().map(|v| v.len()).max().unwrap_or(0);
+    p.next_vals = Vec::with_capacity(max_sr);
+    p
 }
 
 pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, input: &[u8]) -> Vec<ObservedPush> {
@@ -184,7 +291,7 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
     let pool = OUT_POOL.get_or_init(|| Mutex::new(Vec::new()));
     maybe_hook("after_out_pool_init");
     let mut out: Vec<ObservedPush> = {
-        let mut guard = pool.lock().unwrap();
+        let mut guard = pool.lock().unwrap_or_else(|e| e.into_inner());
         if guard.is_empty() {
             // First-time warm-up: create multiple preallocated buffers (init-time allocations allowed).
             for _ in 0..8 {
@@ -202,89 +309,38 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
 
     // Prepare reusable runtime pools and initialize them once during the warm-up.
     static POOLS: OnceLock<Mutex<RuntimePools>> = OnceLock::new();
-    const INPUT_KEYS: &[&str] = &[
-        "input_two_eq","input_two_ne","input_two_le","input_two_ge","input_arrow","input_dotdot",
-        "input_byte_is_digit",
-        "input_ident_len5","input_ident_len6","input_ident_len8",
-        "input_ident_guard","input_ident_false","input_ident_break","input_ident_while",
-        "input_ident_match","input_ident_const","input_ident_module","input_ident_signal",
-        "input_ident_reflex","input_ident_return","input_ident_struct","input_ident_cycles",
-        "input_ident_internal",
-    ];
+
+    // Compute a fingerprint for the current program to detect when a different
+    // module is loaded and pools need reinitialization (HIGH-01 fix). A static
+    // list of INPUT_KEYS is no longer used — input signal keys are dynamically
+    // seeded from prog.module.signals (HIGH-03 fix).
+    // Uses only Copy-type lengths to avoid hot-path heap allocation.
+    let current_fingerprint = (
+        prog.module.name.len(),
+        prog.module.signals.len(),
+        prog.module.guards.len(),
+        prog.module.reflexes.len(),
+    );
 
     maybe_hook("before_pools_init");
     let pools_mutex = POOLS.get_or_init(|| {
         // Init-time allocations are allowed here (warm-up).
-        let mut p = RuntimePools::new(prog.module.guards.len(), prog.module.signals.len(), prog.module.reflexes.len());
-        // populate clear reflex names once into pools
-        for r in &prog.module.reflexes {
-            if r.name.contains("clear") || r.name.contains("tick") {
-                p.clear_reflex_names.push(r.name.clone());
-            }
-        }
-        // Prepopulate common input keys into the per-tick env to avoid allocating keys on every tick.
-        for &k in INPUT_KEYS {
-            p.env.insert(k.to_string(), Value::Bool(false));
-        }
-        // Snapshot clear reflex names once (store as Arc for cheap runtime cloning)
-        p.clear_reflex_names_snapshot = Arc::new(p.clear_reflex_names.clone());
-
-        // Initialize guard counters and active map
-        p.guard_counters.clear();
-        for g in &prog.module.guards {
-            p.guard_counters.insert(g.name.clone(), 0);
-            p.guard_active.insert(g.name.clone(), false);
-        }
-        // Persistent signal state for internal signals
-        p.persistent_env.clear();
-        for s in &prog.module.signals {
-            match s.ty {
-                crate::ast::types::SignalType::Bool => {
-                    p.persistent_env.insert(s.name.clone(), Value::Bool(false));
-                }
-                crate::ast::types::SignalType::Unsigned(_) => {
-                    p.persistent_env.insert(s.name.clone(), Value::Integer(0));
-                }
-            }
-        }
-        p.signal_env = p.persistent_env.clone();
-
-        // Collect output signal names for zero-alloc per-tick reset.
-        p.output_signal_names.clear();
-        for s in &prog.module.signals {
-            if s.kind == crate::ast::types::SignalKind::Output {
-                p.output_signal_names.push(s.name.clone());
-            }
-        }
-
-        // Precompute shift-register signal lists per guard (init-time).
-        p.sr_signal_names.clear();
-        for g in &prog.module.guards {
-            let prefix = format!("{}_sr_", g.name);
-            let mut names: Vec<(usize, String)> = Vec::new();
-            for sig in &prog.module.signals {
-                if sig.name.starts_with(&prefix) {
-                    if let Ok(idx) = sig.name[prefix.len()..].parse::<usize>() {
-                        names.push((idx, sig.name.clone()));
-                    }
-                }
-            }
-            names.sort_by_key(|(i, _)| *i);
-            let mut ordered: Vec<String> = Vec::with_capacity(names.len());
-            for (_, n) in names.into_iter() {
-                ordered.push(n);
-            }
-            p.sr_signal_names.push(ordered);
-        }
-        // Reserve next_vals capacity to avoid per-tick reallocations.
-        let max_sr = p.sr_signal_names.iter().map(|v| v.len()).max().unwrap_or(0);
-        p.next_vals = Vec::with_capacity(max_sr);
-        Mutex::new(p)
+        // Build pools using the full init_pools helper so that the first call
+        // completes all allocation inside get_or_init (zero-alloc on subsequent calls).
+        Mutex::new(init_pools_for_program(prog, current_fingerprint))
     });
 
-    // Lock the initialized pools for this run. Locking should not allocate after init.
-    let mut pools_guard = pools_mutex.lock().unwrap();
+    // Lock pools with poison recovery (HIGH-04 fix).
+    let mut pools_guard = pools_mutex.lock().unwrap_or_else(|e| e.into_inner());
     maybe_hook("after_pools_lock");
+
+    // If the pools were initialized for a different program (or this is a subsequent
+    // call with a new module shape), reinitialize. This path only runs when the
+    // program shape genuinely changes — not on the normal hot path (HIGH-01 fix).
+    if pools_guard.program_fingerprint != current_fingerprint {
+        *pools_guard = init_pools_for_program(prog, current_fingerprint);
+    }
+
     let pools = &mut *pools_guard;
     // Clone clear reflex names Arc (cheap) so we don't hold an immutable borrow on `pools`.
     let clear_reflex_names_snapshot = pools.clear_reflex_names_snapshot.clone();

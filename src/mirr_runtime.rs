@@ -211,10 +211,20 @@ impl RuntimePools {
     }
 
     /// Clear per-tick transient containers prior to each tick.
-    pub fn clear_per_tick(&mut self) {
-        // Reset boolean and integer vectors in-place to avoid reallocations.
-        for v in &mut self.signal_vals {
-            *v = Value::Bool(false);
+    ///
+    /// IMPORTANT: This resets signal_vals to defaults. Callers MUST restore
+    /// persistent signal values from persistent_vals after calling this method,
+    /// otherwise internal signals that should survive across ticks will be lost.
+    /// The mirr_executor.rs RuntimePools.clear_per_tick() handles this correctly
+    /// by only resetting output signals and preserving persistent_env separately.
+    pub fn clear_per_tick(&mut self, output_indices: &[usize]) {
+        // Only reset output signal values to avoid nuking persistent internal
+        // signal state (HIGH-02 fix). Previously this reset ALL signal_vals to
+        // Bool(false), which would destroy internal signal persistence.
+        for &idx in output_indices {
+            if idx < self.signal_vals.len() {
+                self.signal_vals[idx] = Value::Bool(false);
+            }
         }
         for b in &mut self.guard_active {
             *b = false;

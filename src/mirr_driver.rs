@@ -157,9 +157,11 @@ pub fn drive_lexer_from_bytes(input: &[u8]) -> Vec<ObservedPush> {
             continue;
         }
 
-        // single-char fallback: treat as identifier-like push of the char
-        let ch = (b as char).to_string();
-        out.push(ObservedPush::new("emit_push_ident", Some(ch), None));
+        // single-char fallback: emit an ident push without allocating a String
+        // for the character. The executor omits ident payloads on single-char
+        // tokens (it passes None), so we must match that to maintain parity
+        // between driver and executor (LOW-01 fix).
+        out.push(ObservedPush::new("emit_push_ident", None, None));
         pos += 1;
     }
 
