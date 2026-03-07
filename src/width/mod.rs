@@ -12,6 +12,10 @@ pub mod flatten;
 pub mod constraint;
 pub mod solver;
 pub mod display;
+pub mod graph;
+pub mod scc;
+pub mod scc_solver;
+pub mod verify;
 
 use crate::ast::expr::Expr;
 use crate::ast::program::{Assignment, SignalDecl};
@@ -59,6 +63,9 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
                     nodes_analyzed: 0,
                     propagation_rounds: 0,
                     diagnostics_count: 1,
+                    scc_count: 0,
+                    expansive_count: 0,
+                    nonexpansive_count: 0,
                 },
             };
         }
@@ -82,6 +89,9 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
         nodes_analyzed: node_count,
         propagation_rounds: solve_result.rounds,
         diagnostics_count: all_diags.len(),
+        scc_count: 0,
+        expansive_count: 0,
+        nonexpansive_count: 0,
     };
 
     WidthInferenceResult {
@@ -186,6 +196,9 @@ pub fn infer_program_widths(
         nodes_analyzed: 0,
         propagation_rounds: 0,
         diagnostics_count: 0,
+        scc_count: 0,
+        expansive_count: 0,
+        nonexpansive_count: 0,
     };
 
     // Infer widths for guard conditions.
@@ -229,6 +242,146 @@ pub fn infer_program_widths(
         guard_results,
         assignment_results,
         stats: total_stats,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Public API: Phase 4b — SCC-based width inference
+// ---------------------------------------------------------------------------
+
+/// Result of SCC-based width analysis on an entire module.
+pub struct SccWidthResult {
+    /// Phase 4a results (per-expression inference).
+    pub phase4a: ProgramWidthResult,
+    /// Detected non-trivial SCCs with classification.
+    pub sccs: Vec<types::SccInfo>,
+    /// Per-SCC solve results (parallel to `sccs`).
+    pub scc_solves: Vec<(types::SccInfo, scc_solver::SccSolveResult)>,
+    /// Least-solution verification result.
+    pub verification: verify::VerifyResult,
+    /// Aggregate statistics including SCC info.
+    pub stats: WidthStats,
+    /// All diagnostics from SCC analysis.
+    pub scc_diagnostics: Vec<WidthDiag>,
+    /// Signal names that belong to any detected SCC.
+    /// Phase 4a truncation errors for these targets are suppressed
+    /// because Phase 4b owns their width determination.
+    pub scc_member_names: std::collections::HashSet<String>,
+}
+
+impl SccWidthResult {
+    /// Returns true if any non-suppressed diagnostic is an error.
+    ///
+    /// Phase 4a truncation errors for signals in SCCs are suppressed:
+    /// Phase 4b owns the width of SCC member signals, so Phase 4a's
+    /// acyclic truncation analysis does not apply to them.
+    pub fn has_errors(&self) -> bool {
+        // Guard errors always count (guards are never SCC members).
+        for (_, r) in &self.phase4a.guard_results {
+            if r.has_errors() {
+                return true;
+            }
+        }
+        // Assignment errors: suppress truncation errors for SCC member targets.
+        for (label, diags) in &self.phase4a.assignment_results {
+            let target = label.split('.').nth(1).unwrap_or(label.as_str());
+            let is_scc_member = self.scc_member_names.contains(target);
+            for d in diags {
+                if d.severity == DiagSeverity::Error {
+                    if is_scc_member && d.message.contains("truncates") {
+                        continue;
+                    }
+                    return true;
+                }
+            }
+        }
+        // SCC-level diagnostics.
+        if self.scc_diagnostics.iter().any(|d| d.severity == DiagSeverity::Error) {
+            return true;
+        }
+        // Verification diagnostics.
+        if self.verification.diagnostics.iter().any(|d| d.severity == DiagSeverity::Error) {
+            return true;
+        }
+        false
+    }
+}
+
+/// Run full Phase 4b SCC-based width inference on a MIRR module.
+///
+/// Pipeline: Phase 4a per-expression -> build graph -> find SCCs ->
+/// solve SCCs -> verify minimality.
+///
+/// Bounded: all steps are individually bounded.
+pub fn infer_program_widths_with_scc(
+    program: &crate::ast::MirrProgram,
+) -> SccWidthResult {
+    // Step 1: Run Phase 4a (per-expression inference).
+    let phase4a = infer_program_widths(program);
+
+    // Step 2: Build width dependency graph.
+    let dep_graph = graph::build_graph(program);
+
+    // Step 3: Find SCCs.
+    let scc_result = scc::find_sccs(&dep_graph);
+    let mut scc_diags = scc_result.diagnostics;
+
+    // Step 4: Solve each SCC.
+    let signals = &program.module.signals;
+    let guards = &program.module.guards;
+    let mut scc_solves: Vec<(types::SccInfo, scc_solver::SccSolveResult)> =
+        Vec::with_capacity(scc_result.sccs.len());
+
+    for scc_info in scc_result.sccs {
+        let solve_result = scc_solver::solve_scc(
+            &scc_info, signals, guards, program,
+        );
+        scc_diags.extend(solve_result.diagnostics.iter().cloned());
+        scc_solves.push((scc_info, solve_result));
+    }
+
+    // Step 5: Verify least solution.
+    let verification = verify::verify_least_solution(&scc_solves, signals);
+    scc_diags.extend(verification.diagnostics.iter().cloned());
+
+    // Aggregate stats.
+    let scc_count = scc_solves.len();
+    let expansive_count = scc_solves.iter()
+        .filter(|(s, _)| s.kind == types::SccKind::Expansive)
+        .count();
+    let nonexpansive_count = scc_count - expansive_count;
+
+    let stats = WidthStats {
+        nodes_analyzed: phase4a.stats.nodes_analyzed,
+        propagation_rounds: phase4a.stats.propagation_rounds,
+        diagnostics_count: phase4a.stats.diagnostics_count + scc_diags.len(),
+        scc_count,
+        expansive_count,
+        nonexpansive_count,
+    };
+
+    let sccs: Vec<types::SccInfo> = scc_solves.iter()
+        .map(|(s, _)| s.clone())
+        .collect();
+
+    // Collect SCC member signal names for truncation suppression.
+    let mut scc_member_names = std::collections::HashSet::new();
+    for (scc_info, _) in &scc_solves {
+        for &idx in &scc_info.signal_indices {
+            if let Some(s) = signals.get(idx) {
+                scc_member_names.insert(s.name.clone());
+            }
+        }
+    }
+
+    SccWidthResult {
+        phase4a,
+        sccs,
+        scc_solves,
+        verification,
+        stats,
+        scc_diagnostics: scc_diags,
+        scc_member_names,
     }
 }
 

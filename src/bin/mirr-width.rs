@@ -27,6 +27,7 @@ fn main() {
     }
 
     let show_stats = args.iter().any(|a| a == "--stats");
+    let scc_mode = args.iter().any(|a| a == "--scc");
     let input_path = args.iter().find(|a| !a.starts_with('-'));
 
     let input_path = match input_path {
@@ -46,14 +47,18 @@ fn main() {
     };
 
     if input_path.ends_with(".mirr") {
-        run_mirr_mode(&content, show_stats);
+        if scc_mode {
+            run_scc_mode(&content, show_stats);
+        } else {
+            run_mirr_mode(&content, show_stats);
+        }
     } else {
         run_json_mode(&content, show_stats);
     }
 }
 
 fn print_usage(is_error: bool) {
-    eprintln!("Usage: mirr-width <expr.json | program.mirr> [--stats]");
+    eprintln!("Usage: mirr-width <expr.json | program.mirr> [--stats] [--scc]");
     eprintln!();
     eprintln!("Modes:");
     eprintln!("  .json file  -- infer widths for a bare Expr JSON (no signals)");
@@ -61,6 +66,7 @@ fn print_usage(is_error: bool) {
     eprintln!();
     eprintln!("Flags:");
     eprintln!("  --stats     Print detailed inference statistics");
+    eprintln!("  --scc       Enable Phase 4b SCC analysis (requires .mirr input)");
     if is_error {
         process::exit(1);
     }
@@ -139,6 +145,53 @@ fn run_mirr_mode(content: &str, show_stats: bool) {
 
     for d in &all_diags {
         println!("  {}", d);
+    }
+
+    if show_stats {
+        eprintln!("[stats] {}", width::display::format_stats(&result.stats));
+    }
+
+    if result.has_errors() {
+        process::exit(1);
+    }
+}
+
+fn run_scc_mode(content: &str, show_stats: bool) {
+    let mut program = match parse_mirr(content) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("Parse error: {}", e);
+            process::exit(1);
+        }
+    };
+
+    // Run Phase 3 simplification on all expressions first.
+    simplify_program(&mut program);
+
+    // Run full Phase 4b SCC-based width inference.
+    let result = width::infer_program_widths_with_scc(&program);
+
+    // Print Phase 4a summary.
+    println!("MIRR Width Analysis (Phase 4b): {}", program.module.name);
+    println!("  Guards analyzed:      {}", result.phase4a.guard_results.len());
+    println!("  Assignments analyzed: {}", result.phase4a.assignment_results.len());
+
+    // Print SCC report.
+    let signal_names: Vec<String> = program.module.signals.iter()
+        .map(|s| s.name.clone())
+        .collect();
+    print!("{}", width::display::format_scc_report(&result.sccs, &signal_names));
+
+    // Print SCC diagnostics.
+    for d in &result.scc_diagnostics {
+        println!("  {}", d);
+    }
+
+    // Print verification result.
+    if result.verification.is_minimal {
+        println!("  Least solution: VERIFIED");
+    } else {
+        println!("  Least solution: FAILED (see diagnostics)");
     }
 
     if show_stats {

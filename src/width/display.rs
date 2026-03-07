@@ -5,7 +5,7 @@
 
 #![forbid(unsafe_code)]
 
-use super::types::{WidthExpr, WidthStats};
+use super::types::{SccInfo, SccKind, WidthExpr, WidthStats};
 
 /// Format a `WidthExpr` tree as a human-readable string with width annotations.
 ///
@@ -45,6 +45,9 @@ pub fn format_width_expr(expr: &WidthExpr) -> String {
                     });
                     work.push(FormatWork::Visit(right));
                     work.push(FormatWork::Visit(left));
+                }
+                WidthExpr::Prev { signal, delay, width } => {
+                    results.push(format!("prev({}, {}):{}", signal, delay, width));
                 }
             },
             FormatWork::CombineUnary { op, width } => {
@@ -91,7 +94,40 @@ fn format_binary_op(op: crate::ast::types::BinaryOp) -> String {
 /// Format a `WidthStats` as a summary line.
 pub fn format_stats(stats: &WidthStats) -> String {
     format!(
-        "nodes={} rounds={} diagnostics={}",
+        "nodes={} rounds={} diagnostics={} sccs={} expansive={} nonexpansive={}",
         stats.nodes_analyzed, stats.propagation_rounds, stats.diagnostics_count,
+        stats.scc_count, stats.expansive_count, stats.nonexpansive_count,
     )
+}
+
+/// Format an SCC report for display.
+///
+/// `signal_names` maps signal indices to their declared names.
+/// Bounded: iterates once over SCCs (max MAX_SIGNALS).
+pub fn format_scc_report(
+    sccs: &[SccInfo],
+    signal_names: &[String],
+) -> String {
+    if sccs.is_empty() {
+        return "No non-trivial SCCs detected.".to_string();
+    }
+    let mut out = String::with_capacity(256);
+    out.push_str(&format!("SCCs detected: {}\n", sccs.len()));
+    for (i, scc) in sccs.iter().enumerate() {
+        if i >= 256 {
+            out.push_str("  ... (truncated)\n");
+            break;
+        }
+        let kind_str = match scc.kind {
+            SccKind::Expansive => "expansive",
+            SccKind::Nonexpansive => "nonexpansive",
+        };
+        let names: Vec<&str> = scc.signal_indices.iter()
+            .filter_map(|&idx| signal_names.get(idx).map(|s| s.as_str()))
+            .collect();
+        out.push_str(&format!(
+            "  SCC {}: {} [{}]\n", i, kind_str, names.join(", ")
+        ));
+    }
+    out
 }

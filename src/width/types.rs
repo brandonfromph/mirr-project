@@ -52,6 +52,7 @@ pub enum WidthExpr {
     Signal { name: String, width: Width },
     Unary { op: UnaryOp, operand: Box<WidthExpr>, width: Width },
     Binary { op: BinaryOp, left: Box<WidthExpr>, right: Box<WidthExpr>, width: Width },
+    Prev { signal: String, delay: u64, width: Width },
 }
 
 impl WidthExpr {
@@ -61,7 +62,8 @@ impl WidthExpr {
             WidthExpr::Literal { width, .. }
             | WidthExpr::Signal { width, .. }
             | WidthExpr::Unary { width, .. }
-            | WidthExpr::Binary { width, .. } => *width,
+            | WidthExpr::Binary { width, .. }
+            | WidthExpr::Prev { width, .. } => *width,
         }
     }
 }
@@ -84,6 +86,35 @@ pub enum FlatNode {
     Signal { name: String },
     Unary { op: UnaryOp, operand: u32 },
     Binary { op: BinaryOp, left: u32, right: u32 },
+    Prev { signal: String, delay: u64 },
+}
+
+// ---------------------------------------------------------------------------
+// SCC types for Phase 4b
+// ---------------------------------------------------------------------------
+
+/// Maximum number of signals the SCC analyzer will process.
+pub const MAX_SIGNALS: usize = 1024;
+
+/// Maximum SCC size before emitting a hard error.
+pub const MAX_SCC_SIZE: usize = 64;
+
+/// Classification of a strongly connected component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SccKind {
+    /// Values can grow (contains Add, Mul, Shl on cycle path).
+    Expansive,
+    /// Values circulate but don't grow (Prev-only, And/Or/Xor, comparisons).
+    Nonexpansive,
+}
+
+/// Information about a detected SCC in the width dependency graph.
+#[derive(Debug, Clone)]
+pub struct SccInfo {
+    /// Indices of signals in this SCC (into the signal declarations array).
+    pub signal_indices: Vec<usize>,
+    /// Classification of this SCC.
+    pub kind: SccKind,
 }
 
 // ---------------------------------------------------------------------------
@@ -138,4 +169,10 @@ pub struct WidthStats {
     pub propagation_rounds: usize,
     /// Number of diagnostics emitted (errors + infos).
     pub diagnostics_count: usize,
+    /// Number of non-trivial SCCs detected (Phase 4b).
+    pub scc_count: usize,
+    /// Number of expansive SCCs.
+    pub expansive_count: usize,
+    /// Number of nonexpansive SCCs.
+    pub nonexpansive_count: usize,
 }

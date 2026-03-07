@@ -46,7 +46,7 @@ pub use executor::{ExecutionRecord, Executor};
 pub use knowledge::{AdaptationRecord, KnowledgeBase};
 pub use ltl::{PropertyResult, SignalPredicate, TemporalProperty};
 pub use monitor::{Monitor, RingBuffer};
-pub use planner::{ActionEntry, AdaptationAction, PlanResult, Planner};
+pub use planner::{ActionEntry, AdaptationAction, PlanResult, Planner, TriggerCondition};
 pub use sensor::{SensorConfig, SensorModel};
 
 // ---------------------------------------------------------------------------
@@ -208,35 +208,37 @@ impl MapeKSimulator {
         }
 
         // A — Analyze: check all temporal properties.
-        let violations = self.analyzer.violations(&self.monitor);
+        let all_results = self.analyzer.evaluate(&self.monitor);
+        let violation_count = all_results.iter().filter(|r| !r.satisfied).count();
 
-        if !violations.is_empty() {
+        if violation_count > 0 {
             self.total_violations = self.total_violations
-                .wrapping_add(violations.len() as u64);
+                .wrapping_add(violation_count as u64);
+        }
 
-            // P — Plan: select the best action for these violations.
-            let plan = self.planner.select(&violations);
+        // P — Plan: select the best action (checks both violations and
+        // satisfaction triggers based on each entry's trigger_on field).
+        let plan = self.planner.select(&all_results);
 
-            // E — Execute: apply the selected action.
-            if let Some(ref action) = plan.action {
-                let exec_record = self.executor.apply(action, &mut self.signal_env);
-                let trigger_idx = plan.trigger_property_idx.unwrap_or(0);
+        // E — Execute: apply the selected action.
+        if let Some(ref action) = plan.action {
+            let exec_record = self.executor.apply(action, &mut self.signal_env);
+            let trigger_idx = plan.trigger_property_idx.unwrap_or(0);
 
-                // K — Knowledge: record the adaptation.
-                let adaptation = AdaptationRecord::from_execution(
-                    current_tick,
-                    trigger_idx,
-                    &action.label(),
-                    &exec_record,
-                );
-                self.knowledge.record(adaptation);
-                self.total_adaptations = self.total_adaptations.wrapping_add(1);
+            // K — Knowledge: record the adaptation.
+            let adaptation = AdaptationRecord::from_execution(
+                current_tick,
+                trigger_idx,
+                &action.label(),
+                &exec_record,
+            );
+            self.knowledge.record(adaptation);
+            self.total_adaptations = self.total_adaptations.wrapping_add(1);
 
-                // Track emergency stop.
-                if self.executor.is_emergency_active() && !self.emergency_triggered {
-                    self.emergency_triggered = true;
-                    self.emergency_tick = Some(current_tick);
-                }
+            // Track emergency stop.
+            if self.executor.is_emergency_active() && !self.emergency_triggered {
+                self.emergency_triggered = true;
+                self.emergency_tick = Some(current_tick);
             }
         }
 

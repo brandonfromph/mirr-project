@@ -14,7 +14,7 @@ use std::process;
 use nasa_rust_project::mape_k::{
     self,
     AdaptationAction, SimConfig, SensorConfig, TemporalProperty,
-    SignalPredicate, ActionEntry, MapeKSimulator,
+    SignalPredicate, ActionEntry, MapeKSimulator, TriggerCondition,
 };
 
 fn main() {
@@ -140,13 +140,17 @@ fn neonatal_respirator_config() -> SimConfig {
             ),
         ],
         action_table: vec![
-            // On sustained low pressure (property 1): emergency stop.
+            // On sustained low pressure (property 1 satisfied): emergency stop.
+            // Persists(LessThan(50), 10) being *satisfied* means dangerously
+            // low pressure has held for 10 consecutive ticks.
             ActionEntry {
                 trigger_property_idx: 1,
                 action: AdaptationAction::EmergencyStop,
                 priority: 100,
+                trigger_on: TriggerCondition::OnSatisfaction,
             },
-            // On any pressure violation (property 0): set clamp signal.
+            // On any pressure violation (property 0 violated): log warning.
+            // Always(GreaterThan(50)) being *violated* means pressure dropped.
             ActionEntry {
                 trigger_property_idx: 0,
                 action: AdaptationAction::SetSignal {
@@ -154,6 +158,7 @@ fn neonatal_respirator_config() -> SimConfig {
                     value: 1,
                 },
                 priority: 50,
+                trigger_on: TriggerCondition::OnViolation,
             },
         ],
         window_size: 64,

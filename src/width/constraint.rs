@@ -107,6 +107,21 @@ pub fn generate_constraints(
                     id, *op, *left, *right, nodes, &mut constraints, &mut diagnostics,
                 );
             }
+            FlatNode::Prev { signal, .. } => {
+                // Prev has the same width as the referenced signal.
+                let declared = lookup_signal_width(signal, signals);
+                match declared {
+                    Some(w) => {
+                        constraints.push(WidthConstraint::Fixed { node: id, width: w });
+                    }
+                    None => {
+                        diagnostics.push(WidthDiag::error(format!(
+                            "prev signal '{}' has no declared width", signal
+                        )));
+                        constraints.push(WidthConstraint::Fixed { node: id, width: 1 });
+                    }
+                }
+            }
         }
     }
 

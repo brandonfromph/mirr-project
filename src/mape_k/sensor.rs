@@ -198,7 +198,7 @@ mod tests {
         let mut s = SensorModel::new(pressure_config(7));
         for _ in 0..1000 {
             let v = s.sample();
-            assert!(v >= 115 && v <= 125, "value {v} outside expected range");
+            assert!((115..=125).contains(&v), "value {v} outside expected range");
         }
     }
 
@@ -217,7 +217,7 @@ mod tests {
         // First 10 ticks: normal (around 100).
         for _ in 0..10 {
             let v = s.sample();
-            assert!(v >= 95 && v <= 105, "pre-fault value {v} unexpected");
+            assert!((95..=105).contains(&v), "pre-fault value {v} unexpected");
         }
         // From tick 10 onward: fault value = 0.
         for _ in 10..20 {

@@ -50,7 +50,7 @@ fn count_nodes(expr: &Expr) -> usize {
         }
         count += 1;
         match e {
-            Expr::Literal(_) | Expr::Signal(_) => {}
+            Expr::Literal(_) | Expr::Signal(_) | Expr::Prev { .. } => {}
             Expr::Unary { operand, .. } => stack.push(operand),
             Expr::Binary { left, right, .. } => {
                 stack.push(left);
@@ -251,7 +251,7 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
         }
         match item {
             WorkItem::Descend(e) => match e {
-                Expr::Literal(_) | Expr::Signal(_) => {
+                Expr::Literal(_) | Expr::Signal(_) | Expr::Prev { .. } => {
                     results.push(e);
                 }
                 Expr::Unary { op, operand } => {

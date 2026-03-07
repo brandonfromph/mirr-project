@@ -22,4 +22,11 @@ pub enum Expr {
         left: Box<Expr>,
         right: Box<Expr>,
     },
+    /// Previous-tick reference: reads `signal` at tick `t - delay`.
+    /// In hardware, this maps to a register chain of length `delay`.
+    /// `delay` must be >= 1 (enforced by validation).
+    Prev {
+        signal: String,
+        delay: u64,
+    },
 }

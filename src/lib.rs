@@ -21,6 +21,8 @@ pub mod mirr_driver;
 pub mod mirr_executor;
 pub mod width;
 pub mod mape_k;
+pub mod pipeline;
+pub mod emit;
 
 // Top-level re-exports for ergonomic access.
 pub use ast::{MirrAstJson, MirrProgram};
@@ -32,3 +34,5 @@ pub use simplify::SimplifyStats;
 pub use temporal::{TemporalGuardCompiler, low_level_ir::TemporalNetlist, low_level_ir::TemporalNetlistJson};
 pub use width::types::{WidthStats, WidthDiag, WidthExpr};
 pub use mape_k::{MapeKSimulator, SimConfig, SimResult};
+pub use pipeline::{PipelineConfig, PipelineResult, run_pipeline};
+pub use emit::json_netlist::JsonNetlist;

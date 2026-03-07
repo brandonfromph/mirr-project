@@ -16,6 +16,7 @@ use nasa_rust_project::mape_k::{
     ActionEntry, AdaptationAction, Analyzer, Executor, KnowledgeBase,
     MapeKSimulator, Monitor, Planner, PropertyResult, RingBuffer,
     SensorConfig, SensorModel, SignalPredicate, SimConfig, TemporalProperty,
+    TriggerCondition,
 };
 use std::collections::HashMap;
 
@@ -222,11 +223,13 @@ fn planner_selects_highest_priority() {
             trigger_property_idx: 0,
             action: AdaptationAction::SetSignal { name: "a".into(), value: 1 },
             priority: 5,
+            trigger_on: TriggerCondition::OnViolation,
         },
         ActionEntry {
             trigger_property_idx: 0,
             action: AdaptationAction::EmergencyStop,
             priority: 100,
+            trigger_on: TriggerCondition::OnViolation,
         },
     ]);
     let result = planner.select(&[violation(0)]);
@@ -240,6 +243,7 @@ fn planner_no_match_returns_none() {
             trigger_property_idx: 5,
             action: AdaptationAction::EmergencyStop,
             priority: 10,
+            trigger_on: TriggerCondition::OnViolation,
         },
     ]);
     let result = planner.select(&[violation(0)]);
@@ -253,11 +257,13 @@ fn planner_multiple_violations_picks_best() {
             trigger_property_idx: 0,
             action: AdaptationAction::SetSignal { name: "a".into(), value: 1 },
             priority: 10,
+            trigger_on: TriggerCondition::OnViolation,
         },
         ActionEntry {
             trigger_property_idx: 1,
             action: AdaptationAction::EmergencyStop,
             priority: 50,
+            trigger_on: TriggerCondition::OnViolation,
         },
     ]);
     let result = planner.select(&[violation(0), violation(1)]);
@@ -394,6 +400,7 @@ fn neonatal_config() -> SimConfig {
                 value: 1,
             },
             priority: 10,
+            trigger_on: TriggerCondition::OnViolation,
         }],
         window_size: 64,
         knowledge_capacity: 100,
@@ -465,6 +472,7 @@ fn emergency_stop_halts_simulation() {
             trigger_property_idx: 0,
             action: AdaptationAction::EmergencyStop,
             priority: 100,
+            trigger_on: TriggerCondition::OnViolation,
         }],
         window_size: 32,
         knowledge_capacity: 100,
@@ -518,11 +526,13 @@ fn multi_property_multi_action_scenario() {
                     value: 1,
                 },
                 priority: 50,
+                trigger_on: TriggerCondition::OnViolation,
             },
             ActionEntry {
                 trigger_property_idx: 1,
                 action: AdaptationAction::EmergencyStop,
                 priority: 100,
+                trigger_on: TriggerCondition::OnViolation,
             },
         ],
         window_size: 32,

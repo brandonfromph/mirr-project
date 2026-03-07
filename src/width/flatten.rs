@@ -25,6 +25,7 @@ enum FlatWork<'a> {
     EmitSignal { name: &'a str },
     EmitUnary { op: crate::ast::types::UnaryOp },
     EmitBinary { op: crate::ast::types::BinaryOp },
+    EmitPrev { signal: &'a str, delay: u64 },
 }
 
 /// Flatten an `Expr` tree into a `Vec<FlatNode>` in post-order.
@@ -71,6 +72,9 @@ pub fn flatten_expr(expr: &Expr) -> Option<Vec<FlatNode>> {
                     work.push(FlatWork::Visit(right));
                     work.push(FlatWork::Visit(left));
                 }
+                Expr::Prev { signal, delay } => {
+                    work.push(FlatWork::EmitPrev { signal, delay: *delay });
+                }
             },
             FlatWork::EmitLiteral { value } => {
                 let idx = nodes.len();
@@ -109,6 +113,14 @@ pub fn flatten_expr(expr: &Expr) -> Option<Vec<FlatNode>> {
                     return None;
                 }
                 nodes.push(FlatNode::Binary { op, left: left_idx, right: right_idx });
+                idx_stack.push(idx as u32);
+            }
+            FlatWork::EmitPrev { signal, delay } => {
+                let idx = nodes.len();
+                if idx >= MAX_FLAT_NODES {
+                    return None;
+                }
+                nodes.push(FlatNode::Prev { signal: signal.to_string(), delay });
                 idx_stack.push(idx as u32);
             }
         }
@@ -169,6 +181,9 @@ pub fn reconstruct_width_expr(nodes: &[FlatNode], widths: &[Width]) -> Option<Wi
                     right: Box::new(right_expr),
                     width: w,
                 }
+            }
+            FlatNode::Prev { signal, delay } => {
+                WidthExpr::Prev { signal: signal.clone(), delay: *delay, width: w }
             }
         };
         built.push(Some(we));

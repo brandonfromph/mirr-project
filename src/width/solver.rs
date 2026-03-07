@@ -186,6 +186,7 @@ fn node_description(idx: usize, nodes: &[FlatNode]) -> String {
         Some(FlatNode::Signal { name }) => format!("signal '{}'", name),
         Some(FlatNode::Unary { op, .. }) => format!("{:?}", op),
         Some(FlatNode::Binary { op, .. }) => format!("{:?}", op),
+        Some(FlatNode::Prev { signal, delay }) => format!("prev('{}', {})", signal, delay),
         None => "unknown".to_string(),
     }
 }

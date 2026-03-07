@@ -177,18 +177,26 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - `mirr-width` CLI runs simplification automatically before inference.
   - 67 integration tests across 13 categories, every diagnostic message pinned by exact text.
 
-- **Scope (Phase 4b — FIRWINE Complete):**
-  - **Strongly Connected Component (SCC) detection** in width constraint graph — required for loops like `x <= x + 1` (accumulators, counters, state machines, shift registers).
-  - **Expansive SCCs** (values can grow — counters, accumulators): Branch-and-Bound algorithm to find smallest width satisfying loop constraints without overflow.
-  - **Nonexpansive SCCs** (values circulate but don't grow — state machine encoding, shift registers): modified Floyd-Warshall algorithm for fixed-point width where constraints stabilize.
-  - **Unique Least Solution verification:** confirm solver finds the mathematically optimal minimum, not just any valid width.
-  - **Semantic Guard Wrappers:** pre-synthesis assertions defining "Physiological Plausibility" for input signals — maximum rates of change, absolute physical bounds (e.g., human heart rate cannot exceed 300 bpm). Protects against valid-but-incorrect data from sensor failure (e.g., disconnected sensor reading as valid "0"). Extends FIRWINE beyond arithmetic overflow into semantic data integrity.
+- **Scope (Phase 4b — FIRWINE Complete, Completed):**
+  - **`Expr::Prev { signal, delay }`** — new IR variant for temporal back-references (shift registers, accumulators). Delay ≥ 1 enforced by semantic validation. Wired through executor, semantic validator, all width pass stages, simplifier, and MAPE-K harness.
+  - **Width Dependency Graph** (`src/width/graph.rs`) — directed graph tracking signal-to-signal width dependencies through all reflex assignment RHS expressions, including `Prev` back-edges that create cycles.
+  - **Iterative Tarjan's SCC** (`src/width/scc.rs`) — finds strongly connected components; O(V+E), bounded by `MAX_SIGNALS = 1024`. All traversal via explicit work stack, zero recursion (NASA P10).
+  - **SCC classification:** Expansive (cycle path contains `Add`, `Mul`, or `Shl` — values can grow), Nonexpansive (cycle contains only `Prev`, bitwise ops, comparisons — values circulate but don't grow).
+  - **Nonexpansive solver** (`src/width/scc_solver.rs`) — Floyd-Warshall fixpoint: all signals in the SCC converge to the maximum declared width among members. Bounded by `MAX_SCC_SIZE² = 4096` iterations.
+  - **Expansive solver** — guard-bound inference: extracts upper bound from guard cycle-count annotations, computes `min_bits_for(bound)`. Hard error (reject compilation) if no bound is provable — no silent u64 default.
+  - **Unique Least Solution verification** (`src/width/verify.rs`) — confirms each solved width is not over-wide relative to declared signal types; emits COMPILER BUG diagnostic if minimality is violated.
+  - **`scc_member_names: HashSet<String>`** in `SccWidthResult` — correct Phase 4a/4b diagnostic split. Phase 4a correctly flags `prev(counter)+1` as truncation; Phase 4b suppresses that error for SCC-member targets since it owns their width determination.
+  - **`--scc` flag** added to `mirr-width` CLI — activates the full Phase 4b pipeline.
+  - 4 new modules (`graph.rs`, `scc.rs`, `scc_solver.rs`, `verify.rs`), 10 files total in `src/width/`, 38 new integration tests across 9 categories (105 total for Phase 4).
 
-**Result artifact:** CLI tool `mirr-width` that computes widths, reports unsafe truncations, and emits a fully width-annotated IR/netlist.
+- **Scope (Phase 4c — Semantic Guard Wrappers, Future):**
+  - Pre-synthesis assertions defining "Physiological Plausibility" for input signals — maximum rates of change, absolute physical bounds (e.g., human heart rate cannot exceed 300 bpm). Protects against valid-but-incorrect data from sensor failure (e.g., disconnected sensor reading as valid "0"). Extends FIRWINE beyond arithmetic overflow into semantic data integrity.
+
+**Result artifact:** CLI tool `mirr-width` that computes widths, reports unsafe truncations, detects cyclic width dependencies via SCC analysis, and emits a fully width-annotated IR/netlist.
 
 ---
 
-## Phase 5 – MAPE-K Simulation Harness (Not Started)
+## Phase 5 – MAPE-K Simulation Harness (semi-Completed)
 
 - **Goal:** Simulate the Monitor–Analyze–Plan–Execute–Knowledge (MAPE-K) loop for clinical and safety-critical scenarios — transitioning R-SPU from "hardware as a resource" to "hardware as an agent."
 
@@ -343,3 +351,81 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 - Sayeed, M.A. et al. (2024). Real-time multi-channel epileptic seizure detection. Sensors, 24(22), 7175.
 - Kwon, S. et al. (2021). Non-contact respiratory monitoring using an RGB camera. Sensors, 21(16), 5429.
 - Sunkavilli, S. et al. (2022). DPReDO: DPR-enabled design obfuscation for FPGA security. IEEE SOCC 2022.
+
+---
+
+## Repository Structure
+
+```text
+.
+├── src/
+│   ├── main.rs                    # CLI entrypoint
+│   ├── lib.rs                     # Public API / module exports
+│   ├── error.rs                   # Shared error types
+│   ├── bootstrap_runner.rs        # Self-host bootstrap pipeline
+│   ├── simplify.rs                # Logic simplifier — 33 algebraic rules (Phase 3)
+│   ├── mirr_executor.rs           # Signal evaluator used by MAPE-K harness (Phase 5)
+│   ├── bin/
+│   │   ├── mirr-simplify.rs       # Standalone simplifier CLI
+│   │   ├── mirr-width.rs          # Bit-width inference CLI; --scc enables Phase 4b
+│   │   ├── mirr-simulate.rs       # MAPE-K simulation harness CLI (Phase 5)
+│   │   └── generate_mirr_stress.rs
+│   ├── ast/
+│   │   ├── types.rs
+│   │   ├── expr.rs                # Includes Expr::Prev for temporal back-references
+│   │   └── program.rs
+│   ├── lexer/
+│   │   └── tokenizer.rs
+│   ├── parser/
+│   │   ├── expr_parser.rs
+│   │   └── module_parser.rs
+│   ├── validation/
+│   │   └── semantic.rs
+│   ├── temporal/
+│   │   ├── compiler.rs
+│   │   ├── emit.rs
+│   │   └── low_level_ir.rs
+│   ├── width/                     # FIRWINE bit-width inference (Phase 4)
+│   │   ├── mod.rs                 # Pipeline entry; SccWidthResult and has_errors()
+│   │   ├── types.rs               # FlatNode, WidthExpr, SccInfo, WidthStats
+│   │   ├── flatten.rs             # Expression flattening including Prev back-edges
+│   │   ├── constraint.rs          # Constraint generation from flat nodes
+│   │   ├── solver.rs              # Acyclic constraint propagation (Phase 4a)
+│   │   ├── display.rs             # Human-readable width and SCC reports
+│   │   ├── graph.rs               # Width dependency graph construction (Phase 4b)
+│   │   ├── scc.rs                 # Iterative Tarjan's SCC detection (Phase 4b)
+│   │   ├── scc_solver.rs          # Expansive/nonexpansive SCC solvers (Phase 4b)
+│   │   └── verify.rs              # Unique least solution verification (Phase 4b)
+│   └── mape_k/                    # MAPE-K adaptive simulation harness (Phase 5)
+│       ├── mod.rs
+│       ├── monitor.rs
+│       ├── analyzer.rs
+│       ├── planner.rs
+│       └── sensor.rs
+├── tests/
+│   ├── *_tests.rs                 # Unit/integration suites
+│   └── fixtures/
+├── compiler_mirr/                 # MIRR-in-MIRR self-hosting port (incremental)
+├── stdlib/mirr_core/              # Standard library primitives in MIRR
+├── examples/
+│   └── neonatal_respirator.mirr
+├── docs/
+│   ├── roadmap.md                 # This file
+│   ├── mirr_spec.md
+│   └── ...
+└── mcp_server/                    # TypeScript MCP stdio server
+```
+
+### Where to make changes
+
+| Area | Files |
+|---|---|
+| Syntax / tokens | `src/lexer/*`, `src/parser/*` |
+| AST / data model | `src/ast/*`; temporal back-refs: `Expr::Prev` in `expr.rs` |
+| Semantic rules | `src/validation/semantic.rs` |
+| Temporal lowering | `src/temporal/*` |
+| Logic simplification | `src/simplify.rs` |
+| Bit-width inference (acyclic) | `src/width/solver.rs`, `constraint.rs`, `flatten.rs` |
+| Bit-width inference (cyclic SCC) | `src/width/graph.rs`, `scc.rs`, `scc_solver.rs`, `verify.rs` |
+| MAPE-K harness | `src/mape_k/`, `src/mirr_executor.rs` |
+| Self-hosting pipeline | `src/bootstrap_runner.rs` |

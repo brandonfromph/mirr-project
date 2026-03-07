@@ -114,6 +114,10 @@ fn eval_expr(e: &Expr, env_get: &impl Fn(&str) -> Value) -> Value {
         E::Literal(LiteralValue::Bool(b)) => Value::Bool(*b),
         E::Literal(LiteralValue::Integer(i)) => Value::Integer(*i),
         E::Signal(name) => env_get(name),
+        // Prev references read the signal from a previous tick. In the
+        // current executor model, previous-tick state is already in the
+        // environment (persisted by the tick loop). Return it directly.
+        E::Prev { signal, .. } => env_get(signal),
         E::Unary { op, operand } => {
             let v = eval_expr(operand, env_get);
             match op {

@@ -53,19 +53,32 @@ impl AdaptationAction {
     }
 }
 
+/// Whether to trigger on property violation or satisfaction.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TriggerCondition {
+    /// Fire when the property is violated (safety invariant broken).
+    #[default]
+    OnViolation,
+    /// Fire when the property is satisfied (dangerous condition detected).
+    OnSatisfaction,
+}
+
 // ---------------------------------------------------------------------------
 // Action table entry
 // ---------------------------------------------------------------------------
 
-/// A mapping from a property violation to an adaptation action.
+/// A mapping from a property evaluation result to an adaptation action.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActionEntry {
     /// Index of the property in the analyzer's property list.
     pub trigger_property_idx: usize,
-    /// Action to take when this property is violated.
+    /// Action to take when the trigger condition is met.
     pub action: AdaptationAction,
     /// Priority (higher value wins ties). Range 0..=255.
     pub priority: u8,
+    /// Whether to trigger on violation or satisfaction.
+    #[serde(default)]
+    pub trigger_on: TriggerCondition,
 }
 
 // ---------------------------------------------------------------------------
@@ -106,19 +119,25 @@ impl Planner {
         self.entries.len()
     }
 
-    /// Select the highest-priority action matching any violated property.
+    /// Select the highest-priority action matching any triggered condition.
     ///
-    /// `violations` should contain only the violated `PropertyResult`s
-    /// (i.e., those with `satisfied == false`).
+    /// `results` should contain all `PropertyResult`s from the analyzer.
+    /// Each action entry specifies whether it triggers on violation or
+    /// satisfaction via `trigger_on`.
     ///
     /// Bounded: linear scan over entries (max MAX_ACTION_ENTRIES).
-    pub fn select(&self, violations: &[PropertyResult]) -> PlanResult {
+    pub fn select(&self, results: &[PropertyResult]) -> PlanResult {
         let mut best: Option<(usize, u8, usize)> = None; // (entry_idx, priority, prop_idx)
 
         for (eidx, entry) in self.entries.iter().enumerate() {
-            // Check if this entry's trigger property is among the violations.
-            let triggered = violations.iter().any(|v| {
-                !v.satisfied && v.property_idx == entry.trigger_property_idx
+            let triggered = results.iter().any(|r| {
+                if r.property_idx != entry.trigger_property_idx {
+                    return false;
+                }
+                match entry.trigger_on {
+                    TriggerCondition::OnViolation => !r.satisfied,
+                    TriggerCondition::OnSatisfaction => r.satisfied,
+                }
             });
 
             if triggered {
@@ -169,6 +188,7 @@ mod tests {
                 trigger_property_idx: 0,
                 action: AdaptationAction::EmergencyStop,
                 priority: 10,
+                trigger_on: TriggerCondition::OnViolation,
             },
         ]);
         let result = planner.select(&[violation(0)]);
@@ -184,11 +204,13 @@ mod tests {
                     name: "low".to_string(), value: 1,
                 },
                 priority: 5,
+                trigger_on: TriggerCondition::OnViolation,
             },
             ActionEntry {
                 trigger_property_idx: 0,
                 action: AdaptationAction::EmergencyStop,
                 priority: 20,
+                trigger_on: TriggerCondition::OnViolation,
             },
         ]);
         let result = planner.select(&[violation(0)]);
@@ -203,6 +225,7 @@ mod tests {
                 trigger_property_idx: 5,
                 action: AdaptationAction::EmergencyStop,
                 priority: 10,
+                trigger_on: TriggerCondition::OnViolation,
             },
         ]);
         let result = planner.select(&[violation(0)]); // violation is for prop 0
@@ -218,16 +241,37 @@ mod tests {
                     name: "a".to_string(), value: 1,
                 },
                 priority: 5,
+                trigger_on: TriggerCondition::OnViolation,
             },
             ActionEntry {
                 trigger_property_idx: 1,
                 action: AdaptationAction::EmergencyStop,
                 priority: 20,
+                trigger_on: TriggerCondition::OnViolation,
             },
         ]);
         let result = planner.select(&[violation(0), violation(1)]);
         assert_eq!(result.action, Some(AdaptationAction::EmergencyStop));
         assert_eq!(result.trigger_property_idx, Some(1));
+    }
+
+    #[test]
+    fn select_on_satisfaction() {
+        let planner = Planner::new(vec![
+            ActionEntry {
+                trigger_property_idx: 0,
+                action: AdaptationAction::EmergencyStop,
+                priority: 10,
+                trigger_on: TriggerCondition::OnSatisfaction,
+            },
+        ]);
+        let satisfied = PropertyResult {
+            property_idx: 0,
+            satisfied: true,
+            evidence_tick: Some(5),
+        };
+        let result = planner.select(&[satisfied]);
+        assert_eq!(result.action, Some(AdaptationAction::EmergencyStop));
     }
 
     #[test]
