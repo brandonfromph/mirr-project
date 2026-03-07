@@ -119,7 +119,10 @@ fn parse_always_complex_both_sides() {
 fn parse_property_missing_keyword_error() {
     let src = wrap_property("property p1 {\n    sometimes (x);\n}");
     let msg = parse_err(&src);
-    assert!(msg.contains("must start with 'always'") || msg.contains("must start with"), "Unexpected error: {msg}");
+    assert!(
+        msg.contains("must start with 'always'") || msg.contains("must start with"),
+        "Unexpected error: {msg}"
+    );
 }
 
 #[test]
@@ -151,7 +154,10 @@ module m {
 fn parse_property_empty_formula_error() {
     let src = wrap_property("property p1 {\n}");
     let msg = parse_err(&src);
-    assert!(msg.contains("must start with 'always'") || msg.contains("must start with"), "Unexpected error: {msg}");
+    assert!(
+        msg.contains("must start with 'always'") || msg.contains("must start with"),
+        "Unexpected error: {msg}"
+    );
 }
 
 #[test]

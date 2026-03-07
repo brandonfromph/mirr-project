@@ -8,9 +8,9 @@
 //! 51 tests total.
 
 use nasa_rust_project::ast::expr::Expr;
+use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
 use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use nasa_rust_project::{run_pipeline, validate_module, PipelineConfig};
 
 // ---------------------------------------------------------------------------
@@ -124,9 +124,7 @@ module m {{
 fn mirr_with_properties(properties: &[(&str, &str)]) -> String {
     let mut props = String::new();
     for (name, formula_line) in properties {
-        props.push_str(&format!(
-            "\n    property {name} {{\n        {formula_line}\n    }}\n"
-        ));
+        props.push_str(&format!("\n    property {name} {{\n        {formula_line}\n    }}\n"));
     }
     format!(
         r#"
@@ -182,10 +180,7 @@ fn directive_clone_eq() {
 
 #[test]
 fn never_implies_fields() {
-    let f = PropertyFormula::NeverImplies {
-        antecedent: sig("a"),
-        consequent: sig("b"),
-    };
+    let f = PropertyFormula::NeverImplies { antecedent: sig("a"), consequent: sig("b") };
     match f {
         PropertyFormula::NeverImplies { antecedent, consequent } => {
             assert_eq!(antecedent, sig("a"));
@@ -226,10 +221,7 @@ fn always_followed_by_fields() {
 
 #[test]
 fn exprs_never_implies_returns_two() {
-    let f = PropertyFormula::NeverImplies {
-        antecedent: sig("a"),
-        consequent: sig("b"),
-    };
+    let f = PropertyFormula::NeverImplies { antecedent: sig("a"), consequent: sig("b") };
     assert_eq!(f.exprs().len(), 2);
 }
 
@@ -255,10 +247,7 @@ fn exprs_always_followed_by_returns_two() {
 
 #[test]
 fn exprs_mut_never_implies_modifiable() {
-    let mut f = PropertyFormula::NeverImplies {
-        antecedent: sig("a"),
-        consequent: sig("b"),
-    };
+    let mut f = PropertyFormula::NeverImplies { antecedent: sig("a"), consequent: sig("b") };
     let mut exprs = f.exprs_mut();
     assert_eq!(exprs.len(), 2);
     *exprs[0] = sig("c");
@@ -318,10 +307,7 @@ fn parse_cover_never() {
     let src = mirr_with_property("cover never (x > 100);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Cover);
-    assert!(matches!(
-        result.program.module.properties[0].formula,
-        PropertyFormula::Never(_)
-    ));
+    assert!(matches!(result.program.module.properties[0].formula, PropertyFormula::Never(_)));
 }
 
 #[test]
@@ -340,10 +326,7 @@ fn parse_cover_shorthand_parens() {
     let src = mirr_with_property("cover (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Cover);
-    assert!(matches!(
-        result.program.module.properties[0].formula,
-        PropertyFormula::Always(_)
-    ));
+    assert!(matches!(result.program.module.properties[0].formula, PropertyFormula::Always(_)));
 }
 
 // ===========================================================================
@@ -426,20 +409,14 @@ fn eventually_within_missing_within_rejected() {
     let src = mirr_with_property("eventually (y);");
     let err = run_pipeline_expect_err(&src);
     let msg = err.to_string();
-    assert!(
-        msg.contains("eventually within"),
-        "Expected 'eventually within' error, got: {msg}"
-    );
+    assert!(msg.contains("eventually within"), "Expected 'eventually within' error, got: {msg}");
 }
 
 #[test]
 fn eventually_within_validation_passes() {
     let module = module_with_properties(vec![prop(
         "ok",
-        PropertyFormula::EventuallyWithin {
-            expr: sig("alarm"),
-            cycles: 10,
-        },
+        PropertyFormula::EventuallyWithin { expr: sig("alarm"), cycles: 10 },
     )]);
     validate_module(&module).expect("EventuallyWithin should pass validation");
 }
@@ -586,10 +563,7 @@ fn json_never_implies_kind() {
     let src = mirr_with_property("never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let json = nasa_rust_project::emit::json_netlist::emit_json(&result).unwrap();
-    assert!(
-        json.contains("\"never_implies\""),
-        "Expected 'never_implies' kind in JSON: {json}"
-    );
+    assert!(json.contains("\"never_implies\""), "Expected 'never_implies' kind in JSON: {json}");
 }
 
 #[test]
@@ -597,10 +571,7 @@ fn json_eventually_within_kind() {
     let src = mirr_with_property("eventually within 7 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let json = nasa_rust_project::emit::json_netlist::emit_json(&result).unwrap();
-    assert!(
-        json.contains("\"eventually_within\""),
-        "Expected 'eventually_within' kind: {json}"
-    );
+    assert!(json.contains("\"eventually_within\""), "Expected 'eventually_within' kind: {json}");
 }
 
 #[test]
@@ -608,10 +579,7 @@ fn json_always_followed_by_kind() {
     let src = mirr_with_property("always (x > 100 followed_by 3 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let json = nasa_rust_project::emit::json_netlist::emit_json(&result).unwrap();
-    assert!(
-        json.contains("\"always_followed_by\""),
-        "Expected 'always_followed_by' kind: {json}"
-    );
+    assert!(json.contains("\"always_followed_by\""), "Expected 'always_followed_by' kind: {json}");
 }
 
 // ===========================================================================
@@ -623,10 +591,7 @@ fn firrtl_property_comment_assert() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
-    assert!(
-        firrtl.contains("; property p:"),
-        "Expected FIRRTL property comment: {firrtl}"
-    );
+    assert!(firrtl.contains("; property p:"), "Expected FIRRTL property comment: {firrtl}");
 }
 
 #[test]
@@ -660,10 +625,7 @@ fn dot_assert_property_fillcolor() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let dot = nasa_rust_project::emit::dot::emit_module_dot(&result);
-    assert!(
-        dot.contains("fillcolor=lightblue"),
-        "Expected lightblue for assert property: {dot}"
-    );
+    assert!(dot.contains("fillcolor=lightblue"), "Expected lightblue for assert property: {dot}");
 }
 
 #[test]
@@ -784,10 +746,7 @@ fn prev_zero_delay_in_never_implies_antecedent_rejected() {
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
@@ -801,27 +760,18 @@ fn prev_zero_delay_in_never_implies_consequent_rejected() {
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
 fn prev_zero_delay_in_eventually_within_rejected() {
     let module = module_with_properties(vec![prop(
         "bad",
-        PropertyFormula::EventuallyWithin {
-            expr: gt(prev("sensor", 0), 50),
-            cycles: 10,
-        },
+        PropertyFormula::EventuallyWithin { expr: gt(prev("sensor", 0), 50), cycles: 10 },
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
@@ -836,10 +786,7 @@ fn prev_zero_delay_in_followed_by_trigger_rejected() {
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
@@ -854,10 +801,7 @@ fn prev_zero_delay_in_followed_by_response_rejected() {
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
@@ -872,10 +816,7 @@ fn prev_valid_delay_in_new_variants_passes() {
         ),
         prop(
             "ok2",
-            PropertyFormula::EventuallyWithin {
-                expr: gt(prev("sensor", 2), 50),
-                cycles: 10,
-            },
+            PropertyFormula::EventuallyWithin { expr: gt(prev("sensor", 2), 50), cycles: 10 },
         ),
         prop(
             "ok3",

@@ -57,13 +57,11 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     let header = collect_def_header(lines, index)?;
 
     // Extract name and param string from header.
-    let after_def = header
-        .strip_prefix("def ")
-        .ok_or_else(|| pattern_err("Malformed pattern definition."))?;
+    let after_def =
+        header.strip_prefix("def ").ok_or_else(|| pattern_err("Malformed pattern definition."))?;
 
-    let open_paren = after_def
-        .find('(')
-        .ok_or_else(|| pattern_err("Pattern definition missing '('."))?;
+    let open_paren =
+        after_def.find('(').ok_or_else(|| pattern_err("Pattern definition missing '('."))?;
 
     let name = after_def[..open_paren].trim();
     if name.is_empty() {
@@ -193,17 +191,13 @@ fn parse_pattern_params(param_str: &str, name: &str) -> Result<Vec<PatternParam>
 
 /// Parse a single parameter declaration like `sensor: signal in u16` or `low: u16`.
 fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, MirrError> {
-    let (name_part, type_part) = param_str
-        .split_once(':')
-        .ok_or_else(|| pattern_err(format!(
-            "Pattern '{def_name}' parameter missing ':': {param_str}"
-        )))?;
+    let (name_part, type_part) = param_str.split_once(':').ok_or_else(|| {
+        pattern_err(format!("Pattern '{def_name}' parameter missing ':': {param_str}"))
+    })?;
 
     let pname = name_part.trim();
     if pname.is_empty() {
-        return Err(pattern_err(format!(
-            "Pattern '{def_name}' has parameter with empty name."
-        )));
+        return Err(pattern_err(format!("Pattern '{def_name}' has parameter with empty name.")));
     }
 
     let type_str = type_part.trim();
@@ -213,11 +207,11 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
         let rest = after_signal.trim();
         let mut tokens = rest.split_whitespace();
 
-        let kind_str = tokens
-            .next()
-            .ok_or_else(|| pattern_err(format!(
+        let kind_str = tokens.next().ok_or_else(|| {
+            pattern_err(format!(
                 "Pattern '{def_name}' signal parameter '{pname}' missing direction."
-            )))?;
+            ))
+        })?;
 
         let kind = match kind_str {
             "in" => SignalKind::Input,
@@ -230,11 +224,9 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
             }
         };
 
-        let ty_str = tokens
-            .next()
-            .ok_or_else(|| pattern_err(format!(
-                "Pattern '{def_name}' signal parameter '{pname}' missing type."
-            )))?;
+        let ty_str = tokens.next().ok_or_else(|| {
+            pattern_err(format!("Pattern '{def_name}' signal parameter '{pname}' missing type."))
+        })?;
 
         let ty = parse_signal_type(ty_str, def_name, pname)?;
 
@@ -313,9 +305,7 @@ fn collect_reflect_body(
         line_count += 1;
     }
 
-    Err(pattern_err(format!(
-        "Pattern '{name}' reflect block not closed with '}}'."
-    )))
+    Err(pattern_err(format!("Pattern '{name}' reflect block not closed with '}}'.")))
 }
 
 // ---------------------------------------------------------------------------
@@ -367,9 +357,7 @@ pub fn parse_pattern_call(line: &str) -> Result<PatternCall, MirrError> {
         .trim();
 
     // Find the opening paren.
-    let open = without_semi
-        .find('(')
-        .ok_or_else(|| pattern_err("Pattern call missing '('."))?;
+    let open = without_semi.find('(').ok_or_else(|| pattern_err("Pattern call missing '('."))?;
 
     let pattern_name = without_semi[..open].trim();
     if pattern_name.is_empty() {
@@ -377,11 +365,9 @@ pub fn parse_pattern_call(line: &str) -> Result<PatternCall, MirrError> {
     }
 
     // Find the closing paren.
-    let close = without_semi
-        .rfind(')')
-        .ok_or_else(|| pattern_err(format!(
-            "Pattern call '{pattern_name}' missing closing ')'."
-        )))?;
+    let close = without_semi.rfind(')').ok_or_else(|| {
+        pattern_err(format!("Pattern call '{pattern_name}' missing closing ')'."))
+    })?;
 
     let args_str = &without_semi[open + 1..close];
     let arguments = parse_call_args(args_str, pattern_name)?;
@@ -414,9 +400,7 @@ fn parse_call_args(args_str: &str, call_name: &str) -> Result<Vec<PatternArg>, M
     for part in &parts {
         let arg_str = part.trim();
         if arg_str.is_empty() {
-            return Err(pattern_err(format!(
-                "Pattern call '{call_name}' has empty argument."
-            )));
+            return Err(pattern_err(format!("Pattern call '{call_name}' has empty argument.")));
         }
 
         let arg = if arg_str == "true" {

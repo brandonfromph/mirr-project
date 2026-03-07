@@ -172,8 +172,14 @@ def all_kinds(
     let prog = parse_ok(&src);
     let params = &prog.patterns[0].params;
     assert_eq!(params.len(), 5);
-    assert!(matches!(params[0].kind, PatternParamKind::Signal { kind: SignalKind::Input, ty: SignalType::Unsigned(16) }));
-    assert!(matches!(params[1].kind, PatternParamKind::Signal { kind: SignalKind::Output, ty: SignalType::Bool }));
+    assert!(matches!(
+        params[0].kind,
+        PatternParamKind::Signal { kind: SignalKind::Input, ty: SignalType::Unsigned(16) }
+    ));
+    assert!(matches!(
+        params[1].kind,
+        PatternParamKind::Signal { kind: SignalKind::Output, ty: SignalType::Bool }
+    ));
     assert!(matches!(params[2].kind, PatternParamKind::Constant { ty: SignalType::Unsigned(16) }));
     assert!(matches!(params[3].kind, PatternParamKind::Constant { ty: SignalType::Unsigned(32) }));
     assert!(matches!(params[4].kind, PatternParamKind::Constant { ty: SignalType::Bool }));
@@ -432,7 +438,9 @@ module m {{
     );
     let prog = parse_ok(&src);
     assert_eq!(prog.module.pattern_calls[0].arguments.len(), 5);
-    assert!(matches!(&prog.module.pattern_calls[0].arguments[0], PatternArg::SignalRef(s) if s == "p"));
+    assert!(
+        matches!(&prog.module.pattern_calls[0].arguments[0], PatternArg::SignalRef(s) if s == "p")
+    );
 }
 
 #[test]
@@ -616,9 +624,13 @@ module m {{
         monitor = monitor_sensor_source()
     );
     let result = pipeline_ok(&src);
-    let has_sensor_guard = result.program.module.guards.iter().any(|g| g.name.contains("my_sensor"));
-    assert!(has_sensor_guard, "Guard names should contain substituted signal name: {:?}",
-        result.program.module.guards.iter().map(|g| &g.name).collect::<Vec<_>>());
+    let has_sensor_guard =
+        result.program.module.guards.iter().any(|g| g.name.contains("my_sensor"));
+    assert!(
+        has_sensor_guard,
+        "Guard names should contain substituted signal name: {:?}",
+        result.program.module.guards.iter().map(|g| &g.name).collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -709,7 +721,11 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let expanded_guard = result.program.module.guards.iter()
+    let expanded_guard = result
+        .program
+        .module
+        .guards
+        .iter()
         .find(|g| g.name.contains("active"))
         .expect("Should find expanded guard");
     assert_eq!(expanded_guard.cycles, 3);
@@ -749,18 +765,20 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let has_prefixed = result.program.module.guards.iter()
-        .any(|g| g.name == "simple_guard_0_check");
-    assert!(has_prefixed, "Guard should be prefixed: {:?}",
-        result.program.module.guards.iter().map(|g| &g.name).collect::<Vec<_>>());
+    let has_prefixed =
+        result.program.module.guards.iter().any(|g| g.name == "simple_guard_0_check");
+    assert!(
+        has_prefixed,
+        "Guard should be prefixed: {:?}",
+        result.program.module.guards.iter().map(|g| &g.name).collect::<Vec<_>>()
+    );
 }
 
 #[test]
 fn prefix_two_calls_get_different_indices() {
     let result = pipeline_ok(&ventilator_source());
-    let guard_names: Vec<&str> = result.program.module.guards.iter()
-        .map(|g| g.name.as_str())
-        .collect();
+    let guard_names: Vec<&str> =
+        result.program.module.guards.iter().map(|g| g.name.as_str()).collect();
     let has_0 = guard_names.iter().any(|n| n.contains("_0_"));
     let has_1 = guard_names.iter().any(|n| n.contains("_1_"));
     assert!(has_0, "First call should have index 0: {guard_names:?}");
@@ -770,15 +788,16 @@ fn prefix_two_calls_get_different_indices() {
 #[test]
 fn prefix_internal_signals_get_prefixed() {
     let result = pipeline_ok(&ventilator_source());
-    let internal_sigs: Vec<&str> = result.program.module.signals.iter()
+    let internal_sigs: Vec<&str> = result
+        .program
+        .module
+        .signals
+        .iter()
         .filter(|s| s.kind == SignalKind::Internal)
         .map(|s| s.name.as_str())
         .collect();
     for sig in &internal_sigs {
-        assert!(
-            sig.contains("monitor_sensor_"),
-            "Internal signal should be prefixed: {sig}"
-        );
+        assert!(sig.contains("monitor_sensor_"), "Internal signal should be prefixed: {sig}");
     }
 }
 
@@ -824,11 +843,19 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let manual_g = result.program.module.guards.iter()
+    let manual_g = result
+        .program
+        .module
+        .guards
+        .iter()
         .find(|g| g.name == "manual_guard")
         .expect("Should have manual guard");
     assert!(manual_g.origin.is_none(), "Hand-written guard should have origin: None");
-    let manual_r = result.program.module.reflexes.iter()
+    let manual_r = result
+        .program
+        .module
+        .reflexes
+        .iter()
         .find(|r| r.name == "manual_reflex")
         .expect("Should have manual reflex");
     assert!(manual_r.origin.is_none(), "Hand-written reflex should have origin: None");
@@ -1050,7 +1077,11 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let internal_sigs: Vec<&str> = result.program.module.signals.iter()
+    let internal_sigs: Vec<&str> = result
+        .program
+        .module
+        .signals
+        .iter()
         .filter(|s| s.kind == SignalKind::Internal && s.origin.is_some())
         .map(|s| s.name.as_str())
         .collect();
@@ -1246,9 +1277,8 @@ fn pattern_with_property_always_implies() {
 #[test]
 fn pattern_origin_has_correct_format() {
     let result = pipeline_ok(&ventilator_source());
-    let origins: Vec<&str> = result.program.module.pattern_origins.iter()
-        .map(|o| o.pattern_name.as_str())
-        .collect();
+    let origins: Vec<&str> =
+        result.program.module.pattern_origins.iter().map(|o| o.pattern_name.as_str()).collect();
     assert!(origins.contains(&"monitor_sensor"), "Should record monitor_sensor as origin");
 }
 

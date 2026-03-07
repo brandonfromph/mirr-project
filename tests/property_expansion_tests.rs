@@ -3,9 +3,9 @@
 //! - Refactor: PropertyFormula::exprs() / exprs_mut() centralize variant dispatch
 
 use nasa_rust_project::ast::expr::Expr;
+use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use nasa_rust_project::ast::property::{PropertyDecl, PropertyFormula};
 use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use nasa_rust_project::{run_pipeline, validate_module, PipelineConfig};
 
 // ---------------------------------------------------------------------------
@@ -88,24 +88,16 @@ fn prev_zero_delay_in_always_property_is_rejected() {
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
 fn prev_zero_delay_in_never_property_is_rejected() {
-    let module = module_with_properties(vec![prop(
-        "bad",
-        PropertyFormula::Never(prev("alarm", 0)),
-    )]);
+    let module =
+        module_with_properties(vec![prop("bad", PropertyFormula::Never(prev("alarm", 0)))]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
@@ -119,10 +111,7 @@ fn prev_zero_delay_in_implies_antecedent_is_rejected() {
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
@@ -136,10 +125,7 @@ fn prev_zero_delay_in_implies_consequent_is_rejected() {
     )]);
     let err = validate_module(&module).unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("prev") && msg.contains("delay"),
-        "Expected prev delay error, got: {msg}"
-    );
+    assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
 
 #[test]
@@ -169,10 +155,7 @@ fn exprs_never_returns_one() {
 
 #[test]
 fn exprs_implies_returns_two() {
-    let f = PropertyFormula::AlwaysImplies {
-        antecedent: sig("x"),
-        consequent: sig("y"),
-    };
+    let f = PropertyFormula::AlwaysImplies { antecedent: sig("x"), consequent: sig("y") };
     assert_eq!(f.exprs().len(), 2);
 }
 
@@ -225,14 +208,8 @@ module m {
     let result = run_pipeline(src, &config).expect("Pipeline should succeed");
     assert_eq!(result.program.module.properties.len(), 3);
 
-    assert!(matches!(
-        result.program.module.properties[0].formula,
-        PropertyFormula::Always(_)
-    ));
-    assert!(matches!(
-        result.program.module.properties[1].formula,
-        PropertyFormula::Never(_)
-    ));
+    assert!(matches!(result.program.module.properties[0].formula, PropertyFormula::Always(_)));
+    assert!(matches!(result.program.module.properties[1].formula, PropertyFormula::Never(_)));
     assert!(matches!(
         result.program.module.properties[2].formula,
         PropertyFormula::AlwaysImplies { .. }

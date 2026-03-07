@@ -122,7 +122,12 @@ fn module_with_prev_in_guard(delay: u64) -> Module {
                 ty: SignalType::Unsigned(8),
                 origin: None,
             },
-            SignalDecl { name: "y".to_string(), kind: SignalKind::Output, ty: SignalType::Bool, origin: None },
+            SignalDecl {
+                name: "y".to_string(),
+                kind: SignalKind::Output,
+                ty: SignalType::Bool,
+                origin: None,
+            },
         ],
         guards: vec![Guard {
             name: "g".to_string(),
@@ -196,14 +201,20 @@ fn module_with_prev_in_reflex(delay: u64) -> Module {
 fn prev_delay_zero_in_guard_condition_pinned_message() {
     let module = module_with_prev_in_guard(0);
     let msg = validate_module_err(&module);
-    assert_eq!(msg, "[E200] Semantic error: 'g' contains prev('x') with delay 0; delay must be >= 1.");
+    assert_eq!(
+        msg,
+        "[E200] Semantic error: 'g' contains prev('x') with delay 0; delay must be >= 1."
+    );
 }
 
 #[test]
 fn prev_delay_zero_in_reflex_rhs_pinned_message() {
     let module = module_with_prev_in_reflex(0);
     let msg = validate_module_err(&module);
-    assert_eq!(msg, "[E200] Semantic error: 'r' contains prev('x') with delay 0; delay must be >= 1.");
+    assert_eq!(
+        msg,
+        "[E200] Semantic error: 'r' contains prev('x') with delay 0; delay must be >= 1."
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -249,8 +260,18 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
     let module = Module {
         name: "prev_undecl_reflex".to_string(),
         signals: vec![
-            SignalDecl { name: "a".to_string(), kind: SignalKind::Input, ty: SignalType::Bool, origin: None },
-            SignalDecl { name: "b".to_string(), kind: SignalKind::Output, ty: SignalType::Bool, origin: None },
+            SignalDecl {
+                name: "a".to_string(),
+                kind: SignalKind::Input,
+                ty: SignalType::Bool,
+                origin: None,
+            },
+            SignalDecl {
+                name: "b".to_string(),
+                kind: SignalKind::Output,
+                ty: SignalType::Bool,
+                origin: None,
+            },
         ],
         guards: vec![Guard {
             name: "g".to_string(),

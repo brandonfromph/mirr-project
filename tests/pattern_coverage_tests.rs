@@ -14,9 +14,7 @@
 //! Zero modifications to any `src/` file.
 
 use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::pattern::{
-    PatternDef, PatternParam, PatternParamKind, ReflectBlock,
-};
+use nasa_rust_project::ast::pattern::{PatternDef, PatternParam, PatternParamKind, ReflectBlock};
 use nasa_rust_project::ast::program::Guard;
 use nasa_rust_project::ast::types::{LiteralValue, SignalType};
 use nasa_rust_project::emit;
@@ -191,7 +189,10 @@ def bad(s: signal inout u16) {{
 "#
     );
     let msg = parse_err(&src);
-    assert!(msg.contains("unknown signal kind 'inout'"), "Expected 'unknown signal kind' error, got: {msg}");
+    assert!(
+        msg.contains("unknown signal kind 'inout'"),
+        "Expected 'unknown signal kind' error, got: {msg}"
+    );
 }
 
 #[test]
@@ -252,7 +253,10 @@ def toomany({param_str}) {{
 "#
     );
     let msg = parse_err(&src);
-    assert!(msg.contains("too many parameters"), "Expected 'too many parameters' error, got: {msg}");
+    assert!(
+        msg.contains("too many parameters"),
+        "Expected 'too many parameters' error, got: {msg}"
+    );
 }
 
 #[test]
@@ -342,7 +346,10 @@ def deep() {{
 "#
     );
     let msg = parse_err(&src);
-    assert!(msg.contains("exceeds maximum brace depth"), "Expected 'exceeds maximum brace depth' error, got: {msg}");
+    assert!(
+        msg.contains("exceeds maximum brace depth"),
+        "Expected 'exceeds maximum brace depth' error, got: {msg}"
+    );
 }
 
 #[test]
@@ -494,7 +501,10 @@ fn validate_duplicate_param_name() {
         body: ReflectBlock { raw_lines: vec!["guard g { when true for 1 cycles; }".to_string()] },
     }];
     let err = validate_pattern_defs(&defs).unwrap_err().to_string();
-    assert!(err.contains("duplicate parameter name"), "Expected 'duplicate parameter name', got: {err}");
+    assert!(
+        err.contains("duplicate parameter name"),
+        "Expected 'duplicate parameter name', got: {err}"
+    );
 }
 
 #[test]
@@ -517,9 +527,7 @@ fn validate_too_many_params_semantic() {
 
 #[test]
 fn validate_body_too_many_lines() {
-    let raw_lines: Vec<String> = (0..513)
-        .map(|i| format!("// line {i}"))
-        .collect();
+    let raw_lines: Vec<String> = (0..513).map(|i| format!("// line {i}")).collect();
 
     let defs = vec![PatternDef {
         name: "big_body".to_string(),
@@ -570,7 +578,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("Duplicate pattern definition"), "Expected pipeline to catch duplicate via validate_pattern_defs, got: {msg}");
+    assert!(
+        msg.contains("Duplicate pattern definition"),
+        "Expected pipeline to catch duplicate via validate_pattern_defs, got: {msg}"
+    );
 }
 
 // =========================================================================
@@ -715,7 +726,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("expects a constant, got a signal reference"), "Expected const/signal mismatch, got: {msg}");
+    assert!(
+        msg.contains("expects a constant, got a signal reference"),
+        "Expected const/signal mismatch, got: {msg}"
+    );
 }
 
 #[test]
@@ -756,8 +770,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
-        "Expected scoping error, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
+        "Expected scoping error, got: {msg}"
+    );
 }
 
 #[test]
@@ -798,8 +814,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
-        "Expected scoping error, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
+        "Expected scoping error, got: {msg}"
+    );
 }
 
 #[test]
@@ -840,8 +858,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
-        "Expected scoping error, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
+        "Expected scoping error, got: {msg}"
+    );
 }
 
 #[test]
@@ -886,8 +906,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
-        "Expected scoping error, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
+        "Expected scoping error, got: {msg}"
+    );
 }
 
 #[test]
@@ -951,8 +973,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") || msg.contains("undeclared"),
-        "Expected scoping or undeclared error, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") || msg.contains("undeclared"),
+        "Expected scoping or undeclared error, got: {msg}"
+    );
 }
 
 #[test]
@@ -1010,8 +1034,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") || msg.contains("undeclared"),
-        "Expected scoping or undeclared error, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") || msg.contains("undeclared"),
+        "Expected scoping or undeclared error, got: {msg}"
+    );
 }
 
 #[test]
@@ -1069,8 +1095,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") || msg.contains("undeclared"),
-        "Expected scoping or undeclared error, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") || msg.contains("undeclared"),
+        "Expected scoping or undeclared error, got: {msg}"
+    );
 }
 
 #[test]
@@ -1115,8 +1143,10 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
-        "Expected scoping error for never property, got: {msg}");
+    assert!(
+        msg.contains("is internal to pattern") && msg.contains("cannot be referenced externally"),
+        "Expected scoping error for never property, got: {msg}"
+    );
 }
 
 // =========================================================================
@@ -1166,15 +1196,27 @@ module m {
 "#;
     let result = pipeline_ok(src);
     // The guard name should be prefixed.
-    let guard = result.program.module.guards.iter()
+    let guard = result
+        .program
+        .module
+        .guards
+        .iter()
         .find(|g| g.name.contains("check"))
         .expect("Should find check guard");
     assert!(guard.name.starts_with("with_ref_0_"), "Guard should be prefixed: {}", guard.name);
     // The internal signal should be prefixed.
-    let int_sig = result.program.module.signals.iter()
+    let int_sig = result
+        .program
+        .module
+        .signals
+        .iter()
         .find(|s| s.name.contains("state"))
         .expect("Should find state signal");
-    assert!(int_sig.name.starts_with("with_ref_0_"), "Internal signal should be prefixed: {}", int_sig.name);
+    assert!(
+        int_sig.name.starts_with("with_ref_0_"),
+        "Internal signal should be prefixed: {}",
+        int_sig.name
+    );
 }
 
 #[test]
@@ -1207,12 +1249,7 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let negated_guard = result
-        .program
-        .module
-        .guards
-        .iter()
-        .find(|g| g.name.contains("neg"));
+    let negated_guard = result.program.module.guards.iter().find(|g| g.name.contains("neg"));
     assert!(negated_guard.is_some(), "Should have negated guard from pattern");
 }
 
@@ -1256,12 +1293,7 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let prop = result
-        .program
-        .module
-        .properties
-        .iter()
-        .find(|p| p.name.contains("prop"));
+    let prop = result.program.module.properties.iter().find(|p| p.name.contains("prop"));
     assert!(prop.is_some(), "Should have always property from pattern");
     assert!(prop.unwrap().origin.is_some(), "Property should have origin");
 }
@@ -1300,12 +1332,7 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let prop = result
-        .program
-        .module
-        .properties
-        .iter()
-        .find(|p| p.name.contains("never_prop"));
+    let prop = result.program.module.properties.iter().find(|p| p.name.contains("never_prop"));
     assert!(prop.is_some(), "Should have never property from pattern");
 }
 
@@ -1342,12 +1369,7 @@ module m {
     // Skip temporal since complex guard conditions may not lower to hardware.
     let config = PipelineConfig { temporal: false, ..PipelineConfig::default() };
     let result = run_pipeline(src, &config).unwrap_or_else(|e| panic!("Pipeline failed: {e}"));
-    let deep_guard = result
-        .program
-        .module
-        .guards
-        .iter()
-        .find(|g| g.name.contains("deep_cond"));
+    let deep_guard = result.program.module.guards.iter().find(|g| g.name.contains("deep_cond"));
     assert!(deep_guard.is_some(), "Should have deeply nested guard");
 }
 
@@ -1426,8 +1448,10 @@ module m {{
     let result = pipeline_ok(&src);
     let sv = emit::verilog::emit_sv(&result);
     // The internal signal should have a Pattern origin comment.
-    assert!(sv.contains("// Pattern: monitor_sensor_0"),
-        "SV should have origin comment on internal signal: {sv}");
+    assert!(
+        sv.contains("// Pattern: monitor_sensor_0"),
+        "SV should have origin comment on internal signal: {sv}"
+    );
     // Verify internal signal declaration follows the comment.
     assert!(sv.contains("Internal signals"), "SV should have internal signals section");
 }
@@ -1461,8 +1485,10 @@ module m {{
     let sv = emit::verilog::emit_sv(&result);
     // Find the property assertion section — it should have a Pattern origin comment.
     let after_safety = sv.split("Safety Properties").last().unwrap_or("");
-    assert!(after_safety.contains("// Pattern: monitor_sensor_0"),
-        "SVA section should have origin comment: {sv}");
+    assert!(
+        after_safety.contains("// Pattern: monitor_sensor_0"),
+        "SVA section should have origin comment: {sv}"
+    );
 }
 
 #[test]
@@ -1494,8 +1520,10 @@ module m {{
     let sv = emit::verilog::emit_sv(&result);
     // Reflex section should have pattern origin comment.
     let after_reflex = sv.split("Reflex Assignments").last().unwrap_or("");
-    assert!(after_reflex.contains("// Pattern: monitor_sensor_0"),
-        "Reflex section should have origin comment: {sv}");
+    assert!(
+        after_reflex.contains("// Pattern: monitor_sensor_0"),
+        "Reflex section should have origin comment: {sv}"
+    );
 }
 
 #[test]
@@ -1520,8 +1548,10 @@ module m {
     let result = pipeline_ok(src);
     let sv = emit::verilog::emit_sv(&result);
     let reflex_section = sv.split("Reflex Assignments").last().unwrap_or("");
-    assert!(!reflex_section.contains("// Pattern:"),
-        "Hand-written reflex should NOT have pattern origin comment");
+    assert!(
+        !reflex_section.contains("// Pattern:"),
+        "Hand-written reflex should NOT have pattern origin comment"
+    );
 }
 
 #[test]
@@ -1551,7 +1581,10 @@ module m {{
     );
     let result = pipeline_ok(&src);
     let dot = emit::dot::emit_module_dot(&result);
-    assert!(dot.contains("tooltip=\"Pattern:"), "DOT guard should have tooltip with Pattern origin: {dot}");
+    assert!(
+        dot.contains("tooltip=\"Pattern:"),
+        "DOT guard should have tooltip with Pattern origin: {dot}"
+    );
 }
 
 #[test]
@@ -1583,8 +1616,10 @@ module m {{
     let dot = emit::dot::emit_module_dot(&result);
     // The internal signal should have a tooltip.
     let signal_section = dot.split("// Signals").last().unwrap_or("");
-    assert!(signal_section.contains("tooltip=\"Pattern:"),
-        "DOT signal should have tooltip with Pattern origin: {dot}");
+    assert!(
+        signal_section.contains("tooltip=\"Pattern:"),
+        "DOT signal should have tooltip with Pattern origin: {dot}"
+    );
 }
 
 #[test]
@@ -1615,7 +1650,10 @@ module m {{
     let result = pipeline_ok(&src);
     let json = emit::json_netlist::emit_json(&result).expect("JSON should serialize");
     // The expanded guards should have "origin" in the JSON.
-    assert!(json.contains("\"origin\""), "JSON should include origin field for expanded guards: {json}");
+    assert!(
+        json.contains("\"origin\""),
+        "JSON should include origin field for expanded guards: {json}"
+    );
 }
 
 #[test]
@@ -1640,7 +1678,10 @@ module m {
     let result = pipeline_ok(src);
     let json = emit::json_netlist::emit_json(&result).expect("JSON should serialize");
     // With skip_serializing_if, guards with origin:None should NOT have "origin" key.
-    assert!(!json.contains("\"origin\""), "JSON should NOT have origin field when no patterns used: {json}");
+    assert!(
+        !json.contains("\"origin\""),
+        "JSON should NOT have origin field when no patterns used: {json}"
+    );
 }
 
 // =========================================================================
@@ -1745,8 +1786,11 @@ module m {{
     assert!(result.temporal_netlist.is_some(), "Temporal netlist should have been generated");
     let netlist = result.temporal_netlist.as_ref().unwrap();
     // Should have guards from both hand-written and expanded.
-    assert!(netlist.guards.len() >= 3, "Should have at least 3 temporal guards, got {}",
-        netlist.guards.len());
+    assert!(
+        netlist.guards.len() >= 3,
+        "Should have at least 3 temporal guards, got {}",
+        netlist.guards.len()
+    );
 }
 
 #[test]
@@ -1780,12 +1824,7 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let cmp_guard = result
-        .program
-        .module
-        .guards
-        .iter()
-        .find(|g| g.name.contains("over"));
+    let cmp_guard = result.program.module.guards.iter().find(|g| g.name.contains("over"));
     assert!(cmp_guard.is_some(), "Should have comparison-based guard from pattern");
 }
 
@@ -1829,8 +1868,10 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    assert!(result.program.module.guards.len() >= 3,
-        "Should have guards from both patterns plus hand-written");
+    assert!(
+        result.program.module.guards.len() >= 3,
+        "Should have guards from both patterns plus hand-written"
+    );
 }
 
 #[test]
@@ -1862,14 +1903,20 @@ module m {{
     // After simplify + width + temporal, origin tags should still be present.
     for guard in &result.program.module.guards {
         if guard.name.contains("monitor_sensor") {
-            assert!(guard.origin.is_some(),
-                "Origin should survive full pipeline for guard '{}'", guard.name);
+            assert!(
+                guard.origin.is_some(),
+                "Origin should survive full pipeline for guard '{}'",
+                guard.name
+            );
         }
     }
     for reflex in &result.program.module.reflexes {
         if reflex.name.contains("monitor_sensor") {
-            assert!(reflex.origin.is_some(),
-                "Origin should survive full pipeline for reflex '{}'", reflex.name);
+            assert!(
+                reflex.origin.is_some(),
+                "Origin should survive full pipeline for reflex '{}'",
+                reflex.name
+            );
         }
     }
 }
@@ -1922,7 +1969,10 @@ fn guard_origin_none_serializes_without_field() {
         origin: None,
     };
     let json = serde_json::to_string(&guard).unwrap();
-    assert!(!json.contains("\"origin\""), "Guard with origin:None should not serialize origin field: {json}");
+    assert!(
+        !json.contains("\"origin\""),
+        "Guard with origin:None should not serialize origin field: {json}"
+    );
 }
 
 #[test]
@@ -1934,7 +1984,10 @@ fn guard_origin_some_serializes_with_field() {
         origin: Some("test_origin_0".to_string()),
     };
     let json = serde_json::to_string(&guard).unwrap();
-    assert!(json.contains("\"origin\""), "Guard with origin:Some should serialize origin field: {json}");
+    assert!(
+        json.contains("\"origin\""),
+        "Guard with origin:Some should serialize origin field: {json}"
+    );
     assert!(json.contains("test_origin_0"), "Origin value should be present: {json}");
 }
 

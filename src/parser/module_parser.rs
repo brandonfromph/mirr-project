@@ -35,9 +35,7 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
         if line.starts_with("def ") {
             if def_count >= MAX_PATTERN_DEFS {
                 return Err(MirrError::PatternError {
-                    message: format!(
-                        "Too many pattern definitions (max {MAX_PATTERN_DEFS})."
-                    ),
+                    message: format!("Too many pattern definitions (max {MAX_PATTERN_DEFS})."),
                 });
             }
             let pat = parse_pattern_def(&lines, &mut index)?;
@@ -478,14 +476,24 @@ fn parse_property_formula(
     let (directive, rest) = if let Some(after) = stripped.strip_prefix("cover") {
         let after = after.trim();
         // "cover" must be followed by a formula keyword or parens
-        if after.is_empty() || after.starts_with('(') || after.starts_with("always") || after.starts_with("never") || after.starts_with("eventually") {
+        if after.is_empty()
+            || after.starts_with('(')
+            || after.starts_with("always")
+            || after.starts_with("never")
+            || after.starts_with("eventually")
+        {
             (PropertyDirective::Cover, after)
         } else {
             (PropertyDirective::Assert, stripped)
         }
     } else if let Some(after) = stripped.strip_prefix("assume") {
         let after = after.trim();
-        if after.is_empty() || after.starts_with('(') || after.starts_with("always") || after.starts_with("never") || after.starts_with("eventually") {
+        if after.is_empty()
+            || after.starts_with('(')
+            || after.starts_with("always")
+            || after.starts_with("never")
+            || after.starts_with("eventually")
+        {
             (PropertyDirective::Assume, after)
         } else {
             (PropertyDirective::Assert, stripped)
@@ -570,9 +578,7 @@ fn parse_eventually_body(body: &str, name: &str) -> Result<PropertyFormula, Mirr
     let rest = body
         .strip_prefix("within")
         .ok_or_else(|| {
-            MirrError::new(format!(
-                "Property '{name}': expected 'eventually within N (expr)'."
-            ))
+            MirrError::new(format!("Property '{name}': expected 'eventually within N (expr)'."))
         })?
         .trim();
 
@@ -606,10 +612,7 @@ fn parse_eventually_body(body: &str, name: &str) -> Result<PropertyFormula, Mirr
 
 /// Try to parse "P followed_by N Q" inside an `always (...)` body.
 /// Returns `None` if the pattern is not found.
-fn try_parse_followed_by(
-    inner: &str,
-    name: &str,
-) -> Result<Option<PropertyFormula>, MirrError> {
+fn try_parse_followed_by(inner: &str, name: &str) -> Result<Option<PropertyFormula>, MirrError> {
     let Some(fb_pos) = inner.find(" followed_by ") else {
         return Ok(None);
     };
@@ -628,15 +631,11 @@ fn try_parse_followed_by(
     let response_str = after_fb[space_pos + 1..].trim();
 
     let delay_cycles: u32 = delay_str.parse().map_err(|_| {
-        MirrError::new(format!(
-            "Property '{name}': invalid delay '{delay_str}' in followed_by."
-        ))
+        MirrError::new(format!("Property '{name}': invalid delay '{delay_str}' in followed_by."))
     })?;
 
     if delay_cycles < 1 {
-        return Err(MirrError::new(format!(
-            "Property '{name}': followed_by requires delay >= 1."
-        )));
+        return Err(MirrError::new(format!("Property '{name}': followed_by requires delay >= 1.")));
     }
 
     let trigger = parse_expression(trigger_str)
@@ -644,11 +643,7 @@ fn try_parse_followed_by(
     let response = parse_expression(response_str)
         .map_err(|e| MirrError::new(format!("Property '{name}' response error: {e}")))?;
 
-    Ok(Some(PropertyFormula::AlwaysFollowedBy {
-        trigger,
-        response,
-        delay_cycles,
-    }))
+    Ok(Some(PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles }))
 }
 
 fn unwrap_parens<'a>(body: &'a str, name: &str, keyword: &str) -> Result<&'a str, MirrError> {

@@ -73,7 +73,12 @@ fn prev_guard_result() -> PipelineResult {
                 ty: SignalType::Unsigned(8),
                 origin: None,
             },
-            SignalDecl { name: "y".to_string(), kind: SignalKind::Output, ty: SignalType::Bool, origin: None },
+            SignalDecl {
+                name: "y".to_string(),
+                kind: SignalKind::Output,
+                ty: SignalType::Bool,
+                origin: None,
+            },
         ],
         guards: vec![Guard {
             name: "g".to_string(),

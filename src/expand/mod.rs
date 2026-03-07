@@ -76,16 +76,11 @@ pub fn expand_patterns(program: &mut MirrProgram) -> Result<(), MirrError> {
 ///
 /// Errors on duplicate pattern names.
 /// Bounded: iterates over patterns vec (max 64 from parser).
-fn build_pattern_map(
-    patterns: &[PatternDef],
-) -> Result<HashMap<&str, &PatternDef>, MirrError> {
+fn build_pattern_map(patterns: &[PatternDef]) -> Result<HashMap<&str, &PatternDef>, MirrError> {
     let mut map = HashMap::with_capacity(patterns.len());
     for pat in patterns {
         if map.insert(pat.name.as_str(), pat).is_some() {
-            return Err(pattern_err(format!(
-                "Duplicate pattern definition: '{}'.",
-                pat.name
-            )));
+            return Err(pattern_err(format!("Duplicate pattern definition: '{}'.", pat.name)));
         }
     }
     Ok(map)
@@ -122,10 +117,7 @@ fn expand_single_call(
     }
 
     let def = *pattern_map.get(call.pattern_name.as_str()).ok_or_else(|| {
-        pattern_err(format!(
-            "Pattern call references undefined pattern '{}'.",
-            call.pattern_name
-        ))
+        pattern_err(format!("Pattern call references undefined pattern '{}'.", call.pattern_name))
     })?;
 
     // Validate argument count.
@@ -145,12 +137,8 @@ fn expand_single_call(
     let args_summary = build_args_summary(&call.arguments);
 
     // Substitute all raw lines in the reflect body.
-    let substituted: Vec<String> = def
-        .body
-        .raw_lines
-        .iter()
-        .map(|line| substitute_line(line, &subs))
-        .collect();
+    let substituted: Vec<String> =
+        def.body.raw_lines.iter().map(|line| substitute_line(line, &subs)).collect();
 
     // Parse the substituted lines as a module fragment.
     let mut fragment = parse_reflect_fragment(&substituted, &call.pattern_name)?;
@@ -399,11 +387,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
     // an internal signal from a DIFFERENT expansion.
     for guard in &module.guards {
         if let Some(ref guard_origin) = guard.origin {
-            check_expr_cross_expansion(
-                &guard.condition,
-                guard_origin,
-                &internal_signals,
-            )?;
+            check_expr_cross_expansion(&guard.condition, guard_origin, &internal_signals)?;
         }
     }
     for reflex in &module.reflexes {
@@ -421,11 +405,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
                         });
                     }
                 }
-                check_expr_cross_expansion(
-                    &assignment.value,
-                    reflex_origin,
-                    &internal_signals,
-                )?;
+                check_expr_cross_expansion(&assignment.value, reflex_origin, &internal_signals)?;
             }
         }
     }
@@ -568,16 +548,14 @@ fn build_substitution_map(
             (crate::ast::pattern::PatternParamKind::Constant { .. }, PatternArg::ConstInt(n)) => {
                 format!("{n}")
             }
-            (
-                crate::ast::pattern::PatternParamKind::Constant { .. },
-                PatternArg::ConstBool(b),
-            ) => {
-                if *b { "true".to_string() } else { "false".to_string() }
+            (crate::ast::pattern::PatternParamKind::Constant { .. }, PatternArg::ConstBool(b)) => {
+                if *b {
+                    "true".to_string()
+                } else {
+                    "false".to_string()
+                }
             }
-            (
-                crate::ast::pattern::PatternParamKind::Constant { .. },
-                PatternArg::SignalRef(_),
-            ) => {
+            (crate::ast::pattern::PatternParamKind::Constant { .. }, PatternArg::SignalRef(_)) => {
                 return Err(pattern_err(format!(
                     "Pattern '{}' parameter '{}' expects a constant, got a signal reference.",
                     def.name, param.name
@@ -638,12 +616,8 @@ fn parse_reflect_fragment(
     source.push_str("}\n");
 
     // Parse using existing parser.
-    let program = crate::parser::parse_mirr(&source).map_err(|e| {
-        pattern_err(format!(
-            "In pattern '{}' reflect body: {}",
-            pattern_name, e
-        ))
-    })?;
+    let program = crate::parser::parse_mirr(&source)
+        .map_err(|e| pattern_err(format!("In pattern '{}' reflect body: {}", pattern_name, e)))?;
 
     Ok(ExpandedFragment {
         signals: program.module.signals,

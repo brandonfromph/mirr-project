@@ -6,8 +6,8 @@
 // and property annotations.
 // ---------------------------------------------------------------------------
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 use nasa_rust_project::emit::firrtl::emit_firrtl;
+use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
 /// Helper: run pipeline and emit FIRRTL.
 fn firrtl_from(src: &str) -> String {

@@ -113,15 +113,9 @@ fn bench_parse(c: &mut Criterion) {
     let large = large_input();
 
     let mut group = c.benchmark_group("parse");
-    group.bench_function("small", |b| {
-        b.iter(|| parse_mirr(black_box(&small)))
-    });
-    group.bench_function("medium", |b| {
-        b.iter(|| parse_mirr(black_box(&medium)))
-    });
-    group.bench_function("large", |b| {
-        b.iter(|| parse_mirr(black_box(&large)))
-    });
+    group.bench_function("small", |b| b.iter(|| parse_mirr(black_box(&small))));
+    group.bench_function("medium", |b| b.iter(|| parse_mirr(black_box(&medium))));
+    group.bench_function("large", |b| b.iter(|| parse_mirr(black_box(&large))));
     group.finish();
 }
 
@@ -130,11 +124,7 @@ fn bench_pipeline(c: &mut Criterion) {
     let medium = medium_input();
     let large = large_input();
 
-    let config = PipelineConfig {
-        simplify: true,
-        width: true,
-        temporal: true,
-    };
+    let config = PipelineConfig { simplify: true, width: true, temporal: true };
 
     let mut group = c.benchmark_group("pipeline");
     group.bench_function("small", |b| {

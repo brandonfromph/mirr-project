@@ -379,5 +379,3 @@ fn emit_property_nodes(module: &Module, out: &mut String) {
     }
     out.push('\n');
 }
-
-

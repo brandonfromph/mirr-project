@@ -50,11 +50,7 @@ fn emit_header(out: &mut String) {
     out.push_str("FIRRTL version 1.1.0\n");
 }
 
-fn emit_module(
-    module: &Module,
-    temporal_netlist: Option<&TemporalNetlist>,
-    out: &mut String,
-) {
+fn emit_module(module: &Module, temporal_netlist: Option<&TemporalNetlist>, out: &mut String) {
     out.push_str("  module ");
     out.push_str(&module.name);
     out.push_str(" :\n");
@@ -88,11 +84,8 @@ fn emit_ports(module: &Module, out: &mut String) {
 }
 
 fn emit_internal_wires(module: &Module, out: &mut String) {
-    let internals: Vec<_> = module
-        .signals
-        .iter()
-        .filter(|s| s.kind == SignalKind::Internal)
-        .collect();
+    let internals: Vec<_> =
+        module.signals.iter().filter(|s| s.kind == SignalKind::Internal).collect();
 
     if internals.is_empty() {
         return;
@@ -155,23 +148,14 @@ fn emit_shift_register_firrtl(
     out.push_str(&format!("    connect {}_cond , {}\n", sr.name, cond));
 
     // Shift operation: sr <= cat(cond, sr[high:1]).
-    out.push_str(&format!(
-        "    connect {0}_sr , cat({0}_cond, shr({0}_sr, 1))\n",
-        sr.name,
-    ));
+    out.push_str(&format!("    connect {0}_sr , cat({0}_cond, shr({0}_sr, 1))\n", sr.name,));
 
     // Output: guard fires when all bits are 1.
     out.push_str(&format!("    wire {} : UInt<1>\n", sr.output_signal));
-    out.push_str(&format!(
-        "    connect {} , andr({}_sr)\n",
-        sr.output_signal, sr.name,
-    ));
+    out.push_str(&format!("    connect {} , andr({}_sr)\n", sr.output_signal, sr.name,));
 }
 
-fn emit_counter_firrtl(
-    cg: &crate::temporal::low_level_ir::CounterGuard,
-    out: &mut String,
-) {
+fn emit_counter_firrtl(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mut String) {
     let width = cg.counter_width();
     let cond = emit_condition_firrtl(&cg.condition_kind);
 
@@ -247,7 +231,9 @@ fn emit_property_comments(module: &Module, out: &mut String) {
         return;
     }
 
-    out.push_str("\n    ; ── Safety Properties (verification only — no FIRRTL equivalent to SVA) ──\n");
+    out.push_str(
+        "\n    ; ── Safety Properties (verification only — no FIRRTL equivalent to SVA) ──\n",
+    );
 
     for prop in &module.properties {
         let desc = match &prop.formula {
@@ -258,18 +244,10 @@ fn emit_property_comments(module: &Module, out: &mut String) {
                 format!("never ({})", expr_text(expr))
             }
             crate::ast::property::PropertyFormula::AlwaysImplies { antecedent, consequent } => {
-                format!(
-                    "always ({} -> {})",
-                    expr_text(antecedent),
-                    expr_text(consequent),
-                )
+                format!("always ({} -> {})", expr_text(antecedent), expr_text(consequent),)
             }
             crate::ast::property::PropertyFormula::NeverImplies { antecedent, consequent } => {
-                format!(
-                    "never ({} -> {})",
-                    expr_text(antecedent),
-                    expr_text(consequent),
-                )
+                format!("never ({} -> {})", expr_text(antecedent), expr_text(consequent),)
             }
             crate::ast::property::PropertyFormula::EventuallyWithin { expr, cycles } => {
                 format!("eventually within {} ({})", cycles, expr_text(expr))
@@ -293,10 +271,7 @@ fn emit_property_comments(module: &Module, out: &mut String) {
             crate::ast::property::PropertyDirective::Cover => "cover ",
             crate::ast::property::PropertyDirective::Assume => "assume ",
         };
-        out.push_str(&format!(
-            "    ; {}property {}: {}\n",
-            directive_prefix, prop.name, desc,
-        ));
+        out.push_str(&format!("    ; {}property {}: {}\n", directive_prefix, prop.name, desc,));
     }
 }
 
