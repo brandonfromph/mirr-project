@@ -1,0 +1,175 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Standard Library — Fixed-Capacity Map
+// ---------------------------------------------------------------------------
+// Module: stdlib/mirr_core/fixed_map.mirr
+// Purpose: Open-addressed fixed-capacity string→u32 hash table for use by
+//          the semantic validator (symbol tables, guard/signal lookup).
+// NASA-CORE rules: no allocation, bounded operations, explicit error returns.
+// ---------------------------------------------------------------------------
+
+module mirr_fixed_map {
+    // Maximum number of entries in the map.
+    // Sized for typical MIRR module symbol tables (signals + guards + reflexes).
+    const MAP_CAPACITY: usize = 256;
+
+    // Sentinel value for empty slots (key length == 0 means empty).
+    const EMPTY_SLOT_KEY_LEN: usize = 0;
+
+    // Maximum key string length (signal/guard/reflex names).
+    const MAX_KEY_LEN: usize = 128;
+
+    // -----------------------------------------------------------------------
+    // MapEntry — a single slot in the open-addressed table
+    // -----------------------------------------------------------------------
+    struct MapEntry {
+        // Key bytes (zero-padded). Empty iff key_len == 0.
+        key: [u8; MAX_KEY_LEN],
+        key_len: usize,
+        // Associated value.
+        value: u32,
+    }
+
+    // -----------------------------------------------------------------------
+    // FixedMap — open-addressed hash table with linear probing
+    // -----------------------------------------------------------------------
+    struct FixedMap {
+        entries: [MapEntry; MAP_CAPACITY],
+        count: usize,
+    }
+
+    // -----------------------------------------------------------------------
+    // fixed_map_new — initialize an empty FixedMap
+    // -----------------------------------------------------------------------
+    fn fixed_map_new() -> FixedMap {
+        FixedMap {
+            entries: intrinsic_zero_init_map_entries(),
+            count: 0,
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // fixed_map_hash — compute a slot index for key bytes
+    //
+    // Uses FNV-1a with modulo MAP_CAPACITY.
+    // Bounded: loop runs exactly key_len iterations (≤ MAX_KEY_LEN).
+    // -----------------------------------------------------------------------
+    fn fixed_map_hash(key: &str) -> usize {
+        let len: usize = intrinsic_str_len(key);
+        let mut hash: u32 = 2166136261;
+        let mut i: usize = 0;
+        while i < len {
+            let mut oob: bool = false;
+            let b: u8 = intrinsic_str_byte_at(key, i, &mut oob);
+            if !oob {
+                hash = hash ^ (b as u32);
+                hash = hash * 16777619;
+            }
+            i = i + 1;
+        }
+        (hash as usize) % MAP_CAPACITY
+    }
+
+    // -----------------------------------------------------------------------
+    // fixed_map_key_matches — compare entry key against a &str
+    // -----------------------------------------------------------------------
+    fn fixed_map_key_matches(entry: &MapEntry, key: &str) -> bool {
+        let klen: usize = intrinsic_str_len(key);
+        if entry.key_len != klen {
+            return false;
+        }
+        let mut i: usize = 0;
+        while i < klen {
+            let mut oob: bool = false;
+            let kb: u8 = intrinsic_str_byte_at(key, i, &mut oob);
+            if oob || entry.key[i] != kb {
+                return false;
+            }
+            i = i + 1;
+        }
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // fixed_map_insert — insert key→value; returns false if full or key too long
+    //
+    // If the key already exists, updates its value (upsert semantics).
+    // -----------------------------------------------------------------------
+    fn fixed_map_insert(map: &mut FixedMap, key: &str, value: u32) -> bool {
+        let klen: usize = intrinsic_str_len(key);
+        if klen == 0 || klen > MAX_KEY_LEN {
+            return false;
+        }
+        if map.count >= MAP_CAPACITY {
+            return false;
+        }
+        let mut slot: usize = fixed_map_hash(key);
+        let mut probes: usize = 0;
+        // Linear probe: bounded by MAP_CAPACITY iterations
+        while probes < MAP_CAPACITY {
+            let is_empty: bool = map.entries[slot].key_len == EMPTY_SLOT_KEY_LEN;
+            let is_match: bool = fixed_map_key_matches(&map.entries[slot], key);
+            if is_empty || is_match {
+                // Write key bytes
+                let mut i: usize = 0;
+                while i < klen {
+                    let mut oob: bool = false;
+                    let b: u8 = intrinsic_str_byte_at(key, i, &mut oob);
+                    if !oob {
+                        map.entries[slot].key[i] = b;
+                    }
+                    i = i + 1;
+                }
+                map.entries[slot].key_len = klen;
+                map.entries[slot].value = value;
+                if is_empty {
+                    map.count = map.count + 1;
+                }
+                return true;
+            }
+            slot = (slot + 1) % MAP_CAPACITY;
+            probes = probes + 1;
+        }
+        false
+    }
+
+    // -----------------------------------------------------------------------
+    // fixed_map_get — look up key; returns false if not found
+    // -----------------------------------------------------------------------
+    fn fixed_map_get(map: &FixedMap, key: &str, out_value: &mut u32) -> bool {
+        let klen: usize = intrinsic_str_len(key);
+        if klen == 0 || klen > MAX_KEY_LEN {
+            return false;
+        }
+        let mut slot: usize = fixed_map_hash(key);
+        let mut probes: usize = 0;
+        // Linear probe: bounded by MAP_CAPACITY iterations
+        while probes < MAP_CAPACITY {
+            let is_empty: bool = map.entries[slot].key_len == EMPTY_SLOT_KEY_LEN;
+            if is_empty {
+                return false;
+            }
+            if fixed_map_key_matches(&map.entries[slot], key) {
+                *out_value = map.entries[slot].value;
+                return true;
+            }
+            slot = (slot + 1) % MAP_CAPACITY;
+            probes = probes + 1;
+        }
+        false
+    }
+
+    // -----------------------------------------------------------------------
+    // fixed_map_contains — return true if key exists in the map
+    // -----------------------------------------------------------------------
+    fn fixed_map_contains(map: &FixedMap, key: &str) -> bool {
+        let mut dummy: u32 = 0;
+        fixed_map_get(map, key, &mut dummy)
+    }
+
+    // -----------------------------------------------------------------------
+    // fixed_map_len — return number of entries stored
+    // -----------------------------------------------------------------------
+    fn fixed_map_len(map: &FixedMap) -> usize {
+        map.count
+    }
+}

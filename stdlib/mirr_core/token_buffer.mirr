@@ -1,0 +1,168 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Standard Library — Token Buffer
+// ---------------------------------------------------------------------------
+// Module: stdlib/mirr_core/token_buffer.mirr
+// Purpose: Fixed-capacity accumulator for tokens produced by the lexer.
+// NASA-CORE rules: no allocation, bounded capacity, explicit error returns.
+// ---------------------------------------------------------------------------
+
+module mirr_token_buffer {
+    // Maximum tokens a single source file may produce.
+    // Source files larger than ~8 KB with dense token streams approach this.
+    const TOKEN_BUFFER_CAPACITY: usize = 8192;
+
+    // -----------------------------------------------------------------------
+    // TokenKind — discriminant for every token class produced by the lexer
+    // -----------------------------------------------------------------------
+    enum TokenKind {
+        // Literals
+        Ident,
+        Integer,
+        BoolTrue,
+        BoolFalse,
+        // Keywords
+        KwModule,
+        KwSignal,
+        KwGuard,
+        KwReflex,
+        KwWhen,
+        KwFor,
+        KwCycles,
+        KwOn,
+        KwAnd,
+        KwIn,
+        KwOut,
+        KwInternal,
+        KwBool,
+        KwFn,
+        KwLet,
+        KwMut,
+        KwReturn,
+        KwBreak,
+        KwIf,
+        KwElse,
+        KwLoop,
+        KwWhile,
+        KwMatch,
+        KwConst,
+        KwStruct,
+        KwEnum,
+        // Two-character operators
+        AmpAmp,
+        PipePipe,
+        LtLt,
+        GtGt,
+        LtEq,
+        GtEq,
+        EqEq,
+        BangEq,
+        Arrow,
+        DotDot,
+        // Single-character operators and punctuation
+        Bang,
+        Caret,
+        Plus,
+        Minus,
+        Star,
+        Slash,
+        Lt,
+        Gt,
+        Eq,
+        Amp,
+        Pipe,
+        LParen,
+        RParen,
+        LBrace,
+        RBrace,
+        LBracket,
+        RBracket,
+        Colon,
+        Semicolon,
+        Comma,
+        Dot,
+        // Special
+        Eof,
+        Unknown,
+    }
+
+    // -----------------------------------------------------------------------
+    // Token — a single lexed token
+    // -----------------------------------------------------------------------
+    struct Token {
+        // Token kind discriminant
+        kind: u32,
+        // Byte offset in source where token starts
+        start: usize,
+        // Byte length of the token in source
+        len: usize,
+        // For Integer tokens: the parsed u64 value (0 if not Integer)
+        int_value: u64,
+    }
+
+    // -----------------------------------------------------------------------
+    // TokenBuffer — fixed-capacity token accumulator
+    // -----------------------------------------------------------------------
+    struct TokenBuffer {
+        tokens: [Token; TOKEN_BUFFER_CAPACITY],
+        count: usize,
+    }
+
+    // -----------------------------------------------------------------------
+    // token_buffer_new — initialize an empty TokenBuffer
+    // -----------------------------------------------------------------------
+    fn token_buffer_new() -> TokenBuffer {
+        TokenBuffer {
+            tokens: intrinsic_zero_init_token_array(),
+            count: 0,
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // token_buffer_push — append a token; returns false if capacity exceeded
+    // -----------------------------------------------------------------------
+    fn token_buffer_push(buf: &mut TokenBuffer, tok: Token) -> bool {
+        if buf.count >= TOKEN_BUFFER_CAPACITY {
+            return false;
+        }
+        buf.tokens[buf.count] = tok;
+        buf.count = buf.count + 1;
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // token_buffer_get — retrieve token at index i; returns false on OOB
+    // -----------------------------------------------------------------------
+    fn token_buffer_get(buf: &TokenBuffer, i: usize, out: &mut Token) -> bool {
+        if i >= buf.count {
+            return false;
+        }
+        *out = buf.tokens[i];
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // token_buffer_len — return the number of tokens stored
+    // -----------------------------------------------------------------------
+    fn token_buffer_len(buf: &TokenBuffer) -> usize {
+        buf.count
+    }
+
+    // -----------------------------------------------------------------------
+    // token_buffer_is_full — true if no more tokens can be pushed
+    // -----------------------------------------------------------------------
+    fn token_buffer_is_full(buf: &TokenBuffer) -> bool {
+        buf.count >= TOKEN_BUFFER_CAPACITY
+    }
+
+    // -----------------------------------------------------------------------
+    // token_make — construct a Token value
+    // -----------------------------------------------------------------------
+    fn token_make(kind: u32, start: usize, len: usize, int_value: u64) -> Token {
+        Token {
+            kind,
+            start,
+            len,
+            int_value,
+        }
+    }
+}

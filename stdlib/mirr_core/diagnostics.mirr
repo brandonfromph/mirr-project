@@ -1,0 +1,179 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Standard Library — Diagnostics Builder
+// ---------------------------------------------------------------------------
+// Module: stdlib/mirr_core/diagnostics.mirr
+// Purpose: Structured error/warning records and builder for the MIRR compiler
+//          modules (lexer, parser, semantic validator).
+// NASA-CORE rules: no allocation, bounded capacity, explicit error codes.
+// ---------------------------------------------------------------------------
+
+module mirr_diagnostics {
+    // Maximum number of diagnostics collectible in one compilation pass.
+    const MAX_DIAGNOSTICS: usize = 256;
+
+    // Maximum length of a diagnostic message string.
+    const MAX_MESSAGE_LEN: usize = 512;
+
+    // -----------------------------------------------------------------------
+    // DiagSeverity — how serious this diagnostic is
+    // -----------------------------------------------------------------------
+    enum DiagSeverity {
+        Error,
+        Warning,
+        Note,
+    }
+
+    // -----------------------------------------------------------------------
+    // DiagCode — stable numeric code for each diagnostic class
+    //
+    // These codes are used by the parity gate to compare Rust vs MIRR output.
+    // Text messages may differ; codes must match.
+    // -----------------------------------------------------------------------
+    enum DiagCode {
+        // Parse errors (1xxx)
+        ParseEmptySource,
+        ParseExpectedModule,
+        ParseModuleNotClosed,
+        ParseSignalMissingSemicolon,
+        ParseSignalMissingColon,
+        ParseSignalUnknownKind,
+        ParseSignalUnknownType,
+        ParseSignalEmptyName,
+        ParseGuardMissingWhen,
+        ParseGuardInvalidCycles,
+        ParseReflexEmptyOn,
+        ParseUnexpectedLine,
+        // Lexical errors (2xxx)
+        LexUnexpectedChar,
+        LexIntegerOverflow,
+        LexUnbalancedParen,
+        // Semantic errors (3xxx)
+        SemDuplicateSignal,
+        SemDuplicateGuard,
+        SemDuplicateReflex,
+        SemUndeclaredSignalInGuard,
+        SemUndeclaredGuardInReflex,
+        SemAssignToInput,
+        SemAssignToUndeclared,
+        SemRhsUndeclaredSignal,
+        // Temporal compilation errors (4xxx)
+        TemporalUnsupportedCondition,
+        TemporalCompilationFailed,
+        // Generic (0)
+        Unknown,
+    }
+
+    // -----------------------------------------------------------------------
+    // Diagnostic — a single structured compiler message
+    // -----------------------------------------------------------------------
+    struct Diagnostic {
+        // Stable code for parity comparisons
+        code: u32,
+        // Severity level
+        severity: u32,
+        // Source byte offset where the problem starts (0 if not applicable)
+        offset: usize,
+        // Source byte length of the offending span (0 if not applicable)
+        span_len: usize,
+        // Human-readable message bytes (zero-padded to MAX_MESSAGE_LEN)
+        message: [u8; MAX_MESSAGE_LEN],
+        // Length of the valid message bytes
+        message_len: usize,
+    }
+
+    // -----------------------------------------------------------------------
+    // DiagnosticList — fixed-capacity list of diagnostics
+    // -----------------------------------------------------------------------
+    struct DiagnosticList {
+        items: [Diagnostic; MAX_DIAGNOSTICS],
+        count: usize,
+        // True once count reached MAX_DIAGNOSTICS (overflow protection)
+        overflowed: bool,
+    }
+
+    // -----------------------------------------------------------------------
+    // diag_list_new — initialize an empty DiagnosticList
+    // -----------------------------------------------------------------------
+    fn diag_list_new() -> DiagnosticList {
+        DiagnosticList {
+            items: intrinsic_zero_init_diag_array(),
+            count: 0,
+            overflowed: false,
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // diag_push — add a diagnostic; returns false if list is full
+    // -----------------------------------------------------------------------
+    fn diag_push(list: &mut DiagnosticList, d: Diagnostic) -> bool {
+        if list.count >= MAX_DIAGNOSTICS {
+            list.overflowed = true;
+            return false;
+        }
+        list.items[list.count] = d;
+        list.count = list.count + 1;
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // diag_has_errors — true if any Error-severity diagnostic exists
+    // -----------------------------------------------------------------------
+    fn diag_has_errors(list: &DiagnosticList) -> bool {
+        let mut i: usize = 0;
+        // Bounded: loop runs list.count times (≤ MAX_DIAGNOSTICS)
+        while i < list.count {
+            // DiagSeverity::Error == 0
+            if list.items[i].severity == 0 {
+                return true;
+            }
+            i = i + 1;
+        }
+        false
+    }
+
+    // -----------------------------------------------------------------------
+    // diag_count — return the number of diagnostics recorded
+    // -----------------------------------------------------------------------
+    fn diag_count(list: &DiagnosticList) -> usize {
+        list.count
+    }
+
+    // -----------------------------------------------------------------------
+    // diag_make_error — construct an Error diagnostic
+    // -----------------------------------------------------------------------
+    fn diag_make_error(code: u32, offset: usize, span_len: usize) -> Diagnostic {
+        Diagnostic {
+            code,
+            severity: 0,
+            offset,
+            span_len,
+            message: intrinsic_zero_u8_array_512(),
+            message_len: 0,
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // diag_make_warning — construct a Warning diagnostic
+    // -----------------------------------------------------------------------
+    fn diag_make_warning(code: u32, offset: usize, span_len: usize) -> Diagnostic {
+        Diagnostic {
+            code,
+            severity: 1,
+            offset,
+            span_len,
+            message: intrinsic_zero_u8_array_512(),
+            message_len: 0,
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // diag_get — retrieve the diagnostic at index i; returns false on OOB
+    // -----------------------------------------------------------------------
+    fn diag_get(list: &DiagnosticList, i: usize, out: &mut Diagnostic) -> bool {
+        if i >= list.count {
+            return false;
+        }
+        *out = list.items[i];
+        true
+    }
+}

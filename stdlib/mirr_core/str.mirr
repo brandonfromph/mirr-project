@@ -1,0 +1,151 @@
+// ---------------------------------------------------------------------------
+// MIRR-CORE Standard Library — String Slice Primitives
+// ---------------------------------------------------------------------------
+// Module: stdlib/mirr_core/str.mirr
+// Purpose: Zero-copy read-only operations on &str slices for use by the
+//          MIRR compiler modules (lexer, parser, etc.).
+// NASA-CORE rules: no allocation, bounded loops, explicit error returns.
+// ---------------------------------------------------------------------------
+
+module mirr_str {
+    // -----------------------------------------------------------------------
+    // Constants
+    // -----------------------------------------------------------------------
+
+    // Maximum string slice length accepted by these primitives (4 MiB).
+    // Any &str longer than this is rejected at the call site.
+    const MAX_STR_LEN: usize = 4194304;
+
+    // -----------------------------------------------------------------------
+    // str_len — return the byte length of a &str slice
+    //
+    // Postcondition: result <= MAX_STR_LEN
+    // -----------------------------------------------------------------------
+    fn str_len(s: &str) -> usize {
+        // Intrinsic: implemented by the bootstrap host.
+        // MIRR-CORE contract: returns the number of UTF-8 bytes in `s`.
+        // Bounded: trivially terminates (no loop).
+        intrinsic_str_len(s)
+    }
+
+    // -----------------------------------------------------------------------
+    // str_byte_at — return the byte at position `i` in `s`
+    //
+    // Precondition:  i < str_len(s)
+    // Returns:       the raw byte value at index `i`
+    // Error:         returns 0 and sets out_of_bounds = true if i >= len
+    // -----------------------------------------------------------------------
+    fn str_byte_at(s: &str, i: usize, out_of_bounds: &mut bool) -> u8 {
+        let len: usize = str_len(s);
+        if i >= len {
+            *out_of_bounds = true;
+            return 0;
+        }
+        *out_of_bounds = false;
+        intrinsic_str_byte_at(s, i)
+    }
+
+    // -----------------------------------------------------------------------
+    // str_slice — return a sub-slice s[start..end]
+    //
+    // Precondition:  start <= end <= str_len(s)
+    // Error:         returns empty slice and sets err = true on bounds violation
+    // -----------------------------------------------------------------------
+    fn str_slice(s: &str, start: usize, end: usize, err: &mut bool) -> &str {
+        let len: usize = str_len(s);
+        if start > end || end > len {
+            *err = true;
+            return intrinsic_empty_str();
+        }
+        *err = false;
+        intrinsic_str_slice(s, start, end)
+    }
+
+    // -----------------------------------------------------------------------
+    // str_eq — compare two &str slices for equality
+    //
+    // Returns true iff both slices have the same byte length and identical
+    // byte content. Constant-time in the lengths (bounded loop).
+    // -----------------------------------------------------------------------
+    fn str_eq(a: &str, b: &str) -> bool {
+        let la: usize = str_len(a);
+        let lb: usize = str_len(b);
+        if la != lb {
+            return false;
+        }
+        let mut i: usize = 0;
+        // Bounded: loop terminates when i == la <= MAX_STR_LEN
+        while i < la {
+            let mut oob_a: bool = false;
+            let mut oob_b: bool = false;
+            let ba: u8 = str_byte_at(a, i, &mut oob_a);
+            let bb: u8 = str_byte_at(b, i, &mut oob_b);
+            if oob_a || oob_b || ba != bb {
+                return false;
+            }
+            i = i + 1;
+        }
+        true
+    }
+
+    // -----------------------------------------------------------------------
+    // str_starts_with — check if `s` starts with prefix `p`
+    //
+    // Returns true iff str_slice(s, 0, len(p)) == p
+    // -----------------------------------------------------------------------
+    fn str_starts_with(s: &str, p: &str) -> bool {
+        let ls: usize = str_len(s);
+        let lp: usize = str_len(p);
+        if lp > ls {
+            return false;
+        }
+        let mut err: bool = false;
+        let prefix: &str = str_slice(s, 0, lp, &mut err);
+        if err {
+            return false;
+        }
+        str_eq(prefix, p)
+    }
+
+    // -----------------------------------------------------------------------
+    // str_is_empty — return true iff str_len(s) == 0
+    // -----------------------------------------------------------------------
+    fn str_is_empty(s: &str) -> bool {
+        str_len(s) == 0
+    }
+
+    // -----------------------------------------------------------------------
+    // is_whitespace_byte — true for space, tab, newline, carriage return
+    // -----------------------------------------------------------------------
+    fn is_whitespace_byte(b: u8) -> bool {
+        b == 32 || b == 9 || b == 10 || b == 13
+    }
+
+    // -----------------------------------------------------------------------
+    // is_digit_byte — true for ASCII '0'..'9'
+    // -----------------------------------------------------------------------
+    fn is_digit_byte(b: u8) -> bool {
+        b >= 48 && b <= 57
+    }
+
+    // -----------------------------------------------------------------------
+    // is_alpha_byte — true for ASCII 'a'..'z' and 'A'..'Z'
+    // -----------------------------------------------------------------------
+    fn is_alpha_byte(b: u8) -> bool {
+        (b >= 97 && b <= 122) || (b >= 65 && b <= 90)
+    }
+
+    // -----------------------------------------------------------------------
+    // is_ident_start_byte — valid identifier start character
+    // -----------------------------------------------------------------------
+    fn is_ident_start_byte(b: u8) -> bool {
+        is_alpha_byte(b) || b == 95
+    }
+
+    // -----------------------------------------------------------------------
+    // is_ident_byte — valid identifier continuation character
+    // -----------------------------------------------------------------------
+    fn is_ident_byte(b: u8) -> bool {
+        is_alpha_byte(b) || is_digit_byte(b) || b == 95
+    }
+}

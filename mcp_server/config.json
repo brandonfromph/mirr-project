@@ -1,0 +1,46 @@
+{
+  "allowed_paths": [
+    ".",
+    "tests",
+    "artifacts"
+  ],
+  "allowed_commands": {
+    "cargo": [
+      "build",
+      "test",
+      "check"
+    ],
+    "executables": [
+      "mirr-simplify.exe",
+      "target/debug/mirr-simplify",
+      "target/debug/mirr-simplify.exe",
+      "target\\debug\\mirr-simplify.exe"
+    ]
+  },
+  "api_keys": [
+    {
+      "id": "local-admin",
+      "role": "admin",
+      "token": "mcp-admin-REPLACE"
+    },
+    {
+      "id": "local-committer",
+      "role": "committer",
+      "token": "5f2993a55cbdde7d162856bf32430c17761db12fc8b82fb74cf4c798c255f39d",
+      "hashed": true
+    },
+    {
+      "id": "test-runner",
+      "role": "builder",
+      "token": "c78b7b87b98dd5086d5be543d8f3bce1ba00594ebe2d8b3ecc6f59e0df8fca5f",
+      "hashed": true
+    }
+  ],
+  "timeouts": {
+    "default_ms": 120000
+  },
+  "sandbox": {
+    "docker_mode": false
+  },
+  "revoked_keys": []
+}
