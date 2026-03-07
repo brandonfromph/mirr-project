@@ -40,31 +40,40 @@ This roadmap breaks the Reflexive Processing Unit (R‑SPU) concept into **small
 
 **Result artifact:** CLI tool `mirr-temporal` that shows how each high-level guard maps to concrete hardware primitives, with JSON/DOT output for downstream tools.
 
-### Phase 3 – Logic Simplifier (SmaRTLy-Inspired, In Progress)
+### Phase 3 – Logic Simplifier (SmaRTLy-Inspired, Completed)
 
 - **Goal:** Build a robust, resource-bounded logic simplification engine for the combinational logic in MIRR IR/netlists.
 - **Scope:**
   - Represent boolean expressions as recursive graphs (AND, OR, NOT, XOR nodes) in the AST and IR.
   - Implement algebraic simplification rules:
     - `X & 1 = X`, `X & 0 = 0`, `X | 0 = X`, `X ^ 0 = X`, `!!X = X`, `!true = false`, `!false = true`, etc.
+    - Boolean idempotence: `a & a = a`, `a | a = a`, `a ^ a = false`.
+    - Boolean absorption: `a & !a = false`, `a | !a = true`.
     - Constant folding and propagation throughout the expression tree.
-    - Eliminate redundant logic gates and flatten nested expressions where possible.
+    - Arithmetic identity/annihilation: `x + 0 = x`, `x * 1 = x`, `x * 0 = 0`, `x << 0 = x`.
+    - Arithmetic constant folding: `3 + 5 = 8`, `10 - 3 = 7` (wrapping semantics).
+    - Comparison constant folding: `3 < 5 = true`, `5 == 5 = true`.
   - Ensure all simplification passes are:
     - Deterministic and free of recursion or unbounded loops (NASA Power-of-10 compliance).
     - Bounded in memory and stack usage; no heap allocation in hot paths.
     - Fully covered by unit and integration tests, including edge cases and pathological inputs.
   - Provide a CLI tool (`mirr-simplify`) that:
-    - Reads MIRR IR/netlist or expression JSON.
+    - Reads MIRR IR/netlist or expression JSON, or full `.mirr` source files.
     - Applies all simplification passes.
     - Emits the reduced IR/netlist and statistics (e.g., gate count reduction).
     - Fails safely on malformed or unsupported input.
+  - Integrate simplification into the temporal compilation pipeline (pre-lowering pass).
   - (Optional, future) Integrate a SAT solver for equivalence checking and advanced redundancy elimination on small expressions.
 
 **Current Status:**
-  - All core simplification rules for boolean logic are implemented and tested.
-  - CLI tool `mirr-simplify` is available and functional.
-  - No SAT-based or advanced graph-based simplification yet.
-  - Arithmetic and bit-width inference not yet started.
+  - All boolean, arithmetic, and comparison simplification rules are implemented and tested (33 algebraic rules).
+  - Iterative post-order traversal engine (bounded, NASA P10 compliant, no recursion).
+  - Fixpoint iteration (bounded by MAX_PASSES) catches cascading reductions.
+  - SimplifyStats API reports rules applied and before/after node counts.
+  - CLI tool `mirr-simplify` supports both Expr JSON and full `.mirr` file modes with `--stats` flag.
+  - Simplification is wired into the temporal lowering pipeline: guard conditions are simplified before ConditionKind classification.
+  - 58 unit and integration tests with full rule coverage.
+  - SAT-based and advanced graph-based simplification deferred to future work.
 
 **Result artifact:** CLI tool `mirr-simplify` that reads a netlist/IR and prints a reduced version, with statistics on gate count reduction. All logic is robust, deterministic, and safety-audited.
 

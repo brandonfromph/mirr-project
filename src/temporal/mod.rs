@@ -15,6 +15,7 @@ pub mod low_level_ir;
 
 use crate::ast::program::Module;
 use crate::error::MirrError;
+use crate::simplify::simplify_expr;
 
 // Re-export the types callers need so they don't have to know sub-module paths.
 pub use compiler::{ImplementationStrategy, ResourceEstimate, ResourceEstimator, TemporalCompiler};
@@ -36,12 +37,23 @@ impl TemporalGuardCompiler {
     ///
     /// Each guard is compiled using the adaptive strategy (shift register vs
     /// counter) defined in `compiler::TemporalCompiler`.
+    ///
+    /// Phase 3 integration: guard conditions are simplified before lowering so
+    /// that expressions like `sensor && true` reduce to `sensor`, enabling
+    /// correct ConditionKind classification (SimpleSignal) instead of
+    /// unnecessary ComplexGuard wrapping.
     pub fn compile_temporal_guards(
         &mut self,
         module: &Module,
     ) -> Result<TemporalNetlist, MirrError> {
+        // Pre-simplify guard conditions (Phase 3 integration).
+        let simplified_guards: Vec<_> = module.guards.iter().map(|g| {
+            let mut g = g.clone();
+            g.condition = simplify_expr(g.condition);
+            g
+        }).collect();
         let mut inner = TemporalCompiler::new();
-        inner.compile_module(&module.guards)
+        inner.compile_module(&simplified_guards)
     }
 
     /// Serialize a netlist to pretty-printed JSON.

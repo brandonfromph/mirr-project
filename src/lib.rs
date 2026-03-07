@@ -26,4 +26,5 @@ pub use bootstrap_runner::{BootstrapOpts, BootstrapResult, BootstrapRunner, Stag
 pub use error::MirrError;
 pub use parser::parse_mirr;
 pub use validation::validate_module;
+pub use simplify::SimplifyStats;
 pub use temporal::{TemporalGuardCompiler, low_level_ir::TemporalNetlist, low_level_ir::TemporalNetlistJson};
