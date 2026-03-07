@@ -7,14 +7,14 @@
 
 #![forbid(unsafe_code)]
 
-pub mod types;
-pub mod flatten;
 pub mod constraint;
-pub mod solver;
 pub mod display;
+pub mod flatten;
 pub mod graph;
 pub mod scc;
 pub mod scc_solver;
+pub mod solver;
+pub mod types;
 pub mod verify;
 
 use crate::ast::expr::Expr;
@@ -94,11 +94,7 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
         nonexpansive_count: 0,
     };
 
-    WidthInferenceResult {
-        expr: width_expr,
-        diagnostics: all_diags,
-        stats,
-    }
+    WidthInferenceResult { expr: width_expr, diagnostics: all_diags, stats }
 }
 
 // ---------------------------------------------------------------------------
@@ -109,20 +105,15 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
 ///
 /// Runs width inference on the RHS expression, then compares the inferred
 /// width against the target signal's declared width.
-pub fn check_assignment(
-    assignment: &Assignment,
-    signals: &[SignalDecl],
-) -> Vec<WidthDiag> {
+pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<WidthDiag> {
     let result = infer_widths(&assignment.value, signals);
     let mut diags = result.diagnostics;
 
     // Look up target width.
-    let target_width = signals.iter()
-        .find(|s| s.name == assignment.target)
-        .map(|s| match s.ty {
-            SignalType::Bool => 1u32,
-            SignalType::Unsigned(w) => w,
-        });
+    let target_width = signals.iter().find(|s| s.name == assignment.target).map(|s| match s.ty {
+        SignalType::Bool => 1u32,
+        SignalType::Unsigned(w) => w,
+    });
 
     if let (Some(we), Some(tw)) = (&result.expr, target_width) {
         let expr_w = we.width();
@@ -186,9 +177,7 @@ impl ProgramWidthResult {
 /// checking for truncations at every assignment site.
 ///
 /// Bounded: iterates over guards + reflexes (finite, from parsed program).
-pub fn infer_program_widths(
-    program: &crate::ast::MirrProgram,
-) -> ProgramWidthResult {
+pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthResult {
     let signals = &program.module.signals;
     let mut guard_results: Vec<(String, WidthInferenceResult)> = Vec::new();
     let mut assignment_results: Vec<(String, Vec<WidthDiag>)> = Vec::new();
@@ -222,12 +211,10 @@ pub fn infer_program_widths(
             let mut diags = rhs_result.diagnostics;
 
             // Perform the truncation check inline.
-            let target_width = signals.iter()
-                .find(|s| s.name == a.target)
-                .map(|s| match s.ty {
-                    SignalType::Bool => 1u32,
-                    SignalType::Unsigned(w) => w,
-                });
+            let target_width = signals.iter().find(|s| s.name == a.target).map(|s| match s.ty {
+                SignalType::Bool => 1u32,
+                SignalType::Unsigned(w) => w,
+            });
             if let (Some(we), Some(tw)) = (&rhs_result.expr, target_width) {
                 diags.extend(solver::check_truncation(&a.target, tw, we.width()));
             }
@@ -238,11 +225,7 @@ pub fn infer_program_widths(
         }
     }
 
-    ProgramWidthResult {
-        guard_results,
-        assignment_results,
-        stats: total_stats,
-    }
+    ProgramWidthResult { guard_results, assignment_results, stats: total_stats }
 }
 
 // ---------------------------------------------------------------------------
@@ -313,9 +296,7 @@ impl SccWidthResult {
 /// solve SCCs -> verify minimality.
 ///
 /// Bounded: all steps are individually bounded.
-pub fn infer_program_widths_with_scc(
-    program: &crate::ast::MirrProgram,
-) -> SccWidthResult {
+pub fn infer_program_widths_with_scc(program: &crate::ast::MirrProgram) -> SccWidthResult {
     // Step 1: Run Phase 4a (per-expression inference).
     let phase4a = infer_program_widths(program);
 
@@ -333,9 +314,7 @@ pub fn infer_program_widths_with_scc(
         Vec::with_capacity(scc_result.sccs.len());
 
     for scc_info in scc_result.sccs {
-        let solve_result = scc_solver::solve_scc(
-            &scc_info, signals, guards, program,
-        );
+        let solve_result = scc_solver::solve_scc(&scc_info, signals, guards, program);
         scc_diags.extend(solve_result.diagnostics.iter().cloned());
         scc_solves.push((scc_info, solve_result));
     }
@@ -346,9 +325,8 @@ pub fn infer_program_widths_with_scc(
 
     // Aggregate stats.
     let scc_count = scc_solves.len();
-    let expansive_count = scc_solves.iter()
-        .filter(|(s, _)| s.kind == types::SccKind::Expansive)
-        .count();
+    let expansive_count =
+        scc_solves.iter().filter(|(s, _)| s.kind == types::SccKind::Expansive).count();
     let nonexpansive_count = scc_count - expansive_count;
 
     let stats = WidthStats {
@@ -360,9 +338,7 @@ pub fn infer_program_widths_with_scc(
         nonexpansive_count,
     };
 
-    let sccs: Vec<types::SccInfo> = scc_solves.iter()
-        .map(|(s, _)| s.clone())
-        .collect();
+    let sccs: Vec<types::SccInfo> = scc_solves.iter().map(|(s, _)| s.clone()).collect();
 
     // Collect SCC member signal names for truncation suppression.
     let mut scc_member_names = std::collections::HashSet::new();
@@ -384,4 +360,3 @@ pub fn infer_program_widths_with_scc(
         scc_member_names,
     }
 }
-

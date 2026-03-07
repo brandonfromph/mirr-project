@@ -19,17 +19,17 @@ use crate::lexer::tokenizer::Token;
 ///
 /// This helper is intentionally conservative: unknown kinds become
 /// Token::Ident(push_kind.to_string()) so parity tests can inspect them.
-pub fn map_push_kind_to_token(push_kind: &str, ident_text: Option<&str>, int_val: Option<u64>) -> Token {
+pub fn map_push_kind_to_token(
+    push_kind: &str,
+    ident_text: Option<&str>,
+    int_val: Option<u64>,
+) -> Token {
     match push_kind {
-        "integer" | "push_integer" | "emit_push_integer" => {
-            Token::Integer(int_val.unwrap_or(0))
-        }
-        "ident" | "push_ident" | "emit_push_ident" => {
-            match ident_text {
-                Some(s) => Token::Ident(s.to_string()),
-                None => Token::Ident("".to_string()),
-            }
-        }
+        "integer" | "push_integer" | "emit_push_integer" => Token::Integer(int_val.unwrap_or(0)),
+        "ident" | "push_ident" | "emit_push_ident" => match ident_text {
+            Some(s) => Token::Ident(s.to_string()),
+            None => Token::Ident("".to_string()),
+        },
         "eq_eq" | "push_eq_eq" | "emit_push_eq_eq" => Token::EqEq,
         "bang_eq" | "excl_eq" | "push_excl_eq" | "emit_push_excl_eq" => Token::BangEq,
         "le" | "push_le" | "emit_push_le" => Token::Le,
@@ -37,7 +37,9 @@ pub fn map_push_kind_to_token(push_kind: &str, ident_text: Option<&str>, int_val
         // Map arrow/dotdot to an identifier token so tests can observe them,
         // until a dedicated Token variant is added for them.
         "arrow" | "push_arrow" | "emit_push_arrow" => Token::Ident("->".to_string()),
-        "dot_dot" | "dotdot" | "push_dot_dot" | "emit_push_dot_dot" => Token::Ident("..".to_string()),
+        "dot_dot" | "dotdot" | "push_dot_dot" | "emit_push_dot_dot" => {
+            Token::Ident("..".to_string())
+        }
         // Keywords
         "kw_when" | "push_kw_when" | "emit_push_kw_when" => Token::Ident("when".to_string()),
         "kw_bool" | "push_kw_bool" | "emit_push_kw_bool" => Token::Ident("bool".to_string()),
@@ -66,9 +68,7 @@ impl Default for TokenBuffer {
 impl TokenBuffer {
     /// Create a new token buffer.
     pub fn new() -> Self {
-        Self {
-            tokens: Vec::with_capacity(TOKEN_BUFFER_CAPACITY),
-        }
+        Self { tokens: Vec::with_capacity(TOKEN_BUFFER_CAPACITY) }
     }
 
     /// Return number of tokens currently stored.
@@ -94,14 +94,24 @@ pub fn token_buffer_push(buf: &mut TokenBuffer, tok: Token) -> bool {
 }
 
 /// Keep the existing helper for Vec<Token> for backwards compatibility/tests.
-pub fn push_mapped_token(vec: &mut Vec<Token>, push_kind: &str, ident_text: Option<&str>, int_val: Option<u64>) -> bool {
+pub fn push_mapped_token(
+    vec: &mut Vec<Token>,
+    push_kind: &str,
+    ident_text: Option<&str>,
+    int_val: Option<u64>,
+) -> bool {
     let tok = map_push_kind_to_token(push_kind, ident_text, int_val);
     vec.push(tok);
     true
 }
 
 /// Map a lexer push-kind and append into a TokenBuffer (preferred host API).
-pub fn push_mapped_token_to_buffer(buf: &mut TokenBuffer, push_kind: &str, ident_text: Option<&str>, int_val: Option<u64>) -> bool {
+pub fn push_mapped_token_to_buffer(
+    buf: &mut TokenBuffer,
+    push_kind: &str,
+    ident_text: Option<&str>,
+    int_val: Option<u64>,
+) -> bool {
     let tok = map_push_kind_to_token(push_kind, ident_text, int_val);
     token_buffer_push(buf, tok)
 }
@@ -132,7 +142,13 @@ impl Value {
     pub fn as_int(&self) -> u64 {
         match self {
             Value::Integer(i) => *i,
-            Value::Bool(b) => if *b { 1 } else { 0 },
+            Value::Bool(b) => {
+                if *b {
+                    1
+                } else {
+                    0
+                }
+            }
         }
     }
 }
@@ -247,9 +263,7 @@ impl RuntimeHandle {
     /// provided worst-case counts. This should be called during module/runtime
     /// initialization (not per tick).
     pub fn new(guard_capacity: usize, signal_capacity: usize, reflex_capacity: usize) -> Self {
-        RuntimeHandle {
-            pools: RuntimePools::new(guard_capacity, signal_capacity, reflex_capacity),
-        }
+        RuntimeHandle { pools: RuntimePools::new(guard_capacity, signal_capacity, reflex_capacity) }
     }
 }
 

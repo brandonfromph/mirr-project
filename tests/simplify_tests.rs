@@ -13,10 +13,18 @@ use nasa_rust_project::simplify::{simplify_expr, simplify_expr_with_stats};
 // Helper constructors
 // ---------------------------------------------------------------------------
 
-fn sig(name: &str) -> Expr { Expr::Signal(name.into()) }
-fn bool_lit(b: bool) -> Expr { Expr::Literal(LiteralValue::Bool(b)) }
-fn int_lit(n: u64) -> Expr { Expr::Literal(LiteralValue::Integer(n)) }
-fn not(e: Expr) -> Expr { Expr::Unary { op: UnaryOp::Not, operand: Box::new(e) } }
+fn sig(name: &str) -> Expr {
+    Expr::Signal(name.into())
+}
+fn bool_lit(b: bool) -> Expr {
+    Expr::Literal(LiteralValue::Bool(b))
+}
+fn int_lit(n: u64) -> Expr {
+    Expr::Literal(LiteralValue::Integer(n))
+}
+fn not(e: Expr) -> Expr {
+    Expr::Unary { op: UnaryOp::Not, operand: Box::new(e) }
+}
 fn bin(op: BinaryOp, l: Expr, r: Expr) -> Expr {
     Expr::Binary { op, left: Box::new(l), right: Box::new(r) }
 }
@@ -26,66 +34,102 @@ fn bin(op: BinaryOp, l: Expr, r: Expr) -> Expr {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn and_true_right() { assert_eq!(simplify_expr(bin(BinaryOp::And, sig("a"), bool_lit(true))), sig("a")); }
+fn and_true_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::And, sig("a"), bool_lit(true))), sig("a"));
+}
 
 #[test]
-fn and_true_left() { assert_eq!(simplify_expr(bin(BinaryOp::And, bool_lit(true), sig("a"))), sig("a")); }
+fn and_true_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::And, bool_lit(true), sig("a"))), sig("a"));
+}
 
 #[test]
-fn and_false_right() { assert_eq!(simplify_expr(bin(BinaryOp::And, sig("a"), bool_lit(false))), bool_lit(false)); }
+fn and_false_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::And, sig("a"), bool_lit(false))), bool_lit(false));
+}
 
 #[test]
-fn and_false_left() { assert_eq!(simplify_expr(bin(BinaryOp::And, bool_lit(false), sig("a"))), bool_lit(false)); }
+fn and_false_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::And, bool_lit(false), sig("a"))), bool_lit(false));
+}
 
 #[test]
-fn or_false_right() { assert_eq!(simplify_expr(bin(BinaryOp::Or, sig("a"), bool_lit(false))), sig("a")); }
+fn or_false_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Or, sig("a"), bool_lit(false))), sig("a"));
+}
 
 #[test]
-fn or_false_left() { assert_eq!(simplify_expr(bin(BinaryOp::Or, bool_lit(false), sig("a"))), sig("a")); }
+fn or_false_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Or, bool_lit(false), sig("a"))), sig("a"));
+}
 
 #[test]
-fn or_true_right() { assert_eq!(simplify_expr(bin(BinaryOp::Or, sig("a"), bool_lit(true))), bool_lit(true)); }
+fn or_true_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Or, sig("a"), bool_lit(true))), bool_lit(true));
+}
 
 #[test]
-fn or_true_left() { assert_eq!(simplify_expr(bin(BinaryOp::Or, bool_lit(true), sig("a"))), bool_lit(true)); }
+fn or_true_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Or, bool_lit(true), sig("a"))), bool_lit(true));
+}
 
 #[test]
-fn xor_false_right() { assert_eq!(simplify_expr(bin(BinaryOp::Xor, sig("a"), bool_lit(false))), sig("a")); }
+fn xor_false_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Xor, sig("a"), bool_lit(false))), sig("a"));
+}
 
 #[test]
-fn xor_false_left() { assert_eq!(simplify_expr(bin(BinaryOp::Xor, bool_lit(false), sig("a"))), sig("a")); }
+fn xor_false_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Xor, bool_lit(false), sig("a"))), sig("a"));
+}
 
 #[test]
-fn xor_true_right() { assert_eq!(simplify_expr(bin(BinaryOp::Xor, sig("a"), bool_lit(true))), not(sig("a"))); }
+fn xor_true_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Xor, sig("a"), bool_lit(true))), not(sig("a")));
+}
 
 #[test]
-fn xor_true_left() { assert_eq!(simplify_expr(bin(BinaryOp::Xor, bool_lit(true), sig("a"))), not(sig("a"))); }
+fn xor_true_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Xor, bool_lit(true), sig("a"))), not(sig("a")));
+}
 
 // ---------------------------------------------------------------------------
 // Unary rules
 // ---------------------------------------------------------------------------
 
 #[test]
-fn double_negation() { assert_eq!(simplify_expr(not(not(sig("a")))), sig("a")); }
+fn double_negation() {
+    assert_eq!(simplify_expr(not(not(sig("a")))), sig("a"));
+}
 
 #[test]
-fn not_true() { assert_eq!(simplify_expr(not(bool_lit(true))), bool_lit(false)); }
+fn not_true() {
+    assert_eq!(simplify_expr(not(bool_lit(true))), bool_lit(false));
+}
 
 #[test]
-fn not_false() { assert_eq!(simplify_expr(not(bool_lit(false))), bool_lit(true)); }
+fn not_false() {
+    assert_eq!(simplify_expr(not(bool_lit(false))), bool_lit(true));
+}
 
 // ---------------------------------------------------------------------------
 // Boolean idempotence / absorption (5 rules)
 // ---------------------------------------------------------------------------
 
 #[test]
-fn and_idempotent() { assert_eq!(simplify_expr(bin(BinaryOp::And, sig("x"), sig("x"))), sig("x")); }
+fn and_idempotent() {
+    assert_eq!(simplify_expr(bin(BinaryOp::And, sig("x"), sig("x"))), sig("x"));
+}
 
 #[test]
-fn or_idempotent() { assert_eq!(simplify_expr(bin(BinaryOp::Or, sig("x"), sig("x"))), sig("x")); }
+fn or_idempotent() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Or, sig("x"), sig("x"))), sig("x"));
+}
 
 #[test]
-fn xor_self_cancel() { assert_eq!(simplify_expr(bin(BinaryOp::Xor, sig("x"), sig("x"))), bool_lit(false)); }
+fn xor_self_cancel() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Xor, sig("x"), sig("x"))), bool_lit(false));
+}
 
 #[test]
 fn and_contradiction() {
@@ -116,81 +160,127 @@ fn or_tautology_reversed() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn cmp_lt_true() { assert_eq!(simplify_expr(bin(BinaryOp::Lt, int_lit(3), int_lit(5))), bool_lit(true)); }
+fn cmp_lt_true() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Lt, int_lit(3), int_lit(5))), bool_lit(true));
+}
 
 #[test]
-fn cmp_lt_false() { assert_eq!(simplify_expr(bin(BinaryOp::Lt, int_lit(5), int_lit(3))), bool_lit(false)); }
+fn cmp_lt_false() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Lt, int_lit(5), int_lit(3))), bool_lit(false));
+}
 
 #[test]
-fn cmp_le_true() { assert_eq!(simplify_expr(bin(BinaryOp::Le, int_lit(5), int_lit(5))), bool_lit(true)); }
+fn cmp_le_true() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Le, int_lit(5), int_lit(5))), bool_lit(true));
+}
 
 #[test]
-fn cmp_gt_true() { assert_eq!(simplify_expr(bin(BinaryOp::Gt, int_lit(7), int_lit(3))), bool_lit(true)); }
+fn cmp_gt_true() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Gt, int_lit(7), int_lit(3))), bool_lit(true));
+}
 
 #[test]
-fn cmp_ge_true() { assert_eq!(simplify_expr(bin(BinaryOp::Ge, int_lit(3), int_lit(3))), bool_lit(true)); }
+fn cmp_ge_true() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Ge, int_lit(3), int_lit(3))), bool_lit(true));
+}
 
 #[test]
-fn cmp_eq_true() { assert_eq!(simplify_expr(bin(BinaryOp::Eq, int_lit(42), int_lit(42))), bool_lit(true)); }
+fn cmp_eq_true() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Eq, int_lit(42), int_lit(42))), bool_lit(true));
+}
 
 #[test]
-fn cmp_eq_false() { assert_eq!(simplify_expr(bin(BinaryOp::Eq, int_lit(1), int_lit(2))), bool_lit(false)); }
+fn cmp_eq_false() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Eq, int_lit(1), int_lit(2))), bool_lit(false));
+}
 
 #[test]
-fn cmp_ne_true() { assert_eq!(simplify_expr(bin(BinaryOp::Ne, int_lit(1), int_lit(2))), bool_lit(true)); }
+fn cmp_ne_true() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Ne, int_lit(1), int_lit(2))), bool_lit(true));
+}
 
 #[test]
-fn cmp_ne_false() { assert_eq!(simplify_expr(bin(BinaryOp::Ne, int_lit(5), int_lit(5))), bool_lit(false)); }
+fn cmp_ne_false() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Ne, int_lit(5), int_lit(5))), bool_lit(false));
+}
 
 // ---------------------------------------------------------------------------
 // Arithmetic identity / annihilation
 // ---------------------------------------------------------------------------
 
 #[test]
-fn add_zero_right() { assert_eq!(simplify_expr(bin(BinaryOp::Add, sig("x"), int_lit(0))), sig("x")); }
+fn add_zero_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Add, sig("x"), int_lit(0))), sig("x"));
+}
 
 #[test]
-fn add_zero_left() { assert_eq!(simplify_expr(bin(BinaryOp::Add, int_lit(0), sig("x"))), sig("x")); }
+fn add_zero_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Add, int_lit(0), sig("x"))), sig("x"));
+}
 
 #[test]
-fn sub_zero() { assert_eq!(simplify_expr(bin(BinaryOp::Sub, sig("x"), int_lit(0))), sig("x")); }
+fn sub_zero() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Sub, sig("x"), int_lit(0))), sig("x"));
+}
 
 #[test]
-fn mul_one_right() { assert_eq!(simplify_expr(bin(BinaryOp::Mul, sig("x"), int_lit(1))), sig("x")); }
+fn mul_one_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Mul, sig("x"), int_lit(1))), sig("x"));
+}
 
 #[test]
-fn mul_one_left() { assert_eq!(simplify_expr(bin(BinaryOp::Mul, int_lit(1), sig("x"))), sig("x")); }
+fn mul_one_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Mul, int_lit(1), sig("x"))), sig("x"));
+}
 
 #[test]
-fn mul_zero_right() { assert_eq!(simplify_expr(bin(BinaryOp::Mul, sig("x"), int_lit(0))), int_lit(0)); }
+fn mul_zero_right() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Mul, sig("x"), int_lit(0))), int_lit(0));
+}
 
 #[test]
-fn mul_zero_left() { assert_eq!(simplify_expr(bin(BinaryOp::Mul, int_lit(0), sig("x"))), int_lit(0)); }
+fn mul_zero_left() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Mul, int_lit(0), sig("x"))), int_lit(0));
+}
 
 #[test]
-fn shl_zero() { assert_eq!(simplify_expr(bin(BinaryOp::Shl, sig("x"), int_lit(0))), sig("x")); }
+fn shl_zero() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Shl, sig("x"), int_lit(0))), sig("x"));
+}
 
 #[test]
-fn shr_zero() { assert_eq!(simplify_expr(bin(BinaryOp::Shr, sig("x"), int_lit(0))), sig("x")); }
+fn shr_zero() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Shr, sig("x"), int_lit(0))), sig("x"));
+}
 
 // ---------------------------------------------------------------------------
 // Arithmetic constant folding
 // ---------------------------------------------------------------------------
 
 #[test]
-fn add_constants() { assert_eq!(simplify_expr(bin(BinaryOp::Add, int_lit(3), int_lit(5))), int_lit(8)); }
+fn add_constants() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Add, int_lit(3), int_lit(5))), int_lit(8));
+}
 
 #[test]
-fn sub_constants() { assert_eq!(simplify_expr(bin(BinaryOp::Sub, int_lit(10), int_lit(3))), int_lit(7)); }
+fn sub_constants() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Sub, int_lit(10), int_lit(3))), int_lit(7));
+}
 
 #[test]
-fn mul_constants() { assert_eq!(simplify_expr(bin(BinaryOp::Mul, int_lit(4), int_lit(8))), int_lit(32)); }
+fn mul_constants() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Mul, int_lit(4), int_lit(8))), int_lit(32));
+}
 
 #[test]
-fn shl_constants() { assert_eq!(simplify_expr(bin(BinaryOp::Shl, int_lit(1), int_lit(4))), int_lit(16)); }
+fn shl_constants() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Shl, int_lit(1), int_lit(4))), int_lit(16));
+}
 
 #[test]
-fn shr_constants() { assert_eq!(simplify_expr(bin(BinaryOp::Shr, int_lit(16), int_lit(2))), int_lit(4)); }
+fn shr_constants() {
+    assert_eq!(simplify_expr(bin(BinaryOp::Shr, int_lit(16), int_lit(2))), int_lit(4));
+}
 
 #[test]
 fn shl_clamped_to_63() {
@@ -238,13 +328,19 @@ fn nested_arithmetic() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn signal_passthrough() { assert_eq!(simplify_expr(sig("x")), sig("x")); }
+fn signal_passthrough() {
+    assert_eq!(simplify_expr(sig("x")), sig("x"));
+}
 
 #[test]
-fn bool_literal_passthrough() { assert_eq!(simplify_expr(bool_lit(true)), bool_lit(true)); }
+fn bool_literal_passthrough() {
+    assert_eq!(simplify_expr(bool_lit(true)), bool_lit(true));
+}
 
 #[test]
-fn int_literal_passthrough() { assert_eq!(simplify_expr(int_lit(42)), int_lit(42)); }
+fn int_literal_passthrough() {
+    assert_eq!(simplify_expr(int_lit(42)), int_lit(42));
+}
 
 #[test]
 fn non_simplifiable_comparison_passthrough() {
@@ -313,7 +409,8 @@ module test_simplify {
 "#;
     let program = nasa_rust_project::parse_mirr(src).expect("parse should succeed");
     let mut compiler = nasa_rust_project::TemporalGuardCompiler::new();
-    let netlist = compiler.compile_temporal_guards(&program.module)
+    let netlist = compiler
+        .compile_temporal_guards(&program.module)
         .expect("temporal lowering should succeed after simplification");
     assert_eq!(netlist.guards.len(), 1, "should have 1 compiled guard");
 }

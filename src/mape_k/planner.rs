@@ -15,8 +15,8 @@
 
 #![forbid(unsafe_code)]
 
-use serde::{Deserialize, Serialize};
 use super::ltl::PropertyResult;
+use serde::{Deserialize, Serialize};
 
 /// Maximum action table size (bounded resource, NASA P10).
 pub const MAX_ACTION_ENTRIES: usize = 256;
@@ -141,9 +141,7 @@ impl Planner {
             });
 
             if triggered {
-                let dominated = best
-                    .map(|(_, bp, _)| entry.priority <= bp)
-                    .unwrap_or(false);
+                let dominated = best.map(|(_, bp, _)| entry.priority <= bp).unwrap_or(false);
                 if !dominated {
                     best = Some((eidx, entry.priority, entry.trigger_property_idx));
                 }
@@ -156,11 +154,7 @@ impl Planner {
                 entry_idx: Some(eidx),
                 trigger_property_idx: Some(pidx),
             },
-            None => PlanResult {
-                action: None,
-                entry_idx: None,
-                trigger_property_idx: None,
-            },
+            None => PlanResult { action: None, entry_idx: None, trigger_property_idx: None },
         }
     }
 }
@@ -174,23 +168,17 @@ mod tests {
     use super::*;
 
     fn violation(idx: usize) -> PropertyResult {
-        PropertyResult {
-            property_idx: idx,
-            satisfied: false,
-            evidence_tick: Some(0),
-        }
+        PropertyResult { property_idx: idx, satisfied: false, evidence_tick: Some(0) }
     }
 
     #[test]
     fn select_single_match() {
-        let planner = Planner::new(vec![
-            ActionEntry {
-                trigger_property_idx: 0,
-                action: AdaptationAction::EmergencyStop,
-                priority: 10,
-                trigger_on: TriggerCondition::OnViolation,
-            },
-        ]);
+        let planner = Planner::new(vec![ActionEntry {
+            trigger_property_idx: 0,
+            action: AdaptationAction::EmergencyStop,
+            priority: 10,
+            trigger_on: TriggerCondition::OnViolation,
+        }]);
         let result = planner.select(&[violation(0)]);
         assert_eq!(result.action, Some(AdaptationAction::EmergencyStop));
     }
@@ -200,9 +188,7 @@ mod tests {
         let planner = Planner::new(vec![
             ActionEntry {
                 trigger_property_idx: 0,
-                action: AdaptationAction::SetSignal {
-                    name: "low".to_string(), value: 1,
-                },
+                action: AdaptationAction::SetSignal { name: "low".to_string(), value: 1 },
                 priority: 5,
                 trigger_on: TriggerCondition::OnViolation,
             },
@@ -220,14 +206,12 @@ mod tests {
 
     #[test]
     fn select_no_match() {
-        let planner = Planner::new(vec![
-            ActionEntry {
-                trigger_property_idx: 5,
-                action: AdaptationAction::EmergencyStop,
-                priority: 10,
-                trigger_on: TriggerCondition::OnViolation,
-            },
-        ]);
+        let planner = Planner::new(vec![ActionEntry {
+            trigger_property_idx: 5,
+            action: AdaptationAction::EmergencyStop,
+            priority: 10,
+            trigger_on: TriggerCondition::OnViolation,
+        }]);
         let result = planner.select(&[violation(0)]); // violation is for prop 0
         assert_eq!(result.action, None);
     }
@@ -237,9 +221,7 @@ mod tests {
         let planner = Planner::new(vec![
             ActionEntry {
                 trigger_property_idx: 0,
-                action: AdaptationAction::SetSignal {
-                    name: "a".to_string(), value: 1,
-                },
+                action: AdaptationAction::SetSignal { name: "a".to_string(), value: 1 },
                 priority: 5,
                 trigger_on: TriggerCondition::OnViolation,
             },
@@ -257,28 +239,20 @@ mod tests {
 
     #[test]
     fn select_on_satisfaction() {
-        let planner = Planner::new(vec![
-            ActionEntry {
-                trigger_property_idx: 0,
-                action: AdaptationAction::EmergencyStop,
-                priority: 10,
-                trigger_on: TriggerCondition::OnSatisfaction,
-            },
-        ]);
-        let satisfied = PropertyResult {
-            property_idx: 0,
-            satisfied: true,
-            evidence_tick: Some(5),
-        };
+        let planner = Planner::new(vec![ActionEntry {
+            trigger_property_idx: 0,
+            action: AdaptationAction::EmergencyStop,
+            priority: 10,
+            trigger_on: TriggerCondition::OnSatisfaction,
+        }]);
+        let satisfied = PropertyResult { property_idx: 0, satisfied: true, evidence_tick: Some(5) };
         let result = planner.select(&[satisfied]);
         assert_eq!(result.action, Some(AdaptationAction::EmergencyStop));
     }
 
     #[test]
     fn action_label_formatting() {
-        let a = AdaptationAction::SetSignal {
-            name: "clamp".to_string(), value: 1,
-        };
+        let a = AdaptationAction::SetSignal { name: "clamp".to_string(), value: 1 };
         assert_eq!(a.label(), "SetSignal(clamp=1)");
         assert_eq!(AdaptationAction::EmergencyStop.label(), "EmergencyStop");
     }

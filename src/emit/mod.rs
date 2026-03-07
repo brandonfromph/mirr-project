@@ -5,5 +5,5 @@
 #![forbid(unsafe_code)]
 
 pub mod dot;
-pub mod verilog;
 pub mod json_netlist;
+pub mod verilog;

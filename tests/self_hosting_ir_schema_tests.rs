@@ -11,9 +11,7 @@
 //   - Round-trip: parse JSON back into structs and compare equality
 // ---------------------------------------------------------------------------
 
-use nasa_rust_project::{
-    parse_mirr, MirrAstJson, TemporalGuardCompiler, TemporalNetlistJson,
-};
+use nasa_rust_project::{parse_mirr, MirrAstJson, TemporalGuardCompiler, TemporalNetlistJson};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,14 +119,8 @@ module m {
     let program = parse_mirr(src).expect("parse failed");
     let ast_json = MirrAstJson::from_program(&program);
     let json_str = serde_json::to_string(&ast_json).expect("serialization failed");
-    assert!(
-        json_str.contains("\"ir_version\""),
-        "JSON output must contain ir_version key"
-    );
-    assert!(
-        json_str.contains("\"1.0\""),
-        "ir_version value must be \"1.0\""
-    );
+    assert!(json_str.contains("\"ir_version\""), "JSON output must contain ir_version key");
+    assert!(json_str.contains("\"1.0\""), "ir_version value must be \"1.0\"");
 }
 
 #[test]
@@ -137,10 +129,8 @@ fn ast_golden_fixture_neonatal_signal_names() {
     let value = normalize_json(&fixture_str);
 
     let signals = value["module"]["signals"].as_array().expect("signals must be array");
-    let names: Vec<&str> = signals
-        .iter()
-        .map(|s| s["name"].as_str().expect("signal name must be string"))
-        .collect();
+    let names: Vec<&str> =
+        signals.iter().map(|s| s["name"].as_str().expect("signal name must be string")).collect();
 
     assert_eq!(names, ["respirator_enable", "airway_pressure", "clamp_valve"]);
 }
@@ -177,14 +167,8 @@ fn ast_golden_fixture_seizure_monitor() {
     let cond = &guard["condition"]["Binary"];
     assert_eq!(cond["op"].as_str().unwrap(), "And");
     assert_eq!(cond["left"]["Signal"].as_str().unwrap(), "eeg_spike");
-    assert_eq!(
-        cond["right"]["Unary"]["op"].as_str().unwrap(),
-        "Not"
-    );
-    assert_eq!(
-        cond["right"]["Unary"]["operand"]["Signal"].as_str().unwrap(),
-        "artifact_noise"
-    );
+    assert_eq!(cond["right"]["Unary"]["op"].as_str().unwrap(), "Not");
+    assert_eq!(cond["right"]["Unary"]["operand"]["Signal"].as_str().unwrap(), "artifact_noise");
 }
 
 // ---------------------------------------------------------------------------
@@ -286,10 +270,7 @@ fn netlist_golden_fixture_counter_strategy_used() {
 
     let guards = value["guards"].as_array().expect("guards must be array");
     assert_eq!(guards.len(), 1);
-    assert!(
-        guards[0].get("Counter").is_some(),
-        "1000-cycle guard must use Counter strategy"
-    );
+    assert!(guards[0].get("Counter").is_some(), "1000-cycle guard must use Counter strategy");
 
     let counter = &guards[0]["Counter"];
     assert_eq!(counter["name"].as_str().unwrap(), "sustained_pressure_drop");

@@ -12,9 +12,8 @@
 use std::process;
 
 use nasa_rust_project::mape_k::{
-    self,
-    AdaptationAction, SimConfig, SensorConfig, TemporalProperty,
-    SignalPredicate, ActionEntry, MapeKSimulator, TriggerCondition,
+    self, ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
+    TemporalProperty, TriggerCondition,
 };
 
 fn main() {
@@ -116,22 +115,21 @@ fn main() {
 /// detect the sustained pressure drop and activate the emergency clamp.
 fn neonatal_respirator_config() -> SimConfig {
     SimConfig {
-        sensors: vec![
-            SensorConfig {
-                name: "airway_pressure".to_string(),
-                base_value: 120,
-                noise_amplitude: 5,
-                fault_at_tick: Some(500),
-                fault_value: 10, // Sensor degrades to dangerously low value.
-                fault_end_tick: None,
-                seed: 42,
-            },
-        ],
+        sensors: vec![SensorConfig {
+            name: "airway_pressure".to_string(),
+            base_value: 120,
+            noise_amplitude: 5,
+            fault_at_tick: Some(500),
+            fault_value: 10, // Sensor degrades to dangerously low value.
+            fault_end_tick: None,
+            seed: 42,
+        }],
         properties: vec![
             // Safety property: airway pressure must always be above 50.
-            TemporalProperty::Always(
-                SignalPredicate::GreaterThan("airway_pressure".to_string(), 50),
-            ),
+            TemporalProperty::Always(SignalPredicate::GreaterThan(
+                "airway_pressure".to_string(),
+                50,
+            )),
             // Sustained low: pressure below 50 for 10 consecutive ticks
             // is a critical condition requiring emergency action.
             TemporalProperty::Persists(

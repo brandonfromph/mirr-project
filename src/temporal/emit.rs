@@ -27,8 +27,8 @@
 // Ref: MIRR-PHASE2-001 §2 (emission scope), P2-REQ-007, P2-REQ-008
 // ---------------------------------------------------------------------------
 
-use crate::error::MirrError;
 use crate::ast::types::SignalType;
+use crate::error::MirrError;
 use crate::temporal::low_level_ir::{CompiledGuard, GeneratedSignalKind, TemporalNetlist};
 
 /// Emit a `TemporalNetlist` as a pretty-printed JSON string.
@@ -79,7 +79,10 @@ pub fn emit_dot(netlist: &TemporalNetlist) -> Result<String, MirrError> {
             CompiledGuard::Counter(c) => {
                 dot.push_str(&format!(
                     "  subgraph cluster_{} {{\n    label=\"Counter: {}\\n{}\\nfor {} cycles\";\n",
-                    c.name, c.name, c.condition_kind.describe(), c.target_count
+                    c.name,
+                    c.name,
+                    c.condition_kind.describe(),
+                    c.target_count
                 ));
                 dot.push_str(&format!(
                     "    \"{}\" -> \"{}\";\n    \"{}\" -> \"{}\";\n    \"{}\" -> \"{}\";\n  }}\n",
@@ -155,10 +158,7 @@ pub fn emit_verilog(netlist: &TemporalNetlist) -> Result<String, MirrError> {
                 ));
             }
             CompiledGuard::Complex(cx) => {
-                v.push_str(&format!(
-                    "    // Complex guard '{}'\n",
-                    cx.name
-                ));
+                v.push_str(&format!("    // Complex guard '{}'\n", cx.name));
             }
         }
     }
@@ -170,8 +170,8 @@ pub fn emit_verilog(netlist: &TemporalNetlist) -> Result<String, MirrError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::temporal::low_level_ir::{GeneratedSignal, ShiftRegisterGuard, TemporalNetlist};
     use crate::temporal::low_level_ir::CompiledGuard;
+    use crate::temporal::low_level_ir::{GeneratedSignal, ShiftRegisterGuard, TemporalNetlist};
 
     fn simple_sr_netlist() -> TemporalNetlist {
         use crate::temporal::low_level_ir::ConditionKind;

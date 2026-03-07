@@ -56,10 +56,7 @@ impl Analyzer {
 
     /// Return only violated properties from the last evaluation.
     pub fn violations(&self, monitor: &Monitor) -> Vec<PropertyResult> {
-        self.evaluate(monitor)
-            .into_iter()
-            .filter(|r| !r.satisfied)
-            .collect()
+        self.evaluate(monitor).into_iter().filter(|r| !r.satisfied).collect()
     }
 }
 
@@ -75,40 +72,29 @@ impl Analyzer {
         monitor: &Monitor,
     ) -> PropertyResult {
         match prop {
-            TemporalProperty::Always(pred) => {
-                self.eval_always(idx, pred, monitor)
-            }
+            TemporalProperty::Always(pred) => self.eval_always(idx, pred, monitor),
             TemporalProperty::EventuallyWithin(pred, n) => {
                 self.eval_eventually_within(idx, pred, *n, monitor)
             }
-            TemporalProperty::Persists(pred, n) => {
-                self.eval_persists(idx, pred, *n, monitor)
-            }
+            TemporalProperty::Persists(pred, n) => self.eval_persists(idx, pred, *n, monitor),
         }
     }
 
     /// G(P): P must hold at every tick in the window.
-    fn eval_always(
-        &self,
-        idx: usize,
-        pred: &SignalPredicate,
-        monitor: &Monitor,
-    ) -> PropertyResult {
+    fn eval_always(&self, idx: usize, pred: &SignalPredicate, monitor: &Monitor) -> PropertyResult {
         let window = match monitor.window(pred.signal_name()) {
             Some(w) => w,
-            None => return PropertyResult {
-                property_idx: idx,
-                satisfied: true, // no data => vacuously true
-                evidence_tick: None,
-            },
+            None => {
+                return PropertyResult {
+                    property_idx: idx,
+                    satisfied: true, // no data => vacuously true
+                    evidence_tick: None,
+                };
+            }
         };
 
         if window.is_empty() {
-            return PropertyResult {
-                property_idx: idx,
-                satisfied: true,
-                evidence_tick: None,
-            };
+            return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None };
         }
 
         // Scan window from oldest to newest. First violation = evidence.
@@ -141,19 +127,17 @@ impl Analyzer {
     ) -> PropertyResult {
         let window = match monitor.window(pred.signal_name()) {
             Some(w) => w,
-            None => return PropertyResult {
-                property_idx: idx,
-                satisfied: false, // no data => never satisfied
-                evidence_tick: None,
-            },
+            None => {
+                return PropertyResult {
+                    property_idx: idx,
+                    satisfied: false, // no data => never satisfied
+                    evidence_tick: None,
+                };
+            }
         };
 
         if window.is_empty() {
-            return PropertyResult {
-                property_idx: idx,
-                satisfied: false,
-                evidence_tick: None,
-            };
+            return PropertyResult { property_idx: idx, satisfied: false, evidence_tick: None };
         }
 
         // Check the last N entries (or full window if shorter).
@@ -189,11 +173,9 @@ impl Analyzer {
     ) -> PropertyResult {
         let window = match monitor.window(pred.signal_name()) {
             Some(w) => w,
-            None => return PropertyResult {
-                property_idx: idx,
-                satisfied: false,
-                evidence_tick: None,
-            },
+            None => {
+                return PropertyResult { property_idx: idx, satisfied: false, evidence_tick: None }
+            }
         };
 
         if window.is_empty() || n == 0 {
@@ -255,9 +237,10 @@ mod tests {
     #[test]
     fn always_satisfied() {
         let mon = make_monitor_with("p", &[50, 51, 52, 53]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::Always(SignalPredicate::GreaterThan("p".to_string(), 40)),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::Always(SignalPredicate::GreaterThan(
+            "p".to_string(),
+            40,
+        ))]);
         let results = a.evaluate(&mon);
         assert!(results[0].satisfied);
     }
@@ -265,9 +248,10 @@ mod tests {
     #[test]
     fn always_violated() {
         let mon = make_monitor_with("p", &[50, 51, 30, 53]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::Always(SignalPredicate::GreaterThan("p".to_string(), 40)),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::Always(SignalPredicate::GreaterThan(
+            "p".to_string(),
+            40,
+        ))]);
         let results = a.evaluate(&mon);
         assert!(!results[0].satisfied);
         assert_eq!(results[0].evidence_tick, Some(2));
@@ -276,11 +260,10 @@ mod tests {
     #[test]
     fn eventually_within_satisfied() {
         let mon = make_monitor_with("flag", &[0, 0, 1, 0]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::EventuallyWithin(
-                SignalPredicate::IsTrue("flag".to_string()), 4
-            ),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::EventuallyWithin(
+            SignalPredicate::IsTrue("flag".to_string()),
+            4,
+        )]);
         let results = a.evaluate(&mon);
         assert!(results[0].satisfied);
     }
@@ -288,11 +271,10 @@ mod tests {
     #[test]
     fn eventually_within_violated() {
         let mon = make_monitor_with("flag", &[0, 0, 0, 0]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::EventuallyWithin(
-                SignalPredicate::IsTrue("flag".to_string()), 4
-            ),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::EventuallyWithin(
+            SignalPredicate::IsTrue("flag".to_string()),
+            4,
+        )]);
         let results = a.evaluate(&mon);
         assert!(!results[0].satisfied);
     }
@@ -301,11 +283,10 @@ mod tests {
     fn eventually_within_window_boundary() {
         // Only check last 2 ticks. True at tick 0, but not in last 2.
         let mon = make_monitor_with("s", &[1, 0, 0, 0]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::EventuallyWithin(
-                SignalPredicate::IsTrue("s".to_string()), 2
-            ),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::EventuallyWithin(
+            SignalPredicate::IsTrue("s".to_string()),
+            2,
+        )]);
         let results = a.evaluate(&mon);
         assert!(!results[0].satisfied);
     }
@@ -313,11 +294,10 @@ mod tests {
     #[test]
     fn persists_satisfied() {
         let mon = make_monitor_with("p", &[10, 20, 30, 40, 50]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::Persists(
-                SignalPredicate::GreaterThan("p".to_string(), 5), 3
-            ),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::Persists(
+            SignalPredicate::GreaterThan("p".to_string(), 5),
+            3,
+        )]);
         let results = a.evaluate(&mon);
         assert!(results[0].satisfied);
     }
@@ -326,11 +306,10 @@ mod tests {
     fn persists_broken_run() {
         // Run of 2, then break, then run of 1. Need 3 consecutive.
         let mon = make_monitor_with("p", &[50, 50, 2, 50]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::Persists(
-                SignalPredicate::GreaterThan("p".to_string(), 10), 3
-            ),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::Persists(
+            SignalPredicate::GreaterThan("p".to_string(), 10),
+            3,
+        )]);
         let results = a.evaluate(&mon);
         assert!(!results[0].satisfied);
     }
@@ -339,11 +318,10 @@ mod tests {
     fn persists_exact_boundary() {
         // Exactly 3 consecutive at the end.
         let mon = make_monitor_with("x", &[0, 1, 1, 1]);
-        let a = Analyzer::new(vec![
-            TemporalProperty::Persists(
-                SignalPredicate::IsTrue("x".to_string()), 3
-            ),
-        ]);
+        let a = Analyzer::new(vec![TemporalProperty::Persists(
+            SignalPredicate::IsTrue("x".to_string()),
+            3,
+        )]);
         let results = a.evaluate(&mon);
         assert!(results[0].satisfied);
     }
@@ -356,7 +334,7 @@ mod tests {
             TemporalProperty::Always(SignalPredicate::LessThan("v".to_string(), 250)),
         ]);
         let results = a.evaluate(&mon);
-        assert!(results[0].satisfied);  // all > 50
+        assert!(results[0].satisfied); // all > 50
         assert!(!results[1].satisfied); // 300 >= 250
     }
 }

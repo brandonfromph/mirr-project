@@ -8,10 +8,10 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::types::BinaryOp;
 use super::graph::WidthDepGraph;
-use super::types::{SccInfo, SccKind, MAX_SCC_SIZE, MAX_SIGNALS};
 use super::types::WidthDiag;
+use super::types::{SccInfo, SccKind, MAX_SCC_SIZE, MAX_SIGNALS};
+use crate::ast::types::BinaryOp;
 
 /// Result of SCC detection.
 pub struct SccResult {
@@ -54,9 +54,8 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
         while let Some(&mut (v, ref mut ni, caller)) = call_stack.last_mut() {
             iters += 1;
             if iters > max_iters {
-                diagnostics.push(WidthDiag::error(
-                    "SCC detection exceeded iteration budget".to_string(),
-                ));
+                diagnostics
+                    .push(WidthDiag::error("SCC detection exceeded iteration budget".to_string()));
                 return SccResult { sccs: Vec::new(), diagnostics };
             }
 
@@ -107,8 +106,8 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
                     }
                 }
                 // Only keep non-trivial SCCs.
-                let is_self_loop = scc_members.len() == 1
-                    && graph.adj[scc_members[0]].contains(&scc_members[0]);
+                let is_self_loop =
+                    scc_members.len() == 1 && graph.adj[scc_members[0]].contains(&scc_members[0]);
                 if scc_members.len() > 1 || is_self_loop {
                     all_sccs.push(scc_members);
                 }
@@ -131,13 +130,16 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
     let mut sccs: Vec<SccInfo> = Vec::with_capacity(all_sccs.len());
     for members in all_sccs {
         if members.len() > MAX_SCC_SIZE {
-            let names: Vec<&str> = members.iter()
+            let names: Vec<&str> = members
+                .iter()
                 .take(5)
                 .filter_map(|&i| graph.signal_names.get(i).map(|s| s.as_str()))
                 .collect();
             diagnostics.push(WidthDiag::error(format!(
                 "SCC with {} signals exceeds maximum size of {}; signals include: {}",
-                members.len(), MAX_SCC_SIZE, names.join(", ")
+                members.len(),
+                MAX_SCC_SIZE,
+                names.join(", ")
             )));
             continue;
         }

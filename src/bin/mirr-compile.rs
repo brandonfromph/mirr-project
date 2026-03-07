@@ -10,8 +10,8 @@
 
 use std::process;
 
-use nasa_rust_project::pipeline::{PipelineConfig, run_pipeline};
 use nasa_rust_project::emit;
+use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -108,15 +108,13 @@ fn main() {
             }
         }
         "verilog" | "sv" => emit::verilog::emit_sv(&result),
-        "json" => {
-            match emit::json_netlist::emit_json(&result) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("Error serializing JSON: {e}");
-                    process::exit(1);
-                }
+        "json" => match emit::json_netlist::emit_json(&result) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Error serializing JSON: {e}");
+                process::exit(1);
             }
-        }
+        },
         other => {
             eprintln!("Unknown emit format: '{other}'. Use dot, verilog, or json.");
             process::exit(1);
@@ -138,10 +136,7 @@ fn main() {
     }
 }
 
-fn print_summary(
-    result: &nasa_rust_project::pipeline::PipelineResult,
-    show_stats: bool,
-) {
+fn print_summary(result: &nasa_rust_project::pipeline::PipelineResult, show_stats: bool) {
     let module = &result.program.module;
     eprintln!("MIRR Compile: {}", module.name);
     eprintln!(
@@ -165,11 +160,7 @@ fn print_summary(
     }
 
     if let Some(tn) = &result.temporal_netlist {
-        eprintln!(
-            "  Temporal: {} guards, {} signals",
-            tn.guards.len(),
-            tn.signals.len(),
-        );
+        eprintln!("  Temporal: {} guards, {} signals", tn.guards.len(), tn.signals.len(),);
     }
 
     if show_stats {

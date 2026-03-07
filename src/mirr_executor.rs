@@ -1,14 +1,14 @@
+use crate::ast::types::SignalKind;
+use crate::ast::{Expr, LiteralValue};
 use crate::mirr_driver::ObservedPush;
 use crate::mirr_runtime::Value;
 use crate::parser::parse_mirr;
-use crate::ast::{Expr, LiteralValue};
-use crate::ast::types::SignalKind;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::str;
-use std::sync::{OnceLock, Mutex, Arc};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 
 static PROBE_OUTPOOL_TAKEN: AtomicUsize = AtomicUsize::new(0);
 static PROBE_PUSH_SAMPLE: AtomicUsize = AtomicUsize::new(0);
@@ -273,7 +273,10 @@ fn init_pools_for_program(
     p
 }
 
-pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, input: &[u8]) -> Vec<ObservedPush> {
+pub fn drive_parsed_module_with_interpreter(
+    prog: &crate::ast::MirrProgram,
+    input: &[u8],
+) -> Vec<ObservedPush> {
     maybe_hook("start");
     let s = match str::from_utf8(input) {
         Ok(v) => v,
@@ -283,7 +286,8 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
     let mut pos = 0usize;
     let len = bytes.len();
     // Preallocate a larger output buffer to avoid Vec growth/reallocations on hot-path.
-    let initial_out_cap = std::cmp::max((prog.module.reflexes.len().max(8)).saturating_mul(4), 1024);
+    let initial_out_cap =
+        std::cmp::max((prog.module.reflexes.len().max(8)).saturating_mul(4), 1024);
 
     // Use a pool of preallocated output Vecs protected by a Mutex.
     // Instead of popping the buffer (which can drain the pool and trigger warm-up
@@ -305,7 +309,10 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
         // Prefer taking an already-allocated slot (capacity >= initial_out_cap)
         // to avoid selecting a previously-drained empty slot which would trigger
         // a heap allocation when pushed into.
-        let idx = guard.iter().position(|v| v.capacity() >= initial_out_cap).unwrap_or_else(|| guard.len() - 1);
+        let idx = guard
+            .iter()
+            .position(|v| v.capacity() >= initial_out_cap)
+            .unwrap_or_else(|| guard.len() - 1);
         std::mem::take(&mut guard[idx])
     };
     // Probe: record that we took an out-pool buffer
@@ -360,8 +367,8 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
         }
 
         // Track current token text / integer value for assigning to pushes.
-            let mut _current_ident: Option<&str> = None;
-            let mut current_int: Option<u64> = None;
+        let mut _current_ident: Option<&str> = None;
+        let mut current_int: Option<u64> = None;
 
         // Determine which input_* signals would be asserted for this tick.
         // We'll set them in `env` before evaluating guards.
@@ -371,12 +378,36 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
         // Detect two-char ops using byte comparisons (safe for multi-byte UTF-8 chars).
         if pos + 1 < len {
             match (bytes[pos], bytes[pos + 1]) {
-                (b'=', b'=') => { if let Some(v) = env.get_mut("input_two_eq") { *v = Value::Bool(true); } }
-                (b'!', b'=') => { if let Some(v) = env.get_mut("input_two_ne") { *v = Value::Bool(true); } }
-                (b'<', b'=') => { if let Some(v) = env.get_mut("input_two_le") { *v = Value::Bool(true); } }
-                (b'>', b'=') => { if let Some(v) = env.get_mut("input_two_ge") { *v = Value::Bool(true); } }
-                (b'-', b'>') => { if let Some(v) = env.get_mut("input_arrow") { *v = Value::Bool(true); } }
-                (b'.', b'.') => { if let Some(v) = env.get_mut("input_dotdot") { *v = Value::Bool(true); } }
+                (b'=', b'=') => {
+                    if let Some(v) = env.get_mut("input_two_eq") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                (b'!', b'=') => {
+                    if let Some(v) = env.get_mut("input_two_ne") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                (b'<', b'=') => {
+                    if let Some(v) = env.get_mut("input_two_le") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                (b'>', b'=') => {
+                    if let Some(v) = env.get_mut("input_two_ge") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                (b'-', b'>') => {
+                    if let Some(v) = env.get_mut("input_arrow") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                (b'.', b'.') => {
+                    if let Some(v) = env.get_mut("input_dotdot") {
+                        *v = Value::Bool(true);
+                    }
+                }
                 _ => {}
             }
         }
@@ -393,7 +424,9 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
             } else {
                 current_int = Some(0);
             }
-            if let Some(v) = env.get_mut("input_byte_is_digit") { *v = Value::Bool(true); }
+            if let Some(v) = env.get_mut("input_byte_is_digit") {
+                *v = Value::Bool(true);
+            }
             // The lexer expects emit_push_integer reflex when digit_guard true.
         }
         // Identifiers / keywords
@@ -407,27 +440,85 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
             // classify length classes (use slice length to avoid allocation)
             let l = word_slice.len();
             if l == 5 {
-                if let Some(v) = env.get_mut("input_ident_len5") { *v = Value::Bool(true); }
+                if let Some(v) = env.get_mut("input_ident_len5") {
+                    *v = Value::Bool(true);
+                }
             } else if l == 6 {
-                if let Some(v) = env.get_mut("input_ident_len6") { *v = Value::Bool(true); }
+                if let Some(v) = env.get_mut("input_ident_len6") {
+                    *v = Value::Bool(true);
+                }
             } else if l == 8 {
-                if let Some(v) = env.get_mut("input_ident_len8") { *v = Value::Bool(true); }
+                if let Some(v) = env.get_mut("input_ident_len8") {
+                    *v = Value::Bool(true);
+                }
             }
             // specific keywords
             match word_slice {
-                "guard" => { if let Some(v) = env.get_mut("input_ident_guard") { *v = Value::Bool(true); } }
-                "false" => { if let Some(v) = env.get_mut("input_ident_false") { *v = Value::Bool(true); } }
-                "break" => { if let Some(v) = env.get_mut("input_ident_break") { *v = Value::Bool(true); } }
-                "while" => { if let Some(v) = env.get_mut("input_ident_while") { *v = Value::Bool(true); } }
-                "match" => { if let Some(v) = env.get_mut("input_ident_match") { *v = Value::Bool(true); } }
-                "const" => { if let Some(v) = env.get_mut("input_ident_const") { *v = Value::Bool(true); } }
-                "module" => { if let Some(v) = env.get_mut("input_ident_module") { *v = Value::Bool(true); } }
-                "signal" => { if let Some(v) = env.get_mut("input_ident_signal") { *v = Value::Bool(true); } }
-                "reflex" => { if let Some(v) = env.get_mut("input_ident_reflex") { *v = Value::Bool(true); } }
-                "return" => { if let Some(v) = env.get_mut("input_ident_return") { *v = Value::Bool(true); } }
-                "struct" => { if let Some(v) = env.get_mut("input_ident_struct") { *v = Value::Bool(true); } }
-                "cycles" => { if let Some(v) = env.get_mut("input_ident_cycles") { *v = Value::Bool(true); } }
-                "internal" => { if let Some(v) = env.get_mut("input_ident_internal") { *v = Value::Bool(true); } }
+                "guard" => {
+                    if let Some(v) = env.get_mut("input_ident_guard") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "false" => {
+                    if let Some(v) = env.get_mut("input_ident_false") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "break" => {
+                    if let Some(v) = env.get_mut("input_ident_break") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "while" => {
+                    if let Some(v) = env.get_mut("input_ident_while") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "match" => {
+                    if let Some(v) = env.get_mut("input_ident_match") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "const" => {
+                    if let Some(v) = env.get_mut("input_ident_const") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "module" => {
+                    if let Some(v) = env.get_mut("input_ident_module") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "signal" => {
+                    if let Some(v) = env.get_mut("input_ident_signal") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "reflex" => {
+                    if let Some(v) = env.get_mut("input_ident_reflex") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "return" => {
+                    if let Some(v) = env.get_mut("input_ident_return") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "struct" => {
+                    if let Some(v) = env.get_mut("input_ident_struct") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "cycles" => {
+                    if let Some(v) = env.get_mut("input_ident_cycles") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "internal" => {
+                    if let Some(v) = env.get_mut("input_ident_internal") {
+                        *v = Value::Bool(true);
+                    }
+                }
                 _ => {}
             }
             // input_byte_is_whitespace remains false here
@@ -463,7 +554,8 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
         for (g_idx, g) in prog.module.guards.iter().enumerate() {
             let cond_true = eval_expr(&g.condition, &|name: &str| {
                 signal_env.get(name).cloned().unwrap_or(Value::Bool(false))
-            }).as_bool();
+            })
+            .as_bool();
 
             // Use precomputed shift-register signal names (per-guard) to avoid per-tick allocations.
             let sr_names = if g_idx < pools.sr_signal_names.len() {
@@ -619,13 +711,13 @@ pub fn drive_parsed_module_with_interpreter(prog: &crate::ast::MirrProgram, inpu
         // Persist internal signal values back into persistent_env so they
         // carry over to the next tick.
         for s in &prog.module.signals {
-                if s.kind == SignalKind::Internal {
-                    if let Some(v) = signal_env.get(&s.name) {
-                        if let Some(pe) = pools.persistent_env.get_mut(&s.name) {
-                            *pe = v.clone();
-                        }
+            if s.kind == SignalKind::Internal {
+                if let Some(v) = signal_env.get(&s.name) {
+                    if let Some(pe) = pools.persistent_env.get_mut(&s.name) {
+                        *pe = v.clone();
                     }
                 }
+            }
         }
     }
 

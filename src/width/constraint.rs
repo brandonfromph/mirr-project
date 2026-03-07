@@ -6,9 +6,9 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::types::{BinaryOp, UnaryOp, SignalType};
-use crate::ast::SignalDecl;
 use super::types::{FlatNode, Width, WidthDiag, MAX_FLAT_NODES};
+use crate::ast::types::{BinaryOp, SignalType, UnaryOp};
+use crate::ast::SignalDecl;
 
 // ---------------------------------------------------------------------------
 // Constraint enum
@@ -62,10 +62,7 @@ pub struct ConstraintSet {
 /// widths for Signal nodes.
 ///
 /// Bounded: iterates once over `nodes` (len <= MAX_FLAT_NODES).
-pub fn generate_constraints(
-    nodes: &[FlatNode],
-    signals: &[SignalDecl],
-) -> ConstraintSet {
+pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> ConstraintSet {
     let mut constraints: Vec<WidthConstraint> = Vec::with_capacity(nodes.len());
     let mut diagnostics: Vec<WidthDiag> = Vec::new();
 
@@ -89,7 +86,8 @@ pub fn generate_constraints(
                     }
                     None => {
                         diagnostics.push(WidthDiag::error(format!(
-                            "signal '{}' has no declared width", name
+                            "signal '{}' has no declared width",
+                            name
                         )));
                         // Default to 1 to allow solving to continue.
                         constraints.push(WidthConstraint::Fixed { node: id, width: 1 });
@@ -104,7 +102,13 @@ pub fn generate_constraints(
             },
             FlatNode::Binary { op, left, right } => {
                 generate_binary_constraint(
-                    id, *op, *left, *right, nodes, &mut constraints, &mut diagnostics,
+                    id,
+                    *op,
+                    *left,
+                    *right,
+                    nodes,
+                    &mut constraints,
+                    &mut diagnostics,
                 );
             }
             FlatNode::Prev { signal, .. } => {
@@ -116,7 +120,8 @@ pub fn generate_constraints(
                     }
                     None => {
                         diagnostics.push(WidthDiag::error(format!(
-                            "prev signal '{}' has no declared width", signal
+                            "prev signal '{}' has no declared width",
+                            signal
                         )));
                         constraints.push(WidthConstraint::Fixed { node: id, width: 1 });
                     }
@@ -168,7 +173,9 @@ fn generate_binary_constraint(
                 Some(amt) => {
                     let clamped = amt.min(63) as u32;
                     constraints.push(WidthConstraint::LeftPlusConst {
-                        node: id, left, shift_amount: clamped,
+                        node: id,
+                        left,
+                        shift_amount: clamped,
                     });
                 }
                 None => {
@@ -184,7 +191,9 @@ fn generate_binary_constraint(
                 Some(amt) => {
                     let clamped = amt.min(63) as u32;
                     constraints.push(WidthConstraint::LeftMinusConst {
-                        node: id, left, shift_amount: clamped,
+                        node: id,
+                        left,
+                        shift_amount: clamped,
                     });
                 }
                 None => {
@@ -195,8 +204,7 @@ fn generate_binary_constraint(
         BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
             constraints.push(WidthConstraint::MaxOf { node: id, left, right });
         }
-        BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt
-        | BinaryOp::Ge | BinaryOp::Eq | BinaryOp::Ne => {
+        BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge | BinaryOp::Eq | BinaryOp::Ne => {
             constraints.push(WidthConstraint::Boolean { node: id });
         }
     }

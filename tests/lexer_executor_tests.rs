@@ -1,6 +1,6 @@
 use nasa_rust_project::mirr_driver;
-use nasa_rust_project::mirr_executor;
 use nasa_rust_project::mirr_driver::collect_tokens_from_pushes;
+use nasa_rust_project::mirr_executor;
 
 #[test]
 fn interpreter_parity_basic() {
@@ -12,19 +12,15 @@ fn interpreter_parity_basic() {
     // implemented in lexer.mirr — the program currently maps most identifiers
     // to emit_push_ident. Parity for keyword inputs will be verified separately
     // once lexer.mirr is extended to emit keyword-specific push signals.
-    let cases: Vec<&[u8]> = vec![
-        b"42 == 100" as &[u8],
-        b"1 != 2",
-        b"1 <= 200 >= 3",
-        b"42",
-    ];
+    let cases: Vec<&[u8]> = vec![b"42 == 100" as &[u8], b"1 != 2", b"1 <= 200 >= 3", b"42"];
 
     for input in cases {
         let emu = mirr_driver::drive_lexer_from_bytes(input);
         let exec = mirr_executor::drive_lexer_with_interpreter(input);
 
         assert_eq!(
-            emu, exec,
+            emu,
+            exec,
             "ObservedPush sequences differ for input: {:?}",
             String::from_utf8_lossy(input)
         );
@@ -33,7 +29,8 @@ fn interpreter_parity_basic() {
         let toks_exec = collect_tokens_from_pushes(&exec);
 
         assert_eq!(
-            toks_emu, toks_exec,
+            toks_emu,
+            toks_exec,
             "Mapped token sequences differ for input: {:?}",
             String::from_utf8_lossy(input)
         );

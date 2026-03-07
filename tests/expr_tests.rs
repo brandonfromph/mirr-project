@@ -8,11 +8,7 @@ use nasa_rust_project::parser::parse_expression;
 // -- Helpers --
 
 fn bin(op: BinaryOp, left: Expr, right: Expr) -> Expr {
-    Expr::Binary {
-        op,
-        left: Box::new(left),
-        right: Box::new(right),
-    }
+    Expr::Binary { op, left: Box::new(left), right: Box::new(right) }
 }
 
 fn sig(name: &str) -> Expr {
@@ -28,10 +24,7 @@ fn bool_lit(v: bool) -> Expr {
 }
 
 fn not(e: Expr) -> Expr {
-    Expr::Unary {
-        op: UnaryOp::Not,
-        operand: Box::new(e),
-    }
+    Expr::Unary { op: UnaryOp::Not, operand: Box::new(e) }
 }
 
 // -- Tests --
@@ -80,24 +73,14 @@ fn expr_not() {
 #[test]
 fn expr_complex_and_not() {
     let e = parse_expression("eeg_spike && !artifact_noise").expect("ok");
-    assert_eq!(
-        e,
-        bin(BinaryOp::And, sig("eeg_spike"), not(sig("artifact_noise")))
-    );
+    assert_eq!(e, bin(BinaryOp::And, sig("eeg_spike"), not(sig("artifact_noise"))));
 }
 
 #[test]
 fn expr_precedence_and_or() {
     // a || b && c  =>  a || (b && c)
     let e = parse_expression("a || b && c").expect("ok");
-    assert_eq!(
-        e,
-        bin(
-            BinaryOp::Or,
-            sig("a"),
-            bin(BinaryOp::And, sig("b"), sig("c"))
-        )
-    );
+    assert_eq!(e, bin(BinaryOp::Or, sig("a"), bin(BinaryOp::And, sig("b"), sig("c"))));
 }
 
 #[test]
@@ -118,28 +101,14 @@ fn expr_precedence_comparison_and_logical() {
 fn expr_parentheses() {
     // (a || b) && c
     let e = parse_expression("(a || b) && c").expect("ok");
-    assert_eq!(
-        e,
-        bin(
-            BinaryOp::And,
-            bin(BinaryOp::Or, sig("a"), sig("b")),
-            sig("c")
-        )
-    );
+    assert_eq!(e, bin(BinaryOp::And, bin(BinaryOp::Or, sig("a"), sig("b")), sig("c")));
 }
 
 #[test]
 fn expr_arithmetic() {
     // a + b * c  =>  a + (b * c)
     let e = parse_expression("a + b * c").expect("ok");
-    assert_eq!(
-        e,
-        bin(
-            BinaryOp::Add,
-            sig("a"),
-            bin(BinaryOp::Mul, sig("b"), sig("c"))
-        )
-    );
+    assert_eq!(e, bin(BinaryOp::Add, sig("a"), bin(BinaryOp::Mul, sig("b"), sig("c"))));
 }
 
 #[test]
@@ -156,22 +125,10 @@ fn expr_xor() {
 
 #[test]
 fn expr_all_comparison_ops() {
-    assert_eq!(
-        parse_expression("a <= b").expect("ok"),
-        bin(BinaryOp::Le, sig("a"), sig("b"))
-    );
-    assert_eq!(
-        parse_expression("a >= b").expect("ok"),
-        bin(BinaryOp::Ge, sig("a"), sig("b"))
-    );
-    assert_eq!(
-        parse_expression("a == b").expect("ok"),
-        bin(BinaryOp::Eq, sig("a"), sig("b"))
-    );
-    assert_eq!(
-        parse_expression("a != b").expect("ok"),
-        bin(BinaryOp::Ne, sig("a"), sig("b"))
-    );
+    assert_eq!(parse_expression("a <= b").expect("ok"), bin(BinaryOp::Le, sig("a"), sig("b")));
+    assert_eq!(parse_expression("a >= b").expect("ok"), bin(BinaryOp::Ge, sig("a"), sig("b")));
+    assert_eq!(parse_expression("a == b").expect("ok"), bin(BinaryOp::Eq, sig("a"), sig("b")));
+    assert_eq!(parse_expression("a != b").expect("ok"), bin(BinaryOp::Ne, sig("a"), sig("b")));
 }
 
 #[test]

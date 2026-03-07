@@ -3,13 +3,17 @@
 //! Requirement coverage: P2-REQ-001 through P2-REQ-006, P2-REQ-013 through P2-REQ-015
 //! Ref: MIRR-PHASE2-001 §6 (traceability table)
 
+use nasa_rust_project::ast::{
+    types::{BinaryOp, LiteralValue, UnaryOp},
+    Expr,
+};
 use nasa_rust_project::{
-    parse_mirr, MirrError, TemporalGuardCompiler,
+    parse_mirr,
     temporal::low_level_ir::{
         CompiledGuard, ConditionKind, GeneratedSignalKind, TemporalNetlistJson,
     },
+    MirrError, TemporalGuardCompiler,
 };
-use nasa_rust_project::ast::{Expr, types::{BinaryOp, LiteralValue, UnaryOp}};
 
 // ---------------------------------------------------------------------------
 // P2-REQ-001: Short guard (N≤16) lowers to ShiftRegisterGuard
@@ -123,16 +127,10 @@ module test_module {
 
     assert_eq!(netlist.guards.len(), 2);
 
-    let sr_count = netlist
-        .guards
-        .iter()
-        .filter(|g| matches!(g, CompiledGuard::ShiftRegister(_)))
-        .count();
-    let ctr_count = netlist
-        .guards
-        .iter()
-        .filter(|g| matches!(g, CompiledGuard::Counter(_)))
-        .count();
+    let sr_count =
+        netlist.guards.iter().filter(|g| matches!(g, CompiledGuard::ShiftRegister(_))).count();
+    let ctr_count =
+        netlist.guards.iter().filter(|g| matches!(g, CompiledGuard::Counter(_))).count();
 
     assert_eq!(sr_count, 1, "expected one shift-register guard");
     assert_eq!(ctr_count, 1, "expected one counter guard");
@@ -265,10 +263,7 @@ module test_module {
     }
 
     let result = TemporalGuardCompiler::new().compile_temporal_guards(&module);
-    assert!(
-        result.is_err(),
-        "Expected a TemporalCompilationError for unsupported AND condition"
-    );
+    assert!(result.is_err(), "Expected a TemporalCompilationError for unsupported AND condition");
     match result.unwrap_err() {
         MirrError::TemporalCompilationError { message } => {
             assert!(
@@ -336,8 +331,7 @@ fn test_negated_signal_condition_lowering() {
         op: UnaryOp::Not,
         operand: Box::new(Expr::Signal("pressure_ok".to_string())),
     };
-    let ck = ConditionKind::try_from_expr(&not_expr)
-        .expect("Not(Signal) must lower successfully");
+    let ck = ConditionKind::try_from_expr(&not_expr).expect("Not(Signal) must lower successfully");
 
     match ck {
         ConditionKind::NegatedSignal(ref s) => {
@@ -359,8 +353,8 @@ fn test_comparison_condition_lowering() {
         left: Box::new(Expr::Signal("sensor_val".to_string())),
         right: Box::new(Expr::Literal(LiteralValue::Integer(1))),
     };
-    let ck = ConditionKind::try_from_expr(&eq_expr)
-        .expect("Signal == Literal must lower successfully");
+    let ck =
+        ConditionKind::try_from_expr(&eq_expr).expect("Signal == Literal must lower successfully");
 
     match &ck {
         ConditionKind::Comparison { signal, op, value } => {
@@ -374,14 +368,7 @@ fn test_comparison_condition_lowering() {
 
     // All six comparison operators must be accepted (Step 2.2 extension).
     // `<`, `<=`, `>`, `>=` lower to magnitude comparator circuits.
-    for op in [
-        BinaryOp::Eq,
-        BinaryOp::Ne,
-        BinaryOp::Lt,
-        BinaryOp::Le,
-        BinaryOp::Gt,
-        BinaryOp::Ge,
-    ] {
+    for op in [BinaryOp::Eq, BinaryOp::Ne, BinaryOp::Lt, BinaryOp::Le, BinaryOp::Gt, BinaryOp::Ge] {
         let expr = Expr::Binary {
             op,
             left: Box::new(Expr::Signal("pressure".to_string())),
@@ -626,24 +613,22 @@ module neonatal_respirator {
     // ---- 2. Load the golden fixture ----
     let fixture_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/netlist/neonatal_respirator.json");
-    let fixture_str =
-        std::fs::read_to_string(&fixture_path).expect("fixture file missing");
+    let fixture_str = std::fs::read_to_string(&fixture_path).expect("fixture file missing");
     let expected: serde_json::Value =
         serde_json::from_str(&fixture_str).expect("fixture JSON invalid");
 
     // ---- 3. IR version ----
-    assert_eq!(
-        actual["ir_version"], expected["ir_version"],
-        "ir_version mismatch"
-    );
+    assert_eq!(actual["ir_version"], expected["ir_version"], "ir_version mismatch");
 
     // ---- 4. Guard count and strategy ----
-    let actual_guards   = actual["guards"].as_array().expect("guards not array");
+    let actual_guards = actual["guards"].as_array().expect("guards not array");
     let expected_guards = expected["guards"].as_array().expect("guards not array");
     assert_eq!(
-        actual_guards.len(), expected_guards.len(),
+        actual_guards.len(),
+        expected_guards.len(),
         "guard count mismatch: actual {} vs fixture {}",
-        actual_guards.len(), expected_guards.len()
+        actual_guards.len(),
+        expected_guards.len()
     );
 
     // The single guard must be a Counter strategy.
@@ -659,18 +644,27 @@ module neonatal_respirator {
         "fixture guard[0] must be Counter variant"
     );
 
-    let actual_ctr   = &actual_guard_obj["Counter"];
+    let actual_ctr = &actual_guard_obj["Counter"];
     let expected_ctr = &expected_guard_obj["Counter"];
 
-    assert_eq!(actual_ctr["name"],          expected_ctr["name"],          "guard name mismatch");
-    assert_eq!(actual_ctr["input_signal"],  expected_ctr["input_signal"],  "input_signal mismatch");
-    assert_eq!(actual_ctr["output_signal"], expected_ctr["output_signal"], "output_signal mismatch");
-    assert_eq!(actual_ctr["counter_signal"],   expected_ctr["counter_signal"],   "counter_signal mismatch");
-    assert_eq!(actual_ctr["comparator_signal"],expected_ctr["comparator_signal"],"comparator_signal mismatch");
-    assert_eq!(actual_ctr["target_count"],  expected_ctr["target_count"],  "target_count mismatch");
+    assert_eq!(actual_ctr["name"], expected_ctr["name"], "guard name mismatch");
+    assert_eq!(actual_ctr["input_signal"], expected_ctr["input_signal"], "input_signal mismatch");
+    assert_eq!(
+        actual_ctr["output_signal"], expected_ctr["output_signal"],
+        "output_signal mismatch"
+    );
+    assert_eq!(
+        actual_ctr["counter_signal"], expected_ctr["counter_signal"],
+        "counter_signal mismatch"
+    );
+    assert_eq!(
+        actual_ctr["comparator_signal"], expected_ctr["comparator_signal"],
+        "comparator_signal mismatch"
+    );
+    assert_eq!(actual_ctr["target_count"], expected_ctr["target_count"], "target_count mismatch");
 
     // condition_kind must be Comparison { signal, op, value }
-    let actual_ck   = &actual_ctr["condition_kind"];
+    let actual_ck = &actual_ctr["condition_kind"];
     let expected_ck = &expected_ctr["condition_kind"];
     assert_eq!(
         actual_ck["Comparison"]["signal"], expected_ck["Comparison"]["signal"],
@@ -686,27 +680,44 @@ module neonatal_respirator {
     );
 
     // ---- 5. Signal count and kinds ----
-    let actual_signals   = actual["signals"].as_array().expect("signals not array");
+    let actual_signals = actual["signals"].as_array().expect("signals not array");
     let expected_signals = expected["signals"].as_array().expect("signals not array");
     assert_eq!(
-        actual_signals.len(), expected_signals.len(),
+        actual_signals.len(),
+        expected_signals.len(),
         "signal count mismatch: actual {} vs fixture {}",
-        actual_signals.len(), expected_signals.len()
+        actual_signals.len(),
+        expected_signals.len()
     );
 
     // Verify each signal by name+kind+ty (order must match fixture)
     for (i, (a, e)) in actual_signals.iter().zip(expected_signals.iter()).enumerate() {
         assert_eq!(a["name"], e["name"], "signals[{i}] name mismatch");
-        assert_eq!(a["ty"],   e["ty"],   "signals[{i}] ty mismatch");
+        assert_eq!(a["ty"], e["ty"], "signals[{i}] ty mismatch");
         assert_eq!(a["kind"], e["kind"], "signals[{i}] kind mismatch");
     }
 
     // ---- 6. Statistics ----
-    let actual_stats   = &actual["statistics"];
+    let actual_stats = &actual["statistics"];
     let expected_stats = &expected["statistics"];
-    assert_eq!(actual_stats["shift_registers_used"], expected_stats["shift_registers_used"], "shift_registers_used mismatch");
-    assert_eq!(actual_stats["counters_used"],        expected_stats["counters_used"],        "counters_used mismatch");
-    assert_eq!(actual_stats["logic_gates_used"],     expected_stats["logic_gates_used"],     "logic_gates_used mismatch");
-    assert_eq!(actual_stats["max_delay_cycles"],     expected_stats["max_delay_cycles"],     "max_delay_cycles mismatch");
-    assert_eq!(actual_stats["total_signals"],        expected_stats["total_signals"],        "total_signals mismatch");
+    assert_eq!(
+        actual_stats["shift_registers_used"], expected_stats["shift_registers_used"],
+        "shift_registers_used mismatch"
+    );
+    assert_eq!(
+        actual_stats["counters_used"], expected_stats["counters_used"],
+        "counters_used mismatch"
+    );
+    assert_eq!(
+        actual_stats["logic_gates_used"], expected_stats["logic_gates_used"],
+        "logic_gates_used mismatch"
+    );
+    assert_eq!(
+        actual_stats["max_delay_cycles"], expected_stats["max_delay_cycles"],
+        "max_delay_cycles mismatch"
+    );
+    assert_eq!(
+        actual_stats["total_signals"], expected_stats["total_signals"],
+        "total_signals mismatch"
+    );
 }

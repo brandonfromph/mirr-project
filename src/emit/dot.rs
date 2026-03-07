@@ -127,11 +127,7 @@ fn emit_guard_edges(module: &Module, out: &mut String) {
     for g in &module.guards {
         let refs = collect_signal_refs_bounded(&g.condition);
         for sig in &refs {
-            out.push_str(&format!(
-                "  {} -> {};\n",
-                sanitize_id(sig),
-                guard_node_id(&g.name),
-            ));
+            out.push_str(&format!("  {} -> {};\n", sanitize_id(sig), guard_node_id(&g.name),));
         }
         // Prev back-edges rendered as dashed red.
         let prev_refs = collect_prev_refs_bounded(&g.condition);

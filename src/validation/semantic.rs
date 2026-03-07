@@ -28,15 +28,14 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     let signal_capacity = module.signals.len();
     let guard_capacity = module.guards.len();
     let reflex_capacity = module.reflexes.len();
-    
+
     // Collect signal names and check for duplicates.
     let mut signal_names: HashSet<&str> = HashSet::with_capacity(signal_capacity);
     for sig in &module.signals {
         if !signal_names.insert(&sig.name) {
-            return Err(MirrError::SemanticError { message: format!(
-                "Duplicate signal name: '{}'.",
-                sig.name
-            )});
+            return Err(MirrError::SemanticError {
+                message: format!("Duplicate signal name: '{}'.", sig.name),
+            });
         }
     }
 
@@ -44,10 +43,9 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     let mut guard_names: HashSet<&str> = HashSet::with_capacity(guard_capacity);
     for guard in &module.guards {
         if !guard_names.insert(&guard.name) {
-            return Err(MirrError::SemanticError { message: format!(
-                "Duplicate guard name: '{}'.",
-                guard.name
-            )});
+            return Err(MirrError::SemanticError {
+                message: format!("Duplicate guard name: '{}'.", guard.name),
+            });
         }
     }
 
@@ -55,16 +53,17 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     let mut reflex_names: HashSet<&str> = HashSet::with_capacity(reflex_capacity);
     for reflex in &module.reflexes {
         if !reflex_names.insert(&reflex.name) {
-            return Err(MirrError::SemanticError { message: format!(
-                "Duplicate reflex name: '{}'.",
-                reflex.name
-            )});
+            return Err(MirrError::SemanticError {
+                message: format!("Duplicate reflex name: '{}'.", reflex.name),
+            });
         }
     }
 
     // Build set of output/internal signals (valid assignment targets).
     // NASA-style optimization: reserve capacity and filter efficiently.
-    let writable_capacity = module.signals.iter()
+    let writable_capacity = module
+        .signals
+        .iter()
         .filter(|s| s.kind == SignalKind::Output || s.kind == SignalKind::Internal)
         .count();
     let writable_signals: HashSet<&str> = {
@@ -84,10 +83,12 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
         let refs = collect_signal_refs(&guard.condition);
         for sig_ref in &refs {
             if !signal_names.contains(sig_ref.as_str()) {
-                return Err(MirrError::SemanticError { message: format!(
-                    "Guard '{}' references undeclared signal '{}'.",
-                    guard.name, sig_ref
-                )});
+                return Err(MirrError::SemanticError {
+                    message: format!(
+                        "Guard '{}' references undeclared signal '{}'.",
+                        guard.name, sig_ref
+                    ),
+                });
             }
         }
     }
@@ -97,10 +98,12 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
         // Check guard references.
         for gname in &reflex.guard_names {
             if !guard_names.contains(gname.as_str()) {
-                return Err(MirrError::SemanticError { message: format!(
-                    "Reflex '{}' references undeclared guard '{}'.",
-                    reflex.name, gname
-                )});
+                return Err(MirrError::SemanticError {
+                    message: format!(
+                        "Reflex '{}' references undeclared guard '{}'.",
+                        reflex.name, gname
+                    ),
+                });
             }
         }
 
@@ -109,15 +112,19 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
             // Target must be a writable signal.
             if !writable_signals.contains(assignment.target.as_str()) {
                 if signal_names.contains(assignment.target.as_str()) {
-                    return Err(MirrError::SemanticError { message: format!(
-                        "Reflex '{}' assigns to input signal '{}', which is not writable.",
-                        reflex.name, assignment.target
-                    )});
+                    return Err(MirrError::SemanticError {
+                        message: format!(
+                            "Reflex '{}' assigns to input signal '{}', which is not writable.",
+                            reflex.name, assignment.target
+                        ),
+                    });
                 }
-                return Err(MirrError::SemanticError { message: format!(
-                    "Reflex '{}' assigns to undeclared signal '{}'.",
-                    reflex.name, assignment.target
-                )});
+                return Err(MirrError::SemanticError {
+                    message: format!(
+                        "Reflex '{}' assigns to undeclared signal '{}'.",
+                        reflex.name, assignment.target
+                    ),
+                });
             }
 
             // Validate Prev delays in RHS expressions.
@@ -127,10 +134,12 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
             let refs = collect_signal_refs(&assignment.value);
             for sig_ref in &refs {
                 if !signal_names.contains(sig_ref.as_str()) {
-                    return Err(MirrError::SemanticError { message: format!(
-                        "Reflex '{}' assignment references undeclared signal '{}'.",
-                        reflex.name, sig_ref
-                    )});
+                    return Err(MirrError::SemanticError {
+                        message: format!(
+                            "Reflex '{}' assignment references undeclared signal '{}'.",
+                            reflex.name, sig_ref
+                        ),
+                    });
                 }
             }
         }
@@ -156,10 +165,12 @@ fn validate_prev_delays(expr: &Expr, context_name: &str) -> Result<(), MirrError
         match node {
             Expr::Prev { signal, delay } => {
                 if *delay == 0 {
-                    return Err(MirrError::SemanticError { message: format!(
-                        "'{}' contains prev('{}') with delay 0; delay must be >= 1.",
-                        context_name, signal
-                    )});
+                    return Err(MirrError::SemanticError {
+                        message: format!(
+                            "'{}' contains prev('{}') with delay 0; delay must be >= 1.",
+                            context_name, signal
+                        ),
+                    });
                 }
             }
             Expr::Literal(_) | Expr::Signal(_) => {}

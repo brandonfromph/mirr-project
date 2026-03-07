@@ -1,7 +1,7 @@
-use nasa_rust_project::ast::program::{MirrProgram, Module, SignalDecl, Guard, Assignment, Reflex};
-use nasa_rust_project::ast::types::{SignalKind, SignalType};
 use nasa_rust_project::ast::expr::Expr;
+use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
 use nasa_rust_project::ast::types::LiteralValue;
+use nasa_rust_project::ast::types::{SignalKind, SignalType};
 use nasa_rust_project::mirr_executor::drive_parsed_module_with_interpreter;
 
 #[test]
@@ -25,36 +25,30 @@ fn test_guard_counter_lifetime() {
                     ty: SignalType::Bool,
                 },
             ],
-            guards: vec![
-                Guard {
-                    name: "digit_guard".to_string(),
-                    condition: Expr::Signal("input_byte_is_digit".to_string()),
-                    cycles: 3,
-                },
-            ],
+            guards: vec![Guard {
+                name: "digit_guard".to_string(),
+                condition: Expr::Signal("input_byte_is_digit".to_string()),
+                cycles: 3,
+            }],
             reflexes: vec![
                 Reflex {
                     name: "emit_integer".to_string(),
                     guard_names: vec!["digit_guard".to_string()],
-                    assignments: vec![
-                        Assignment {
-                            target: "emit_push_integer".to_string(),
-                            value: Expr::Literal(LiteralValue::Bool(true)),
-                        }
-                    ],
+                    assignments: vec![Assignment {
+                        target: "emit_push_integer".to_string(),
+                        value: Expr::Literal(LiteralValue::Bool(true)),
+                    }],
                 },
                 Reflex {
                     name: "clear_tick".to_string(),
                     guard_names: vec!["digit_guard".to_string()],
-                    assignments: vec![
-                        Assignment {
-                            target: "emit_push_integer".to_string(),
-                            value: Expr::Literal(LiteralValue::Bool(false)),
-                        }
-                    ],
+                    assignments: vec![Assignment {
+                        target: "emit_push_integer".to_string(),
+                        value: Expr::Literal(LiteralValue::Bool(false)),
+                    }],
                 },
             ],
-        }
+        },
     };
 
     // Input: a digit followed by two identifier tokens to drive total 3 ticks.
@@ -63,13 +57,13 @@ fn test_guard_counter_lifetime() {
     let pushes = drive_parsed_module_with_interpreter(&prog, input);
 
     // Count integer push events and verify payload
-    let int_pushes: Vec<_> = pushes.iter()
-        .filter(|p| p.kind == "emit_push_integer")
-        .collect();
+    let int_pushes: Vec<_> = pushes.iter().filter(|p| p.kind == "emit_push_integer").collect();
 
     assert_eq!(int_pushes.len(), 3, "expected 3 integer pushes while guard active for 3 cycles");
     // The lexer captures the integer value on the digit tick; subsequent
     // guard ticks may not carry the integer payload in this minimal setup.
-    assert!(int_pushes.iter().any(|p| p.int_val == Some(4)),
-        "expected at least one push to carry the integer payload 4");
+    assert!(
+        int_pushes.iter().any(|p| p.int_val == Some(4)),
+        "expected at least one push to carry the integer payload 4"
+    );
 }

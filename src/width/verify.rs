@@ -9,10 +9,10 @@
 
 #![forbid(unsafe_code)]
 
+use super::scc_solver::SccSolveResult;
+use super::types::{SccInfo, WidthDiag, MAX_SIGNALS};
 use crate::ast::program::SignalDecl;
 use crate::ast::types::SignalType;
-use super::types::{SccInfo, WidthDiag, MAX_SIGNALS};
-use super::scc_solver::SccSolveResult;
 
 /// Result of the Unique Least Solution verification.
 pub struct VerifyResult {

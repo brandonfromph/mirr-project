@@ -22,11 +22,7 @@ fn assert_parse_err(source: &str, msg_contains: &str) {
 }
 
 fn bin(op: BinaryOp, left: Expr, right: Expr) -> Expr {
-    Expr::Binary {
-        op,
-        left: Box::new(left),
-        right: Box::new(right),
-    }
+    Expr::Binary { op, left: Box::new(left), right: Box::new(right) }
 }
 
 fn sig(name: &str) -> Expr {
@@ -42,10 +38,7 @@ fn bool_lit(v: bool) -> Expr {
 }
 
 fn not(e: Expr) -> Expr {
-    Expr::Unary {
-        op: UnaryOp::Not,
-        operand: Box::new(e),
-    }
+    Expr::Unary { op: UnaryOp::Not, operand: Box::new(e) }
 }
 
 // -- Tests --
@@ -88,22 +81,13 @@ module neonatal_respirator {
     assert_eq!(p.module.signals[1].ty, SignalType::Unsigned(16));
     assert_eq!(p.module.guards.len(), 1);
     assert_eq!(p.module.guards[0].name, "sustained_pressure_drop");
-    assert_eq!(
-        p.module.guards[0].condition,
-        bin(BinaryOp::Lt, sig("airway_pressure"), int(50))
-    );
+    assert_eq!(p.module.guards[0].condition, bin(BinaryOp::Lt, sig("airway_pressure"), int(50)));
     assert_eq!(p.module.guards[0].cycles, 1000);
     assert_eq!(p.module.reflexes.len(), 1);
-    assert_eq!(
-        p.module.reflexes[0].guard_names,
-        ["sustained_pressure_drop"]
-    );
+    assert_eq!(p.module.reflexes[0].guard_names, ["sustained_pressure_drop"]);
     assert_eq!(p.module.reflexes[0].assignments.len(), 1);
     assert_eq!(p.module.reflexes[0].assignments[0].target, "clamp_valve");
-    assert_eq!(
-        p.module.reflexes[0].assignments[0].value,
-        bool_lit(true)
-    );
+    assert_eq!(p.module.reflexes[0].assignments[0].value, bool_lit(true));
 }
 
 #[test]
@@ -149,15 +133,9 @@ module multi {
     assert_eq!(p.module.reflexes[0].guard_names, ["g1", "g2"]);
     assert_eq!(p.module.reflexes[0].assignments.len(), 2);
     assert_eq!(p.module.reflexes[0].assignments[0].target, "x");
-    assert_eq!(
-        p.module.reflexes[0].assignments[0].value,
-        bool_lit(true)
-    );
+    assert_eq!(p.module.reflexes[0].assignments[0].value, bool_lit(true));
     assert_eq!(p.module.reflexes[0].assignments[1].target, "y");
-    assert_eq!(
-        p.module.reflexes[0].assignments[1].value,
-        bool_lit(false)
-    );
+    assert_eq!(p.module.reflexes[0].assignments[1].value, bool_lit(false));
 }
 
 #[test]
@@ -256,11 +234,7 @@ module t {
     assert_eq!(p.module.reflexes[0].assignments[0].target, "result");
     assert_eq!(
         p.module.reflexes[0].assignments[0].value,
-        bin(
-            BinaryOp::Add,
-            sig("a"),
-            bin(BinaryOp::Mul, sig("b"), int(2))
-        )
+        bin(BinaryOp::Add, sig("a"), bin(BinaryOp::Mul, sig("b"), int(2)))
     );
 }
 
@@ -298,18 +272,12 @@ fn err_signal_no_colon() {
 
 #[test]
 fn err_signal_bad_kind() {
-    assert_parse_err(
-        "module m {\n    signal x: foo bool;\n}",
-        "Unknown signal kind",
-    );
+    assert_parse_err("module m {\n    signal x: foo bool;\n}", "Unknown signal kind");
 }
 
 #[test]
 fn err_signal_bad_type() {
-    assert_parse_err(
-        "module m {\n    signal x: in x32;\n}",
-        "Unknown signal type",
-    );
+    assert_parse_err("module m {\n    signal x: in x32;\n}", "Unknown signal type");
 }
 
 #[test]

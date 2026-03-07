@@ -13,10 +13,9 @@
 #![forbid(unsafe_code)]
 
 use nasa_rust_project::mape_k::{
-    ActionEntry, AdaptationAction, Analyzer, Executor, KnowledgeBase,
-    MapeKSimulator, Monitor, Planner, PropertyResult, RingBuffer,
-    SensorConfig, SensorModel, SignalPredicate, SimConfig, TemporalProperty,
-    TriggerCondition,
+    ActionEntry, AdaptationAction, Analyzer, Executor, KnowledgeBase, MapeKSimulator, Monitor,
+    Planner, PropertyResult, RingBuffer, SensorConfig, SensorModel, SignalPredicate, SimConfig,
+    TemporalProperty, TriggerCondition,
 };
 use std::collections::HashMap;
 
@@ -134,9 +133,8 @@ fn build_monitor(signal: &str, values: &[u64]) -> Monitor {
 #[test]
 fn always_satisfied_all_above_threshold() {
     let mon = build_monitor("p", &[80, 90, 100, 110]);
-    let a = Analyzer::new(vec![
-        TemporalProperty::Always(SignalPredicate::GreaterThan("p".into(), 50)),
-    ]);
+    let a =
+        Analyzer::new(vec![TemporalProperty::Always(SignalPredicate::GreaterThan("p".into(), 50))]);
     let results = a.evaluate(&mon);
     assert!(results[0].satisfied);
 }
@@ -144,9 +142,8 @@ fn always_satisfied_all_above_threshold() {
 #[test]
 fn always_violated_single_dip() {
     let mon = build_monitor("p", &[80, 90, 30, 110]);
-    let a = Analyzer::new(vec![
-        TemporalProperty::Always(SignalPredicate::GreaterThan("p".into(), 50)),
-    ]);
+    let a =
+        Analyzer::new(vec![TemporalProperty::Always(SignalPredicate::GreaterThan("p".into(), 50))]);
     let results = a.evaluate(&mon);
     assert!(!results[0].satisfied);
     assert_eq!(results[0].evidence_tick, Some(2));
@@ -155,9 +152,10 @@ fn always_violated_single_dip() {
 #[test]
 fn eventually_within_found_in_window() {
     let mon = build_monitor("flag", &[0, 0, 1, 0, 0]);
-    let a = Analyzer::new(vec![
-        TemporalProperty::EventuallyWithin(SignalPredicate::IsTrue("flag".into()), 5),
-    ]);
+    let a = Analyzer::new(vec![TemporalProperty::EventuallyWithin(
+        SignalPredicate::IsTrue("flag".into()),
+        5,
+    )]);
     let results = a.evaluate(&mon);
     assert!(results[0].satisfied);
 }
@@ -166,9 +164,10 @@ fn eventually_within_found_in_window() {
 fn eventually_within_outside_deadline() {
     // True at tick 0, deadline is 2, only checks last 2 ticks.
     let mon = build_monitor("f", &[1, 0, 0, 0]);
-    let a = Analyzer::new(vec![
-        TemporalProperty::EventuallyWithin(SignalPredicate::IsTrue("f".into()), 2),
-    ]);
+    let a = Analyzer::new(vec![TemporalProperty::EventuallyWithin(
+        SignalPredicate::IsTrue("f".into()),
+        2,
+    )]);
     let results = a.evaluate(&mon);
     assert!(!results[0].satisfied);
 }
@@ -176,9 +175,10 @@ fn eventually_within_outside_deadline() {
 #[test]
 fn persists_three_consecutive() {
     let mon = build_monitor("x", &[0, 50, 60, 70, 0]);
-    let a = Analyzer::new(vec![
-        TemporalProperty::Persists(SignalPredicate::GreaterThan("x".into(), 40), 3),
-    ]);
+    let a = Analyzer::new(vec![TemporalProperty::Persists(
+        SignalPredicate::GreaterThan("x".into(), 40),
+        3,
+    )]);
     let results = a.evaluate(&mon);
     assert!(results[0].satisfied);
 }
@@ -186,9 +186,10 @@ fn persists_three_consecutive() {
 #[test]
 fn persists_interrupted_fails() {
     let mon = build_monitor("x", &[50, 60, 10, 70, 80]);
-    let a = Analyzer::new(vec![
-        TemporalProperty::Persists(SignalPredicate::GreaterThan("x".into(), 40), 3),
-    ]);
+    let a = Analyzer::new(vec![TemporalProperty::Persists(
+        SignalPredicate::GreaterThan("x".into(), 40),
+        3,
+    )]);
     let results = a.evaluate(&mon);
     assert!(!results[0].satisfied);
 }
@@ -196,9 +197,11 @@ fn persists_interrupted_fails() {
 #[test]
 fn in_range_predicate_works() {
     let mon = build_monitor("temp", &[35, 36, 37, 38, 39]);
-    let a = Analyzer::new(vec![
-        TemporalProperty::Always(SignalPredicate::InRange("temp".into(), 36, 38)),
-    ]);
+    let a = Analyzer::new(vec![TemporalProperty::Always(SignalPredicate::InRange(
+        "temp".into(),
+        36,
+        38,
+    ))]);
     let results = a.evaluate(&mon);
     assert!(!results[0].satisfied); // 35 and 39 are out of range
     assert_eq!(results[0].evidence_tick, Some(0));
@@ -209,11 +212,7 @@ fn in_range_predicate_works() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 fn violation(idx: usize) -> PropertyResult {
-    PropertyResult {
-        property_idx: idx,
-        satisfied: false,
-        evidence_tick: Some(0),
-    }
+    PropertyResult { property_idx: idx, satisfied: false, evidence_tick: Some(0) }
 }
 
 #[test]
@@ -238,14 +237,12 @@ fn planner_selects_highest_priority() {
 
 #[test]
 fn planner_no_match_returns_none() {
-    let planner = Planner::new(vec![
-        ActionEntry {
-            trigger_property_idx: 5,
-            action: AdaptationAction::EmergencyStop,
-            priority: 10,
-            trigger_on: TriggerCondition::OnViolation,
-        },
-    ]);
+    let planner = Planner::new(vec![ActionEntry {
+        trigger_property_idx: 5,
+        action: AdaptationAction::EmergencyStop,
+        priority: 10,
+        trigger_on: TriggerCondition::OnViolation,
+    }]);
     let result = planner.select(&[violation(0)]);
     assert_eq!(result.action, None);
 }
@@ -277,14 +274,8 @@ fn planner_multiple_violations_picks_best() {
 #[test]
 fn executor_set_signal() {
     let mut exec = Executor::new(vec!["alarm".into(), "valve".into()]);
-    let mut env = HashMap::from([
-        ("alarm".into(), 0u64),
-        ("valve".into(), 0u64),
-    ]);
-    let rec = exec.apply(
-        &AdaptationAction::SetSignal { name: "alarm".into(), value: 1 },
-        &mut env,
-    );
+    let mut env = HashMap::from([("alarm".into(), 0u64), ("valve".into(), 0u64)]);
+    let rec = exec.apply(&AdaptationAction::SetSignal { name: "alarm".into(), value: 1 }, &mut env);
     assert!(rec.success);
     assert_eq!(env["alarm"], 1);
 }
@@ -292,10 +283,7 @@ fn executor_set_signal() {
 #[test]
 fn executor_emergency_stop_zeros_all_signals() {
     let mut exec = Executor::new(vec!["a".into(), "b".into()]);
-    let mut env = HashMap::from([
-        ("a".into(), 42u64),
-        ("b".into(), 99u64),
-    ]);
+    let mut env = HashMap::from([("a".into(), 42u64), ("b".into(), 99u64)]);
     let rec = exec.apply(&AdaptationAction::EmergencyStop, &mut env);
     assert!(rec.success);
     assert!(exec.is_emergency_active());
@@ -307,10 +295,8 @@ fn executor_emergency_stop_zeros_all_signals() {
 fn executor_unknown_signal_fails_gracefully() {
     let mut exec = Executor::new(vec!["known".into()]);
     let mut env = HashMap::from([("known".into(), 0u64)]);
-    let rec = exec.apply(
-        &AdaptationAction::SetSignal { name: "unknown".into(), value: 1 },
-        &mut env,
-    );
+    let rec =
+        exec.apply(&AdaptationAction::SetSignal { name: "unknown".into(), value: 1 }, &mut env);
     assert!(!rec.success);
 }
 
@@ -388,17 +374,13 @@ fn neonatal_config() -> SimConfig {
             fault_end_tick: None,
             seed: 42,
         }],
-        properties: vec![
-            TemporalProperty::Always(
-                SignalPredicate::GreaterThan("airway_pressure".into(), 50),
-            ),
-        ],
+        properties: vec![TemporalProperty::Always(SignalPredicate::GreaterThan(
+            "airway_pressure".into(),
+            50,
+        ))],
         action_table: vec![ActionEntry {
             trigger_property_idx: 0,
-            action: AdaptationAction::SetSignal {
-                name: "airway_pressure".into(),
-                value: 1,
-            },
+            action: AdaptationAction::SetSignal { name: "airway_pressure".into(), value: 1 },
             priority: 10,
             trigger_on: TriggerCondition::OnViolation,
         }],
@@ -462,12 +444,10 @@ fn emergency_stop_halts_simulation() {
             fault_end_tick: None,
             seed: 1,
         }],
-        properties: vec![
-            TemporalProperty::Persists(
-                SignalPredicate::LessThan("pressure".into(), 50),
-                5,
-            ),
-        ],
+        properties: vec![TemporalProperty::Persists(
+            SignalPredicate::LessThan("pressure".into(), 50),
+            5,
+        )],
         action_table: vec![ActionEntry {
             trigger_property_idx: 0,
             action: AdaptationAction::EmergencyStop,
@@ -511,20 +491,13 @@ fn multi_property_multi_action_scenario() {
             },
         ],
         properties: vec![
-            TemporalProperty::Always(
-                SignalPredicate::GreaterThan("heart_rate".into(), 50),
-            ),
-            TemporalProperty::Always(
-                SignalPredicate::GreaterThan("blood_pressure".into(), 80),
-            ),
+            TemporalProperty::Always(SignalPredicate::GreaterThan("heart_rate".into(), 50)),
+            TemporalProperty::Always(SignalPredicate::GreaterThan("blood_pressure".into(), 80)),
         ],
         action_table: vec![
             ActionEntry {
                 trigger_property_idx: 0,
-                action: AdaptationAction::SetSignal {
-                    name: "heart_rate".into(),
-                    value: 1,
-                },
+                action: AdaptationAction::SetSignal { name: "heart_rate".into(), value: 1 },
                 priority: 50,
                 trigger_on: TriggerCondition::OnViolation,
             },
@@ -580,9 +553,7 @@ fn empty_action_table_no_panic() {
             fault_end_tick: None,
             seed: 1,
         }],
-        properties: vec![
-            TemporalProperty::Always(SignalPredicate::IsTrue("s".into())),
-        ],
+        properties: vec![TemporalProperty::Always(SignalPredicate::IsTrue("s".into()))],
         action_table: vec![], // no actions defined
         window_size: 8,
         knowledge_capacity: 10,
@@ -622,10 +593,8 @@ fn adaptation_log_serializable_to_json() {
 fn switch_mode_action_records_correctly() {
     let mut exec = Executor::new(vec!["s".into()]);
     let mut env = HashMap::from([("s".into(), 42u64)]);
-    let rec = exec.apply(
-        &AdaptationAction::SwitchMode { mode_name: "high_precision".into() },
-        &mut env,
-    );
+    let rec =
+        exec.apply(&AdaptationAction::SwitchMode { mode_name: "high_precision".into() }, &mut env);
     assert!(rec.success);
     // Signal state should not change on mode switch.
     assert_eq!(env["s"], 42);

@@ -16,20 +16,20 @@ pub enum Token {
     False,
     // Operators
     Bang,     // !
-    AmpAmp,  // &&
+    AmpAmp,   // &&
     PipePipe, // ||
     Caret,    // ^
     Plus,     // +
     Minus,    // -
     Star,     // *
-    LtLt,    // <<
-    GtGt,    // >>
+    LtLt,     // <<
+    GtGt,     // >>
     Lt,       // <
     Le,       // <=
     Gt,       // >
     Ge,       // >=
-    EqEq,    // ==
-    BangEq,  // !=
+    EqEq,     // ==
+    BangEq,   // !=
     LParen,
     RParen,
 }
@@ -45,9 +45,7 @@ impl TokenArena {
     /// Uses input length to estimate token count (typically 1 token per 2-3 chars).
     fn new(input_len: usize) -> Self {
         let estimated_tokens = input_len.saturating_div(2).max(8);
-        Self {
-            tokens: Vec::with_capacity(estimated_tokens),
-        }
+        Self { tokens: Vec::with_capacity(estimated_tokens) }
     }
 
     /// Add a token to the arena.
@@ -109,9 +107,9 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
                 pos += 1;
             }
             let num_str = &input[start..pos];
-            let value: u64 = num_str.parse().map_err(|_| {
-                MirrError::new(format!("Integer literal too large: '{num_str}'."))
-            })?;
+            let value: u64 = num_str
+                .parse()
+                .map_err(|_| MirrError::new(format!("Integer literal too large: '{num_str}'.")))?;
             arena.push(Token::Integer(value));
             continue;
         }
@@ -135,11 +133,8 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         // Safety: reconstruct the character from the byte rather than slicing
         // the original &str, which would panic on multi-byte UTF-8 boundaries
         // (e.g., em dash U+2014 is 3 bytes: 0xE2 0x80 0x94).
-        let ch_display = if b.is_ascii() {
-            (b as char).to_string()
-        } else {
-            format!("0x{:02X}", b)
-        };
+        let ch_display =
+            if b.is_ascii() { (b as char).to_string() } else { format!("0x{:02X}", b) };
         return Err(MirrError::new(format!(
             "Unexpected character '{}' in expression.",
             ch_display

@@ -20,7 +20,17 @@ fn generator_runs_and_outputs_text_python() {
 fn generator_runs_and_outputs_text_rust() {
     // use the Rust binary we just added
     let output = Command::new("cargo")
-        .args(["run", "--quiet", "--bin", "generate_mirr_stress", "--", "--type", "mux_forest", "--size", "10"])
+        .args([
+            "run",
+            "--quiet",
+            "--bin",
+            "generate_mirr_stress",
+            "--",
+            "--type",
+            "mux_forest",
+            "--size",
+            "10",
+        ])
         .output()
         .expect("failed to execute rust generator");
 
@@ -49,7 +59,17 @@ fn generated_templates_compile() {
     let types = ["mux_forest", "temporal_chain", "width_chain"];
     for typ in types {
         let output = Command::new("cargo")
-            .args(["run", "--quiet", "--bin", "generate_mirr_stress", "--", "--type", typ, "--size", "5"])
+            .args([
+                "run",
+                "--quiet",
+                "--bin",
+                "generate_mirr_stress",
+                "--",
+                "--type",
+                typ,
+                "--size",
+                "5",
+            ])
             .output()
             .expect("failed to execute rust generator");
         assert!(output.status.success());

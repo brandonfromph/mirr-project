@@ -8,9 +8,9 @@
 
 #![forbid(unsafe_code)]
 
+use super::types::MAX_SIGNALS;
 use crate::ast::expr::Expr;
 use crate::ast::program::MirrProgram;
-use super::types::MAX_SIGNALS;
 
 /// Directed graph of width dependencies between signals.
 ///
@@ -92,8 +92,7 @@ fn collect_refs_with_ops(expr: &Expr) -> Vec<RefWithOps> {
     let mut results: Vec<RefWithOps> = Vec::with_capacity(16);
 
     // Work stack: (expression, ops_on_path_to_here).
-    let mut stack: Vec<(&Expr, Vec<crate::ast::types::BinaryOp>)> =
-        Vec::with_capacity(32);
+    let mut stack: Vec<(&Expr, Vec<crate::ast::types::BinaryOp>)> = Vec::with_capacity(32);
     stack.push((expr, Vec::new()));
 
     let mut visited = 0usize;

@@ -12,8 +12,8 @@ use std::fs;
 use std::process;
 
 use nasa_rust_project::ast::Expr;
-use nasa_rust_project::simplify::{simplify_expr_with_stats, SimplifyStats};
 use nasa_rust_project::parse_mirr;
+use nasa_rust_project::simplify::{simplify_expr_with_stats, SimplifyStats};
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -84,11 +84,7 @@ fn run_mirr_mode(content: &str, show_stats: bool) {
         }
     };
 
-    let mut total_stats = SimplifyStats {
-        rules_applied: 0,
-        nodes_before: 0,
-        nodes_after: 0,
-    };
+    let mut total_stats = SimplifyStats { rules_applied: 0, nodes_before: 0, nodes_after: 0 };
 
     // Simplify guard conditions.
     let mut guard_count = 0;

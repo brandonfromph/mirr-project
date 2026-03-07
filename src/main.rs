@@ -3,7 +3,7 @@
 
 use std::{env, fs, process};
 
-use nasa_rust_project::{parse_mirr, TemporalGuardCompiler, BootstrapRunner, BootstrapOpts};
+use nasa_rust_project::{parse_mirr, BootstrapOpts, BootstrapRunner, TemporalGuardCompiler};
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -26,13 +26,19 @@ fn main() {
 
     for arg in args {
         match arg.as_str() {
-            "--compile" | "-c"         => compile_temporal = true,
-            "--json" | "-j"            => emit_json = true,
-            "--dot" | "-d"             => emit_dot = true,
-            "--verilog"                 => emit_verilog = true,
-            "--selfhost-compile"       => selfhost_compile = true,
-            "--selfhost-compile-json"  => { selfhost_compile = true; selfhost_json = true; }
-            "--selfhost-compile-verilog" => { selfhost_compile = true; selfhost_verilog = true; }
+            "--compile" | "-c" => compile_temporal = true,
+            "--json" | "-j" => emit_json = true,
+            "--dot" | "-d" => emit_dot = true,
+            "--verilog" => emit_verilog = true,
+            "--selfhost-compile" => selfhost_compile = true,
+            "--selfhost-compile-json" => {
+                selfhost_compile = true;
+                selfhost_json = true;
+            }
+            "--selfhost-compile-verilog" => {
+                selfhost_compile = true;
+                selfhost_verilog = true;
+            }
             path if path.starts_with('-') => {
                 eprintln!("Unknown option: {}", path);
                 print_help();
@@ -59,7 +65,7 @@ fn main() {
     };
 
     // --selfhost-compile: run the bootstrap runner and exit.
-        if selfhost_compile {
+    if selfhost_compile {
         let runner = BootstrapRunner::new(BootstrapOpts {
             fixture_root: None,
             emit_netlist_json: selfhost_json,
@@ -177,12 +183,12 @@ fn main() {
         // Default output: summary and detailed information
         println!("Temporal Guard Compilation Results:");
         println!("{}", netlist.summary());
-        
+
         println!("\nDetailed Guard Information:");
         for (i, guard) in netlist.guards.iter().enumerate() {
             println!("Guard {}: {:?}", i + 1, guard);
         }
-        
+
         println!("\nGenerated Signals:");
         for signal in &netlist.signals {
             println!("  - {} ({:?})", signal.name, signal.kind);
@@ -198,8 +204,12 @@ fn print_help() {
     println!("Options:");
     println!("  -c, --compile              Compile temporal guards to low-level netlist");
     println!("  -j, --json                 Emit netlist as JSON (requires --compile)");
-    println!("  -d, --dot                  Emit netlist as Graphviz DOT format (requires --compile)");
-    println!("      --verilog              Emit netlist as simple Verilog module (requires --compile)");
+    println!(
+        "  -d, --dot                  Emit netlist as Graphviz DOT format (requires --compile)"
+    );
+    println!(
+        "      --verilog              Emit netlist as simple Verilog module (requires --compile)"
+    );
     println!("      --selfhost-compile     Run full self-hosting bootstrap pipeline");
     println!("      --selfhost-compile-json  Same as above, also emit netlist JSON");
     println!("      --selfhost-compile-verilog  Same as above, also emit Verilog");

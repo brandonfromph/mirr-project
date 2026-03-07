@@ -38,12 +38,7 @@ impl RingBuffer {
     /// Capacity is clamped to MAX_WINDOW_SIZE.
     pub fn new(capacity: usize) -> Self {
         let cap = capacity.min(MAX_WINDOW_SIZE);
-        Self {
-            buf: vec![0u64; cap],
-            capacity: cap,
-            write_pos: 0,
-            len: 0,
-        }
+        Self { buf: vec![0u64; cap], capacity: cap, write_pos: 0, len: 0 }
     }
 
     /// Push a value into the ring buffer, overwriting the oldest if full.
@@ -83,10 +78,7 @@ impl RingBuffer {
     /// Iterate over all stored values from oldest to newest.
     /// Returns an iterator that yields at most `len` items.
     pub fn iter(&self) -> RingBufferIter<'_> {
-        RingBufferIter {
-            buf: self,
-            pos: 0,
-        }
+        RingBufferIter { buf: self, pos: 0 }
     }
 
     /// Clear all stored values.
@@ -148,11 +140,7 @@ impl Monitor {
         for name in signal_names.iter().take(MAX_SENSORS) {
             windows.insert(name.to_string(), RingBuffer::new(ws));
         }
-        Self {
-            windows,
-            window_size: ws,
-            tick: 0,
-        }
+        Self { windows, window_size: ws, tick: 0 }
     }
 
     /// Record a sensor sample for the named signal at the current tick.

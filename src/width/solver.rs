@@ -59,10 +59,7 @@ fn seed_widths(node_count: usize, constraints: &[WidthConstraint]) -> Vec<u32> {
 ///
 /// Bounded: outer loop runs at most MAX_PROPAGATION_ROUNDS times.
 /// Inner loop iterates once over constraints per round.
-pub fn solve(
-    nodes: &[FlatNode],
-    constraints: &[WidthConstraint],
-) -> SolveResult {
+pub fn solve(nodes: &[FlatNode], constraints: &[WidthConstraint]) -> SolveResult {
     let node_count = nodes.len().min(MAX_FLAT_NODES);
     let mut widths = seed_widths(node_count, constraints);
     let mut diagnostics: Vec<WidthDiag> = Vec::new();
@@ -99,12 +96,8 @@ pub fn solve(
 /// if the constraint wants to update a node, or `None` if no update.
 fn evaluate_constraint(c: &WidthConstraint, widths: &[u32]) -> Option<(usize, u32)> {
     match c {
-        WidthConstraint::Fixed { node, width } => {
-            Some((*node as usize, *width))
-        }
-        WidthConstraint::Boolean { node } => {
-            Some((*node as usize, 1))
-        }
+        WidthConstraint::Fixed { node, width } => Some((*node as usize, *width)),
+        WidthConstraint::Boolean { node } => Some((*node as usize, 1)),
         WidthConstraint::MaxPlusOne { node, left, right } => {
             let lw = get_w(widths, *left);
             let rw = get_w(widths, *right);
@@ -154,20 +147,15 @@ fn get_w(widths: &[u32], idx: u32) -> u32 {
 /// Post-solve validation: check all widths are resolved and within bounds.
 ///
 /// Bounded: iterates once over `widths` (len <= MAX_FLAT_NODES).
-fn validate_widths(
-    widths: &[u32],
-    nodes: &[FlatNode],
-    diagnostics: &mut Vec<WidthDiag>,
-) {
+fn validate_widths(widths: &[u32], nodes: &[FlatNode], diagnostics: &mut Vec<WidthDiag>) {
     for (i, &w) in widths.iter().enumerate() {
         if i >= MAX_FLAT_NODES {
             break;
         }
         if w == 0 {
             let desc = node_description(i, nodes);
-            diagnostics.push(WidthDiag::error(format!(
-                "node {} ({}) has unresolved width", i, desc
-            )));
+            diagnostics
+                .push(WidthDiag::error(format!("node {} ({}) has unresolved width", i, desc)));
         }
         if w > Width::MAX.0 {
             let desc = node_description(i, nodes);
@@ -199,11 +187,7 @@ fn node_description(idx: usize, nodes: &[FlatNode]) -> String {
 /// with `target_width` would cause an unsafe truncation.
 ///
 /// Returns diagnostics (possibly empty) for this single assignment.
-pub fn check_truncation(
-    target_name: &str,
-    target_width: u32,
-    expr_width: Width,
-) -> Vec<WidthDiag> {
+pub fn check_truncation(target_name: &str, target_width: u32, expr_width: Width) -> Vec<WidthDiag> {
     let mut diags = Vec::new();
     if expr_width.0 > target_width {
         diags.push(WidthDiag::error(format!(

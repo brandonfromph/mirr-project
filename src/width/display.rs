@@ -52,7 +52,7 @@ pub fn format_width_expr(expr: &WidthExpr) -> String {
             },
             FormatWork::CombineUnary { op, width } => {
                 let operand_s = results.pop().unwrap_or_default();
-                results.push(format!("({}{}):{}",  op, operand_s, width));
+                results.push(format!("({}{}):{}", op, operand_s, width));
             }
             FormatWork::CombineBinary { op, width } => {
                 let right_s = results.pop().unwrap_or_default();
@@ -95,8 +95,12 @@ fn format_binary_op(op: crate::ast::types::BinaryOp) -> String {
 pub fn format_stats(stats: &WidthStats) -> String {
     format!(
         "nodes={} rounds={} diagnostics={} sccs={} expansive={} nonexpansive={}",
-        stats.nodes_analyzed, stats.propagation_rounds, stats.diagnostics_count,
-        stats.scc_count, stats.expansive_count, stats.nonexpansive_count,
+        stats.nodes_analyzed,
+        stats.propagation_rounds,
+        stats.diagnostics_count,
+        stats.scc_count,
+        stats.expansive_count,
+        stats.nonexpansive_count,
     )
 }
 
@@ -104,10 +108,7 @@ pub fn format_stats(stats: &WidthStats) -> String {
 ///
 /// `signal_names` maps signal indices to their declared names.
 /// Bounded: iterates once over SCCs (max MAX_SIGNALS).
-pub fn format_scc_report(
-    sccs: &[SccInfo],
-    signal_names: &[String],
-) -> String {
+pub fn format_scc_report(sccs: &[SccInfo], signal_names: &[String]) -> String {
     if sccs.is_empty() {
         return "No non-trivial SCCs detected.".to_string();
     }
@@ -122,12 +123,12 @@ pub fn format_scc_report(
             SccKind::Expansive => "expansive",
             SccKind::Nonexpansive => "nonexpansive",
         };
-        let names: Vec<&str> = scc.signal_indices.iter()
+        let names: Vec<&str> = scc
+            .signal_indices
+            .iter()
             .filter_map(|&idx| signal_names.get(idx).map(|s| s.as_str()))
             .collect();
-        out.push_str(&format!(
-            "  SCC {}: {} [{}]\n", i, kind_str, names.join(", ")
-        ));
+        out.push_str(&format!("  SCC {}: {} [{}]\n", i, kind_str, names.join(", ")));
     }
     out
 }

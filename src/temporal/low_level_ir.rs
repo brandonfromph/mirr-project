@@ -4,8 +4,8 @@
 //! that can be mapped to hardware primitives like shift registers and counters.
 
 use crate::ast::{
-    Expr,
     types::{BinaryOp, LiteralValue, SignalType, UnaryOp},
+    Expr,
 };
 use serde::{Deserialize, Serialize};
 
@@ -92,10 +92,7 @@ impl ConditionKind {
             Expr::Signal(name) => Ok(ConditionKind::SimpleSignal(name.clone())),
 
             // `when !<signal>` or `when not <signal>`
-            Expr::Unary {
-                op: UnaryOp::Not,
-                operand,
-            } => match operand.as_ref() {
+            Expr::Unary { op: UnaryOp::Not, operand } => match operand.as_ref() {
                 Expr::Signal(name) => Ok(ConditionKind::NegatedSignal(name.clone())),
                 _ => Err("negation of non-signal expressions is not supported"),
             },
@@ -383,12 +380,7 @@ impl GeneratedSignal {
 
     /// Create a comparator output signal
     pub fn comparator(name: String) -> Self {
-        Self {
-            name,
-            ty: SignalType::Bool,
-            kind: GeneratedSignalKind::Comparator,
-            source: None,
-        }
+        Self { name, ty: SignalType::Bool, kind: GeneratedSignalKind::Comparator, source: None }
     }
 
     /// Create a logic gate output signal
@@ -409,12 +401,7 @@ impl GeneratedSignal {
         } else {
             None
         };
-        Self {
-            name,
-            ty: SignalType::Bool,
-            kind: GeneratedSignalKind::LogicGate,
-            source,
-        }
+        Self { name, ty: SignalType::Bool, kind: GeneratedSignalKind::LogicGate, source }
     }
 }
 
@@ -432,9 +419,7 @@ impl ShiftRegisterGuard {
         delay_cycles: u64,
         condition_kind: ConditionKind,
     ) -> Self {
-        let stages = (0..delay_cycles)
-            .map(|i| format!("{name}_sr_{i}"))
-            .collect();
+        let stages = (0..delay_cycles).map(|i| format!("{name}_sr_{i}")).collect();
         Self {
             output_signal: format!("{name}_out"),
             name,
@@ -485,12 +470,7 @@ impl CounterGuard {
 impl ComplexGuard {
     /// Create a complex guard
     pub fn new(name: String, sub_guards: Vec<CompiledGuard>, combination_logic: Expr) -> Self {
-        Self {
-            output_signal: format!("{name}_out"),
-            name,
-            sub_guards,
-            combination_logic,
-        }
+        Self { output_signal: format!("{name}_out"), name, sub_guards, combination_logic }
     }
 }
 
@@ -510,8 +490,12 @@ mod tests {
     #[test]
     fn test_shift_register_guard_creation() {
         let ck = simple_ck("input_signal");
-        let guard =
-            ShiftRegisterGuard::new("test_guard".to_string(), "input_signal".to_string(), 4, ck.clone());
+        let guard = ShiftRegisterGuard::new(
+            "test_guard".to_string(),
+            "input_signal".to_string(),
+            4,
+            ck.clone(),
+        );
 
         assert_eq!(guard.name, "test_guard");
         assert_eq!(guard.input_signal, "input_signal");
@@ -569,10 +553,7 @@ mod tests {
 
     #[test]
     fn test_condition_kind_describe() {
-        assert_eq!(
-            ConditionKind::SimpleSignal("clk".to_string()).describe(),
-            "when clk (high)"
-        );
+        assert_eq!(ConditionKind::SimpleSignal("clk".to_string()).describe(), "when clk (high)");
         assert_eq!(
             ConditionKind::NegatedSignal("reset".to_string()).describe(),
             "when !reset (low)"
@@ -588,14 +569,9 @@ mod tests {
     #[test]
     fn test_condition_kind_all_comparison_ops_accepted() {
         // Step 2.2: all six comparison operators must be accepted (P2-REQ-015)
-        for op in [
-            BinaryOp::Eq,
-            BinaryOp::Ne,
-            BinaryOp::Lt,
-            BinaryOp::Le,
-            BinaryOp::Gt,
-            BinaryOp::Ge,
-        ] {
+        for op in
+            [BinaryOp::Eq, BinaryOp::Ne, BinaryOp::Lt, BinaryOp::Le, BinaryOp::Gt, BinaryOp::Ge]
+        {
             let expr = Expr::Binary {
                 op,
                 left: Box::new(Expr::Signal("sig".to_string())),

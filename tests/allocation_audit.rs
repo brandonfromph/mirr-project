@@ -52,7 +52,10 @@ fn allocation_audit_hot_path_no_new_allocs_after_init() {
         ALLOC_COUNT.load(Ordering::SeqCst).saturating_sub(before)
     };
     let baseline_post = ALLOC_COUNT.load(Ordering::SeqCst);
-    eprintln!("warmup allocs: init1={} init2={} guard={} total {}->{}", alloc1, alloc2, alloc3, baseline_pre, baseline_post);
+    eprintln!(
+        "warmup allocs: init1={} init2={} guard={} total {}->{}",
+        alloc1, alloc2, alloc3, baseline_pre, baseline_post
+    );
 
     // Switch to a no-op hook before the measurement window so that the
     // eprintln! inside the diagnostic hook does not contribute allocations
@@ -66,7 +69,11 @@ fn allocation_audit_hot_path_no_new_allocs_after_init() {
     let post = ALLOC_COUNT.load(Ordering::SeqCst);
     let hot_alloc = post.saturating_sub(pre);
     eprintln!("hot-path allocs: {} ({} -> {})", hot_alloc, pre, post);
-    assert_eq!(post, pre, "Hot-path emitted unexpected heap allocations after init ({} -> {})", pre, post);
+    assert_eq!(
+        post, pre,
+        "Hot-path emitted unexpected heap allocations after init ({} -> {})",
+        pre, post
+    );
 
     // Sanity: ensure warm-up did allocate at least once.
     assert!(baseline_post >= baseline_pre, "Warm-up did not record any allocations");

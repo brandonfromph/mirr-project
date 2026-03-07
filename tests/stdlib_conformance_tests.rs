@@ -84,8 +84,7 @@ fn diag_parse_expected_module_is_parse_class() {
 
 #[test]
 fn diag_parse_module_not_closed_is_parse_class() {
-    let err = parse_mirr("module m { signal s: in bool;")
-        .expect_err("unclosed module must fail");
+    let err = parse_mirr("module m { signal s: in bool;").expect_err("unclosed module must fail");
     assert_eq!(error_class(&err), "parse");
     assert!(err.to_string().contains("not closed"));
 }
@@ -99,16 +98,16 @@ fn diag_parse_signal_missing_semicolon_is_parse_class() {
 
 #[test]
 fn diag_parse_signal_unknown_kind_is_parse_class() {
-    let err = parse_mirr("module m {\n    signal x: foo bool;\n}")
-        .expect_err("unknown kind must fail");
+    let err =
+        parse_mirr("module m {\n    signal x: foo bool;\n}").expect_err("unknown kind must fail");
     assert_eq!(error_class(&err), "parse");
     assert!(err.to_string().contains("Unknown signal kind"));
 }
 
 #[test]
 fn diag_parse_signal_unknown_type_is_parse_class() {
-    let err = parse_mirr("module m {\n    signal x: in x32;\n}")
-        .expect_err("unknown type must fail");
+    let err =
+        parse_mirr("module m {\n    signal x: in x32;\n}").expect_err("unknown type must fail");
     assert_eq!(error_class(&err), "parse");
     assert!(err.to_string().contains("Unknown signal type"));
 }

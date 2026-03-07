@@ -1,22 +1,22 @@
- // Module: temporal/compiler
- // Responsibility: Deterministic lowering of high-level temporal guards into
- // a bounded, verifiable low-level IR (shift registers / counters).
- //
- // Phase 3 interface notes:
- // - Public APIs validate inputs and return Result; callers must check returns.
- // - Fixed bounds: MAX_GUARDS and MAX_STAGES apply; loops must document explicit upper bounds.
- // - Resource budgets: worst-case stack <= 64 KiB; post-init heap = 0 (compile-time allocations allowed if bounded and documented).
- // - Determinism: any RNG or ordering must be seeded/injected and recorded in provenance.
- //
- //! Temporal Guard Compiler
- //!
- //! Implements the compilation pass that transforms high-level temporal guards
- //! into low-level representations using shift registers and counters.
- 
- use crate::ast::{program::Guard, types::SignalType};
+// Module: temporal/compiler
+// Responsibility: Deterministic lowering of high-level temporal guards into
+// a bounded, verifiable low-level IR (shift registers / counters).
+//
+// Phase 3 interface notes:
+// - Public APIs validate inputs and return Result; callers must check returns.
+// - Fixed bounds: MAX_GUARDS and MAX_STAGES apply; loops must document explicit upper bounds.
+// - Resource budgets: worst-case stack <= 64 KiB; post-init heap = 0 (compile-time allocations allowed if bounded and documented).
+// - Determinism: any RNG or ordering must be seeded/injected and recorded in provenance.
+//
+//! Temporal Guard Compiler
+//!
+//! Implements the compilation pass that transforms high-level temporal guards
+//! into low-level representations using shift registers and counters.
+
+use crate::ast::{program::Guard, types::SignalType};
 use crate::error::MirrError;
 use crate::temporal::low_level_ir::{
-    ConditionKind, CompiledGuard, GeneratedSignal, GeneratedSignalKind, TemporalNetlist,
+    CompiledGuard, ConditionKind, GeneratedSignal, GeneratedSignalKind, TemporalNetlist,
 };
 
 /// Adaptive threshold for choosing between shift registers and counters.
@@ -54,10 +54,7 @@ impl Default for TemporalCompiler {
 impl TemporalCompiler {
     /// Create a new temporal compiler
     pub fn new() -> Self {
-        Self {
-            signal_counter: 0,
-            context: CompilationContext::default(),
-        }
+        Self { signal_counter: 0, context: CompilationContext::default() }
     }
 
     /// Compile a module's temporal guards into a low-level netlist
@@ -94,7 +91,9 @@ impl TemporalCompiler {
             Err(_) => {
                 // attempt complex boolean combination
                 if let crate::ast::Expr::Binary { op, left, right } = &guard.condition {
-                    if *op == crate::ast::types::BinaryOp::And || *op == crate::ast::types::BinaryOp::Or {
+                    if *op == crate::ast::types::BinaryOp::And
+                        || *op == crate::ast::types::BinaryOp::Or
+                    {
                         // recursively compile each side as its own guard
                         let left_name = format!("{}_sub{}", guard.name, self.signal_counter);
                         self.signal_counter += 1;
@@ -213,9 +212,9 @@ impl TemporalCompiler {
         ));
 
         // Generate comparator signal
-        self.context.signals.push(GeneratedSignal::comparator(
-            counter_guard.comparator_signal.clone(),
-        ));
+        self.context
+            .signals
+            .push(GeneratedSignal::comparator(counter_guard.comparator_signal.clone()));
 
         // Generate output signal
         self.context.signals.push(GeneratedSignal {
@@ -278,11 +277,8 @@ impl ResourceEstimator {
 
     /// Estimate resources for counter implementation
     pub fn estimate_counter_resources(delay_cycles: u64) -> ResourceEstimate {
-        let counter_width = if delay_cycles == 0 {
-            1
-        } else {
-            (delay_cycles as f64).log2().ceil() as usize + 1
-        };
+        let counter_width =
+            if delay_cycles == 0 { 1 } else { (delay_cycles as f64).log2().ceil() as usize + 1 };
         ResourceEstimate {
             shift_registers: 0,
             counters: 1,
@@ -294,9 +290,9 @@ impl ResourceEstimator {
     /// Choose the optimal implementation strategy for a given delay
     pub fn choose_optimal_strategy(delay_cycles: u64) -> ImplementationStrategy {
         if delay_cycles <= SHIFT_REGISTER_THRESHOLD {
-            ImplementationStrategy::ShiftRegister(
-                Self::estimate_shift_register_resources(delay_cycles),
-            )
+            ImplementationStrategy::ShiftRegister(Self::estimate_shift_register_resources(
+                delay_cycles,
+            ))
         } else {
             ImplementationStrategy::Counter(Self::estimate_counter_resources(delay_cycles))
         }
@@ -385,10 +381,7 @@ mod tests {
 
         match compiled {
             CompiledGuard::ShiftRegister(sr) => {
-                assert_eq!(
-                    sr.condition_kind,
-                    ConditionKind::SimpleSignal("clk_en".to_string())
-                );
+                assert_eq!(sr.condition_kind, ConditionKind::SimpleSignal("clk_en".to_string()));
             }
             _ => panic!("Expected ShiftRegister"),
         }

@@ -17,22 +17,14 @@ pub enum MirrError {
     /// Semantic analysis error
     SemanticError { message: String },
     /// Temporal causality violation error
-    TemporalCausalityViolation {
-        cause: String,
-        effect: String,
-        constraint_type: String,
-    },
+    TemporalCausalityViolation { cause: String, effect: String, constraint_type: String },
     /// Temporal compilation error
-    TemporalCompilationError {
-        message: String,
-    },
+    TemporalCompilationError { message: String },
 }
 
 impl MirrError {
     pub fn new(message: impl Into<String>) -> Self {
-        Self::ParseError {
-            message: message.into(),
-        }
+        Self::ParseError { message: message.into() }
     }
 }
 
@@ -43,9 +35,15 @@ impl fmt::Display for MirrError {
             MirrError::LexicalError { message } => write!(f, "Lexical error: {}", message),
             MirrError::SemanticError { message } => write!(f, "Semantic error: {}", message),
             MirrError::TemporalCausalityViolation { cause, effect, constraint_type } => {
-                write!(f, "Temporal causality violation: {} cannot cause {} ({})", cause, effect, constraint_type)
+                write!(
+                    f,
+                    "Temporal causality violation: {} cannot cause {} ({})",
+                    cause, effect, constraint_type
+                )
             }
-            MirrError::TemporalCompilationError { message } => write!(f, "Temporal compilation error: {}", message),
+            MirrError::TemporalCompilationError { message } => {
+                write!(f, "Temporal compilation error: {}", message)
+            }
         }
     }
 }

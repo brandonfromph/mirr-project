@@ -27,11 +27,7 @@ use nasa_rust_project::width::WidthInferenceResult;
 // ---------------------------------------------------------------------------
 
 fn sig(name: &str, ty: SignalType) -> SignalDecl {
-    SignalDecl {
-        name: name.to_string(),
-        kind: SignalKind::Internal,
-        ty,
-    }
+    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty }
 }
 
 fn lit(v: u64) -> Expr {
@@ -63,19 +59,23 @@ fn root_width(result: &WidthInferenceResult) -> u32 {
 }
 
 fn has_error_containing(result: &WidthInferenceResult, needle: &str) -> bool {
-    result.diagnostics.iter().any(|d| {
-        d.severity == DiagSeverity::Error && d.message.contains(needle)
-    })
+    result
+        .diagnostics
+        .iter()
+        .any(|d| d.severity == DiagSeverity::Error && d.message.contains(needle))
 }
 
 fn has_info_containing(result: &WidthInferenceResult, needle: &str) -> bool {
-    result.diagnostics.iter().any(|d| {
-        d.severity == DiagSeverity::Info && d.message.contains(needle)
-    })
+    result
+        .diagnostics
+        .iter()
+        .any(|d| d.severity == DiagSeverity::Info && d.message.contains(needle))
 }
 
 fn error_messages(result: &WidthInferenceResult) -> Vec<String> {
-    result.diagnostics.iter()
+    result
+        .diagnostics
+        .iter()
         .filter(|d| d.severity == DiagSeverity::Error)
         .map(|d| d.message.clone())
         .collect()
@@ -247,7 +247,9 @@ fn sub_underflow_info_exact_text() {
     let sigs = [sig("a", SignalType::Unsigned(8)), sig("b", SignalType::Unsigned(8))];
     let e = binary(BinaryOp::Sub, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
-    let infos: Vec<&str> = r.diagnostics.iter()
+    let infos: Vec<&str> = r
+        .diagnostics
+        .iter()
         .filter(|d| d.severity == DiagSeverity::Info)
         .map(|d| d.message.as_str())
         .collect();
@@ -259,9 +261,8 @@ fn sub_underflow_info_exact_text() {
 fn sub_literal_safe_no_underflow_info() {
     // 10 - 3: left (10) >= right (3), provably safe — no info emitted.
     let r = infer(&binary(BinaryOp::Sub, lit(10), lit(3)), &[]);
-    let infos: Vec<&WidthDiag> = r.diagnostics.iter()
-        .filter(|d| d.severity == DiagSeverity::Info)
-        .collect();
+    let infos: Vec<&WidthDiag> =
+        r.diagnostics.iter().filter(|d| d.severity == DiagSeverity::Info).collect();
     assert!(infos.is_empty(), "expected no underflow info for safe literal subtraction");
 }
 
@@ -479,15 +480,11 @@ fn not_bool_stays_1_bit() {
 #[test]
 fn truncation_u16_to_u8_error() {
     use nasa_rust_project::ast::program::Assignment;
-    let sigs = [
-        sig("src", SignalType::Unsigned(16)),
-        sig("dst", SignalType::Unsigned(8)),
-    ];
+    let sigs = [sig("src", SignalType::Unsigned(16)), sig("dst", SignalType::Unsigned(8))];
     let a = Assignment { target: "dst".to_string(), value: signal("src") };
     let diags = width::check_assignment(&a, &sigs);
-    let errors: Vec<&WidthDiag> = diags.iter()
-        .filter(|d| d.severity == DiagSeverity::Error)
-        .collect();
+    let errors: Vec<&WidthDiag> =
+        diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert_eq!(errors.len(), 1);
     assert!(errors[0].message.contains("truncates from 16 bits to 8 bits"));
 }
@@ -495,50 +492,37 @@ fn truncation_u16_to_u8_error() {
 #[test]
 fn truncation_exact_text() {
     use nasa_rust_project::ast::program::Assignment;
-    let sigs = [
-        sig("wide", SignalType::Unsigned(32)),
-        sig("narrow", SignalType::Unsigned(16)),
-    ];
+    let sigs = [sig("wide", SignalType::Unsigned(32)), sig("narrow", SignalType::Unsigned(16))];
     let a = Assignment { target: "narrow".to_string(), value: signal("wide") };
     let diags = width::check_assignment(&a, &sigs);
-    let errors: Vec<String> = diags.iter()
+    let errors: Vec<String> = diags
+        .iter()
         .filter(|d| d.severity == DiagSeverity::Error)
         .map(|d| d.message.clone())
         .collect();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0],
-        "assignment to 'narrow' truncates from 32 bits to 16 bits"
-    );
+    assert_eq!(errors[0], "assignment to 'narrow' truncates from 32 bits to 16 bits");
 }
 
 #[test]
 fn no_truncation_when_widths_match() {
     use nasa_rust_project::ast::program::Assignment;
-    let sigs = [
-        sig("src", SignalType::Unsigned(8)),
-        sig("dst", SignalType::Unsigned(8)),
-    ];
+    let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(8))];
     let a = Assignment { target: "dst".to_string(), value: signal("src") };
     let diags = width::check_assignment(&a, &sigs);
-    let errors: Vec<&WidthDiag> = diags.iter()
-        .filter(|d| d.severity == DiagSeverity::Error)
-        .collect();
+    let errors: Vec<&WidthDiag> =
+        diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert!(errors.is_empty());
 }
 
 #[test]
 fn no_truncation_when_target_wider() {
     use nasa_rust_project::ast::program::Assignment;
-    let sigs = [
-        sig("src", SignalType::Unsigned(8)),
-        sig("dst", SignalType::Unsigned(16)),
-    ];
+    let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(16))];
     let a = Assignment { target: "dst".to_string(), value: signal("src") };
     let diags = width::check_assignment(&a, &sigs);
-    let errors: Vec<&WidthDiag> = diags.iter()
-        .filter(|d| d.severity == DiagSeverity::Error)
-        .collect();
+    let errors: Vec<&WidthDiag> =
+        diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert!(errors.is_empty());
 }
 
@@ -556,9 +540,8 @@ fn truncation_add_overflow_to_narrow_target() {
         value: binary(BinaryOp::Add, signal("a"), signal("b")),
     };
     let diags = width::check_assignment(&a, &sigs);
-    let errors: Vec<&WidthDiag> = diags.iter()
-        .filter(|d| d.severity == DiagSeverity::Error)
-        .collect();
+    let errors: Vec<&WidthDiag> =
+        diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert_eq!(errors.len(), 1);
     assert!(errors[0].message.contains("truncates from 9 bits to 8 bits"));
 }
@@ -734,25 +717,19 @@ fn program_width_inference_basic() {
                 sig("in_a", SignalType::Unsigned(8)),
                 sig("out_b", SignalType::Unsigned(16)),
             ],
-            guards: vec![
-                Guard {
-                    name: "g1".to_string(),
-                    condition: binary(BinaryOp::Lt, signal("in_a"), lit(100)),
-                    cycles: 1,
-                },
-            ],
-            reflexes: vec![
-                Reflex {
-                    name: "r1".to_string(),
-                    guard_names: vec!["g1".to_string()],
-                    assignments: vec![
-                        Assignment {
-                            target: "out_b".to_string(),
-                            value: signal("in_a"),
-                        },
-                    ],
-                },
-            ],
+            guards: vec![Guard {
+                name: "g1".to_string(),
+                condition: binary(BinaryOp::Lt, signal("in_a"), lit(100)),
+                cycles: 1,
+            }],
+            reflexes: vec![Reflex {
+                name: "r1".to_string(),
+                guard_names: vec!["g1".to_string()],
+                assignments: vec![Assignment {
+                    target: "out_b".to_string(),
+                    value: signal("in_a"),
+                }],
+            }],
         },
     };
 
@@ -775,26 +752,21 @@ fn program_detects_truncation_in_reflex() {
                 sig("out", SignalType::Unsigned(8)),
             ],
             guards: vec![],
-            reflexes: vec![
-                Reflex {
-                    name: "r1".to_string(),
-                    guard_names: vec![],
-                    assignments: vec![
-                        Assignment {
-                            target: "out".to_string(),
-                            value: binary(BinaryOp::Add, signal("a"), signal("b")),
-                        },
-                    ],
-                },
-            ],
+            reflexes: vec![Reflex {
+                name: "r1".to_string(),
+                guard_names: vec![],
+                assignments: vec![Assignment {
+                    target: "out".to_string(),
+                    value: binary(BinaryOp::Add, signal("a"), signal("b")),
+                }],
+            }],
         },
     };
 
     let result = width::infer_program_widths(&program);
     assert!(result.has_errors());
     let all_diags = result.all_diagnostics();
-    let errors: Vec<&&WidthDiag> = all_diags.iter()
-        .filter(|d| d.severity == DiagSeverity::Error)
-        .collect();
+    let errors: Vec<&&WidthDiag> =
+        all_diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert!(errors.iter().any(|d| d.message.contains("truncates from 9 bits to 8 bits")));
 }

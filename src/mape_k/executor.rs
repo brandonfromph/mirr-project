@@ -15,9 +15,9 @@
 
 #![forbid(unsafe_code)]
 
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use super::planner::AdaptationAction;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // Execution result
@@ -59,10 +59,7 @@ pub struct Executor {
 impl Executor {
     /// Create an executor that knows about the given signal names.
     pub fn new(valid_signals: Vec<String>) -> Self {
-        Self {
-            valid_signals,
-            emergency_active: false,
-        }
+        Self { valid_signals, emergency_active: false }
     }
 
     /// Whether an emergency stop is currently active.
@@ -91,9 +88,7 @@ impl Executor {
             AdaptationAction::SwitchMode { mode_name } => {
                 self.apply_switch_mode(mode_name, signal_env)
             }
-            AdaptationAction::EmergencyStop => {
-                self.apply_emergency_stop(signal_env)
-            }
+            AdaptationAction::EmergencyStop => self.apply_emergency_stop(signal_env),
         }
     }
 
@@ -106,10 +101,7 @@ impl Executor {
         // Validate that the target signal exists.
         if !self.valid_signals.iter().any(|s| s == name) {
             return ExecutionRecord {
-                action: AdaptationAction::SetSignal {
-                    name: name.to_string(),
-                    value,
-                },
+                action: AdaptationAction::SetSignal { name: name.to_string(), value },
                 pre_state: Vec::new(),
                 post_state: Vec::new(),
                 success: false,
@@ -122,10 +114,7 @@ impl Executor {
         let post_val = value;
 
         ExecutionRecord {
-            action: AdaptationAction::SetSignal {
-                name: name.to_string(),
-                value,
-            },
+            action: AdaptationAction::SetSignal { name: name.to_string(), value },
             pre_state: vec![(name.to_string(), pre_val)],
             post_state: vec![(name.to_string(), post_val)],
             success: true,
@@ -142,9 +131,7 @@ impl Executor {
         // is not directly modified (the "bitstream" concept is simulated
         // by the orchestrator loading a different configuration).
         ExecutionRecord {
-            action: AdaptationAction::SwitchMode {
-                mode_name: mode_name.to_string(),
-            },
+            action: AdaptationAction::SwitchMode { mode_name: mode_name.to_string() },
             pre_state: Vec::new(),
             post_state: Vec::new(),
             success: true,
@@ -152,10 +139,7 @@ impl Executor {
         }
     }
 
-    fn apply_emergency_stop(
-        &mut self,
-        signal_env: &mut HashMap<String, u64>,
-    ) -> ExecutionRecord {
+    fn apply_emergency_stop(&mut self, signal_env: &mut HashMap<String, u64>) -> ExecutionRecord {
         self.emergency_active = true;
 
         // Capture pre-state for all output signals, then zero them.
@@ -207,10 +191,7 @@ mod tests {
     fn set_signal_success() {
         let mut exec = make_executor();
         let mut env = make_env();
-        let action = AdaptationAction::SetSignal {
-            name: "clamp".to_string(),
-            value: 1,
-        };
+        let action = AdaptationAction::SetSignal { name: "clamp".to_string(), value: 1 };
         let rec = exec.apply(&action, &mut env);
         assert!(rec.success);
         assert_eq!(env["clamp"], 1);
@@ -222,10 +203,7 @@ mod tests {
     fn set_signal_unknown_fails() {
         let mut exec = make_executor();
         let mut env = make_env();
-        let action = AdaptationAction::SetSignal {
-            name: "nonexistent".to_string(),
-            value: 1,
-        };
+        let action = AdaptationAction::SetSignal { name: "nonexistent".to_string(), value: 1 };
         let rec = exec.apply(&action, &mut env);
         assert!(!rec.success);
         assert!(rec.error.unwrap().contains("unknown signal"));
@@ -256,9 +234,7 @@ mod tests {
     fn switch_mode_records() {
         let mut exec = make_executor();
         let mut env = make_env();
-        let action = AdaptationAction::SwitchMode {
-            mode_name: "high_precision".to_string(),
-        };
+        let action = AdaptationAction::SwitchMode { mode_name: "high_precision".to_string() };
         let rec = exec.apply(&action, &mut env);
         assert!(rec.success);
     }

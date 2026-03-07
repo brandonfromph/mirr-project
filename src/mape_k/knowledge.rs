@@ -13,9 +13,9 @@
 
 #![forbid(unsafe_code)]
 
-use serde::{Deserialize, Serialize};
 use super::executor::ExecutionRecord;
 use super::planner::AdaptationAction;
+use serde::{Deserialize, Serialize};
 
 /// Maximum number of adaptation records the knowledge base retains.
 pub const MAX_LOG_ENTRIES: usize = 4096;
@@ -83,11 +83,7 @@ impl KnowledgeBase {
     /// Capacity is clamped to MAX_LOG_ENTRIES.
     pub fn new(capacity: usize) -> Self {
         let cap = capacity.min(MAX_LOG_ENTRIES);
-        Self {
-            records: Vec::with_capacity(cap),
-            capacity: cap,
-            total_recorded: 0,
-        }
+        Self { records: Vec::with_capacity(cap), capacity: cap, total_recorded: 0 }
     }
 
     /// Append an adaptation record. If at capacity, evicts the oldest.

@@ -8,9 +8,9 @@
 
 #![forbid(unsafe_code)]
 
+use super::types::{FlatNode, Width, WidthExpr, MAX_FLAT_NODES};
 use crate::ast::expr::Expr;
 use crate::ast::types::LiteralValue;
-use super::types::{FlatNode, Width, WidthExpr, MAX_FLAT_NODES};
 
 // ---------------------------------------------------------------------------
 // Flatten: Expr -> Vec<FlatNode>
@@ -21,11 +21,22 @@ enum FlatWork<'a> {
     /// Visit this expression's children, then schedule an Emit.
     Visit(&'a Expr),
     /// Children have been emitted; emit this node and record child indices.
-    EmitLiteral { value: u64 },
-    EmitSignal { name: &'a str },
-    EmitUnary { op: crate::ast::types::UnaryOp },
-    EmitBinary { op: crate::ast::types::BinaryOp },
-    EmitPrev { signal: &'a str, delay: u64 },
+    EmitLiteral {
+        value: u64,
+    },
+    EmitSignal {
+        name: &'a str,
+    },
+    EmitUnary {
+        op: crate::ast::types::UnaryOp,
+    },
+    EmitBinary {
+        op: crate::ast::types::BinaryOp,
+    },
+    EmitPrev {
+        signal: &'a str,
+        delay: u64,
+    },
 }
 
 /// Flatten an `Expr` tree into a `Vec<FlatNode>` in post-order.
@@ -155,26 +166,15 @@ pub fn reconstruct_width_expr(nodes: &[FlatNode], widths: &[Width]) -> Option<Wi
         }
         let w = widths[i];
         let we = match node {
-            FlatNode::Literal { value } => {
-                WidthExpr::Literal { value: *value, width: w }
-            }
-            FlatNode::Signal { name } => {
-                WidthExpr::Signal { name: name.clone(), width: w }
-            }
+            FlatNode::Literal { value } => WidthExpr::Literal { value: *value, width: w },
+            FlatNode::Signal { name } => WidthExpr::Signal { name: name.clone(), width: w },
             FlatNode::Unary { op, operand } => {
-                let operand_expr = built.get_mut(*operand as usize)
-                    .and_then(|slot| slot.take())?;
-                WidthExpr::Unary {
-                    op: *op,
-                    operand: Box::new(operand_expr),
-                    width: w,
-                }
+                let operand_expr = built.get_mut(*operand as usize).and_then(|slot| slot.take())?;
+                WidthExpr::Unary { op: *op, operand: Box::new(operand_expr), width: w }
             }
             FlatNode::Binary { op, left, right } => {
-                let left_expr = built.get_mut(*left as usize)
-                    .and_then(|slot| slot.take())?;
-                let right_expr = built.get_mut(*right as usize)
-                    .and_then(|slot| slot.take())?;
+                let left_expr = built.get_mut(*left as usize).and_then(|slot| slot.take())?;
+                let right_expr = built.get_mut(*right as usize).and_then(|slot| slot.take())?;
                 WidthExpr::Binary {
                     op: *op,
                     left: Box::new(left_expr),

@@ -28,11 +28,7 @@ pub struct PipelineConfig {
 
 impl Default for PipelineConfig {
     fn default() -> Self {
-        Self {
-            simplify: true,
-            width: true,
-            temporal: true,
-        }
+        Self { simplify: true, width: true, temporal: true }
     }
 }
 
@@ -66,18 +62,11 @@ pub fn run_pipeline(source: &str, config: &PipelineConfig) -> Result<PipelineRes
     crate::validation::validate_module(&program.module)?;
 
     // Stage 3: Simplify (optional).
-    let simplify_stats = if config.simplify {
-        Some(simplify_program(&mut program))
-    } else {
-        None
-    };
+    let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
 
     // Stage 4: Width inference (optional). Always includes SCC.
-    let width_result = if config.width {
-        Some(width::infer_program_widths_with_scc(&program))
-    } else {
-        None
-    };
+    let width_result =
+        if config.width { Some(width::infer_program_widths_with_scc(&program)) } else { None };
 
     // Stage 5: Temporal lowering (optional).
     let temporal_netlist = if config.temporal {
@@ -87,23 +76,14 @@ pub fn run_pipeline(source: &str, config: &PipelineConfig) -> Result<PipelineRes
         None
     };
 
-    Ok(PipelineResult {
-        program,
-        simplify_stats,
-        width_result,
-        temporal_netlist,
-    })
+    Ok(PipelineResult { program, simplify_stats, width_result, temporal_netlist })
 }
 
 /// Run Phase 3 simplification on all expressions in the program.
 ///
 /// Returns aggregate stats. Bounded: iterates over guards + reflexes.
 fn simplify_program(program: &mut MirrProgram) -> SimplifyStats {
-    let mut total = SimplifyStats {
-        rules_applied: 0,
-        nodes_before: 0,
-        nodes_after: 0,
-    };
+    let mut total = SimplifyStats { rules_applied: 0, nodes_before: 0, nodes_after: 0 };
 
     for g in &mut program.module.guards {
         let (simplified, stats) = crate::simplify::simplify_expr_with_stats(g.condition.clone());

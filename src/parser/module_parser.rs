@@ -5,10 +5,10 @@
 // Handles module, signal, guard, and reflex declarations.
 // ---------------------------------------------------------------------------
 
+use super::expr_parser::parse_expression;
 use crate::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
 use crate::ast::types::{SignalKind, SignalType};
 use crate::error::MirrError;
-use super::expr_parser::parse_expression;
 
 /// Parse a MIRR source file into an in-memory representation.
 pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
@@ -39,17 +39,13 @@ fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::new(
-            "Expected 'module' declaration but found end of file.",
-        ));
+        return Err(MirrError::new("Expected 'module' declaration but found end of file."));
     }
 
     let header = lines[*index].trim();
 
     if !header.starts_with("module ") {
-        return Err(MirrError::new(format!(
-            "Expected 'module' declaration, found: {header}"
-        )));
+        return Err(MirrError::new(format!("Expected 'module' declaration, found: {header}")));
     }
 
     let after_keyword = header
@@ -105,10 +101,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
         }
     }
 
-    Err(MirrError::new(format!(
-        "Module '{}' was not closed with '}}'.",
-        module.name
-    )))
+    Err(MirrError::new(format!("Module '{}' was not closed with '}}'.", module.name)))
 }
 
 fn parse_signal(line: &str) -> Result<SignalDecl, MirrError> {
@@ -133,12 +126,9 @@ fn parse_signal(line: &str) -> Result<SignalDecl, MirrError> {
     let rest = rest.trim();
     let mut parts = rest.split_whitespace();
 
-    let kind_str = parts
-        .next()
-        .ok_or_else(|| MirrError::new("Signal kind (in/out/internal) is missing."))?;
-    let ty_str = parts
-        .next()
-        .ok_or_else(|| MirrError::new("Signal type (bool/uN) is missing."))?;
+    let kind_str =
+        parts.next().ok_or_else(|| MirrError::new("Signal kind (in/out/internal) is missing."))?;
+    let ty_str = parts.next().ok_or_else(|| MirrError::new("Signal type (bool/uN) is missing."))?;
 
     if parts.next().is_some() {
         return Err(MirrError::new("Too many tokens in signal declaration."));
@@ -170,18 +160,12 @@ fn parse_signal(line: &str) -> Result<SignalDecl, MirrError> {
         )));
     };
 
-    Ok(SignalDecl {
-        name: name.to_string(),
-        kind,
-        ty,
-    })
+    Ok(SignalDecl { name: name.to_string(), kind, ty })
 }
 
 fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::new(
-            "Unexpected end of file in guard declaration.",
-        ));
+        return Err(MirrError::new("Unexpected end of file in guard declaration."));
     }
 
     let header = lines[*index].trim();
@@ -203,9 +187,7 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!(
-            "Guard '{name}' missing 'when' clause."
-        )));
+        return Err(MirrError::new(format!("Guard '{name}' missing 'when' clause.")));
     }
 
     let when_line = lines[*index].trim();
@@ -220,19 +202,14 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
         .ok_or_else(|| MirrError::new("Malformed 'when' line."))?
         .trim();
 
-    let condition = parse_expression(condition_str).map_err(|e| {
-        MirrError::new(format!(
-            "Guard '{name}' condition parse error: {e}"
-        ))
-    })?;
+    let condition = parse_expression(condition_str)
+        .map_err(|e| MirrError::new(format!("Guard '{name}' condition parse error: {e}")))?;
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!(
-            "Guard '{name}' missing 'for' clause."
-        )));
+        return Err(MirrError::new(format!("Guard '{name}' missing 'for' clause.")));
     }
 
     let for_line = lines[*index].trim();
@@ -248,23 +225,18 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
         .trim_start();
 
     let mut for_parts = after_for.split_whitespace();
-    let cycles_str = for_parts
-        .next()
-        .ok_or_else(|| MirrError::new("Expected cycle count after 'for'."))?;
+    let cycles_str =
+        for_parts.next().ok_or_else(|| MirrError::new("Expected cycle count after 'for'."))?;
 
     let cycles: u64 = cycles_str.trim().parse().map_err(|_| {
-        MirrError::new(format!(
-            "Invalid cycle count in guard '{name}': {cycles_str}"
-        ))
+        MirrError::new(format!("Invalid cycle count in guard '{name}': {cycles_str}"))
     })?;
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!(
-            "Guard '{name}' not closed with '}}'."
-        )));
+        return Err(MirrError::new(format!("Guard '{name}' not closed with '}}'.")));
     }
 
     let closing = lines[*index].trim();
@@ -276,22 +248,14 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
 
     *index += 1;
 
-    Ok(Guard {
-        name: name.to_string(),
-        condition,
-        cycles,
-    })
+    Ok(Guard { name: name.to_string(), condition, cycles })
 }
 
 /// Parse a single assignment line like `clamp_valve = true;` into an
 /// Assignment struct with a parsed expression on the RHS.
 fn parse_assignment(line: &str) -> Result<Assignment, MirrError> {
     // Strip inline comments before processing.
-    let line = if let Some(pos) = line.find("//") {
-        line[..pos].trim_end()
-    } else {
-        line
-    };
+    let line = if let Some(pos) = line.find("//") { line[..pos].trim_end() } else { line };
     let stripped = line.strip_suffix(';').unwrap_or(line).trim();
 
     let (lhs, rhs) = stripped
@@ -305,28 +269,18 @@ fn parse_assignment(line: &str) -> Result<Assignment, MirrError> {
 
     let rhs_str = rhs.trim();
     if rhs_str.is_empty() {
-        return Err(MirrError::new(format!(
-            "Assignment to '{target}' has empty right-hand side."
-        )));
+        return Err(MirrError::new(format!("Assignment to '{target}' has empty right-hand side.")));
     }
 
-    let value = parse_expression(rhs_str).map_err(|e| {
-        MirrError::new(format!(
-            "Error in assignment to '{target}': {e}"
-        ))
-    })?;
+    let value = parse_expression(rhs_str)
+        .map_err(|e| MirrError::new(format!("Error in assignment to '{target}': {e}")))?;
 
-    Ok(Assignment {
-        target: target.to_string(),
-        value,
-    })
+    Ok(Assignment { target: target.to_string(), value })
 }
 
 fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::new(
-            "Unexpected end of file in reflex declaration.",
-        ));
+        return Err(MirrError::new("Unexpected end of file in reflex declaration."));
     }
 
     let header = lines[*index].trim();
@@ -348,9 +302,7 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!(
-            "Reflex '{name}' missing 'on' clause."
-        )));
+        return Err(MirrError::new(format!("Reflex '{name}' missing 'on' clause.")));
     }
 
     let on_line = lines[*index].trim();
@@ -360,9 +312,8 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
         )));
     }
 
-    let after_on = on_line
-        .strip_prefix("on ")
-        .ok_or_else(|| MirrError::new("Malformed 'on' line."))?;
+    let after_on =
+        on_line.strip_prefix("on ").ok_or_else(|| MirrError::new("Malformed 'on' line."))?;
 
     let (guards_part, _) = match after_on.split_once('{') {
         Some(parts) => parts,
@@ -378,9 +329,7 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
     }
 
     if guard_names.is_empty() {
-        return Err(MirrError::new(format!(
-            "Reflex '{name}' has no guard names in 'on' clause."
-        )));
+        return Err(MirrError::new(format!("Reflex '{name}' has no guard names in 'on' clause.")));
     }
 
     *index += 1;
@@ -402,9 +351,8 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
             break;
         }
 
-        let assignment = parse_assignment(line).map_err(|e| {
-            MirrError::new(format!("In reflex '{name}': {e}"))
-        })?;
+        let assignment = parse_assignment(line)
+            .map_err(|e| MirrError::new(format!("In reflex '{name}': {e}")))?;
         assignments.push(assignment);
 
         *index += 1;
@@ -413,9 +361,7 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!(
-            "Reflex '{name}' not closed with '}}'."
-        )));
+        return Err(MirrError::new(format!("Reflex '{name}' not closed with '}}'.")));
     }
 
     let closing = lines[*index].trim();
@@ -427,9 +373,5 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
 
     *index += 1;
 
-    Ok(Reflex {
-        name: name.to_string(),
-        guard_names,
-        assignments,
-    })
+    Ok(Reflex { name: name.to_string(), guard_names, assignments })
 }

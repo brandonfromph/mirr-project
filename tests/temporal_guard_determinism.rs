@@ -1,6 +1,6 @@
-use std::fs;
-use nasa_rust_project::parser::parse_mirr;
 use nasa_rust_project::mirr_executor::drive_parsed_module_with_interpreter;
+use nasa_rust_project::parser::parse_mirr;
+use std::fs;
 
 /// Run the parsed lexer module multiple times with the same input and assert
 /// outputs are identical every repeat (guard/reflex determinism).

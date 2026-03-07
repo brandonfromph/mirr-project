@@ -5,12 +5,12 @@
 // Uses a Pratt parser with bounded recursion depth.
 // ---------------------------------------------------------------------------
 
-use crate::ast::types::BinaryOp;
 use crate::ast::expr::Expr;
+use crate::ast::types::BinaryOp;
 use crate::ast::types::{LiteralValue, UnaryOp};
 use crate::error::MirrError;
-use crate::lexer::tokenizer::Token;
 use crate::lexer::tokenize_expr;
+use crate::lexer::tokenizer::Token;
 
 /// Binding power (left, right) for binary operators.
 /// Higher number = tighter binding.
@@ -91,12 +91,12 @@ impl ExprParser {
         if self.tokens.is_empty() {
             return Err(MirrError::new("Empty expression."));
         }
-        
+
         // Early validation: check for balanced parentheses
         if !self.has_balanced_parens() {
             return Err(MirrError::new("Unbalanced parentheses in expression."));
         }
-        
+
         let expr = self.parse_expr(0, 0)?;
         if !self.at_end() {
             return Err(MirrError::new(format!(
@@ -162,11 +162,7 @@ impl ExprParser {
             self.advance();
 
             let rhs = self.parse_expr(right_bp, depth + 1)?;
-            lhs = Expr::Binary {
-                op,
-                left: Box::new(lhs),
-                right: Box::new(rhs),
-            };
+            lhs = Expr::Binary { op, left: Box::new(lhs), right: Box::new(rhs) };
         }
 
         Ok(lhs)
@@ -182,9 +178,7 @@ impl ExprParser {
             )));
         }
 
-        let tok = self
-            .advance()
-            .ok_or_else(|| MirrError::new("Unexpected end of expression."))?;
+        let tok = self.advance().ok_or_else(|| MirrError::new("Unexpected end of expression."))?;
 
         match tok {
             Token::True => Ok(Expr::Literal(LiteralValue::Bool(true))),
@@ -194,10 +188,7 @@ impl ExprParser {
             Token::Bang => {
                 // Unary not: bind tighter than any binary operator.
                 let operand = self.parse_prefix(depth + 1)?;
-                Ok(Expr::Unary {
-                    op: UnaryOp::Not,
-                    operand: Box::new(operand),
-                })
+                Ok(Expr::Unary { op: UnaryOp::Not, operand: Box::new(operand) })
             }
             Token::LParen => {
                 let inner = self.parse_expr(0, depth + 1)?;
@@ -206,10 +197,9 @@ impl ExprParser {
                     _ => Err(MirrError::new("Expected closing ')' in expression.")),
                 }
             }
-            other => Err(MirrError::new(format!(
-                "Unexpected token at start of expression: {:?}",
-                other
-            ))),
+            other => {
+                Err(MirrError::new(format!("Unexpected token at start of expression: {:?}", other)))
+            }
         }
     }
 }

@@ -8,9 +8,9 @@
 
 #![forbid(unsafe_code)]
 
+use crate::ast::expr::Expr;
 use crate::ast::program::Module;
 use crate::ast::types::{BinaryOp, SignalKind, SignalType, UnaryOp};
-use crate::ast::expr::Expr;
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
@@ -50,7 +50,9 @@ fn emit_header(out: &mut String) {
 fn emit_module_decl(module: &Module, out: &mut String) {
     out.push_str(&format!("module {} (\n", module.name));
 
-    let port_signals: Vec<_> = module.signals.iter()
+    let port_signals: Vec<_> = module
+        .signals
+        .iter()
         .filter(|s| s.kind == SignalKind::Input || s.kind == SignalKind::Output)
         .collect();
 
@@ -75,9 +77,8 @@ fn emit_port_list(_module: &Module, out: &mut String) {
 }
 
 fn emit_internal_signals(module: &Module, out: &mut String) {
-    let internals: Vec<_> = module.signals.iter()
-        .filter(|s| s.kind == SignalKind::Internal)
-        .collect();
+    let internals: Vec<_> =
+        module.signals.iter().filter(|s| s.kind == SignalKind::Internal).collect();
 
     if !internals.is_empty() {
         out.push_str("  // Internal signals\n");
@@ -101,14 +102,8 @@ fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
                 emit_counter_guard(cg, out);
             }
             CompiledGuard::Complex(cx) => {
-                out.push_str(&format!(
-                    "  // Complex guard: {} (sub-guards combined)\n",
-                    cx.name
-                ));
-                out.push_str(&format!(
-                    "  logic {};\n",
-                    cx.output_signal
-                ));
+                out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
+                out.push_str(&format!("  logic {};\n", cx.output_signal));
                 out.push_str(&format!(
                     "  assign {} = {};\n\n",
                     cx.output_signal,
@@ -124,16 +119,15 @@ fn emit_shift_register_guard(
     out: &mut String,
 ) {
     let cond_desc = sr.condition_kind.describe();
-    out.push_str(&format!("  // Guard: {} — {} for {} cycles\n", sr.name, cond_desc, sr.delay_cycles));
+    out.push_str(&format!(
+        "  // Guard: {} — {} for {} cycles\n",
+        sr.name, cond_desc, sr.delay_cycles
+    ));
 
     let stage_count = sr.delay_cycles.min(MAX_SR_STAGES_INLINE);
 
     // Declare the shift register.
-    out.push_str(&format!(
-        "  logic [{}:0] {}_sr;\n",
-        stage_count.saturating_sub(1),
-        sr.name,
-    ));
+    out.push_str(&format!("  logic [{}:0] {}_sr;\n", stage_count.saturating_sub(1), sr.name,));
 
     // Condition wire.
     out.push_str(&format!("  logic {}_cond;\n", sr.name));
@@ -145,10 +139,7 @@ fn emit_shift_register_guard(
 
     // Shift register always_ff block.
     out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
-    out.push_str(&format!(
-        "    if (!rst_n)\n      {}_sr <= '0;\n",
-        sr.name
-    ));
+    out.push_str(&format!("    if (!rst_n)\n      {}_sr <= '0;\n", sr.name));
     out.push_str(&format!(
         "    else\n      {0}_sr <= {{{0}_cond, {0}_sr[{1}:1]}};\n",
         sr.name,
@@ -157,16 +148,10 @@ fn emit_shift_register_guard(
     out.push_str("  end\n");
 
     // Output: guard fires when all stages are 1.
-    out.push_str(&format!(
-        "  assign {} = &{}_sr;\n\n",
-        sr.output_signal, sr.name,
-    ));
+    out.push_str(&format!("  assign {} = &{}_sr;\n\n", sr.output_signal, sr.name,));
 }
 
-fn emit_counter_guard(
-    cg: &crate::temporal::low_level_ir::CounterGuard,
-    out: &mut String,
-) {
+fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mut String) {
     let cond_desc = cg.condition_kind.describe();
     let width = cg.counter_width();
     out.push_str(&format!(
@@ -175,11 +160,7 @@ fn emit_counter_guard(
     ));
 
     // Counter register.
-    out.push_str(&format!(
-        "  logic [{}:0] {};\n",
-        width.saturating_sub(1),
-        cg.counter_signal,
-    ));
+    out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), cg.counter_signal,));
 
     // Condition wire.
     out.push_str(&format!("  logic {}_cond;\n", cg.name));
@@ -191,14 +172,8 @@ fn emit_counter_guard(
 
     // Counter always_ff block.
     out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
-    out.push_str(&format!(
-        "    if (!rst_n)\n      {} <= '0;\n",
-        cg.counter_signal
-    ));
-    out.push_str(&format!(
-        "    else if (!{}_cond)\n      {} <= '0;\n",
-        cg.name, cg.counter_signal
-    ));
+    out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", cg.counter_signal));
+    out.push_str(&format!("    else if (!{}_cond)\n      {} <= '0;\n", cg.name, cg.counter_signal));
     out.push_str(&format!(
         "    else if ({0} < {1})\n      {0} <= {0} + 1;\n",
         cg.counter_signal, cg.target_count,
@@ -226,9 +201,7 @@ fn emit_reflex_logic(module: &Module, out: &mut String) {
             let guard_cond = if r.guard_names.len() == 1 {
                 format!("{}_out", r.guard_names[0])
             } else {
-                let parts: Vec<String> = r.guard_names.iter()
-                    .map(|g| format!("{g}_out"))
-                    .collect();
+                let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
                 parts.join(" || ")
             };
             out.push_str(&format!(
@@ -279,7 +252,11 @@ fn emit_condition_expr(ck: &crate::temporal::low_level_ir::ConditionKind) -> Str
             let val_str = match value {
                 crate::ast::types::LiteralValue::Integer(n) => format!("{n}"),
                 crate::ast::types::LiteralValue::Bool(b) => {
-                    if *b { "1'b1".to_string() } else { "1'b0".to_string() }
+                    if *b {
+                        "1'b1".to_string()
+                    } else {
+                        "1'b0".to_string()
+                    }
                 }
             };
             format!("({signal} {op_str} {val_str})")

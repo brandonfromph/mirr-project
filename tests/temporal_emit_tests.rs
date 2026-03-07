@@ -29,29 +29,18 @@ module test_module {
 "#;
     let program = parse_mirr(src).expect("parse failed");
     let mut compiler = TemporalGuardCompiler::new();
-    let netlist = compiler
-        .compile_temporal_guards(&program.module)
-        .expect("compile failed");
+    let netlist = compiler.compile_temporal_guards(&program.module).expect("compile failed");
 
     let json = compiler.emit_netlist_json(&netlist).expect("json emit failed");
 
     // Must contain the guard name
     assert!(json.contains("test_guard"), "JSON must include guard name");
     // Must contain SR variant tag
-    assert!(
-        json.contains("ShiftRegister"),
-        "JSON must include ShiftRegister variant"
-    );
+    assert!(json.contains("ShiftRegister"), "JSON must include ShiftRegister variant");
     // Must contain statistics fields
-    assert!(
-        json.contains("shift_registers_used"),
-        "JSON missing shift_registers_used"
-    );
+    assert!(json.contains("shift_registers_used"), "JSON missing shift_registers_used");
     assert!(json.contains("counters_used"), "JSON missing counters_used");
-    assert!(
-        json.contains("logic_gates_used"),
-        "JSON missing logic_gates_used"
-    );
+    assert!(json.contains("logic_gates_used"), "JSON missing logic_gates_used");
 }
 
 // ---------------------------------------------------------------------------
@@ -78,9 +67,7 @@ module test_module {
 "#;
     let program = parse_mirr(src).expect("parse failed");
     let mut compiler = TemporalGuardCompiler::new();
-    let netlist = compiler
-        .compile_temporal_guards(&program.module)
-        .expect("compile failed");
+    let netlist = compiler.compile_temporal_guards(&program.module).expect("compile failed");
 
     let json = compiler.emit_netlist_json(&netlist).expect("json emit failed");
     assert!(json.contains("Counter"), "JSON must include Counter variant");
@@ -111,9 +98,7 @@ module test_module {
 "#;
     let program = parse_mirr(src).expect("parse failed");
     let mut compiler = TemporalGuardCompiler::new();
-    let netlist = compiler
-        .compile_temporal_guards(&program.module)
-        .expect("compile failed");
+    let netlist = compiler.compile_temporal_guards(&program.module).expect("compile failed");
 
     let dot = compiler.emit_netlist_dot(&netlist).expect("dot emit failed");
 
@@ -125,15 +110,9 @@ module test_module {
     assert!(dot.ends_with("}\n"), "DOT must end with closing brace");
 
     // Must contain the guard cluster
-    assert!(
-        dot.contains("cluster_test_guard"),
-        "DOT must contain guard cluster"
-    );
+    assert!(dot.contains("cluster_test_guard"), "DOT must contain guard cluster");
     // Must reference the input signal
-    assert!(
-        dot.contains("input_signal"),
-        "DOT must reference input signal"
-    );
+    assert!(dot.contains("input_signal"), "DOT must reference input signal");
 }
 
 // ---------------------------------------------------------------------------
@@ -160,17 +139,9 @@ module test_module {
 "#;
     let program = parse_mirr(src).expect("parse failed");
     let mut compiler = TemporalGuardCompiler::new();
-    let netlist = compiler
-        .compile_temporal_guards(&program.module)
-        .expect("compile failed");
+    let netlist = compiler.compile_temporal_guards(&program.module).expect("compile failed");
 
     let dot = compiler.emit_netlist_dot(&netlist).expect("dot emit failed");
-    assert!(
-        dot.contains("cluster_sustained_guard"),
-        "DOT must contain counter guard cluster"
-    );
-    assert!(
-        dot.contains("Counter:"),
-        "DOT counter label must say 'Counter:'"
-    );
+    assert!(dot.contains("cluster_sustained_guard"), "DOT must contain counter guard cluster");
+    assert!(dot.contains("Counter:"), "DOT counter label must say 'Counter:'");
 }

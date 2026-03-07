@@ -72,15 +72,10 @@ pub fn build_netlist(result: &PipelineResult) -> JsonNetlist {
         has_errors: w.has_errors(),
     });
 
-    let temporal = result.temporal_netlist.as_ref().map(|n| {
-        crate::temporal::low_level_ir::TemporalNetlistJson::from_netlist(n)
-    });
+    let temporal = result
+        .temporal_netlist
+        .as_ref()
+        .map(|n| crate::temporal::low_level_ir::TemporalNetlistJson::from_netlist(n));
 
-    JsonNetlist {
-        ir_version: "1.0".to_string(),
-        program,
-        simplify_stats,
-        width_stats,
-        temporal,
-    }
+    JsonNetlist { ir_version: "1.0".to_string(), program, simplify_stats, width_stats, temporal }
 }

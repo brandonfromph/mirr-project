@@ -70,9 +70,7 @@ fn count_nodes(expr: &Expr) -> usize {
 fn simplify_unary(op: UnaryOp, operand: Expr) -> (Expr, bool) {
     match (op, &operand) {
         // !! X  =>  X   (double negation elimination)
-        (UnaryOp::Not, Expr::Unary { op: UnaryOp::Not, operand: inner }) => {
-            (*inner.clone(), true)
-        }
+        (UnaryOp::Not, Expr::Unary { op: UnaryOp::Not, operand: inner }) => (*inner.clone(), true),
         // !true => false,  !false => true   (literal negation)
         (UnaryOp::Not, Expr::Literal(LiteralValue::Bool(b))) => {
             (Expr::Literal(LiteralValue::Bool(!b)), true)
@@ -104,22 +102,23 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> (Expr, bool) {
         (And, _, Expr::Literal(Bool(true))) => (left, true),
         (And, Expr::Literal(Bool(true)), _) => (right, true),
         // X && false => false
-        (And, _, Expr::Literal(Bool(false)))
-        | (And, Expr::Literal(Bool(false)), _) => (Expr::Literal(Bool(false)), true),
+        (And, _, Expr::Literal(Bool(false))) | (And, Expr::Literal(Bool(false)), _) => {
+            (Expr::Literal(Bool(false)), true)
+        }
 
         // X || false => X,  false || X => X
         (Or, _, Expr::Literal(Bool(false))) => (left, true),
         (Or, Expr::Literal(Bool(false)), _) => (right, true),
         // X || true => true
-        (Or, _, Expr::Literal(Bool(true)))
-        | (Or, Expr::Literal(Bool(true)), _) => (Expr::Literal(Bool(true)), true),
+        (Or, _, Expr::Literal(Bool(true))) | (Or, Expr::Literal(Bool(true)), _) => {
+            (Expr::Literal(Bool(true)), true)
+        }
 
         // X ^ false => X,  false ^ X => X
         (Xor, _, Expr::Literal(Bool(false))) => (left, true),
         (Xor, Expr::Literal(Bool(false)), _) => (right, true),
         // X ^ true => !X,  true ^ X => !X
-        (Xor, x, Expr::Literal(Bool(true)))
-        | (Xor, Expr::Literal(Bool(true)), x) => {
+        (Xor, x, Expr::Literal(Bool(true))) | (Xor, Expr::Literal(Bool(true)), x) => {
             (Expr::Unary { op: UnaryOp::Not, operand: Box::new(x.clone()) }, true)
         }
 
@@ -177,8 +176,9 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> (Expr, bool) {
         (Mul, _, Expr::Literal(Integer(1))) => (left, true),
         (Mul, Expr::Literal(Integer(1)), _) => (right, true),
         // x * 0 => 0,  0 * x => 0
-        (Mul, _, Expr::Literal(Integer(0)))
-        | (Mul, Expr::Literal(Integer(0)), _) => (Expr::Literal(Integer(0)), true),
+        (Mul, _, Expr::Literal(Integer(0))) | (Mul, Expr::Literal(Integer(0)), _) => {
+            (Expr::Literal(Integer(0)), true)
+        }
         // x << 0 => x,  x >> 0 => x
         (Shl, _, Expr::Literal(Integer(0))) => (left, true),
         (Shr, _, Expr::Literal(Integer(0))) => (left, true),
@@ -209,11 +209,7 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> (Expr, bool) {
         // =================================================================
         // No rule matched — reconstruct unchanged.
         // =================================================================
-        _ => (Expr::Binary {
-            op,
-            left: Box::new(left),
-            right: Box::new(right),
-        }, false),
+        _ => (Expr::Binary { op, left: Box::new(left), right: Box::new(right) }, false),
     }
 }
 
@@ -322,10 +318,6 @@ pub fn simplify_expr_with_stats(expr: Expr) -> (Expr, SimplifyStats) {
     }
 
     let nodes_after = count_nodes(&current);
-    let stats = SimplifyStats {
-        rules_applied: total_rules,
-        nodes_before,
-        nodes_after,
-    };
+    let stats = SimplifyStats { rules_applied: total_rules, nodes_before, nodes_after };
     (current, stats)
 }

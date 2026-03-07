@@ -46,10 +46,7 @@ fn test_counter_resource_est_large_delay() {
     // 1000-cycle delay: ceil(log2(1000))+1 = 10+1 = 11 bits
     let est = ResourceEstimator::estimate_counter_resources(1000);
     assert_eq!(est.counters, 1);
-    assert!(
-        est.total_signals > 10,
-        "larger delay needs wider counter → more signals"
-    );
+    assert!(est.total_signals > 10, "larger delay needs wider counter → more signals");
 }
 
 // ---------------------------------------------------------------------------
@@ -80,10 +77,7 @@ fn test_strategy_selection_threshold() {
 
     // Clearly long → counter
     let long = ResourceEstimator::choose_optimal_strategy(100);
-    assert!(
-        matches!(long, ImplementationStrategy::Counter(_)),
-        "N=100 must select Counter"
-    );
+    assert!(matches!(long, ImplementationStrategy::Counter(_)), "N=100 must select Counter");
 }
 
 // ---------------------------------------------------------------------------
@@ -99,22 +93,17 @@ fn test_counter_width_calculation() {
     }
 
     let cases = [
-        Case { cycles: 1,    expected_width: 1 },
-        Case { cycles: 2,    expected_width: 2 },
-        Case { cycles: 4,    expected_width: 3 },
-        Case { cycles: 16,   expected_width: 5 },
-        Case { cycles: 100,  expected_width: 8 },
+        Case { cycles: 1, expected_width: 1 },
+        Case { cycles: 2, expected_width: 2 },
+        Case { cycles: 4, expected_width: 3 },
+        Case { cycles: 16, expected_width: 5 },
+        Case { cycles: 100, expected_width: 8 },
         Case { cycles: 1000, expected_width: 11 },
     ];
 
     for case in &cases {
         let ck = ConditionKind::SimpleSignal("in".to_string());
-        let guard = CounterGuard::new(
-            "w".to_string(),
-            "in".to_string(),
-            case.cycles,
-            ck,
-        );
+        let guard = CounterGuard::new("w".to_string(), "in".to_string(), case.cycles, ck);
         assert_eq!(
             guard.counter_width(),
             case.expected_width,

@@ -34,8 +34,8 @@ pub mod monitor;
 pub mod planner;
 pub mod sensor;
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // Re-exports for public API
@@ -99,15 +99,9 @@ impl SimResult {
         s.push_str(&format!("  Violations detected: {}\n", self.total_violations));
         s.push_str(&format!("  Adaptations applied: {}\n", self.total_adaptations));
         if self.emergency_triggered {
-            s.push_str(&format!(
-                "  EMERGENCY STOP at tick {}\n",
-                self.emergency_tick.unwrap_or(0)
-            ));
+            s.push_str(&format!("  EMERGENCY STOP at tick {}\n", self.emergency_tick.unwrap_or(0)));
         }
-        s.push_str(&format!(
-            "  Adaptation log entries: {}\n",
-            self.adaptation_log.len()
-        ));
+        s.push_str(&format!("  Adaptation log entries: {}\n", self.adaptation_log.len()));
         s
     }
 }
@@ -140,17 +134,12 @@ impl MapeKSimulator {
     /// Create a new simulator from configuration.
     pub fn new(config: SimConfig) -> Self {
         // Build sensor models.
-        let sensors: Vec<SensorModel> = config.sensors.iter()
-            .map(|c| SensorModel::new(c.clone()))
-            .collect();
+        let sensors: Vec<SensorModel> =
+            config.sensors.iter().map(|c| SensorModel::new(c.clone())).collect();
 
         // Collect signal names for the monitor.
-        let signal_names: Vec<String> = config.sensors.iter()
-            .map(|c| c.name.clone())
-            .collect();
-        let signal_name_refs: Vec<&str> = signal_names.iter()
-            .map(|s| s.as_str())
-            .collect();
+        let signal_names: Vec<String> = config.sensors.iter().map(|c| c.name.clone()).collect();
+        let signal_name_refs: Vec<&str> = signal_names.iter().map(|s| s.as_str()).collect();
 
         let monitor = Monitor::new(config.window_size, &signal_name_refs);
         let analyzer = Analyzer::new(config.properties);
@@ -212,8 +201,7 @@ impl MapeKSimulator {
         let violation_count = all_results.iter().filter(|r| !r.satisfied).count();
 
         if violation_count > 0 {
-            self.total_violations = self.total_violations
-                .wrapping_add(violation_count as u64);
+            self.total_violations = self.total_violations.wrapping_add(violation_count as u64);
         }
 
         // P — Plan: select the best action (checks both violations and
@@ -247,9 +235,8 @@ impl MapeKSimulator {
     }
 
     fn build_result(&self) -> SimResult {
-        let final_state: Vec<(String, u64)> = self.signal_env.iter()
-            .map(|(k, v)| (k.clone(), *v))
-            .collect();
+        let final_state: Vec<(String, u64)> =
+            self.signal_env.iter().map(|(k, v)| (k.clone(), *v)).collect();
 
         SimResult {
             total_ticks: self.monitor.tick(),

@@ -64,9 +64,6 @@ pub struct MirrAstJson {
 impl MirrAstJson {
     /// Wrap a parsed program in the versioned JSON envelope.
     pub fn from_program(program: &MirrProgram) -> Self {
-        Self {
-            ir_version: "1.0".to_string(),
-            module: program.module.clone(),
-        }
+        Self { ir_version: "1.0".to_string(), module: program.module.clone() }
     }
 }

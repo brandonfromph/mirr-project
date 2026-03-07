@@ -131,17 +131,10 @@ fn run_mirr_mode(content: &str, show_stats: bool) {
 
     // Print all diagnostics.
     let all_diags = result.all_diagnostics();
-    let error_count = all_diags.iter()
-        .filter(|d| d.severity == DiagSeverity::Error)
-        .count();
-    let info_count = all_diags.iter()
-        .filter(|d| d.severity == DiagSeverity::Info)
-        .count();
+    let error_count = all_diags.iter().filter(|d| d.severity == DiagSeverity::Error).count();
+    let info_count = all_diags.iter().filter(|d| d.severity == DiagSeverity::Info).count();
 
-    println!(
-        "  Diagnostics: {} error(s), {} info(s)",
-        error_count, info_count,
-    );
+    println!("  Diagnostics: {} error(s), {} info(s)", error_count, info_count,);
 
     for d in &all_diags {
         println!("  {}", d);
@@ -177,9 +170,7 @@ fn run_scc_mode(content: &str, show_stats: bool) {
     println!("  Assignments analyzed: {}", result.phase4a.assignment_results.len());
 
     // Print SCC report.
-    let signal_names: Vec<String> = program.module.signals.iter()
-        .map(|s| s.name.clone())
-        .collect();
+    let signal_names: Vec<String> = program.module.signals.iter().map(|s| s.name.clone()).collect();
     print!("{}", width::display::format_scc_report(&result.sccs, &signal_names));
 
     // Print SCC diagnostics.

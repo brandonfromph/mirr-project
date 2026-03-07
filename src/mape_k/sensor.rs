@@ -31,7 +31,9 @@ impl Lcg {
     /// Advance the LCG and return the next pseudo-random u64.
     pub fn next_u64(&mut self) -> u64 {
         // Knuth LCG constants (period 2^64).
-        self.state = self.state.wrapping_mul(6_364_136_223_846_793_005)
+        self.state = self
+            .state
+            .wrapping_mul(6_364_136_223_846_793_005)
             .wrapping_add(1_442_695_040_888_963_407);
         self.state
     }
@@ -88,11 +90,7 @@ impl SensorModel {
     /// Create a new sensor model from configuration.
     pub fn new(config: SensorConfig) -> Self {
         let rng = Lcg::new(config.seed);
-        Self {
-            config,
-            rng,
-            current_tick: 0,
-        }
+        Self { config, rng, current_tick: 0 }
     }
 
     /// Return the sensor's name.
@@ -116,9 +114,8 @@ impl SensorModel {
         // Check fault window.
         if let Some(fault_start) = self.config.fault_at_tick {
             if tick >= fault_start {
-                let fault_ended = self.config.fault_end_tick
-                    .map(|end| tick >= end)
-                    .unwrap_or(false);
+                let fault_ended =
+                    self.config.fault_end_tick.map(|end| tick >= end).unwrap_or(false);
                 if !fault_ended {
                     return self.config.fault_value;
                 }
@@ -237,8 +234,12 @@ mod tests {
             seed: 1,
         };
         let mut s = SensorModel::new(cfg);
-        for _ in 0..5 { assert_eq!(s.sample(), 100); }
-        for _ in 5..8 { assert_eq!(s.sample(), 999); }
+        for _ in 0..5 {
+            assert_eq!(s.sample(), 100);
+        }
+        for _ in 5..8 {
+            assert_eq!(s.sample(), 999);
+        }
         // After fault_end_tick: normal again.
         assert_eq!(s.sample(), 100); // tick 8
     }

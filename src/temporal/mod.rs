@@ -47,11 +47,15 @@ impl TemporalGuardCompiler {
         module: &Module,
     ) -> Result<TemporalNetlist, MirrError> {
         // Pre-simplify guard conditions (Phase 3 integration).
-        let simplified_guards: Vec<_> = module.guards.iter().map(|g| {
-            let mut g = g.clone();
-            g.condition = simplify_expr(g.condition);
-            g
-        }).collect();
+        let simplified_guards: Vec<_> = module
+            .guards
+            .iter()
+            .map(|g| {
+                let mut g = g.clone();
+                g.condition = simplify_expr(g.condition);
+                g
+            })
+            .collect();
         let mut inner = TemporalCompiler::new();
         inner.compile_module(&simplified_guards)
     }

@@ -21,29 +21,25 @@ use nasa_rust_project::{BootstrapOpts, BootstrapResult, BootstrapRunner};
 
 /// Resolve the repo-root fixture directory.
 fn fixture_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
 }
 
 /// Resolve the path to the canonical example source file.
 fn neonatal_source() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
-        .join("neonatal_respirator.mirr")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("examples").join("neonatal_respirator.mirr")
 }
 
 /// Run the bootstrap pipeline on the given source with fixture parity enabled.
-    fn run_pipeline(source: &Path) -> BootstrapResult {
-        let runner = BootstrapRunner::new(BootstrapOpts {
-            fixture_root: Some(fixture_root()),
-            emit_netlist_json: true,
-            emit_netlist_verilog: false,
-            fail_fast: false,
-            run_lexer_driver: false,
-        });
-        runner.run(source)
-    }
+fn run_pipeline(source: &Path) -> BootstrapResult {
+    let runner = BootstrapRunner::new(BootstrapOpts {
+        fixture_root: Some(fixture_root()),
+        emit_netlist_json: true,
+        emit_netlist_verilog: false,
+        fail_fast: false,
+        run_lexer_driver: false,
+    });
+    runner.run(source)
+}
 
 // ===========================================================================
 // Full pipeline parity — canonical neonatal_respirator example
@@ -55,11 +51,7 @@ fn selfhost_neonatal_all_stages_pass() {
 
     // Every stage must succeed.
     for stage in &result.stages {
-        assert!(
-            stage.ok,
-            "Stage '{}' failed: {}",
-            stage.name, stage.message,
-        );
+        assert!(stage.ok, "Stage '{}' failed: {}", stage.name, stage.message,);
     }
     assert!(result.ok, "Overall pipeline must pass");
 }
@@ -141,14 +133,8 @@ fn selfhost_neonatal_signal_contract() {
     ];
 
     for (sig, (exp_name, exp_kind)) in signals.iter().zip(expected.iter()) {
-        assert_eq!(
-            sig["name"], *exp_name,
-            "signal name mismatch"
-        );
-        assert_eq!(
-            sig["kind"], *exp_kind,
-            "signal kind mismatch for {exp_name}"
-        );
+        assert_eq!(sig["name"], *exp_name, "signal name mismatch");
+        assert_eq!(sig["kind"], *exp_kind, "signal kind mismatch for {exp_name}");
     }
 
     // Counter signal must be Unsigned(11) — ceil(log2(1000)) + 1 = 11.
@@ -197,10 +183,7 @@ fn selfhost_parse_error_fails_pipeline() {
 
     let parse_stage = result.stages.iter().find(|s| s.name == "Parse");
     assert!(parse_stage.is_some(), "Parse stage must appear");
-    assert!(
-        !parse_stage.unwrap().ok,
-        "Parse stage must report failure"
-    );
+    assert!(!parse_stage.unwrap().ok, "Parse stage must report failure");
 }
 
 #[test]
@@ -248,10 +231,7 @@ module dup_test {
 
     let validate_stage = result.stages.iter().find(|s| s.name == "Validate");
     assert!(validate_stage.is_some(), "Validate stage must appear");
-    assert!(
-        !validate_stage.unwrap().ok,
-        "Validate stage must report failure on duplicate signals"
-    );
+    assert!(!validate_stage.unwrap().ok, "Validate stage must report failure on duplicate signals");
 }
 
 // ===========================================================================
@@ -268,10 +248,7 @@ fn selfhost_summary_line_ci_format() {
         summary.starts_with("[SELF-HOST PASS]"),
         "successful run must produce PASS summary, got: {summary}"
     );
-    assert!(
-        summary.contains("stages passed"),
-        "summary must include 'stages passed'"
-    );
+    assert!(summary.contains("stages passed"), "summary must include 'stages passed'");
 }
 
 #[test]
@@ -324,11 +301,8 @@ fn selfhost_neonatal_has_five_stages() {
 #[test]
 fn selfhost_fixture_json_roundtrip_stable() {
     // Read the golden fixture.
-    let fixture_path = fixture_root()
-        .join("netlist")
-        .join("neonatal_respirator.json");
-    let fixture_str = std::fs::read_to_string(&fixture_path)
-        .expect("golden fixture must exist");
+    let fixture_path = fixture_root().join("netlist").join("neonatal_respirator.json");
+    let fixture_str = std::fs::read_to_string(&fixture_path).expect("golden fixture must exist");
     let fixture_val: serde_json::Value =
         serde_json::from_str(&fixture_str).expect("golden fixture must be valid JSON");
 
@@ -352,8 +326,7 @@ fn selfhost_fixture_json_roundtrip_stable() {
         "total_signals",
     ] {
         assert_eq!(
-            actual_val["statistics"][field],
-            fixture_val["statistics"][field],
+            actual_val["statistics"][field], fixture_val["statistics"][field],
             "statistics.{field} mismatch"
         );
     }

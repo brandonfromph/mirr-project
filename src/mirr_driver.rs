@@ -14,11 +14,7 @@ pub struct ObservedPush {
 
 impl ObservedPush {
     pub fn new(kind: &'static str, ident: Option<String>, int_val: Option<u64>) -> Self {
-        Self {
-            kind,
-            ident,
-            int_val,
-        }
+        Self { kind, ident, int_val }
     }
 }
 
@@ -29,12 +25,7 @@ pub fn collect_tokens_from_pushes(pushes: &[ObservedPush]) -> Vec<Token> {
     let mut out: Vec<Token> = Vec::new();
     for p in pushes {
         // Use mirr_runtime helper which centralizes mapping rules.
-        let _ok = mirr_runtime::push_mapped_token(
-            &mut out,
-            p.kind,
-            p.ident.as_deref(),
-            p.int_val,
-        );
+        let _ok = mirr_runtime::push_mapped_token(&mut out, p.kind, p.ident.as_deref(), p.int_val);
         // For now we ignore the boolean result; future versions can propagate
         // errors or diagnostics if mapping/push fails.
     }
@@ -129,30 +120,68 @@ pub fn drive_lexer_from_bytes(input: &[u8]) -> Vec<ObservedPush> {
             let word = &s[start..pos];
             // Map known keywords to push kinds
             match word {
-                "when" => out.push(ObservedPush::new("emit_push_kw_when", Some(word.to_string()), None)),
-                "bool" => out.push(ObservedPush::new("emit_push_kw_bool", Some(word.to_string()), None)),
+                "when" => {
+                    out.push(ObservedPush::new("emit_push_kw_when", Some(word.to_string()), None))
+                }
+                "bool" => {
+                    out.push(ObservedPush::new("emit_push_kw_bool", Some(word.to_string()), None))
+                }
                 "true" => out.push(ObservedPush::new("emit_push_tok_true", None, None)),
                 "false" => out.push(ObservedPush::new("emit_push_tok_false", None, None)),
-                "else" => out.push(ObservedPush::new("emit_push_kw_else", Some(word.to_string()), None)),
-                "loop" => out.push(ObservedPush::new("emit_push_kw_loop", Some(word.to_string()), None)),
-                "enum" => out.push(ObservedPush::new("emit_push_kw_enum", Some(word.to_string()), None)),
+                "else" => {
+                    out.push(ObservedPush::new("emit_push_kw_else", Some(word.to_string()), None))
+                }
+                "loop" => {
+                    out.push(ObservedPush::new("emit_push_kw_loop", Some(word.to_string()), None))
+                }
+                "enum" => {
+                    out.push(ObservedPush::new("emit_push_kw_enum", Some(word.to_string()), None))
+                }
                 // len==5
-                "guard" => out.push(ObservedPush::new("emit_push_kw_guard", Some(word.to_string()), None)),
-                "break" => out.push(ObservedPush::new("emit_push_kw_break", Some(word.to_string()), None)),
-                "while" => out.push(ObservedPush::new("emit_push_kw_while", Some(word.to_string()), None)),
-                "match" => out.push(ObservedPush::new("emit_push_kw_match", Some(word.to_string()), None)),
-                "const" => out.push(ObservedPush::new("emit_push_kw_const", Some(word.to_string()), None)),
+                "guard" => {
+                    out.push(ObservedPush::new("emit_push_kw_guard", Some(word.to_string()), None))
+                }
+                "break" => {
+                    out.push(ObservedPush::new("emit_push_kw_break", Some(word.to_string()), None))
+                }
+                "while" => {
+                    out.push(ObservedPush::new("emit_push_kw_while", Some(word.to_string()), None))
+                }
+                "match" => {
+                    out.push(ObservedPush::new("emit_push_kw_match", Some(word.to_string()), None))
+                }
+                "const" => {
+                    out.push(ObservedPush::new("emit_push_kw_const", Some(word.to_string()), None))
+                }
                 // len==6
-                "module" => out.push(ObservedPush::new("emit_push_kw_module", Some(word.to_string()), None)),
-                "signal" => out.push(ObservedPush::new("emit_push_kw_signal", Some(word.to_string()), None)),
-                "reflex" => out.push(ObservedPush::new("emit_push_kw_reflex", Some(word.to_string()), None)),
-                "return" => out.push(ObservedPush::new("emit_push_kw_return", Some(word.to_string()), None)),
-                "struct" => out.push(ObservedPush::new("emit_push_kw_struct", Some(word.to_string()), None)),
-                "cycles" => out.push(ObservedPush::new("emit_push_kw_cycles", Some(word.to_string()), None)),
+                "module" => {
+                    out.push(ObservedPush::new("emit_push_kw_module", Some(word.to_string()), None))
+                }
+                "signal" => {
+                    out.push(ObservedPush::new("emit_push_kw_signal", Some(word.to_string()), None))
+                }
+                "reflex" => {
+                    out.push(ObservedPush::new("emit_push_kw_reflex", Some(word.to_string()), None))
+                }
+                "return" => {
+                    out.push(ObservedPush::new("emit_push_kw_return", Some(word.to_string()), None))
+                }
+                "struct" => {
+                    out.push(ObservedPush::new("emit_push_kw_struct", Some(word.to_string()), None))
+                }
+                "cycles" => {
+                    out.push(ObservedPush::new("emit_push_kw_cycles", Some(word.to_string()), None))
+                }
                 // len==8
-                "internal" => out.push(ObservedPush::new("emit_push_kw_internal", Some(word.to_string()), None)),
+                "internal" => out.push(ObservedPush::new(
+                    "emit_push_kw_internal",
+                    Some(word.to_string()),
+                    None,
+                )),
                 // default: identifier
-                other => out.push(ObservedPush::new("emit_push_ident", Some(other.to_string()), None)),
+                other => {
+                    out.push(ObservedPush::new("emit_push_ident", Some(other.to_string()), None))
+                }
             }
             continue;
         }
@@ -184,12 +213,7 @@ mod tests {
         let toks = collect_tokens_from_pushes(&pushes);
         assert_eq!(
             toks,
-            vec![
-                Token::Integer(42),
-                Token::Ident("hello".to_string()),
-                Token::True,
-                Token::EqEq,
-            ]
+            vec![Token::Integer(42), Token::Ident("hello".to_string()), Token::True, Token::EqEq,]
         );
     }
 

@@ -8,9 +8,9 @@
 
 #![forbid(unsafe_code)]
 
+use super::types::{SccInfo, SccKind, WidthDiag, MAX_SCC_SIZE};
 use crate::ast::program::{Guard, SignalDecl};
 use crate::ast::types::SignalType;
-use super::types::{SccInfo, SccKind, WidthDiag, MAX_SCC_SIZE};
 
 /// Maximum iterations for Floyd-Warshall fixpoint in nonexpansive SCCs.
 /// Bounded by SCC_SIZE^2 (worst case for shortest-path convergence).
@@ -31,17 +31,15 @@ pub struct SccSolveResult {
 /// to the same width (the max of any declared width among them).
 ///
 /// Bounded: at most MAX_FLOYD_WARSHALL_ITERS iterations.
-pub fn solve_nonexpansive(
-    scc: &SccInfo,
-    signals: &[SignalDecl],
-) -> SccSolveResult {
+pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResult {
     let n = scc.signal_indices.len();
     let mut diagnostics: Vec<WidthDiag> = Vec::new();
 
     // Initialize widths from declarations.
     let mut widths: Vec<u32> = Vec::with_capacity(n);
     for &sig_idx in &scc.signal_indices {
-        let w = signals.get(sig_idx)
+        let w = signals
+            .get(sig_idx)
             .map(|s| match s.ty {
                 SignalType::Bool => 1u32,
                 SignalType::Unsigned(w) => w,
@@ -79,13 +77,16 @@ pub fn solve_nonexpansive(
     // Post-solve: check for unresolved nodes.
     for (i, &w) in widths.iter().enumerate() {
         if w == 0 {
-            let name = scc.signal_indices.get(i)
+            let name = scc
+                .signal_indices
+                .get(i)
                 .and_then(|&idx| signals.get(idx))
                 .map(|s| s.name.as_str())
                 .unwrap_or("unknown");
             diagnostics.push(WidthDiag::error(format!(
                 "signal '{}' in nonexpansive SCC has no width anchor \
-                 (add an explicit type annotation)", name
+                 (add an explicit type annotation)",
+                name
             )));
         }
     }
@@ -136,9 +137,7 @@ pub fn solve_expansive(
         }
 
         // Strategy 2: Infer from guard bounds.
-        let inferred = infer_bound_from_guards(
-            &sig.name, program, guards,
-        );
+        let inferred = infer_bound_from_guards(&sig.name, program, guards);
         match inferred {
             Some(w) => {
                 widths.push(w);
@@ -153,7 +152,8 @@ pub fn solve_expansive(
                 diagnostics.push(WidthDiag::error(format!(
                     "signal '{}' is in an expansive SCC but has no provable \
                      width bound. Add an explicit type annotation or a \
-                     bounded temporal guard.", sig.name
+                     bounded temporal guard.",
+                    sig.name
                 )));
             }
         }
@@ -186,11 +186,7 @@ fn infer_bound_from_guards(
 
             // Check if RHS is `prev(signal_name) + constant`.
             let increment = match &a.value {
-                Expr::Binary {
-                    op: BinaryOp::Add,
-                    left,
-                    right,
-                } => {
+                Expr::Binary { op: BinaryOp::Add, left, right } => {
                     let left_is_prev = matches!(
                         left.as_ref(),
                         Expr::Prev { signal, .. } if signal == signal_name
@@ -208,12 +204,14 @@ fn infer_bound_from_guards(
                             Expr::Prev { signal, .. } if signal == signal_name
                         );
                         let left_const = match left.as_ref() {
-                            Expr::Literal(crate::ast::types::LiteralValue::Integer(v)) => {
-                                Some(*v)
-                            }
+                            Expr::Literal(crate::ast::types::LiteralValue::Integer(v)) => Some(*v),
                             _ => None,
                         };
-                        if right_is_prev { left_const } else { None }
+                        if right_is_prev {
+                            left_const
+                        } else {
+                            None
+                        }
                     }
                 }
                 _ => None,

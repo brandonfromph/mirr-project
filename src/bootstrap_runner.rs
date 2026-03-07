@@ -23,10 +23,7 @@ use std::path::{Path, PathBuf};
 
 use crate::{
     parser::parse_mirr,
-    temporal::{
-        low_level_ir::TemporalNetlistJson,
-        TemporalGuardCompiler,
-    },
+    temporal::{low_level_ir::TemporalNetlistJson, TemporalGuardCompiler},
     validation::validate_module,
 };
 
@@ -55,7 +52,6 @@ pub struct BootstrapOpts {
     /// the compiler_mirr lexer module (off by default).
     pub run_lexer_driver: bool,
 }
-
 
 /// Result of one pipeline stage.
 #[derive(Debug, Clone)]
@@ -89,11 +85,7 @@ impl BootstrapResult {
     /// Print a structured report to stdout.
     pub fn print_report(&self) {
         let status = if self.ok { "PASS" } else { "FAIL" };
-        println!(
-            "Self-Host Bootstrap: {} — {}",
-            status,
-            self.source_path.display()
-        );
+        println!("Self-Host Bootstrap: {} — {}", status, self.source_path.display());
         for (i, stage) in self.stages.iter().enumerate() {
             let icon = if stage.ok { "✓" } else { "✗" };
             println!("  Stage {}: {} [{}] {}", i + 1, icon, stage.name, stage.message);
@@ -246,9 +238,7 @@ impl BootstrapRunner {
         // -------------------------------------------------------------------
         // Stage 4: Temporal lowering
         // -------------------------------------------------------------------
-        let netlist = match TemporalGuardCompiler::new()
-            .compile_temporal_guards(&program.module)
-        {
+        let netlist = match TemporalGuardCompiler::new().compile_temporal_guards(&program.module) {
             Ok(n) => {
                 stages.push(StageResult {
                     name: "TemporalLower".to_string(),
@@ -326,11 +316,7 @@ impl BootstrapRunner {
                     failures
                 )
             };
-            stages.push(StageResult {
-                name: "LexerDriver".to_string(),
-                ok,
-                message,
-            });
+            stages.push(StageResult { name: "LexerDriver".to_string(), ok, message });
         }
         let envelope = TemporalNetlistJson::from_netlist(&netlist);
         let actual_json = match serde_json::to_string_pretty(&envelope) {
@@ -371,26 +357,24 @@ impl BootstrapRunner {
                     message: "no fixture configured — skipped".to_string(),
                 });
             }
-            Some(path) => {
-                match self.check_netlist_parity(&actual_json, &path) {
-                    Ok(()) => {
-                        stages.push(StageResult {
-                            name: "FixtureParity".to_string(),
-                            ok: true,
-                            message: format!("matches {}", path.display()),
-                        });
-                    }
-                    Err(msg) => {
-                        stages.push(StageResult {
-                            name: "FixtureParity".to_string(),
-                            ok: false,
-                            message: msg,
-                        });
-                        let all_ok = stages.iter().all(|s| s.ok);
-                        return self.finish(source_path, stages, all_ok, netlist_json, netlist_verilog);
-                    }
+            Some(path) => match self.check_netlist_parity(&actual_json, &path) {
+                Ok(()) => {
+                    stages.push(StageResult {
+                        name: "FixtureParity".to_string(),
+                        ok: true,
+                        message: format!("matches {}", path.display()),
+                    });
                 }
-            }
+                Err(msg) => {
+                    stages.push(StageResult {
+                        name: "FixtureParity".to_string(),
+                        ok: false,
+                        message: msg,
+                    });
+                    let all_ok = stages.iter().all(|s| s.ok);
+                    return self.finish(source_path, stages, all_ok, netlist_json, netlist_verilog);
+                }
+            },
         }
 
         let all_ok = stages.iter().all(|s| s.ok);
@@ -413,7 +397,11 @@ impl BootstrapRunner {
         let stem = source_path.file_stem()?.to_str()?;
         let fixture_root = self.resolve_fixture_root(source_path)?;
         let path = fixture_root.join("netlist").join(format!("{stem}.json"));
-        if path.exists() { Some(path) } else { None }
+        if path.exists() {
+            Some(path)
+        } else {
+            None
+        }
     }
 
     /// Resolve the fixture root directory.
@@ -454,18 +442,14 @@ impl BootstrapRunner {
     ///   - `guards` (count, strategy, names, signal names, condition)
     ///   - `signals` (count, names, types, kinds)
     ///   - `statistics` (all numeric fields except `compilation_time_us`)
-    fn check_netlist_parity(
-        &self,
-        actual_json: &str,
-        fixture_path: &Path,
-    ) -> Result<(), String> {
+    fn check_netlist_parity(&self, actual_json: &str, fixture_path: &Path) -> Result<(), String> {
         let fixture_str = std::fs::read_to_string(fixture_path)
             .map_err(|e| format!("cannot read fixture '{}': {e}", fixture_path.display()))?;
 
-        let actual: serde_json::Value = serde_json::from_str(actual_json)
-            .map_err(|e| format!("actual JSON invalid: {e}"))?;
-        let expected: serde_json::Value = serde_json::from_str(&fixture_str)
-            .map_err(|e| format!("fixture JSON invalid: {e}"))?;
+        let actual: serde_json::Value =
+            serde_json::from_str(actual_json).map_err(|e| format!("actual JSON invalid: {e}"))?;
+        let expected: serde_json::Value =
+            serde_json::from_str(&fixture_str).map_err(|e| format!("fixture JSON invalid: {e}"))?;
 
         // ir_version
         if actual["ir_version"] != expected["ir_version"] {
@@ -490,13 +474,19 @@ impl BootstrapRunner {
         }
         for (i, (a, e)) in as_.iter().zip(es_.iter()).enumerate() {
             if a["name"] != e["name"] {
-                return Err(format!("signals[{i}].name: actual={} expected={}", a["name"], e["name"]));
+                return Err(format!(
+                    "signals[{i}].name: actual={} expected={}",
+                    a["name"], e["name"]
+                ));
             }
             if a["ty"] != e["ty"] {
                 return Err(format!("signals[{i}].ty: actual={} expected={}", a["ty"], e["ty"]));
             }
             if a["kind"] != e["kind"] {
-                return Err(format!("signals[{i}].kind: actual={} expected={}", a["kind"], e["kind"]));
+                return Err(format!(
+                    "signals[{i}].kind: actual={} expected={}",
+                    a["kind"], e["kind"]
+                ));
             }
         }
 
@@ -530,13 +520,7 @@ impl BootstrapRunner {
         netlist_json: Option<String>,
         netlist_verilog: Option<String>,
     ) -> BootstrapResult {
-        BootstrapResult {
-            source_path,
-            stages,
-            ok,
-            netlist_json,
-            netlist_verilog,
-        }
+        BootstrapResult { source_path, stages, ok, netlist_json, netlist_verilog }
     }
 }
 
@@ -590,11 +574,7 @@ module neonatal_respirator {
         // Read / Parse / Validate / TemporalLower must all pass.
         // FixtureParity is skipped (no fixture adjacent to tempfile).
         for stage in &result.stages {
-            assert!(
-                stage.ok,
-                "Stage '{}' failed: {}",
-                stage.name, stage.message
-            );
+            assert!(stage.ok, "Stage '{}' failed: {}", stage.name, stage.message);
         }
     }
 
@@ -656,8 +636,7 @@ module neonatal_respirator {
         let _f = write_temp_mirr(NEONATAL_SRC);
 
         // Locate the repo's fixture directory.
-        let fixture_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures");
+        let fixture_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
         if !fixture_root.exists() {
             return; // skip if fixtures not present in this environment
         }
@@ -675,7 +654,11 @@ module neonatal_respirator {
             run_lexer_driver: false,
         });
         let result = runner.run(&named);
-        assert!(result.ok, "all stages including FixtureParity must pass; stages: {:#?}", result.stages);
+        assert!(
+            result.ok,
+            "all stages including FixtureParity must pass; stages: {:#?}",
+            result.stages
+        );
     }
 
     #[test]

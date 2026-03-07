@@ -1,8 +1,8 @@
 use std::fs;
 
 use nasa_rust_project::mirr_driver;
-use nasa_rust_project::mirr_executor;
 use nasa_rust_project::mirr_driver::collect_tokens_from_pushes;
+use nasa_rust_project::mirr_executor;
 
 fn run_case_from_path(path: &str) {
     let txt = fs::read_to_string(path).unwrap_or_else(|_| panic!("Failed to read {}", path));

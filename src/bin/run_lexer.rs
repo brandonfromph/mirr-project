@@ -1,8 +1,8 @@
 //! Quick binary to exercise the MIRR lexer interpreter and show that the
 //! lexer written in the MIRR language actually executes and produces tokens.
 
-use nasa_rust_project::mirr_executor;
 use nasa_rust_project::mirr_driver::collect_tokens_from_pushes;
+use nasa_rust_project::mirr_executor;
 
 fn main() {
     // simple test string; not literally "Hello world" but demonstrates that the
