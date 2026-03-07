@@ -14,6 +14,8 @@ use crate::temporal::low_level_ir::TemporalNetlistJson;
 /// Top-level JSON netlist structure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonNetlist {
+    /// Bump when JSON netlist schema changes. See CHANGELOG.md.
+    pub schema_version: String,
     /// IR version for contract tracking.
     pub ir_version: String,
     /// The compiled program AST (post-simplification).
@@ -113,6 +115,7 @@ pub fn build_netlist(result: &PipelineResult) -> JsonNetlist {
         .collect();
 
     JsonNetlist {
+        schema_version: "0.2.0".to_string(),
         ir_version: "1.0".to_string(),
         program,
         simplify_stats,

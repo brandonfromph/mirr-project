@@ -7,11 +7,11 @@ Write a rule in plain code. Get nanosecond-speed hardware logic — no OS, no sc
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=for-the-badge)](LICENSE)
 [![Build](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)]()
-[![Tests](https://img.shields.io/badge/tests-632%20passing-brightgreen?style=for-the-badge)]()
+[![Tests](https://img.shields.io/badge/tests-711%20passing-brightgreen?style=for-the-badge)]()
 [![Language: Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Target: Verilog RTL](https://img.shields.io/badge/Target-Verilog%20RTL-blueviolet?style=for-the-badge)]()
 
-[Read the Design Doc](docs/roadmap.md) · [Report a Bug](https://github.com/brandonfromph/mirr-project/issues) · [Request a Feature](https://github.com/brandonfromph/mirr-project/issues)
+[Read the Design Doc](docs/roadmap.md) · [Read the Tutorial](docs/tutorial.md) · [CHANGELOG](CHANGELOG.md) · [Migration Guide](docs/migration-guide.md) · [Report a Bug](https://github.com/brandonfromph/mirr-project/issues) · [Request a Feature](https://github.com/brandonfromph/mirr-project/issues)
 
 </div>
 
