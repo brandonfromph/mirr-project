@@ -28,6 +28,9 @@
 | Temporal Guard Compiler | [`phase2_temporal_guard_compiler.md`](phase2_temporal_guard_compiler.md) | 🟢 Frozen | Cement2-inspired temporal lowering design |
 | Interpreter Runtime Spec | [`interpreter/runtime_spec.md`](interpreter/runtime_spec.md) | 🟡 Draft | Runtime semantics and architecture for MIRR-CORE interpreter |
 | Tutorial: MIRR from Scratch | [`tutorial.md`](tutorial.md) | 🔵 Active | 10-lesson beginner guide — no prior hardware experience required |
+| Loop & Allocation Scan | [`architecture/loop_and_alloc_scan.md`](architecture/loop_and_alloc_scan.md) | 🟢 Frozen | Phase 3 Task 2 — loop and allocation scan design |
+| Module Interface Specs | [`architecture/module_interface_specs.md`](architecture/module_interface_specs.md) | 🟢 Frozen | Phase 3 Task 2 — architecture and module interface specs |
+| Per-Module Specs | [`architecture/per_module_specs.md`](architecture/per_module_specs.md) | 🟢 Frozen | Phase 3 Task 2 — per-module implementation specs |
 
 ## 2. Schemas (Machine-Readable)
 
@@ -68,6 +71,7 @@
 | Benchmark Protocol | [`benchmarks/benchmark_protocol.md`](benchmarks/benchmark_protocol.md) | 🟡 Draft | Performance measurement methodology |
 | Error Code Reference | [`error_codes.md`](error_codes.md) | 🔵 Active | Complete catalogue of all MIRR compiler error codes (E1xx–E4xx) |
 | Migration Guide | [`migration-guide.md`](migration-guide.md) | 🔵 Active | Upgrade notes for API and JSON consumers (0.1.0 to 0.2.0) |
+| Benchmarks | [`benchmarks.md`](benchmarks.md) | 🔵 Active | Criterion benchmark documentation |
 
 ## 6. Runbooks (Operational)
 
@@ -102,6 +106,7 @@
 | Phase 3 Tasks | [`phase3_tasks.md`](phase3_tasks.md) | 🟢 Frozen | Phase 3 task list |
 | Requirements RTM | [`requirements_rtm.md`](requirements_rtm.md) | 🟡 Draft | Requirements traceability matrix |
 | CHANGELOG | [`../CHANGELOG.md`](../CHANGELOG.md) | 🔵 Active | Versioned change history (Keep a Changelog format) |
+| Phase 3 RTM Review Agenda | [`meetings/phase3_rtm_review_agenda.md`](meetings/phase3_rtm_review_agenda.md) | 🟢 Frozen | Phase 3 RTM review meeting agenda |
 
 ## 9. Research Scripts
 

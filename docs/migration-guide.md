@@ -1,3 +1,8 @@
+---
+title: Migration Guide
+nav_order: 3
+---
+
 # Migration Guide: MIRR 0.1.0 to 0.2.0
 
 This guide covers breaking and notable changes between MIRR compiler versions

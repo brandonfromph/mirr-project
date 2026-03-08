@@ -1,0 +1,48 @@
+title: MIRR
+description: A hardware rule language for safety-critical systems
+remote_theme: just-the-docs/just-the-docs
+url: "https://brandonfromph.github.io"
+baseurl: "/mirr-project"
+
+permalink: pretty
+
+exclude:
+  - schemas/
+  - templates/
+  - branding/
+  - meetings/
+  - architecture/
+  - benchmarks/
+  - runbooks/
+  - research/
+  - interpreter/
+  - decisions/
+  - testing/
+  - mcp_server/
+  - demo_viewer.html
+  - INDEX.md
+  - mirr_spec.md
+  - self_hosting_core_spec.md
+  - self_hosting_ir_contract.md
+  - self_hosting_milestone.md
+  - phase2_temporal_guard_compiler.md
+  - phase3_hazard_analysis.md
+  - phase3_plan.md
+  - phase3_task1_actions.md
+  - phase3_tasks.md
+  - post_milestone_plan.md
+  - logic_simplification.md
+  - nasa_coding_guidelines.md
+  - requirements_rtm.md
+  - mcp_api.md
+  - mcp_phase1_tasks.md
+  - mcp_roadmap.md
+  - benchmarks.md
+
+aux_links:
+  "GitHub":
+    - "https://github.com/brandonfromph/mirr-project"
+
+nav_sort: order
+
+search_enabled: true

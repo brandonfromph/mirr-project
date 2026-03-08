@@ -1,4 +1,9 @@
-# R‑SPU Compiler & EDA Roadmap
+---
+title: Roadmap
+nav_order: 4
+---
+
+# R-SPU Compiler & EDA Roadmap
 
 This roadmap breaks the Reflexive Processing Unit (R‑SPU) concept into **small, Rust‑based subprojects**. Each step is intended to be realistically completable and to produce visible results.
 

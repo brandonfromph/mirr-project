@@ -1,3 +1,8 @@
+---
+title: Error Codes
+nav_order: 2
+---
+
 # MIRR Error Code Reference
 
 > **Status:** Active

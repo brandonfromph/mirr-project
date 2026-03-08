@@ -1,3 +1,8 @@
+---
+title: Tutorial
+nav_order: 1
+---
+
 # Tutorial: MIRR from Scratch
 
 A step-by-step guide for absolute beginners. No prior hardware experience
