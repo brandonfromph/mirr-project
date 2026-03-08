@@ -8,6 +8,26 @@ argument-hint: 'What should this change accomplish? (e.g., "fix prev validation 
 
 Generate an auditable proposal for any change to the MIRR compiler. The scope scales — a one-file bug fix gets a lightweight proposal; a 10-file campaign gets the full treatment. Every proposal follows the same standard: read first, assess risk, respect the philosophy, pin every change.
 
+## Proposal Archive
+
+All signed (executed) and vetoed proposals are frozen in `proposals/` at the repo root. Before proposing a new campaign, **read the archive** to understand what has already been done, what error code ranges are claimed, and what Phase 7 sequencing decisions have been made.
+
+```
+proposals/
+├── 001-SEM-001-2026-03-08.md   # Unique semantic error codes (E201-E215)
+├── 002-TYPE-001-2026-03-08.md  # Semantic type checker (E601-E607) — Phase 7 foundation
+├── 003-TYPE-002-2026-03-08.md  # Signed integer types (i1-i64) — extends type system
+├── 004-TYPE-003-2026-03-08.md  # Signed-aware width inference — bridges typeck↔width
+├── 005-TYPE-004-2026-03-08.md  # Linear signal ownership (E216) — single-writer enforcement
+├── 006-ROCQ-001-2026-03-08.md  # Width inference proofs in Rocq — formal verification
+├── 007-TYPE005-RSPU001-2026-03-08.md  # Higher-order patterns + R-SPU ISA emission
+└── ...                          # Future proposals follow NNN-ID-YYYY-MM-DD.md
+```
+
+**Naming convention:** `NNN-CAMPAIGN_ID-YYYY-MM-DD.md` where NNN is a zero-padded sequence number.
+
+**Before proposing:** read the latest proposal to check for claimed error code ranges, open dependencies, and the Phase 7 sequencing graph. Error code ranges currently allocated: E1xx (parse), E2xx (semantic, E201-E216), E3xx (temporal), E4xx (pattern, E401-E403), E5xx (width, E500-E511), E6xx (type, E601-E607), E7xx (R-SPU, E701-E703).
+
 ## Scope Detection
 
 Assess the change size first. This determines how much ceremony is needed:
@@ -43,22 +63,23 @@ src/
 ├── lexer/         # Expression tokenizer (Token enum)
 ├── validation/    # semantic.rs: signal refs, duplicates, prev delays
 ├── expand/        # Pattern expansion (def/reflect -> inline)
+├── typeck/        # Type checker for signedness consistency (E6xx)
 ├── simplify.rs    # Boolean/arithmetic simplification
 ├── width/         # Width inference + SCC analysis (6 submodules)
 ├── temporal/      # Guard -> shift register/counter compilation
-├── emit/          # verilog.rs (SVA), firrtl.rs, json_netlist.rs, dot.rs
+├── emit/          # verilog.rs (SVA), firrtl.rs, json_netlist.rs, dot.rs, rspu.rs (R-SPU ISA)
 ├── pipeline.rs    # run_pipeline() orchestrates all stages
 ├── mape_k/        # MAPE-K autonomic simulator (6 submodules)
 └── bin/           # mirr-compile, mirr-simplify, mirr-width, mirr-simulate
-tests/             # ~30 test files, ~655 tests
-examples/          # 11 .mirr files (7 compilable, 2 error cases, 2 pattern demos)
+tests/             # 39 test files, 847 tests
+examples/          # 12 .mirr files (7 compilable, 2 error cases, 2 pattern demos, 1 signed)
 ```
 
-Key types: `MirrProgram`, `Module`, `Guard`, `Reflex`, `PropertyDecl`, `Expr`, `MirrError` (4 variants: ParseError, SemanticError, TemporalCompilationError, PatternError).
+Key types: `MirrProgram`, `Module`, `Guard`, `Reflex`, `PropertyDecl`, `Expr`, `MirrError` (6 variants: ParseError, SemanticError, TemporalCompilationError, PatternError, TypeError, RspuError).
 
-Error codes: `[E1xx]` parse, `[E2xx]` semantic, `[E3xx]` temporal, `[E4xx]` pattern.
+Error codes: `[E1xx]` parse, `[E2xx]` semantic, `[E3xx]` temporal, `[E4xx]` pattern, `[E5xx]` width, `[E6xx]` type, `[E7xx]` R-SPU.
 
-Three property forms: `always (P)`, `never (P)`, `always (P -> Q)`. No more.
+Six property forms: `always (P)`, `never (P)`, `always (P -> Q)`, `never (P -> Q)`, `eventually_within(P, N)`, `always_followed_by(P, Q, N)`.
 
 ## Step 1 — Audit
 

@@ -241,8 +241,8 @@ cargo run --bin mirr-compile -- --emit verilog my_respirator.mirr
 
 This tells the MIRR compiler to:
 - Read `my_respirator.mirr`
-- Run it through all compiler stages (parse, validate, simplify, width
-  inference, temporal lowering)
+- Run it through all compiler stages (parse, validate, expand patterns,
+  type check, simplify, width inference, temporal lowering)
 - Emit a Verilog file (Verilog is a standard hardware description language
   that chip manufacturers understand)
 
@@ -281,9 +281,18 @@ MIRR has a small, fixed set of types:
 | `u16` | Unsigned integer 0-65535 | 16 bits |
 | `u32` | Unsigned integer 0-4294967295 | 32 bits |
 | `u64` | Unsigned integer 0-18446744073709551615 | 64 bits |
+| `i8` | Signed integer -128 to 127 | 8 bits |
+| `i16` | Signed integer -32768 to 32767 | 16 bits |
+| `i32` | Signed integer -2147483648 to 2147483647 | 32 bits |
+| `i64` | Signed integer | 64 bits |
 
-There are no signed integers, no floating point numbers, no strings, no
+There are no floating point numbers, no strings, no
 arrays, no structs. Hardware operates on bits and fixed-width numbers.
+
+**Signed vs. unsigned:** Use unsigned types (`u8`–`u64`) for sensor readings,
+counters, and addresses. Use signed types (`i8`–`i64`) for values that can be
+negative, such as temperature deltas or error signals. The compiler rejects
+mixed signed/unsigned operations — you must be explicit about which you mean.
 
 ### Comparison operators
 
@@ -318,6 +327,7 @@ Combine conditions:
 | `*` | Multiply | `a * b` |
 | `<<` | Shift left | `a << 2` |
 | `>>` | Shift right | `a >> 1` |
+| `-` (unary) | Negate (signed) | `-a` |
 
 ### The `prev()` function
 
@@ -595,7 +605,7 @@ for different signals or thresholds. Do not use patterns for one-off logic.
 
 ## Lesson 8: Reading compiler output
 
-The MIRR compiler can emit five output formats. Each serves a different
+The MIRR compiler can emit six output formats. Each serves a different
 purpose.
 
 ### Verilog (`--emit verilog`)
@@ -669,6 +679,24 @@ transformations.
 cargo run --bin mirr-compile -- --emit firrtl examples/neonatal_respirator.mirr
 ```
 
+### R-SPU Assembly (programmatic API)
+
+R-SPU (Reflex Signal Processing Unit) is MIRR's instruction-level backend.
+It compiles your module into a bounded instruction sequence for a
+safety-critical processor architecture.
+
+**Who uses it:** Embedded safety systems, custom silicon targets, MAPE-K
+runtime monitors.
+
+R-SPU emission is available through the Rust API:
+
+```rust
+let config = PipelineConfig { rspu: true, ..PipelineConfig::default() };
+let result = run_pipeline(source, &config)?;
+let program = result.rspu_program.unwrap();
+println!("{}", program.emit_asm());
+```
+
 ---
 
 ## Lesson 9: Common errors
@@ -682,9 +710,12 @@ the problem belongs to.
 | Code | Category | What went wrong |
 |------|----------|-----------------|
 | `[E100]` | Parse error | The compiler could not understand the syntax of your code |
-| `[E200]` | Semantic error | The syntax is valid but the meaning is wrong |
+| `[E2xx]` | Semantic error | The syntax is valid but the meaning is wrong (E201–E216) |
 | `[E300]` | Temporal error | Something went wrong during temporal guard compilation |
 | `[E400]` | Pattern error | Something went wrong during pattern expansion |
+| `[E5xx]` | Width error | Bit-width inference found an inconsistency (E500–E511) |
+| `[E6xx]` | Type error | Type checker found a type mismatch (E601–E607) |
+| `[E7xx]` | R-SPU error | R-SPU instruction emission failed (E701–E703) |
 
 ### [E100] Parse errors
 
@@ -717,7 +748,7 @@ signal x: in out bool;
 
 **Fix:** A signal is either `in` or `out`, not both.
 
-### [E200] Semantic errors
+### [E2xx] Semantic errors
 
 **Duplicate names:**
 
@@ -728,7 +759,7 @@ signal x: out bool;   // x declared twice
 ```
 
 ```
-[E200] Semantic error: Duplicate signal name: 'x'.
+Semantic error: [E201] Duplicate signal name: 'x'.
 ```
 
 **Fix:** Give each signal a unique name.
@@ -743,7 +774,7 @@ guard g {
 ```
 
 ```
-[E200] Semantic error: Guard 'g' references undeclared signal 'ghost'.
+Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'.
 ```
 
 **Fix:** Declare `ghost` as a signal, or correct the spelling.
@@ -757,7 +788,7 @@ property p {
 ```
 
 ```
-[E200] Semantic error: 'p' contains prev('sensor') with delay 0; delay must be >= 1.
+Semantic error: [E209] 'p' contains prev('sensor') with delay 0; delay must be >= 1.
 ```
 
 **Fix:** Use `prev(sensor, 1)` or higher.
@@ -827,7 +858,7 @@ makes execution time unpredictable.
 
 ### No floating point
 
-All types are unsigned integers or booleans. Floating point arithmetic
+All types are integers (signed or unsigned) or booleans. Floating point arithmetic
 requires specialized hardware units and is outside MIRR's scope.
 
 ### Why so minimal?

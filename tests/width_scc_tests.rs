@@ -139,10 +139,10 @@ fn prev_display_format() {
 #[test]
 fn prev_flattens_to_flat_node() {
     let expr = prev("x", 1);
-    let nodes = width::flatten::flatten_expr(&expr).unwrap();
+    let nodes = width::flatten::flatten_expr(&expr, &[]).unwrap();
     assert_eq!(nodes.len(), 1);
     match &nodes[0] {
-        width::types::FlatNode::Prev { signal, delay } => {
+        width::types::FlatNode::Prev { signal, delay, .. } => {
             assert_eq!(signal, "x");
             assert_eq!(*delay, 1);
         }
@@ -154,7 +154,7 @@ fn prev_flattens_to_flat_node() {
 fn prev_in_add_flattens_correctly() {
     // prev(x, 1) + 1
     let expr = add(prev("x", 1), int_lit(1));
-    let nodes = width::flatten::flatten_expr(&expr).unwrap();
+    let nodes = width::flatten::flatten_expr(&expr, &[]).unwrap();
     assert_eq!(nodes.len(), 3); // prev, literal, add
 }
 

@@ -46,7 +46,7 @@ module dup_sig {
 }
 "#;
     let msg = validate_err(source);
-    assert_eq!(msg, "[E200] Semantic error: Duplicate signal name: 'x'.");
+    assert_eq!(msg, "Semantic error: [E201] Duplicate signal name: 'x'.");
 }
 
 #[test]
@@ -74,7 +74,7 @@ module dup_guard {
 }
 "#;
     let msg = validate_err(source);
-    assert_eq!(msg, "[E200] Semantic error: Duplicate guard name: 'g'.");
+    assert_eq!(msg, "Semantic error: [E202] Duplicate guard name: 'g'.");
 }
 
 #[test]
@@ -103,7 +103,7 @@ module dup_reflex {
 }
 "#;
     let msg = validate_err(source);
-    assert_eq!(msg, "[E200] Semantic error: Duplicate reflex name: 'r'.");
+    assert_eq!(msg, "Semantic error: [E203] Duplicate reflex name: 'r'.");
 }
 
 // ---------------------------------------------------------------------------
@@ -203,7 +203,7 @@ fn prev_delay_zero_in_guard_condition_pinned_message() {
     let msg = validate_module_err(&module);
     assert_eq!(
         msg,
-        "[E200] Semantic error: 'g' contains prev('x') with delay 0; delay must be >= 1."
+        "Semantic error: [E209] 'g' contains prev('x') with delay 0; delay must be >= 1."
     );
 }
 
@@ -213,7 +213,7 @@ fn prev_delay_zero_in_reflex_rhs_pinned_message() {
     let msg = validate_module_err(&module);
     assert_eq!(
         msg,
-        "[E200] Semantic error: 'r' contains prev('x') with delay 0; delay must be >= 1."
+        "Semantic error: [E209] 'r' contains prev('x') with delay 0; delay must be >= 1."
     );
 }
 
@@ -252,7 +252,7 @@ fn undeclared_signal_inside_prev_in_guard() {
         pattern_origins: Vec::new(),
     };
     let msg = validate_module_err(&module);
-    assert_eq!(msg, "[E200] Semantic error: Guard 'g' references undeclared signal 'ghost'.");
+    assert_eq!(msg, "Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'.");
 }
 
 #[test]
@@ -295,7 +295,7 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
     let msg = validate_module_err(&module);
     assert_eq!(
         msg,
-        "[E200] Semantic error: Reflex 'r' assignment references undeclared signal 'phantom'."
+        "Semantic error: [E208] Reflex 'r' assignment references undeclared signal 'phantom'."
     );
 }
 

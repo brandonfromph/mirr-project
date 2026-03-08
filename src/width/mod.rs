@@ -51,7 +51,7 @@ impl WidthInferenceResult {
 /// All steps are iterative with bounded loops.
 pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult {
     // Step 1: Flatten.
-    let flat_nodes = match flatten::flatten_expr(expr) {
+    let flat_nodes = match flatten::flatten_expr(expr, signals) {
         Some(nodes) => nodes,
         None => {
             return WidthInferenceResult {
@@ -109,15 +109,19 @@ pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<
     let result = infer_widths(&assignment.value, signals);
     let mut diags = result.diagnostics;
 
-    // Look up target width.
-    let target_width = signals.iter().find(|s| s.name == assignment.target).map(|s| match s.ty {
-        SignalType::Bool => 1u32,
-        SignalType::Unsigned(w) => w,
+    // Look up target width and signedness.
+    let target_info = signals.iter().find(|s| s.name == assignment.target).map(|s| {
+        let (w, signed) = match s.ty {
+            SignalType::Bool => (1u32, false),
+            SignalType::Unsigned(w) => (w, false),
+            SignalType::Signed(w) => (w, true),
+        };
+        (w, signed)
     });
 
-    if let (Some(we), Some(tw)) = (&result.expr, target_width) {
+    if let (Some(we), Some((tw, ts))) = (&result.expr, target_info) {
         let expr_w = we.width();
-        let trunc_diags = solver::check_truncation(&assignment.target, tw, expr_w);
+        let trunc_diags = solver::check_truncation(&assignment.target, tw, expr_w, ts);
         diags.extend(trunc_diags);
     }
 
@@ -211,12 +215,16 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
             let mut diags = rhs_result.diagnostics;
 
             // Perform the truncation check inline.
-            let target_width = signals.iter().find(|s| s.name == a.target).map(|s| match s.ty {
-                SignalType::Bool => 1u32,
-                SignalType::Unsigned(w) => w,
+            let target_info = signals.iter().find(|s| s.name == a.target).map(|s| {
+                let (w, signed) = match s.ty {
+                    SignalType::Bool => (1u32, false),
+                    SignalType::Unsigned(w) => (w, false),
+                    SignalType::Signed(w) => (w, true),
+                };
+                (w, signed)
             });
-            if let (Some(we), Some(tw)) = (&rhs_result.expr, target_width) {
-                diags.extend(solver::check_truncation(&a.target, tw, we.width()));
+            if let (Some(we), Some((tw, ts))) = (&rhs_result.expr, target_info) {
+                diags.extend(solver::check_truncation(&a.target, tw, we.width(), ts));
             }
 
             total_stats.diagnostics_count += diags.len();

@@ -109,6 +109,8 @@ fn prev_guard_result() -> PipelineResult {
         simplify_stats: None,
         width_result: None,
         temporal_netlist: None,
+        rspu_program: None,
+        type_map: None,
     }
 }
 

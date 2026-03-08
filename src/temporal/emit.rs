@@ -116,6 +116,13 @@ pub fn emit_verilog(netlist: &TemporalNetlist) -> Result<String, MirrError> {
                     format!("    wire [{}:0] {};// Unsigned({})\n", w - 1, signal.name, w)
                 }
             }
+            SignalType::Signed(w) => {
+                if w == 0 {
+                    format!("    wire signed {};// Signed(0)\n", signal.name)
+                } else {
+                    format!("    wire signed [{}:0] {};// Signed({})\n", w - 1, signal.name, w)
+                }
+            }
         };
         v.push_str(&decl);
     }

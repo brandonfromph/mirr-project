@@ -249,9 +249,13 @@ pub struct CompilationStatistics {
 /// Used by IR contract tests and parity gate.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TemporalNetlistJson {
+    /// IR version string for contract tracking (currently "1.0").
     pub ir_version: String,
+    /// Compiled guard definitions.
     pub guards: Vec<CompiledGuard>,
+    /// Generated hardware signals (shift registers, counters, etc.).
     pub signals: Vec<GeneratedSignal>,
+    /// Compilation statistics (guard count, signal count, timing).
     pub statistics: CompilationStatistics,
 }
 

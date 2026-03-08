@@ -15,8 +15,11 @@ use super::types::{SignalKind, SignalType};
 /// A signal declaration: name, direction (in/out/internal), and bit-width type.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignalDecl {
+    /// Signal identifier (unique within the module).
     pub name: String,
+    /// Direction: input, output, or internal.
     pub kind: SignalKind,
+    /// Bit-width type (bool, u8–u64, i8–i64).
     #[serde(rename = "ty")]
     pub ty: SignalType,
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written signals).
@@ -27,8 +30,11 @@ pub struct SignalDecl {
 /// A temporal guard: fires when a condition holds for N consecutive clock cycles.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Guard {
+    /// Guard identifier (referenced by reflexes).
     pub name: String,
+    /// Boolean condition expression evaluated each clock tick.
     pub condition: Expr,
+    /// Number of consecutive cycles the condition must hold before firing.
     pub cycles: u64,
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written guards).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -38,15 +44,20 @@ pub struct Guard {
 /// A single assignment: `target = value;`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Assignment {
+    /// Target signal name (must be output or internal).
     pub target: String,
+    /// Value expression to assign.
     pub value: Expr,
 }
 
 /// A reflex block: triggered by a guard, assigns values to output/internal signals.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reflex {
+    /// Reflex block identifier.
     pub name: String,
+    /// List of guard names that trigger this reflex.
     pub guard_names: Vec<String>,
+    /// Assignments executed when the reflex fires.
     pub assignments: Vec<Assignment>,
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written reflexes).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -56,14 +67,21 @@ pub struct Reflex {
 /// A MIRR module: the top-level container for signals, guards, reflexes, and properties.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Module {
+    /// Module name (appears after `module` keyword).
     pub name: String,
+    /// Signal declarations (inputs, outputs, internals).
     pub signals: Vec<SignalDecl>,
+    /// Temporal guard definitions.
     pub guards: Vec<Guard>,
+    /// Reflex blocks (guard-triggered assignments).
     pub reflexes: Vec<Reflex>,
+    /// Safety property declarations (compiled to SVA).
     #[serde(default)]
     pub properties: Vec<PropertyDecl>,
+    /// Pattern instantiation calls (erased after expansion).
     #[serde(default)]
     pub pattern_calls: Vec<PatternCall>,
+    /// Provenance tags from pattern expansion (DO-178C traceability).
     #[serde(default)]
     pub pattern_origins: Vec<PatternOrigin>,
 }
@@ -71,8 +89,10 @@ pub struct Module {
 /// Root of a parsed MIRR program, with IR version for contract tracking.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MirrProgram {
+    /// Top-level pattern definitions (`def` blocks).
     #[serde(default)]
     pub patterns: Vec<PatternDef>,
+    /// The single module in this compilation unit.
     pub module: Module,
 }
 
@@ -80,7 +100,9 @@ pub struct MirrProgram {
 /// Used by IR contract tests and parity gate.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MirrAstJson {
+    /// IR version string for contract tracking (currently "1.0").
     pub ir_version: String,
+    /// The compiled module AST.
     pub module: Module,
 }
 

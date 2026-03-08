@@ -8,27 +8,47 @@ use crate::error::MirrError;
 /// Token produced by the expression tokenizer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
+    /// An identifier (signal name, keyword, etc.).
     Ident(String),
+    /// An integer literal.
     Integer(u64),
+    /// The `true` keyword.
     True,
+    /// The `false` keyword.
     False,
-    // Operators
-    Bang,     // !
-    AmpAmp,   // &&
-    PipePipe, // ||
-    Caret,    // ^
-    Plus,     // +
-    Minus,    // -
-    Star,     // *
-    LtLt,     // <<
-    GtGt,     // >>
-    Lt,       // <
-    Le,       // <=
-    Gt,       // >
-    Ge,       // >=
-    EqEq,     // ==
-    BangEq,   // !=
+    /// `!` — logical/bitwise NOT.
+    Bang,
+    /// `&&` — logical AND.
+    AmpAmp,
+    /// `||` — logical OR.
+    PipePipe,
+    /// `^` — bitwise XOR.
+    Caret,
+    /// `+` — addition.
+    Plus,
+    /// `-` — subtraction or unary negation.
+    Minus,
+    /// `*` — multiplication.
+    Star,
+    /// `<<` — left shift.
+    LtLt,
+    /// `>>` — right shift.
+    GtGt,
+    /// `<` — less than.
+    Lt,
+    /// `<=` — less than or equal.
+    Le,
+    /// `>` — greater than.
+    Gt,
+    /// `>=` — greater than or equal.
+    Ge,
+    /// `==` — equality.
+    EqEq,
+    /// `!=` — inequality.
+    BangEq,
+    /// `(` — left parenthesis.
     LParen,
+    /// `)` — right parenthesis.
     RParen,
 }
 

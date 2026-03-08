@@ -114,6 +114,7 @@ fn emit_signal_nodes(module: &Module, out: &mut String) {
         let width_label = match s.ty {
             SignalType::Bool => "bool".to_string(),
             SignalType::Unsigned(w) => format!("u{w}"),
+            SignalType::Signed(w) => format!("i{w}"),
         };
         let tooltip = match &s.origin {
             Some(origin) => format!(" tooltip=\"Pattern: {origin}\""),

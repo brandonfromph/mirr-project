@@ -117,13 +117,17 @@ pub fn push_mapped_token_to_buffer(
 // ---------------------------------------------------------------------------
 use std::collections::HashMap;
 
+/// A runtime signal value (boolean or integer).
 #[derive(Clone, Debug)]
 pub enum Value {
+    /// Boolean signal value.
     Bool(bool),
+    /// Unsigned integer signal value.
     Integer(u64),
 }
 
 impl Value {
+    /// Coerce to boolean (integers: nonzero = true).
     pub fn as_bool(&self) -> bool {
         match self {
             Value::Bool(b) => *b,
@@ -131,6 +135,7 @@ impl Value {
         }
     }
 
+    /// Coerce to integer (booleans: true = 1, false = 0).
     pub fn as_int(&self) -> u64 {
         match self {
             Value::Integer(i) => *i,
@@ -171,10 +176,12 @@ pub struct RuntimePools {
 
     /// Scratch buffers reused across ticks for shift-register lowering, etc.
     pub sr_pairs: Vec<(usize, String)>,
+    /// Scratch buffer for next-tick signal values.
     pub next_vals: Vec<Value>,
 }
 
 impl RuntimePools {
+    /// Create a new pool with preallocated capacity. Call at init time only.
     pub fn new(guard_capacity: usize, signal_capacity: usize, reflex_capacity: usize) -> Self {
         RuntimePools {
             index_map: HashMap::with_capacity(signal_capacity),
@@ -247,6 +254,7 @@ impl RuntimePools {
 /// a RuntimeHandle at initialization time and reuse it for hot-path modules.
 /// This keeps ownership clear and prepares for future shared/global pool use.
 pub struct RuntimeHandle {
+    /// Preallocated runtime pools for signal, guard, and scratch storage.
     pub pools: RuntimePools,
 }
 

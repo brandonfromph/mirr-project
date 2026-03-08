@@ -84,10 +84,12 @@ impl PropertyFormula {
 /// A named safety property declaration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PropertyDecl {
+    /// Property name (unique within the module).
     pub name: String,
     /// Verification directive (assert/cover/assume). Defaults to Assert.
     #[serde(default)]
     pub directive: PropertyDirective,
+    /// The property formula (always, never, implies, etc.).
     pub formula: PropertyFormula,
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written properties).
     #[serde(default, skip_serializing_if = "Option::is_none")]

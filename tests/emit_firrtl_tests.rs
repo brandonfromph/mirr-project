@@ -18,7 +18,7 @@ fn firrtl_from(src: &str) -> String {
 
 /// Helper: run pipeline with temporal disabled.
 fn firrtl_no_temporal(src: &str) -> String {
-    let config = PipelineConfig { simplify: true, width: true, temporal: false };
+    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: false, rspu: false };
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
     emit_firrtl(&result)
 }

@@ -58,9 +58,10 @@ pub fn verify_least_solution(
                 None => continue,
             };
 
-            let declared = match sig.ty {
-                SignalType::Bool => 1u32,
-                SignalType::Unsigned(w) => w,
+            let (declared, sig_signed) = match sig.ty {
+                SignalType::Bool => (1u32, false),
+                SignalType::Unsigned(w) => (w, false),
+                SignalType::Signed(w) => (w, true),
             };
 
             // The solution width should equal the declared width for
@@ -71,10 +72,12 @@ pub fn verify_least_solution(
                 // Width is less than declared — solution assigned less
                 // than what the signal needs. This shouldn't happen if
                 // the solver works correctly.
+                let solved_display = super::types::Width(width).display_with_sign(sig_signed);
+                let declared_display = super::types::Width(declared).display_with_sign(sig_signed);
                 diagnostics.push(WidthDiag::error(format!(
-                    "[E511] COMPILER BUG: signal '{}' solved width u{} is less \
-                     than declared u{}",
-                    sig.name, width, declared
+                    "[E511] COMPILER BUG: signal '{}' solved width {} is less \
+                     than declared {}",
+                    sig.name, solved_display, declared_display
                 )));
                 is_minimal = false;
             }

@@ -26,9 +26,12 @@ MIRR errors follow the format `[Exxx] <Category> error: <message>`.
 | Code | Category | Where to look |
 |------|----------|---------------|
 | `[E100]` | Parse error | `src/parser/module_parser.rs`, `src/parser/expr_parser.rs`, `src/lexer/tokenizer.rs` |
-| `[E200]` | Semantic error | `src/validation/semantic.rs`, `src/expand/mod.rs` |
+| `[E2xx]` | Semantic error (E201–E216) | `src/validation/semantic.rs`, `src/expand/mod.rs` |
 | `[E300]` | Temporal error | `src/temporal/compiler.rs`, `src/temporal/emit.rs` |
 | `[E400]` | Pattern error | `src/parser/pattern_parser.rs`, `src/expand/mod.rs`, `src/validation/semantic.rs` |
+| `[E5xx]` | Width inference error (E500–E511) | `src/width/solver.rs`, `src/width/scc_solver.rs`, `src/width/verify.rs` |
+| `[E6xx]` | Type error (E601–E607) | `src/typeck/`, `src/validation/semantic.rs` |
+| `[E7xx]` | R-SPU error (E701–E703) | `src/emit/rspu.rs`, `src/emit/rspu_regalloc.rs` |
 
 ## Step 3 — Locate the Source Line
 
@@ -57,7 +60,7 @@ Propose a minimal edit to fix the error. Show the corrected `.mirr` source. Only
 |--------------|-------|-----|
 | `"Signal declaration must end with ';'"` | Missing semicolon | Add `;` after type |
 | `"Unknown signal kind: X"` | Typo in direction | Use `in`, `out`, or `internal` |
-| `"Unknown signal type: X"` | Invalid type | Use `bool`, `u8`, `u16`, `u32`, `u64` |
+| `"Unknown signal type: X"` | Invalid type | Use `bool`, `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64` |
 | `"Guard 'X' missing 'when' clause"` | Wrong guard body structure | Add `when <expr>` line |
 | `"Guard 'X' missing 'for' clause"` | Missing cycle count | Add `for N cycles;` line |
 | `"Reflex 'X' references undeclared guard 'Y'"` | Typo in guard name | Check `on <guard_name>` matches a guard |
@@ -65,12 +68,13 @@ Propose a minimal edit to fix the error. Show the corrected `.mirr` source. Only
 | `"Duplicate signal/guard/reflex name"` | Name reuse | Rename one of the duplicates |
 | `"prev('X') with delay 0"` | Prev with zero delay | Use delay >= 1 |
 | `"formula must start with 'always' or 'never'"` | Wrong property keyword | Properties use `always (...)`, `never (...)`, or `always (P -> Q)` |
+| `"Signed/unsigned mismatch in expression"` | Mixing signed and unsigned types | Ensure both operands are signed (`i8`–`i64`) or both unsigned (`u8`–`u64`). Mixing is a type error (E6xx) |
 
 ## MIRR Syntax Quick Reference
 
 ```
 module <name> {
-    signal <name>: in|out|internal bool|u8|u16|u32|u64;
+    signal <name>: in|out|internal bool|u8|u16|u32|u64|i8|i16|i32|i64;
 
     guard <name> {
         when <expression>
@@ -87,6 +91,9 @@ module <name> {
         always (<expression>);
         never (<expression>);
         always (<expression> -> <expression>);
+        never (<expression> -> <expression>);
+        eventually_within(<expression>, <N>);
+        always_followed_by(<expression>, <expression>, <N>);
     }
 }
 ```

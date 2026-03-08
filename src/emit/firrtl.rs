@@ -283,6 +283,7 @@ fn firrtl_type(ty: &SignalType) -> String {
     match ty {
         SignalType::Bool => "UInt<1>".to_string(),
         SignalType::Unsigned(w) => format!("UInt<{}>", w),
+        SignalType::Signed(w) => format!("SInt<{}>", w),
     }
 }
 
@@ -339,6 +340,10 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
             let inner = emit_expr_firrtl_bounded(operand, iterations);
             format!("not({})", inner)
         }
+        Expr::Unary { op: UnaryOp::Negate, operand } => {
+            let inner = emit_expr_firrtl_bounded(operand, iterations);
+            format!("neg({})", inner)
+        }
         Expr::Binary { op, left, right } => {
             let l = emit_expr_firrtl_bounded(left, iterations);
             let r = emit_expr_firrtl_bounded(right, iterations);
@@ -383,6 +388,9 @@ fn expr_text_bounded(expr: &Expr, iters: &mut usize) -> String {
         Expr::Prev { signal, delay } => format!("prev({signal}, {delay})"),
         Expr::Unary { op: UnaryOp::Not, operand } => {
             format!("!{}", expr_text_bounded(operand, iters))
+        }
+        Expr::Unary { op: UnaryOp::Negate, operand } => {
+            format!("-{}", expr_text_bounded(operand, iters))
         }
         Expr::Binary { op, left, right } => {
             let l = expr_text_bounded(left, iters);

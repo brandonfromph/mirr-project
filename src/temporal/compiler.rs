@@ -1,14 +1,13 @@
-// Module: temporal/compiler
-// Responsibility: Deterministic lowering of high-level temporal guards into
-// a bounded, verifiable low-level IR (shift registers / counters).
-//
-// Phase 3 interface notes:
-// - Public APIs validate inputs and return Result; callers must check returns.
-// - Fixed bounds: MAX_GUARDS and MAX_STAGES apply; loops must document explicit upper bounds.
-// - Resource budgets: worst-case stack <= 64 KiB; post-init heap = 0 (compile-time allocations allowed if bounded and documented).
-// - Determinism: any RNG or ordering must be seeded/injected and recorded in provenance.
-//
 //! Temporal Guard Compiler
+//!
+//! Deterministic lowering of high-level temporal guards into
+//! a bounded, verifiable low-level IR (shift registers / counters).
+//!
+//! Phase 3 interface notes:
+//! - Public APIs validate inputs and return Result; callers must check returns.
+//! - Fixed bounds: MAX_GUARDS and MAX_STAGES apply; loops must document explicit upper bounds.
+//! - Resource budgets: worst-case stack <= 64 KiB; post-init heap = 0 (compile-time allocations allowed if bounded and documented).
+//! - Determinism: any RNG or ordering must be seeded/injected and recorded in provenance.
 //!
 //! Implements the compilation pass that transforms high-level temporal guards
 //! into low-level representations using shift registers and counters.

@@ -3,7 +3,7 @@
 //! Checks for duplicate names, undeclared signal references, guard-reflex
 //! consistency, property formula validity, and pattern definition constraints.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::ast::expr::Expr;
 use crate::ast::pattern::PatternDef;
@@ -34,7 +34,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     for sig in &module.signals {
         if !signal_names.insert(&sig.name) {
             return Err(MirrError::SemanticError {
-                message: format!("Duplicate signal name: '{}'.", sig.name),
+                message: format!("[E201] Duplicate signal name: '{}'.", sig.name),
             });
         }
     }
@@ -44,7 +44,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     for guard in &module.guards {
         if !guard_names.insert(&guard.name) {
             return Err(MirrError::SemanticError {
-                message: format!("Duplicate guard name: '{}'.", guard.name),
+                message: format!("[E202] Duplicate guard name: '{}'.", guard.name),
             });
         }
     }
@@ -54,7 +54,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     for reflex in &module.reflexes {
         if !reflex_names.insert(&reflex.name) {
             return Err(MirrError::SemanticError {
-                message: format!("Duplicate reflex name: '{}'.", reflex.name),
+                message: format!("[E203] Duplicate reflex name: '{}'.", reflex.name),
             });
         }
     }
@@ -85,7 +85,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
             if !signal_names.contains(sig_ref.as_str()) {
                 return Err(MirrError::SemanticError {
                     message: format!(
-                        "Guard '{}' references undeclared signal '{}'.",
+                        "[E204] Guard '{}' references undeclared signal '{}'.",
                         guard.name, sig_ref
                     ),
                 });
@@ -100,7 +100,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
             if !guard_names.contains(gname.as_str()) {
                 return Err(MirrError::SemanticError {
                     message: format!(
-                        "Reflex '{}' references undeclared guard '{}'.",
+                        "[E205] Reflex '{}' references undeclared guard '{}'.",
                         reflex.name, gname
                     ),
                 });
@@ -114,14 +114,14 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                 if signal_names.contains(assignment.target.as_str()) {
                     return Err(MirrError::SemanticError {
                         message: format!(
-                            "Reflex '{}' assigns to input signal '{}', which is not writable.",
+                            "[E206] Reflex '{}' assigns to input signal '{}', which is not writable.",
                             reflex.name, assignment.target
                         ),
                     });
                 }
                 return Err(MirrError::SemanticError {
                     message: format!(
-                        "Reflex '{}' assigns to undeclared signal '{}'.",
+                        "[E207] Reflex '{}' assigns to undeclared signal '{}'.",
                         reflex.name, assignment.target
                     ),
                 });
@@ -136,7 +136,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                 if !signal_names.contains(sig_ref.as_str()) {
                     return Err(MirrError::SemanticError {
                         message: format!(
-                            "Reflex '{}' assignment references undeclared signal '{}'.",
+                            "[E208] Reflex '{}' assignment references undeclared signal '{}'.",
                             reflex.name, sig_ref
                         ),
                     });
@@ -145,8 +145,60 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
         }
     }
 
+    // Validate single-writer ownership: each writable signal must have
+    // at most one reflex that assigns to it.
+    validate_signal_ownership(module)?;
+
     // Validate property declarations.
     validate_properties(&module.properties, &signal_names)?;
+
+    Ok(())
+}
+
+/// Validate that each writable signal has at most one writer reflex.
+///
+/// Two different reflexes assigning to the same signal creates a hardware
+/// race condition (two drivers on the same wire). This pass builds a
+/// signal→reflex map and rejects any signal with more than one writer.
+///
+/// Intra-reflex multiple assignments are allowed (sequential semantics
+/// within a single reflex block).
+///
+/// Bounded: single pass over all reflexes and their assignments.
+fn validate_signal_ownership(module: &Module) -> Result<(), MirrError> {
+    // Map: signal_name → (first_writer_reflex_name, first_writer_origin)
+    let mut writers: HashMap<&str, (&str, Option<&str>)> = HashMap::new();
+
+    for reflex in &module.reflexes {
+        for assignment in &reflex.assignments {
+            let target = assignment.target.as_str();
+            let origin = reflex.origin.as_deref();
+            match writers.get(target) {
+                Some((first_reflex, first_origin)) => {
+                    // Conflict: two different reflexes write to the same signal.
+                    if *first_reflex != reflex.name {
+                        let msg = match (first_origin, origin) {
+                            (Some(p1), Some(p2)) => format!(
+                                "[E216] Signal '{}' has multiple writers: \
+                                 reflex '{}' (from pattern '{}') and reflex '{}' (from pattern '{}').",
+                                target, first_reflex, p1, reflex.name, p2
+                            ),
+                            _ => format!(
+                                "[E216] Signal '{}' has multiple writers: \
+                                 reflex '{}' and reflex '{}'.",
+                                target, first_reflex, reflex.name
+                            ),
+                        };
+                        return Err(MirrError::SemanticError { message: msg });
+                    }
+                    // Same reflex writing again — allowed (intra-reflex sequential).
+                }
+                None => {
+                    writers.insert(target, (&reflex.name, origin));
+                }
+            }
+        }
+    }
 
     Ok(())
 }
@@ -170,7 +222,7 @@ fn validate_prev_delays(expr: &Expr, context_name: &str) -> Result<(), MirrError
                 if *delay == 0 {
                     return Err(MirrError::SemanticError {
                         message: format!(
-                            "'{}' contains prev('{}') with delay 0; delay must be >= 1.",
+                            "[E209] '{}' contains prev('{}') with delay 0; delay must be >= 1.",
                             context_name, signal
                         ),
                     });
@@ -224,7 +276,7 @@ fn validate_properties(
     for prop in properties {
         if !property_names.insert(&prop.name) {
             return Err(MirrError::SemanticError {
-                message: format!("Duplicate property name: '{}'.", prop.name),
+                message: format!("[E210] Duplicate property name: '{}'.", prop.name),
             });
         }
         validate_property_signals(prop, signal_names)?;
@@ -244,7 +296,7 @@ fn validate_property_signals(
             if !signal_names.contains(sig_ref.as_str()) {
                 return Err(MirrError::SemanticError {
                     message: format!(
-                        "Property '{}' references undeclared signal '{}'.",
+                        "[E211] Property '{}' references undeclared signal '{}'.",
                         prop.name, sig_ref
                     ),
                 });

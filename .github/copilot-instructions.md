@@ -7,7 +7,7 @@ MIRR is built on the generative power of three. Every layer of the system uses e
 | Layer | The Three |
 |-------|-----------|
 | Language primitives | Signal, Guard, Reflex |
-| Property forms | `always (P)`, `never (P)`, `always (P -> Q)` |
+| Property forms | `always (P)`, `never (P)`, `always (P -> Q)`, `never (P -> Q)`, `eventually_within(P, N)`, `always_followed_by(P, Q, N)` |
 | Backend engines | Cement2 (temporal), SmaRTLy (simplification), FIRWINE (width inference) |
 | System roles | Design language, compiler toolchain, runtime instruction language |
 
@@ -22,10 +22,11 @@ src/
 ├── lexer/         # Expression tokenizer
 ├── validation/    # Semantic checks (signal refs, duplicates, prev delays)
 ├── expand/        # Pattern expansion engine (def/reflect → inline)
+├── typeck/         # Type checker: signedness consistency, type map (Phase 3b)
 ├── simplify.rs    # Boolean/arithmetic simplification (Phase 3)
 ├── width/         # Width inference + SCC analysis (Phase 4, FIRWINE)
 ├── temporal/      # Temporal guard compilation (Phase 2, Cement2)
-├── emit/          # Verilog/SVA, FIRRTL, JSON netlist, DOT graph output
+├── emit/          # Verilog/SVA, FIRRTL, JSON netlist, DOT graph, R-SPU assembly output
 ├── pipeline.rs    # Full pipeline: parse → validate → expand → simplify → width → temporal
 ├── mape_k/        # MAPE-K autonomic simulator (monitor/analyze/plan/execute)
 ├── bin/           # CLI binaries (mirr-compile, mirr-simplify, mirr-width, mirr-simulate)
@@ -106,9 +107,11 @@ cargo bench
 2. **Validate patterns** — check pattern definitions for well-formedness
 3. **Expand patterns** — `def`/`reflect` pattern calls inlined into module
 4. **Validate module** — signal refs, duplicate names, prev delays, property formulas
-5. **Simplify** — boolean/arithmetic expression simplification (optional)
-6. **Width inference** — assign minimum safe bit widths, detect SCCs (optional)
-7. **Temporal compile** — guards → shift registers or counters (optional)
+5. **Typecheck** — signedness consistency check (optional)
+6. **Simplify** — boolean/arithmetic expression simplification (optional)
+7. **Width inference** — assign minimum safe bit widths, detect SCCs (optional)
+8. **Temporal compile** — guards → shift registers or counters (optional)
+9. **R-SPU emission** — guard/reflex → instruction stream (optional)
 
 ## Key Conventions
 
@@ -119,10 +122,12 @@ cargo bench
 - `def`/`reflect` for reusable patterns (Phase 7b)
 - No heap allocation or unbounded loops in safety-critical paths
 - All new docs must be indexed in `docs/INDEX.md`
-- Types: `bool`, `u8`, `u16`, `u32`, `u64` — no implicit casting
+- Types: `bool`, `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64` — no implicit casting
 - Guard combination: `on guard_a and guard_b { ... }`
 - No loops, function calls, or conditionals inside reflexes
-- Error codes: `[E1xx]` parse, `[E2xx]` semantic, `[E3xx]` temporal, `[E4xx]` pattern — see `docs/error_codes.md`
+- Error codes: `[E1xx]` parse, `[E2xx]` semantic, `[E3xx]` temporal, `[E4xx]` pattern, `[E5xx]` width, `[E6xx]` type, `[E7xx]` R-SPU — see `docs/error_codes.md`
+- Signed types: `i8`–`i64` use two's complement; mixing signed/unsigned is a type error (E6xx)
+- Higher-order patterns: `def` can accept pattern parameters via `param: pattern` syntax
 
 ## Example: Adding a New Validation Check
 
@@ -148,7 +153,7 @@ cargo bench
 | `src/temporal/compiler.rs` | Guard → shift register/counter compilation |
 | `src/width/` | Width inference, SCC detection, constraint solving |
 | `src/mape_k/` | MAPE-K autonomic loop simulator |
-| `examples/*.mirr` | 11 example programs (7 compilable, 2 error cases, 2 pattern demos) |
+| `examples/*.mirr` | 12 example programs (8 compilable, 2 error cases, 2 pattern demos) |
 | `benches/pipeline_bench.rs` | Criterion benchmarks (3 tiers × 2 targets) |
 | `fuzz/` | cargo-fuzz targets for parse_mirr and run_pipeline |
 | `vscode-mirr/` | VS Code syntax highlighting extension |

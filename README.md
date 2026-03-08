@@ -7,9 +7,9 @@ Write a rule in plain code. Get nanosecond-speed hardware logic — no OS, no sc
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=for-the-badge)](LICENSE)
 [![Build](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)](https://github.com/brandonfromph/mirr-project/actions)
-[![Tests](https://img.shields.io/badge/tests-711%20passing-brightgreen?style=for-the-badge)](https://github.com/brandonfromph/mirr-project/actions)
+[![Tests](https://img.shields.io/badge/tests-847%20passing-brightgreen?style=for-the-badge)](https://github.com/brandonfromph/mirr-project/actions)
 [![Language: Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Target: Verilog RTL](https://img.shields.io/badge/Target-Verilog%20RTL-blueviolet?style=for-the-badge)](#)
+[![Target: Verilog RTL](https://img.shields.io/badge/Target-Verilog%20%7C%20R--SPU-blueviolet?style=for-the-badge)](#)
 
 [Website](https://brandonfromph.github.io/mirr-project/) · [Tutorial](docs/tutorial.md) · [Error Codes](docs/error_codes.md) · [CHANGELOG](CHANGELOG.md) · [Report a Bug](https://github.com/brandonfromph/mirr-project/issues)
 
@@ -95,12 +95,6 @@ cargo test   # all tests should pass with zero warnings
 ## Usage
 
 ```bash
-# Parse a MIRR file
-cargo run --bin mirr-parse -- examples/neonatal_respirator.mirr
-
-# Compile temporal guards
-cargo run --bin mirr-temporal -- examples/neonatal_respirator.mirr
-
 # Simplify logic
 cargo run --bin mirr-simplify -- --stats examples/neonatal_respirator.mirr
 
@@ -110,8 +104,11 @@ cargo run --bin mirr-width -- examples/neonatal_respirator.mirr
 # Full pipeline — emit SystemVerilog RTL
 cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit verilog
 
-# Other emit formats: json, dot, sva, firrtl
+# Other emit formats: json, dot, sva, firrtl, rspu
 cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit json
+
+# MAPE-K autonomic simulation
+cargo run --bin mirr-simulate -- --ticks 10000
 ```
 
 ---
@@ -121,7 +118,7 @@ cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit json
 | Document | Description |
 |----------|-------------|
 | [Tutorial](docs/tutorial.md) | 10-lesson beginner guide — no hardware experience needed |
-| [Error Codes](docs/error_codes.md) | Complete catalogue of compiler diagnostics (E1xx–E4xx) |
+| [Error Codes](docs/error_codes.md) | Complete catalogue of compiler diagnostics (E1xx–E7xx) |
 | [Migration Guide](docs/migration-guide.md) | Upgrade notes for 0.1.0 to 0.2.0 |
 | [Roadmap](docs/roadmap.md) | Phase 0–10 project roadmap |
 | [CHANGELOG](CHANGELOG.md) | Versioned change history |
@@ -133,8 +130,8 @@ cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit json
 - [x] Phase 0–6 — Foundation through integration pipeline
 - [x] Phase 7a — Safety properties and SVA assertion emission
 - [x] Phase 7b — Homoiconic pattern system (`def`/`reflect`)
-- [ ] Phase 7 — Formal verification (Rocq proofs)
-- [ ] Phase 8 — R-SPU RTL hardware architecture
+- [x] Phase 7 — Formal verification (Rocq proofs)
+- [x] Phase 8 — R-SPU instruction set architecture
 - [ ] Phase 9 — Multi-core fabric
 - [ ] Phase 10 — Production certification (DO-178C, IEC 62304, ISO 26262)
 

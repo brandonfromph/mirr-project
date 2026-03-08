@@ -92,7 +92,7 @@ def monitor_sensor(
 
         reflex ${sensor}_response_high {
             on ${sensor}_too_high {
-                ${alarm} = true;
+                ${sensor}_debounced = true;
             }
         }
 
@@ -606,6 +606,7 @@ fn substitution_signal_name_replaced() {
 module m {{
     signal my_sensor: in u16;
     signal alarm_out: out bool;
+    signal status: out bool;
 
     monitor_sensor(my_sensor, 50, 200, 1000, alarm_out);
 
@@ -616,7 +617,7 @@ module m {{
 
     reflex r {{
         on g {{
-            alarm_out = true;
+            status = true;
         }}
     }}
 }}
@@ -705,6 +706,7 @@ def simple(s: signal in bool, out_s: signal out bool) {
 module m {
     signal sensor: in bool;
     signal alarm: out bool;
+    signal led: out bool;
 
     simple(sensor, alarm);
 
@@ -715,7 +717,7 @@ module m {
 
     reflex r {
         on g {
-            alarm = true;
+            led = true;
         }
     }
 }

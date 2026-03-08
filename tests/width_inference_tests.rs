@@ -486,7 +486,7 @@ fn truncation_u16_to_u8_error() {
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert_eq!(errors.len(), 1);
-    assert!(errors[0].message.contains("truncates from 16 bits to 8 bits"));
+    assert!(errors[0].message.contains("truncates unsigned 16 bits to 8 bits"));
 }
 
 #[test]
@@ -501,7 +501,7 @@ fn truncation_exact_text() {
         .map(|d| d.message.clone())
         .collect();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0], "[E505] assignment to 'narrow' truncates from 32 bits to 16 bits");
+    assert_eq!(errors[0], "[E505] assignment to 'narrow' truncates unsigned 32 bits to 16 bits");
 }
 
 #[test]
@@ -543,7 +543,7 @@ fn truncation_add_overflow_to_narrow_target() {
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert_eq!(errors.len(), 1);
-    assert!(errors[0].message.contains("truncates from 9 bits to 8 bits"));
+    assert!(errors[0].message.contains("truncates unsigned 9 bits to 8 bits"));
 }
 
 // ===========================================================================
@@ -779,5 +779,5 @@ fn program_detects_truncation_in_reflex() {
     let all_diags = result.all_diagnostics();
     let errors: Vec<&&WidthDiag> =
         all_diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
-    assert!(errors.iter().any(|d| d.message.contains("truncates from 9 bits to 8 bits")));
+    assert!(errors.iter().any(|d| d.message.contains("truncates unsigned 9 bits to 8 bits")));
 }

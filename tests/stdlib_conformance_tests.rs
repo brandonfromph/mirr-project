@@ -62,6 +62,8 @@ fn error_class(e: &MirrError) -> &'static str {
         MirrError::SemanticError { .. } => "semantic",
         MirrError::TemporalCompilationError { .. } => "temporal",
         MirrError::PatternError { .. } => "pattern",
+        MirrError::TypeError { .. } => "type",
+        MirrError::RspuError { .. } => "rspu",
     }
 }
 

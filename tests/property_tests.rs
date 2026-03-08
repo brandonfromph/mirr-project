@@ -188,35 +188,35 @@ fn property_duplicate_name_pinned_message() {
     let src =
         wrap_property("property p1 {\n    always (x);\n}\n\nproperty p1 {\n    never (y);\n}");
     let msg = validate_err(&src);
-    assert_eq!(msg, "[E200] Semantic error: Duplicate property name: 'p1'.");
+    assert_eq!(msg, "Semantic error: [E210] Duplicate property name: 'p1'.");
 }
 
 #[test]
 fn property_undeclared_signal_always_pinned() {
     let src = wrap_property("property p1 {\n    always (ghost);\n}");
     let msg = validate_err(&src);
-    assert_eq!(msg, "[E200] Semantic error: Property 'p1' references undeclared signal 'ghost'.");
+    assert_eq!(msg, "Semantic error: [E211] Property 'p1' references undeclared signal 'ghost'.");
 }
 
 #[test]
 fn property_undeclared_signal_never_pinned() {
     let src = wrap_property("property p1 {\n    never (phantom);\n}");
     let msg = validate_err(&src);
-    assert_eq!(msg, "[E200] Semantic error: Property 'p1' references undeclared signal 'phantom'.");
+    assert_eq!(msg, "Semantic error: [E211] Property 'p1' references undeclared signal 'phantom'.");
 }
 
 #[test]
 fn property_undeclared_signal_implies_antecedent_pinned() {
     let src = wrap_property("property p1 {\n    always (ghost -> y);\n}");
     let msg = validate_err(&src);
-    assert_eq!(msg, "[E200] Semantic error: Property 'p1' references undeclared signal 'ghost'.");
+    assert_eq!(msg, "Semantic error: [E211] Property 'p1' references undeclared signal 'ghost'.");
 }
 
 #[test]
 fn property_undeclared_signal_implies_consequent_pinned() {
     let src = wrap_property("property p1 {\n    always (x -> phantom);\n}");
     let msg = validate_err(&src);
-    assert_eq!(msg, "[E200] Semantic error: Property 'p1' references undeclared signal 'phantom'.");
+    assert_eq!(msg, "Semantic error: [E211] Property 'p1' references undeclared signal 'phantom'.");
 }
 
 #[test]

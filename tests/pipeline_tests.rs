@@ -88,7 +88,7 @@ fn pipeline_full_neonatal() {
 
 #[test]
 fn pipeline_parse_only() {
-    let config = PipelineConfig { simplify: false, width: false, temporal: false };
+    let config = PipelineConfig { typecheck: false, simplify: false, width: false, temporal: false, rspu: false };
     let result = run_pipeline(MINIMAL_MIRR, &config).expect("pipeline should succeed");
 
     assert_eq!(result.program.module.name, "minimal");
@@ -99,7 +99,7 @@ fn pipeline_parse_only() {
 
 #[test]
 fn pipeline_simplify_without_width() {
-    let config = PipelineConfig { simplify: true, width: false, temporal: false };
+    let config = PipelineConfig { typecheck: true, simplify: true, width: false, temporal: false, rspu: false };
     let result = run_pipeline(MINIMAL_MIRR, &config).expect("pipeline should succeed");
 
     assert!(result.simplify_stats.is_some());
@@ -108,7 +108,7 @@ fn pipeline_simplify_without_width() {
 
 #[test]
 fn pipeline_width_without_temporal() {
-    let config = PipelineConfig { simplify: true, width: true, temporal: false };
+    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: false, rspu: false };
     let result = run_pipeline(ARITHMETIC_MIRR, &config).expect("pipeline should succeed");
 
     assert!(result.width_result.is_some());
@@ -337,7 +337,7 @@ fn json_output_contains_temporal_netlist() {
 
 #[test]
 fn json_output_null_when_stages_skipped() {
-    let config = PipelineConfig { simplify: false, width: false, temporal: false };
+    let config = PipelineConfig { typecheck: false, simplify: false, width: false, temporal: false, rspu: false };
     let result = run_pipeline(MINIMAL_MIRR, &config).unwrap();
     let json_str = emit::json_netlist::emit_json(&result).unwrap();
     let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();

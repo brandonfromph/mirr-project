@@ -136,6 +136,10 @@ fn evaluate_constraint(c: &WidthConstraint, widths: &[u32]) -> Option<(usize, u3
             let sw = get_w(widths, *source);
             Some((*node as usize, sw))
         }
+        WidthConstraint::SameAsPlusOne { node, source } => {
+            let sw = get_w(widths, *source);
+            Some((*node as usize, sw.saturating_add(1)))
+        }
     }
 }
 
@@ -171,10 +175,10 @@ fn validate_widths(widths: &[u32], nodes: &[FlatNode], diagnostics: &mut Vec<Wid
 fn node_description(idx: usize, nodes: &[FlatNode]) -> String {
     match nodes.get(idx) {
         Some(FlatNode::Literal { value }) => format!("literal {}", value),
-        Some(FlatNode::Signal { name }) => format!("signal '{}'", name),
+        Some(FlatNode::Signal { name, .. }) => format!("signal '{}'", name),
         Some(FlatNode::Unary { op, .. }) => format!("{:?}", op),
         Some(FlatNode::Binary { op, .. }) => format!("{:?}", op),
-        Some(FlatNode::Prev { signal, delay }) => format!("prev('{}', {})", signal, delay),
+        Some(FlatNode::Prev { signal, delay, .. }) => format!("prev('{}', {})", signal, delay),
         None => "unknown".to_string(),
     }
 }
@@ -186,13 +190,22 @@ fn node_description(idx: usize, nodes: &[FlatNode]) -> String {
 /// Check whether assigning an expression with `expr_width` to a target signal
 /// with `target_width` would cause an unsafe truncation.
 ///
+/// `target_signed` indicates whether the target is a signed type,
+/// for sign-aware diagnostic messages.
+///
 /// Returns diagnostics (possibly empty) for this single assignment.
-pub fn check_truncation(target_name: &str, target_width: u32, expr_width: Width) -> Vec<WidthDiag> {
+pub fn check_truncation(
+    target_name: &str,
+    target_width: u32,
+    expr_width: Width,
+    target_signed: bool,
+) -> Vec<WidthDiag> {
     let mut diags = Vec::new();
     if expr_width.0 > target_width {
+        let category = if target_signed { "signed" } else { "unsigned" };
         diags.push(WidthDiag::error(format!(
-            "[E505] assignment to '{}' truncates from {} bits to {} bits",
-            target_name, expr_width.0, target_width
+            "[E505] assignment to '{}' truncates {} {} bits to {} bits",
+            target_name, category, expr_width.0, target_width
         )));
     }
     diags

@@ -127,6 +127,7 @@ fn eval_expr(e: &Expr, env_get: &impl Fn(&str) -> Value) -> Value {
             let v = eval_expr(operand, env_get);
             match op {
                 UnaryOp::Not => Value::Bool(!v.as_bool()),
+                UnaryOp::Negate => Value::Integer(0u64.wrapping_sub(v.as_int())),
             }
         }
         E::Binary { op, left, right } => {
@@ -239,7 +240,8 @@ fn init_pools_for_program(
             crate::ast::types::SignalType::Bool => {
                 p.persistent_env.insert(s.name.clone(), Value::Bool(false));
             }
-            crate::ast::types::SignalType::Unsigned(_) => {
+            crate::ast::types::SignalType::Unsigned(_)
+            | crate::ast::types::SignalType::Signed(_) => {
                 p.persistent_env.insert(s.name.clone(), Value::Integer(0));
             }
         }

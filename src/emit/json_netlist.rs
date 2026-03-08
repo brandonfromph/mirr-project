@@ -36,36 +36,52 @@ pub struct JsonNetlist {
 /// Serializable wrapper for SimplifyStats.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimplifyStatsJson {
+    /// Number of simplification rules applied.
     pub rules_applied: usize,
+    /// Expression node count before simplification.
     pub nodes_before: usize,
+    /// Expression node count after simplification.
     pub nodes_after: usize,
 }
 
 /// Serializable wrapper for WidthStats.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WidthStatsJson {
+    /// Total expression nodes analyzed.
     pub nodes_analyzed: usize,
+    /// Constraint propagation iterations to fixpoint.
     pub propagation_rounds: usize,
+    /// Number of width diagnostics emitted.
     pub diagnostics_count: usize,
+    /// Number of strongly connected components detected.
     pub scc_count: usize,
+    /// Number of expansive SCCs (contain Add/Mul/Shl).
     pub expansive_count: usize,
+    /// Number of non-expansive SCCs (Prev-only or bitwise).
     pub nonexpansive_count: usize,
+    /// True if any diagnostic is a hard error.
     pub has_errors: bool,
 }
 
 /// Serializable wrapper for a property declaration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PropertyJson {
+    /// Property name.
     pub name: String,
+    /// Verification directive: "assert", "cover", or "assume".
     pub directive: String,
+    /// Formula kind: "always", "never", "always_implies", etc.
     pub kind: String,
+    /// Human-readable formula text.
     pub formula_text: String,
 }
 
 /// Serializable wrapper for pattern origin annotation (Phase 7b).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PatternOriginJson {
+    /// Name of the pattern that was expanded.
     pub pattern_name: String,
+    /// Human-readable argument summary.
     pub args_summary: String,
 }
 
@@ -195,6 +211,9 @@ fn expr_text_bounded(expr: &crate::ast::Expr, iters: &mut usize) -> String {
         Expr::Prev { signal, delay } => format!("prev({signal}, {delay})"),
         Expr::Unary { op: UnaryOp::Not, operand } => {
             format!("!{}", expr_text_bounded(operand, iters))
+        }
+        Expr::Unary { op: UnaryOp::Negate, operand } => {
+            format!("-{}", expr_text_bounded(operand, iters))
         }
         Expr::Binary { op, left, right } => {
             let l = expr_text_bounded(left, iters);

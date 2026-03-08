@@ -187,6 +187,11 @@ impl ExprParser {
                 let operand = self.parse_prefix(depth + 1)?;
                 Ok(Expr::Unary { op: UnaryOp::Not, operand: Box::new(operand) })
             }
+            Token::Minus => {
+                // Unary negate: bind tighter than any binary operator.
+                let operand = self.parse_prefix(depth + 1)?;
+                Ok(Expr::Unary { op: UnaryOp::Negate, operand: Box::new(operand) })
+            }
             Token::LParen => {
                 let inner = self.parse_expr(0, depth + 1)?;
                 match self.advance() {

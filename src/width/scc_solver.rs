@@ -42,7 +42,7 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
             .get(sig_idx)
             .map(|s| match s.ty {
                 SignalType::Bool => 1u32,
-                SignalType::Unsigned(w) => w,
+                SignalType::Unsigned(w) | SignalType::Signed(w) => w,
             })
             .unwrap_or(0);
         widths.push(w);
@@ -125,7 +125,7 @@ pub fn solve_expansive(
         // Strategy 1: Explicit type annotation.
         let declared_width = match sig.ty {
             SignalType::Bool => 1u32,
-            SignalType::Unsigned(w) => w,
+            SignalType::Unsigned(w) | SignalType::Signed(w) => w,
         };
 
         // If the signal has a non-default width (> 0), accept it.

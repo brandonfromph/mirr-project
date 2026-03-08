@@ -10,7 +10,7 @@
 
 use super::types::{FlatNode, Width, WidthExpr, MAX_FLAT_NODES};
 use crate::ast::expr::Expr;
-use crate::ast::types::LiteralValue;
+use crate::ast::types::{LiteralValue, SignalType};
 
 // ---------------------------------------------------------------------------
 // Flatten: Expr -> Vec<FlatNode>
@@ -41,10 +41,12 @@ enum FlatWork<'a> {
 
 /// Flatten an `Expr` tree into a `Vec<FlatNode>` in post-order.
 ///
+/// `signals` provides signal declarations for signedness lookup.
+///
 /// Returns `None` if the tree exceeds `MAX_FLAT_NODES` nodes.
 /// Bounded: the work stack processes at most `MAX_FLAT_NODES * 3` items
 /// (each node produces at most 3 work items: visit + children + emit).
-pub fn flatten_expr(expr: &Expr) -> Option<Vec<FlatNode>> {
+pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<Vec<FlatNode>> {
     let mut work: Vec<FlatWork<'_>> = Vec::with_capacity(128);
     let mut nodes: Vec<FlatNode> = Vec::with_capacity(128);
     // Index stack tracks which FlatNode index each child was emitted to.
@@ -100,7 +102,7 @@ pub fn flatten_expr(expr: &Expr) -> Option<Vec<FlatNode>> {
                 if idx >= MAX_FLAT_NODES {
                     return None;
                 }
-                nodes.push(FlatNode::Signal { name: name.to_string() });
+                nodes.push(FlatNode::Signal { name: name.to_string(), signed: is_signed(name, signals) });
                 idx_stack.push(idx as u32);
             }
             FlatWork::EmitUnary { op } => {
@@ -131,13 +133,18 @@ pub fn flatten_expr(expr: &Expr) -> Option<Vec<FlatNode>> {
                 if idx >= MAX_FLAT_NODES {
                     return None;
                 }
-                nodes.push(FlatNode::Prev { signal: signal.to_string(), delay });
+                nodes.push(FlatNode::Prev { signal: signal.to_string(), delay, signed: is_signed(signal, signals) });
                 idx_stack.push(idx as u32);
             }
         }
     }
 
     Some(nodes)
+}
+
+/// Check whether a signal is declared as signed.
+fn is_signed(name: &str, signals: &[crate::ast::SignalDecl]) -> bool {
+    signals.iter().any(|s| s.name == name && matches!(s.ty, SignalType::Signed(_)))
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +174,7 @@ pub fn reconstruct_width_expr(nodes: &[FlatNode], widths: &[Width]) -> Option<Wi
         let w = widths[i];
         let we = match node {
             FlatNode::Literal { value } => WidthExpr::Literal { value: *value, width: w },
-            FlatNode::Signal { name } => WidthExpr::Signal { name: name.clone(), width: w },
+            FlatNode::Signal { name, .. } => WidthExpr::Signal { name: name.clone(), width: w },
             FlatNode::Unary { op, operand } => {
                 let operand_expr = built.get_mut(*operand as usize).and_then(|slot| slot.take())?;
                 WidthExpr::Unary { op: *op, operand: Box::new(operand_expr), width: w }
@@ -182,7 +189,7 @@ pub fn reconstruct_width_expr(nodes: &[FlatNode], widths: &[Width]) -> Option<Wi
                     width: w,
                 }
             }
-            FlatNode::Prev { signal, delay } => {
+            FlatNode::Prev { signal, delay, .. } => {
                 WidthExpr::Prev { signal: signal.clone(), delay: *delay, width: w }
             }
         };

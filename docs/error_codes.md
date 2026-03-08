@@ -20,6 +20,8 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E3xx   | 300–399 | Temporal compilation  | `MirrError::TemporalCompilationError` |
 | E4xx   | 400–499 | Pattern expansion     | `MirrError::PatternError`   |
 | E5xx   | 500–599 | Width inference        | `WidthDiag` (subsystem-local) |
+| E6xx   | 600–699 | Type checking          | `MirrError::TypeError`      |
+| E7xx   | 700–799 | R-SPU emission          | `MirrError::RspuError`      |
 
 ## Parse Errors (E1xx)
 
@@ -61,19 +63,22 @@ The prefix classifies the error; the full code maps to a single creation site.
 
 | Code | Message pattern | Source |
 |------|----------------|--------|
-| E200 | *(category prefix for all semantic errors)* | `src/error.rs` |
-| — | `Duplicate signal name: '{name}'.` | `src/validation/semantic.rs` |
-| — | `Duplicate guard name: '{name}'.` | `src/validation/semantic.rs` |
-| — | `Duplicate reflex name: '{name}'.` | `src/validation/semantic.rs` |
-| — | `Guard '{name}' references undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
-| — | `Reflex '{name}' references undeclared guard '{guard}'.` | `src/validation/semantic.rs` |
-| — | `Reflex '{name}' assigns to input signal '{sig}', which is not writable.` | `src/validation/semantic.rs` |
-| — | `Reflex '{name}' assigns to undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
-| — | `Reflex '{name}' assignment references undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
-| — | `'{context}' contains prev('{sig}') with delay 0; delay must be >= 1.` | `src/validation/semantic.rs` |
-| — | `Duplicate property name: '{name}'.` | `src/validation/semantic.rs` |
-| — | `Property '{name}' references undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
-| — | `signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` |
+| E201 | `[E201] Duplicate signal name: '{name}'.` | `src/validation/semantic.rs` |
+| E202 | `[E202] Duplicate guard name: '{name}'.` | `src/validation/semantic.rs` |
+| E203 | `[E203] Duplicate reflex name: '{name}'.` | `src/validation/semantic.rs` |
+| E204 | `[E204] Guard '{name}' references undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
+| E205 | `[E205] Reflex '{name}' references undeclared guard '{guard}'.` | `src/validation/semantic.rs` |
+| E206 | `[E206] Reflex '{name}' assigns to input signal '{sig}', which is not writable.` | `src/validation/semantic.rs` |
+| E207 | `[E207] Reflex '{name}' assigns to undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
+| E208 | `[E208] Reflex '{name}' assignment references undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
+| E209 | `[E209] '{context}' contains prev('{sig}') with delay 0; delay must be >= 1.` | `src/validation/semantic.rs` |
+| E210 | `[E210] Duplicate property name: '{name}'.` | `src/validation/semantic.rs` |
+| E211 | `[E211] Property '{name}' references undeclared signal '{sig}'.` | `src/validation/semantic.rs` |
+| E212 | `[E212] signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (hand-written reflex target) |
+| E213 | `[E213] signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (hand-written expression) |
+| E214 | `[E214] signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (cross-expansion target) |
+| E215 | `[E215] signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (cross-expansion expression) |
+| E216 | `[E216] Signal '{sig}' has multiple writers: reflex '{r1}' and reflex '{r2}'.` | `src/validation/semantic.rs` |
 
 ## Temporal Errors (E3xx)
 
@@ -114,10 +119,39 @@ The following variants were removed as dead code (never constructed):
 | E502 | `prev signal '{name}' has no declared width` | `src/width/constraint.rs` |
 | E503 | `node {id} ({desc}) has unresolved width` | `src/width/solver.rs` |
 | E504 | `node {id} ({desc}) requires {n} bits, exceeding maximum of 64` | `src/width/solver.rs` |
-| E505 | `assignment to '{target}' truncates from {n} bits to {m} bits` | `src/width/solver.rs` |
+| E505 | `assignment to '{target}' truncates {signed\|unsigned} {n} bits to {m} bits` | `src/width/solver.rs` |
 | E506 | `SCC detection exceeded iteration budget` | `src/width/scc.rs` |
 | E507 | `SCC with {n} signals exceeds maximum size of {max}; signals include: {names}` | `src/width/scc.rs` |
 | E508 | `nonexpansive SCC solver exceeded iteration budget` | `src/width/scc_solver.rs` |
 | E509 | `signal '{name}' in nonexpansive SCC has no width anchor (add an explicit type annotation)` | `src/width/scc_solver.rs` |
 | E510 | `signal '{name}' is in an expansive SCC but has no provable width bound. Add an explicit type annotation or a bounded temporal guard.` | `src/width/scc_solver.rs` |
-| E511 | `COMPILER BUG: signal '{name}' solved width u{n} is less than declared u{m}` | `src/width/verify.rs` |
+| E511 | `COMPILER BUG: signal '{name}' solved width {i\|u}{n} is less than declared {i\|u}{m}` | `src/width/verify.rs` |
+
+## Type Errors (E6xx)
+
+| Code | Message pattern | Source |
+|------|----------------|--------|
+| E601 | `[E601] Guard '{name}' condition must be bool, got {ty}.` | `src/typeck/mod.rs` |
+| E602 | `[E602] Assignment to '{target}' ({target_ty}): expression type {expr_ty} is not compatible.` | `src/typeck/mod.rs` |
+| E603 | `[E603] Operator '{op}' requires numeric operands, got {left_ty} and {right_ty}.` | `src/typeck/mod.rs` |
+| E603 | `[E603] Operator '{op}' cannot mix signed and unsigned operands: {left} and {right}.` | `src/typeck/mod.rs` |
+| E603 | `[E603] Operator '-' (negate) cannot be applied to bool.` | `src/typeck/mod.rs` |
+| E604 | `[E604] Operator '{op}' requires bool operands, got {left_ty} and {right_ty}.` | `src/typeck/mod.rs` |
+| E605 | `[E605] Ordering operator '{op}' cannot compare {left_ty} and {right_ty}.` | `src/typeck/mod.rs` |
+| E606 | `[E606] Equality operator '{op}' cannot compare {left_ty} and {right_ty}.` | `src/typeck/mod.rs` |
+| E607 | `[E607] Operator '^' (xor) requires matching types, got {left_ty} and {right_ty}.` | `src/typeck/mod.rs` |
+
+**Note (TYPE-002):** E603/E605/E606/E607 also trigger for cross-category signed/unsigned
+operations. Signed types (`i1`–`i64`) participate in the same error code scheme as unsigned
+types (`u1`–`u64`). No implicit signed↔unsigned conversion is allowed.
+
+## R-SPU Emission Errors (E7xx)
+
+| Code | Message pattern | Source |
+|------|----------------|--------|
+| E700 | *(category prefix for all R-SPU errors)* | `src/error.rs` |
+| E701 | `[E701] R-SPU register allocation failed: too many {kind} signals ({count} > {max}).` | `src/emit/rspu_regalloc.rs` |
+| E701 | `[E701] R-SPU temporary registers exhausted.` | `src/emit/rspu.rs` |
+| E702 | `[E702] R-SPU instruction budget exceeded: {count} instructions > {max}.` | `src/emit/rspu.rs` |
+| E702 | `[E702] R-SPU expression exceeds maximum node count.` | `src/emit/rspu.rs` |
+| E703 | `[E703] R-SPU guard resource exhausted: {count} guards > {max}.` | `src/emit/rspu.rs` |

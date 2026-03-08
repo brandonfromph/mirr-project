@@ -9,13 +9,14 @@
 use super::types::{FlatNode, Width, WidthDiag, MAX_FLAT_NODES};
 use crate::ast::types::{BinaryOp, SignalType, UnaryOp};
 use crate::ast::SignalDecl;
+use serde::Serialize;
 
 // ---------------------------------------------------------------------------
 // Constraint enum
 // ---------------------------------------------------------------------------
 
 /// A width constraint on a node identified by its flat-array index.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum WidthConstraint {
     /// Node must be exactly `width` bits (literal or declared signal).
     Fixed { node: u32, width: u32 },
@@ -42,6 +43,9 @@ pub enum WidthConstraint {
     /// Node width = left_width  (for Shr with variable shift, Unary Not).
     SameAs { node: u32, source: u32 },
 
+    /// Node width = source_width + 1  (for unsigned-to-signed negate).
+    SameAsPlusOne { node: u32, source: u32 },
+
     /// Node width = 1  (for comparison operators and boolean literals).
     Boolean { node: u32 },
 }
@@ -52,7 +56,9 @@ pub enum WidthConstraint {
 
 /// Result of constraint generation.
 pub struct ConstraintSet {
+    /// Generated width constraints for the solver.
     pub constraints: Vec<WidthConstraint>,
+    /// Diagnostics emitted during constraint generation.
     pub diagnostics: Vec<WidthDiag>,
 }
 
@@ -78,7 +84,7 @@ pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> Const
                 let w = Width::min_bits_for(*value);
                 constraints.push(WidthConstraint::Fixed { node: id, width: w.0 });
             }
-            FlatNode::Signal { name } => {
+            FlatNode::Signal { name, .. } => {
                 let declared = lookup_signal_width(name, signals);
                 match declared {
                     Some(w) => {
@@ -99,6 +105,18 @@ pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> Const
                     // Bitwise NOT preserves width.
                     constraints.push(WidthConstraint::SameAs { node: id, source: *operand });
                 }
+                UnaryOp::Negate => {
+                    // Negate: unsigned operand needs +1 bit for two's complement,
+                    // signed operand preserves width.
+                    let operand_signed = is_operand_signed(*operand, nodes);
+                    if operand_signed {
+                        constraints
+                            .push(WidthConstraint::SameAs { node: id, source: *operand });
+                    } else {
+                        constraints
+                            .push(WidthConstraint::SameAsPlusOne { node: id, source: *operand });
+                    }
+                }
             },
             FlatNode::Binary { op, left, right } => {
                 generate_binary_constraint(
@@ -111,7 +129,7 @@ pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> Const
                     &mut diagnostics,
                 );
             }
-            FlatNode::Prev { signal, .. } => {
+            FlatNode::Prev { signal, signed: _, .. } => {
                 // Prev has the same width as the referenced signal.
                 let declared = lookup_signal_width(signal, signals);
                 match declared {
@@ -151,15 +169,20 @@ fn generate_binary_constraint(
         }
         BinaryOp::Sub => {
             constraints.push(WidthConstraint::MaxOf { node: id, left, right });
-            // Only emit underflow info when we cannot prove safety at compile time.
-            // If both operands are literals and left >= right, no underflow is possible.
-            let left_val = get_literal_value(left, nodes);
-            let right_val = get_literal_value(right, nodes);
-            let provably_safe = matches!((left_val, right_val), (Some(l), Some(r)) if l >= r);
-            if !provably_safe {
-                diagnostics.push(WidthDiag::info(
-                    "unsigned subtraction may underflow (wrapping semantics)".to_string(),
-                ));
+            // Only emit underflow info for unsigned subtraction.
+            // Signed subtraction wraps correctly in two's complement.
+            let either_signed =
+                is_operand_signed(left, nodes) || is_operand_signed(right, nodes);
+            if !either_signed {
+                let left_val = get_literal_value(left, nodes);
+                let right_val = get_literal_value(right, nodes);
+                let provably_safe =
+                    matches!((left_val, right_val), (Some(l), Some(r)) if l >= r);
+                if !provably_safe {
+                    diagnostics.push(WidthDiag::info(
+                        "unsigned subtraction may underflow (wrapping semantics)".to_string(),
+                    ));
+                }
             }
         }
         BinaryOp::Mul => {
@@ -221,7 +244,7 @@ fn lookup_signal_width(name: &str, signals: &[SignalDecl]) -> Option<u32> {
         if s.name == name {
             return match s.ty {
                 SignalType::Bool => Some(1),
-                SignalType::Unsigned(w) => Some(w),
+                SignalType::Unsigned(w) | SignalType::Signed(w) => Some(w),
             };
         }
     }
@@ -234,4 +257,12 @@ fn get_literal_value(idx: u32, nodes: &[FlatNode]) -> Option<u64> {
         FlatNode::Literal { value } => Some(*value),
         _ => None,
     })
+}
+
+/// Check whether the node at `idx` is a signed signal or prev.
+fn is_operand_signed(idx: u32, nodes: &[FlatNode]) -> bool {
+    matches!(
+        nodes.get(idx as usize),
+        Some(FlatNode::Signal { signed: true, .. }) | Some(FlatNode::Prev { signed: true, .. })
+    )
 }

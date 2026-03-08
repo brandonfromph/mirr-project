@@ -23,6 +23,7 @@ pub struct Lcg {
 }
 
 impl Lcg {
+    /// Create a new LCG with the given seed. Zero seeds are ORed with 1 to avoid degeneracy.
     pub fn new(seed: u64) -> Self {
         // Avoid zero state which produces a degenerate sequence.
         Self { state: seed | 1 }

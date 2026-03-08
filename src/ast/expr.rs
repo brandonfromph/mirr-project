@@ -12,12 +12,16 @@ use serde::{Deserialize, Serialize};
 /// Expression tree node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Expr {
+    /// A literal value (boolean or integer constant).
     Literal(LiteralValue),
+    /// A signal reference by name.
     Signal(String),
+    /// Unary operation (NOT or negate) applied to an operand.
     Unary {
         op: UnaryOp,
         operand: Box<Expr>,
     },
+    /// Binary operation applied to left and right operands.
     Binary {
         op: BinaryOp,
         left: Box<Expr>,

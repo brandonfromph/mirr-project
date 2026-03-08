@@ -257,6 +257,13 @@ fn sv_type(ty: &SignalType) -> String {
                 format!("logic [{:>2}:0]", w - 1)
             }
         }
+        SignalType::Signed(w) => {
+            if *w == 1 {
+                "logic signed".to_string()
+            } else {
+                format!("logic signed [{:>2}:0]", w - 1)
+            }
+        }
     }
 }
 
@@ -319,6 +326,7 @@ fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
             let inner = emit_expr_str(operand, iterations);
             match op {
                 UnaryOp::Not => format!("(!{inner})"),
+                UnaryOp::Negate => format!("(-{inner})"),
             }
         }
         Expr::Binary { op, left, right } => {

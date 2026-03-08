@@ -12,8 +12,11 @@ use std::str;
 /// "emit_push_ident", "emit_push_eq_eq", "emit_push_tok_true", ...).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservedPush {
+    /// Push-kind identifier (e.g. "emit_push_integer", "emit_push_ident").
     pub kind: &'static str,
+    /// Identifier payload (for ident pushes).
     pub ident: Option<String>,
+    /// Integer payload (for integer pushes).
     pub int_val: Option<u64>,
 }
 

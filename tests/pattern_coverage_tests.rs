@@ -81,7 +81,7 @@ def monitor_sensor(
 
         reflex ${sensor}_response_high {
             on ${sensor}_too_high {
-                ${alarm} = true;
+                ${sensor}_debounced = true;
             }
         }
 
@@ -606,6 +606,7 @@ fn expand_max_items_exceeded() {
 module m {{
 {signals}
     signal dummy: in bool;
+    signal dummy_out: out bool;
 
 {calls}
     guard g {{
@@ -615,7 +616,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a0 = true;
+            dummy_out = true;
         }}
     }}
 }}
@@ -1277,6 +1278,7 @@ def with_always(s: signal in bool, out: signal out bool) {
 module m {
     signal x: in bool;
     signal y: out bool;
+    signal z: out bool;
 
     with_always(x, y);
 
@@ -1287,7 +1289,7 @@ module m {
 
     reflex r {
         on g {
-            y = true;
+            z = true;
         }
     }
 }
@@ -1394,6 +1396,7 @@ def ext_ref(s: signal in bool, out: signal out bool) {
 module m {
     signal sensor: in bool;
     signal alarm: out bool;
+    signal led: out bool;
 
     ext_ref(sensor, alarm);
 
@@ -1404,7 +1407,7 @@ module m {
 
     reflex r {
         on g {
-            alarm = true;
+            led = true;
         }
     }
 }
@@ -1428,6 +1431,7 @@ fn verilog_origin_on_internal_signal() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1438,7 +1442,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1464,6 +1468,7 @@ fn verilog_origin_on_property_assertion() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1474,7 +1479,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1499,6 +1504,7 @@ fn verilog_origin_on_reflex_block() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1509,7 +1515,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1562,6 +1568,7 @@ fn dot_guard_tooltip_has_pattern_origin() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1572,7 +1579,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1595,6 +1602,7 @@ fn dot_signal_tooltip_has_pattern_origin() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1605,7 +1613,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1630,6 +1638,7 @@ fn json_module_guard_has_origin_field() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1640,7 +1649,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1734,6 +1743,7 @@ fn pattern_expansion_interacts_with_width_inference() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1744,7 +1754,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1765,6 +1775,7 @@ fn pattern_expansion_interacts_with_temporal_compiler() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1775,7 +1786,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}
@@ -1882,6 +1893,7 @@ fn pattern_origin_survives_full_pipeline() {
 module m {{
     signal p: in u16;
     signal a: out bool;
+    signal b: out bool;
 
     monitor_sensor(p, 50, 200, 1000, a);
 
@@ -1892,7 +1904,7 @@ module m {{
 
     reflex r {{
         on g {{
-            a = true;
+            b = true;
         }}
     }}
 }}

@@ -30,6 +30,15 @@ impl Width {
         // 64 - leading_zeros gives the position of the highest set bit + 1.
         Width(64_u32.saturating_sub(v.leading_zeros()))
     }
+
+    /// Format this width with a sign prefix: `i16` for signed, `u16` for unsigned.
+    pub fn display_with_sign(&self, signed: bool) -> String {
+        if signed {
+            format!("i{}", self.0)
+        } else {
+            format!("u{}", self.0)
+        }
+    }
 }
 
 impl std::fmt::Display for Width {
@@ -48,10 +57,15 @@ impl std::fmt::Display for Width {
 /// Every node carries its resolved `Width`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WidthExpr {
+    /// Literal constant with its minimum bit-width.
     Literal { value: u64, width: Width },
+    /// Signal reference with its declared or inferred width.
     Signal { name: String, width: Width },
+    /// Unary operation with result width.
     Unary { op: UnaryOp, operand: Box<WidthExpr>, width: Width },
+    /// Binary operation with result width.
     Binary { op: BinaryOp, left: Box<WidthExpr>, right: Box<WidthExpr>, width: Width },
+    /// Previous-tick reference with signal's width.
     Prev { signal: String, delay: u64, width: Width },
 }
 
@@ -82,11 +96,16 @@ pub const MAX_FLAT_NODES: usize = 512;
 /// lower indices than their parent.
 #[derive(Debug, Clone)]
 pub enum FlatNode {
+    /// Literal constant value.
     Literal { value: u64 },
-    Signal { name: String },
+    /// Signal reference with signedness flag.
+    Signal { name: String, signed: bool },
+    /// Unary operation referencing operand by node index.
     Unary { op: UnaryOp, operand: u32 },
+    /// Binary operation referencing operands by node indices.
     Binary { op: BinaryOp, left: u32, right: u32 },
-    Prev { signal: String, delay: u64 },
+    /// Previous-tick reference with signedness flag.
+    Prev { signal: String, delay: u64, signed: bool },
 }
 
 // ---------------------------------------------------------------------------
@@ -133,14 +152,18 @@ pub enum DiagSeverity {
 /// A diagnostic emitted by the width inference pass.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WidthDiag {
+    /// Severity level (error or info).
     pub severity: DiagSeverity,
+    /// Human-readable diagnostic message.
     pub message: String,
 }
 
 impl WidthDiag {
+    /// Create an error-severity diagnostic.
     pub fn error(msg: impl Into<String>) -> Self {
         WidthDiag { severity: DiagSeverity::Error, message: msg.into() }
     }
+    /// Create an info-severity diagnostic.
     pub fn info(msg: impl Into<String>) -> Self {
         WidthDiag { severity: DiagSeverity::Info, message: msg.into() }
     }

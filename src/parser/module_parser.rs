@@ -195,9 +195,16 @@ fn parse_signal(line: &str) -> Result<SignalDecl, MirrError> {
             ))
         })?;
         SignalType::Unsigned(width)
+    } else if let Some(width_str) = ty_str.strip_prefix('i') {
+        let width: u32 = width_str.parse().map_err(|_| {
+            MirrError::new(format!(
+                "Invalid signed width in type '{ty_str}'. Expected something like 'i16'."
+            ))
+        })?;
+        SignalType::Signed(width)
     } else {
         return Err(MirrError::new(format!(
-            "Unknown signal type: {ty_str}. Expected 'bool' or 'uN'."
+            "Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'."
         )));
     };
 

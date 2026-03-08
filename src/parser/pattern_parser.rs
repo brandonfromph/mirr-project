@@ -231,6 +231,9 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
         let ty = parse_signal_type(ty_str, def_name, pname)?;
 
         Ok(PatternParam { name: pname.to_string(), kind: PatternParamKind::Signal { kind, ty } })
+    } else if type_str == "pattern" {
+        // Higher-order: pattern parameter.
+        Ok(PatternParam { name: pname.to_string(), kind: PatternParamKind::Pattern })
     } else {
         // Constant parameter.
         let ty = parse_signal_type(type_str, def_name, pname)?;
@@ -251,8 +254,16 @@ fn parse_signal_type(ty_str: &str, def_name: &str, pname: &str) -> Result<Signal
         })?;
         return Ok(SignalType::Unsigned(width));
     }
+    if let Some(width_str) = ty_str.strip_prefix('i') {
+        let width: u32 = width_str.parse().map_err(|_| {
+            pattern_err(format!(
+                "Pattern '{def_name}' parameter '{pname}': invalid type '{ty_str}'."
+            ))
+        })?;
+        return Ok(SignalType::Signed(width));
+    }
     Err(pattern_err(format!(
-        "Pattern '{def_name}' parameter '{pname}': unknown type '{ty_str}'. Expected 'bool' or 'uN'."
+        "Pattern '{def_name}' parameter '{pname}': unknown type '{ty_str}'. Expected 'bool', 'uN', or 'iN'."
     )))
 }
 

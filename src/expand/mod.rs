@@ -44,6 +44,9 @@ pub fn expand_patterns(program: &mut MirrProgram) -> Result<(), MirrError> {
     // Build lookup map: pattern name -> &PatternDef (max 64 entries).
     let pattern_map = build_pattern_map(&program.patterns)?;
 
+    // Static cycle detection before any expansion (bounded DFS).
+    detect_pattern_cycles(&program.patterns)?;
+
     // Take ownership of pattern calls, leaving an empty vec in the module.
     let calls = std::mem::take(&mut program.module.pattern_calls);
 
@@ -179,6 +182,18 @@ fn expand_single_call(
     module.guards.extend(fragment.guards);
     module.reflexes.extend(fragment.reflexes);
     module.properties.extend(fragment.properties);
+
+    // Recursively expand any nested pattern calls from the fragment.
+    for nested_call in &fragment.pattern_calls {
+        expand_single_call(
+            nested_call,
+            pattern_map,
+            module,
+            depth + 1,
+            total_expanded,
+            call_index,
+        )?;
+    }
 
     // Record provenance annotation.
     module.pattern_origins.push(PatternOrigin {
@@ -365,7 +380,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
                 if let Some(origin) = internal_signals.get(assignment.target.as_str()) {
                     return Err(MirrError::SemanticError {
                         message: format!(
-                            "signal '{}' is internal to pattern '{}' \
+                            "[E212] signal '{}' is internal to pattern '{}' \
                              and cannot be referenced externally",
                             assignment.target, origin
                         ),
@@ -398,7 +413,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
                     if *sig_origin != reflex_origin.as_str() {
                         return Err(MirrError::SemanticError {
                             message: format!(
-                                "signal '{}' is internal to pattern '{}' \
+                                "[E214] signal '{}' is internal to pattern '{}' \
                                  and cannot be referenced externally",
                                 assignment.target, sig_origin
                             ),
@@ -448,7 +463,7 @@ fn check_expr_no_internal_refs(
             if let Some(origin) = internal_signals.get(sig_name) {
                 return Err(MirrError::SemanticError {
                     message: format!(
-                        "signal '{}' is internal to pattern '{}' \
+                        "[E213] signal '{}' is internal to pattern '{}' \
                          and cannot be referenced externally",
                         sig_name, origin
                     ),
@@ -495,7 +510,7 @@ fn check_expr_cross_expansion(
                 if *sig_origin != my_origin {
                     return Err(MirrError::SemanticError {
                         message: format!(
-                            "signal '{}' is internal to pattern '{}' \
+                            "[E215] signal '{}' is internal to pattern '{}' \
                              and cannot be referenced externally",
                             sig_name, sig_origin
                         ),
@@ -558,6 +573,27 @@ fn build_substitution_map(
             (crate::ast::pattern::PatternParamKind::Constant { .. }, PatternArg::SignalRef(_)) => {
                 return Err(pattern_err(format!(
                     "Pattern '{}' parameter '{}' expects a constant, got a signal reference.",
+                    def.name, param.name
+                )));
+            }
+            // Higher-order: pattern parameter accepts a pattern name.
+            // PatternRef is produced when the parser explicitly resolves it;
+            // SignalRef is the common case because the parser cannot distinguish
+            // pattern names from signal names at parse time.
+            (crate::ast::pattern::PatternParamKind::Pattern, PatternArg::PatternRef(name))
+            | (crate::ast::pattern::PatternParamKind::Pattern, PatternArg::SignalRef(name)) => {
+                name.clone()
+            }
+            (crate::ast::pattern::PatternParamKind::Pattern, _) => {
+                return Err(pattern_err(format!(
+                    "[E401] Pattern '{}' parameter '{}' has kind 'pattern' but argument is not a pattern reference.",
+                    def.name, param.name
+                )));
+            }
+            // Signal/Constant params do not accept pattern refs.
+            (_, PatternArg::PatternRef(_)) => {
+                return Err(pattern_err(format!(
+                    "[E401] Pattern '{}' parameter '{}' does not accept a pattern reference.",
                     def.name, param.name
                 )));
             }
@@ -624,6 +660,7 @@ fn parse_reflect_fragment(
         guards: program.module.guards,
         reflexes: program.module.reflexes,
         properties: program.module.properties,
+        pattern_calls: program.module.pattern_calls,
     })
 }
 
@@ -662,9 +699,99 @@ fn build_args_summary(args: &[PatternArg]) -> String {
             PatternArg::SignalRef(name) => name.clone(),
             PatternArg::ConstInt(n) => format!("{n}"),
             PatternArg::ConstBool(b) => format!("{b}"),
+            PatternArg::PatternRef(name) => name.clone(),
         })
         .collect();
     parts.join(", ")
+}
+
+// ---------------------------------------------------------------------------
+// Cycle detection
+// ---------------------------------------------------------------------------
+
+/// Detect circular pattern references using bounded DFS.
+///
+/// Builds an adjacency list from pattern def bodies by scanning for
+/// pattern call lines. Reports E402 if a cycle is found.
+///
+/// Bounded: at most MAX_PATTERN_DEFS=64 nodes, DFS stack bounded by same.
+fn detect_pattern_cycles(patterns: &[PatternDef]) -> Result<(), MirrError> {
+    use crate::parser::pattern_parser::is_pattern_call_line;
+
+    // Build name set for quick lookup.
+    let pattern_names: HashSet<&str> = patterns.iter().map(|p| p.name.as_str()).collect();
+
+    // Build adjacency list: for each pattern, which other patterns does it call?
+    let mut adj: HashMap<&str, Vec<&str>> = HashMap::with_capacity(patterns.len());
+    for pat in patterns {
+        let mut callees = Vec::new();
+        for line in &pat.body.raw_lines {
+            let trimmed = line.trim();
+            if is_pattern_call_line(trimmed) {
+                // Extract callee name (before the '(').
+                if let Some(paren) = trimmed.find('(') {
+                    let callee = trimmed[..paren].trim();
+                    if pattern_names.contains(callee) {
+                        callees.push(callee);
+                    }
+                }
+            }
+        }
+        adj.insert(pat.name.as_str(), callees);
+    }
+
+    // DFS cycle detection with explicit stack (no recursion).
+    // States: 0 = unvisited, 1 = in-progress (on stack), 2 = done.
+    let mut state: HashMap<&str, u8> = HashMap::with_capacity(patterns.len());
+    let mut path: Vec<&str> = Vec::with_capacity(patterns.len());
+
+    for pat in patterns {
+        let start = pat.name.as_str();
+        if *state.get(start).unwrap_or(&0) != 0 {
+            continue;
+        }
+
+        // Explicit DFS stack: (node, child_index).
+        let mut stack: Vec<(&str, usize)> = vec![(start, 0)];
+        state.insert(start, 1);
+        path.push(start);
+
+        while let Some((node, idx)) = stack.last_mut() {
+            let children = adj.get(node).map_or(&[] as &[&str], |v| v.as_slice());
+            if *idx >= children.len() {
+                // Done with this node.
+                state.insert(node, 2);
+                path.pop();
+                stack.pop();
+                continue;
+            }
+
+            let child = children[*idx];
+            *idx += 1;
+
+            match state.get(child).unwrap_or(&0) {
+                0 => {
+                    // Unvisited — descend.
+                    state.insert(child, 1);
+                    path.push(child);
+                    stack.push((child, 0));
+                }
+                1 => {
+                    // Back edge — cycle detected.
+                    let cycle_start = path.iter().position(|&n| n == child).unwrap_or(0);
+                    let cycle_path: Vec<&str> = path[cycle_start..].to_vec();
+                    let cycle_str =
+                        cycle_path.iter().copied().chain(std::iter::once(child)).collect::<Vec<_>>().join(" -> ");
+                    return Err(pattern_err(format!(
+                        "[E402] Circular pattern reference detected: {cycle_str}."
+                    )));
+                }
+                _ => {} // Already done, skip.
+            }
+        }
+    }
+
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -677,6 +804,7 @@ struct ExpandedFragment {
     guards: Vec<crate::ast::program::Guard>,
     reflexes: Vec<crate::ast::program::Reflex>,
     properties: Vec<crate::ast::property::PropertyDecl>,
+    pattern_calls: Vec<PatternCall>,
 }
 
 // ---------------------------------------------------------------------------
