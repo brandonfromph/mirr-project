@@ -8,6 +8,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::types::{SignalKind, SignalType};
+use crate::span::Span;
 
 /// The kind of a pattern parameter.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,6 +50,9 @@ pub struct PatternDef {
     pub params: Vec<PatternParam>,
     /// Template body (reflect block with interpolation markers).
     pub body: ReflectBlock,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }
 
 /// An argument in a pattern call.
@@ -71,6 +75,9 @@ pub struct PatternCall {
     pub pattern_name: String,
     /// Actual arguments matching the pattern's formal parameters.
     pub arguments: Vec<PatternArg>,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }
 
 /// Metadata about a pattern expansion, carried through to emitters for annotation.

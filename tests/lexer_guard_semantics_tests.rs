@@ -20,12 +20,14 @@ fn test_guard_counter_lifetime() {
                     kind: SignalKind::Input,
                     ty: SignalType::Bool,
                     origin: None,
+                    span: None,
                 },
                 SignalDecl {
                     name: "emit_push_integer".to_string(),
                     kind: SignalKind::Internal,
                     ty: SignalType::Bool,
                     origin: None,
+                    span: None,
                 },
             ],
             guards: vec![Guard {
@@ -33,6 +35,7 @@ fn test_guard_counter_lifetime() {
                 condition: Expr::Signal("input_byte_is_digit".to_string()),
                 cycles: 3,
                 origin: None,
+                span: None,
             }],
             reflexes: vec![
                 Reflex {
@@ -41,8 +44,10 @@ fn test_guard_counter_lifetime() {
                     assignments: vec![Assignment {
                         target: "emit_push_integer".to_string(),
                         value: Expr::Literal(LiteralValue::Bool(true)),
+                        span: None,
                     }],
                     origin: None,
+                    span: None,
                 },
                 Reflex {
                     name: "clear_tick".to_string(),
@@ -50,13 +55,16 @@ fn test_guard_counter_lifetime() {
                     assignments: vec![Assignment {
                         target: "emit_push_integer".to_string(),
                         value: Expr::Literal(LiteralValue::Bool(false)),
+                        span: None,
                     }],
                     origin: None,
+                    span: None,
                 },
             ],
             properties: Vec::new(),
             pattern_calls: Vec::new(),
             pattern_origins: Vec::new(),
+            span: None,
         },
     };
 

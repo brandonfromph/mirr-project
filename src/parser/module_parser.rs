@@ -11,6 +11,7 @@ use crate::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, Signal
 use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
 use crate::ast::types::{SignalKind, SignalType};
 use crate::error::MirrError;
+use crate::span::Span;
 
 /// Maximum number of top-level `def` blocks allowed.
 const MAX_PATTERN_DEFS: usize = 64;
@@ -36,6 +37,7 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
             if def_count >= MAX_PATTERN_DEFS {
                 return Err(MirrError::PatternError {
                     message: format!("Too many pattern definitions (max {MAX_PATTERN_DEFS})."),
+                    span: None,
                 });
             }
             let pat = parse_pattern_def(&lines, &mut index)?;
@@ -73,10 +75,12 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
         return Err(MirrError::new("Expected 'module' declaration but found end of file."));
     }
 
+    let module_start = *index;
     let header = lines[*index].trim();
 
     if !header.starts_with("module ") {
-        return Err(MirrError::new(format!("Expected 'module' declaration, found: {header}")));
+        return Err(MirrError::new(format!("Expected 'module' declaration, found: {header}"))
+            .with_span(Some(Span::full_line(*index as u32))));
     }
 
     let after_keyword = header
@@ -90,7 +94,8 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::new("Module name cannot be empty."));
+        return Err(MirrError::new("Module name cannot be empty.")
+            .with_span(Some(Span::full_line(*index as u32))));
     }
 
     let mut module = Module {
@@ -101,6 +106,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     };
 
     *index += 1;
@@ -115,10 +121,11 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 
         if line == "}" {
             // End of module.
+            module.span = Some(Span::multi_line(module_start as u32, *index as u32));
             *index += 1;
             return Ok(module);
         } else if line.starts_with("signal ") {
-            let signal = parse_signal(line)?;
+            let signal = parse_signal(line, *index)?;
             module.signals.push(signal);
             *index += 1;
         } else if line.starts_with("guard ") {
@@ -131,24 +138,27 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
             let prop = parse_property(lines, index)?;
             module.properties.push(prop);
         } else if is_pattern_call_line(line) {
-            let call = parse_pattern_call(line)?;
+            let mut call = parse_pattern_call(line)?;
+            call.span = Some(Span::full_line(*index as u32));
             module.pattern_calls.push(call);
             *index += 1;
         } else {
             return Err(MirrError::new(format!(
                 "Unexpected line inside module '{}': {}",
                 module.name, line
-            )));
+            ))
+            .with_span(Some(Span::full_line(*index as u32))));
         }
     }
 
     Err(MirrError::new(format!("Module '{}' was not closed with '}}'.", module.name)))
 }
 
-fn parse_signal(line: &str) -> Result<SignalDecl, MirrError> {
+fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> {
+    let span = Some(Span::full_line(line_index as u32));
     let after_keyword = line
         .strip_prefix("signal ")
-        .ok_or_else(|| MirrError::new("Malformed signal declaration."))?;
+        .ok_or_else(|| MirrError::new("Malformed signal declaration.").with_span(span))?;
 
     let trimmed = after_keyword.trim();
     let without_semicolon = trimmed
@@ -208,7 +218,7 @@ fn parse_signal(line: &str) -> Result<SignalDecl, MirrError> {
         )));
     };
 
-    Ok(SignalDecl { name: name.to_string(), kind, ty, origin: None })
+    Ok(SignalDecl { name: name.to_string(), kind, ty, origin: None, span })
 }
 
 fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
@@ -216,6 +226,7 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
         return Err(MirrError::new("Unexpected end of file in guard declaration."));
     }
 
+    let start_line = *index;
     let header = lines[*index].trim();
     let after_keyword = header
         .strip_prefix("guard ")
@@ -296,12 +307,18 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
 
     *index += 1;
 
-    Ok(Guard { name: name.to_string(), condition, cycles, origin: None })
+    Ok(Guard {
+        name: name.to_string(),
+        condition,
+        cycles,
+        origin: None,
+        span: Some(Span::multi_line(start_line as u32, (*index - 1) as u32)),
+    })
 }
 
 /// Parse a single assignment line like `clamp_valve = true;` into an
 /// Assignment struct with a parsed expression on the RHS.
-fn parse_assignment(line: &str) -> Result<Assignment, MirrError> {
+fn parse_assignment(line: &str, line_index: usize) -> Result<Assignment, MirrError> {
     // Strip inline comments before processing.
     let line = if let Some(pos) = line.find("//") { line[..pos].trim_end() } else { line };
     let stripped = line.strip_suffix(';').unwrap_or(line).trim();
@@ -323,7 +340,11 @@ fn parse_assignment(line: &str) -> Result<Assignment, MirrError> {
     let value = parse_expression(rhs_str)
         .map_err(|e| MirrError::new(format!("Error in assignment to '{target}': {e}")))?;
 
-    Ok(Assignment { target: target.to_string(), value })
+    Ok(Assignment {
+        target: target.to_string(),
+        value,
+        span: Some(Span::full_line(line_index as u32)),
+    })
 }
 
 fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> {
@@ -331,6 +352,7 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
         return Err(MirrError::new("Unexpected end of file in reflex declaration."));
     }
 
+    let start_line = *index;
     let header = lines[*index].trim();
     let after_keyword = header
         .strip_prefix("reflex ")
@@ -399,7 +421,7 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
             break;
         }
 
-        let assignment = parse_assignment(line)
+        let assignment = parse_assignment(line, *index)
             .map_err(|e| MirrError::new(format!("In reflex '{name}': {e}")))?;
         assignments.push(assignment);
 
@@ -421,7 +443,13 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
 
     *index += 1;
 
-    Ok(Reflex { name: name.to_string(), guard_names, assignments, origin: None })
+    Ok(Reflex {
+        name: name.to_string(),
+        guard_names,
+        assignments,
+        origin: None,
+        span: Some(Span::multi_line(start_line as u32, (*index - 1) as u32)),
+    })
 }
 
 fn parse_property(lines: &[&str], index: &mut usize) -> Result<PropertyDecl, MirrError> {
@@ -429,6 +457,7 @@ fn parse_property(lines: &[&str], index: &mut usize) -> Result<PropertyDecl, Mir
         return Err(MirrError::new("Unexpected end of file in property declaration."));
     }
 
+    let start_line = *index;
     let header = lines[*index].trim();
     let after_keyword = header
         .strip_prefix("property ")
@@ -470,7 +499,13 @@ fn parse_property(lines: &[&str], index: &mut usize) -> Result<PropertyDecl, Mir
 
     *index += 1;
 
-    Ok(PropertyDecl { name: name.to_string(), directive, formula, origin: None })
+    Ok(PropertyDecl {
+        name: name.to_string(),
+        directive,
+        formula,
+        origin: None,
+        span: Some(Span::multi_line(start_line as u32, (*index - 1) as u32)),
+    })
 }
 
 fn parse_property_formula(

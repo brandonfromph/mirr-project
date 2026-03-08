@@ -32,6 +32,10 @@ lto = "fat"
 name = "mirr-compile"
 path = "src/bin/mirr-compile.rs"
 
+[[bin]]
+name = "mirr-lsp"
+path = "src/bin/mirr-lsp.rs"
+
 [[bench]]
 name = "pipeline_bench"
 harness = false

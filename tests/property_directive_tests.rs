@@ -43,12 +43,14 @@ fn module_with_properties(properties: Vec<PropertyDecl>) -> Module {
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(16),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "alarm".to_string(),
                 kind: SignalKind::Output,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
         ],
         guards: vec![Guard {
@@ -56,6 +58,7 @@ fn module_with_properties(properties: Vec<PropertyDecl>) -> Module {
             condition: gt(sig("sensor"), 100),
             cycles: 1,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -63,12 +66,15 @@ fn module_with_properties(properties: Vec<PropertyDecl>) -> Module {
             assignments: vec![Assignment {
                 target: "alarm".to_string(),
                 value: Expr::Literal(LiteralValue::Bool(true)),
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties,
         pattern_calls: vec![],
         pattern_origins: vec![],
+        span: None,
     }
 }
 
@@ -78,6 +84,7 @@ fn prop(name: &str, formula: PropertyFormula) -> PropertyDecl {
         directive: PropertyDirective::Assert,
         formula,
         origin: None,
+        span: None,
     }
 }
 

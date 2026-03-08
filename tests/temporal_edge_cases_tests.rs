@@ -36,7 +36,8 @@ fn complex_guard_or_combination_compiles() {
         }),
     };
 
-    let guard = Guard { name: "or_guard".to_string(), condition, cycles: 4, origin: None };
+    let guard =
+        Guard { name: "or_guard".to_string(), condition, cycles: 4, origin: None, span: None };
 
     let module = Module {
         name: "or_test".to_string(),
@@ -46,6 +47,7 @@ fn complex_guard_or_combination_compiles() {
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     };
 
     let mut compiler = TemporalGuardCompiler::new();

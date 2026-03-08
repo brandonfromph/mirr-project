@@ -384,6 +384,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
                              and cannot be referenced externally",
                             assignment.target, origin
                         ),
+                        span: None,
                     });
                 }
                 check_expr_no_internal_refs(&assignment.value, &internal_signals)?;
@@ -417,6 +418,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
                                  and cannot be referenced externally",
                                 assignment.target, sig_origin
                             ),
+                            span: None,
                         });
                     }
                 }
@@ -467,6 +469,7 @@ fn check_expr_no_internal_refs(
                          and cannot be referenced externally",
                         sig_name, origin
                     ),
+                    span: None,
                 });
             }
         }
@@ -514,6 +517,7 @@ fn check_expr_cross_expansion(
                              and cannot be referenced externally",
                             sig_name, sig_origin
                         ),
+                        span: None,
                     });
                 }
             }
@@ -816,5 +820,5 @@ struct ExpandedFragment {
 // ---------------------------------------------------------------------------
 
 fn pattern_err(msg: impl Into<String>) -> MirrError {
-    MirrError::PatternError { message: msg.into() }
+    MirrError::PatternError { message: msg.into(), span: None }
 }

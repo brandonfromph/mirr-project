@@ -25,45 +25,59 @@ fn signed_module_with_guard(condition: Expr) -> Module {
                 kind: SignalKind::Input,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "su".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(16),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "si".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Signed(16),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "si8".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Signed(8),
                 origin: None,
+                span: None,
             },
         ],
-        guards: vec![Guard { name: "g".to_string(), condition, cycles: 1, origin: None }],
+        guards: vec![Guard {
+            name: "g".to_string(),
+            condition,
+            cycles: 1,
+            origin: None,
+            span: None,
+        }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
             guard_names: vec!["g".to_string()],
             assignments: vec![Assignment {
                 target: "y".to_string(),
                 value: Expr::Literal(LiteralValue::Bool(true)),
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     }
 }
 
@@ -77,30 +91,35 @@ fn signed_module_with_assignment(target: &str, target_ty: SignalType, value: Exp
                 kind: SignalKind::Input,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: target.to_string(),
                 kind: SignalKind::Output,
                 ty: target_ty,
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "su".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(16),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "si".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Signed(16),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "si8".to_string(),
                 kind: SignalKind::Input,
                 ty: SignalType::Signed(8),
                 origin: None,
+                span: None,
             },
         ],
         guards: vec![Guard {
@@ -108,16 +127,19 @@ fn signed_module_with_assignment(target: &str, target_ty: SignalType, value: Exp
             condition: Expr::Signal("x".to_string()),
             cycles: 1,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
             guard_names: vec!["g".to_string()],
-            assignments: vec![Assignment { target: target.to_string(), value }],
+            assignments: vec![Assignment { target: target.to_string(), value, span: None }],
             origin: None,
+            span: None,
         }],
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     }
 }
 
@@ -420,6 +442,7 @@ fn negate_unsigned_produces_signed() {
         kind: SignalKind::Output,
         ty: SignalType::Signed(32),
         origin: None,
+        span: None,
     });
     // The target is already pushed by signed_module_with_assignment, so remove the duplicate.
     // Actually, signed_module_with_assignment already creates the target signal. No duplicate.

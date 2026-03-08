@@ -81,6 +81,7 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, MirrError> {
                     "[E601] Guard '{}' condition must be bool, got {}.",
                     guard.name, cond_ty
                 ),
+                span: guard.span,
             });
         }
     }
@@ -100,6 +101,7 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, MirrError> {
                         "[E602] Assignment to '{}' ({}): expression type {} is not compatible.",
                         assignment.target, target_ty, expr_ty
                     ),
+                    span: assignment.span,
                 });
             }
         }
@@ -255,6 +257,7 @@ fn infer_binary_type(
                         left,
                         right
                     ),
+                    span: None,
                 });
             }
             match op {
@@ -288,6 +291,7 @@ fn infer_binary_type(
                         left,
                         right
                     ),
+                    span: None,
                 });
             }
             Ok(SignalType::Bool)
@@ -303,6 +307,7 @@ fn infer_binary_type(
                             "[E607] Operator '^' (xor) requires matching types, got {} and {}.",
                             left, right
                         ),
+                        span: None,
                     });
                 }
             }
@@ -320,6 +325,7 @@ fn infer_binary_type(
                         left,
                         right
                     ),
+                    span: None,
                 });
             }
             // Cross-category: reject signed vs unsigned ordering.
@@ -331,6 +337,7 @@ fn infer_binary_type(
                         "[E605] Ordering operator '{}' cannot compare {} and {} (signed/unsigned mismatch).",
                         op_symbol(op), left, right
                     ),
+                    span: None,
                 });
             }
             Ok(SignalType::Bool)
@@ -353,6 +360,7 @@ fn infer_binary_type(
                         left,
                         right
                     ),
+                    span: None,
                 });
             }
             Ok(SignalType::Bool)
@@ -376,6 +384,7 @@ fn require_numeric(
                 ty,
                 other
             ),
+            span: None,
         }),
     }
 }
@@ -392,6 +401,7 @@ fn infer_negate_type(operand: SignalType) -> Result<SignalType, MirrError> {
             message:
                 "[E603] Operator '-' (negate) cannot be applied to bool. Use '!' for logical not."
                     .to_string(),
+            span: None,
         }),
     }
 }

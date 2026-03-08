@@ -121,5 +121,5 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
 }
 
 fn rspu_err(msg: impl Into<String>) -> MirrError {
-    MirrError::RspuError { message: msg.into() }
+    MirrError::RspuError { message: msg.into(), span: None }
 }

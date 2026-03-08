@@ -16,6 +16,7 @@ use crate::temporal::low_level_ir::{CompiledGuard, GeneratedSignalKind, Temporal
 pub fn emit_json(netlist: &TemporalNetlist) -> Result<String, MirrError> {
     serde_json::to_string_pretty(netlist).map_err(|e| MirrError::TemporalCompilationError {
         message: format!("JSON serialization failed: {e}"),
+        span: None,
     })
 }
 

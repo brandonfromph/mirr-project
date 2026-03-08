@@ -72,12 +72,14 @@ fn prev_guard_result() -> PipelineResult {
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(8),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
         ],
         guards: vec![Guard {
@@ -89,6 +91,7 @@ fn prev_guard_result() -> PipelineResult {
             },
             cycles: 5,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -96,12 +99,15 @@ fn prev_guard_result() -> PipelineResult {
             assignments: vec![Assignment {
                 target: "y".to_string(),
                 value: Expr::Literal(LiteralValue::Bool(true)),
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     };
 
     PipelineResult {

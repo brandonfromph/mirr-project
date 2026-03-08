@@ -27,6 +27,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::expr::Expr;
+use crate::span::Span;
 
 /// Verification directive controlling the SVA wrapper keyword.
 ///
@@ -94,4 +95,7 @@ pub struct PropertyDecl {
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written properties).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }

@@ -27,7 +27,7 @@ use nasa_rust_project::width::WidthInferenceResult;
 // ---------------------------------------------------------------------------
 
 fn sig(name: &str, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty, origin: None }
+    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty, origin: None, span: None }
 }
 
 fn lit(v: u64) -> Expr {
@@ -481,7 +481,7 @@ fn not_bool_stays_1_bit() {
 fn truncation_u16_to_u8_error() {
     use nasa_rust_project::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(16)), sig("dst", SignalType::Unsigned(8))];
-    let a = Assignment { target: "dst".to_string(), value: signal("src") };
+    let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
     let diags = width::check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
@@ -493,7 +493,7 @@ fn truncation_u16_to_u8_error() {
 fn truncation_exact_text() {
     use nasa_rust_project::ast::program::Assignment;
     let sigs = [sig("wide", SignalType::Unsigned(32)), sig("narrow", SignalType::Unsigned(16))];
-    let a = Assignment { target: "narrow".to_string(), value: signal("wide") };
+    let a = Assignment { target: "narrow".to_string(), value: signal("wide"), span: None };
     let diags = width::check_assignment(&a, &sigs);
     let errors: Vec<String> = diags
         .iter()
@@ -508,7 +508,7 @@ fn truncation_exact_text() {
 fn no_truncation_when_widths_match() {
     use nasa_rust_project::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(8))];
-    let a = Assignment { target: "dst".to_string(), value: signal("src") };
+    let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
     let diags = width::check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
@@ -519,7 +519,7 @@ fn no_truncation_when_widths_match() {
 fn no_truncation_when_target_wider() {
     use nasa_rust_project::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(16))];
-    let a = Assignment { target: "dst".to_string(), value: signal("src") };
+    let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
     let diags = width::check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
@@ -538,6 +538,7 @@ fn truncation_add_overflow_to_narrow_target() {
     let a = Assignment {
         target: "out".to_string(),
         value: binary(BinaryOp::Add, signal("a"), signal("b")),
+        span: None,
     };
     let diags = width::check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
@@ -723,6 +724,7 @@ fn program_width_inference_basic() {
                 condition: binary(BinaryOp::Lt, signal("in_a"), lit(100)),
                 cycles: 1,
                 origin: None,
+                span: None,
             }],
             reflexes: vec![Reflex {
                 name: "r1".to_string(),
@@ -730,12 +732,15 @@ fn program_width_inference_basic() {
                 assignments: vec![Assignment {
                     target: "out_b".to_string(),
                     value: signal("in_a"),
+                    span: None,
                 }],
                 origin: None,
+                span: None,
             }],
             properties: Vec::new(),
             pattern_calls: Vec::new(),
             pattern_origins: Vec::new(),
+            span: None,
         },
     };
 
@@ -765,12 +770,15 @@ fn program_detects_truncation_in_reflex() {
                 assignments: vec![Assignment {
                     target: "out".to_string(),
                     value: binary(BinaryOp::Add, signal("a"), signal("b")),
+                    span: None,
                 }],
                 origin: None,
+                span: None,
             }],
             properties: Vec::new(),
             pattern_calls: Vec::new(),
             pattern_origins: Vec::new(),
+            span: None,
         },
     };
 

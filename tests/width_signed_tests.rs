@@ -22,7 +22,7 @@ use nasa_rust_project::width;
 // ───────────────────── helpers ─────────────────────
 
 fn sig(name: &str, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty, origin: None }
+    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty, origin: None, span: None }
 }
 
 fn signal(name: &str) -> Expr {
@@ -218,6 +218,7 @@ fn typecheck_module_returns_type_map() {
             condition: Expr::Literal(LiteralValue::Bool(true)),
             cycles: 1,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -225,12 +226,15 @@ fn typecheck_module_returns_type_map() {
             assignments: vec![Assignment {
                 target: "out".to_string(),
                 value: add(signal("a"), signal("b")),
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties: vec![],
         pattern_calls: vec![],
         pattern_origins: vec![],
+        span: None,
     };
     let type_map = nasa_rust_project::typeck::typecheck_module(&module).unwrap();
     // Should have entries for: literal true, signal a, signal b, a+b

@@ -499,6 +499,7 @@ fn validate_duplicate_param_name() {
             },
         ],
         body: ReflectBlock { raw_lines: vec!["guard g { when true for 1 cycles; }".to_string()] },
+        span: None,
     }];
     let err = validate_pattern_defs(&defs).unwrap_err().to_string();
     assert!(
@@ -520,6 +521,7 @@ fn validate_too_many_params_semantic() {
         name: "big".to_string(),
         params,
         body: ReflectBlock { raw_lines: vec!["guard g { when true for 1 cycles; }".to_string()] },
+        span: None,
     }];
     let err = validate_pattern_defs(&defs).unwrap_err().to_string();
     assert!(err.contains("33 parameters (max 32)"), "Expected params count error, got: {err}");
@@ -533,6 +535,7 @@ fn validate_body_too_many_lines() {
         name: "big_body".to_string(),
         params: vec![],
         body: ReflectBlock { raw_lines },
+        span: None,
     }];
     let err = validate_pattern_defs(&defs).unwrap_err().to_string();
     assert!(err.contains("513 lines (max 512)"), "Expected body line count error, got: {err}");
@@ -1979,6 +1982,7 @@ fn guard_origin_none_serializes_without_field() {
         condition: Expr::Literal(LiteralValue::Bool(true)),
         cycles: 1,
         origin: None,
+        span: None,
     };
     let json = serde_json::to_string(&guard).unwrap();
     assert!(
@@ -1994,6 +1998,7 @@ fn guard_origin_some_serializes_with_field() {
         condition: Expr::Literal(LiteralValue::Bool(true)),
         cycles: 1,
         origin: Some("test_origin_0".to_string()),
+        span: None,
     };
     let json = serde_json::to_string(&guard).unwrap();
     assert!(

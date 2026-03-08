@@ -20,7 +20,7 @@ use nasa_rust_project::validate_module;
 // ───────────────────── helpers ─────────────────────
 
 fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind, ty, origin: None }
+    SignalDecl { name: name.to_string(), kind, ty, origin: None, span: None }
 }
 
 fn bool_out(name: &str) -> SignalDecl {
@@ -49,15 +49,24 @@ fn bool_guard(name: &str, signal_name: &str) -> Guard {
         },
         cycles: 1,
         origin: None,
+        span: None,
     }
 }
 
 fn assign(target: &str, value: u64) -> Assignment {
-    Assignment { target: target.to_string(), value: Expr::Literal(LiteralValue::Integer(value)) }
+    Assignment {
+        target: target.to_string(),
+        value: Expr::Literal(LiteralValue::Integer(value)),
+        span: None,
+    }
 }
 
 fn assign_bool(target: &str, value: bool) -> Assignment {
-    Assignment { target: target.to_string(), value: Expr::Literal(LiteralValue::Bool(value)) }
+    Assignment {
+        target: target.to_string(),
+        value: Expr::Literal(LiteralValue::Bool(value)),
+        span: None,
+    }
 }
 
 fn reflex(name: &str, guard: &str, assignments: Vec<Assignment>) -> Reflex {
@@ -66,6 +75,7 @@ fn reflex(name: &str, guard: &str, assignments: Vec<Assignment>) -> Reflex {
         guard_names: vec![guard.to_string()],
         assignments,
         origin: None,
+        span: None,
     }
 }
 
@@ -80,6 +90,7 @@ fn reflex_with_origin(
         guard_names: vec![guard.to_string()],
         assignments,
         origin: Some(origin.to_string()),
+        span: None,
     }
 }
 
@@ -97,6 +108,7 @@ fn base_module(
         properties: vec![],
         pattern_calls: vec![],
         pattern_origins: vec![],
+        span: None,
     }
 }
 
@@ -249,6 +261,7 @@ fn bool_output_two_writers_e216() {
                 kind: SignalKind::Input,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
             bool_out("flag"),
         ],
@@ -257,6 +270,7 @@ fn bool_output_two_writers_e216() {
             condition: Expr::Signal("trigger".to_string()),
             cycles: 1,
             origin: None,
+            span: None,
         }],
         vec![
             reflex("r1", "g", vec![assign_bool("flag", true)]),
@@ -289,6 +303,7 @@ fn reflex_with_no_assignments_passes() {
             guard_names: vec!["g".to_string()],
             assignments: vec![],
             origin: None,
+            span: None,
         }],
     );
     validate_module(&module).expect("reflex with no assignments should pass");

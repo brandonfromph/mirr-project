@@ -104,12 +104,14 @@ impl TemporalCompiler {
                             condition: (*left.clone()),
                             cycles: guard.cycles,
                             origin: None,
+                            span: None,
                         };
                         let right_guard = Guard {
                             name: right_name.clone(),
                             condition: (*right.clone()),
                             cycles: guard.cycles,
                             origin: None,
+                            span: None,
                         };
 
                         let left_comp = self.compile_guard(&left_guard)?;
@@ -160,6 +162,7 @@ impl TemporalCompiler {
                         "guard '{}': condition cannot be lowered to hardware — unsupported form",
                         guard.name
                     ),
+                    span: None,
                 })
             }
         }
@@ -242,6 +245,7 @@ impl TemporalCompiler {
                     "guard '{}': condition cannot be lowered to hardware — {}",
                     guard.name, reason
                 ),
+                span: None,
             }
         })
     }
@@ -337,6 +341,7 @@ mod tests {
             condition: crate::ast::Expr::Signal(signal.to_string()),
             cycles,
             origin: None,
+            span: None,
         }
     }
 

@@ -112,7 +112,7 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
         *index += 1;
     }
 
-    Ok(PatternDef { name: name.to_string(), params, body: ReflectBlock { raw_lines } })
+    Ok(PatternDef { name: name.to_string(), params, body: ReflectBlock { raw_lines }, span: None })
 }
 
 /// Collect the full `def` header, which may span multiple lines.
@@ -383,7 +383,7 @@ pub fn parse_pattern_call(line: &str) -> Result<PatternCall, MirrError> {
     let args_str = &without_semi[open + 1..close];
     let arguments = parse_call_args(args_str, pattern_name)?;
 
-    Ok(PatternCall { pattern_name: pattern_name.to_string(), arguments })
+    Ok(PatternCall { pattern_name: pattern_name.to_string(), arguments, span: None })
 }
 
 /// Parse comma-separated call arguments.
@@ -447,5 +447,5 @@ fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {
 }
 
 fn pattern_err(msg: impl Into<String>) -> MirrError {
-    MirrError::PatternError { message: msg.into() }
+    MirrError::PatternError { message: msg.into(), span: None }
 }

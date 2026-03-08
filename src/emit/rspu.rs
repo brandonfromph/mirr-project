@@ -468,5 +468,5 @@ fn signal_width(ty: &SignalType) -> u32 {
 }
 
 fn rspu_err(msg: impl Into<String>) -> MirrError {
-    MirrError::RspuError { message: msg.into() }
+    MirrError::RspuError { message: msg.into(), span: None }
 }

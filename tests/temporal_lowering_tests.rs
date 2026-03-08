@@ -265,7 +265,7 @@ module test_module {
     let result = TemporalGuardCompiler::new().compile_temporal_guards(&module);
     assert!(result.is_err(), "Expected a TemporalCompilationError for unsupported AND condition");
     match result.unwrap_err() {
-        MirrError::TemporalCompilationError { message } => {
+        MirrError::TemporalCompilationError { message, .. } => {
             assert!(
                 message.contains("bad_guard"),
                 "Error message must identify the offending guard; got: {message}"

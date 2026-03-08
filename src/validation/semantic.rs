@@ -35,6 +35,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
         if !signal_names.insert(&sig.name) {
             return Err(MirrError::SemanticError {
                 message: format!("[E201] Duplicate signal name: '{}'.", sig.name),
+                span: sig.span,
             });
         }
     }
@@ -45,6 +46,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
         if !guard_names.insert(&guard.name) {
             return Err(MirrError::SemanticError {
                 message: format!("[E202] Duplicate guard name: '{}'.", guard.name),
+                span: guard.span,
             });
         }
     }
@@ -55,6 +57,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
         if !reflex_names.insert(&reflex.name) {
             return Err(MirrError::SemanticError {
                 message: format!("[E203] Duplicate reflex name: '{}'.", reflex.name),
+                span: reflex.span,
             });
         }
     }
@@ -88,6 +91,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                         "[E204] Guard '{}' references undeclared signal '{}'.",
                         guard.name, sig_ref
                     ),
+                    span: guard.span,
                 });
             }
         }
@@ -103,6 +107,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                         "[E205] Reflex '{}' references undeclared guard '{}'.",
                         reflex.name, gname
                     ),
+                    span: reflex.span,
                 });
             }
         }
@@ -117,6 +122,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                             "[E206] Reflex '{}' assigns to input signal '{}', which is not writable.",
                             reflex.name, assignment.target
                         ),
+                        span: reflex.span,
                     });
                 }
                 return Err(MirrError::SemanticError {
@@ -124,6 +130,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                         "[E207] Reflex '{}' assigns to undeclared signal '{}'.",
                         reflex.name, assignment.target
                     ),
+                    span: reflex.span,
                 });
             }
 
@@ -139,6 +146,7 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                             "[E208] Reflex '{}' assignment references undeclared signal '{}'.",
                             reflex.name, sig_ref
                         ),
+                        span: reflex.span,
                     });
                 }
             }
@@ -189,7 +197,7 @@ fn validate_signal_ownership(module: &Module) -> Result<(), MirrError> {
                                 target, first_reflex, reflex.name
                             ),
                         };
-                        return Err(MirrError::SemanticError { message: msg });
+                        return Err(MirrError::SemanticError { message: msg, span: reflex.span });
                     }
                     // Same reflex writing again — allowed (intra-reflex sequential).
                 }
@@ -225,6 +233,7 @@ fn validate_prev_delays(expr: &Expr, context_name: &str) -> Result<(), MirrError
                             "[E209] '{}' contains prev('{}') with delay 0; delay must be >= 1.",
                             context_name, signal
                         ),
+                        span: None,
                     });
                 }
             }
@@ -277,6 +286,7 @@ fn validate_properties(
         if !property_names.insert(&prop.name) {
             return Err(MirrError::SemanticError {
                 message: format!("[E210] Duplicate property name: '{}'.", prop.name),
+                span: prop.span,
             });
         }
         validate_property_signals(prop, signal_names)?;
@@ -299,6 +309,7 @@ fn validate_property_signals(
                         "[E211] Property '{}' references undeclared signal '{}'.",
                         prop.name, sig_ref
                     ),
+                    span: prop.span,
                 });
             }
         }
@@ -345,6 +356,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
         if !names.insert(&pat.name) {
             return Err(MirrError::PatternError {
                 message: format!("Duplicate pattern definition: '{}'.", pat.name),
+                span: pat.span,
             });
         }
 
@@ -357,6 +369,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
                         "Pattern '{}' has duplicate parameter name: '{}'.",
                         pat.name, p.name
                     ),
+                    span: pat.span,
                 });
             }
         }
@@ -368,12 +381,14 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
                     pat.name,
                     pat.params.len()
                 ),
+                span: pat.span,
             });
         }
 
         if pat.body.raw_lines.is_empty() {
             return Err(MirrError::PatternError {
                 message: format!("Pattern '{}' has empty reflect body.", pat.name),
+                span: pat.span,
             });
         }
 
@@ -384,6 +399,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
                     pat.name,
                     pat.body.raw_lines.len()
                 ),
+                span: pat.span,
             });
         }
     }

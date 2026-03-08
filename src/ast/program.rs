@@ -11,6 +11,7 @@ use super::expr::Expr;
 use super::pattern::{PatternCall, PatternDef, PatternOrigin};
 use super::property::PropertyDecl;
 use super::types::{SignalKind, SignalType};
+use crate::span::Span;
 
 /// A signal declaration: name, direction (in/out/internal), and bit-width type.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -25,6 +26,9 @@ pub struct SignalDecl {
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written signals).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }
 
 /// A temporal guard: fires when a condition holds for N consecutive clock cycles.
@@ -39,6 +43,9 @@ pub struct Guard {
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written guards).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }
 
 /// A single assignment: `target = value;`
@@ -48,6 +55,9 @@ pub struct Assignment {
     pub target: String,
     /// Value expression to assign.
     pub value: Expr,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }
 
 /// A reflex block: triggered by a guard, assigns values to output/internal signals.
@@ -62,6 +72,9 @@ pub struct Reflex {
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written reflexes).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }
 
 /// A MIRR module: the top-level container for signals, guards, reflexes, and properties.
@@ -84,6 +97,9 @@ pub struct Module {
     /// Provenance tags from pattern expansion (DO-178C traceability).
     #[serde(default)]
     pub pattern_origins: Vec<PatternOrigin>,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
 }
 
 /// Root of a parsed MIRR program, with IR version for contract tracking.
@@ -108,7 +124,30 @@ pub struct MirrAstJson {
 
 impl MirrAstJson {
     /// Wrap a parsed program in the versioned JSON envelope.
+    ///
+    /// Spans are stripped because they are compiler-internal metadata
+    /// and not part of the IR contract.
     pub fn from_program(program: &MirrProgram) -> Self {
-        Self { ir_version: "1.0".to_string(), module: program.module.clone() }
+        let mut module = program.module.clone();
+        module.span = None;
+        for sig in &mut module.signals {
+            sig.span = None;
+        }
+        for guard in &mut module.guards {
+            guard.span = None;
+        }
+        for reflex in &mut module.reflexes {
+            reflex.span = None;
+            for assign in &mut reflex.assignments {
+                assign.span = None;
+            }
+        }
+        for prop in &mut module.properties {
+            prop.span = None;
+        }
+        for call in &mut module.pattern_calls {
+            call.span = None;
+        }
+        Self { ir_version: "1.0".to_string(), module }
     }
 }

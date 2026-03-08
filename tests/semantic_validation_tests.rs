@@ -46,7 +46,10 @@ module dup_sig {
 }
 "#;
     let msg = validate_err(source);
-    assert_eq!(msg, "Semantic error: [E201] Duplicate signal name: 'x'.");
+    assert!(
+        msg.contains("[E201] Duplicate signal name: 'x'."),
+        "expected E201 duplicate signal error, got: {msg}"
+    );
 }
 
 #[test]
@@ -74,7 +77,10 @@ module dup_guard {
 }
 "#;
     let msg = validate_err(source);
-    assert_eq!(msg, "Semantic error: [E202] Duplicate guard name: 'g'.");
+    assert!(
+        msg.contains("[E202] Duplicate guard name: 'g'."),
+        "expected E202 duplicate guard error, got: {msg}"
+    );
 }
 
 #[test]
@@ -103,7 +109,10 @@ module dup_reflex {
 }
 "#;
     let msg = validate_err(source);
-    assert_eq!(msg, "Semantic error: [E203] Duplicate reflex name: 'r'.");
+    assert!(
+        msg.contains("[E203] Duplicate reflex name: 'r'."),
+        "expected E203 duplicate reflex error, got: {msg}"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -121,12 +130,14 @@ fn module_with_prev_in_guard(delay: u64) -> Module {
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(8),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
         ],
         guards: vec![Guard {
@@ -138,6 +149,7 @@ fn module_with_prev_in_guard(delay: u64) -> Module {
             },
             cycles: 3,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -145,12 +157,15 @@ fn module_with_prev_in_guard(delay: u64) -> Module {
             assignments: vec![Assignment {
                 target: "y".to_string(),
                 value: Expr::Literal(LiteralValue::Bool(true)),
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     }
 }
 
@@ -164,12 +179,14 @@ fn module_with_prev_in_reflex(delay: u64) -> Module {
                 kind: SignalKind::Input,
                 ty: SignalType::Unsigned(8),
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
                 ty: SignalType::Unsigned(8),
                 origin: None,
+                span: None,
             },
         ],
         guards: vec![Guard {
@@ -181,6 +198,7 @@ fn module_with_prev_in_reflex(delay: u64) -> Module {
             },
             cycles: 3,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -188,12 +206,15 @@ fn module_with_prev_in_reflex(delay: u64) -> Module {
             assignments: vec![Assignment {
                 target: "y".to_string(),
                 value: Expr::Prev { signal: "x".to_string(), delay },
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     }
 }
 
@@ -231,12 +252,14 @@ fn undeclared_signal_inside_prev_in_guard() {
             kind: SignalKind::Output,
             ty: SignalType::Bool,
             origin: None,
+            span: None,
         }],
         guards: vec![Guard {
             name: "g".to_string(),
             condition: Expr::Prev { signal: "ghost".to_string(), delay: 1 },
             cycles: 2,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -244,12 +267,15 @@ fn undeclared_signal_inside_prev_in_guard() {
             assignments: vec![Assignment {
                 target: "y".to_string(),
                 value: Expr::Literal(LiteralValue::Bool(true)),
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     };
     let msg = validate_module_err(&module);
     assert_eq!(msg, "Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'.");
@@ -265,12 +291,14 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
                 kind: SignalKind::Input,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
             SignalDecl {
                 name: "b".to_string(),
                 kind: SignalKind::Output,
                 ty: SignalType::Bool,
                 origin: None,
+                span: None,
             },
         ],
         guards: vec![Guard {
@@ -278,6 +306,7 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
             condition: Expr::Signal("a".to_string()),
             cycles: 2,
             origin: None,
+            span: None,
         }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
@@ -285,12 +314,15 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
             assignments: vec![Assignment {
                 target: "b".to_string(),
                 value: Expr::Prev { signal: "phantom".to_string(), delay: 1 },
+                span: None,
             }],
             origin: None,
+            span: None,
         }],
         properties: Vec::new(),
         pattern_calls: Vec::new(),
         pattern_origins: Vec::new(),
+        span: None,
     };
     let msg = validate_module_err(&module);
     assert_eq!(

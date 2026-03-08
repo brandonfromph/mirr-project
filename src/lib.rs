@@ -31,13 +31,15 @@ pub mod emit;
 pub mod error;
 pub mod expand;
 pub mod lexer;
+pub mod lsp;
 pub mod mape_k;
 pub mod mirr_driver;
 pub mod mirr_executor;
 pub mod mirr_runtime;
 pub mod parser;
 pub mod pipeline;
-pub mod simplify; // Adding the simplify module
+pub mod simplify;
+pub mod span;
 pub mod temporal;
 pub mod typeck;
 pub mod validation;
