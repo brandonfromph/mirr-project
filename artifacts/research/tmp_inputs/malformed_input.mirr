@@ -1,2 +1,0 @@
-module broken_syntax {
- signal x: in bool

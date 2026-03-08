@@ -1,5 +1,5 @@
 # Rust build outputs
-/target/
+target/
 
 # Rust/Tooling local backups
 **/*.rs.bk
@@ -41,3 +41,12 @@ node_modules/
 
 # Test artifacts
 path/
+
+# Paper (lives in separate private repo)
+paper/
+
+# LaTeX build artifacts
+*.pdf
+*.aux
+*.out
+*.synctex.gz
