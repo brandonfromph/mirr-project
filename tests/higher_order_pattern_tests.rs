@@ -426,10 +426,7 @@ module system {
     let module = &result.program.module;
 
     // After composition: should have the expanded guard + reflex from inner pattern.
-    assert!(
-        module.guards.iter().any(|g| g.name.contains("high")),
-        "should find monitor's guard"
-    );
+    assert!(module.guards.iter().any(|g| g.name.contains("high")), "should find monitor's guard");
     assert!(
         module.reflexes.iter().any(|r| r.name.contains("alert")),
         "should find monitor's reflex"

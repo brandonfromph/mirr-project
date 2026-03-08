@@ -117,12 +117,7 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
         + (next_output - REG_OUTPUT_BASE) as usize
         + (next_internal - REG_INTERNAL_BASE) as usize;
 
-    Ok(RegAllocResult {
-        map,
-        entries,
-        total_used,
-        next_temp: REG_TEMP_BASE as u16,
-    })
+    Ok(RegAllocResult { map, entries, total_used, next_temp: REG_TEMP_BASE as u16 })
 }
 
 fn rspu_err(msg: impl Into<String>) -> MirrError {

@@ -204,7 +204,13 @@ module m {
     }
 }
 "#;
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: false,
+    };
     let result = run_pipeline(src, &config).expect("Pipeline should succeed");
     assert_eq!(result.program.module.properties.len(), 3);
 
@@ -220,6 +226,12 @@ module m {
 fn existing_property_examples_compile() {
     let src = std::fs::read_to_string("examples/safety_property.mirr")
         .expect("safety_property.mirr should exist");
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: false,
+    };
     run_pipeline(&src, &config).expect("safety_property.mirr should compile");
 }

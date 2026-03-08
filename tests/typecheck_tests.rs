@@ -50,12 +50,7 @@ fn module_with_guard_condition(condition: Expr) -> Module {
                 origin: None,
             },
         ],
-        guards: vec![Guard {
-            name: "g".to_string(),
-            condition,
-            cycles: 2,
-            origin: None,
-        }],
+        guards: vec![Guard { name: "g".to_string(), condition, cycles: 2, origin: None }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
             guard_names: vec!["g".to_string()],
@@ -110,10 +105,7 @@ fn module_with_assignment(target: &str, target_ty: SignalType, value: Expr) -> M
         reflexes: vec![Reflex {
             name: "r".to_string(),
             guard_names: vec!["g".to_string()],
-            assignments: vec![Assignment {
-                target: target.to_string(),
-                value,
-            }],
+            assignments: vec![Assignment { target: target.to_string(), value }],
             origin: None,
         }],
         properties: Vec::new(),
@@ -169,7 +161,8 @@ fn guard_condition_unsigned_rejected_e601() {
 #[test]
 fn assignment_same_type_passes() {
     // out_u16 = n (u16 = u16)
-    let m = module_with_assignment("out_u16", SignalType::Unsigned(16), Expr::Signal("n".to_string()));
+    let m =
+        module_with_assignment("out_u16", SignalType::Unsigned(16), Expr::Signal("n".to_string()));
     validate_module(&m).unwrap();
     typecheck_module(&m).expect("same-type assignment should pass");
 }
@@ -395,10 +388,7 @@ fn xor_mismatched_rejected_e607() {
 
 #[test]
 fn not_bool_passes() {
-    let expr = Expr::Unary {
-        op: UnaryOp::Not,
-        operand: Box::new(Expr::Signal("x".to_string())),
-    };
+    let expr = Expr::Unary { op: UnaryOp::Not, operand: Box::new(Expr::Signal("x".to_string())) };
     let m = module_with_guard_condition(expr);
     validate_module(&m).unwrap();
     typecheck_module(&m).expect("not on bool should pass");
@@ -406,10 +396,7 @@ fn not_bool_passes() {
 
 #[test]
 fn not_unsigned_passes() {
-    let expr = Expr::Unary {
-        op: UnaryOp::Not,
-        operand: Box::new(Expr::Signal("n".to_string())),
-    };
+    let expr = Expr::Unary { op: UnaryOp::Not, operand: Box::new(Expr::Signal("n".to_string())) };
     let m = module_with_assignment("out_u16", SignalType::Unsigned(16), expr);
     validate_module(&m).unwrap();
     typecheck_module(&m).expect("not on unsigned should pass (bitwise negation)");
@@ -421,10 +408,7 @@ fn not_unsigned_passes() {
 
 #[test]
 fn prev_preserves_bool_type() {
-    let expr = Expr::Prev {
-        signal: "x".to_string(),
-        delay: 1,
-    };
+    let expr = Expr::Prev { signal: "x".to_string(), delay: 1 };
     let m = module_with_guard_condition(expr);
     validate_module(&m).unwrap();
     typecheck_module(&m).expect("prev on bool signal should produce bool");
@@ -432,10 +416,7 @@ fn prev_preserves_bool_type() {
 
 #[test]
 fn prev_preserves_unsigned_type() {
-    let expr = Expr::Prev {
-        signal: "n".to_string(),
-        delay: 1,
-    };
+    let expr = Expr::Prev { signal: "n".to_string(), delay: 1 };
     let m = module_with_assignment("out_u16", SignalType::Unsigned(16), expr);
     validate_module(&m).unwrap();
     typecheck_module(&m).expect("prev on u16 signal should produce u16");
@@ -486,7 +467,13 @@ module typeck_pipeline {
     }
 }
 "#;
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: false,
+    };
     run_pipeline(src, &config).expect("well-typed program should pass full pipeline");
 }
 
@@ -509,7 +496,13 @@ module skip_typeck {
     }
 }
 "#;
-    let config = PipelineConfig { typecheck: false, simplify: true, width: true, temporal: true, rspu: false };
+    let config = PipelineConfig {
+        typecheck: false,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: false,
+    };
     run_pipeline(src, &config).expect("should pass with typecheck disabled");
 }
 
@@ -590,11 +583,8 @@ fn nested_arithmetic_in_comparison() {
 #[test]
 fn bool_to_u1_promotion_passes() {
     // Assign bool signal to u1 target — module_with_assignment already declares out_u1.
-    let m = module_with_assignment(
-        "out_u1",
-        SignalType::Unsigned(1),
-        Expr::Signal("x".to_string()),
-    );
+    let m =
+        module_with_assignment("out_u1", SignalType::Unsigned(1), Expr::Signal("x".to_string()));
     validate_module(&m).unwrap();
     typecheck_module(&m).expect("bool to u1 promotion should pass");
 }

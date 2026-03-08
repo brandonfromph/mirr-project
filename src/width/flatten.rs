@@ -102,7 +102,10 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                 if idx >= MAX_FLAT_NODES {
                     return None;
                 }
-                nodes.push(FlatNode::Signal { name: name.to_string(), signed: is_signed(name, signals) });
+                nodes.push(FlatNode::Signal {
+                    name: name.to_string(),
+                    signed: is_signed(name, signals),
+                });
                 idx_stack.push(idx as u32);
             }
             FlatWork::EmitUnary { op } => {
@@ -133,7 +136,11 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                 if idx >= MAX_FLAT_NODES {
                     return None;
                 }
-                nodes.push(FlatNode::Prev { signal: signal.to_string(), delay, signed: is_signed(signal, signals) });
+                nodes.push(FlatNode::Prev {
+                    signal: signal.to_string(),
+                    delay,
+                    signed: is_signed(signal, signals),
+                });
                 idx_stack.push(idx as u32);
             }
         }

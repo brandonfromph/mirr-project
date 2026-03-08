@@ -123,12 +123,16 @@ fn main() {
         "rspu" => match &result.rspu_program {
             Some(prog) => prog.emit_asm(),
             None => {
-                eprintln!("Error: R-SPU program was not generated (pipeline may have been skipped).");
+                eprintln!(
+                    "Error: R-SPU program was not generated (pipeline may have been skipped)."
+                );
                 process::exit(1);
             }
         },
         other => {
-            eprintln!("Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, or rspu.");
+            eprintln!(
+                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, or rspu."
+            );
             process::exit(1);
         }
     };
@@ -196,7 +200,9 @@ fn print_help() {
     println!("  mirr-compile <file.mirr> [OPTIONS]");
     println!();
     println!("Options:");
-    println!("  --emit FORMAT       Output format: dot, verilog, json, sva, firrtl, rspu (default: dot)");
+    println!(
+        "  --emit FORMAT       Output format: dot, verilog, json, sva, firrtl, rspu (default: dot)"
+    );
     println!("  --output FILE, -o   Write output to FILE (default: stdout)");
     println!("  --dot-detail expr   Show full AST trees in DOT output");
     println!("  --stats             Print detailed pipeline statistics");
@@ -206,5 +212,5 @@ fn print_help() {
     println!("  mirr-compile program.mirr --emit verilog -o out.sv");
     println!("  mirr-compile program.mirr --emit json | jq .");
     println!("  mirr-compile program.mirr --emit dot | dot -Tpng -o graph.png");
-  println!("  mirr-compile program.mirr --emit rspu");
+    println!("  mirr-compile program.mirr --emit rspu");
 }

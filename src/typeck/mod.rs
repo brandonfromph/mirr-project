@@ -251,7 +251,9 @@ fn infer_binary_type(
                 return Err(MirrError::TypeError {
                     message: format!(
                         "[E603] Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
-                        op_symbol(op), left, right
+                        op_symbol(op),
+                        left,
+                        right
                     ),
                 });
             }
@@ -387,7 +389,9 @@ fn infer_negate_type(operand: SignalType) -> Result<SignalType, MirrError> {
         SignalType::Signed(w) => Ok(SignalType::Signed(w)),
         // Negating Bool is nonsensical — use `!` instead.
         SignalType::Bool => Err(MirrError::TypeError {
-            message: "[E603] Operator '-' (negate) cannot be applied to bool. Use '!' for logical not.".to_string(),
+            message:
+                "[E603] Operator '-' (negate) cannot be applied to bool. Use '!' for logical not."
+                    .to_string(),
         }),
     }
 }

@@ -124,7 +124,13 @@ fn pipeline_temporal_error_for_xor_guard() {
 
 #[test]
 fn pipeline_xor_guard_ok_when_temporal_disabled() {
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: false, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: false,
+        rspu: false,
+    };
     let result = run_pipeline(XOR_GUARD_MIRR, &config);
     assert!(result.is_ok(), "XOR guard should pass when temporal is disabled");
 }
@@ -135,7 +141,13 @@ fn pipeline_xor_guard_ok_when_temporal_disabled() {
 
 #[test]
 fn pipeline_no_simplify_yes_width_yes_temporal() {
-    let config = PipelineConfig { typecheck: true, simplify: false, width: true, temporal: true, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: false,
+        width: true,
+        temporal: true,
+        rspu: false,
+    };
     let source = r#"
 module combo1 {
     signal a: in bool;
@@ -161,7 +173,13 @@ module combo1 {
 
 #[test]
 fn pipeline_yes_simplify_no_width_yes_temporal() {
-    let config = PipelineConfig { typecheck: true, simplify: true, width: false, temporal: true, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: false,
+        temporal: true,
+        rspu: false,
+    };
     let source = r#"
 module combo2 {
     signal a: in bool;

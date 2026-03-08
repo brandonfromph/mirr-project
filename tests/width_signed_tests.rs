@@ -70,10 +70,7 @@ fn display_with_sign_one_bit() {
 
 #[test]
 fn flat_node_signal_carries_signed_flag() {
-    let signals = vec![
-        sig("x", SignalType::Signed(8)),
-        sig("y", SignalType::Unsigned(8)),
-    ];
+    let signals = vec![sig("x", SignalType::Signed(8)), sig("y", SignalType::Unsigned(8))];
     let expr = signal("x");
     let nodes = width::flatten::flatten_expr(&expr, &signals).unwrap();
     assert_eq!(nodes.len(), 1);
@@ -152,10 +149,7 @@ fn negate_unsigned_literal_width_plus_one() {
 #[test]
 fn signed_subtraction_no_underflow_warning() {
     // i8 - i8 → should NOT emit "unsigned subtraction may underflow"
-    let signals = vec![
-        sig("a", SignalType::Signed(8)),
-        sig("b", SignalType::Signed(8)),
-    ];
+    let signals = vec![sig("a", SignalType::Signed(8)), sig("b", SignalType::Signed(8))];
     let expr = sub(signal("a"), signal("b"));
     let result = width::infer_widths(&expr, &signals);
     for d in &result.diagnostics {
@@ -170,16 +164,11 @@ fn signed_subtraction_no_underflow_warning() {
 #[test]
 fn unsigned_subtraction_still_warns() {
     // u8 - u8 → should still emit "unsigned subtraction may underflow"
-    let signals = vec![
-        sig("a", SignalType::Unsigned(8)),
-        sig("b", SignalType::Unsigned(8)),
-    ];
+    let signals = vec![sig("a", SignalType::Unsigned(8)), sig("b", SignalType::Unsigned(8))];
     let expr = sub(signal("a"), signal("b"));
     let result = width::infer_widths(&expr, &signals);
-    let has_underflow_warning = result
-        .diagnostics
-        .iter()
-        .any(|d| d.message.contains("unsigned subtraction"));
+    let has_underflow_warning =
+        result.diagnostics.iter().any(|d| d.message.contains("unsigned subtraction"));
     assert!(has_underflow_warning, "unsigned subtraction should still warn about underflow");
 }
 
@@ -268,7 +257,13 @@ fn pipeline_result_has_type_map() {
             }
         }
     "#;
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: false, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: false,
+        rspu: false,
+    };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_some(), "type_map should be Some when typecheck is enabled");
 }
@@ -290,7 +285,13 @@ fn pipeline_result_no_type_map_when_skipped() {
             }
         }
     "#;
-    let config = PipelineConfig { typecheck: false, simplify: false, width: false, temporal: false, rspu: false };
+    let config = PipelineConfig {
+        typecheck: false,
+        simplify: false,
+        width: false,
+        temporal: false,
+        rspu: false,
+    };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_none(), "type_map should be None when typecheck is disabled");
 }
@@ -315,7 +316,13 @@ fn signed_signal_e2e_pipeline() {
             }
         }
     "#;
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: false, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: false,
+        rspu: false,
+    };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_some());
     assert!(!result.has_width_errors());
@@ -340,7 +347,13 @@ fn negate_unsigned_e2e_pipeline() {
             }
         }
     "#;
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: false, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: false,
+        rspu: false,
+    };
     let result = run_pipeline(source, &config).unwrap();
     assert!(!result.has_width_errors(), "negating u8 into i16 should not produce width errors");
 }
@@ -354,9 +367,10 @@ fn same_as_plus_one_constraint_generated_for_unsigned_negate() {
     let nodes = width::flatten::flatten_expr(&expr, &signals).unwrap();
     let cset = width::constraint::generate_constraints(&nodes, &signals);
     // Should have a SameAsPlusOne constraint (not SameAs) for the negate node
-    let has_plus_one = cset.constraints.iter().any(|c| {
-        matches!(c, width::constraint::WidthConstraint::SameAsPlusOne { .. })
-    });
+    let has_plus_one = cset
+        .constraints
+        .iter()
+        .any(|c| matches!(c, width::constraint::WidthConstraint::SameAsPlusOne { .. }));
     assert!(has_plus_one, "unsigned negate should generate SameAsPlusOne constraint");
 }
 
@@ -367,12 +381,14 @@ fn same_as_constraint_generated_for_signed_negate() {
     let nodes = width::flatten::flatten_expr(&expr, &signals).unwrap();
     let cset = width::constraint::generate_constraints(&nodes, &signals);
     // Should have a SameAs constraint (not SameAsPlusOne) for the negate node
-    let has_same_as = cset.constraints.iter().any(|c| {
-        matches!(c, width::constraint::WidthConstraint::SameAs { .. })
-    });
-    let has_plus_one = cset.constraints.iter().any(|c| {
-        matches!(c, width::constraint::WidthConstraint::SameAsPlusOne { .. })
-    });
+    let has_same_as = cset
+        .constraints
+        .iter()
+        .any(|c| matches!(c, width::constraint::WidthConstraint::SameAs { .. }));
+    let has_plus_one = cset
+        .constraints
+        .iter()
+        .any(|c| matches!(c, width::constraint::WidthConstraint::SameAsPlusOne { .. }));
     assert!(has_same_as, "signed negate should generate SameAs constraint");
     assert!(!has_plus_one, "signed negate should NOT generate SameAsPlusOne constraint");
 }

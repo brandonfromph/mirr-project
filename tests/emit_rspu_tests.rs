@@ -162,7 +162,9 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let load_inputs: Vec<_> = prog.instructions.iter()
+    let load_inputs: Vec<_> = prog
+        .instructions
+        .iter()
         .filter(|i| matches!(i, RspuInstruction::LoadInput { .. }))
         .collect();
     assert_eq!(load_inputs.len(), 2, "should have LOAD_INPUT for each input signal");
@@ -195,7 +197,9 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let store_outputs: Vec<_> = prog.instructions.iter()
+    let store_outputs: Vec<_> = prog
+        .instructions
+        .iter()
         .filter(|i| matches!(i, RspuInstruction::StoreOutput { .. }))
         .collect();
     assert_eq!(store_outputs.len(), 2, "should have STORE_OUTPUT for each output signal");
@@ -204,7 +208,9 @@ module test_mod {
 #[test]
 fn emit_reflex_if_for_conditional_assignment() {
     let prog = pipeline_with_rspu(minimal_source());
-    let reflex_ifs: Vec<_> = prog.instructions.iter()
+    let reflex_ifs: Vec<_> = prog
+        .instructions
+        .iter()
         .filter(|i| matches!(i, RspuInstruction::ReflexIf { .. }))
         .collect();
     assert!(!reflex_ifs.is_empty(), "should have at least one REFLEX_IF");
@@ -230,15 +236,12 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let sr_inits = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::SrInit { .. }))
-        .count();
-    let sr_ticks = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::SrTick { .. }))
-        .count();
-    let sr_queries = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::SrQuery { .. }))
-        .count();
+    let sr_inits =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::SrInit { .. })).count();
+    let sr_ticks =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::SrTick { .. })).count();
+    let sr_queries =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::SrQuery { .. })).count();
     assert_eq!(sr_inits, 1, "should have SR_INIT");
     assert_eq!(sr_ticks, 1, "should have SR_TICK");
     assert_eq!(sr_queries, 1, "should have SR_QUERY");
@@ -264,15 +267,12 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let ctr_inits = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::CtrInit { .. }))
-        .count();
-    let ctr_ticks = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::CtrTick { .. }))
-        .count();
-    let ctr_queries = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::CtrQuery { .. }))
-        .count();
+    let ctr_inits =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::CtrInit { .. })).count();
+    let ctr_ticks =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::CtrTick { .. })).count();
+    let ctr_queries =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::CtrQuery { .. })).count();
     assert_eq!(ctr_inits, 1, "should have CTR_INIT");
     assert_eq!(ctr_ticks, 1, "should have CTR_TICK");
     assert_eq!(ctr_queries, 1, "should have CTR_QUERY");
@@ -303,9 +303,8 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let alus: Vec<_> = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::Alu { .. }))
-        .collect();
+    let alus: Vec<_> =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::Alu { .. })).collect();
     assert!(!alus.is_empty(), "should have ALU instructions for a + b");
 }
 
@@ -329,7 +328,9 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let alu_unaries: Vec<_> = prog.instructions.iter()
+    let alu_unaries: Vec<_> = prog
+        .instructions
+        .iter()
         .filter(|i| matches!(i, RspuInstruction::AluUnary { op: AluUnaryOp::Not, .. }))
         .collect();
     assert!(!alu_unaries.is_empty(), "should have ALU_UNARY NOT for !a");
@@ -355,9 +356,8 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let load_imms: Vec<_> = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::LoadImm { .. }))
-        .collect();
+    let load_imms: Vec<_> =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::LoadImm { .. })).collect();
     assert!(!load_imms.is_empty(), "should have LOAD_IMM for literal true");
 }
 
@@ -401,7 +401,9 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let asserts: Vec<_> = prog.instructions.iter()
+    let asserts: Vec<_> = prog
+        .instructions
+        .iter()
         .filter(|i| matches!(i, RspuInstruction::AssertAlways { .. }))
         .collect();
     assert!(!asserts.is_empty(), "should have ASSERT_ALWAYS for always property");
@@ -431,7 +433,9 @@ module test_mod {
 }
 "#;
     let prog = pipeline_with_rspu(source);
-    let asserts: Vec<_> = prog.instructions.iter()
+    let asserts: Vec<_> = prog
+        .instructions
+        .iter()
         .filter(|i| matches!(i, RspuInstruction::AssertNever { .. }))
         .collect();
     assert!(!asserts.is_empty(), "should have ASSERT_NEVER for never property");
@@ -463,7 +467,10 @@ fn mnemonic_returns_correct_names() {
     assert_eq!(RspuInstruction::Mov { dst: 0, src: 1 }.mnemonic(), "MOV");
     assert_eq!(RspuInstruction::LoadImm { dst: 0, value: 42, width: 8 }.mnemonic(), "LOAD_IMM");
     assert_eq!(RspuInstruction::Alu { op: AluOp::Add, dst: 0, a: 1, b: 2 }.mnemonic(), "ALU");
-    assert_eq!(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: 0, src: 1 }.mnemonic(), "ALU_UNARY");
+    assert_eq!(
+        RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: 0, src: 1 }.mnemonic(),
+        "ALU_UNARY"
+    );
     assert_eq!(RspuInstruction::SrInit { guard: 0, length: 5, cond: 0 }.mnemonic(), "SR_INIT");
     assert_eq!(RspuInstruction::SrTick { guard: 0 }.mnemonic(), "SR_TICK");
     assert_eq!(RspuInstruction::SrQuery { dst: 0, guard: 0 }.mnemonic(), "SR_QUERY");
@@ -475,7 +482,10 @@ fn mnemonic_returns_correct_names() {
     assert_eq!(RspuInstruction::ReflexIf { guard: 0, dst: 0, src: 1 }.mnemonic(), "REFLEX_IF");
     assert_eq!(RspuInstruction::Prev { dst: 0, signal: 1, delay: 3 }.mnemonic(), "PREV");
     assert_eq!(RspuInstruction::EmergencyStop.mnemonic(), "EMERGENCY_STOP");
-    assert_eq!(RspuInstruction::AssertAlways { cond: 0, property_id: 0 }.mnemonic(), "ASSERT_ALWAYS");
+    assert_eq!(
+        RspuInstruction::AssertAlways { cond: 0, property_id: 0 }.mnemonic(),
+        "ASSERT_ALWAYS"
+    );
     assert_eq!(RspuInstruction::AssertNever { cond: 0, property_id: 0 }.mnemonic(), "ASSERT_NEVER");
 }
 
@@ -545,18 +555,23 @@ module patient_monitor {
     assert_eq!(prog.guards_used, 2, "should have 2 guards");
     assert!(prog.instructions.len() > 10, "should have substantial instruction count");
 
-    let load_count = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::LoadInput { .. }))
-        .count();
+    let load_count =
+        prog.instructions.iter().filter(|i| matches!(i, RspuInstruction::LoadInput { .. })).count();
     assert_eq!(load_count, 2, "should have 2 LOAD_INPUT instructions");
 
-    let store_count = prog.instructions.iter()
+    let store_count = prog
+        .instructions
+        .iter()
         .filter(|i| matches!(i, RspuInstruction::StoreOutput { .. }))
         .count();
     assert_eq!(store_count, 2, "should have 2 STORE_OUTPUT instructions");
 
-    let assert_count = prog.instructions.iter()
-        .filter(|i| matches!(i, RspuInstruction::AssertAlways { .. } | RspuInstruction::AssertNever { .. }))
+    let assert_count = prog
+        .instructions
+        .iter()
+        .filter(|i| {
+            matches!(i, RspuInstruction::AssertAlways { .. } | RspuInstruction::AssertNever { .. })
+        })
         .count();
     assert_eq!(assert_count, 2, "should have 2 property assertions");
 

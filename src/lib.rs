@@ -58,6 +58,6 @@ pub use simplify::SimplifyStats;
 pub use temporal::{
     low_level_ir::TemporalNetlist, low_level_ir::TemporalNetlistJson, TemporalGuardCompiler,
 };
-pub use validation::validate_module;
 pub use typeck::typecheck_module;
+pub use validation::validate_module;
 pub use width::types::{WidthDiag, WidthExpr, WidthStats};

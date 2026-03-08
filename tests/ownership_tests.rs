@@ -53,17 +53,11 @@ fn bool_guard(name: &str, signal_name: &str) -> Guard {
 }
 
 fn assign(target: &str, value: u64) -> Assignment {
-    Assignment {
-        target: target.to_string(),
-        value: Expr::Literal(LiteralValue::Integer(value)),
-    }
+    Assignment { target: target.to_string(), value: Expr::Literal(LiteralValue::Integer(value)) }
 }
 
 fn assign_bool(target: &str, value: bool) -> Assignment {
-    Assignment {
-        target: target.to_string(),
-        value: Expr::Literal(LiteralValue::Bool(value)),
-    }
+    Assignment { target: target.to_string(), value: Expr::Literal(LiteralValue::Bool(value)) }
 }
 
 fn reflex(name: &str, guard: &str, assignments: Vec<Assignment>) -> Reflex {
@@ -119,10 +113,7 @@ fn two_reflexes_writing_same_output_e216() {
         "multi_writer_out",
         vec![u8_in("x"), u8_out("out")],
         vec![bool_guard("g", "x")],
-        vec![
-            reflex("r1", "g", vec![assign("out", 1)]),
-            reflex("r2", "g", vec![assign("out", 2)]),
-        ],
+        vec![reflex("r1", "g", vec![assign("out", 1)]), reflex("r2", "g", vec![assign("out", 2)])],
     );
     let msg = validate_err(&module);
     assert!(msg.contains("[E216]"), "expected E216, got: {}", msg);
@@ -170,10 +161,7 @@ fn different_reflexes_different_signals_allowed() {
         "unique_writers",
         vec![u8_in("x"), u8_out("a"), u8_out("b")],
         vec![bool_guard("g", "x")],
-        vec![
-            reflex("r1", "g", vec![assign("a", 1)]),
-            reflex("r2", "g", vec![assign("b", 2)]),
-        ],
+        vec![reflex("r1", "g", vec![assign("a", 1)]), reflex("r2", "g", vec![assign("b", 2)])],
     );
     validate_module(&module).expect("each signal has a unique writer — should pass");
 }
@@ -206,16 +194,8 @@ fn pattern_expanded_conflict_shows_origins() {
     );
     let msg = validate_err(&module);
     assert!(msg.contains("[E216]"), "expected E216, got: {}", msg);
-    assert!(
-        msg.contains("pattern 'watchdog'"),
-        "should mention first origin, got: {}",
-        msg
-    );
-    assert!(
-        msg.contains("pattern 'limiter'"),
-        "should mention second origin, got: {}",
-        msg
-    );
+    assert!(msg.contains("pattern 'watchdog'"), "should mention first origin, got: {}", msg);
+    assert!(msg.contains("pattern 'limiter'"), "should mention second origin, got: {}", msg);
 }
 
 // ───────────────── E216: mixed origin (one pattern, one hand-written) ─────────────────
@@ -292,12 +272,7 @@ fn bool_output_two_writers_e216() {
 
 #[test]
 fn empty_reflexes_passes() {
-    let module = base_module(
-        "no_reflexes",
-        vec![u8_in("x")],
-        vec![bool_guard("g", "x")],
-        vec![],
-    );
+    let module = base_module("no_reflexes", vec![u8_in("x")], vec![bool_guard("g", "x")], vec![]);
     validate_module(&module).expect("module with no reflexes should pass ownership check");
 }
 

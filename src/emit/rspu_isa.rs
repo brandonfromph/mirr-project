@@ -134,7 +134,6 @@ pub enum AluUnaryOp {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RspuInstruction {
     // -- Register tier --------------------------------------------------
-
     /// Load an input port value into a register.
     LoadInput { dst: RegId, port: PortId },
     /// Store a register value to an output port.
@@ -145,16 +144,14 @@ pub enum RspuInstruction {
     LoadImm { dst: RegId, value: u64, width: u32 },
 
     // -- ALU tier -------------------------------------------------------
-
-    /// Binary ALU operation: dst = a <op> b.
+    /// Binary ALU operation: `dst = a op b`.
     Alu { op: AluOp, dst: RegId, a: RegId, b: RegId },
-    /// Binary ALU with immediate: dst = a <op> imm.
+    /// Binary ALU with immediate: `dst = a op imm`.
     AluImm { op: AluOp, dst: RegId, a: RegId, imm: u64 },
-    /// Unary ALU operation: dst = <op>(src).
+    /// Unary ALU operation: `dst = op(src)`.
     AluUnary { op: AluUnaryOp, dst: RegId, src: RegId },
 
     // -- Temporal tier --------------------------------------------------
-
     /// Initialize a shift-register guard unit.
     SrInit { guard: GuardId, length: u32, cond: RegId },
     /// Advance a shift-register guard by one tick.
@@ -175,19 +172,16 @@ pub enum RspuInstruction {
     GuardOr { dst: GuardId, a: GuardId, b: GuardId },
 
     // -- Reflex tier ----------------------------------------------------
-
     /// Conditional move: if guard is active, dst = src.
     ReflexIf { guard: GuardId, dst: RegId, src: RegId },
     /// Previous-tick register: dst = signal value at t - delay.
     Prev { dst: RegId, signal: RegId, delay: u32 },
 
     // -- Safety tier (MAPE-K actions) -----------------------------------
-
     /// Halt the R-SPU immediately (non-recoverable safety action).
     EmergencyStop,
 
     // -- LTL Assertion tier (verification only) -------------------------
-
     /// Assert that cond is always true (verification register, no datapath).
     AssertAlways { cond: RegId, property_id: PropertyId },
     /// Assert that cond is never true (verification register, no datapath).

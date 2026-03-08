@@ -54,8 +54,9 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
         while let Some(&mut (v, ref mut ni, caller)) = call_stack.last_mut() {
             iters += 1;
             if iters > max_iters {
-                diagnostics
-                    .push(WidthDiag::error("[E506] SCC detection exceeded iteration budget".to_string()));
+                diagnostics.push(WidthDiag::error(
+                    "[E506] SCC detection exceeded iteration budget".to_string(),
+                ));
                 return SccResult { sccs: Vec::new(), diagnostics };
             }
 

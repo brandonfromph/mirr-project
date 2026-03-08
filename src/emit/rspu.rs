@@ -109,9 +109,7 @@ type GuardAllocResult = (Vec<(String, GuardId)>, HashMap<String, GuardId>);
 ///
 /// Returns both the ordered vec (for program metadata) and the lookup map.
 /// Bounded: at most `MAX_GUARDS` entries.
-fn allocate_guards(
-    netlist: Option<&TemporalNetlist>,
-) -> Result<GuardAllocResult, MirrError> {
+fn allocate_guards(netlist: Option<&TemporalNetlist>) -> Result<GuardAllocResult, MirrError> {
     let mut entries = Vec::new();
     let mut map = HashMap::new();
     let mut next_id: GuardId = 0;
@@ -167,10 +165,7 @@ fn emit_temporal_guards(
                     cond: cond_reg,
                 });
                 instrs.push(RspuInstruction::SrTick { guard: gid });
-                instrs.push(RspuInstruction::SrQuery {
-                    dst: cond_reg,
-                    guard: gid,
-                });
+                instrs.push(RspuInstruction::SrQuery { dst: cond_reg, guard: gid });
             }
             CompiledGuard::Counter(cg) => {
                 let gid = guard_map[&cg.name];
@@ -181,10 +176,7 @@ fn emit_temporal_guards(
                     cond: cond_reg,
                 });
                 instrs.push(RspuInstruction::CtrTick { guard: gid });
-                instrs.push(RspuInstruction::CtrQuery {
-                    dst: cond_reg,
-                    guard: gid,
-                });
+                instrs.push(RspuInstruction::CtrQuery { dst: cond_reg, guard: gid });
             }
             CompiledGuard::Complex(cx) => {
                 // Complex guards have sub-guards; emit them, then combine.
@@ -195,11 +187,7 @@ fn emit_temporal_guards(
                 if cx.sub_guards.len() == 2 {
                     let a_gid = guard_map[&guard_name(&cx.sub_guards[0])];
                     let b_gid = guard_map[&guard_name(&cx.sub_guards[1])];
-                    instrs.push(RspuInstruction::GuardAnd {
-                        dst: gid,
-                        a: a_gid,
-                        b: b_gid,
-                    });
+                    instrs.push(RspuInstruction::GuardAnd { dst: gid, a: a_gid, b: b_gid });
                 }
             }
         }
@@ -246,11 +234,7 @@ fn emit_reflex(
         let src_reg = emit_expr(&assignment.value, regs, instrs)?;
 
         // Conditional move.
-        instrs.push(RspuInstruction::ReflexIf {
-            guard: gid,
-            dst: dst_reg,
-            src: src_reg,
-        });
+        instrs.push(RspuInstruction::ReflexIf { guard: gid, dst: dst_reg, src: src_reg });
     }
 
     Ok(())
@@ -424,21 +408,12 @@ fn emit_properties(
                 let not_p = regs
                     .alloc_temp()
                     .ok_or_else(|| rspu_err("[E701] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::AluUnary {
-                    op: AluUnaryOp::Not,
-                    dst: not_p,
-                    src: p,
-                });
+                instrs.push(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: not_p, src: p });
                 // !P | Q
                 let implies = regs
                     .alloc_temp()
                     .ok_or_else(|| rspu_err("[E701] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::Alu {
-                    op: AluOp::Or,
-                    dst: implies,
-                    a: not_p,
-                    b: q,
-                });
+                instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
                 instrs.push(RspuInstruction::AssertAlways { cond: implies, property_id });
             }
             PropertyFormula::NeverImplies { antecedent, consequent } => {
@@ -448,20 +423,11 @@ fn emit_properties(
                 let not_p = regs
                     .alloc_temp()
                     .ok_or_else(|| rspu_err("[E701] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::AluUnary {
-                    op: AluUnaryOp::Not,
-                    dst: not_p,
-                    src: p,
-                });
+                instrs.push(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: not_p, src: p });
                 let implies = regs
                     .alloc_temp()
                     .ok_or_else(|| rspu_err("[E701] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::Alu {
-                    op: AluOp::Or,
-                    dst: implies,
-                    a: not_p,
-                    b: q,
-                });
+                instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
                 instrs.push(RspuInstruction::AssertNever { cond: implies, property_id });
             }
             PropertyFormula::EventuallyWithin { expr, .. } => {
@@ -476,20 +442,11 @@ fn emit_properties(
                 let not_p = regs
                     .alloc_temp()
                     .ok_or_else(|| rspu_err("[E701] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::AluUnary {
-                    op: AluUnaryOp::Not,
-                    dst: not_p,
-                    src: p,
-                });
+                instrs.push(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: not_p, src: p });
                 let implies = regs
                     .alloc_temp()
                     .ok_or_else(|| rspu_err("[E701] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::Alu {
-                    op: AluOp::Or,
-                    dst: implies,
-                    a: not_p,
-                    b: q,
-                });
+                instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
                 instrs.push(RspuInstruction::AssertAlways { cond: implies, property_id });
             }
         }

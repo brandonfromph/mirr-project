@@ -727,7 +727,13 @@ fn full_pipeline_mixed_directives() {
 fn full_pipeline_existing_example_still_compiles() {
     let src = std::fs::read_to_string("examples/safety_property.mirr")
         .expect("safety_property.mirr should exist");
-    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: false };
+    let config = PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: false,
+    };
     run_pipeline(&src, &config).expect("safety_property.mirr should compile");
 }
 

@@ -98,7 +98,14 @@ pub fn run_pipeline(source: &str, config: &PipelineConfig) -> Result<PipelineRes
         None
     };
 
-    let mut result = PipelineResult { program, simplify_stats, width_result, temporal_netlist, rspu_program: None, type_map };
+    let mut result = PipelineResult {
+        program,
+        simplify_stats,
+        width_result,
+        temporal_netlist,
+        rspu_program: None,
+        type_map,
+    };
 
     // Stage 6: R-SPU emission (optional, requires temporal).
     if config.rspu {

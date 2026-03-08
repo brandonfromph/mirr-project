@@ -7,6 +7,7 @@ module icu_monitor {
     signal systolic_bp:     in  u16;
     signal diastolic_bp:    in  u16;
     signal cardiac_alarm:   out bool;
+    signal tachy_alarm:     out bool;
     signal hypoxia_alarm:   out bool;
     signal bp_alarm:        out bool;
     signal code_blue:       out bool;
@@ -39,7 +40,7 @@ module icu_monitor {
 
     reflex tachy_alert {
         on tachycardia {
-            cardiac_alarm = true;
+            tachy_alarm = true;
         }
     }
 

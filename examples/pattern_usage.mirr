@@ -30,6 +30,7 @@ module dual_sensor {
     signal pressure:       in  u16;
     signal temp_alarm:     out bool;
     signal pressure_alarm: out bool;
+    signal manual_alarm:   out bool;
 
     // Each call expands with a unique prefix: threshold_guard_0_, threshold_guard_1_
     threshold_guard(temperature, 100, 5, temp_alarm);
@@ -43,7 +44,7 @@ module dual_sensor {
 
     reflex manual_response {
         on manual_check {
-            temp_alarm = true;
+            manual_alarm = true;
         }
     }
 }

@@ -110,8 +110,7 @@ pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> Const
                     // signed operand preserves width.
                     let operand_signed = is_operand_signed(*operand, nodes);
                     if operand_signed {
-                        constraints
-                            .push(WidthConstraint::SameAs { node: id, source: *operand });
+                        constraints.push(WidthConstraint::SameAs { node: id, source: *operand });
                     } else {
                         constraints
                             .push(WidthConstraint::SameAsPlusOne { node: id, source: *operand });
@@ -171,13 +170,11 @@ fn generate_binary_constraint(
             constraints.push(WidthConstraint::MaxOf { node: id, left, right });
             // Only emit underflow info for unsigned subtraction.
             // Signed subtraction wraps correctly in two's complement.
-            let either_signed =
-                is_operand_signed(left, nodes) || is_operand_signed(right, nodes);
+            let either_signed = is_operand_signed(left, nodes) || is_operand_signed(right, nodes);
             if !either_signed {
                 let left_val = get_literal_value(left, nodes);
                 let right_val = get_literal_value(right, nodes);
-                let provably_safe =
-                    matches!((left_val, right_val), (Some(l), Some(r)) if l >= r);
+                let provably_safe = matches!((left_val, right_val), (Some(l), Some(r)) if l >= r);
                 if !provably_safe {
                     diagnostics.push(WidthDiag::info(
                         "unsigned subtraction may underflow (wrapping semantics)".to_string(),

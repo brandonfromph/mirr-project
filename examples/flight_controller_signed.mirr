@@ -16,12 +16,12 @@ module flight_controller_signed {
     }
 
     guard nose_down {
-        when pitch_angle < pitch_angle
+        when pitch_angle < 0
         for 8 cycles;
     }
 
     guard bank_steep {
-        when roll_angle < roll_angle
+        when roll_angle > 45
         for 4 cycles;
     }
 

@@ -51,12 +51,7 @@ fn signed_module_with_guard(condition: Expr) -> Module {
                 origin: None,
             },
         ],
-        guards: vec![Guard {
-            name: "g".to_string(),
-            condition,
-            cycles: 1,
-            origin: None,
-        }],
+        guards: vec![Guard { name: "g".to_string(), condition, cycles: 1, origin: None }],
         reflexes: vec![Reflex {
             name: "r".to_string(),
             guard_names: vec!["g".to_string()],
@@ -117,10 +112,7 @@ fn signed_module_with_assignment(target: &str, target_ty: SignalType, value: Exp
         reflexes: vec![Reflex {
             name: "r".to_string(),
             guard_names: vec!["g".to_string()],
-            assignments: vec![Assignment {
-                target: target.to_string(),
-                value,
-            }],
+            assignments: vec![Assignment { target: target.to_string(), value }],
             origin: None,
         }],
         properties: Vec::new(),
@@ -302,13 +294,17 @@ fn signed_multiplication_passes() {
 fn mixed_signed_unsigned_arithmetic_rejected() {
     let expr = Expr::Binary {
         op: BinaryOp::Add,
-        left: Box::new(Expr::Signal("si".to_string())),  // i16
-        right: Box::new(Expr::Signal("su".to_string())),  // u16
+        left: Box::new(Expr::Signal("si".to_string())), // i16
+        right: Box::new(Expr::Signal("su".to_string())), // u16
     };
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
-    assert!(err.to_string().contains("[E603]"), "Expected E603 for mixed signed/unsigned, got: {}", err);
+    assert!(
+        err.to_string().contains("[E603]"),
+        "Expected E603 for mixed signed/unsigned, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -359,13 +355,17 @@ fn signed_comparison_produces_bool() {
 fn signed_vs_unsigned_comparison_rejected() {
     let expr = Expr::Binary {
         op: BinaryOp::Lt,
-        left: Box::new(Expr::Signal("si".to_string())),  // i16
-        right: Box::new(Expr::Signal("su".to_string())),  // u16
+        left: Box::new(Expr::Signal("si".to_string())), // i16
+        right: Box::new(Expr::Signal("su".to_string())), // u16
     };
     let m = signed_module_with_guard(expr);
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
-    assert!(err.to_string().contains("[E605]"), "Expected E605 for cross-category ordering, got: {}", err);
+    assert!(
+        err.to_string().contains("[E605]"),
+        "Expected E605 for cross-category ordering, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -395,7 +395,11 @@ fn signed_vs_unsigned_equality_rejected() {
     let m = signed_module_with_guard(expr);
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
-    assert!(err.to_string().contains("[E606]"), "Expected E606 for cross-category equality, got: {}", err);
+    assert!(
+        err.to_string().contains("[E606]"),
+        "Expected E606 for cross-category equality, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -483,7 +487,11 @@ fn signed_xor_cross_category_rejected() {
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
-    assert!(err.to_string().contains("[E607]"), "Expected E607 for cross-category xor, got: {}", err);
+    assert!(
+        err.to_string().contains("[E607]"),
+        "Expected E607 for cross-category xor, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -500,7 +508,11 @@ fn logical_and_on_signed_rejected() {
     let m = signed_module_with_guard(expr);
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
-    assert!(err.to_string().contains("[E604]"), "Expected E604 for logical on signed, got: {}", err);
+    assert!(
+        err.to_string().contains("[E604]"),
+        "Expected E604 for logical on signed, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -512,7 +524,11 @@ fn guard_condition_signed_rejected() {
     let m = signed_module_with_guard(Expr::Signal("si".to_string()));
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
-    assert!(err.to_string().contains("[E601]"), "Expected E601 for signed guard condition, got: {}", err);
+    assert!(
+        err.to_string().contains("[E601]"),
+        "Expected E601 for signed guard condition, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -576,7 +592,11 @@ module signed_test {
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
     let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
-    assert!(sv.contains("signed"), "Verilog output should contain 'signed' for i16 signals: {}", sv);
+    assert!(
+        sv.contains("signed"),
+        "Verilog output should contain 'signed' for i16 signals: {}",
+        sv
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -610,7 +630,11 @@ module signed_test {
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
     let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
-    assert!(firrtl.contains("SInt<16>"), "FIRRTL output should contain 'SInt<16>' for i16 signals: {}", firrtl);
+    assert!(
+        firrtl.contains("SInt<16>"),
+        "FIRRTL output should contain 'SInt<16>' for i16 signals: {}",
+        firrtl
+    );
 }
 
 // ---------------------------------------------------------------------------

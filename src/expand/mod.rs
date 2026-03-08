@@ -780,8 +780,12 @@ fn detect_pattern_cycles(patterns: &[PatternDef]) -> Result<(), MirrError> {
                     // Back edge — cycle detected.
                     let cycle_start = path.iter().position(|&n| n == child).unwrap_or(0);
                     let cycle_path: Vec<&str> = path[cycle_start..].to_vec();
-                    let cycle_str =
-                        cycle_path.iter().copied().chain(std::iter::once(child)).collect::<Vec<_>>().join(" -> ");
+                    let cycle_str = cycle_path
+                        .iter()
+                        .copied()
+                        .chain(std::iter::once(child))
+                        .collect::<Vec<_>>()
+                        .join(" -> ");
                     return Err(pattern_err(format!(
                         "[E402] Circular pattern reference detected: {cycle_str}."
                     )));

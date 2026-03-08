@@ -158,8 +158,10 @@ fn validate_widths(widths: &[u32], nodes: &[FlatNode], diagnostics: &mut Vec<Wid
         }
         if w == 0 {
             let desc = node_description(i, nodes);
-            diagnostics
-                .push(WidthDiag::error(format!("[E503] node {} ({}) has unresolved width", i, desc)));
+            diagnostics.push(WidthDiag::error(format!(
+                "[E503] node {} ({}) has unresolved width",
+                i, desc
+            )));
         }
         if w > Width::MAX.0 {
             let desc = node_description(i, nodes);
