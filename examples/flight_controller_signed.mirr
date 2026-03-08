@@ -3,12 +3,14 @@
 // Compile: cargo run --bin mirr-compile -- --emit verilog examples/flight_controller_signed.mirr
 
 module flight_controller_signed {
-    signal altitude:      in  u32;
-    signal pitch_angle:   in  i16;
-    signal roll_angle:    in  i16;
-    signal correct_pitch: out bool;
-    signal correct_roll:  out bool;
-    signal terrain_warn:  out bool;
+    signal altitude:        in  u32;
+    signal pitch_angle:     in  i16;
+    signal roll_angle:      in  i16;
+    signal pitch_threshold: in  i16;
+    signal roll_threshold:  in  i16;
+    signal correct_pitch:   out bool;
+    signal correct_roll:    out bool;
+    signal terrain_warn:    out bool;
 
     guard altitude_low {
         when altitude < 500
@@ -16,12 +18,12 @@ module flight_controller_signed {
     }
 
     guard nose_down {
-        when pitch_angle < 0
+        when pitch_angle < pitch_threshold
         for 8 cycles;
     }
 
     guard bank_steep {
-        when roll_angle > 45
+        when roll_angle > roll_threshold
         for 4 cycles;
     }
 
