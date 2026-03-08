@@ -1,7 +1,7 @@
 //! Phase 6: Unified compilation pipeline.
 //!
 //! Orchestrates all compilation stages in sequence:
-//!   parse -> validate -> simplify -> width_infer -> temporal_lower
+//!   parse -> validate -> typecheck -> simplify -> width_infer -> temporal_lower
 //!
 //! Each stage is gated by a config flag so partial pipelines can run
 //! (e.g., parse+simplify only).
@@ -9,6 +9,7 @@
 #![forbid(unsafe_code)]
 
 use crate::ast::MirrProgram;
+use crate::emit::rspu_isa::RspuProgram;
 use crate::error::MirrError;
 use crate::simplify::SimplifyStats;
 use crate::temporal::low_level_ir::TemporalNetlist;
@@ -18,17 +19,21 @@ use crate::width::{self, SccWidthResult};
 /// Configuration for which pipeline stages to run.
 #[derive(Debug, Clone)]
 pub struct PipelineConfig {
+    /// Run type checking after validation.
+    pub typecheck: bool,
     /// Run Phase 3 simplification.
     pub simplify: bool,
     /// Run Phase 4 width inference.
     pub width: bool,
     /// Run Phase 2 temporal lowering.
     pub temporal: bool,
+    /// Run R-SPU instruction emission (requires temporal).
+    pub rspu: bool,
 }
 
 impl Default for PipelineConfig {
     fn default() -> Self {
-        Self { simplify: true, width: true, temporal: true }
+        Self { typecheck: true, simplify: true, width: true, temporal: true, rspu: false }
     }
 }
 
@@ -42,6 +47,10 @@ pub struct PipelineResult {
     pub width_result: Option<SccWidthResult>,
     /// Temporal netlist (None if stage was skipped).
     pub temporal_netlist: Option<TemporalNetlist>,
+    /// R-SPU program (None if stage was skipped).
+    pub rspu_program: Option<RspuProgram>,
+    /// Expression type map from the type checker (None if stage was skipped).
+    pub type_map: Option<crate::typeck::TypeMap>,
 }
 
 impl PipelineResult {
@@ -67,6 +76,13 @@ pub fn run_pipeline(source: &str, config: &PipelineConfig) -> Result<PipelineRes
     // Stage 2: Validate.
     crate::validation::validate_module(&program.module)?;
 
+    // Stage 2.5: Type-check (optional).
+    let type_map = if config.typecheck {
+        Some(crate::typeck::typecheck_module(&program.module)?)
+    } else {
+        None
+    };
+
     // Stage 3: Simplify (optional).
     let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
 
@@ -82,7 +98,14 @@ pub fn run_pipeline(source: &str, config: &PipelineConfig) -> Result<PipelineRes
         None
     };
 
-    Ok(PipelineResult { program, simplify_stats, width_result, temporal_netlist })
+    let mut result = PipelineResult { program, simplify_stats, width_result, temporal_netlist, rspu_program: None, type_map };
+
+    // Stage 6: R-SPU emission (optional, requires temporal).
+    if config.rspu {
+        result.rspu_program = Some(crate::emit::rspu::emit_rspu(&result)?);
+    }
+
+    Ok(result)
 }
 
 /// Run Phase 3 simplification on all expressions in the program.

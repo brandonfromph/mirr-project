@@ -13,6 +13,8 @@
 //! | E3xx   | 300–399   | Temporal errors         |
 //! | E4xx   | 400–499   | Pattern errors          |
 //! | E5xx   | 500–599   | Width inference errors   |
+//! | E6xx   | 600–699   | Type errors              |
+//! | E7xx   | 700–799   | R-SPU emission errors    |
 //!
 //! See `docs/error_codes.md` for the full catalogue.
 // ---------------------------------------------------------------------------
@@ -30,6 +32,10 @@ pub enum MirrError {
     TemporalCompilationError { message: String },
     /// Pattern expansion error (E4xx).
     PatternError { message: String },
+    /// Type checking error (E6xx).
+    TypeError { message: String },
+    /// R-SPU emission error (E7xx).
+    RspuError { message: String },
 }
 
 impl MirrError {
@@ -43,13 +49,19 @@ impl fmt::Display for MirrError {
         match self {
             MirrError::ParseError { message } => write!(f, "[E100] Parse error: {}", message),
             MirrError::SemanticError { message } => {
-                write!(f, "[E200] Semantic error: {}", message)
+                write!(f, "Semantic error: {}", message)
             }
             MirrError::TemporalCompilationError { message } => {
                 write!(f, "[E300] Temporal compilation error: {}", message)
             }
             MirrError::PatternError { message } => {
                 write!(f, "[E400] Pattern error: {}", message)
+            }
+            MirrError::TypeError { message } => {
+                write!(f, "Type error: {}", message)
+            }
+            MirrError::RspuError { message } => {
+                write!(f, "[E700] R-SPU error: {}", message)
             }
         }
     }

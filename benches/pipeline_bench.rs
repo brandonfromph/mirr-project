@@ -124,7 +124,7 @@ fn bench_pipeline(c: &mut Criterion) {
     let medium = medium_input();
     let large = large_input();
 
-    let config = PipelineConfig { simplify: true, width: true, temporal: true };
+    let config = PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: false };
 
     let mut group = c.benchmark_group("pipeline");
     group.bench_function("small", |b| {

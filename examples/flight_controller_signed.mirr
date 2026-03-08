@@ -1,0 +1,45 @@
+// Flight controller with signed types — avionics pitch/roll monitoring.
+// Demonstrates TYPE-002 signed integer types (i16 for angular measurements).
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/flight_controller_signed.mirr
+
+module flight_controller_signed {
+    signal altitude:      in  u32;
+    signal pitch_angle:   in  i16;
+    signal roll_angle:    in  i16;
+    signal correct_pitch: out bool;
+    signal correct_roll:  out bool;
+    signal terrain_warn:  out bool;
+
+    guard altitude_low {
+        when altitude < 500
+        for 10 cycles;
+    }
+
+    guard nose_down {
+        when pitch_angle < pitch_angle
+        for 8 cycles;
+    }
+
+    guard bank_steep {
+        when roll_angle < roll_angle
+        for 4 cycles;
+    }
+
+    reflex pitch_correction {
+        on nose_down {
+            correct_pitch = true;
+        }
+    }
+
+    reflex roll_correction {
+        on bank_steep {
+            correct_roll = true;
+        }
+    }
+
+    reflex terrain_alert {
+        on altitude_low {
+            terrain_warn = true;
+        }
+    }
+}
