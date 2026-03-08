@@ -155,3 +155,12 @@ types (`u1`–`u64`). No implicit signed↔unsigned conversion is allowed.
 | E702 | `[E702] R-SPU instruction budget exceeded: {count} instructions > {max}.` | `src/emit/rspu.rs` |
 | E702 | `[E702] R-SPU expression exceeds maximum node count.` | `src/emit/rspu.rs` |
 | E703 | `[E703] R-SPU guard resource exhausted: {count} guards > {max}.` | `src/emit/rspu.rs` |
+
+---
+
+## See Also
+
+- [Tutorial](tutorial) — Lesson 9: Common errors
+- [Type System](type-system) — Type rules behind E6xx errors
+- [R-SPU Reference](rspu-reference) — Resource limits behind E7xx errors
+- [Migration Guide](migration-guide) — New error codes added per version

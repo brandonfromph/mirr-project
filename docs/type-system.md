@@ -1,3 +1,8 @@
+---
+title: Type System
+nav_order: 6
+---
+
 # MIRR Type System Reference
 
 > **Status:** Active
@@ -186,8 +191,7 @@ function correctly but without signedness enforcement.
 
 ## See Also
 
-- [`docs/error_codes.md`](error_codes.md) — Full error code catalogue (E6xx section)
-- [`docs/tutorial.md`](tutorial.md) — Lesson 8: Signed types
-- `proposals/002-TYPE-001-2026-03-08.md` — TYPE-001 campaign proposal
-- `proposals/003-TYPE-002-2026-03-08.md` — TYPE-002 campaign proposal
-- `src/typeck/mod.rs` — Type checker implementation
+- [Error Codes](error_codes) — Full error code catalogue (E6xx section)
+- [Tutorial](tutorial) — Lesson 8: Signed types
+- [R-SPU Reference](rspu-reference) — How types map to R-SPU registers
+- [Roadmap](roadmap) — TYPE campaigns overview

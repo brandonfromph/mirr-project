@@ -54,9 +54,10 @@ If `airway_pressure` stays below 50 for 1000 consecutive clock cycles,
 |----------|-------------|
 | [Tutorial](tutorial) | 10-lesson beginner guide -- no hardware experience needed |
 | [Error Codes](error_codes) | Complete catalogue of compiler diagnostics |
+| [Type System](type-system) | Signed/unsigned types, width inference, and error codes |
+| [R-SPU Reference](rspu-reference) | R-SPU instruction set architecture and register file |
 | [Migration Guide](migration-guide) | Upgrade notes for 0.1.0 to 0.2.0 |
 | [Roadmap](roadmap) | Phase 0-10 project roadmap |
-| [CHANGELOG](../CHANGELOG.md) | Versioned change history |
 
 ## Getting started
 

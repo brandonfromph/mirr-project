@@ -310,3 +310,13 @@ The full error code table (0.1.0 through 0.3.0) is:
 | `[E5xx]` (E500–E511) | Width inference errors |
 | `[E6xx]` (E601–E607) | Type errors |
 | `[E7xx]` (E701–E703) | R-SPU backend errors |
+
+---
+
+## See Also
+
+- [Error Codes](error_codes) — Complete error code catalogue
+- [Type System](type-system) — New type rules added in 0.2.0+
+- [R-SPU Reference](rspu-reference) — R-SPU backend added in 0.3.0
+- [Tutorial](tutorial) — Updated for all current features
+- [Roadmap](roadmap) — Upcoming changes to plan for

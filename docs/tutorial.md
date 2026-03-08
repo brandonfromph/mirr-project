@@ -878,9 +878,8 @@ can describe.
 
 ## What to read next
 
-- The [README](../README.md) for a project overview and quick reference.
-- The [examples/](../examples/) directory for more complete programs.
-- The [error codes reference](error_codes.md) for the full list of
-  compiler diagnostics.
-- The [migration guide](migration-guide.md) if you are upgrading from
-  an earlier version.
+- [Error Codes](error_codes) — Full list of compiler diagnostics
+- [Type System](type-system) — Signed/unsigned types and inference rules
+- [R-SPU Reference](rspu-reference) — Instruction set architecture
+- [Migration Guide](migration-guide) — Upgrading from an earlier version
+- [Roadmap](roadmap) — Project phases and what comes next

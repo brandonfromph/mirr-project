@@ -1,3 +1,8 @@
+---
+title: R-SPU Reference
+nav_order: 5
+---
+
 # R-SPU Instruction Set Architecture Reference
 
 > **Status:** Active
@@ -183,8 +188,7 @@ The R-SPU backend requires temporal compilation to have run first
 
 ## See Also
 
-- [`docs/error_codes.md`](error_codes.md) — Full error code catalogue
-- [`docs/tutorial.md`](tutorial.md) — Lesson 10: R-SPU emission
-- `src/emit/rspu_isa.rs` — ISA type definitions
-- `src/emit/rspu_regalloc.rs` — Register allocator
-- `src/emit/rspu.rs` — Emission backend
+- [Error Codes](error_codes) — Full error code catalogue (E7xx section)
+- [Tutorial](tutorial) — Lesson 10: R-SPU emission
+- [Type System](type-system) — Signed/unsigned types and width inference
+- [Roadmap](roadmap) — Phase 8: R-SPU ISA

@@ -3,15 +3,10 @@
 # MIRR
 
 **A hardware rule language for safety-critical systems.**
-Write a rule in plain code. Get nanosecond-speed hardware logic — no OS, no scheduler, no delays.
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=for-the-badge)](LICENSE)
-[![Build](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)](https://github.com/brandonfromph/mirr-project/actions)
-[![Tests](https://img.shields.io/badge/tests-847%20passing-brightgreen?style=for-the-badge)](https://github.com/brandonfromph/mirr-project/actions)
-[![Language: Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Target: Verilog RTL](https://img.shields.io/badge/Target-Verilog%20%7C%20R--SPU-blueviolet?style=for-the-badge)](#)
-
-[Website](https://brandonfromph.github.io/mirr-project/) · [Tutorial](docs/tutorial.md) · [Error Codes](docs/error_codes.md) · [CHANGELOG](CHANGELOG.md) · [Report a Bug](https://github.com/brandonfromph/mirr-project/issues)
+[![Build](https://img.shields.io/github/actions/workflow/status/brandonfromph/mirr-project/ci.yml?branch=main&style=flat-square)](https://github.com/brandonfromph/mirr-project/actions)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-stable-orange?style=flat-square)](https://www.rust-lang.org/)
 
 </div>
 
@@ -106,9 +101,6 @@ cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit verilog
 
 # Other emit formats: json, dot, sva, firrtl, rspu
 cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit json
-
-# MAPE-K autonomic simulation
-cargo run --bin mirr-simulate -- --ticks 10000
 ```
 
 ---
@@ -119,6 +111,8 @@ cargo run --bin mirr-simulate -- --ticks 10000
 |----------|-------------|
 | [Tutorial](docs/tutorial.md) | 10-lesson beginner guide — no hardware experience needed |
 | [Error Codes](docs/error_codes.md) | Complete catalogue of compiler diagnostics (E1xx–E7xx) |
+| [Type System](docs/type-system.md) | Signed/unsigned types, width inference, and error codes |
+| [R-SPU Reference](docs/rspu-reference.md) | R-SPU instruction set architecture and register file |
 | [Migration Guide](docs/migration-guide.md) | Upgrade notes for 0.1.0 to 0.2.0 |
 | [Roadmap](docs/roadmap.md) | Phase 0–10 project roadmap |
 | [CHANGELOG](CHANGELOG.md) | Versioned change history |

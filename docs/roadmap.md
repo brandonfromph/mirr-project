@@ -495,3 +495,13 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 | Pattern expansion | `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs` |
 | MAPE-K harness | `src/mape_k/`, `src/mirr_executor.rs` |
 | Self-hosting pipeline | `src/bootstrap_runner.rs` |
+
+---
+
+## See Also
+
+- [Tutorial](tutorial) — Learn the language from scratch
+- [Error Codes](error_codes) — Error codes introduced per phase
+- [Type System](type-system) — TYPE campaign results
+- [R-SPU Reference](rspu-reference) — Phase 8 deliverable
+- [Migration Guide](migration-guide) — Breaking changes per version
