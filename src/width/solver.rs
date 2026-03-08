@@ -155,12 +155,12 @@ fn validate_widths(widths: &[u32], nodes: &[FlatNode], diagnostics: &mut Vec<Wid
         if w == 0 {
             let desc = node_description(i, nodes);
             diagnostics
-                .push(WidthDiag::error(format!("node {} ({}) has unresolved width", i, desc)));
+                .push(WidthDiag::error(format!("[E503] node {} ({}) has unresolved width", i, desc)));
         }
         if w > Width::MAX.0 {
             let desc = node_description(i, nodes);
             diagnostics.push(WidthDiag::error(format!(
-                "node {} ({}) requires {} bits, exceeding maximum of 64",
+                "[E504] node {} ({}) requires {} bits, exceeding maximum of 64",
                 i, desc, w
             )));
         }
@@ -191,7 +191,7 @@ pub fn check_truncation(target_name: &str, target_width: u32, expr_width: Width)
     let mut diags = Vec::new();
     if expr_width.0 > target_width {
         diags.push(WidthDiag::error(format!(
-            "assignment to '{}' truncates from {} bits to {} bits",
+            "[E505] assignment to '{}' truncates from {} bits to {} bits",
             target_name, expr_width.0, target_width
         )));
     }

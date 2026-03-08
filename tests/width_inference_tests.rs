@@ -176,7 +176,7 @@ fn signal_undeclared_exact_diagnostic_text() {
     let r = infer(&signal("ghost"), &[]);
     let errs = error_messages(&r);
     assert_eq!(errs.len(), 1);
-    assert_eq!(errs[0], "signal 'ghost' has no declared width");
+    assert_eq!(errs[0], "[E501] signal 'ghost' has no declared width");
 }
 
 // ===========================================================================
@@ -501,7 +501,7 @@ fn truncation_exact_text() {
         .map(|d| d.message.clone())
         .collect();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0], "assignment to 'narrow' truncates from 32 bits to 16 bits");
+    assert_eq!(errors[0], "[E505] assignment to 'narrow' truncates from 32 bits to 16 bits");
 }
 
 #[test]

@@ -57,7 +57,7 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
             return WidthInferenceResult {
                 expr: None,
                 diagnostics: vec![WidthDiag::error(
-                    "expression tree exceeds maximum node count (512)".to_string(),
+                    "[E500] expression tree exceeds maximum node count (512)".to_string(),
                 )],
                 stats: WidthStats {
                     nodes_analyzed: 0,

@@ -55,7 +55,7 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
         iters += 1;
         if iters > MAX_FLOYD_WARSHALL_ITERS {
             diagnostics.push(WidthDiag::error(
-                "nonexpansive SCC solver exceeded iteration budget".to_string(),
+                "[E508] nonexpansive SCC solver exceeded iteration budget".to_string(),
             ));
             break;
         }
@@ -84,7 +84,7 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
                 .map(|s| s.name.as_str())
                 .unwrap_or("unknown");
             diagnostics.push(WidthDiag::error(format!(
-                "signal '{}' in nonexpansive SCC has no width anchor \
+                "[E509] signal '{}' in nonexpansive SCC has no width anchor \
                  (add an explicit type annotation)",
                 name
             )));
@@ -150,7 +150,7 @@ pub fn solve_expansive(
                 // Strategy 3: Hard error.
                 widths.push(0);
                 diagnostics.push(WidthDiag::error(format!(
-                    "signal '{}' is in an expansive SCC but has no provable \
+                    "[E510] signal '{}' is in an expansive SCC but has no provable \
                      width bound. Add an explicit type annotation or a \
                      bounded temporal guard.",
                     sig.name

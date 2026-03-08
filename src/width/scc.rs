@@ -55,7 +55,7 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
             iters += 1;
             if iters > max_iters {
                 diagnostics
-                    .push(WidthDiag::error("SCC detection exceeded iteration budget".to_string()));
+                    .push(WidthDiag::error("[E506] SCC detection exceeded iteration budget".to_string()));
                 return SccResult { sccs: Vec::new(), diagnostics };
             }
 
@@ -136,7 +136,7 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
                 .filter_map(|&i| graph.signal_names.get(i).map(|s| s.as_str()))
                 .collect();
             diagnostics.push(WidthDiag::error(format!(
-                "SCC with {} signals exceeds maximum size of {}; signals include: {}",
+                "[E507] SCC with {} signals exceeds maximum size of {}; signals include: {}",
                 members.len(),
                 MAX_SCC_SIZE,
                 names.join(", ")

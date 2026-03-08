@@ -1,6 +1,7 @@
 title: MIRR
 description: A hardware rule language for safety-critical systems
 remote_theme: just-the-docs/just-the-docs
+color_scheme: dark
 url: "https://brandonfromph.github.io"
 baseurl: "/mirr-project"
 

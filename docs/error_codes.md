@@ -19,6 +19,7 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E2xx   | 200–299 | Semantic analysis     | `MirrError::SemanticError`  |
 | E3xx   | 300–399 | Temporal compilation  | `MirrError::TemporalCompilationError` |
 | E4xx   | 400–499 | Pattern expansion     | `MirrError::PatternError`   |
+| E5xx   | 500–599 | Width inference        | `WidthDiag` (subsystem-local) |
 
 ## Parse Errors (E1xx)
 
@@ -103,3 +104,20 @@ The following variants were removed as dead code (never constructed):
 
 - `LexicalError` — lexer errors are correctly classified under `ParseError` (E1xx).
 - `TemporalCausalityViolation` — forward-declared for planned causality analysis; never implemented.
+
+## Width Inference Errors (E5xx)
+
+| Code | Message pattern | Source |
+|------|----------------|--------|
+| E500 | `expression tree exceeds maximum node count (512)` | `src/width/mod.rs` |
+| E501 | `signal '{name}' has no declared width` | `src/width/constraint.rs` |
+| E502 | `prev signal '{name}' has no declared width` | `src/width/constraint.rs` |
+| E503 | `node {id} ({desc}) has unresolved width` | `src/width/solver.rs` |
+| E504 | `node {id} ({desc}) requires {n} bits, exceeding maximum of 64` | `src/width/solver.rs` |
+| E505 | `assignment to '{target}' truncates from {n} bits to {m} bits` | `src/width/solver.rs` |
+| E506 | `SCC detection exceeded iteration budget` | `src/width/scc.rs` |
+| E507 | `SCC with {n} signals exceeds maximum size of {max}; signals include: {names}` | `src/width/scc.rs` |
+| E508 | `nonexpansive SCC solver exceeded iteration budget` | `src/width/scc_solver.rs` |
+| E509 | `signal '{name}' in nonexpansive SCC has no width anchor (add an explicit type annotation)` | `src/width/scc_solver.rs` |
+| E510 | `signal '{name}' is in an expansive SCC but has no provable width bound. Add an explicit type annotation or a bounded temporal guard.` | `src/width/scc_solver.rs` |
+| E511 | `COMPILER BUG: signal '{name}' solved width u{n} is less than declared u{m}` | `src/width/verify.rs` |

@@ -72,7 +72,7 @@ pub fn verify_least_solution(
                 // than what the signal needs. This shouldn't happen if
                 // the solver works correctly.
                 diagnostics.push(WidthDiag::error(format!(
-                    "COMPILER BUG: signal '{}' solved width u{} is less \
+                    "[E511] COMPILER BUG: signal '{}' solved width u{} is less \
                      than declared u{}",
                     sig.name, width, declared
                 )));

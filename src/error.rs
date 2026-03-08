@@ -12,6 +12,7 @@
 //! | E2xx   | 200–299   | Semantic errors         |
 //! | E3xx   | 300–399   | Temporal errors         |
 //! | E4xx   | 400–499   | Pattern errors          |
+//! | E5xx   | 500–599   | Width inference errors   |
 //!
 //! See `docs/error_codes.md` for the full catalogue.
 // ---------------------------------------------------------------------------
