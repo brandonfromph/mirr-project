@@ -103,7 +103,16 @@ The prefix classifies the error; the full code maps to a single creation site.
 | — | `Pattern '{name}' expects {N} arguments, got {M}.` | `src/expand/mod.rs` |
 | — | *(plus ~25 additional parse-level pattern messages)* | `src/parser/pattern_parser.rs` |
 
+{: .note }
+> Pattern error messages from `pattern_parser.rs` are not individually
+> catalogued here. All carry the `[E400]` prefix.
+
 ## Removed Variants
+
+{: .warning }
+> The `LexicalError` and `TemporalCausalityViolation` variants were removed.
+> If your tooling matches on these variants, update to use `ParseError` and
+> remove the causality match arm.
 
 The following variants were removed as dead code (never constructed):
 
@@ -126,6 +135,11 @@ The following variants were removed as dead code (never constructed):
 | E509 | `signal '{name}' in nonexpansive SCC has no width anchor (add an explicit type annotation)` | `src/width/scc_solver.rs` |
 | E510 | `signal '{name}' is in an expansive SCC but has no provable width bound. Add an explicit type annotation or a bounded temporal guard.` | `src/width/scc_solver.rs` |
 | E511 | `COMPILER BUG: signal '{name}' solved width {i\|u}{n} is less than declared {i\|u}{m}` | `src/width/verify.rs` |
+
+{: .important }
+> Error E511 indicates a compiler bug -- the solved width is narrower than
+> the declared type. If you encounter this error, please file a bug report
+> with the `.mirr` source that triggered it.
 
 ## Type Errors (E6xx)
 

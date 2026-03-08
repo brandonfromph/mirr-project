@@ -10,11 +10,19 @@ Each version section is organized by audience.
 
 ## 0.1.0 → 0.2.0
 
+{: .note }
+> All new fields use `#[serde(default)]`, so JSON deserialization of data
+> produced by older compiler versions continues to work without changes.
+
 ---
 
 ## For Rust API Consumers
 
 ### New enum variants on `PropertyFormula`
+
+{: .important }
+> If your code matches on `PropertyFormula` without a wildcard arm, you
+> must add cases for the three new variants or compilation will fail.
 
 `PropertyFormula` now has **6 variants** (was 3). If your code matches on this
 enum without a wildcard arm, you must handle the new variants:
@@ -175,6 +183,11 @@ categorize errors programmatically.
 ---
 
 ## 0.2.0 → 0.3.0
+
+{: .warning }
+> Version 0.3.0 introduces signed types, a type checker, and the R-SPU
+> backend. Code that matches exhaustively on `SignalType`, `UnaryOp`, or
+> `PatternParamKind` will require updates.
 
 Version 0.3.0 ships the results of 8 implementation campaigns. This section
 covers all breaking and notable changes.

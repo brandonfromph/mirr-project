@@ -48,6 +48,11 @@ cycle (typically 10 nanoseconds).
 
 Software can be fast, but it cannot guarantee timing. Hardware can.
 
+{: .important }
+> In safety-critical systems, timing is not a performance metric -- it is a
+> correctness requirement. A response that arrives 1 millisecond late in a
+> neonatal ventilator is not slow; it is wrong.
+
 ### What is a clock cycle?
 
 A hardware chip has a **clock** — a tiny oscillator that ticks at a fixed
@@ -187,6 +192,11 @@ module neonatal_respirator {
 ---
 
 ## Lesson 3: Your first MIRR program
+
+{: .tip }
+> If you remember only one thing from Lesson 2: **Signal** is data,
+> **Guard** is a condition over time, **Reflex** is the action. Everything
+> else in MIRR exists to support these three.
 
 Let us write a complete MIRR program step by step: a neonatal respirator
 safety monitor.
@@ -515,6 +525,11 @@ this always holds. I am asking you to prove that there exists at least one
 scenario where `clamp_valve` becomes true within 100 cycles."
 
 ### Properties do NOT generate hardware
+
+{: .warning }
+> Properties produce verification assertions, not hardware. A property like
+> `always (pressure > 10)` does not create a circuit that enforces the
+> condition. Only reflexes drive hardware outputs.
 
 This is important. A property like `always (pressure > 10)` does NOT
 create a circuit that enforces `pressure > 10`. It creates a check that
@@ -862,6 +877,11 @@ All types are integers (signed or unsigned) or booleans. Floating point arithmet
 requires specialized hardware units and is outside MIRR's scope.
 
 ### Why so minimal?
+
+{: .note }
+> MIRR follows NASA/JPL Power-of-10 coding rules: no recursion, bounded
+> loops, bounded memory. Every language construct maps to hardware with
+> predictable timing and resource usage.
 
 MIRR targets safety-critical systems — medical devices, flight
 controllers, industrial safety monitors. In these systems, simplicity is

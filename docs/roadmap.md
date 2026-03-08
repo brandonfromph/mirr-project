@@ -79,6 +79,10 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ## Phase 0 – Foundation (Completed)
 
+{: .tip }
+> Phases 0 through 8 are complete. The compiler is operational with 847+
+> passing tests, zero unsafe code, and zero clippy warnings.
+
 - **Goal:** Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.
 - **Tasks:**
   - Enforce `#![forbid(unsafe_code)]` and `#![deny(warnings)]` across all crates.
@@ -330,6 +334,10 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 ---
 
 ## Phase 9 – R-SPU Fabric & Multi-Core Integration (Not Started)
+
+{: .note }
+> Phases 9 and 10 are forward-looking design goals. They describe the
+> intended trajectory of the project, not current capabilities.
 
 - **Goal:** Scale the R-SPU design to multi-core fabric architectures for complex, safety-critical embedded systems.
 - **Scope:**

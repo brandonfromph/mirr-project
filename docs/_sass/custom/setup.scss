@@ -1,0 +1,23 @@
+// ── MIRR Custom Variables ────────────────────────────────────────
+// Imported after theme variables, before any CSS classes.
+
+// Callout color pairs: -000 (background/border), -300 (title/accent)
+// Safety-critical palette: teal=info, amber=caution, red=danger, green=guidance
+
+$note-000: #1a3a5c;
+$note-300: #4db8d9;
+
+$warning-000: #5c4a11;
+$warning-300: #d69e2e;
+
+$important-000: #5c1a1a;
+$important-300: #e05252;
+
+$tip-000: #134e2a;
+$tip-300: #22c55e;
+
+// Font stack override (Inter for UI, JetBrains Mono for code)
+$body-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  Helvetica, Arial, sans-serif !default;
+$mono-font-family: "JetBrains Mono", ui-monospace, SFMono-Regular,
+  "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !default;

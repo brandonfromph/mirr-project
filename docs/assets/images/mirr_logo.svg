@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">MIRR Ouroboros (Three Snakes)</title>
+  <desc id="desc">
+    A three-snake ouroboros emblem intended as the canonical logo for .mirr files.
+  </desc>
+
+  <defs>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.6" stdDeviation="1.6" flood-color="#020617" flood-opacity="0.55" />
+    </filter>
+  </defs>
+
+  <!-- Outer guide ring -->
+  <circle cx="128" cy="128" r="108" fill="none" stroke="#1f2937" stroke-width="2" opacity="0.25" />
+
+  <g filter="url(#soft-shadow)">
+    <!-- Snake A (Cyan) -->
+    <g transform="rotate(0 128 128)">
+      <path
+        d="M 128 34 A 94 94 0 0 1 219 128 A 94 94 0 0 1 176 207"
+        fill="none"
+        stroke="#00E5FF"
+        stroke-width="24"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path d="M 128 34 L 119 18 L 137 18 Z" fill="#00E5FF" />
+      <ellipse cx="185" cy="207" rx="13" ry="9" transform="rotate(28 185 207)" fill="#00E5FF" />
+      <circle cx="190" cy="205" r="2.2" fill="#0b1020" />
+      <path d="M 193 212 Q 186 214 180 210" fill="none" stroke="#0b1020" stroke-width="2" stroke-linecap="round" />
+    </g>
+
+    <!-- Snake B (Violet) -->
+    <g transform="rotate(120 128 128)">
+      <path
+        d="M 128 34 A 94 94 0 0 1 219 128 A 94 94 0 0 1 176 207"
+        fill="none"
+        stroke="#8B5CF6"
+        stroke-width="24"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path d="M 128 34 L 119 18 L 137 18 Z" fill="#8B5CF6" />
+      <ellipse cx="185" cy="207" rx="13" ry="9" transform="rotate(28 185 207)" fill="#8B5CF6" />
+      <circle cx="190" cy="205" r="2.2" fill="#0b1020" />
+      <path d="M 193 212 Q 186 214 180 210" fill="none" stroke="#0b1020" stroke-width="2" stroke-linecap="round" />
+    </g>
+
+    <!-- Snake C (Green) -->
+    <g transform="rotate(240 128 128)">
+      <path
+        d="M 128 34 A 94 94 0 0 1 219 128 A 94 94 0 0 1 176 207"
+        fill="none"
+        stroke="#22C55E"
+        stroke-width="24"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path d="M 128 34 L 119 18 L 137 18 Z" fill="#22C55E" />
+      <ellipse cx="185" cy="207" rx="13" ry="9" transform="rotate(28 185 207)" fill="#22C55E" />
+      <circle cx="190" cy="205" r="2.2" fill="#0b1020" />
+      <path d="M 193 212 Q 186 214 180 210" fill="none" stroke="#0b1020" stroke-width="2" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <!-- Core mark -->
+  <circle cx="128" cy="128" r="43" fill="#0b1020" stroke="#334155" stroke-width="3" />
+  <path d="M 128 95 L 142 112 L 128 129 L 114 112 Z" fill="#94a3b8" />
+  <circle cx="128" cy="128" r="8" fill="#64748b" />
+</svg>

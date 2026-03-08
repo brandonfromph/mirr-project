@@ -37,6 +37,11 @@ temporaries are allocated on-demand during emission.
 
 ## Resource Limits
 
+{: .warning }
+> All resource limits are hard compile-time caps. There is no dynamic
+> allocation. Exceeding any limit produces an immediate compilation error
+> (E701, E702, or E703).
+
 | Resource      | Limit | Constant           |
 |--------------|-------|--------------------|
 | Registers     | 256   | `MAX_REGISTERS`    |
@@ -112,6 +117,10 @@ Each tick executes in a fixed sequence:
 5. **Postamble** — `STORE_OUTPUT` for every output signal
 
 All instruction execution is single-cycle and deterministic.
+
+{: .note }
+> The R-SPU has no pipeline stalls, no branch prediction, and no speculative
+> execution. Timing is guaranteed by construction.
 
 ---
 
