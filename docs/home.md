@@ -48,7 +48,7 @@ them in hardware, with nanosecond response times.
 
 ## Quick Example
 
-```mirr
+```
 module neonatal_respirator {
     signal airway_pressure: in u16;
     signal clamp_valve:     out bool;
