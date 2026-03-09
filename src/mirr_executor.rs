@@ -3,6 +3,8 @@
 //! Drives the execution of parsed MIRR modules by evaluating guard conditions,
 //! firing reflexes, and updating signal state. Used by the MAPE-K simulation harness.
 
+#![forbid(unsafe_code)]
+
 use crate::ast::types::SignalKind;
 use crate::ast::{Expr, LiteralValue};
 use crate::mirr_driver::ObservedPush;

@@ -5,6 +5,8 @@
 //! back-references (`Prev`). All variants are `Serialize`/`Deserialize`.
 // ---------------------------------------------------------------------------
 
+#![forbid(unsafe_code)]
+
 use super::types::{BinaryOp, LiteralValue, UnaryOp};
 
 use serde::{Deserialize, Serialize};

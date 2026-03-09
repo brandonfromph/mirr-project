@@ -5,6 +5,8 @@
 //! parameter types, and origin metadata for DO-178C traceability.
 // ---------------------------------------------------------------------------
 
+#![forbid(unsafe_code)]
+
 use serde::{Deserialize, Serialize};
 
 use super::types::{SignalKind, SignalType};

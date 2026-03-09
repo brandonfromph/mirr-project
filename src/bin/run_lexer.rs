@@ -1,6 +1,8 @@
 //! Quick binary to exercise the MIRR lexer interpreter and show that the
 //! lexer written in the MIRR language actually executes and produces tokens.
 
+#![forbid(unsafe_code)]
+
 use nasa_rust_project::mirr_driver::collect_tokens_from_pushes;
 use nasa_rust_project::mirr_executor;
 

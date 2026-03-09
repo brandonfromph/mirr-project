@@ -24,6 +24,8 @@
 //! | Assume | `assume property` |
 // ---------------------------------------------------------------------------
 
+#![forbid(unsafe_code)]
+
 use serde::{Deserialize, Serialize};
 
 use super::expr::Expr;

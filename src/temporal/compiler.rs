@@ -12,6 +12,8 @@
 //! Implements the compilation pass that transforms high-level temporal guards
 //! into low-level representations using shift registers and counters.
 
+#![forbid(unsafe_code)]
+
 use crate::ast::{program::Guard, types::SignalType};
 use crate::error::MirrError;
 use crate::temporal::low_level_ir::{

@@ -8,6 +8,8 @@
 //! infers widths for all guard conditions and reflex RHS expressions, checking
 //! for unsafe truncations.
 
+#![forbid(unsafe_code)]
+
 use std::env;
 use std::fs;
 use std::process;

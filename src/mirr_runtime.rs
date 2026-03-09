@@ -3,6 +3,9 @@
 //! Provides Rust-side helpers to map lexer "push" events (from
 //! `compiler_mirr/lexer.mirr` `emit_push_*` signals) into host `Token` values.
 //! Unknown push kinds are converted into `Ident` tokens for test observability.
+
+#![forbid(unsafe_code)]
+
 use crate::lexer::tokenizer::Token;
 
 /// Map a lexer push-kind (as observed from MIRR emit_push_* signals)

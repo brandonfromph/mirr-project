@@ -3,6 +3,8 @@
 //! Defines the intermediate representation for compiled temporal guards
 //! that can be mapped to hardware primitives like shift registers and counters.
 
+#![forbid(unsafe_code)]
+
 use crate::ast::{
     types::{BinaryOp, LiteralValue, SignalType, UnaryOp},
     Expr,

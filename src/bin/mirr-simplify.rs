@@ -7,6 +7,8 @@
 //! In .mirr mode, simplifies all guard conditions and reflex RHS expressions,
 //! printing a summary of rule applications and node count reduction.
 
+#![forbid(unsafe_code)]
+
 use std::env;
 use std::fs;
 use std::process;

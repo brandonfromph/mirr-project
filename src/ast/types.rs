@@ -5,6 +5,8 @@
 //! binary and unary operators, and literal values.
 // ---------------------------------------------------------------------------
 
+#![forbid(unsafe_code)]
+
 use serde::{Deserialize, Serialize};
 
 /// Kind of signal in a MIRR module.

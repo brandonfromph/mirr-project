@@ -5,6 +5,8 @@
 //! module container. Extended with pattern calls and origin tagging (Phase 7b).
 // ---------------------------------------------------------------------------
 
+#![forbid(unsafe_code)]
+
 use serde::{Deserialize, Serialize};
 
 use super::expr::Expr;

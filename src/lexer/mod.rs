@@ -2,6 +2,8 @@
 //!
 //! Re-exports the tokenizer and `Token` enum.
 
+#![forbid(unsafe_code)]
+
 pub mod tokenizer;
 
 pub use tokenizer::{tokenize_expr, Token};

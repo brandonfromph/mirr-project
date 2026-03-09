@@ -5,6 +5,8 @@
 //! infrastructure. The generated output is printed to STDOUT so callers can
 //! redirect it to a file or pipe it into the compiler.
 
+#![forbid(unsafe_code)]
+
 use clap::{Arg, Command};
 use std::error::Error;
 use std::fmt::Write as FmtWrite;

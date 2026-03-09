@@ -3,6 +3,8 @@
 //! Provides byte-level and push-based interfaces for driving the lexer,
 //! collecting tokens, and observing tokenization events.
 
+#![forbid(unsafe_code)]
+
 use crate::lexer::tokenizer::Token;
 use crate::mirr_runtime;
 use std::str;
