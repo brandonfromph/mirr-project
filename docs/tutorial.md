@@ -724,15 +724,15 @@ the problem belongs to.
 
 | Code | Category | What went wrong |
 |------|----------|-----------------|
-| `[E100]` | Parse error | The compiler could not understand the syntax of your code |
+| `[E1xx]` | Parse error | The compiler could not understand the syntax of your code (E101–E166, E170–E181) |
 | `[E2xx]` | Semantic error | The syntax is valid but the meaning is wrong (E201–E216) |
 | `[E300]` | Temporal error | Something went wrong during temporal guard compilation |
-| `[E400]` | Pattern error | Something went wrong during pattern expansion |
+| `[E4xx]` | Pattern error | Something went wrong during pattern expansion (E400–E425) |
 | `[E5xx]` | Width error | Bit-width inference found an inconsistency (E500–E511) |
-| `[E6xx]` | Type error | Type checker found a type mismatch (E601–E607) |
-| `[E7xx]` | R-SPU error | R-SPU instruction emission failed (E701–E703) |
+| `[E6xx]` | Type error | Type checker found a type mismatch (E601–E609) |
+| `[E7xx]` | R-SPU error | R-SPU instruction emission failed (E701–E705) |
 
-### [E100] Parse errors
+### [E1xx] Parse errors
 
 **Unbalanced parentheses:**
 
@@ -745,7 +745,7 @@ guard g {
 ```
 
 ```
-[E100] Parse error: Unbalanced parentheses in expression.
+[E100] Parse error: [E171] Unbalanced parentheses in expression.
 ```
 
 **Fix:** Add the missing closing parenthesis: `when (pressure < 50)`.
@@ -758,7 +758,7 @@ signal x: in out bool;
 ```
 
 ```
-[E100] Parse error: Too many tokens in signal declaration.
+[E100] Parse error: [E114] Too many tokens in signal declaration.
 ```
 
 **Fix:** A signal is either `in` or `out`, not both.
@@ -774,7 +774,7 @@ signal x: out bool;   // x declared twice
 ```
 
 ```
-Semantic error: [E201] Duplicate signal name: 'x'.
+Semantic error: [E201] Duplicate signal name: 'x'. First defined at line 2.
 ```
 
 **Fix:** Give each signal a unique name.
@@ -789,10 +789,11 @@ guard g {
 ```
 
 ```
-Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'.
+Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'. Did you mean 'host'?
 ```
 
-**Fix:** Declare `ghost` as a signal, or correct the spelling.
+**Fix:** Declare `ghost` as a signal, or correct the spelling. The compiler
+suggests the closest match when a similar name exists.
 
 **Invalid `prev()` delay:**
 
@@ -813,7 +814,7 @@ Semantic error: [E209] 'p' contains prev('sensor') with delay 0; delay must be >
 These occur during the temporal lowering stage (when the compiler converts
 guards into counter circuits). They are rare in normal usage.
 
-### [E400] Pattern errors
+### [E4xx] Pattern errors
 
 **Undefined pattern:**
 

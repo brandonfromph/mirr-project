@@ -22,6 +22,7 @@
 use std::error::Error;
 use std::fmt;
 
+use crate::diagnostic::{Diagnostic, Severity};
 use crate::span::Span;
 
 #[derive(Debug, Clone)]
@@ -71,6 +72,111 @@ impl MirrError {
             | Self::RspuError { span, .. } => *span,
         }
     }
+
+    /// Extract the error message body (without variant prefix).
+    pub fn message(&self) -> &str {
+        match self {
+            Self::ParseError { message, .. }
+            | Self::SemanticError { message, .. }
+            | Self::TemporalCompilationError { message, .. }
+            | Self::PatternError { message, .. }
+            | Self::TypeError { message, .. }
+            | Self::RspuError { message, .. } => message,
+        }
+    }
+
+    /// Extract the error code (e.g. "E201") from the message if present.
+    ///
+    /// Looks for `[Ennn]` patterns in the message string.  Falls back to
+    /// the variant's generic code if no embedded code is found.
+    pub fn error_code(&self) -> Option<String> {
+        // First: try to extract an embedded [Ennn] from the message.
+        if let Some(code) = extract_embedded_code(self.message()) {
+            return Some(code);
+        }
+        // Fallback: generic code per variant.
+        match self {
+            Self::ParseError { .. } => Some("E100".to_string()),
+            Self::TemporalCompilationError { .. } => Some("E300".to_string()),
+            Self::PatternError { .. } => Some("E400".to_string()),
+            Self::RspuError { .. } => Some("E700".to_string()),
+            // SemanticError and TypeError embed codes in messages — no fallback.
+            Self::SemanticError { .. } | Self::TypeError { .. } => None,
+        }
+    }
+
+    /// Convert this error to a structured `Diagnostic` for rich rendering.
+    pub fn to_diagnostic(&self) -> Diagnostic {
+        let code = self.error_code();
+        let clean_msg = strip_embedded_code(self.message());
+
+        let severity = match self {
+            Self::RspuError { .. } => Severity::Error,
+            _ => Severity::Error,
+        };
+
+        let mut diag = Diagnostic::error(clean_msg).with_span(self.span());
+        diag.severity = severity;
+        if let Some(c) = code {
+            diag = diag.with_code(c);
+        }
+        diag
+    }
+}
+
+/// Extract an `[Ennn]` error code from the beginning of a message.
+fn extract_embedded_code(msg: &str) -> Option<String> {
+    if msg.len() < 5 {
+        return None;
+    }
+    let bytes = msg.as_bytes();
+    if bytes[0] != b'[' {
+        return None;
+    }
+    // Look for closing bracket within first 7 chars: [E100] or [E1234]
+    // Bounded: at most 7 iterations.
+    let mut i: usize = 1;
+    while i < msg.len().min(8) {
+        if bytes[i] == b']' {
+            let code = &msg[1..i];
+            // Validate: must start with 'E' followed by digits.
+            if code.len() >= 2
+                && code.as_bytes()[0] == b'E'
+                && code[1..].bytes().all(|b| b.is_ascii_digit())
+            {
+                return Some(code.to_string());
+            }
+            return None;
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Strip a leading `[Ennn] ` prefix from a message, returning the clean body.
+fn strip_embedded_code(msg: &str) -> String {
+    if msg.len() < 5 {
+        return msg.to_string();
+    }
+    let bytes = msg.as_bytes();
+    if bytes[0] != b'[' {
+        return msg.to_string();
+    }
+    // Bounded: at most 8 iterations.
+    let mut i: usize = 1;
+    while i < msg.len().min(8) {
+        if bytes[i] == b']' {
+            let rest = &msg[i + 1..];
+            // Skip optional space after bracket.
+            return if let Some(stripped) = rest.strip_prefix(' ') {
+                stripped.to_string()
+            } else {
+                rest.to_string()
+            };
+        }
+        i += 1;
+    }
+    msg.to_string()
 }
 
 impl fmt::Display for MirrError {
@@ -123,3 +229,75 @@ impl fmt::Display for MirrError {
 }
 
 impl Error for MirrError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_code_from_semantic_message() {
+        assert_eq!(
+            extract_embedded_code("[E201] duplicate signal name 'x'"),
+            Some("E201".to_string())
+        );
+    }
+
+    #[test]
+    fn extract_code_from_plain_message() {
+        assert_eq!(extract_embedded_code("Guard name is empty"), None);
+    }
+
+    #[test]
+    fn strip_code_preserves_body() {
+        assert_eq!(
+            strip_embedded_code("[E201] duplicate signal name 'x'"),
+            "duplicate signal name 'x'"
+        );
+    }
+
+    #[test]
+    fn strip_code_no_code_passes_through() {
+        assert_eq!(strip_embedded_code("Guard name is empty"), "Guard name is empty");
+    }
+
+    #[test]
+    fn to_diagnostic_semantic_with_code() {
+        let err = MirrError::SemanticError {
+            message: "[E201] duplicate signal name 'x'".to_string(),
+            span: Some(Span::full_line(4)),
+        };
+        let diag = err.to_diagnostic();
+        assert_eq!(diag.code.as_deref(), Some("E201"));
+        assert_eq!(diag.message, "duplicate signal name 'x'");
+        assert!(diag.span.is_some());
+    }
+
+    #[test]
+    fn to_diagnostic_parse_fallback_code() {
+        let err = MirrError::ParseError { message: "Guard name is empty".to_string(), span: None };
+        let diag = err.to_diagnostic();
+        assert_eq!(diag.code.as_deref(), Some("E100"));
+        assert_eq!(diag.message, "Guard name is empty");
+    }
+
+    #[test]
+    fn error_code_rspu_embedded() {
+        let err = MirrError::RspuError {
+            message: "[E701] register allocation failed".to_string(),
+            span: None,
+        };
+        assert_eq!(err.error_code().as_deref(), Some("E701"));
+    }
+
+    #[test]
+    fn display_backward_compat() {
+        let err = MirrError::ParseError {
+            message: "Guard name is empty".to_string(),
+            span: Some(Span::full_line(4)),
+        };
+        let s = err.to_string();
+        assert!(s.contains("[E100]"));
+        assert!(s.contains("Parse error:"));
+        assert!(s.contains("(line 5)"));
+    }
+}

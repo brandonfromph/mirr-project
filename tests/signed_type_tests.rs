@@ -323,8 +323,8 @@ fn mixed_signed_unsigned_arithmetic_rejected() {
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
     assert!(
-        err.to_string().contains("[E603]"),
-        "Expected E603 for mixed signed/unsigned, got: {}",
+        err.to_string().contains("[E608]"),
+        "Expected E608 for mixed signed/unsigned, got: {}",
         err
     );
 }
@@ -481,7 +481,7 @@ fn negate_bool_rejected() {
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
     let err = typecheck_module(&m).unwrap_err();
-    assert!(err.to_string().contains("[E603]"), "Expected E603 for negate on bool, got: {}", err);
+    assert!(err.to_string().contains("[E609]"), "Expected E609 for negate on bool, got: {}", err);
 }
 
 // ---------------------------------------------------------------------------

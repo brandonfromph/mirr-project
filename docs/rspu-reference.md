@@ -8,7 +8,7 @@ nav_order: 5
 > **Status:** Active
 > **Module:** `src/emit/rspu_isa.rs`, `src/emit/rspu_regalloc.rs`, `src/emit/rspu.rs`
 > **Campaign:** RSPU-001
-> **Error codes:** E701–E703
+> **Error codes:** E701–E705
 
 The **Reflex Signal Processing Unit (R-SPU)** is a safety-critical instruction-level
 target for MIRR. It maps 1:1 to MIRR's three primitives (signal, guard, reflex)
@@ -40,7 +40,7 @@ temporaries are allocated on-demand during emission.
 {: .warning }
 > All resource limits are hard compile-time caps. There is no dynamic
 > allocation. Exceeding any limit produces an immediate compilation error
-> (E701, E702, or E703).
+> (E701–E705).
 
 | Resource      | Limit | Constant           |
 |--------------|-------|--------------------|
@@ -146,6 +146,8 @@ Bounded by `MAX_EXPR_NODES` (512 nodes per expression).
 | E701 | Register partition overflow (too many signals for partition) |
 | E702 | Instruction budget exceeded (> 4096 instructions) |
 | E703 | Guard resource exhausted (> 64 temporal guard units) |
+| E704 | Expression exceeds maximum node count (512 nodes) |
+| E705 | Temporary registers exhausted (> 64 expression intermediates) |
 
 ---
 

@@ -14,6 +14,7 @@ use crate::ast::program::{MirrProgram, Module};
 use crate::ast::property::PropertyFormula;
 use crate::ast::types::SignalKind;
 use crate::error::MirrError;
+use crate::span::Span;
 
 /// Maximum nesting depth for pattern expansion (NASA P10 rule #1).
 const MAX_EXPANSION_DEPTH: usize = 4;
@@ -353,11 +354,11 @@ fn set_origin_tags(fragment: &mut ExpandedFragment, origin: &str) {
 /// Bounded: iterates over module signals + guards + reflexes + properties.
 fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
     // Collect all pattern-internal signal names and their origin.
-    let mut internal_signals: HashMap<&str, &str> = HashMap::with_capacity(16);
+    let mut internal_signals: HashMap<&str, (&str, Option<Span>)> = HashMap::with_capacity(16);
     for sig in &module.signals {
         if sig.kind == SignalKind::Internal {
             if let Some(ref origin) = sig.origin {
-                internal_signals.insert(&sig.name, origin);
+                internal_signals.insert(&sig.name, (origin, sig.span));
             }
         }
     }
@@ -377,14 +378,14 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
     for reflex in &module.reflexes {
         if reflex.origin.is_none() {
             for assignment in &reflex.assignments {
-                if let Some(origin) = internal_signals.get(assignment.target.as_str()) {
+                if let Some((origin, sig_span)) = internal_signals.get(assignment.target.as_str()) {
                     return Err(MirrError::SemanticError {
                         message: format!(
                             "[E212] signal '{}' is internal to pattern '{}' \
                              and cannot be referenced externally",
                             assignment.target, origin
                         ),
-                        span: None,
+                        span: *sig_span,
                     });
                 }
                 check_expr_no_internal_refs(&assignment.value, &internal_signals)?;
@@ -410,7 +411,9 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
         if let Some(ref reflex_origin) = reflex.origin {
             for assignment in &reflex.assignments {
                 // Check target.
-                if let Some(sig_origin) = internal_signals.get(assignment.target.as_str()) {
+                if let Some((sig_origin, sig_span)) =
+                    internal_signals.get(assignment.target.as_str())
+                {
                     if *sig_origin != reflex_origin.as_str() {
                         return Err(MirrError::SemanticError {
                             message: format!(
@@ -418,7 +421,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
                                  and cannot be referenced externally",
                                 assignment.target, sig_origin
                             ),
-                            span: None,
+                            span: *sig_span,
                         });
                     }
                 }
@@ -435,7 +438,7 @@ fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
 /// Uses explicit work stack — zero recursion.
 fn check_expr_no_internal_refs(
     expr: &Expr,
-    internal_signals: &HashMap<&str, &str>,
+    internal_signals: &HashMap<&str, (&str, Option<Span>)>,
 ) -> Result<(), MirrError> {
     const MAX_NODES: usize = 512;
     let mut stack: Vec<&Expr> = Vec::with_capacity(32);
@@ -462,14 +465,14 @@ fn check_expr_no_internal_refs(
             }
         };
         if let Some(sig_name) = name {
-            if let Some(origin) = internal_signals.get(sig_name) {
+            if let Some((origin, sig_span)) = internal_signals.get(sig_name) {
                 return Err(MirrError::SemanticError {
                     message: format!(
                         "[E213] signal '{}' is internal to pattern '{}' \
                          and cannot be referenced externally",
                         sig_name, origin
                     ),
-                    span: None,
+                    span: *sig_span,
                 });
             }
         }
@@ -482,7 +485,7 @@ fn check_expr_no_internal_refs(
 fn check_expr_cross_expansion(
     expr: &Expr,
     my_origin: &str,
-    internal_signals: &HashMap<&str, &str>,
+    internal_signals: &HashMap<&str, (&str, Option<Span>)>,
 ) -> Result<(), MirrError> {
     const MAX_NODES: usize = 512;
     let mut stack: Vec<&Expr> = Vec::with_capacity(32);
@@ -509,7 +512,7 @@ fn check_expr_cross_expansion(
             }
         };
         if let Some(sig_name) = name {
-            if let Some(sig_origin) = internal_signals.get(sig_name) {
+            if let Some((sig_origin, sig_span)) = internal_signals.get(sig_name) {
                 if *sig_origin != my_origin {
                     return Err(MirrError::SemanticError {
                         message: format!(
@@ -517,7 +520,7 @@ fn check_expr_cross_expansion(
                              and cannot be referenced externally",
                             sig_name, sig_origin
                         ),
-                        span: None,
+                        span: *sig_span,
                     });
                 }
             }
@@ -529,7 +532,7 @@ fn check_expr_cross_expansion(
 /// Check that a property formula does not reference internal signals.
 fn check_property_no_internal_refs(
     formula: &PropertyFormula,
-    internal_signals: &HashMap<&str, &str>,
+    internal_signals: &HashMap<&str, (&str, Option<Span>)>,
 ) -> Result<(), MirrError> {
     for expr in formula.exprs() {
         check_expr_no_internal_refs(expr, internal_signals)?;

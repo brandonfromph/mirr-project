@@ -27,6 +27,7 @@
 
 pub mod ast;
 pub mod bootstrap_runner;
+pub mod diagnostic;
 pub mod emit;
 pub mod error;
 pub mod expand;
@@ -40,6 +41,7 @@ pub mod parser;
 pub mod pipeline;
 pub mod simplify;
 pub mod span;
+pub mod suggest;
 pub mod temporal;
 pub mod typeck;
 pub mod validation;

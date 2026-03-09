@@ -36,7 +36,9 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
         if line.starts_with("def ") {
             if def_count >= MAX_PATTERN_DEFS {
                 return Err(MirrError::PatternError {
-                    message: format!("Too many pattern definitions (max {MAX_PATTERN_DEFS})."),
+                    message: format!(
+                        "[E400] Too many pattern definitions (max {MAX_PATTERN_DEFS})."
+                    ),
                     span: None,
                 });
             }
@@ -51,7 +53,7 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
     skip_empty_and_comments(&lines, &mut index);
 
     if index >= lines.len() {
-        return Err(MirrError::new("MIRR source is empty."));
+        return Err(MirrError::new("[E101] MIRR source is empty."));
     }
 
     let module = parse_module(&lines, &mut index)?;
@@ -72,20 +74,22 @@ fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::new("Expected 'module' declaration but found end of file."));
+        return Err(MirrError::new("[E102] Expected 'module' declaration but found end of file."));
     }
 
     let module_start = *index;
     let header = lines[*index].trim();
 
     if !header.starts_with("module ") {
-        return Err(MirrError::new(format!("Expected 'module' declaration, found: {header}"))
-            .with_span(Some(Span::full_line(*index as u32))));
+        return Err(MirrError::new(format!(
+            "[E103] Expected 'module' declaration, found: {header}"
+        ))
+        .with_span(Some(Span::full_line(*index as u32))));
     }
 
     let after_keyword = header
         .strip_prefix("module ")
-        .ok_or_else(|| MirrError::new("Malformed module declaration."))?;
+        .ok_or_else(|| MirrError::new("[E104] Malformed module declaration."))?;
 
     let (name_part, _) = match after_keyword.split_once('{') {
         Some(parts) => parts,
@@ -94,7 +98,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::new("Module name cannot be empty.")
+        return Err(MirrError::new("[E105] Module name cannot be empty.")
             .with_span(Some(Span::full_line(*index as u32))));
     }
 
@@ -144,45 +148,47 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
             *index += 1;
         } else {
             return Err(MirrError::new(format!(
-                "Unexpected line inside module '{}': {}",
+                "[E107] Unexpected line inside module '{}': {}",
                 module.name, line
             ))
             .with_span(Some(Span::full_line(*index as u32))));
         }
     }
 
-    Err(MirrError::new(format!("Module '{}' was not closed with '}}'.", module.name)))
+    Err(MirrError::new(format!("[E106] Module '{}' was not closed with '}}'.", module.name)))
 }
 
 fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> {
     let span = Some(Span::full_line(line_index as u32));
     let after_keyword = line
         .strip_prefix("signal ")
-        .ok_or_else(|| MirrError::new("Malformed signal declaration.").with_span(span))?;
+        .ok_or_else(|| MirrError::new("[E108] Malformed signal declaration.").with_span(span))?;
 
     let trimmed = after_keyword.trim();
     let without_semicolon = trimmed
         .strip_suffix(';')
-        .ok_or_else(|| MirrError::new("Signal declaration must end with ';'."))?;
+        .ok_or_else(|| MirrError::new("[E109] Signal declaration must end with ';'."))?;
 
     let (name_part, rest) = without_semicolon
         .split_once(':')
-        .ok_or_else(|| MirrError::new("Signal declaration must contain ':'."))?;
+        .ok_or_else(|| MirrError::new("[E110] Signal declaration must contain ':'."))?;
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::new("Signal name cannot be empty."));
+        return Err(MirrError::new("[E111] Signal name cannot be empty."));
     }
 
     let rest = rest.trim();
     let mut parts = rest.split_whitespace();
 
-    let kind_str =
-        parts.next().ok_or_else(|| MirrError::new("Signal kind (in/out/internal) is missing."))?;
-    let ty_str = parts.next().ok_or_else(|| MirrError::new("Signal type (bool/uN) is missing."))?;
+    let kind_str = parts
+        .next()
+        .ok_or_else(|| MirrError::new("[E112] Signal kind (in/out/internal) is missing."))?;
+    let ty_str =
+        parts.next().ok_or_else(|| MirrError::new("[E113] Signal type (bool/uN) is missing."))?;
 
     if parts.next().is_some() {
-        return Err(MirrError::new("Too many tokens in signal declaration."));
+        return Err(MirrError::new("[E114] Too many tokens in signal declaration."));
     }
 
     let kind = match kind_str {
@@ -191,7 +197,7 @@ fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> 
         "internal" => SignalKind::Internal,
         other => {
             return Err(MirrError::new(format!(
-                "Unknown signal kind: {other}. Expected 'in', 'out', or 'internal'."
+                "[E115] Unknown signal kind: {other}. Expected 'in', 'out', or 'internal'."
             )));
         }
     };
@@ -201,20 +207,20 @@ fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> 
     } else if let Some(width_str) = ty_str.strip_prefix('u') {
         let width: u32 = width_str.parse().map_err(|_| {
             MirrError::new(format!(
-                "Invalid unsigned width in type '{ty_str}'. Expected something like 'u16'."
+                "[E116] Invalid unsigned width in type '{ty_str}'. Expected something like 'u16'."
             ))
         })?;
         SignalType::Unsigned(width)
     } else if let Some(width_str) = ty_str.strip_prefix('i') {
         let width: u32 = width_str.parse().map_err(|_| {
             MirrError::new(format!(
-                "Invalid signed width in type '{ty_str}'. Expected something like 'i16'."
+                "[E117] Invalid signed width in type '{ty_str}'. Expected something like 'i16'."
             ))
         })?;
         SignalType::Signed(width)
     } else {
         return Err(MirrError::new(format!(
-            "Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'."
+            "[E118] Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'."
         )));
     };
 
@@ -223,14 +229,14 @@ fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> 
 
 fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::new("Unexpected end of file in guard declaration."));
+        return Err(MirrError::new("[E119] Unexpected end of file in guard declaration."));
     }
 
     let start_line = *index;
     let header = lines[*index].trim();
     let after_keyword = header
         .strip_prefix("guard ")
-        .ok_or_else(|| MirrError::new("Malformed guard declaration."))?;
+        .ok_or_else(|| MirrError::new("[E120] Malformed guard declaration."))?;
 
     let (name_part, _) = match after_keyword.split_once('{') {
         Some(parts) => parts,
@@ -239,69 +245,70 @@ fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::new("Guard name cannot be empty."));
+        return Err(MirrError::new("[E121] Guard name cannot be empty."));
     }
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!("Guard '{name}' missing 'when' clause.")));
+        return Err(MirrError::new(format!("[E122] Guard '{name}' missing 'when' clause.")));
     }
 
     let when_line = lines[*index].trim();
     if !when_line.starts_with("when ") {
         return Err(MirrError::new(format!(
-            "Guard '{name}' expected 'when' line, found: {when_line}"
+            "[E123] Guard '{name}' expected 'when' line, found: {when_line}"
         )));
     }
 
     let condition_str = when_line
         .strip_prefix("when ")
-        .ok_or_else(|| MirrError::new("Malformed 'when' line."))?
+        .ok_or_else(|| MirrError::new("[E124] Malformed 'when' line."))?
         .trim();
 
     let condition = parse_expression(condition_str)
-        .map_err(|e| MirrError::new(format!("Guard '{name}' condition parse error: {e}")))?;
+        .map_err(|e| MirrError::new(format!("[E125] Guard '{name}' condition parse error: {e}")))?;
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!("Guard '{name}' missing 'for' clause.")));
+        return Err(MirrError::new(format!("[E126] Guard '{name}' missing 'for' clause.")));
     }
 
     let for_line = lines[*index].trim();
     if !for_line.starts_with("for ") {
         return Err(MirrError::new(format!(
-            "Guard '{name}' expected 'for' line, found: {for_line}"
+            "[E127] Guard '{name}' expected 'for' line, found: {for_line}"
         )));
     }
 
     let after_for = for_line
         .strip_prefix("for ")
-        .ok_or_else(|| MirrError::new("Malformed 'for' line."))?
+        .ok_or_else(|| MirrError::new("[E128] Malformed 'for' line."))?
         .trim_start();
 
     let mut for_parts = after_for.split_whitespace();
-    let cycles_str =
-        for_parts.next().ok_or_else(|| MirrError::new("Expected cycle count after 'for'."))?;
+    let cycles_str = for_parts
+        .next()
+        .ok_or_else(|| MirrError::new("[E129] Expected cycle count after 'for'."))?;
 
     let cycles: u64 = cycles_str.trim().parse().map_err(|_| {
-        MirrError::new(format!("Invalid cycle count in guard '{name}': {cycles_str}"))
+        MirrError::new(format!("[E130] Invalid cycle count in guard '{name}': {cycles_str}"))
     })?;
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!("Guard '{name}' not closed with '}}'.")));
+        return Err(MirrError::new(format!("[E131] Guard '{name}' not closed with '}}'.")));
     }
 
     let closing = lines[*index].trim();
     if closing != "}" {
         return Err(MirrError::new(format!(
-            "Guard '{name}' expected closing '}}', found: {closing}"
+            "[E132] Guard '{name}' expected closing '}}', found: {closing}"
         )));
     }
 
@@ -325,20 +332,22 @@ fn parse_assignment(line: &str, line_index: usize) -> Result<Assignment, MirrErr
 
     let (lhs, rhs) = stripped
         .split_once('=')
-        .ok_or_else(|| MirrError::new(format!("Assignment missing '=': {stripped}")))?;
+        .ok_or_else(|| MirrError::new(format!("[E133] Assignment missing '=': {stripped}")))?;
 
     let target = lhs.trim();
     if target.is_empty() {
-        return Err(MirrError::new("Assignment target cannot be empty."));
+        return Err(MirrError::new("[E134] Assignment target cannot be empty."));
     }
 
     let rhs_str = rhs.trim();
     if rhs_str.is_empty() {
-        return Err(MirrError::new(format!("Assignment to '{target}' has empty right-hand side.")));
+        return Err(MirrError::new(format!(
+            "[E135] Assignment to '{target}' has empty right-hand side."
+        )));
     }
 
     let value = parse_expression(rhs_str)
-        .map_err(|e| MirrError::new(format!("Error in assignment to '{target}': {e}")))?;
+        .map_err(|e| MirrError::new(format!("[E136] Error in assignment to '{target}': {e}")))?;
 
     Ok(Assignment {
         target: target.to_string(),
@@ -349,14 +358,14 @@ fn parse_assignment(line: &str, line_index: usize) -> Result<Assignment, MirrErr
 
 fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::new("Unexpected end of file in reflex declaration."));
+        return Err(MirrError::new("[E137] Unexpected end of file in reflex declaration."));
     }
 
     let start_line = *index;
     let header = lines[*index].trim();
     let after_keyword = header
         .strip_prefix("reflex ")
-        .ok_or_else(|| MirrError::new("Malformed reflex declaration."))?;
+        .ok_or_else(|| MirrError::new("[E138] Malformed reflex declaration."))?;
 
     let (name_part, _) = match after_keyword.split_once('{') {
         Some(parts) => parts,
@@ -365,25 +374,25 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::new("Reflex name cannot be empty."));
+        return Err(MirrError::new("[E139] Reflex name cannot be empty."));
     }
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!("Reflex '{name}' missing 'on' clause.")));
+        return Err(MirrError::new(format!("[E140] Reflex '{name}' missing 'on' clause.")));
     }
 
     let on_line = lines[*index].trim();
     if !on_line.starts_with("on ") {
         return Err(MirrError::new(format!(
-            "Reflex '{name}' expected 'on' line, found: {on_line}"
+            "[E141] Reflex '{name}' expected 'on' line, found: {on_line}"
         )));
     }
 
     let after_on =
-        on_line.strip_prefix("on ").ok_or_else(|| MirrError::new("Malformed 'on' line."))?;
+        on_line.strip_prefix("on ").ok_or_else(|| MirrError::new("[E142] Malformed 'on' line."))?;
 
     let (guards_part, _) = match after_on.split_once('{') {
         Some(parts) => parts,
@@ -399,7 +408,9 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
     }
 
     if guard_names.is_empty() {
-        return Err(MirrError::new(format!("Reflex '{name}' has no guard names in 'on' clause.")));
+        return Err(MirrError::new(format!(
+            "[E143] Reflex '{name}' has no guard names in 'on' clause."
+        )));
     }
 
     *index += 1;
@@ -422,7 +433,7 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
         }
 
         let assignment = parse_assignment(line, *index)
-            .map_err(|e| MirrError::new(format!("In reflex '{name}': {e}")))?;
+            .map_err(|e| MirrError::new(format!("[E144] In reflex '{name}': {e}")))?;
         assignments.push(assignment);
 
         *index += 1;
@@ -431,13 +442,13 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!("Reflex '{name}' not closed with '}}'.")));
+        return Err(MirrError::new(format!("[E145] Reflex '{name}' not closed with '}}'.")));
     }
 
     let closing = lines[*index].trim();
     if closing != "}" {
         return Err(MirrError::new(format!(
-            "Reflex '{name}' expected closing '}}', found: {closing}"
+            "[E146] Reflex '{name}' expected closing '}}', found: {closing}"
         )));
     }
 
@@ -454,14 +465,14 @@ fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> 
 
 fn parse_property(lines: &[&str], index: &mut usize) -> Result<PropertyDecl, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::new("Unexpected end of file in property declaration."));
+        return Err(MirrError::new("[E147] Unexpected end of file in property declaration."));
     }
 
     let start_line = *index;
     let header = lines[*index].trim();
     let after_keyword = header
         .strip_prefix("property ")
-        .ok_or_else(|| MirrError::new("Malformed property declaration."))?;
+        .ok_or_else(|| MirrError::new("[E148] Malformed property declaration."))?;
 
     let (name_part, _) = match after_keyword.split_once('{') {
         Some(parts) => parts,
@@ -470,14 +481,16 @@ fn parse_property(lines: &[&str], index: &mut usize) -> Result<PropertyDecl, Mir
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::new("Property name cannot be empty."));
+        return Err(MirrError::new("[E149] Property name cannot be empty."));
     }
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!("Property '{name}' missing formula (always/never).")));
+        return Err(MirrError::new(format!(
+            "[E150] Property '{name}' missing formula (always/never)."
+        )));
     }
 
     let formula_line = lines[*index].trim();
@@ -487,13 +500,13 @@ fn parse_property(lines: &[&str], index: &mut usize) -> Result<PropertyDecl, Mir
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(MirrError::new(format!("Property '{name}' not closed with '}}'.")));
+        return Err(MirrError::new(format!("[E151] Property '{name}' not closed with '}}'.")));
     }
 
     let closing = lines[*index].trim();
     if closing != "}" {
         return Err(MirrError::new(format!(
-            "Property '{name}' expected closing '}}', found: {closing}"
+            "[E152] Property '{name}' expected closing '}}', found: {closing}"
         )));
     }
 
@@ -568,7 +581,7 @@ fn parse_formula_body(stripped: &str, name: &str) -> Result<PropertyFormula, Mir
     }
 
     Err(MirrError::new(format!(
-        "Property '{name}' formula must start with 'always', 'never', or 'eventually'."
+        "[E153] Property '{name}' formula must start with 'always', 'never', or 'eventually'."
     )))
 }
 
@@ -586,15 +599,17 @@ fn parse_always_body(body: &str, name: &str) -> Result<PropertyFormula, MirrErro
 /// Parse the inner content which may be a simple expression or an implication.
 fn parse_always_or_implies_inner(inner: &str, name: &str) -> Result<PropertyFormula, MirrError> {
     if let Some((lhs, rhs)) = inner.split_once(" -> ") {
-        let antecedent = parse_expression(lhs.trim())
-            .map_err(|e| MirrError::new(format!("Property '{name}' antecedent error: {e}")))?;
-        let consequent = parse_expression(rhs.trim())
-            .map_err(|e| MirrError::new(format!("Property '{name}' consequent error: {e}")))?;
+        let antecedent = parse_expression(lhs.trim()).map_err(|e| {
+            MirrError::new(format!("[E155] Property '{name}' antecedent error: {e}"))
+        })?;
+        let consequent = parse_expression(rhs.trim()).map_err(|e| {
+            MirrError::new(format!("[E156] Property '{name}' consequent error: {e}"))
+        })?;
         return Ok(PropertyFormula::AlwaysImplies { antecedent, consequent });
     }
 
     let expr = parse_expression(inner)
-        .map_err(|e| MirrError::new(format!("Property '{name}' formula error: {e}")))?;
+        .map_err(|e| MirrError::new(format!("[E157] Property '{name}' formula error: {e}")))?;
     Ok(PropertyFormula::Always(expr))
 }
 
@@ -603,15 +618,17 @@ fn parse_never_body(body: &str, name: &str) -> Result<PropertyFormula, MirrError
 
     // Check for never (P -> Q) — NeverImplies
     if let Some((lhs, rhs)) = inner.split_once(" -> ") {
-        let antecedent = parse_expression(lhs.trim())
-            .map_err(|e| MirrError::new(format!("Property '{name}' antecedent error: {e}")))?;
-        let consequent = parse_expression(rhs.trim())
-            .map_err(|e| MirrError::new(format!("Property '{name}' consequent error: {e}")))?;
+        let antecedent = parse_expression(lhs.trim()).map_err(|e| {
+            MirrError::new(format!("[E155] Property '{name}' antecedent error: {e}"))
+        })?;
+        let consequent = parse_expression(rhs.trim()).map_err(|e| {
+            MirrError::new(format!("[E156] Property '{name}' consequent error: {e}"))
+        })?;
         return Ok(PropertyFormula::NeverImplies { antecedent, consequent });
     }
 
     let expr = parse_expression(inner)
-        .map_err(|e| MirrError::new(format!("Property '{name}' formula error: {e}")))?;
+        .map_err(|e| MirrError::new(format!("[E157] Property '{name}' formula error: {e}")))?;
     Ok(PropertyFormula::Never(expr))
 }
 
@@ -620,34 +637,36 @@ fn parse_eventually_body(body: &str, name: &str) -> Result<PropertyFormula, Mirr
     let rest = body
         .strip_prefix("within")
         .ok_or_else(|| {
-            MirrError::new(format!("Property '{name}': expected 'eventually within N (expr)'."))
+            MirrError::new(format!(
+                "[E158] Property '{name}': expected 'eventually within N (expr)'."
+            ))
         })?
         .trim();
 
     // Split off the cycle count before the '('
     let paren_pos = rest.find('(').ok_or_else(|| {
         MirrError::new(format!(
-            "Property '{name}': eventually within requires parenthesized expression."
+            "[E159] Property '{name}': eventually within requires parenthesized expression."
         ))
     })?;
 
     let cycles_str = rest[..paren_pos].trim();
     let cycles: u32 = cycles_str.parse().map_err(|_| {
         MirrError::new(format!(
-            "Property '{name}': invalid cycle count '{cycles_str}' in eventually within."
+            "[E160] Property '{name}': invalid cycle count '{cycles_str}' in eventually within."
         ))
     })?;
 
     if cycles < 1 {
         return Err(MirrError::new(format!(
-            "Property '{name}': eventually within requires cycles >= 1."
+            "[E161] Property '{name}': eventually within requires cycles >= 1."
         )));
     }
 
     let expr_part = &rest[paren_pos..];
     let inner = unwrap_parens(expr_part, name, "eventually within")?;
     let expr = parse_expression(inner)
-        .map_err(|e| MirrError::new(format!("Property '{name}' formula error: {e}")))?;
+        .map_err(|e| MirrError::new(format!("[E157] Property '{name}' formula error: {e}")))?;
 
     Ok(PropertyFormula::EventuallyWithin { expr, cycles })
 }
@@ -665,7 +684,7 @@ fn try_parse_followed_by(inner: &str, name: &str) -> Result<Option<PropertyFormu
     // Split delay from response: "N Q" where Q may contain spaces
     let space_pos = after_fb.find(' ').ok_or_else(|| {
         MirrError::new(format!(
-            "Property '{name}': expected 'P followed_by N Q' with delay and response expression."
+            "[E162] Property '{name}': expected 'P followed_by N Q' with delay and response expression."
         ))
     })?;
 
@@ -673,17 +692,21 @@ fn try_parse_followed_by(inner: &str, name: &str) -> Result<Option<PropertyFormu
     let response_str = after_fb[space_pos + 1..].trim();
 
     let delay_cycles: u32 = delay_str.parse().map_err(|_| {
-        MirrError::new(format!("Property '{name}': invalid delay '{delay_str}' in followed_by."))
+        MirrError::new(format!(
+            "[E163] Property '{name}': invalid delay '{delay_str}' in followed_by."
+        ))
     })?;
 
     if delay_cycles < 1 {
-        return Err(MirrError::new(format!("Property '{name}': followed_by requires delay >= 1.")));
+        return Err(MirrError::new(format!(
+            "[E164] Property '{name}': followed_by requires delay >= 1."
+        )));
     }
 
     let trigger = parse_expression(trigger_str)
-        .map_err(|e| MirrError::new(format!("Property '{name}' trigger error: {e}")))?;
+        .map_err(|e| MirrError::new(format!("[E165] Property '{name}' trigger error: {e}")))?;
     let response = parse_expression(response_str)
-        .map_err(|e| MirrError::new(format!("Property '{name}' response error: {e}")))?;
+        .map_err(|e| MirrError::new(format!("[E166] Property '{name}' response error: {e}")))?;
 
     Ok(Some(PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles }))
 }
@@ -692,7 +715,7 @@ fn unwrap_parens<'a>(body: &'a str, name: &str, keyword: &str) -> Result<&'a str
     let trimmed = body.trim();
     if !trimmed.starts_with('(') || !trimmed.ends_with(')') {
         return Err(MirrError::new(format!(
-            "Property '{name}': {keyword} formula must be wrapped in parentheses."
+            "[E154] Property '{name}': {keyword} formula must be wrapped in parentheses."
         )));
     }
     Ok(&trimmed[1..trimmed.len() - 1])

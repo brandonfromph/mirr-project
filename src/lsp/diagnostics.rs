@@ -77,19 +77,12 @@ fn error_severity(error: &MirrError) -> u32 {
     }
 }
 
-/// Extract a string error code from the formatted message, if present.
+/// Extract a string error code from the error.
+///
+/// Delegates to [`MirrError::error_code`] which inspects embedded `[Ennn]`
+/// codes and falls back to per-variant defaults.
 pub fn error_code(error: &MirrError) -> Option<String> {
-    let msg = error.to_string();
-    // Pattern: "[E123]" near start of formatted message.
-    if let Some(start) = msg.find("[E") {
-        if let Some(end) = msg[start..].find(']') {
-            let code = &msg[start + 1..start + end];
-            if code.len() >= 4 && code.len() <= 5 {
-                return Some(code.to_string());
-            }
-        }
-    }
-    None
+    error.error_code()
 }
 
 #[cfg(test)]
@@ -147,7 +140,7 @@ mod tests {
     #[test]
     fn error_code_none_when_absent() {
         let err = MirrError::new("no code here");
-        // ParseError Display prepends [E100], so it WILL have a code.
+        // ParseError falls back to E100 via MirrError::error_code().
         assert_eq!(error_code(&err), Some("E100".to_string()));
     }
 }

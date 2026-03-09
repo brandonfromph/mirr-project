@@ -162,7 +162,7 @@ impl TemporalCompiler {
                         "guard '{}': condition cannot be lowered to hardware — unsupported form",
                         guard.name
                     ),
-                    span: None,
+                    span: guard.span,
                 })
             }
         }
@@ -245,7 +245,7 @@ impl TemporalCompiler {
                     "guard '{}': condition cannot be lowered to hardware — {}",
                     guard.name, reason
                 ),
-                span: None,
+                span: guard.span,
             }
         })
     }

@@ -50,28 +50,29 @@ const KEYWORDS: &[&str] = &[
 /// Bounded: body lines <= MAX_REFLECT_LINES, brace depth <= MAX_BRACE_DEPTH.
 pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef, MirrError> {
     if *index >= lines.len() {
-        return Err(pattern_err("Unexpected end of file in pattern definition."));
+        return Err(pattern_err("[E401] Unexpected end of file in pattern definition."));
     }
 
     // Collect the full header (may span multiple lines until we see `{` after `)`)
     let header = collect_def_header(lines, index)?;
 
     // Extract name and param string from header.
-    let after_def =
-        header.strip_prefix("def ").ok_or_else(|| pattern_err("Malformed pattern definition."))?;
+    let after_def = header
+        .strip_prefix("def ")
+        .ok_or_else(|| pattern_err("[E402] Malformed pattern definition."))?;
 
     let open_paren =
-        after_def.find('(').ok_or_else(|| pattern_err("Pattern definition missing '('."))?;
+        after_def.find('(').ok_or_else(|| pattern_err("[E403] Pattern definition missing '('."))?;
 
     let name = after_def[..open_paren].trim();
     if name.is_empty() {
-        return Err(pattern_err("Pattern name cannot be empty."));
+        return Err(pattern_err("[E404] Pattern name cannot be empty."));
     }
 
     // Find the matching close paren.
     let close_paren = after_def
         .rfind(')')
-        .ok_or_else(|| pattern_err(format!("Pattern '{name}' missing closing ')'")))?;
+        .ok_or_else(|| pattern_err(format!("[E405] Pattern '{name}' missing closing ')'")))?;
 
     let param_str = &after_def[open_paren + 1..close_paren];
     let params = parse_pattern_params(param_str, name)?;
@@ -80,13 +81,13 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(pattern_err(format!("Pattern '{name}' missing 'reflect' block.")));
+        return Err(pattern_err(format!("[E406] Pattern '{name}' missing 'reflect' block.")));
     }
 
     let reflect_line = lines[*index].trim();
     if !reflect_line.starts_with("reflect") {
         return Err(pattern_err(format!(
-            "Pattern '{name}' expected 'reflect' block, found: {reflect_line}"
+            "[E407] Pattern '{name}' expected 'reflect' block, found: {reflect_line}"
         )));
     }
 
@@ -96,7 +97,7 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
         skip_empty_and_comments(lines, index);
         if *index >= lines.len() || !lines[*index].trim().starts_with('{') {
             return Err(pattern_err(format!(
-                "Pattern '{name}' reflect block missing opening '{{'."
+                "[E408] Pattern '{name}' reflect block missing opening '{{'."
             )));
         }
     }
@@ -153,7 +154,7 @@ fn collect_def_header(lines: &[&str], index: &mut usize) -> Result<String, MirrE
         }
     }
 
-    Err(pattern_err("Pattern definition header not closed with ') {'."))
+    Err(pattern_err("[E409] Pattern definition header not closed with ') {'."))
 }
 
 /// Parse the comma-separated parameter list.
@@ -172,7 +173,7 @@ fn parse_pattern_params(param_str: &str, name: &str) -> Result<Vec<PatternParam>
     let parts: Vec<&str> = trimmed.split(',').collect();
     if parts.len() > MAX_PARAMS {
         return Err(pattern_err(format!(
-            "Pattern '{name}' has too many parameters (max {MAX_PARAMS})."
+            "[E410] Pattern '{name}' has too many parameters (max {MAX_PARAMS})."
         )));
     }
 
@@ -192,12 +193,14 @@ fn parse_pattern_params(param_str: &str, name: &str) -> Result<Vec<PatternParam>
 /// Parse a single parameter declaration like `sensor: signal in u16` or `low: u16`.
 fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, MirrError> {
     let (name_part, type_part) = param_str.split_once(':').ok_or_else(|| {
-        pattern_err(format!("Pattern '{def_name}' parameter missing ':': {param_str}"))
+        pattern_err(format!("[E411] Pattern '{def_name}' parameter missing ':': {param_str}"))
     })?;
 
     let pname = name_part.trim();
     if pname.is_empty() {
-        return Err(pattern_err(format!("Pattern '{def_name}' has parameter with empty name.")));
+        return Err(pattern_err(format!(
+            "[E412] Pattern '{def_name}' has parameter with empty name."
+        )));
     }
 
     let type_str = type_part.trim();
@@ -209,7 +212,7 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
 
         let kind_str = tokens.next().ok_or_else(|| {
             pattern_err(format!(
-                "Pattern '{def_name}' signal parameter '{pname}' missing direction."
+                "[E413] Pattern '{def_name}' signal parameter '{pname}' missing direction."
             ))
         })?;
 
@@ -219,13 +222,15 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
             "internal" => SignalKind::Internal,
             other => {
                 return Err(pattern_err(format!(
-                    "Pattern '{def_name}' parameter '{pname}': unknown signal kind '{other}'."
+                    "[E414] Pattern '{def_name}' parameter '{pname}': unknown signal kind '{other}'."
                 )));
             }
         };
 
         let ty_str = tokens.next().ok_or_else(|| {
-            pattern_err(format!("Pattern '{def_name}' signal parameter '{pname}' missing type."))
+            pattern_err(format!(
+                "[E415] Pattern '{def_name}' signal parameter '{pname}' missing type."
+            ))
         })?;
 
         let ty = parse_signal_type(ty_str, def_name, pname)?;
@@ -249,7 +254,7 @@ fn parse_signal_type(ty_str: &str, def_name: &str, pname: &str) -> Result<Signal
     if let Some(width_str) = ty_str.strip_prefix('u') {
         let width: u32 = width_str.parse().map_err(|_| {
             pattern_err(format!(
-                "Pattern '{def_name}' parameter '{pname}': invalid type '{ty_str}'."
+                "[E416] Pattern '{def_name}' parameter '{pname}': invalid type '{ty_str}'."
             ))
         })?;
         return Ok(SignalType::Unsigned(width));
@@ -257,13 +262,13 @@ fn parse_signal_type(ty_str: &str, def_name: &str, pname: &str) -> Result<Signal
     if let Some(width_str) = ty_str.strip_prefix('i') {
         let width: u32 = width_str.parse().map_err(|_| {
             pattern_err(format!(
-                "Pattern '{def_name}' parameter '{pname}': invalid type '{ty_str}'."
+                "[E416] Pattern '{def_name}' parameter '{pname}': invalid type '{ty_str}'."
             ))
         })?;
         return Ok(SignalType::Signed(width));
     }
     Err(pattern_err(format!(
-        "Pattern '{def_name}' parameter '{pname}': unknown type '{ty_str}'. Expected 'bool', 'uN', or 'iN'."
+        "[E417] Pattern '{def_name}' parameter '{pname}': unknown type '{ty_str}'. Expected 'bool', 'uN', or 'iN'."
     )))
 }
 
@@ -291,7 +296,7 @@ fn collect_reflect_body(
                     depth = depth.saturating_add(1);
                     if depth > MAX_BRACE_DEPTH {
                         return Err(pattern_err(format!(
-                            "Pattern '{name}' reflect body exceeds maximum brace depth ({MAX_BRACE_DEPTH})."
+                            "[E418] Pattern '{name}' reflect body exceeds maximum brace depth ({MAX_BRACE_DEPTH})."
                         )));
                     }
                 }
@@ -316,7 +321,7 @@ fn collect_reflect_body(
         line_count += 1;
     }
 
-    Err(pattern_err(format!("Pattern '{name}' reflect block not closed with '}}'.")))
+    Err(pattern_err(format!("[E419] Pattern '{name}' reflect block not closed with '}}'.")))
 }
 
 // ---------------------------------------------------------------------------
@@ -364,20 +369,21 @@ pub fn parse_pattern_call(line: &str) -> Result<PatternCall, MirrError> {
     // Strip trailing ";".
     let without_semi = trimmed
         .strip_suffix(';')
-        .ok_or_else(|| pattern_err("Pattern call must end with ';'."))?
+        .ok_or_else(|| pattern_err("[E420] Pattern call must end with ';'."))?
         .trim();
 
     // Find the opening paren.
-    let open = without_semi.find('(').ok_or_else(|| pattern_err("Pattern call missing '('."))?;
+    let open =
+        without_semi.find('(').ok_or_else(|| pattern_err("[E421] Pattern call missing '('."))?;
 
     let pattern_name = without_semi[..open].trim();
     if pattern_name.is_empty() {
-        return Err(pattern_err("Pattern call has empty name."));
+        return Err(pattern_err("[E422] Pattern call has empty name."));
     }
 
     // Find the closing paren.
     let close = without_semi.rfind(')').ok_or_else(|| {
-        pattern_err(format!("Pattern call '{pattern_name}' missing closing ')'."))
+        pattern_err(format!("[E423] Pattern call '{pattern_name}' missing closing ')'."))
     })?;
 
     let args_str = &without_semi[open + 1..close];
@@ -403,7 +409,7 @@ fn parse_call_args(args_str: &str, call_name: &str) -> Result<Vec<PatternArg>, M
     let parts: Vec<&str> = trimmed.split(',').collect();
     if parts.len() > MAX_ARGS {
         return Err(pattern_err(format!(
-            "Pattern call '{call_name}' has too many arguments (max {MAX_ARGS})."
+            "[E424] Pattern call '{call_name}' has too many arguments (max {MAX_ARGS})."
         )));
     }
 
@@ -411,7 +417,9 @@ fn parse_call_args(args_str: &str, call_name: &str) -> Result<Vec<PatternArg>, M
     for part in &parts {
         let arg_str = part.trim();
         if arg_str.is_empty() {
-            return Err(pattern_err(format!("Pattern call '{call_name}' has empty argument.")));
+            return Err(pattern_err(format!(
+                "[E425] Pattern call '{call_name}' has empty argument."
+            )));
         }
 
         let arg = if arg_str == "true" {

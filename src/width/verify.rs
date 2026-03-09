@@ -78,7 +78,8 @@ pub fn verify_least_solution(
                     "[E511] COMPILER BUG: signal '{}' solved width {} is less \
                      than declared {}",
                     sig.name, solved_display, declared_display
-                )));
+                )).with_code("E511").with_signal(&sig.name)
+                  .with_help("This is a compiler bug. Please report it at https://github.com/brandonfromph/mirr-project/issues"));
                 is_minimal = false;
             }
             // If width > declared, that's fine — the SCC solver

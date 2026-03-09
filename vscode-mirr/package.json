@@ -10,6 +10,19 @@
   "categories": [
     "Programming Languages"
   ],
+  "main": "./out/extension.js",
+  "activationEvents": ["onLanguage:mirr"],
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  },
   "contributes": {
     "languages": [
       {
@@ -30,6 +43,16 @@
         "scopeName": "source.mirr",
         "path": "./syntaxes/mirr.tmLanguage.json"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "MIRR",
+      "properties": {
+        "mirr.lspPath": {
+          "type": "string",
+          "default": "mirr-lsp",
+          "description": "Path to the mirr-lsp language server executable."
+        }
+      }
+    }
   }
 }

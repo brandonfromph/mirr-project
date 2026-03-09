@@ -55,13 +55,13 @@ with the target signal type. Compatible means:
 ### T2: Arithmetic Operators (`+`, `-`, `*`)
 
 - Both operands must be numeric (not Bool — E603)
-- Both operands must be the same category (both signed or both unsigned — E603)
+- Both operands must be the same category (both signed or both unsigned — E608)
 - Result width = `max(left_width, right_width)`, preserving signedness
 
 ### T3: Shift Operators (`<<`, `>>`)
 
 - Both operands must be numeric (not Bool — E603)
-- Both must be same category (signed/unsigned — E603)
+- Both must be same category (signed/unsigned — E608)
 - Result width = left operand width, preserving signedness
 
 ### T4: Logical Operators (`&&`, `||`)
@@ -100,7 +100,7 @@ with the target signal type. Compatible means:
 
 - `Unsigned(N)` -> `Signed(N+1)` — two's complement requires one extra bit
 - `Signed(N)` -> `Signed(N)` — preserves width
-- `Bool` -> error (E603) — use `!` for logical negation
+- `Bool` -> error (E609) — use `!` for logical negation
 
 ### T10: Previous-tick (`prev(signal, delay)`)
 
@@ -131,11 +131,11 @@ expression**. This eliminates an entire class of bugs common in C/C++ where
 implicit signed-to-unsigned conversion causes unexpected behavior.
 
 ```mirr
-// REJECTED — E603: cannot mix signed and unsigned
+// REJECTED — E608: cannot mix signed and unsigned
 signal a: in u16;
 signal b: in i16;
 reflex always_on {
-    // error_val = a + b;  // E603
+    // error_val = a + b;  // E608
 }
 
 // CORRECT — explicit same-category usage
@@ -174,11 +174,13 @@ let type_map = &result.type_map;  // Option<TypeMap>
 |------|------|-------------|
 | E601 | T11  | Guard condition must be `Bool` |
 | E602 | T1   | Assignment type incompatible with target signal |
-| E603 | T2/T3/T9 | Arithmetic operator requires numeric operands / signed-unsigned mismatch |
+| E603 | T2/T3 | Arithmetic operator requires numeric operands (not Bool) |
 | E604 | T4   | Logical operator requires `Bool` operands |
 | E605 | T6   | Ordering comparison on `Bool` or signed/unsigned mismatch |
 | E606 | T7   | Equality comparison across type categories |
 | E607 | T5   | XOR requires matching types |
+| E608 | T2/T3 | Arithmetic operator cannot mix signed and unsigned operands |
+| E609 | T9   | Arithmetic negation cannot be applied to `Bool` |
 
 ---
 

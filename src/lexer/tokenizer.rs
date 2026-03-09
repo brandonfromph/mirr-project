@@ -125,9 +125,9 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
                 pos += 1;
             }
             let num_str = &input[start..pos];
-            let value: u64 = num_str
-                .parse()
-                .map_err(|_| MirrError::new(format!("Integer literal too large: '{num_str}'.")))?;
+            let value: u64 = num_str.parse().map_err(|_| {
+                MirrError::new(format!("[E180] Integer literal too large: '{num_str}'."))
+            })?;
             arena.push(Token::Integer(value));
             continue;
         }
@@ -154,7 +154,7 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         let ch_display =
             if b.is_ascii() { (b as char).to_string() } else { format!("0x{:02X}", b) };
         return Err(MirrError::new(format!(
-            "Unexpected character '{}' in expression.",
+            "[E181] Unexpected character '{}' in expression.",
             ch_display
         )));
     }

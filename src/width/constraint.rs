@@ -91,10 +91,14 @@ pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> Const
                         constraints.push(WidthConstraint::Fixed { node: id, width: w });
                     }
                     None => {
-                        diagnostics.push(WidthDiag::error(format!(
-                            "[E501] signal '{}' has no declared width",
-                            name
-                        )));
+                        diagnostics.push(
+                            WidthDiag::error(format!(
+                                "[E501] signal '{}' has no declared width",
+                                name
+                            ))
+                            .with_code("E501")
+                            .with_signal(name),
+                        );
                         // Default to 1 to allow solving to continue.
                         constraints.push(WidthConstraint::Fixed { node: id, width: 1 });
                     }
@@ -136,10 +140,14 @@ pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> Const
                         constraints.push(WidthConstraint::Fixed { node: id, width: w });
                     }
                     None => {
-                        diagnostics.push(WidthDiag::error(format!(
-                            "[E502] prev signal '{}' has no declared width",
-                            signal
-                        )));
+                        diagnostics.push(
+                            WidthDiag::error(format!(
+                                "[E502] prev signal '{}' has no declared width",
+                                signal
+                            ))
+                            .with_code("E502")
+                            .with_signal(signal),
+                        );
                         constraints.push(WidthConstraint::Fixed { node: id, width: 1 });
                     }
                 }

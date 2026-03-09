@@ -25,7 +25,7 @@
       "patterns": [
         {
           "name": "keyword.control.mirr",
-          "match": "\\b(module|guard|reflex|property|def|reflect|when|for|on|always|never|cycles|and)\\b"
+          "match": "\\b(module|guard|reflex|property|def|reflect|when|for|on|always|never|cycles|and|eventually|within|followed_by|cover|assume|assert|prev)\\b"
         }
       ]
     },
@@ -41,7 +41,7 @@
       "patterns": [
         {
           "name": "storage.type.mirr",
-          "match": "\\b(bool|u8|u16|u32|u64)\\b"
+          "match": "\\b(bool|[ui][0-9]+)\\b"
         }
       ]
     },

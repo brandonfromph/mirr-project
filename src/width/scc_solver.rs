@@ -54,9 +54,12 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
     loop {
         iters += 1;
         if iters > MAX_FLOYD_WARSHALL_ITERS {
-            diagnostics.push(WidthDiag::error(
-                "[E508] nonexpansive SCC solver exceeded iteration budget".to_string(),
-            ));
+            diagnostics.push(
+                WidthDiag::error(
+                    "[E508] nonexpansive SCC solver exceeded iteration budget".to_string(),
+                )
+                .with_code("E508"),
+            );
             break;
         }
 
@@ -83,11 +86,15 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
                 .and_then(|&idx| signals.get(idx))
                 .map(|s| s.name.as_str())
                 .unwrap_or("unknown");
-            diagnostics.push(WidthDiag::error(format!(
-                "[E509] signal '{}' in nonexpansive SCC has no width anchor \
+            diagnostics.push(
+                WidthDiag::error(format!(
+                    "[E509] signal '{}' in nonexpansive SCC has no width anchor \
                  (add an explicit type annotation)",
-                name
-            )));
+                    name
+                ))
+                .with_code("E509")
+                .with_signal(name),
+            );
         }
     }
 
@@ -141,20 +148,27 @@ pub fn solve_expansive(
         match inferred {
             Some(w) => {
                 widths.push(w);
-                diagnostics.push(WidthDiag::info(format!(
-                    "signal '{}' width inferred as u{} from guard bounds",
-                    sig.name, w
-                )));
+                diagnostics.push(
+                    WidthDiag::info(format!(
+                        "signal '{}' width inferred as u{} from guard bounds",
+                        sig.name, w
+                    ))
+                    .with_signal(&sig.name),
+                );
             }
             None => {
                 // Strategy 3: Hard error.
                 widths.push(0);
-                diagnostics.push(WidthDiag::error(format!(
-                    "[E510] signal '{}' is in an expansive SCC but has no provable \
+                diagnostics.push(
+                    WidthDiag::error(format!(
+                        "[E510] signal '{}' is in an expansive SCC but has no provable \
                      width bound. Add an explicit type annotation or a \
                      bounded temporal guard.",
-                    sig.name
-                )));
+                        sig.name
+                    ))
+                    .with_code("E510")
+                    .with_signal(&sig.name),
+                );
             }
         }
     }

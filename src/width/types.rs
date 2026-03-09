@@ -145,6 +145,8 @@ pub struct SccInfo {
 pub enum DiagSeverity {
     /// Hard error — compilation must stop.
     Error,
+    /// Non-fatal warning — something suspicious but not fatal.
+    Warning,
     /// Informational note — no harm, but worth knowing.
     Info,
 }
@@ -152,20 +154,66 @@ pub enum DiagSeverity {
 /// A diagnostic emitted by the width inference pass.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WidthDiag {
-    /// Severity level (error or info).
+    /// Severity level (error, warning, or info).
     pub severity: DiagSeverity,
     /// Human-readable diagnostic message.
     pub message: String,
+    /// Machine-readable error code, e.g. "E503".
+    pub code: Option<String>,
+    /// Source location where the diagnostic was emitted.
+    pub span: Option<crate::span::Span>,
+    /// Contextual signal name related to this diagnostic.
+    pub signal_name: Option<String>,
+    /// Fix suggestion or help text.
+    pub help: Option<String>,
 }
 
 impl WidthDiag {
     /// Create an error-severity diagnostic.
     pub fn error(msg: impl Into<String>) -> Self {
-        WidthDiag { severity: DiagSeverity::Error, message: msg.into() }
+        WidthDiag {
+            severity: DiagSeverity::Error,
+            message: msg.into(),
+            code: None,
+            span: None,
+            signal_name: None,
+            help: None,
+        }
     }
     /// Create an info-severity diagnostic.
     pub fn info(msg: impl Into<String>) -> Self {
-        WidthDiag { severity: DiagSeverity::Info, message: msg.into() }
+        WidthDiag {
+            severity: DiagSeverity::Info,
+            message: msg.into(),
+            code: None,
+            span: None,
+            signal_name: None,
+            help: None,
+        }
+    }
+
+    /// Attach a machine-readable error code (builder pattern).
+    pub fn with_code(mut self, code: &str) -> Self {
+        self.code = Some(code.to_string());
+        self
+    }
+
+    /// Attach a source span (builder pattern).
+    pub fn with_span(mut self, span: Option<crate::span::Span>) -> Self {
+        self.span = span;
+        self
+    }
+
+    /// Attach a contextual signal name (builder pattern).
+    pub fn with_signal(mut self, name: &str) -> Self {
+        self.signal_name = Some(name.to_string());
+        self
+    }
+
+    /// Attach a help / fix-suggestion string (builder pattern).
+    pub fn with_help(mut self, help: impl Into<String>) -> Self {
+        self.help = Some(help.into());
+        self
     }
 }
 
@@ -173,9 +221,13 @@ impl std::fmt::Display for WidthDiag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let prefix = match self.severity {
             DiagSeverity::Error => "error",
+            DiagSeverity::Warning => "warning",
             DiagSeverity::Info => "info",
         };
-        write!(f, "[width:{}] {}", prefix, self.message)
+        match &self.code {
+            Some(code) => write!(f, "[width:{} {}] {}", prefix, code, self.message),
+            None => write!(f, "[width:{}] {}", prefix, self.message),
+        }
     }
 }
 

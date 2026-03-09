@@ -172,10 +172,10 @@ All error messages now start with a structured error code prefix:
 
 | Prefix | Category | Example |
 |--------|----------|---------|
-| `[E100]` | Parse errors | `[E100] Parse error: Unbalanced parentheses in expression.` |
-| `[E2xx]` | Semantic errors | `Semantic error: [E201] Duplicate signal name: 'x'.` (unique codes E201–E215) |
+| `[E1xx]` | Parse errors (E101–E166, E170–E181) | `[E100] Parse error: [E171] Unbalanced parentheses in expression.` |
+| `[E2xx]` | Semantic errors | `Semantic error: [E201] Duplicate signal name: 'x'.` (unique codes E201–E216) |
 | `[E300]` | Temporal errors | `[E300] Temporal compilation error: ...` |
-| `[E400]` | Pattern errors | `[E400] Pattern error: ...` |
+| `[E4xx]` | Pattern errors (E400–E425) | `[E400] Pattern error: [E401] ...` |
 
 If you parse error output, you can now match on the `[Ennn]` prefix to
 categorize errors programmatically.
@@ -198,12 +198,12 @@ covers all breaking and notable changes.
 |----------|-------------|
 | **SEM-001** | `prev(signal, delay)` temporal back-references with semantic validation (delay ≥ 1) and E215 error code |
 | **TYPE-001** | Signed integer types `i8`, `i16`, `i32`, `i64` via `SignalType::Signed(u8)` and unary negate operator `UnaryOp::Negate` |
-| **TYPE-002** | Type checker module `src/typeck/` with `typecheck_module()`, enforcing signedness consistency, E6xx errors (E601–E607) |
+| **TYPE-002** | Type checker module `src/typeck/` with `typecheck_module()`, enforcing signedness consistency, E6xx errors (E601–E609) |
 | **TYPE-003** | Width inference updated for signed types with two's complement semantics, E5xx errors updated |
 | **TYPE-004** | 3 new property forms: `never (P -> Q)`, `eventually_within(P, N)`, `always_followed_by(P, Q, N)` — total 6 property forms |
 | **TYPE-005** | Higher-order patterns — `PatternParamKind::Pattern` and `PatternArg::PatternRef` for passing patterns as arguments |
 | **ROCQ-001** | Rocq/Coq proof framework in `proofs/` directory |
-| **RSPU-001** | R-SPU instruction set backend — `emit_rspu()`, `RspuProgram`, `RspuInstruction`, register allocator, E7xx errors (E701–E703) |
+| **RSPU-001** | R-SPU instruction set backend — `emit_rspu()`, `RspuProgram`, `RspuInstruction`, register allocator, E7xx errors (E701–E705) |
 
 ---
 
@@ -309,20 +309,20 @@ The structured error code table is extended with the following new entries:
 |--------|----------|---------|
 | `[E216]` | Semantic error — duplicate property name | `Semantic error: [E216] Duplicate property name: 'watchdog'.` |
 | `[E5xx]` | Width inference errors (E500–E511) | `Width error: [E500] Cannot infer width for signal 'x'.` |
-| `[E6xx]` | Type errors (E601–E607) | `Type error: [E601] Signedness mismatch in binary operation.` |
-| `[E7xx]` | R-SPU errors (E701–E703) | `RSPU error: [E701] Register allocation failed for signal 'y'.` |
+| `[E6xx]` | Type errors (E601–E609) | `Type error: [E601] Signedness mismatch in binary operation.` |
+| `[E7xx]` | R-SPU errors (E701–E705) | `RSPU error: [E701] Register allocation failed for signal 'y'.` |
 
 The full error code table (0.1.0 through 0.3.0) is:
 
 | Range | Category |
 |-------|----------|
-| `[E100]` | Parse errors |
+| `[E1xx]` (E101–E166, E170–E181) | Parse errors |
 | `[E2xx]` (E201–E216) | Semantic errors |
 | `[E300]` | Temporal errors |
-| `[E400]` | Pattern errors |
+| `[E4xx]` (E400–E425) | Pattern errors |
 | `[E5xx]` (E500–E511) | Width inference errors |
-| `[E6xx]` (E601–E607) | Type errors |
-| `[E7xx]` (E701–E703) | R-SPU backend errors |
+| `[E6xx]` (E601–E609) | Type errors |
+| `[E7xx]` (E701–E705) | R-SPU backend errors |
 
 ---
 
