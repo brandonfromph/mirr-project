@@ -1,0 +1,68 @@
+// ==========================================================================
+// FIR Filter — 4-Tap Digital Filter in MIRR
+// ==========================================================================
+//
+// Demonstrates multiply operations (BinaryOp::Mul) that should map to
+// vendor DSP blocks when compiled with --target xilinx-7 or similar.
+//
+// Architecture: Four coefficients multiply the input sample. A single
+// output accumulates tap_0 (simplified — full FIR would need prev()
+// delay taps for a real pipeline).
+//
+// This example exercises:
+//   - u16 * u16 = u32 width inference (SumOf rule)
+//   - DSP synthesis attribute emission
+//   - Multi-signal multiply across reflexes
+//
+// Signal count: 8 (6 in, 1 out, 1 internal)
+// Guard count:  1
+// Reflex count: 2
+// ==========================================================================
+
+module fir_filter {
+
+    // Coefficients — loaded from external configuration
+    signal coeff_0: in u16;
+    signal coeff_1: in u16;
+    signal coeff_2: in u16;
+    signal coeff_3: in u16;
+
+    // Input sample
+    signal sample_in: in u16;
+
+    // Sample-valid flag (driven by upstream ADC)
+    signal sample_valid: in bool;
+
+    // Filter output (full 32-bit precision to avoid truncation)
+    signal filter_out: out u32;
+
+    // Internal accumulator for first tap
+    signal tap_0: internal u32;
+
+    // When a new sample arrives
+    guard new_sample {
+        when sample_valid
+        for 1 cycles;
+    }
+
+    // Compute first tap: sample * coeff_0
+    // This multiply should infer a DSP block on Xilinx/Intel/Lattice
+    reflex compute_tap0 {
+        on new_sample {
+            tap_0 = sample_in * coeff_0;
+        }
+    }
+
+    // Output the accumulated value
+    // (Simplified: real FIR would sum all 4 taps using prev() delays)
+    reflex output_sum {
+        on new_sample {
+            filter_out = tap_0;
+        }
+    }
+
+    // Verify the filter output is bounded
+    property output_bounded {
+        always (filter_out < 4294967295);
+    }
+}
