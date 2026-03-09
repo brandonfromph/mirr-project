@@ -55,6 +55,7 @@ pub use bootstrap_runner::{BootstrapOpts, BootstrapResult, BootstrapRunner, Stag
 pub use emit::json_netlist::JsonNetlist;
 pub use emit::rspu_isa::{RspuInstruction, RspuProgram};
 pub use error::MirrError;
+pub use error::PipelineErrors;
 pub use mape_k::{MapeKSimulator, SimConfig, SimResult};
 pub use parser::parse_mirr;
 pub use pipeline::{run_pipeline, PipelineConfig, PipelineResult};

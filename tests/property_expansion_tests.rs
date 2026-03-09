@@ -93,7 +93,8 @@ fn prev_zero_delay_in_always_property_is_rejected() {
         "bad",
         PropertyFormula::Always(gt(prev("sensor", 0), 50)),
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
@@ -102,7 +103,8 @@ fn prev_zero_delay_in_always_property_is_rejected() {
 fn prev_zero_delay_in_never_property_is_rejected() {
     let module =
         module_with_properties(vec![prop("bad", PropertyFormula::Never(prev("alarm", 0)))]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
@@ -116,7 +118,8 @@ fn prev_zero_delay_in_implies_antecedent_is_rejected() {
             consequent: sig("alarm"),
         },
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
@@ -130,7 +133,8 @@ fn prev_zero_delay_in_implies_consequent_is_rejected() {
             consequent: prev("alarm", 0),
         },
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }

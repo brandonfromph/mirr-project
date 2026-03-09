@@ -244,7 +244,8 @@ fn signed_narrowing_i16_to_i8_rejected() {
         Expr::Signal("si".to_string()), // si is i16
     );
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(err.to_string().contains("[E602]"), "Expected E602, got: {}", err);
 }
 
@@ -256,7 +257,8 @@ fn signed_to_unsigned_cross_assign_rejected() {
         Expr::Signal("si".to_string()), // si is i16
     );
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(err.to_string().contains("[E602]"), "Expected E602 for cross-category, got: {}", err);
 }
 
@@ -268,7 +270,8 @@ fn unsigned_to_signed_cross_assign_rejected() {
         Expr::Signal("su".to_string()), // su is u16
     );
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(err.to_string().contains("[E602]"), "Expected E602 for cross-category, got: {}", err);
 }
 
@@ -321,7 +324,8 @@ fn mixed_signed_unsigned_arithmetic_rejected() {
     };
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(
         err.to_string().contains("[E608]"),
         "Expected E608 for mixed signed/unsigned, got: {}",
@@ -382,7 +386,8 @@ fn signed_vs_unsigned_comparison_rejected() {
     };
     let m = signed_module_with_guard(expr);
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(
         err.to_string().contains("[E605]"),
         "Expected E605 for cross-category ordering, got: {}",
@@ -416,7 +421,8 @@ fn signed_vs_unsigned_equality_rejected() {
     };
     let m = signed_module_with_guard(expr);
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(
         err.to_string().contains("[E606]"),
         "Expected E606 for cross-category equality, got: {}",
@@ -480,7 +486,8 @@ fn negate_bool_rejected() {
     };
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(err.to_string().contains("[E609]"), "Expected E609 for negate on bool, got: {}", err);
 }
 
@@ -509,7 +516,8 @@ fn signed_xor_cross_category_rejected() {
     };
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(
         err.to_string().contains("[E607]"),
         "Expected E607 for cross-category xor, got: {}",
@@ -530,7 +538,8 @@ fn logical_and_on_signed_rejected() {
     };
     let m = signed_module_with_guard(expr);
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(
         err.to_string().contains("[E604]"),
         "Expected E604 for logical on signed, got: {}",
@@ -546,7 +555,8 @@ fn logical_and_on_signed_rejected() {
 fn guard_condition_signed_rejected() {
     let m = signed_module_with_guard(Expr::Signal("si".to_string()));
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(
         err.to_string().contains("[E601]"),
         "Expected E601 for signed guard condition, got: {}",

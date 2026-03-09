@@ -146,7 +146,8 @@ module m {
 }
 ";
     let program = parse_mirr(src).unwrap();
-    let err = nasa_rust_project::validate_module(&program.module).unwrap_err();
+    let errs = nasa_rust_project::validate_module(&program.module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("E201"), "expected E201 duplicate signal error, got: {msg}");
     let span = err.span().expect("semantic error should have a span from the duplicate signal");

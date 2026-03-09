@@ -12,14 +12,14 @@ use nasa_rust_project::validate_module;
 /// Helper: parse then validate, return the error message string.
 fn validate_err(source: &str) -> String {
     let program = parse_mirr(source).expect("should parse");
-    let err = validate_module(&program.module).expect_err("should fail validation");
-    err.to_string()
+    let errs = validate_module(&program.module).expect_err("should fail validation");
+    errs.errors[0].to_string()
 }
 
 /// Helper: validate a hand-built module, return the error message.
 fn validate_module_err(module: &Module) -> String {
-    let err = validate_module(module).expect_err("should fail validation");
-    err.to_string()
+    let errs = validate_module(module).expect_err("should fail validation");
+    errs.errors[0].to_string()
 }
 
 // ---------------------------------------------------------------------------

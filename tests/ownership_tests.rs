@@ -113,8 +113,8 @@ fn base_module(
 }
 
 fn validate_err(module: &Module) -> String {
-    let err = validate_module(module).expect_err("should fail validation");
-    err.to_string()
+    let errs = validate_module(module).expect_err("should fail validation");
+    errs.errors[0].to_string()
 }
 
 // ───────────────── E216: two reflexes writing same output ─────────────────

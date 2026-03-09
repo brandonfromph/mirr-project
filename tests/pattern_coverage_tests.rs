@@ -501,7 +501,7 @@ fn validate_duplicate_param_name() {
         body: ReflectBlock { raw_lines: vec!["guard g { when true for 1 cycles; }".to_string()] },
         span: None,
     }];
-    let err = validate_pattern_defs(&defs).unwrap_err().to_string();
+    let err = validate_pattern_defs(&defs).unwrap_err().errors[0].to_string();
     assert!(
         err.contains("duplicate parameter name"),
         "Expected 'duplicate parameter name', got: {err}"
@@ -523,7 +523,7 @@ fn validate_too_many_params_semantic() {
         body: ReflectBlock { raw_lines: vec!["guard g { when true for 1 cycles; }".to_string()] },
         span: None,
     }];
-    let err = validate_pattern_defs(&defs).unwrap_err().to_string();
+    let err = validate_pattern_defs(&defs).unwrap_err().errors[0].to_string();
     assert!(err.contains("33 parameters (max 32)"), "Expected params count error, got: {err}");
 }
 
@@ -537,7 +537,7 @@ fn validate_body_too_many_lines() {
         body: ReflectBlock { raw_lines },
         span: None,
     }];
-    let err = validate_pattern_defs(&defs).unwrap_err().to_string();
+    let err = validate_pattern_defs(&defs).unwrap_err().errors[0].to_string();
     assert!(err.contains("513 lines (max 512)"), "Expected body line count error, got: {err}");
 }
 

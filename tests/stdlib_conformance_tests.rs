@@ -159,8 +159,9 @@ fn diag_parse_reflex_empty_on_is_parse_class() {
 fn diag_sem_duplicate_signal_is_semantic_class() {
     let src = "module m {\n    signal s: in bool;\n    signal s: out bool;\n}";
     let p = parse_mirr(src).expect("parse should succeed");
-    let err = validate_module(&p.module).expect_err("duplicate signal must fail");
-    assert_eq!(error_class(&err), "semantic");
+    let errs = validate_module(&p.module).expect_err("duplicate signal must fail");
+    let err = errs.errors.first().expect("should have at least one error");
+    assert_eq!(error_class(err), "semantic");
     assert!(err.to_string().contains("Duplicate signal name"));
 }
 
@@ -178,8 +179,9 @@ fn diag_sem_duplicate_guard_is_semantic_class() {
     }
 }"#;
     let p = parse_mirr(src).expect("parse should succeed");
-    let err = validate_module(&p.module).expect_err("duplicate guard must fail");
-    assert_eq!(error_class(&err), "semantic");
+    let errs = validate_module(&p.module).expect_err("duplicate guard must fail");
+    let err = errs.errors.first().expect("should have at least one error");
+    assert_eq!(error_class(err), "semantic");
     assert!(err.to_string().contains("Duplicate guard name"));
 }
 
@@ -203,8 +205,9 @@ fn diag_sem_duplicate_reflex_is_semantic_class() {
     }
 }"#;
     let p = parse_mirr(src).expect("parse should succeed");
-    let err = validate_module(&p.module).expect_err("duplicate reflex must fail");
-    assert_eq!(error_class(&err), "semantic");
+    let errs = validate_module(&p.module).expect_err("duplicate reflex must fail");
+    let err = errs.errors.first().expect("should have at least one error");
+    assert_eq!(error_class(err), "semantic");
     assert!(err.to_string().contains("Duplicate reflex name"));
 }
 
@@ -218,8 +221,9 @@ fn diag_sem_undeclared_signal_in_guard_is_semantic_class() {
     }
 }"#;
     let p = parse_mirr(src).expect("parse should succeed");
-    let err = validate_module(&p.module).expect_err("undeclared signal must fail");
-    assert_eq!(error_class(&err), "semantic");
+    let errs = validate_module(&p.module).expect_err("undeclared signal must fail");
+    let err = errs.errors.first().expect("should have at least one error");
+    assert_eq!(error_class(err), "semantic");
     assert!(err.to_string().contains("undeclared signal"));
 }
 
@@ -234,8 +238,9 @@ fn diag_sem_undeclared_guard_in_reflex_is_semantic_class() {
     }
 }"#;
     let p = parse_mirr(src).expect("parse should succeed");
-    let err = validate_module(&p.module).expect_err("undeclared guard must fail");
-    assert_eq!(error_class(&err), "semantic");
+    let errs = validate_module(&p.module).expect_err("undeclared guard must fail");
+    let err = errs.errors.first().expect("should have at least one error");
+    assert_eq!(error_class(err), "semantic");
     assert!(err.to_string().contains("undeclared guard"));
 }
 
@@ -254,8 +259,9 @@ fn diag_sem_assign_to_input_is_semantic_class() {
     }
 }"#;
     let p = parse_mirr(src).expect("parse should succeed");
-    let err = validate_module(&p.module).expect_err("assign to input must fail");
-    assert_eq!(error_class(&err), "semantic");
+    let errs = validate_module(&p.module).expect_err("assign to input must fail");
+    let err = errs.errors.first().expect("should have at least one error");
+    assert_eq!(error_class(err), "semantic");
     assert!(err.to_string().contains("not writable"));
 }
 
@@ -274,8 +280,9 @@ fn diag_sem_assign_to_undeclared_is_semantic_class() {
     }
 }"#;
     let p = parse_mirr(src).expect("parse should succeed");
-    let err = validate_module(&p.module).expect_err("assign to undeclared must fail");
-    assert_eq!(error_class(&err), "semantic");
+    let errs = validate_module(&p.module).expect_err("assign to undeclared must fail");
+    let err = errs.errors.first().expect("should have at least one error");
+    assert_eq!(error_class(err), "semantic");
     assert!(err.to_string().contains("undeclared signal"));
 }
 

@@ -95,7 +95,7 @@ fn pipeline_config() -> PipelineConfig {
 /// Helper: run pipeline expecting an error (avoids needing Debug on PipelineResult).
 fn run_pipeline_expect_err(src: &str) -> nasa_rust_project::error::MirrError {
     match run_pipeline(src, &pipeline_config()) {
-        Err(e) => e,
+        Err(errs) => errs.errors.into_iter().next().expect("should have at least one error"),
         Ok(_) => panic!("Expected pipeline error, but pipeline succeeded"),
     }
 }
@@ -757,7 +757,8 @@ fn prev_zero_delay_in_never_implies_antecedent_rejected() {
             consequent: sig("alarm"),
         },
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
@@ -771,7 +772,8 @@ fn prev_zero_delay_in_never_implies_consequent_rejected() {
             consequent: prev("alarm", 0),
         },
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
@@ -782,7 +784,8 @@ fn prev_zero_delay_in_eventually_within_rejected() {
         "bad",
         PropertyFormula::EventuallyWithin { expr: gt(prev("sensor", 0), 50), cycles: 10 },
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
@@ -797,7 +800,8 @@ fn prev_zero_delay_in_followed_by_trigger_rejected() {
             delay_cycles: 5,
         },
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }
@@ -812,7 +816,8 @@ fn prev_zero_delay_in_followed_by_response_rejected() {
             delay_cycles: 5,
         },
     )]);
-    let err = validate_module(&module).unwrap_err();
+    let errs = validate_module(&module).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("prev") && msg.contains("delay"), "Expected prev delay error, got: {msg}");
 }

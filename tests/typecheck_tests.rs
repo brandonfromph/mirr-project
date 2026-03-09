@@ -137,8 +137,8 @@ fn module_with_assignment(target: &str, target_ty: SignalType, value: Expr) -> M
 
 fn typecheck_err(module: &Module) -> String {
     validate_module(module).expect("should pass semantic validation");
-    let err = typecheck_module(module).expect_err("should fail type check");
-    err.to_string()
+    let errs = typecheck_module(module).expect_err("should fail type check");
+    errs.errors[0].to_string()
 }
 
 // ---------------------------------------------------------------------------
@@ -631,6 +631,7 @@ fn unsigned_narrowing_u16_to_u8_rejected() {
         Expr::Signal("n".to_string()), // n is u16
     );
     validate_module(&m).unwrap();
-    let err = typecheck_module(&m).unwrap_err();
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
     assert!(err.to_string().contains("[E602]"), "Expected E602, got: {}", err);
 }

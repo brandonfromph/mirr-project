@@ -19,6 +19,8 @@
 //! See `docs/error_codes.md` for the full catalogue.
 // ---------------------------------------------------------------------------
 
+#![forbid(unsafe_code)]
+
 use std::error::Error;
 use std::fmt;
 
@@ -229,6 +231,92 @@ impl fmt::Display for MirrError {
 }
 
 impl Error for MirrError {}
+
+// ---------------------------------------------------------------------------
+// Multi-error accumulation (ERR-002)
+// ---------------------------------------------------------------------------
+
+/// Maximum errors accumulated before a pass stops scanning.
+/// NASA Power-of-10: all collections bounded.
+pub const MAX_ACCUMULATED_ERRORS: usize = 20;
+
+/// Container for multiple compiler errors accumulated within a single pass.
+///
+/// The pipeline uses this to report all recoverable errors at once instead
+/// of stopping at the first.  Bounded by [`MAX_ACCUMULATED_ERRORS`].
+#[derive(Debug, Clone)]
+pub struct PipelineErrors {
+    pub errors: Vec<MirrError>,
+}
+
+impl PipelineErrors {
+    /// Create an empty error accumulator.
+    pub fn new() -> Self {
+        Self { errors: Vec::new() }
+    }
+
+    /// Push an error, respecting the accumulation cap.
+    /// No-op if already at [`MAX_ACCUMULATED_ERRORS`].
+    pub fn push(&mut self, e: MirrError) {
+        if self.errors.len() < MAX_ACCUMULATED_ERRORS {
+            self.errors.push(e);
+        }
+    }
+
+    /// True when no errors have been accumulated.
+    pub fn is_empty(&self) -> bool {
+        self.errors.is_empty()
+    }
+
+    /// Number of accumulated errors.
+    pub fn len(&self) -> usize {
+        self.errors.len()
+    }
+
+    /// Reference to the first error, if any.
+    pub fn first(&self) -> Option<&MirrError> {
+        self.errors.first()
+    }
+
+    /// Convert all contained errors to `Diagnostic` structs.
+    pub fn to_diagnostics(&self) -> Vec<Diagnostic> {
+        self.errors.iter().map(MirrError::to_diagnostic).collect()
+    }
+}
+
+impl Default for PipelineErrors {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<MirrError> for PipelineErrors {
+    fn from(e: MirrError) -> Self {
+        Self { errors: vec![e] }
+    }
+}
+
+impl From<Vec<MirrError>> for PipelineErrors {
+    fn from(errors: Vec<MirrError>) -> Self {
+        Self { errors }
+    }
+}
+
+impl fmt::Display for PipelineErrors {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for e in &self.errors {
+            writeln!(f, "{e}")?;
+        }
+        let n = self.errors.len();
+        if n == 1 {
+            write!(f, "error: aborting due to previous error")
+        } else {
+            write!(f, "error: aborting due to {n} previous errors")
+        }
+    }
+}
+
+impl Error for PipelineErrors {}
 
 #[cfg(test)]
 mod tests {

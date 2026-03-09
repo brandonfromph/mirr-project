@@ -10,7 +10,7 @@
 
 use crate::ast::MirrProgram;
 use crate::emit::rspu_isa::RspuProgram;
-use crate::error::MirrError;
+use crate::error::PipelineErrors;
 use crate::simplify::SimplifyStats;
 use crate::temporal::low_level_ir::TemporalNetlist;
 use crate::temporal::TemporalGuardCompiler;
@@ -63,7 +63,10 @@ impl PipelineResult {
 /// Run the full compilation pipeline on MIRR source text.
 ///
 /// Bounded: each stage is individually bounded by its own limits.
-pub fn run_pipeline(source: &str, config: &PipelineConfig) -> Result<PipelineResult, MirrError> {
+pub fn run_pipeline(
+    source: &str,
+    config: &PipelineConfig,
+) -> Result<PipelineResult, PipelineErrors> {
     // Stage 1: Parse.
     let mut program = crate::parser::parse_mirr(source)?;
 

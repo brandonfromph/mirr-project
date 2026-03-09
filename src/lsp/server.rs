@@ -180,7 +180,8 @@ fn compile_and_diagnose(uri: &str, source: &str) -> Value {
             clear_diagnostics(uri)
         }
         Err(e) => {
-            let diags = mirr_error_to_diagnostics(&e);
+            let diags: Vec<serde_json::Value> =
+                e.errors.iter().flat_map(mirr_error_to_diagnostics).collect();
             publish_diagnostics(uri, &diags)
         }
     }
