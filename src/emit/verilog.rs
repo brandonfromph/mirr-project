@@ -143,10 +143,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
     out.push_str("endmodule\n\n");
 
     // Emit the bind statement.
-    out.push_str(&format!(
-        "bind {} {sva_mod_name} u_sva (.*);\n",
-        module.name
-    ));
+    out.push_str(&format!("bind {} {sva_mod_name} u_sva (.*);\n", module.name));
 
     out
 }
