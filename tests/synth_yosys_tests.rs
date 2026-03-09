@@ -14,9 +14,13 @@ fn compile(source: &str) -> nasa_rust_project::pipeline::PipelineResult {
     run_pipeline(source, &PipelineConfig::default()).expect("pipeline should succeed")
 }
 
-/// Helper: check if Yosys is available on this system.
+/// Helper: check if Yosys is available and functional on this system.
 fn yosys_available() -> bool {
-    std::process::Command::new("yosys").arg("-V").output().is_ok()
+    std::process::Command::new("yosys")
+        .arg("-V")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
 /// SVA keywords that must not appear in synthesis-clean output.
