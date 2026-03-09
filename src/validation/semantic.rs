@@ -2,6 +2,11 @@
 //!
 //! Checks for duplicate names, undeclared signal references, guard-reflex
 //! consistency, property formula validity, and pattern definition constraints.
+//!
+//! All validation functions accumulate errors into `PipelineErrors` instead of
+//! returning on first failure (ERR-002).
+
+#![forbid(unsafe_code)]
 
 use std::collections::{HashMap, HashSet};
 
@@ -10,7 +15,9 @@ use crate::ast::pattern::PatternDef;
 use crate::ast::program::Module;
 
 use crate::ast::types::SignalKind;
+use crate::ast::MAX_EXPR_NODES;
 use crate::error::MirrError;
+use crate::error::PipelineErrors;
 use crate::span::Span;
 
 /// Validate a parsed module for semantic correctness:
@@ -23,8 +30,14 @@ use crate::span::Span;
 /// - Assignment targets are declared output or internal signals.
 /// - Assignment expressions only reference declared signals.
 ///
+/// Errors are accumulated (up to [`crate::error::MAX_ACCUMULATED_ERRORS`])
+/// and returned together in a `PipelineErrors`.
+///
 /// NASA-style optimization: pre-allocate hash sets and use efficient lookups.
-pub fn validate_module(module: &Module) -> Result<(), MirrError> {
+pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
+    let mut errors = PipelineErrors::new();
+    let mut reported_undeclared: HashSet<String> = HashSet::with_capacity(16);
+
     // Pre-allocate hash sets with estimated capacity for better performance.
     let signal_capacity = module.signals.len();
     let guard_capacity = module.guards.len();
@@ -36,12 +49,16 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     let mut signal_first_span: HashMap<&str, Option<Span>> =
         HashMap::with_capacity(signal_capacity);
     for sig in &module.signals {
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
         if let Some(first_span) = signal_first_span.get(sig.name.as_str()) {
             let mut msg = format!("[E201] Duplicate signal name: '{}'.", sig.name);
             if let Some(fs) = first_span {
                 msg.push_str(&format!(" First defined at line {}.", fs.start_line + 1));
             }
-            return Err(MirrError::SemanticError { message: msg, span: sig.span });
+            errors.push(MirrError::SemanticError { message: msg, span: sig.span });
+            continue;
         } else {
             signal_names.insert(&sig.name);
             signal_first_span.insert(&sig.name, sig.span);
@@ -53,12 +70,16 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     let mut guard_names: HashSet<&str> = HashSet::with_capacity(guard_capacity);
     let mut guard_first_span: HashMap<&str, Option<Span>> = HashMap::with_capacity(guard_capacity);
     for guard in &module.guards {
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
         if let Some(first_span) = guard_first_span.get(guard.name.as_str()) {
             let mut msg = format!("[E202] Duplicate guard name: '{}'.", guard.name);
             if let Some(fs) = first_span {
                 msg.push_str(&format!(" First defined at line {}.", fs.start_line + 1));
             }
-            return Err(MirrError::SemanticError { message: msg, span: guard.span });
+            errors.push(MirrError::SemanticError { message: msg, span: guard.span });
+            continue;
         } else {
             guard_names.insert(&guard.name);
             guard_first_span.insert(&guard.name, guard.span);
@@ -71,12 +92,16 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     let mut reflex_first_span: HashMap<&str, Option<Span>> =
         HashMap::with_capacity(reflex_capacity);
     for reflex in &module.reflexes {
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
         if let Some(first_span) = reflex_first_span.get(reflex.name.as_str()) {
             let mut msg = format!("[E203] Duplicate reflex name: '{}'.", reflex.name);
             if let Some(fs) = first_span {
                 msg.push_str(&format!(" First defined at line {}.", fs.start_line + 1));
             }
-            return Err(MirrError::SemanticError { message: msg, span: reflex.span });
+            errors.push(MirrError::SemanticError { message: msg, span: reflex.span });
+            continue;
         } else {
             reflex_names.insert(&reflex.name);
             reflex_first_span.insert(&reflex.name, reflex.span);
@@ -108,10 +133,22 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
     // Validate guard conditions reference declared signals.
     // NASA-style optimization: batch validation and early exit.
     for guard in &module.guards {
-        validate_prev_delays(&guard.condition, &guard.name, guard.span)?;
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
+        if let Err(e) = validate_prev_delays(&guard.condition, &guard.name, guard.span) {
+            errors.push(e);
+            continue;
+        }
         let refs = collect_signal_refs(&guard.condition);
         for sig_ref in &refs {
+            if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                break;
+            }
             if !signal_names.contains(sig_ref.as_str()) {
+                if !reported_undeclared.insert(sig_ref.clone()) {
+                    continue;
+                }
                 let suggestion = crate::suggest::closest_match(sig_ref, &signal_name_candidates);
                 let mut msg = format!(
                     "[E204] Guard '{}' references undeclared signal '{}'.",
@@ -120,15 +157,22 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                 if let Some(s) = suggestion {
                     msg.push_str(&format!(" Did you mean '{}'?", s));
                 }
-                return Err(MirrError::SemanticError { message: msg, span: guard.span });
+                errors.push(MirrError::SemanticError { message: msg, span: guard.span });
+                continue;
             }
         }
     }
 
     // Validate reflexes with optimized lookups.
     for reflex in &module.reflexes {
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
         // Check guard references.
         for gname in &reflex.guard_names {
+            if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                break;
+            }
             if !guard_names.contains(gname.as_str()) {
                 let suggestion = crate::suggest::closest_match(gname, &guard_name_candidates);
                 let mut msg = format!(
@@ -138,22 +182,27 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                 if let Some(s) = suggestion {
                     msg.push_str(&format!(" Did you mean '{}'?", s));
                 }
-                return Err(MirrError::SemanticError { message: msg, span: reflex.span });
+                errors.push(MirrError::SemanticError { message: msg, span: reflex.span });
+                continue;
             }
         }
 
         // Check assignments.
         for assignment in &reflex.assignments {
+            if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                break;
+            }
             // Target must be a writable signal.
             if !writable_signals.contains(assignment.target.as_str()) {
                 if signal_names.contains(assignment.target.as_str()) {
-                    return Err(MirrError::SemanticError {
+                    errors.push(MirrError::SemanticError {
                         message: format!(
                             "[E206] Reflex '{}' assigns to input signal '{}', which is not writable.",
                             reflex.name, assignment.target
                         ),
                         span: reflex.span,
                     });
+                    continue;
                 }
                 let suggestion =
                     crate::suggest::closest_match(&assignment.target, &signal_name_candidates);
@@ -164,16 +213,25 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                 if let Some(s) = suggestion {
                     msg.push_str(&format!(" Did you mean '{}'?", s));
                 }
-                return Err(MirrError::SemanticError { message: msg, span: reflex.span });
+                errors.push(MirrError::SemanticError { message: msg, span: reflex.span });
+                continue;
             }
 
             // Validate Prev delays in RHS expressions.
-            validate_prev_delays(&assignment.value, &reflex.name, reflex.span)?;
+            if let Err(e) = validate_prev_delays(&assignment.value, &reflex.name, reflex.span) {
+                errors.push(e);
+            }
 
             // RHS expression signals must be declared.
             let refs = collect_signal_refs(&assignment.value);
             for sig_ref in &refs {
+                if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                    break;
+                }
                 if !signal_names.contains(sig_ref.as_str()) {
+                    if !reported_undeclared.insert(sig_ref.clone()) {
+                        continue;
+                    }
                     let suggestion =
                         crate::suggest::closest_match(sig_ref, &signal_name_candidates);
                     let mut msg = format!(
@@ -183,7 +241,8 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
                     if let Some(s) = suggestion {
                         msg.push_str(&format!(" Did you mean '{}'?", s));
                     }
-                    return Err(MirrError::SemanticError { message: msg, span: reflex.span });
+                    errors.push(MirrError::SemanticError { message: msg, span: reflex.span });
+                    continue;
                 }
             }
         }
@@ -191,26 +250,34 @@ pub fn validate_module(module: &Module) -> Result<(), MirrError> {
 
     // Validate single-writer ownership: each writable signal must have
     // at most one reflex that assigns to it.
-    validate_signal_ownership(module)?;
+    let ownership_errors = validate_signal_ownership(module);
+    for e in ownership_errors {
+        errors.push(e);
+    }
 
     // Validate property declarations.
-    validate_properties(&module.properties, &signal_names, &signal_name_candidates)?;
+    validate_properties(&module.properties, &signal_names, &signal_name_candidates, &mut errors);
 
-    Ok(())
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
 }
 
 /// Validate that each writable signal has at most one writer reflex.
 ///
 /// Two different reflexes assigning to the same signal creates a hardware
 /// race condition (two drivers on the same wire). This pass builds a
-/// signal→reflex map and rejects any signal with more than one writer.
+/// signal->reflex map and rejects any signal with more than one writer.
 ///
 /// Intra-reflex multiple assignments are allowed (sequential semantics
 /// within a single reflex block).
 ///
 /// Bounded: single pass over all reflexes and their assignments.
-fn validate_signal_ownership(module: &Module) -> Result<(), MirrError> {
-    // Map: signal_name → (first_writer_reflex_name, first_writer_origin, first_writer_span)
+fn validate_signal_ownership(module: &Module) -> Vec<MirrError> {
+    let mut ownership_errors: Vec<MirrError> = Vec::new();
+    // Map: signal_name -> (first_writer_reflex_name, first_writer_origin, first_writer_span)
     let mut writers: HashMap<&str, (&str, Option<&str>, Option<Span>)> = HashMap::new();
 
     for reflex in &module.reflexes {
@@ -236,9 +303,10 @@ fn validate_signal_ownership(module: &Module) -> Result<(), MirrError> {
                         if let Some(fs) = first_span {
                             msg.push_str(&format!(" First defined at line {}.", fs.start_line + 1));
                         }
-                        return Err(MirrError::SemanticError { message: msg, span: reflex.span });
+                        ownership_errors
+                            .push(MirrError::SemanticError { message: msg, span: reflex.span });
                     }
-                    // Same reflex writing again — allowed (intra-reflex sequential).
+                    // Same reflex writing again -- allowed (intra-reflex sequential).
                 }
                 None => {
                     writers.insert(target, (&reflex.name, origin, reflex.span));
@@ -247,7 +315,7 @@ fn validate_signal_ownership(module: &Module) -> Result<(), MirrError> {
         }
     }
 
-    Ok(())
+    ownership_errors
 }
 
 /// Validate that all `Prev` nodes in an expression have delay >= 1.
@@ -258,7 +326,6 @@ fn validate_prev_delays(
     context_name: &str,
     context_span: Option<crate::span::Span>,
 ) -> Result<(), MirrError> {
-    const MAX_EXPR_NODES: usize = 512;
     let mut stack: Vec<&Expr> = Vec::with_capacity(32);
     stack.push(expr);
     let mut visited = 0usize;
@@ -320,38 +387,48 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
 }
 
 /// Validate property declarations: no duplicate names, all signal refs declared.
+/// Errors are accumulated into the caller's `PipelineErrors`.
 fn validate_properties(
     properties: &[crate::ast::property::PropertyDecl],
     signal_names: &HashSet<&str>,
     signal_name_candidates: &[&str],
-) -> Result<(), MirrError> {
+    errors: &mut PipelineErrors,
+) {
     let mut property_first_span: HashMap<&str, Option<Span>> =
         HashMap::with_capacity(properties.len());
     for prop in properties {
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
         if let Some(first_span) = property_first_span.get(prop.name.as_str()) {
             let mut msg = format!("[E210] Duplicate property name: '{}'.", prop.name);
             if let Some(fs) = first_span {
                 msg.push_str(&format!(" First defined at line {}.", fs.start_line + 1));
             }
-            return Err(MirrError::SemanticError { message: msg, span: prop.span });
+            errors.push(MirrError::SemanticError { message: msg, span: prop.span });
+            continue;
         } else {
             property_first_span.insert(&prop.name, prop.span);
         }
-        validate_property_signals(prop, signal_names, signal_name_candidates)?;
-        validate_property_prev_delays(prop)?;
+        validate_property_signals(prop, signal_names, signal_name_candidates, errors);
+        validate_property_prev_delays(prop, errors);
     }
-    Ok(())
 }
 
 /// Check that all signal references in a property formula are declared.
+/// Errors are accumulated into the caller's `PipelineErrors`.
 fn validate_property_signals(
     prop: &crate::ast::property::PropertyDecl,
     signal_names: &HashSet<&str>,
     signal_name_candidates: &[&str],
-) -> Result<(), MirrError> {
+    errors: &mut PipelineErrors,
+) {
     for expr in prop.formula.exprs() {
         let refs = collect_signal_refs(expr);
         for sig_ref in &refs {
+            if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                return;
+            }
             if !signal_names.contains(sig_ref.as_str()) {
                 let suggestion = crate::suggest::closest_match(sig_ref, signal_name_candidates);
                 let mut msg = format!(
@@ -361,21 +438,23 @@ fn validate_property_signals(
                 if let Some(s) = suggestion {
                     msg.push_str(&format!(" Did you mean '{}'?", s));
                 }
-                return Err(MirrError::SemanticError { message: msg, span: prop.span });
+                errors.push(MirrError::SemanticError { message: msg, span: prop.span });
             }
         }
     }
-    Ok(())
 }
 
 /// Validate that all Prev nodes in a property formula have delay >= 1.
+/// Errors are accumulated into the caller's `PipelineErrors`.
 fn validate_property_prev_delays(
     prop: &crate::ast::property::PropertyDecl,
-) -> Result<(), MirrError> {
+    errors: &mut PipelineErrors,
+) {
     for expr in prop.formula.exprs() {
-        validate_prev_delays(expr, &prop.name, prop.span)?;
+        if let Err(e) = validate_prev_delays(expr, &prop.name, prop.span) {
+            errors.push(e);
+        }
     }
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -397,25 +476,33 @@ const MAX_PATTERN_BODY_LINES: usize = 512;
 /// - Parameter count <= MAX_PATTERN_PARAMS.
 /// - Body line count <= MAX_PATTERN_BODY_LINES.
 ///
+/// Errors are accumulated (up to [`crate::error::MAX_ACCUMULATED_ERRORS`])
+/// and returned together in a `PipelineErrors`.
+///
 /// Post-expansion, the standard `validate_module` catches all signal/guard/
 /// reflex/property reference issues in the expanded result.
 ///
 /// Bounded: iterates over patterns (max 64) and params (max 32).
-pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
+pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErrors> {
+    let mut errors = PipelineErrors::new();
     let mut names: HashSet<&str> = HashSet::with_capacity(patterns.len());
     for pat in patterns {
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
         if !names.insert(&pat.name) {
-            return Err(MirrError::PatternError {
+            errors.push(MirrError::PatternError {
                 message: format!("Duplicate pattern definition: '{}'.", pat.name),
                 span: pat.span,
             });
+            continue;
         }
 
         // Check for duplicate parameter names within this pattern.
         let mut param_names: HashSet<&str> = HashSet::with_capacity(pat.params.len());
         for p in &pat.params {
             if !param_names.insert(&p.name) {
-                return Err(MirrError::PatternError {
+                errors.push(MirrError::PatternError {
                     message: format!(
                         "Pattern '{}' has duplicate parameter name: '{}'.",
                         pat.name, p.name
@@ -426,7 +513,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
         }
 
         if pat.params.len() > MAX_PATTERN_PARAMS {
-            return Err(MirrError::PatternError {
+            errors.push(MirrError::PatternError {
                 message: format!(
                     "Pattern '{}' has {} parameters (max {MAX_PATTERN_PARAMS}).",
                     pat.name,
@@ -437,14 +524,14 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
         }
 
         if pat.body.raw_lines.is_empty() {
-            return Err(MirrError::PatternError {
+            errors.push(MirrError::PatternError {
                 message: format!("Pattern '{}' has empty reflect body.", pat.name),
                 span: pat.span,
             });
         }
 
         if pat.body.raw_lines.len() > MAX_PATTERN_BODY_LINES {
-            return Err(MirrError::PatternError {
+            errors.push(MirrError::PatternError {
                 message: format!(
                     "Pattern '{}' reflect body has {} lines (max {MAX_PATTERN_BODY_LINES}).",
                     pat.name,
@@ -454,5 +541,9 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), MirrError> {
             });
         }
     }
-    Ok(())
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
 }

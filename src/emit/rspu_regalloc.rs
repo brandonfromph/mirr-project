@@ -20,6 +20,7 @@ use crate::ast::program::Module;
 use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 
+use super::rspu::rspu_err;
 use super::rspu_isa::*;
 
 /// Result of register allocation: maps signal names to register IDs
@@ -118,8 +119,4 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
         + (next_internal - REG_INTERNAL_BASE) as usize;
 
     Ok(RegAllocResult { map, entries, total_used, next_temp: REG_TEMP_BASE as u16 })
-}
-
-fn rspu_err(msg: impl Into<String>) -> MirrError {
-    MirrError::RspuError { message: msg.into(), span: None }
 }

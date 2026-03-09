@@ -3,6 +3,8 @@
 //! Scans MIRR source bytes into a sequence of `Token` values. Bounded iteration
 //! (NASA P10 rule #1): the main loop is bounded by input length.
 
+#![forbid(unsafe_code)]
+
 use crate::error::MirrError;
 
 /// Token produced by the expression tokenizer.
@@ -53,7 +55,7 @@ pub enum Token {
 }
 
 /// Pre-allocated buffer for tokens to reduce heap allocations.
-/// NASA-style optimization: bounded memory usage with arena allocation.
+/// Buffer for accumulating tokens during lexing.
 struct TokenArena {
     tokens: Vec<Token>,
 }
@@ -78,7 +80,7 @@ impl TokenArena {
 }
 
 /// Tokenize an expression string into a sequence of tokens.
-/// NASA-style optimization: uses arena allocation and SIMD-like optimizations.
+/// Tokenize an expression string into a sequence of tokens.
 pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
     let bytes = input.as_bytes();
     let len = bytes.len();
@@ -90,14 +92,13 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         let b = bytes[pos];
 
         // Skip whitespace using optimized byte checking.
-        // NASA-style: minimize branching and use bit operations where possible.
         if is_whitespace_byte(b) {
             pos += 1;
             continue;
         }
 
         // Two-character operators (check before single-char).
-        // NASA-style optimization: use lookup table for faster matching.
+        // Check for two-character operators.
         // Safety: only attempt the str slice if both positions are on ASCII
         // (single-byte) chars, so we never panic on multi-byte UTF-8 boundaries.
         if pos + 1 < len && b.is_ascii() && bytes[pos + 1].is_ascii() {
@@ -110,7 +111,7 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         }
 
         // Single-character operators and punctuation.
-        // NASA-style optimization: use lookup table for O(1) matching.
+        // Check for single-character operators.
         if let Some(tok) = match_single_char_operator(b) {
             arena.push(tok);
             pos += 1;
@@ -118,7 +119,6 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         }
 
         // Integer literal with bounds checking.
-        // NASA-style: prevent overflow and validate range.
         if is_digit_byte(b) {
             let start = pos;
             while pos < len && is_digit_byte(bytes[pos]) {
@@ -163,7 +163,7 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
 }
 
 /// Helper function to check if a byte is whitespace.
-/// NASA-style optimization: use bit operations for faster checking.
+/// Returns true if byte is ASCII whitespace.
 #[inline]
 fn is_whitespace_byte(b: u8) -> bool {
     // Check for space, tab, newline, carriage return
@@ -171,7 +171,7 @@ fn is_whitespace_byte(b: u8) -> bool {
 }
 
 /// Helper function to check if a byte is a digit.
-/// NASA-style optimization: direct byte comparison for speed.
+/// Returns true if byte is an ASCII digit.
 #[inline]
 fn is_digit_byte(b: u8) -> bool {
     b.is_ascii_digit()
@@ -190,7 +190,7 @@ fn is_identifier_byte(b: u8) -> bool {
 }
 
 /// Lookup table for two-character operators.
-/// NASA-style optimization: O(1) lookup instead of string matching.
+/// Match a two-character operator token.
 #[inline]
 fn match_two_char_operator(pair: &str) -> Option<Token> {
     match pair {
@@ -207,7 +207,7 @@ fn match_two_char_operator(pair: &str) -> Option<Token> {
 }
 
 /// Lookup table for single-character operators.
-/// NASA-style optimization: O(1) lookup instead of match statement.
+/// Match a single-character operator token.
 #[inline]
 fn match_single_char_operator(b: u8) -> Option<Token> {
     match b {

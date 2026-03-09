@@ -3,6 +3,8 @@
 //! Recursive-descent parser producing `Expr` AST nodes from token streams.
 //! Supports comparisons, arithmetic, boolean operators, and parenthesized groups.
 
+#![forbid(unsafe_code)]
+
 use crate::ast::expr::Expr;
 use crate::ast::types::BinaryOp;
 use crate::ast::types::{LiteralValue, UnaryOp};
@@ -77,12 +79,6 @@ impl ExprParser {
         self.pos >= self.tokens.len()
     }
 
-    /// Get the current token without advancing.
-    /// NASA-style optimization: bounds-checked access with early return.
-    fn current_token(&self) -> Option<&Token> {
-        self.tokens.get(self.pos)
-    }
-
     /// Parse a complete expression consuming all tokens.
     /// NASA-style optimization: validate input size before parsing.
     fn parse_full(&mut self) -> Result<Expr, MirrError> {
@@ -144,7 +140,7 @@ impl ExprParser {
 
         // Parse infix operators with sufficient binding power.
         // NASA-style: minimize function calls in hot loop
-        while let Some(tok) = self.current_token() {
+        while let Some(tok) = self.peek() {
             let op = token_to_binop(tok);
             let Some(op) = op else {
                 break; // Not an infix operator; stop.

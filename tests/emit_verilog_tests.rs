@@ -454,7 +454,7 @@ fn sv_dsp_attribute_xilinx7() {
     use nasa_rust_project::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     let result = run_pipeline(DSP_MUL_MIRR, &config).unwrap();
-    let sv = emit::verilog::emit_sv_with_target(&result, &FpgaTarget::Xilinx7, 9);
+    let sv = emit::verilog::emit_sv_with_options(&result, Some(FpgaTarget::Xilinx7), 9);
     assert!(
         sv.contains("(* use_dsp48 = \"yes\" *)"),
         "Xilinx 7-series should emit use_dsp48 attribute"
@@ -466,7 +466,7 @@ fn sv_dsp_attribute_intel() {
     use nasa_rust_project::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     let result = run_pipeline(DSP_MUL_MIRR, &config).unwrap();
-    let sv = emit::verilog::emit_sv_with_target(&result, &FpgaTarget::IntelCyclone, 9);
+    let sv = emit::verilog::emit_sv_with_options(&result, Some(FpgaTarget::IntelCyclone), 9);
     assert!(sv.contains("(* multstyle = \"dsp\" *)"), "Intel should emit multstyle attribute");
 }
 
@@ -475,16 +475,15 @@ fn sv_dsp_attribute_lattice() {
     use nasa_rust_project::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     let result = run_pipeline(DSP_MUL_MIRR, &config).unwrap();
-    let sv = emit::verilog::emit_sv_with_target(&result, &FpgaTarget::LatticeIce40, 9);
+    let sv = emit::verilog::emit_sv_with_options(&result, Some(FpgaTarget::LatticeIce40), 9);
     assert!(sv.contains("(* use_dsp = \"yes\" *)"), "Lattice should emit use_dsp attribute");
 }
 
 #[test]
 fn sv_no_dsp_attribute_generic() {
-    use nasa_rust_project::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     let result = run_pipeline(DSP_MUL_MIRR, &config).unwrap();
-    let sv = emit::verilog::emit_sv_with_target(&result, &FpgaTarget::Generic, 9);
+    let sv = emit::verilog::emit_sv_with_options(&result, None, 9);
     assert!(!sv.contains("use_dsp"), "Generic target should NOT emit DSP attributes");
 }
 
@@ -497,7 +496,7 @@ fn sv_no_dsp_below_threshold() {
     // the analysis is conservative (operand width not available at emit time).
     // Use threshold=0 to explicitly disable.
     let result = run_pipeline(DSP_SMALL_MUL_MIRR, &config).unwrap();
-    let sv = emit::verilog::emit_sv_with_target(&result, &FpgaTarget::Xilinx7, 0);
+    let sv = emit::verilog::emit_sv_with_options(&result, Some(FpgaTarget::Xilinx7), 0);
     assert!(!sv.contains("use_dsp"), "Threshold=0 should disable all DSP attributes");
 }
 

@@ -17,17 +17,14 @@ use crate::ast::expr::Expr;
 use crate::ast::program::Module;
 use crate::ast::property::PropertyDecl;
 use crate::ast::types::{BinaryOp, LiteralValue, SignalType, UnaryOp};
-use crate::error::MirrError;
+use crate::ast::MAX_EXPR_NODES;
+use crate::error::{MirrError, PipelineErrors};
 use crate::span::Span;
 
 /// Expression type map: maps each expression (by pointer identity) to its
 /// inferred `SignalType`. Returned by `typecheck_module` so downstream
 /// passes (e.g., width inference) can query signedness without re-walking.
 pub type TypeMap = HashMap<*const Expr, SignalType>;
-
-/// Maximum expression nodes to visit during type inference.
-/// Matches the validation and width pass limits.
-const MAX_EXPR_NODES: usize = 512;
 
 /// Operator display name for error messages.
 fn op_symbol(op: BinaryOp) -> &'static str {
@@ -63,7 +60,11 @@ fn op_symbol(op: BinaryOp) -> &'static str {
 ///
 /// Bounded: iterates over guards + reflexes + properties, each expression
 /// bounded by MAX_EXPR_NODES.
-pub fn typecheck_module(module: &Module) -> Result<TypeMap, MirrError> {
+///
+/// Errors are accumulated across expressions (inter-expression accumulation)
+/// but within a single expression tree, inference stops at the first error
+/// (intra-expression fail-fast) because parent node types depend on children.
+pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
     // Build signal type lookup table.
     let mut signals: HashMap<&str, SignalType> = HashMap::with_capacity(module.signals.len());
     for sig in &module.signals {
@@ -71,48 +72,70 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, MirrError> {
     }
 
     let mut all_types: TypeMap = HashMap::new();
+    let mut errors = PipelineErrors::new();
 
     // T14: Guard conditions must be Bool.
     for guard in &module.guards {
-        let (cond_ty, expr_types) = infer_expr_type(&guard.condition, &signals, guard.span)?;
-        all_types.extend(expr_types);
-        if cond_ty != SignalType::Bool {
-            return Err(MirrError::TypeError {
-                message: format!(
-                    "[E601] Guard '{}' condition must be bool, got {}.",
-                    guard.name, cond_ty
-                ),
-                span: guard.span,
-            });
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
+        match infer_expr_type(&guard.condition, &signals, guard.span) {
+            Ok((cond_ty, expr_types)) => {
+                all_types.extend(expr_types);
+                if cond_ty != SignalType::Bool {
+                    errors.push(MirrError::TypeError {
+                        message: format!(
+                            "[E601] Guard '{}' condition must be bool, got {}.",
+                            guard.name, cond_ty
+                        ),
+                        span: guard.span,
+                    });
+                }
+            }
+            Err(e) => {
+                errors.push(e);
+            }
         }
     }
 
     // T1: Assignment type compatibility.
     for reflex in &module.reflexes {
         for assignment in &reflex.assignments {
+            if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                break;
+            }
             let target_ty = match signals.get(assignment.target.as_str()) {
                 Some(ty) => *ty,
                 None => continue, // Undeclared target — caught by semantic validation.
             };
-            let (expr_ty, expr_types) =
-                infer_expr_type(&assignment.value, &signals, assignment.span)?;
-            all_types.extend(expr_types);
-            if !types_compatible(target_ty, expr_ty) {
-                return Err(MirrError::TypeError {
-                    message: format!(
-                        "[E602] Assignment to '{}' ({}): expression type {} is not compatible.",
-                        assignment.target, target_ty, expr_ty
-                    ),
-                    span: assignment.span,
-                });
+            match infer_expr_type(&assignment.value, &signals, assignment.span) {
+                Ok((expr_ty, expr_types)) => {
+                    all_types.extend(expr_types);
+                    if !types_compatible(target_ty, expr_ty) {
+                        errors.push(MirrError::TypeError {
+                            message: format!(
+                                "[E602] Assignment to '{}' ({}): expression type {} is not compatible.",
+                                assignment.target, target_ty, expr_ty
+                            ),
+                            span: assignment.span,
+                        });
+                    }
+                }
+                Err(e) => {
+                    errors.push(e);
+                }
             }
         }
     }
 
     // Type-check property formulas.
-    check_property_formulas(&module.properties, &signals, &mut all_types)?;
+    check_property_formulas(&module.properties, &signals, &mut all_types, &mut errors);
 
-    Ok(all_types)
+    if errors.is_empty() {
+        Ok(all_types)
+    } else {
+        Err(errors)
+    }
 }
 
 /// Check whether an expression type is compatible with a target type.
@@ -428,13 +451,22 @@ fn check_property_formulas(
     properties: &[PropertyDecl],
     signals: &HashMap<&str, SignalType>,
     all_types: &mut TypeMap,
-) -> Result<(), MirrError> {
+    errors: &mut PipelineErrors,
+) {
     for prop in properties {
+        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+            break;
+        }
         for expr in prop.formula.exprs() {
             // Type-check the expression (operator errors caught here).
-            let (_ty, expr_types) = infer_expr_type(expr, signals, prop.span)?;
-            all_types.extend(expr_types);
+            match infer_expr_type(expr, signals, prop.span) {
+                Ok((_ty, expr_types)) => {
+                    all_types.extend(expr_types);
+                }
+                Err(e) => {
+                    errors.push(e);
+                }
+            }
         }
     }
-    Ok(())
 }

@@ -19,16 +19,14 @@ use std::collections::HashMap;
 
 use crate::ast::expr::Expr;
 use crate::ast::property::{PropertyDecl, PropertyFormula};
-use crate::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
+use crate::ast::types::{BinaryOp, LiteralValue, SignalKind, UnaryOp};
+use crate::ast::MAX_EXPR_NODES;
 use crate::error::MirrError;
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, ConditionKind, TemporalNetlist};
 
 use super::rspu_isa::*;
 use super::rspu_regalloc::{allocate_registers, RegAllocResult};
-
-/// Maximum expression nodes to walk (same as verilog emitter).
-const MAX_EXPR_NODES: usize = 512;
 
 /// Emit an R-SPU program from pipeline results.
 ///
@@ -458,15 +456,6 @@ fn emit_properties(
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Produce the `SignalType` bit width for LOAD_IMM annotations.
-#[allow(dead_code)]
-fn signal_width(ty: &SignalType) -> u32 {
-    match ty {
-        SignalType::Bool => 1,
-        SignalType::Unsigned(w) | SignalType::Signed(w) => *w,
-    }
-}
-
-fn rspu_err(msg: impl Into<String>) -> MirrError {
+pub(crate) fn rspu_err(msg: impl Into<String>) -> MirrError {
     MirrError::RspuError { message: msg.into(), span: None }
 }

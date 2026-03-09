@@ -14,10 +14,8 @@
 use crate::ast::program::Module;
 use crate::ast::types::{SignalKind, SignalType};
 use crate::emit::fpga_target::FpgaTarget;
+use crate::emit::fpga_target::MAX_CONSTRAINT_LINES;
 use crate::pipeline::PipelineResult;
-
-/// Maximum lines in a generated constraint file (NASA P10 bounded iteration).
-const MAX_CONSTRAINT_LINES: usize = 256;
 
 /// Emit a constraint file for the given FPGA target.
 pub fn emit_constraints(result: &PipelineResult, target: &FpgaTarget) -> String {

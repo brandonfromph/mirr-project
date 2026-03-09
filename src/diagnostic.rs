@@ -125,25 +125,7 @@ impl fmt::Display for Severity {
 /// Uses `lines()` with an explicit counter bounded by the total number of
 /// lines (which is itself bounded by source length).
 fn get_source_line(source: &str, line_idx: u32) -> Option<&str> {
-    let target = line_idx as usize;
-    let mut idx: usize = 0;
-    // Bounded: at most source.len()+1 iterations (one per line).
-    let mut lines_iter = source.lines();
-    loop {
-        match lines_iter.next() {
-            Some(line) => {
-                if idx == target {
-                    return Some(line);
-                }
-                idx += 1;
-            }
-            None => return None,
-        }
-        // Safety bound: impossible to exceed total lines, but guard anyway.
-        if idx > source.len() {
-            return None;
-        }
-    }
+    source.lines().nth(line_idx as usize)
 }
 
 /// Truncate a source line to at most `MAX_DIAG_LINE_WIDTH` characters.

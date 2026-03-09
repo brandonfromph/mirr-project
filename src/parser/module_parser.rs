@@ -4,8 +4,11 @@
 //! guards, reflexes, properties, and pattern calls. Also dispatches `def` blocks
 //! to the pattern parser.
 
+#![forbid(unsafe_code)]
+
 use super::expr_parser::parse_expression;
 use super::pattern_parser::{is_pattern_call_line, parse_pattern_call, parse_pattern_def};
+use super::skip_empty_and_comments;
 use crate::ast::pattern::PatternDef;
 use crate::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
 use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
@@ -59,17 +62,6 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
     let module = parse_module(&lines, &mut index)?;
 
     Ok(MirrProgram { patterns, module })
-}
-
-fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {
-    while *index < lines.len() {
-        let line = lines[*index].trim();
-        if line.is_empty() || line.starts_with("//") {
-            *index += 1;
-        } else {
-            break;
-        }
-    }
 }
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {

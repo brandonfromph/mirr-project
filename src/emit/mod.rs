@@ -16,3 +16,54 @@ pub mod rspu_isa;
 pub mod rspu_regalloc;
 pub mod testbench;
 pub mod verilog;
+
+use crate::ast::expr::Expr;
+use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use crate::ast::MAX_EXPR_NODES;
+
+/// Render an expression in MIRR-like text form for property/JSON output.
+pub(crate) fn expr_text(expr: &Expr) -> String {
+    let mut iters = 0usize;
+    expr_text_bounded(expr, &mut iters)
+}
+
+pub(crate) fn expr_text_bounded(expr: &Expr, iters: &mut usize) -> String {
+    *iters += 1;
+    if *iters > MAX_EXPR_NODES {
+        return "...".to_string();
+    }
+    match expr {
+        Expr::Literal(LiteralValue::Bool(true)) => "true".to_string(),
+        Expr::Literal(LiteralValue::Bool(false)) => "false".to_string(),
+        Expr::Literal(LiteralValue::Integer(n)) => format!("{n}"),
+        Expr::Signal(name) => name.clone(),
+        Expr::Prev { signal, delay } => format!("prev({signal}, {delay})"),
+        Expr::Unary { op: UnaryOp::Not, operand } => {
+            format!("!{}", expr_text_bounded(operand, iters))
+        }
+        Expr::Unary { op: UnaryOp::Negate, operand } => {
+            format!("-{}", expr_text_bounded(operand, iters))
+        }
+        Expr::Binary { op, left, right } => {
+            let l = expr_text_bounded(left, iters);
+            let r = expr_text_bounded(right, iters);
+            let op_str = match op {
+                BinaryOp::And => "&&",
+                BinaryOp::Or => "||",
+                BinaryOp::Xor => "^",
+                BinaryOp::Lt => "<",
+                BinaryOp::Le => "<=",
+                BinaryOp::Gt => ">",
+                BinaryOp::Ge => ">=",
+                BinaryOp::Eq => "==",
+                BinaryOp::Ne => "!=",
+                BinaryOp::Add => "+",
+                BinaryOp::Sub => "-",
+                BinaryOp::Mul => "*",
+                BinaryOp::Shl => "<<",
+                BinaryOp::Shr => ">>",
+            };
+            format!("({l} {op_str} {r})")
+        }
+    }
+}

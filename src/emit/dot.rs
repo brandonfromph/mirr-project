@@ -58,12 +58,10 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
 
     // Guard condition trees.
     for g in &module.guards {
-        let root = node_id;
         out.push_str(&format!("  subgraph cluster_guard_{} {{\n", sanitize_id(&g.name)));
         out.push_str(&format!("    label=\"guard: {}\";\n", g.name));
         emit_expr_nodes(&g.condition, &mut node_id, &mut out);
         out.push_str("  }\n");
-        let _ = root; // root is the first node emitted inside
     }
 
     // Reflex assignment RHS trees.

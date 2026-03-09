@@ -7,6 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::expr_text;
 use crate::ast::MirrAstJson;
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::TemporalNetlistJson;
@@ -186,55 +187,5 @@ fn property_to_json(prop: &crate::ast::property::PropertyDecl) -> PropertyJson {
         directive: directive_str.to_string(),
         kind,
         formula_text,
-    }
-}
-
-/// Render an expression in MIRR-like text form for JSON output.
-fn expr_text(expr: &crate::ast::Expr) -> String {
-    let mut iters = 0usize;
-    expr_text_bounded(expr, &mut iters)
-}
-
-fn expr_text_bounded(expr: &crate::ast::Expr, iters: &mut usize) -> String {
-    use crate::ast::expr::Expr;
-    use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
-    const MAX: usize = 512;
-    *iters += 1;
-    if *iters > MAX {
-        return "...".to_string();
-    }
-    match expr {
-        Expr::Literal(LiteralValue::Bool(true)) => "true".to_string(),
-        Expr::Literal(LiteralValue::Bool(false)) => "false".to_string(),
-        Expr::Literal(LiteralValue::Integer(n)) => format!("{n}"),
-        Expr::Signal(name) => name.clone(),
-        Expr::Prev { signal, delay } => format!("prev({signal}, {delay})"),
-        Expr::Unary { op: UnaryOp::Not, operand } => {
-            format!("!{}", expr_text_bounded(operand, iters))
-        }
-        Expr::Unary { op: UnaryOp::Negate, operand } => {
-            format!("-{}", expr_text_bounded(operand, iters))
-        }
-        Expr::Binary { op, left, right } => {
-            let l = expr_text_bounded(left, iters);
-            let r = expr_text_bounded(right, iters);
-            let op_str = match op {
-                BinaryOp::And => "&&",
-                BinaryOp::Or => "||",
-                BinaryOp::Xor => "^",
-                BinaryOp::Lt => "<",
-                BinaryOp::Le => "<=",
-                BinaryOp::Gt => ">",
-                BinaryOp::Ge => ">=",
-                BinaryOp::Eq => "==",
-                BinaryOp::Ne => "!=",
-                BinaryOp::Add => "+",
-                BinaryOp::Sub => "-",
-                BinaryOp::Mul => "*",
-                BinaryOp::Shl => "<<",
-                BinaryOp::Shr => ">>",
-            };
-            format!("({l} {op_str} {r})")
-        }
     }
 }

@@ -5,6 +5,8 @@
 //! properties, patterns, and the top-level program structure.
 // ---------------------------------------------------------------------------
 
+#![forbid(unsafe_code)]
+
 pub mod expr;
 pub mod pattern;
 pub mod program;
@@ -20,3 +22,6 @@ pub use pattern::{
 pub use program::{Assignment, Guard, MirrAstJson, MirrProgram, Module, Reflex, SignalDecl};
 pub use property::{PropertyDecl, PropertyDirective, PropertyFormula};
 pub use types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
+
+/// Maximum expression nodes to visit during bounded traversal (NASA P10).
+pub(crate) const MAX_EXPR_NODES: usize = 512;

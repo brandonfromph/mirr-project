@@ -9,6 +9,7 @@
 use crate::ast::expr::Expr;
 use crate::ast::program::Module;
 use crate::ast::types::BinaryOp;
+use crate::ast::MAX_EXPR_NODES;
 
 /// Maximum number of DSP candidates tracked per module (NASA P10 bounded iteration).
 pub const MAX_DSP_CANDIDATES: usize = 64;
@@ -53,7 +54,7 @@ pub fn analyze_dsp(module: &Module, threshold: u32) -> DspAnalysis {
             if candidates.len() >= MAX_DSP_CANDIDATES {
                 break;
             }
-            if expr_contains_mul(&assignment.value, threshold) {
+            if expr_contains_mul(&assignment.value) {
                 candidates.push(DspCandidate {
                     reflex_name: reflex.name.clone(),
                     target_signal: assignment.target.clone(),
@@ -65,23 +66,13 @@ pub fn analyze_dsp(module: &Module, threshold: u32) -> DspAnalysis {
     DspAnalysis { candidates, threshold_bits: threshold }
 }
 
-/// Check if a reflex contains a multiply operation suitable for DSP mapping.
-/// Returns the set of reflex names that have DSP-eligible multiplies.
-pub fn dsp_reflex_names(module: &Module, threshold: u32) -> std::collections::HashSet<String> {
-    let analysis = analyze_dsp(module, threshold);
-    analysis.candidates.into_iter().map(|c| c.reflex_name).collect()
-}
-
 /// Recursively check if an expression tree contains a `Mul` node.
 ///
 /// Bounded traversal: counts nodes to prevent unbounded recursion on
 /// pathological ASTs.
-fn expr_contains_mul(expr: &Expr, _threshold: u32) -> bool {
+fn expr_contains_mul(expr: &Expr) -> bool {
     expr_contains_mul_bounded(expr, &mut 0)
 }
-
-/// Maximum expression nodes to visit (NASA P10 bounded iteration).
-const MAX_EXPR_NODES: usize = 512;
 
 fn expr_contains_mul_bounded(expr: &Expr, count: &mut usize) -> bool {
     *count += 1;

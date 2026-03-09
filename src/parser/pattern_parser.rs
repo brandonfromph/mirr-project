@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+use super::skip_empty_and_comments;
 use crate::ast::pattern::{
     PatternArg, PatternCall, PatternDef, PatternParam, PatternParamKind, ReflectBlock,
 };
@@ -442,17 +443,6 @@ fn parse_call_args(args_str: &str, call_name: &str) -> Result<Vec<PatternArg>, M
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {
-    while *index < lines.len() {
-        let line = lines[*index].trim();
-        if line.is_empty() || line.starts_with("//") {
-            *index += 1;
-        } else {
-            break;
-        }
-    }
-}
 
 fn pattern_err(msg: impl Into<String>) -> MirrError {
     MirrError::PatternError { message: msg.into(), span: None }

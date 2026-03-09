@@ -24,20 +24,7 @@ pub fn emit_sv(result: &PipelineResult) -> String {
     emit_sv_with_options(result, None, crate::emit::dsp::DEFAULT_DSP_THRESHOLD)
 }
 
-/// Emit SystemVerilog RTL with FPGA target-specific DSP synthesis attributes.
-///
-/// When `target` is `Some` and not `Generic`, multiply operations in reflexes
-/// get vendor-specific `(* use_dsp = "yes" *)` or equivalent attributes.
-pub fn emit_sv_with_target(
-    result: &PipelineResult,
-    target: &FpgaTarget,
-    dsp_threshold: u32,
-) -> String {
-    let t = if *target == FpgaTarget::Generic { None } else { Some(*target) };
-    emit_sv_with_options(result, t, dsp_threshold)
-}
-
-fn emit_sv_with_options(
+pub fn emit_sv_with_options(
     result: &PipelineResult,
     target: Option<FpgaTarget>,
     dsp_threshold: u32,
@@ -48,7 +35,8 @@ fn emit_sv_with_options(
     // Determine which reflexes contain DSP-eligible multiplies.
     // threshold=0 means DSP inference is disabled.
     let dsp_reflexes = if target.is_some() && dsp_threshold > 0 {
-        crate::emit::dsp::dsp_reflex_names(module, dsp_threshold)
+        let analysis = crate::emit::dsp::analyze_dsp(module, dsp_threshold);
+        analysis.candidates.into_iter().map(|c| c.reflex_name).collect()
     } else {
         std::collections::HashSet::new()
     };
@@ -57,7 +45,6 @@ fn emit_sv_with_options(
     emit_header(&mut out);
     emit_pattern_annotations(module, &mut out);
     emit_module_decl(module, &mut out);
-    emit_port_list(module, &mut out);
     emit_internal_signals(module, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
@@ -135,10 +122,6 @@ fn emit_module_decl(module: &Module, out: &mut String) {
     }
 
     out.push_str(");\n\n");
-}
-
-fn emit_port_list(_module: &Module, _out: &mut String) {
-    // Clock and reset ports now auto-injected in emit_module_decl.
 }
 
 fn emit_internal_signals(module: &Module, out: &mut String) {
@@ -524,8 +507,7 @@ fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &mut String) 
 // Input Synchronizer Chains
 // -----------------------------------------------------------------------
 
-/// Maximum synchronizer stages (bounded iteration, NASA P10 Rule #1).
-const MAX_SYNC_STAGES: u32 = 4;
+use crate::emit::fpga_target::MAX_SYNC_STAGES;
 
 /// Emit 2-stage (or N-stage) synchronizer chains for all input signals
 /// except `clk` and `rst_n`. Returns a mapping of original signal names

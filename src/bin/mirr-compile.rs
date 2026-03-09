@@ -129,10 +129,21 @@ fn main() {
     let result = match run_pipeline(&source, &config) {
         Ok(r) => r,
         Err(e) => {
-            let diagnostic = e.to_diagnostic();
-            let rendered =
-                nasa_rust_project::diagnostic::render_diagnostic(&diagnostic, &source, &input_path);
-            eprint!("{}", rendered);
+            for err in &e.errors {
+                let diagnostic = err.to_diagnostic();
+                let rendered = nasa_rust_project::diagnostic::render_diagnostic(
+                    &diagnostic,
+                    &source,
+                    &input_path,
+                );
+                eprint!("{}", rendered);
+            }
+            let n = e.errors.len();
+            if n == 1 {
+                eprintln!("error: aborting due to previous error");
+            } else {
+                eprintln!("error: aborting due to {n} previous errors");
+            }
             process::exit(1);
         }
     };
@@ -156,7 +167,12 @@ fn main() {
             }
         }
         "verilog" | "sv" => {
-            emit::verilog::emit_sv_with_target(&result, &fpga_target, dsp_threshold)
+            let t = if fpga_target == emit::fpga_target::FpgaTarget::Generic {
+                None
+            } else {
+                Some(fpga_target)
+            };
+            emit::verilog::emit_sv_with_options(&result, t, dsp_threshold)
         }
         "json" => match emit::json_netlist::emit_json(&result) {
             Ok(s) => s,
