@@ -18,6 +18,7 @@ use crate::ast::types::SignalKind;
 use crate::ast::MAX_EXPR_NODES;
 use crate::error::MirrError;
 use crate::error::PipelineErrors;
+use crate::parser::pattern_parser::{MAX_PARAMS, MAX_REFLECT_LINES};
 use crate::span::Span;
 
 /// Validate a parsed module for semantic correctness:
@@ -32,8 +33,6 @@ use crate::span::Span;
 ///
 /// Errors are accumulated (up to [`crate::error::MAX_ACCUMULATED_ERRORS`])
 /// and returned together in a `PipelineErrors`.
-///
-/// NASA-style optimization: pre-allocate hash sets and use efficient lookups.
 pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     let mut errors = PipelineErrors::new();
     let mut reported_undeclared: HashSet<String> = HashSet::with_capacity(16);
@@ -109,7 +108,6 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     }
 
     // Build set of output/internal signals (valid assignment targets).
-    // NASA-style optimization: reserve capacity and filter efficiently.
     let writable_capacity = module
         .signals
         .iter()
@@ -131,7 +129,6 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     let guard_name_candidates: Vec<&str> = module.guards.iter().map(|g| g.name.as_str()).collect();
 
     // Validate guard conditions reference declared signals.
-    // NASA-style optimization: batch validation and early exit.
     for guard in &module.guards {
         if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
             break;
@@ -163,7 +160,7 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
         }
     }
 
-    // Validate reflexes with optimized lookups.
+    // Validate reflexes.
     for reflex in &module.reflexes {
         if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
             break;
@@ -360,7 +357,6 @@ fn validate_prev_delays(
 
 /// Collect all signal references from an expression tree.
 /// Uses an explicit stack to avoid recursion.
-/// NASA-style optimization: pre-allocate vector and minimize allocations.
 pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
     // Pre-allocate with reasonable capacity estimate.
     // In practice, expressions rarely have more than 10-20 signal references.
@@ -461,20 +457,14 @@ fn validate_property_prev_delays(
 // Pattern definition validation (Phase 7b)
 // ---------------------------------------------------------------------------
 
-/// Maximum parameters allowed in a single pattern definition.
-const MAX_PATTERN_PARAMS: usize = 32;
-
-/// Maximum body lines allowed in a reflect block.
-const MAX_PATTERN_BODY_LINES: usize = 512;
-
 /// Validate pattern definitions for structural correctness.
 ///
 /// Called BEFORE pattern expansion. Checks:
 /// - No duplicate pattern names.
 /// - No duplicate parameter names within a pattern.
 /// - Reflect body is non-empty.
-/// - Parameter count <= MAX_PATTERN_PARAMS.
-/// - Body line count <= MAX_PATTERN_BODY_LINES.
+/// - Parameter count <= MAX_PARAMS.
+/// - Body line count <= MAX_REFLECT_LINES.
 ///
 /// Errors are accumulated (up to [`crate::error::MAX_ACCUMULATED_ERRORS`])
 /// and returned together in a `PipelineErrors`.
@@ -512,10 +502,10 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
             }
         }
 
-        if pat.params.len() > MAX_PATTERN_PARAMS {
+        if pat.params.len() > MAX_PARAMS {
             errors.push(MirrError::PatternError {
                 message: format!(
-                    "Pattern '{}' has {} parameters (max {MAX_PATTERN_PARAMS}).",
+                    "Pattern '{}' has {} parameters (max {MAX_PARAMS}).",
                     pat.name,
                     pat.params.len()
                 ),
@@ -530,10 +520,10 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
             });
         }
 
-        if pat.body.raw_lines.len() > MAX_PATTERN_BODY_LINES {
+        if pat.body.raw_lines.len() > MAX_REFLECT_LINES {
             errors.push(MirrError::PatternError {
                 message: format!(
-                    "Pattern '{}' reflect body has {} lines (max {MAX_PATTERN_BODY_LINES}).",
+                    "Pattern '{}' reflect body has {} lines (max {MAX_REFLECT_LINES}).",
                     pat.name,
                     pat.body.raw_lines.len()
                 ),

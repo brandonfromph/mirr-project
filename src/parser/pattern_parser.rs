@@ -13,13 +13,13 @@ use crate::ast::types::{SignalKind, SignalType};
 use crate::error::MirrError;
 
 /// Maximum number of parameters in a pattern definition.
-const MAX_PARAMS: usize = 32;
+pub(crate) const MAX_PARAMS: usize = 32;
 
 /// Maximum number of arguments in a pattern call.
 const MAX_ARGS: usize = 32;
 
 /// Maximum number of lines in a reflect body.
-const MAX_REFLECT_LINES: usize = 512;
+pub(crate) const MAX_REFLECT_LINES: usize = 512;
 
 /// Maximum brace nesting depth inside a reflect body.
 const MAX_BRACE_DEPTH: usize = 16;

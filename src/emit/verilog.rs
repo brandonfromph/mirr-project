@@ -16,6 +16,8 @@ use crate::emit::fpga_target::FpgaTarget;
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
+use crate::ast::MAX_EXPR_NODES;
+
 /// Maximum shift-register stages to emit inline before truncating.
 const MAX_SR_STAGES_INLINE: u64 = 1024;
 
@@ -378,9 +380,8 @@ fn emit_expr_inline(expr: &Expr) -> String {
 
 /// Bounded expression-to-string conversion.
 fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
-    const MAX_NODES: usize = 512;
     *iterations += 1;
-    if *iterations > MAX_NODES {
+    if *iterations > MAX_EXPR_NODES {
         return "/* truncated */".to_string();
     }
     match expr {

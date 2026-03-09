@@ -30,7 +30,6 @@ fn infix_binding_power(op: &BinaryOp) -> (u8, u8) {
 const MAX_EXPR_DEPTH: usize = 128;
 
 /// Map a token to a binary operator, if applicable.
-/// NASA-style optimization: use lookup table for O(1) matching.
 #[inline]
 fn token_to_binop(tok: &Token) -> Option<BinaryOp> {
     match tok {
@@ -80,7 +79,6 @@ impl ExprParser {
     }
 
     /// Parse a complete expression consuming all tokens.
-    /// NASA-style optimization: validate input size before parsing.
     fn parse_full(&mut self) -> Result<Expr, MirrError> {
         if self.tokens.is_empty() {
             return Err(MirrError::new("[E170] Empty expression."));
@@ -102,7 +100,6 @@ impl ExprParser {
     }
 
     /// Check if parentheses are balanced in the token stream.
-    /// NASA-style optimization: single-pass validation before parsing.
     fn has_balanced_parens(&self) -> bool {
         let mut depth = 0;
         for token in &self.tokens {
@@ -126,7 +123,6 @@ impl ExprParser {
     }
 
     /// Pratt parser: parse expression with given minimum binding power.
-    /// NASA-style optimization: inline critical functions and reduce allocations.
     fn parse_expr(&mut self, min_bp: u8, depth: usize) -> Result<Expr, MirrError> {
         if depth > MAX_EXPR_DEPTH {
             return Err(MirrError::new(format!(
@@ -139,7 +135,6 @@ impl ExprParser {
         let mut lhs = self.parse_prefix(depth)?;
 
         // Parse infix operators with sufficient binding power.
-        // NASA-style: minimize function calls in hot loop
         while let Some(tok) = self.peek() {
             let op = token_to_binop(tok);
             let Some(op) = op else {
@@ -162,7 +157,6 @@ impl ExprParser {
     }
 
     /// Parse a prefix expression or atom.
-    /// NASA-style optimization: reduce cloning and use direct matching.
     fn parse_prefix(&mut self, depth: usize) -> Result<Expr, MirrError> {
         if depth > MAX_EXPR_DEPTH {
             return Err(MirrError::new(format!(

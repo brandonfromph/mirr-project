@@ -292,7 +292,7 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
 
 /// Simplify a MIRR expression tree, running to fixpoint.
 ///
-/// Preserves the original function signature for backward compatibility.
+/// Convenience wrapper that discards statistics.
 /// Applies algebraic rules iteratively (no recursion) and repeats until
 /// no more rules fire or MAX_PASSES is reached.
 pub fn simplify_expr(expr: Expr) -> Expr {

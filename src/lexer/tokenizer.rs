@@ -54,81 +54,54 @@ pub enum Token {
     RParen,
 }
 
-/// Pre-allocated buffer for tokens to reduce heap allocations.
-/// Buffer for accumulating tokens during lexing.
-struct TokenArena {
-    tokens: Vec<Token>,
-}
-
-impl TokenArena {
-    /// Create a new token arena with estimated capacity.
-    /// Uses input length to estimate token count (typically 1 token per 2-3 chars).
-    fn new(input_len: usize) -> Self {
-        let estimated_tokens = input_len.saturating_div(2).max(8);
-        Self { tokens: Vec::with_capacity(estimated_tokens) }
-    }
-
-    /// Add a token to the arena.
-    fn push(&mut self, token: Token) {
-        self.tokens.push(token);
-    }
-
-    /// Get the current tokens.
-    fn finish(self) -> Vec<Token> {
-        self.tokens
-    }
-}
-
-/// Tokenize an expression string into a sequence of tokens.
 /// Tokenize an expression string into a sequence of tokens.
 pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
     let bytes = input.as_bytes();
     let len = bytes.len();
     let mut pos = 0usize;
-    let mut arena = TokenArena::new(len);
+    let estimated_tokens = len.saturating_div(2).max(8);
+    let mut tokens = Vec::with_capacity(estimated_tokens);
 
     // Bounded iteration: each loop iteration advances pos by at least 1.
     while pos < len {
         let b = bytes[pos];
 
-        // Skip whitespace using optimized byte checking.
+        // Skip whitespace.
         if is_whitespace_byte(b) {
             pos += 1;
             continue;
         }
 
         // Two-character operators (check before single-char).
-        // Check for two-character operators.
         // Safety: only attempt the str slice if both positions are on ASCII
         // (single-byte) chars, so we never panic on multi-byte UTF-8 boundaries.
         if pos + 1 < len && b.is_ascii() && bytes[pos + 1].is_ascii() {
             let pair = &input[pos..pos + 2];
             if let Some(tok) = match_two_char_operator(pair) {
-                arena.push(tok);
+                tokens.push(tok);
                 pos += 2;
                 continue;
             }
         }
 
-        // Single-character operators and punctuation.
-        // Check for single-character operators.
+        // Single-character operators.
         if let Some(tok) = match_single_char_operator(b) {
-            arena.push(tok);
+            tokens.push(tok);
             pos += 1;
             continue;
         }
 
         // Integer literal with bounds checking.
-        if is_digit_byte(b) {
+        if b.is_ascii_digit() {
             let start = pos;
-            while pos < len && is_digit_byte(bytes[pos]) {
+            while pos < len && bytes[pos].is_ascii_digit() {
                 pos += 1;
             }
             let num_str = &input[start..pos];
             let value: u64 = num_str.parse().map_err(|_| {
                 MirrError::new(format!("[E180] Integer literal too large: '{num_str}'."))
             })?;
-            arena.push(Token::Integer(value));
+            tokens.push(Token::Integer(value));
             continue;
         }
 
@@ -144,7 +117,7 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
                 "false" => Token::False,
                 _ => Token::Ident(word.to_string()),
             };
-            arena.push(tok);
+            tokens.push(tok);
             continue;
         }
 
@@ -159,22 +132,14 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         )));
     }
 
-    Ok(arena.finish())
+    Ok(tokens)
 }
 
-/// Helper function to check if a byte is whitespace.
 /// Returns true if byte is ASCII whitespace.
 #[inline]
 fn is_whitespace_byte(b: u8) -> bool {
     // Check for space, tab, newline, carriage return
     b == b' ' || b == b'\t' || b == b'\n' || b == b'\r'
-}
-
-/// Helper function to check if a byte is a digit.
-/// Returns true if byte is an ASCII digit.
-#[inline]
-fn is_digit_byte(b: u8) -> bool {
-    b.is_ascii_digit()
 }
 
 /// Helper function to check if a byte can start an identifier.
@@ -189,7 +154,6 @@ fn is_identifier_byte(b: u8) -> bool {
     b.is_ascii_lowercase() || b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_'
 }
 
-/// Lookup table for two-character operators.
 /// Match a two-character operator token.
 #[inline]
 fn match_two_char_operator(pair: &str) -> Option<Token> {
@@ -206,7 +170,6 @@ fn match_two_char_operator(pair: &str) -> Option<Token> {
     }
 }
 
-/// Lookup table for single-character operators.
 /// Match a single-character operator token.
 #[inline]
 fn match_single_char_operator(b: u8) -> Option<Token> {

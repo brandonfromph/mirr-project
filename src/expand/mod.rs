@@ -13,6 +13,7 @@ use crate::ast::pattern::{PatternArg, PatternCall, PatternDef, PatternOrigin};
 use crate::ast::program::{MirrProgram, Module};
 use crate::ast::property::PropertyFormula;
 use crate::ast::types::SignalKind;
+use crate::ast::MAX_EXPR_NODES;
 use crate::error::MirrError;
 use crate::span::Span;
 
@@ -290,14 +291,13 @@ fn apply_name_prefixing(
 /// Uses an explicit iterative work stack — zero recursion (NASA P10 rule #1).
 /// Bounded: at most 512 nodes.
 fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, String>) {
-    const MAX_NODES: usize = 512;
     let mut stack: Vec<&mut Expr> = Vec::with_capacity(32);
     stack.push(expr);
     let mut visited = 0usize;
 
     while let Some(node) = stack.pop() {
         visited += 1;
-        if visited > MAX_NODES {
+        if visited > MAX_EXPR_NODES {
             break;
         }
         match node {
@@ -440,14 +440,13 @@ fn check_expr_no_internal_refs(
     expr: &Expr,
     internal_signals: &HashMap<&str, (&str, Option<Span>)>,
 ) -> Result<(), MirrError> {
-    const MAX_NODES: usize = 512;
     let mut stack: Vec<&Expr> = Vec::with_capacity(32);
     stack.push(expr);
     let mut visited = 0usize;
 
     while let Some(node) = stack.pop() {
         visited += 1;
-        if visited > MAX_NODES {
+        if visited > MAX_EXPR_NODES {
             break;
         }
         let name = match node {
@@ -487,14 +486,13 @@ fn check_expr_cross_expansion(
     my_origin: &str,
     internal_signals: &HashMap<&str, (&str, Option<Span>)>,
 ) -> Result<(), MirrError> {
-    const MAX_NODES: usize = 512;
     let mut stack: Vec<&Expr> = Vec::with_capacity(32);
     stack.push(expr);
     let mut visited = 0usize;
 
     while let Some(node) = stack.pop() {
         visited += 1;
-        if visited > MAX_NODES {
+        if visited > MAX_EXPR_NODES {
             break;
         }
         let name = match node {

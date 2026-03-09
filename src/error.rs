@@ -112,10 +112,7 @@ impl MirrError {
         let code = self.error_code();
         let clean_msg = strip_embedded_code(self.message());
 
-        let severity = match self {
-            Self::RspuError { .. } => Severity::Error,
-            _ => Severity::Error,
-        };
+        let severity = Severity::Error;
 
         let mut diag = Diagnostic::error(clean_msg).with_span(self.span());
         diag.severity = severity;
