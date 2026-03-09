@@ -441,11 +441,21 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 │   │   └── pattern_parser.rs      # Pattern definition and call parsing (Phase 7b)
 │   ├── validation/
 │   │   └── semantic.rs            # Includes property validation (Phase 7a)
-│   ├── emit/                      # Output emitters (Phase 6)
+│   ├── typeck/                    # Type checker module (TYPE-001)
+│   │   └── mod.rs
+│   ├── emit/                      # Output emitters — 7 backends (Phase 6+)
 │   │   ├── mod.rs
 │   │   ├── verilog.rs             # SystemVerilog RTL + SVA assertions (Phase 7a)
 │   │   ├── dot.rs                 # Graphviz DOT with property nodes (Phase 7a)
-│   │   └── json_netlist.rs        # JSON netlist with properties key (Phase 7a)
+│   │   ├── json_netlist.rs        # JSON netlist with properties key (Phase 7a)
+│   │   ├── rspu.rs                # R-SPU native code emission
+│   │   ├── rspu_isa.rs            # R-SPU instruction set definitions
+│   │   ├── rspu_regalloc.rs       # R-SPU register allocator
+│   │   ├── firrtl.rs              # FIRRTL intermediate representation emission
+│   │   ├── fpga_scaffold.rs       # FPGA scaffold generation (FPGA-001)
+│   │   ├── fpga_target.rs         # FPGA target definitions (FPGA-002)
+│   │   ├── dsp.rs                 # DSP block emission
+│   │   └── testbench.rs           # Testbench generation
 │   ├── temporal/
 │   │   ├── compiler.rs
 │   │   ├── emit.rs
@@ -475,6 +485,12 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 │   ├── pattern_tests.rs           # Pattern system tests (Phase 7b)
 │   ├── pattern_coverage_tests.rs  # Pattern coverage gap tests (Phase 7b)
 │   └── fixtures/
+├── proofs/                        # Rocq (Coq) formal proofs (ROCQ-001)
+│   └── width/                     # FIRWINE width inference proofs
+│       ├── Types.v, MinBits.v, Constraint.v, Flatten.v
+│       ├── Solver.v, Monotone.v, Truncation.v, Integration.v
+│       └── SCC/                   # SCC-specific proofs
+│           ├── Tarjan.v, Classify.v, Nonexpansive.v
 ├── compiler_mirr/                 # MIRR-in-MIRR self-hosting port (incremental)
 ├── stdlib/mirr_core/              # Standard library primitives in MIRR
 ├── examples/
@@ -497,12 +513,19 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 | Logic simplification | `src/simplify.rs` |
 | Bit-width inference (acyclic) | `src/width/solver.rs`, `constraint.rs`, `flatten.rs` |
 | Bit-width inference (cyclic SCC) | `src/width/graph.rs`, `scc.rs`, `scc_solver.rs`, `verify.rs` |
-| Output emission | `src/emit/verilog.rs`, `src/emit/dot.rs`, `src/emit/json_netlist.rs` |
+| Output emission | `src/emit/verilog.rs`, `dot.rs`, `json_netlist.rs`, `rspu.rs`, `firrtl.rs`, `fpga_scaffold.rs`, `fpga_target.rs`, `dsp.rs`, `testbench.rs` |
+| R-SPU backend | `src/emit/rspu.rs`, `rspu_isa.rs`, `rspu_regalloc.rs` |
+| FIRRTL emission | `src/emit/firrtl.rs` |
+| FPGA targets | `src/emit/fpga_scaffold.rs`, `src/emit/fpga_target.rs` |
+| DSP emission | `src/emit/dsp.rs` |
+| Testbench generation | `src/emit/testbench.rs` |
+| Type checking | `src/typeck/mod.rs` |
 | Unified pipeline | `src/pipeline.rs` |
 | Safety properties / SVA | `src/ast/property.rs`, `src/emit/verilog.rs` (SVA), `src/validation/semantic.rs` |
 | Pattern expansion | `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs` |
 | MAPE-K harness | `src/mape_k/`, `src/mirr_executor.rs` |
 | Self-hosting pipeline | `src/bootstrap_runner.rs` |
+| Rocq formal proofs | `proofs/width/*.v`, `proofs/width/SCC/*.v` |
 
 ---
 

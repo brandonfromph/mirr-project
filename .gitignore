@@ -45,6 +45,9 @@ path/
 # Paper (lives in separate private repo)
 paper/
 
+# Archived internal docs (not for public, preserved locally)
+docs/_archive/
+
 # LaTeX build artifacts
 *.pdf
 *.aux

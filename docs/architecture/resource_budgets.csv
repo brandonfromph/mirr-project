@@ -1,7 +1,0 @@
-Module,MAX_SIGNALS,MAX_GUARDS,MAX_REFLEXES,TOKEN_BUFFER_CAPACITY,WORST_CASE_STACK_BYTES,PREALLOC_HEAP_BYTES,Notes
-mirr_runtime,256,128,256,8192,65536,262144,Initial conservative estimates — verify in architecture walkthrough
-mirr_executor,256,128,256,8192,32768,0,Hot-path: heap post-init = 0; use preallocated pools
-temporal/compiler,512,256,512,8192,65536,131072,Compile-time allocations allowed if bounded and documented
-temporal/emit,512,256,512,8192,32768,0,Emit should avoid heap in hot loops; allow bounded transient allocations during emit if documented
-lexer,1024,0,0,8192,16384,0,Tokenizer uses preallocated token buffer
-parser,1024,0,0,8192,32768,131072,Parser may allocate during init/parse; document bounds

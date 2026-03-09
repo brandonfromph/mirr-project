@@ -33,6 +33,10 @@ The following features are **included** and their semantics are frozen for this 
 | `u32`    | Unsigned 32-bit integer                   |
 | `u64`    | Unsigned 64-bit integer                   |
 | `usize`  | Unsigned platform-word-size integer       |
+| `i8`     | Signed 8-bit integer                      |
+| `i16`    | Signed 16-bit integer                     |
+| `i32`    | Signed 32-bit integer                     |
+| `i64`    | Signed 64-bit integer                     |
 
 String handling is provided via the stdlib slice type (see Section 4).
 
@@ -217,6 +221,7 @@ fn_decl        := 'fn' ident '(' param_list ')' '->' type block
 param_list     := (ident ':' type ','?)*
 
 type           := 'bool' | 'u8' | 'u16' | 'u32' | 'u64' | 'usize'
+                | 'i8' | 'i16' | 'i32' | 'i64'
                 | '&' 'str'
                 | '&' type
                 | '&' 'mut' type

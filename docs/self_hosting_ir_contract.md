@@ -73,6 +73,9 @@ The output of the temporal guard lowering pass. Maps to concrete hardware primit
 
 // or for unsigned integers:
 { "Unsigned": <integer> }
+
+// or for signed integers:
+{ "Signed": <integer> }
 ```
 
 ### 3.5 `Guard`
