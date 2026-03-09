@@ -13,6 +13,20 @@ MIRR is built on the generative power of three. Every layer of the system uses e
 
 The compiler is built to the same standards as its safety-critical output: `#![forbid(unsafe_code)]`, `#![deny(warnings)]`, no unbounded loops, no recursion (NASA Power-of-10).
 
+### Zero-Debt Invariant
+
+The codebase never ages. No matter how many features ship, the code must read as if it were written today from scratch with full knowledge of what it needs to be. Seven prohibitions are enforced on every change:
+
+1. **No wrapper functions** — no `fn foo() { bar() }` indirection layers
+2. **No deprecated aliases** — when something is renamed, the old name is deleted everywhere immediately
+3. **No dead code** — if it's unreachable or unused, it's deleted; version control is the archive
+4. **No redundant abstractions** — every type/trait must justify its existence with distinct behavior
+5. **No backward-compat shims** — no `_unused` params, no `// removed` tombstones, no feature flags for old behavior
+6. **No duplicate logic** — one source of truth for every constant, helper, and pattern
+7. **No misleading comments** — comments describe what the code does today, not what it used to do
+
+These are enforced by the Debt Audit table in every campaign proposal and the Zero-Debt Gate at campaign close-out. See `.github/skills/propose-campaign/SKILL.md` for the full specification.
+
 ## Architecture
 
 ```

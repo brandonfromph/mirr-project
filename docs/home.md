@@ -48,13 +48,13 @@ them in hardware, with nanosecond response times.
 
 ## Quick Example
 
-```
+```bash
 module neonatal_respirator {
     signal airway_pressure: in u16;
     signal clamp_valve:     out bool;
 
     guard sustained_pressure_drop {
-        when airway_pressure < 50
+        when airway_pressure < 50 
         for  1000 cycles;
     }
 
