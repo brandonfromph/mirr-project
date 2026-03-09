@@ -6,9 +6,13 @@
 #![forbid(unsafe_code)]
 
 pub mod dot;
+pub mod dsp;
 pub mod firrtl;
+pub mod fpga_scaffold;
+pub mod fpga_target;
 pub mod json_netlist;
 pub mod rspu;
 pub mod rspu_isa;
 pub mod rspu_regalloc;
+pub mod testbench;
 pub mod verilog;

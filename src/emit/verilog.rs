@@ -12,6 +12,7 @@ use crate::ast::expr::Expr;
 use crate::ast::program::Module;
 use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
 use crate::ast::types::{BinaryOp, SignalKind, SignalType, UnaryOp};
+use crate::emit::fpga_target::FpgaTarget;
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
@@ -20,8 +21,38 @@ const MAX_SR_STAGES_INLINE: u64 = 1024;
 
 /// Emit SystemVerilog RTL from pipeline results.
 pub fn emit_sv(result: &PipelineResult) -> String {
+    emit_sv_with_options(result, None, crate::emit::dsp::DEFAULT_DSP_THRESHOLD)
+}
+
+/// Emit SystemVerilog RTL with FPGA target-specific DSP synthesis attributes.
+///
+/// When `target` is `Some` and not `Generic`, multiply operations in reflexes
+/// get vendor-specific `(* use_dsp = "yes" *)` or equivalent attributes.
+pub fn emit_sv_with_target(
+    result: &PipelineResult,
+    target: &FpgaTarget,
+    dsp_threshold: u32,
+) -> String {
+    let t = if *target == FpgaTarget::Generic { None } else { Some(*target) };
+    emit_sv_with_options(result, t, dsp_threshold)
+}
+
+fn emit_sv_with_options(
+    result: &PipelineResult,
+    target: Option<FpgaTarget>,
+    dsp_threshold: u32,
+) -> String {
     let module = &result.program.module;
     let mut out = String::with_capacity(4096);
+
+    // Determine which reflexes contain DSP-eligible multiplies.
+    // threshold=0 means DSP inference is disabled.
+    let dsp_reflexes = if target.is_some() && dsp_threshold > 0 {
+        crate::emit::dsp::dsp_reflex_names(module, dsp_threshold)
+    } else {
+        std::collections::HashSet::new()
+    };
+    let dsp_attr = if dsp_threshold > 0 { target.map(|t| t.dsp_attribute()) } else { None };
 
     emit_header(&mut out);
     emit_pattern_annotations(module, &mut out);
@@ -33,7 +64,7 @@ pub fn emit_sv(result: &PipelineResult) -> String {
         emit_temporal_logic(netlist, &mut out);
     }
 
-    emit_reflex_logic(module, &mut out);
+    emit_reflex_logic(module, &dsp_reflexes, dsp_attr, &mut out);
 
     let has_rst_n = module_has_rst_n(module);
     emit_property_assertions(module, has_rst_n, &mut out);
@@ -71,30 +102,43 @@ fn emit_pattern_annotations(module: &Module, out: &mut String) {
 fn emit_module_decl(module: &Module, out: &mut String) {
     out.push_str(&format!("module {} (\n", module.name));
 
-    let port_signals: Vec<_> = module
-        .signals
-        .iter()
-        .filter(|s| s.kind == SignalKind::Input || s.kind == SignalKind::Output)
-        .collect();
+    let has_clk = module.signals.iter().any(|s| s.name == "clk");
+    let has_rst_n = module.signals.iter().any(|s| s.name == "rst_n");
+    let needs_temporal = !module.guards.is_empty();
 
-    let port_count = port_signals.len();
-    for (i, s) in port_signals.iter().enumerate() {
-        let dir = match s.kind {
-            SignalKind::Input => "input ",
-            SignalKind::Output => "output",
-            SignalKind::Internal => "internal",
-        };
-        let type_str = sv_type(&s.ty);
+    let mut ports: Vec<String> = Vec::new();
+
+    // Auto-inject clk and rst_n when temporal guards exist.
+    if needs_temporal && !has_clk {
+        ports.push("  input  logic        clk".to_string());
+    }
+    if needs_temporal && !has_rst_n {
+        ports.push("  input  logic        rst_n".to_string());
+    }
+
+    for s in &module.signals {
+        if s.kind == SignalKind::Input || s.kind == SignalKind::Output {
+            let dir = match s.kind {
+                SignalKind::Input => "input ",
+                SignalKind::Output => "output",
+                SignalKind::Internal => "internal",
+            };
+            let type_str = sv_type(&s.ty);
+            ports.push(format!("  {dir} {type_str} {}", s.name));
+        }
+    }
+
+    let port_count = ports.len();
+    for (i, port) in ports.iter().enumerate() {
         let comma = if i + 1 < port_count { "," } else { "" };
-        out.push_str(&format!("  {dir} {type_str} {}{comma}\n", s.name));
+        out.push_str(&format!("{port}{comma}\n"));
     }
 
     out.push_str(");\n\n");
 }
 
-fn emit_port_list(_module: &Module, out: &mut String) {
-    out.push_str("  // Clock and reset (implicit in MIRR, explicit in RTL)\n");
-    out.push_str("  // Connect clk and rst_n at instantiation site.\n\n");
+fn emit_port_list(_module: &Module, _out: &mut String) {
+    // Clock and reset ports now auto-injected in emit_module_decl.
 }
 
 fn emit_internal_signals(module: &Module, out: &mut String) {
@@ -143,6 +187,22 @@ fn emit_shift_register_guard(
     out: &mut String,
 ) {
     let cond_desc = sr.condition_kind.describe();
+    // Special case: 1-cycle guard is purely combinational.
+    if sr.delay_cycles == 1 {
+        out.push_str(&format!(
+            "  // Guard: {} — {} for 1 cycle (combinational)\n",
+            sr.name, cond_desc
+        ));
+        out.push_str(&format!("  logic {}_cond;\n", sr.name));
+        out.push_str(&format!(
+            "  assign {}_cond = {};\n",
+            sr.name,
+            emit_condition_expr(&sr.condition_kind),
+        ));
+        out.push_str(&format!("  assign {} = {}_cond;\n\n", sr.output_signal, sr.name));
+        return;
+    }
+
     out.push_str(&format!(
         "  // Guard: {} — {} for {} cycles\n",
         sr.name, cond_desc, sr.delay_cycles
@@ -211,25 +271,52 @@ fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mu
     ));
 }
 
-fn emit_reflex_logic(module: &Module, out: &mut String) {
+fn emit_reflex_logic(
+    module: &Module,
+    dsp_reflexes: &std::collections::HashSet<String>,
+    dsp_attr: Option<&str>,
+    out: &mut String,
+) {
     if module.reflexes.is_empty() {
         return;
     }
 
     out.push_str("  // ── Reflex Assignments ──\n\n");
 
+    // Declare guard _out wires used in reflex combinational logic.
+    let mut declared_outs = std::collections::HashSet::new();
+    for r in &module.reflexes {
+        for g in &r.guard_names {
+            let wire_name = format!("{g}_out");
+            if declared_outs.insert(wire_name.clone()) {
+                out.push_str(&format!("  logic {};\n", wire_name));
+            }
+        }
+    }
+    out.push('\n');
+
     for r in &module.reflexes {
         if let Some(ref origin) = r.origin {
             out.push_str(&format!("  // Pattern: {origin}\n"));
         }
         out.push_str(&format!("  // Reflex: {}\n", r.name));
+        // Emit DSP synthesis attribute if this reflex contains a multiply.
+        if let Some(attr) = dsp_attr {
+            if dsp_reflexes.contains(&r.name) {
+                out.push_str(&format!("  {attr}\n"));
+            }
+        }
         out.push_str("  always_comb begin\n");
+        // Default assignments to prevent latch inference.
+        for a in &r.assignments {
+            out.push_str(&format!("    {} = '0;\n", a.target));
+        }
         for a in &r.assignments {
             let guard_cond = if r.guard_names.len() == 1 {
                 format!("{}_out", r.guard_names[0])
             } else {
                 let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
-                parts.join(" || ")
+                parts.join(" && ")
             };
             out.push_str(&format!(
                 "    if ({}) {} = {};\n",
@@ -431,6 +518,83 @@ fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &mut String) 
             ));
         }
     }
+}
+
+// -----------------------------------------------------------------------
+// Input Synchronizer Chains
+// -----------------------------------------------------------------------
+
+/// Maximum synchronizer stages (bounded iteration, NASA P10 Rule #1).
+const MAX_SYNC_STAGES: u32 = 4;
+
+/// Emit 2-stage (or N-stage) synchronizer chains for all input signals
+/// except `clk` and `rst_n`. Returns a mapping of original signal names
+/// to their synchronized versions (_s suffix).
+pub fn emit_synchronizer_chains(
+    module: &Module,
+    sync_stages: u32,
+    out: &mut String,
+) -> Vec<(String, String)> {
+    if sync_stages == 0 {
+        return Vec::new();
+    }
+    let stages = sync_stages.min(MAX_SYNC_STAGES);
+
+    let mut mappings = Vec::new();
+    out.push_str("  // ── Input Synchronizer Chains ──\n\n");
+
+    for s in &module.signals {
+        if s.kind != SignalKind::Input {
+            continue;
+        }
+        if s.name == "clk" || s.name == "rst_n" {
+            continue;
+        }
+
+        let width = match &s.ty {
+            SignalType::Bool => 1u32,
+            SignalType::Unsigned(w) | SignalType::Signed(w) => *w,
+        };
+        let sync_name = format!("{}_s", s.name);
+        let sync_reg = format!("{}_sync", s.name);
+
+        // Declare synchronizer register chain.
+        let total_bits = width * stages;
+        out.push_str(&format!("  // {}-stage synchronizer for {}\n", stages, s.name));
+        out.push_str(&format!("  logic [{}:0] {};\n", total_bits.saturating_sub(1), sync_reg,));
+
+        // Sequential synchronizer logic.
+        out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+        out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", sync_reg));
+        if stages == 1 {
+            out.push_str(&format!("    else\n      {} <= {};\n", sync_reg, s.name));
+        } else {
+            // Shift chain: {input, sync[high:width]}
+            out.push_str(&format!(
+                "    else\n      {} <= {{{}, {}[{}:{}]}};\n",
+                sync_reg,
+                s.name,
+                sync_reg,
+                total_bits.saturating_sub(1),
+                width,
+            ));
+        }
+        out.push_str("  end\n");
+
+        // Output: synchronized signal is the last stage.
+        let type_str = sv_type(&s.ty);
+        out.push_str(&format!(
+            "  {} {} = {}[{}:0];\n\n",
+            type_str,
+            sync_name,
+            sync_reg,
+            width.saturating_sub(1),
+        ));
+
+        mappings.push((s.name.clone(), sync_name));
+    }
+
+    mappings
 }
 
 /// Emit only the SVA assertion block (no module wrapper).

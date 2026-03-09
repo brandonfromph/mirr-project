@@ -210,7 +210,7 @@ fn emit_reflex_logic(module: &Module, out: &mut String) {
             let mut expr = format!("{}_out", r.guard_names[0]);
             let mut i = 1;
             while i < r.guard_names.len() {
-                expr = format!("or({}, {}_out)", expr, r.guard_names[i]);
+                expr = format!("and({}, {}_out)", expr, r.guard_names[i]);
                 i += 1;
             }
             expr
@@ -219,8 +219,8 @@ fn emit_reflex_logic(module: &Module, out: &mut String) {
         for a in &r.assignments {
             let val = emit_expr_firrtl(&a.value);
             out.push_str(&format!(
-                "    when {} :\n      connect {} , {}\n",
-                guard_cond, a.target, val,
+                "    when {} :\n      connect {} , {}\n    else :\n      connect {} , UInt(0)\n",
+                guard_cond, a.target, val, a.target,
             ));
         }
     }

@@ -3,7 +3,8 @@
 //! End-to-end pipeline: parse -> validate -> simplify -> width -> temporal -> emit.
 //!
 //! Usage:
-//!   mirr-compile <file.mirr> [--emit dot|verilog|json|sva|firrtl|rspu] [--output FILE] [--stats]
+//!   mirr-compile <file.mirr> [--emit dot|verilog|json|sva|firrtl|rspu|testbench|scaffold] [--output FILE] [--stats]
+//!   mirr-compile <file.mirr> --emit verilog --target xilinx-7 --testbench --scaffold
 //!   mirr-compile <file.mirr> --emit dot --dot-detail expr [--output FILE]
 
 #![forbid(unsafe_code)]
@@ -11,6 +12,7 @@
 use std::process;
 
 use nasa_rust_project::emit;
+use nasa_rust_project::emit::fpga_target::FpgaTarget;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
 fn main() {
@@ -22,6 +24,11 @@ fn main() {
     let mut show_stats = false;
     let mut show_help = false;
     let mut dot_detail_expr = false;
+    let mut target_name: Option<String> = None;
+    let mut sync_stages: u32 = 2;
+    let mut dsp_threshold: u32 = nasa_rust_project::emit::dsp::DEFAULT_DSP_THRESHOLD;
+    let mut emit_testbench = false;
+    let mut emit_scaffold = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -44,6 +51,26 @@ fn main() {
                     dot_detail_expr = true;
                 }
             }
+            "--target" => {
+                i += 1;
+                if i < args.len() {
+                    target_name = Some(args[i].clone());
+                }
+            }
+            "--sync-stages" => {
+                i += 1;
+                if i < args.len() {
+                    sync_stages = args[i].parse().unwrap_or(2);
+                }
+            }
+            "--dsp-threshold" => {
+                i += 1;
+                if i < args.len() {
+                    dsp_threshold = args[i].parse().unwrap_or(dsp_threshold);
+                }
+            }
+            "--testbench" => emit_testbench = true,
+            "--scaffold" => emit_scaffold = true,
             "--stats" => show_stats = true,
             "--help" | "-h" => show_help = true,
             other => {
@@ -71,6 +98,21 @@ fn main() {
         }
     };
 
+    // Parse FPGA target.
+    let fpga_target = match &target_name {
+        Some(name) => match FpgaTarget::from_str_name(name) {
+            Some(t) => t,
+            None => {
+                eprintln!("Unknown FPGA target: '{name}'.");
+                eprintln!(
+                    "Valid targets: generic, xilinx-7, xilinx-us, intel-cyclone, lattice-ice40"
+                );
+                process::exit(1);
+            }
+        },
+        None => FpgaTarget::default(),
+    };
+
     let source = match std::fs::read_to_string(&input_path) {
         Ok(s) => s,
         Err(e) => {
@@ -87,7 +129,10 @@ fn main() {
     let result = match run_pipeline(&source, &config) {
         Ok(r) => r,
         Err(e) => {
-            eprintln!("{e}");
+            let diagnostic = e.to_diagnostic();
+            let rendered =
+                nasa_rust_project::diagnostic::render_diagnostic(&diagnostic, &source, &input_path);
+            eprint!("{}", rendered);
             process::exit(1);
         }
     };
@@ -110,7 +155,9 @@ fn main() {
                 emit::dot::emit_module_dot(&result)
             }
         }
-        "verilog" | "sv" => emit::verilog::emit_sv(&result),
+        "verilog" | "sv" => {
+            emit::verilog::emit_sv_with_target(&result, &fpga_target, dsp_threshold)
+        }
         "json" => match emit::json_netlist::emit_json(&result) {
             Ok(s) => s,
             Err(e) => {
@@ -129,18 +176,21 @@ fn main() {
                 process::exit(1);
             }
         },
+        "testbench" => emit::testbench::emit_testbench(&result),
+        "scaffold" => emit::fpga_scaffold::emit_constraints(&result, &fpga_target),
+        "build-script" => emit::fpga_scaffold::emit_build_script(&result, &fpga_target),
         other => {
             eprintln!(
-                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, or rspu."
+                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, testbench, scaffold, or build-script."
             );
             process::exit(1);
         }
     };
 
-    // Write output.
-    match output_path {
+    // Write primary output.
+    match &output_path {
         Some(path) => {
-            if let Err(e) = std::fs::write(&path, &output) {
+            if let Err(e) = std::fs::write(path, &output) {
                 eprintln!("Error writing '{path}': {e}");
                 process::exit(1);
             }
@@ -149,6 +199,54 @@ fn main() {
         None => {
             print!("{output}");
         }
+    }
+
+    // Emit additional outputs if requested alongside verilog.
+    if (format == "verilog" || format == "sv") && emit_testbench {
+        let tb = emit::testbench::emit_testbench(&result);
+        let tb_path = derive_path(&input_path, "_tb.sv");
+        if let Err(e) = std::fs::write(&tb_path, &tb) {
+            eprintln!("Error writing testbench '{tb_path}': {e}");
+        } else {
+            eprintln!("Testbench written to {tb_path}");
+        }
+    }
+
+    if (format == "verilog" || format == "sv") && emit_scaffold {
+        let constraints = emit::fpga_scaffold::emit_constraints(&result, &fpga_target);
+        let ext = fpga_target.constraint_extension();
+        let constr_path = derive_path(&input_path, &format!(".{ext}"));
+        if let Err(e) = std::fs::write(&constr_path, &constraints) {
+            eprintln!("Error writing constraints '{constr_path}': {e}");
+        } else {
+            eprintln!("Constraints written to {constr_path}");
+        }
+
+        let build = emit::fpga_scaffold::emit_build_script(&result, &fpga_target);
+        let build_ext = match fpga_target {
+            FpgaTarget::LatticeIce40 | FpgaTarget::Generic => "sh",
+            _ => "tcl",
+        };
+        let build_path = derive_path(&input_path, &format!("_build.{build_ext}"));
+        if let Err(e) = std::fs::write(&build_path, &build) {
+            eprintln!("Error writing build script '{build_path}': {e}");
+        } else {
+            eprintln!("Build script written to {build_path}");
+        }
+    }
+
+    // Emit synchronizer chain info if non-default.
+    if sync_stages != 2 && (format == "verilog" || format == "sv") {
+        eprintln!("  Sync stages: {sync_stages}");
+    }
+}
+
+/// Derive an output path from the input path by replacing the extension.
+fn derive_path(input_path: &str, suffix: &str) -> String {
+    if let Some(dot_pos) = input_path.rfind('.') {
+        format!("{}{}", &input_path[..dot_pos], suffix)
+    } else {
+        format!("{input_path}{suffix}")
     }
 }
 
@@ -200,16 +298,23 @@ fn print_help() {
     println!("  mirr-compile <file.mirr> [OPTIONS]");
     println!();
     println!("Options:");
-    println!(
-        "  --emit FORMAT       Output format: dot, verilog, json, sva, firrtl, rspu (default: dot)"
-    );
+    println!("  --emit FORMAT       Output format: dot, verilog, json, sva, firrtl, rspu,");
+    println!("                      testbench, scaffold, build-script (default: dot)");
     println!("  --output FILE, -o   Write output to FILE (default: stdout)");
+    println!("  --target FAMILY     FPGA target: generic, xilinx-7, xilinx-us, intel-cyclone,");
+    println!("                      lattice-ice40 (default: generic)");
+    println!("  --sync-stages N     Input synchronizer stages, 0 to disable (default: 2)");
+    println!("  --dsp-threshold N   Min operand bits for DSP inference, 0 to disable (default: 9)");
+    println!("  --testbench         Also emit a self-checking testbench (with --emit verilog)");
+    println!("  --scaffold          Also emit constraint template and build script");
     println!("  --dot-detail expr   Show full AST trees in DOT output");
     println!("  --stats             Print detailed pipeline statistics");
     println!("  --help, -h          Show this help");
     println!();
     println!("Examples:");
     println!("  mirr-compile program.mirr --emit verilog -o out.sv");
+    println!("  mirr-compile program.mirr --emit verilog --target xilinx-7 --testbench --scaffold");
+    println!("  mirr-compile program.mirr --emit testbench");
     println!("  mirr-compile program.mirr --emit json | jq .");
     println!("  mirr-compile program.mirr --emit dot | dot -Tpng -o graph.png");
     println!("  mirr-compile program.mirr --emit rspu");
