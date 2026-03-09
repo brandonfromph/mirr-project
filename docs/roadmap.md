@@ -80,7 +80,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 ## Phase 0 – Foundation (Completed)
 
 {: .tip }
-> Phases 0 through 8 are complete. The compiler is operational with 847+
+> Phases 0 through 8 are complete. The compiler is operational with 954
 > passing tests, zero unsafe code, and zero clippy warnings.
 
 - **Goal:** Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.
@@ -255,7 +255,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Emit SystemVerilog RTL, JSON netlist, and DOT graph from the unified pipeline.
   - Single driver binary `mirr-compile` with `--emit verilog|dot|json` flags.
   - Bootstrap runner (`mirr-parse`) with parity checks against the unified pipeline.
-  - 632 tests passing, zero clippy warnings, zero unsafe code.
+  - 954 tests passing, zero clippy warnings, zero unsafe code.
 
 **Result artifact:** Unified driver binary `mirr-compile` that performs a full compile-analyze run with multiple output formats.
 
@@ -293,7 +293,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Bounded expansion: `MAX_EXPANSION_DEPTH=4`, `MAX_EXPANDED_ITEMS=256`, `MAX_PARAMS=32`, `MAX_ARGS=32`, `MAX_REFLECT_LINES=512`, `MAX_BRACE_DEPTH=16`.
   - Pipeline ordering: parse → `validate_pattern_defs` → `expand_patterns` → validate_module → simplify → width → temporal → emit.
   - New modules: `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs`.
-  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **632 total tests, zero clippy warnings.**
+  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **954 total tests, zero clippy warnings.**
 
 **Result artifact:** Reusable pattern definitions that expand at compile time into validated, origin-tagged hardware structures.
 
@@ -470,7 +470,7 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 ├── src/expand/                    # Pattern expansion engine (Phase 7b)
 │   └── mod.rs                     # expand_patterns(), name prefixing, scoping validation
 ├── tests/
-│   ├── *_tests.rs                 # Unit/integration suites (632 tests)
+│   ├── *_tests.rs                 # Unit/integration suites (954 tests)
 │   ├── property_tests.rs          # Property/SVA tests (Phase 7a)
 │   ├── pattern_tests.rs           # Pattern system tests (Phase 7b)
 │   ├── pattern_coverage_tests.rs  # Pattern coverage gap tests (Phase 7b)

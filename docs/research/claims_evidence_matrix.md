@@ -33,8 +33,8 @@ Only class (1) should be presented as MIRR experimental results.
 | C6 | Compiler output is deterministic for fixed input | (1) Implemented+measured (experiment) | `scripts/research/run_experiments.py` | `py -3 scripts/research/run_experiments.py --skip-build` (Windows), `python3 scripts/research/run_experiments.py --skip-build` (POSIX) | “Determinism is evaluated via repeated-output hashing.” |
 | C7 | Cement2 enables 377MHz timing closure | (2) External literature | Cited in manuscript | N/A (not reproduced) | “Prior work reports up to 377MHz; not re-implemented in MIRR yet.” |
 | C8 | SmaRTLy achieves ~47% area reduction | (2) External literature | Cited in manuscript | N/A (not reproduced) | “Prior work reports area reduction; MIRR integration remains future work.” |
-| C9 | FIRWINE guarantees unique least solution for width inference | (2) External literature | Cited in manuscript | N/A (not reproduced) | “Formal result is from FIRWINE authors; MIRR currently does not implement FIRWINE.” |
-| C10 | MIRR currently compiles to SystemVerilog RTL | (3) Future work | Not implemented in repo | N/A | “RTL backend is planned; current output is low-level JSON/DOT netlist.” |
+| C9 | SCC-based width inference with Rocq proofs | (1) Implemented+measured | `src/width/*`, `proofs/*.v`, width tests | `cargo test --test width_tests` | “MIRR implements SCC-based width inference with 816 lines of Rocq proofs, inspired by FIRWINE.” |
+| C10 | MIRR compiles to SystemVerilog RTL | (1) Implemented+measured | `src/emit/verilog.rs`, verilog emission tests | `cargo test --test emit_verilog_tests` | “SystemVerilog RTL emission is implemented and tested.” |
 | C11 | MIRR currently performs DPR on FPGA hardware | (3) Future work | Not implemented in repo | N/A | “DPR integration is future hardware validation work.” |
 | C12 | MIRR currently guarantees fail-safe clinical behavior | (3) Future work | Not clinically validated | N/A | “Safety guarantees are a target objective pending hardware and clinical validation.” |
 

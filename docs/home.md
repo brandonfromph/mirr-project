@@ -15,8 +15,8 @@ permalink: /
   </p>
   <div class="mirr-status-bar">
     <span><span class="mirr-status-dot green"></span> Compiler operational</span>
-    <span><span class="mirr-status-dot blue"></span> 6 emit targets</span>
-    <span><span class="mirr-status-dot amber"></span> v0.3.0</span>
+    <span><span class="mirr-status-dot blue"></span> 7 emit targets</span>
+    <span><span class="mirr-status-dot amber"></span> v0.2.0</span>
   </div>
 </div>
 

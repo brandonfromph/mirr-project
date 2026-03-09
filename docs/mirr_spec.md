@@ -39,7 +39,8 @@ Where:
 - `<kind>` ∈ `{in, out, internal}`.
 - `<type>` ∈:
   - `bool`
-  - `uN` (unsigned N‑bit, e.g. `u8`, `u16`, `u32`)
+  - `uN` (unsigned N‑bit, e.g. `u8`, `u16`, `u32`, `u64`)
+  - `iN` (signed N‑bit, e.g. `i8`, `i16`, `i32`, `i64`)
 
 **Examples**:
 

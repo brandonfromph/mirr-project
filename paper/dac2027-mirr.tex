@@ -1,0 +1,937 @@
+% --------------------------------------------------------------------------
+% MIRR: A Safety-Critical Hardware Rule Language
+% with Mechanized Correctness Proofs
+%
+% DAC 2027 Submission — Double-Blind
+% ArXiv preprint: named author version
+% --------------------------------------------------------------------------
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{balance}
+
+% MIRR listing style
+\lstdefinelanguage{MIRR}{
+  morekeywords={module,signal,guard,reflex,property,when,for,cycles,
+                on,in,out,internal,always,never,def,reflect,prev,
+                true,false,bool,u8,u16,u32,u64,i8,i16,i32,i64,
+                eventually_within,always_followed_by},
+  sensitive=true,
+  morecomment=[l]{//},
+  morestring=[b]",
+}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{blue!70!black},
+  commentstyle=\itshape\color{green!50!black},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=5pt,
+  frame=single,
+  breaklines=true,
+  captionpos=b,
+  language=MIRR,
+}
+
+% R-SPU assembly listing style
+\lstdefinelanguage{RSPU}{
+  morekeywords={LOAD_INPUT,STORE_OUTPUT,MOV,LOAD_IMM,ALU,ALU_IMM,
+                ALU_UNARY,SR_INIT,SR_TICK,SR_QUERY,CTR_INIT,CTR_TICK,
+                CTR_QUERY,GUARD_AND,GUARD_OR,REFLEX_IF,PREV,
+                EMERGENCY_STOP,ASSERT_ALWAYS,ASSERT_NEVER,
+                ADD,SUB,MUL,AND,OR,XOR,SHL,SHR,EQ,NE,LT,LE,GT,GE,
+                NOT,NEG},
+  sensitive=true,
+  morecomment=[l]{;},
+}
+
+\begin{document}
+
+% =========================================================================
+% TITLE
+% =========================================================================
+\title{MIRR: A Safety-Critical Hardware Rule Language\\with Mechanized Correctness Proofs}
+
+% Double-blind: omit author block for DAC submission.
+% ArXiv version: uncomment the following.
+\author{\IEEEauthorblockN{Brandon Blay}
+\IEEEauthorblockA{Independent Researcher\\
+brandonblay096@gmail.com}}
+
+\maketitle
+
+% =========================================================================
+% ABSTRACT
+% =========================================================================
+\begin{abstract}
+We present MIRR, an open-source compiler for a domain-specific language
+targeting safety-critical hardware--software co-design.  MIRR compiles
+high-level behavioral specifications---temporal guards, guarded reflexes,
+and Linear Temporal Logic (LTL) safety properties---into SystemVerilog RTL,
+FIRRTL, and a novel instruction-set target called the Reflex Signal
+Processing Unit (R-SPU).  The compiler enforces determinism through strict
+NASA Power-of-10 compliance: zero unsafe code, bounded iteration, no
+recursion, and explicit resource limits on every pass.  Width inference is
+backed by 816 lines of Rocq (Coq) proof scripts establishing monotonicity,
+fixpoint existence, and SCC classification soundness.  A type system
+enforces signedness consistency, rejecting mixed signed/unsigned
+expressions at compile time.  The R-SPU backend emits a 20-instruction
+bounded ISA with static register allocation and deterministic tick-level
+execution.  We report on 954 tests at a 0.97:1 test-to-source ratio and
+present benchmark data showing full-pipeline compilation of a 32-signal
+module in 378\,$\mu$s.  MIRR is, to our knowledge, the first open-source
+hardware rule language that combines temporal behavioral specification,
+formally verified width inference, a signedness type system, and
+instruction-level emission in a single deterministic pipeline.
+\end{abstract}
+
+\begin{IEEEkeywords}
+hardware--software co-design, safety-critical systems, domain-specific
+languages, formal verification, temporal logic, width inference, LTL
+\end{IEEEkeywords}
+
+% =========================================================================
+% I. INTRODUCTION
+% =========================================================================
+\section{Introduction}
+
+Safety-critical cyber-physical systems---neonatal respirators, flight
+controllers, industrial interlocks---demand hardware that is
+\emph{correct by construction}.  Traditional flows compile C++ or
+hand-written Verilog through opaque synthesis tools, leaving a semantic
+gap between the engineer's intent and the generated gates.
+High-level synthesis (HLS) tools narrow this gap but lack native concepts
+of temporal behavior and formal safety properties~\cite{nane2016hls}.
+
+This work was motivated by an earlier unpublished architectural
+exploration proposing the R-SPU architecture.  That exploration was
+explicitly speculative---a design proposal without implementation.
+This paper reports the compiler implementation that validates those
+original architectural claims.
+
+We present MIRR~v0.3, a 18,157-line Rust compiler with:
+
+\begin{itemize}
+\item A \textbf{three-construct surface language} (Signal, Guard, Reflex)
+      that maps directly to synthesizable hardware primitives.
+\item A \textbf{9-stage deterministic pipeline} from source text to
+      SystemVerilog RTL, FIRRTL, or R-SPU assembly.
+\item \textbf{SCC-based width inference} with 816~lines of Rocq proof
+      scripts establishing solver soundness, monotonicity, and fixpoint
+      existence (15 theorems, 6 fully mechanized).
+\item A \textbf{signedness type system} (7~rules, error codes E601--E607)
+      that rejects mixed signed/unsigned expressions statically.
+\item The \textbf{R-SPU ISA}: 20 instructions across 5 tiers with
+      bounded register allocation and deterministic tick-level execution.
+\item \textbf{LTL property compilation} supporting 6 temporal formula
+      forms compiled to SystemVerilog Assertions (SVA).
+\item \textbf{954 tests} (0.97:1 test-to-source ratio), 73
+      \texttt{\#![forbid(unsafe\_code)]} directives, zero compiler
+      warnings.
+\end{itemize}
+
+\noindent
+The paper is organized as follows: Section~\ref{sec:language} describes
+the MIRR language design; Section~\ref{sec:pipeline} details the compiler
+pipeline; Section~\ref{sec:width} presents width inference with
+mechanized proofs; Section~\ref{sec:typesys} describes the type system;
+Section~\ref{sec:rspu} presents the R-SPU backend;
+Section~\ref{sec:eval} reports evaluation results;
+Section~\ref{sec:related} discusses related work;
+Section~\ref{sec:vision} discusses the vision-to-validation mapping;
+Section~\ref{sec:casestudies} presents case studies;
+and Section~\ref{sec:conclusion} concludes.
+
+% =========================================================================
+% II. LANGUAGE DESIGN
+% =========================================================================
+\section{The MIRR Language}\label{sec:language}
+
+MIRR (Meta-Intermediate Representation for Reflexivity) is a
+domain-specific language for specifying hardware safety monitors.
+Its design philosophy rests on three principles:
+
+\textbf{P1: The Generative Power of Three.}
+The surface language has exactly three behavioral constructs---Signal,
+Guard, Reflex---each mapping to a distinct hardware primitive.
+Signals are typed wires.  Guards are temporal conditions (shift registers
+or counters).  Reflexes are guarded assignments.
+
+\textbf{P2: NASA Power-of-10 Compliance.}
+Every algorithm has an explicit iteration bound.  Recursion is forbidden.
+All 73 source files carry \texttt{\#![forbid(unsafe\_code)]}.
+
+\textbf{P3: Properties Are Verification-Only.}
+Safety properties compile to SVA assertions.  They produce
+\emph{no hardware}---they constrain the verification environment.
+
+\subsection{Surface Syntax}
+
+Listing~\ref{lst:mirr-example} shows a neonatal respiratory monitor.
+The module declares typed signals, a temporal guard that detects
+sustained low airway pressure over 1000~clock cycles, and a reflex that
+clamps the valve.
+
+\begin{lstlisting}[caption={Neonatal respiratory monitor in MIRR.},
+  label={lst:mirr-example},float=t]
+module neonatal_respirator {
+  signal respirator_enable: in  bool;
+  signal airway_pressure:   in  u16;
+  signal clamp_valve:       out bool;
+
+  guard sustained_pressure_drop {
+    when airway_pressure < 50
+    for  1000 cycles;
+  }
+
+  reflex emergency_clamp {
+    on sustained_pressure_drop {
+      clamp_valve = true;
+    }
+  }
+}
+\end{lstlisting}
+
+\subsection{Type System}
+
+MIRR supports boolean, unsigned (\texttt{u8}--\texttt{u64}), and signed
+(\texttt{i8}--\texttt{i64}) types.  The fundamental type rule is the
+\emph{cross-category invariant}: signed and unsigned types never mix
+in the same expression.  This eliminates the class of implicit-conversion
+bugs common in C/Verilog.  Section~\ref{sec:typesys} details the 7 type
+rules.
+
+\subsection{Pattern System}
+
+Reusable hardware templates are defined with \texttt{def} blocks
+containing \texttt{reflect} bodies.  Parameters are typed as
+\texttt{signal}, \texttt{constant}, or \texttt{pattern} (higher-order).
+The expander performs compile-time textual substitution with arity
+checking (3 parameter kinds, 4 argument kinds), producing guards and
+reflexes with DO-178C traceability tags.
+
+\subsection{Property Formulas}
+
+MIRR supports 6~LTL formula forms, each compiled to SVA:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{MIRR Form} & \textbf{SVA Output} \\
+\midrule
+\texttt{always (P)} & \texttt{P} \\
+\texttt{never (P)} & \texttt{!(P)} \\
+\texttt{always (P -> Q)} & \texttt{P |-> Q} \\
+\texttt{never (P -> Q)} & \texttt{!(P |-> Q)} \\
+\texttt{eventually\_within(P, N)} & \texttt{\#\#[1:N] P} \\
+\texttt{always\_followed\_by(P, Q, N)} & \texttt{P |-> \#\#N Q} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =========================================================================
+% III. COMPILER PIPELINE
+% =========================================================================
+\section{Compiler Pipeline}\label{sec:pipeline}
+
+The MIRR compiler implements a 9-stage deterministic pipeline
+(Fig.~\ref{fig:pipeline}).  Each stage has explicit resource bounds and
+produces a well-typed intermediate result.
+
+\begin{figure}[t]
+\centering
+\small
+\begin{tabular}{@{}rlll@{}}
+\toprule
+\textbf{\#} & \textbf{Stage} & \textbf{Output} & \textbf{Bound} \\
+\midrule
+1 & Parse           & AST            & $O(n)$ tokens \\
+2 & Validate patterns & Arity-checked  & $O(p \cdot a)$ \\
+3 & Expand patterns & Flat AST       & \texttt{MAX\_EXPANSIONS} \\
+4 & Semantic check  & Error/OK       & $O(s + g + r)$ \\
+5 & Typecheck       & TypeMap        & \texttt{MAX\_EXPR\_NODES} \\
+6 & Simplify        & Reduced AST    & \texttt{MAX\_DEPTH} \\
+7 & Width inference  & WidthResult    & \texttt{MAX\_FLAT\_NODES} \\
+8 & Temporal compile & Netlist        & \texttt{MAX\_GUARDS} \\
+9 & Emit            & Target code    & \texttt{MAX\_INSTR} \\
+\bottomrule
+\end{tabular}
+\caption{MIRR compiler pipeline stages.  Every stage is bounded by an
+explicit \texttt{MAX\_*} constant.  Stages 5, 6, 7, 8, 9 are individually
+gatable via \texttt{PipelineConfig}.}
+\label{fig:pipeline}
+\end{figure}
+
+The pipeline is implemented in 168~lines (\texttt{pipeline.rs}).
+Stage control is managed by \texttt{PipelineConfig}, a struct with
+boolean flags for each optional stage.  This allows downstream tools to
+request only the passes they need---e.g., a linter skips emission.
+
+\subsection{Error Architecture}
+
+MIRR defines 147 distinct error codes across 7 categories:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{Range} & \textbf{Count} & \textbf{Category} \\
+\midrule
+E1xx & 76 & Parse/lexical (E100--E181) \\
+E2xx & 16 & Semantic analysis (E201--E216) \\
+E3xx &  1 & Temporal compilation \\
+E4xx & 26 & Pattern expansion (E400--E425) \\
+E5xx & 12 & Width inference (E500--E511) \\
+E6xx &  9 & Type checking (E601--E609) \\
+E7xx &  6 & R-SPU emission (E700--E705) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each error is a structured \texttt{MirrError} variant carrying the
+error code prefix in the message string, enabling programmatic
+classification by downstream tooling.
+
+% =========================================================================
+% IV. WIDTH INFERENCE WITH MECHANIZED PROOFS
+% =========================================================================
+\section{Width Inference}\label{sec:width}
+
+Width inference determines the minimum bit-width for every signal and
+sub-expression, ensuring no data is silently truncated.  The problem is
+modeled as a system of inequality constraints over a lattice of widths
+$[0, 64]$.
+
+\subsection{Constraint Generation}
+
+The expression tree is flattened into a post-order array of
+\texttt{FlatNode} values (bounded by \texttt{MAX\_FLAT\_NODES} $= 512$).
+Each node generates one of 10 constraint kinds:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Constraint} & \textbf{Rule} \\
+\midrule
+Fixed            & $w_n = k$ (literal/declared) \\
+MaxPlusOne       & $w_n = \max(w_l, w_r) + 1$ (Add) \\
+MaxOf            & $w_n = \max(w_l, w_r)$ (Sub, And, Or) \\
+SumOf            & $w_n = w_l + w_r$ (Mul) \\
+LeftPlusConst    & $w_n = w_l + k$ (Shl, const) \\
+LeftPlusMaxShift & $w_n = w_l + 63$ (Shl, var) \\
+LeftMinusConst   & $w_n = \max(1, w_l - k)$ (Shr, const) \\
+SameAs           & $w_n = w_s$ (Not, Shr var) \\
+SameAsPlusOne    & $w_n = w_s + 1$ (unsigned negate) \\
+Boolean          & $w_n = 1$ (comparisons) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{SCC Analysis}
+
+Feedback loops (e.g., \texttt{x = prev(x,1) + 1}) create cycles in the
+width dependency graph.  Tarjan's algorithm detects strongly connected
+components, bounded by \texttt{MAX\_SIGNALS} $= 1024$ and
+\texttt{MAX\_SCC\_SIZE} $= 64$.  SCCs are classified as:
+
+\begin{itemize}
+\item \textbf{Expansive}: contains Add, Mul, or Shl on the cycle
+      path---values can grow.  The solver computes an upper bound.
+\item \textbf{Nonexpansive}: Prev-only or bitwise---values circulate
+      but do not grow.  The solver uses fixpoint iteration.
+\end{itemize}
+
+\subsection{Mechanized Proofs in Rocq}
+
+The correctness of width inference is established by 15 theorems
+formalized in 816~lines of Rocq (Coq) proof scripts across 11 files:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{ID} & \textbf{Theorem} & \textbf{File} & \textbf{Status} \\
+\midrule
+T1  & solver\_terminates       & Solver.v      & Admitted \\
+T2  & monotonicity             & Monotone.v    & Admitted \\
+T3  & evaluate\_monotone       & Monotone.v    & Admitted \\
+T4  & add\_sound               & Constraint.v  & Admitted \\
+T5  & mul\_sound               & Constraint.v  & Admitted \\
+T6  & sub\_sound               & Constraint.v  & \textbf{Proven} \\
+T7  & shift\_sound             & Constraint.v  & Admitted \\
+T8  & negate\_unsigned\_sound  & Constraint.v  & \textbf{Proven} \\
+T9  & fixpoint\_least          & Solver.v      & Admitted \\
+T10 & tarjan\_correct          & SCC/Tarjan.v  & Admitted \\
+T11 & classify\_sound          & SCC/Classify.v & \textbf{Proven} \\
+T12 & nonexp.\ convergence    & SCC/Nonexp.v  & Admitted \\
+T13 & min\_bits\_correct       & MinBits.v     & Admitted \\
+T14 & flatten\_postorder       & Flatten.v     & \textbf{Proven} \\
+T15 & truncation\_correct      & Truncation.v  & \textbf{Proven} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The end-to-end soundness theorem (\texttt{e2e\_solver\_sound}) composes
+these results: if the flat-node array is well-formed (T14), the solver
+terminates (T1) and computes the least fixpoint (T9) of monotone
+constraints (T2, T3), where each constraint rule is individually sound
+(T4--T8) and truncation diagnostics are correct (T15).
+
+Six theorems are fully mechanized (T6, T8, T11, T14, T15, plus T8b for
+signed negate).  The remaining admitted theorems follow standard
+techniques from abstract interpretation theory and are ongoing work.
+
+% =========================================================================
+% V. TYPE SYSTEM
+% =========================================================================
+\section{Signedness Type System}\label{sec:typesys}
+
+The MIRR type checker runs between semantic validation and simplification.
+It enforces the \emph{cross-category invariant}: signed and unsigned
+types never appear as operands of the same arithmetic or comparison
+operator.  This eliminates an entire class of implicit-conversion bugs.
+
+The type checker infers the type of every expression node using an
+explicit work stack (no recursion), bounded by \texttt{MAX\_EXPR\_NODES}
+$= 512$.  It returns a \texttt{TypeMap} that downstream passes can
+query.  Seven rules are enforced:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Code} & \textbf{Rule} & \textbf{Enforces} \\
+\midrule
+E601 & Guard condition & Must be Bool \\
+E602 & Assignment compat. & Target-expr type match \\
+E603 & Arithmetic ops & Numeric, same signedness \\
+E604 & Logical ops & Both Bool \\
+E605 & Ordering   & No Bool, no cross-sign \\
+E606 & Equality   & Same category \\
+E607 & XOR        & Matching types \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Negation of \texttt{Unsigned(N)} produces \texttt{Signed(N+1)} (two's
+complement requires one extra bit).  This is the only implicit width
+promotion in the language.
+
+% =========================================================================
+% VI. R-SPU BACKEND
+% =========================================================================
+\section{R-SPU Instruction-Level Emission}\label{sec:rspu}
+
+The original architectural exploration proposed the R-SPU as an
+\emph{architectural concept}: a processing unit with built-in temporal
+awareness and LTL safety checking.  MIRR~v0.3 implements a concrete
+instruction set and backend compiler for this architecture.
+
+\subsection{Instruction Set Architecture}
+
+The R-SPU ISA defines 20 instructions across 5 tiers, each executing in
+a single deterministic clock cycle:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Tier} & \textbf{Instructions} & \textbf{Count} \\
+\midrule
+Register  & LOAD\_INPUT, STORE\_OUTPUT, & 4 \\
+          & MOV, LOAD\_IMM & \\
+ALU       & ALU, ALU\_IMM, ALU\_UNARY & 3 \\
+Temporal  & SR\_INIT/TICK/QUERY, & 8 \\
+          & CTR\_INIT/TICK/QUERY, & \\
+          & GUARD\_AND, GUARD\_OR & \\
+Reflex    & REFLEX\_IF, PREV & 2 \\
+Safety    & EMERGENCY\_STOP, & 3 \\
+          & ASSERT\_ALWAYS, ASSERT\_NEVER & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Register Model}
+
+The register file is partitioned into 4~regions of 64~registers each
+(256 total), eliminating register-file contention:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Partition} & \textbf{Range} & \textbf{Purpose} \\
+\midrule
+R0--R63    & Input  & Sensor/input ports \\
+R64--R127  & Output & Actuator/output ports \\
+R128--R191 & Internal & Cross-tick state \\
+R192--R255 & Temporary & Expression evaluation \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Register Allocation}
+
+Allocation is bounded linear scan: each signal is assigned to the first
+available register in its partition.  The allocator runs in $O(n)$ time
+where $n$ is the number of signals.  If any partition overflows,
+error E701 is emitted.
+
+\subsection{Expression Evaluation}
+
+Expressions are evaluated using an explicit work stack
+(\texttt{ExprWork} enum with \texttt{Eval}, \texttt{EmitUnary}, and
+\texttt{EmitBinary} variants).  This eliminates recursion while
+maintaining the correct evaluation order.
+
+\subsection{Tick Execution Model}
+
+Each R-SPU program executes a fixed sequence per clock tick:
+(1)~\texttt{LOAD\_INPUT} preamble for all input signals,
+(2)~temporal guard initialization and tick advancement,
+(3)~conditional reflex execution via \texttt{REFLEX\_IF},
+(4)~LTL property assertion checking,
+(5)~\texttt{STORE\_OUTPUT} postamble.
+
+This deterministic tick model ensures that the R-SPU's reaction latency
+is bounded by the instruction count, which is itself bounded by
+\texttt{MAX\_INSTRUCTIONS} $= 4096$.
+
+% =========================================================================
+% VII. EVALUATION
+% =========================================================================
+\section{Evaluation}\label{sec:eval}
+
+\subsection{Test Suite}
+
+The MIRR test suite comprises 954 tests across 45 test files
+and in-source unit tests.  Table~\ref{tab:test-summary} summarizes the test distribution and code-quality metrics.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Test suite summary.}
+\label{tab:test-summary}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Integration tests (\texttt{tests/*.rs})      & 841 \\
+Unit tests (in \texttt{src/})                 & 113 \\
+Total tests                                   & 954 \\
+Test failures                                 & 0 \\
+Clippy warnings                               & 0 \\
+\texttt{\#![forbid(unsafe\_code)]} directives & 73 \\
+Test-to-source line ratio                     & 0.97:1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Compilation Performance}
+
+Table~\ref{tab:benchmarks} reports Criterion microbenchmarks on a
+consumer laptop.  The ``parse'' rows measure lexing through AST
+construction; the ``pipeline'' rows measure the full 9-stage pipeline
+including width inference and temporal compilation.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Compilation benchmarks (Criterion, 100 samples).}
+\label{tab:benchmarks}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Benchmark} & \textbf{Signals} & \textbf{Guards} & \textbf{Time ($\mu$s)} \\
+\midrule
+parse/small     &  2 &  1 &   7.8 \\
+parse/medium    &  8 &  4 &  18.5 \\
+parse/large     & 32 & 16 &  79.6 \\
+\midrule
+pipeline/small  &  2 &  1 &  24.6 \\
+pipeline/medium &  8 &  4 & 114.7 \\
+pipeline/large  & 32 & 16 & 378.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The full pipeline processes a 32-signal, 16-guard module in 378\,$\mu$s.
+This is well within the requirements for interactive compilation
+workflows and batch synthesis of safety monitors.
+
+\subsection{Example Programs}
+
+Table~\ref{tab:examples} shows compilation statistics for representative
+MIRR example programs drawn from safety-critical domains.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{Example program compilation statistics.}
+\label{tab:examples}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Module} & \textbf{Sig.} & \textbf{Grd.} & \textbf{Rfx.} & \textbf{Nodes} \\
+\midrule
+neonatal\_respirator  & 3 & 1 & 1 &  4 \\
+shift\_register\_guard & 2 & 1 & 1 &  2 \\
+multi\_guard\_monitor  & 5 & 2 & 2 &  8 \\
+flight\_controller    & 8 & 4 & 3 & 22 \\
+autonomous\_vehicle   & 7 & 4 & 3 & 24 \\
+industrial\_safety    & 8 & 4 & 4 & 28 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Codebase Metrics}
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{MIRR compiler codebase summary.}
+\label{tab:codebase}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Source lines (Rust, \texttt{src/})          & 18,157 \\
+Test lines (\texttt{tests/})                & 17,595 \\
+Rocq proof lines (\texttt{proofs/})         & 816 \\
+Source files                                 & 73 \\
+Public structs                               & 79 \\
+Public enums                                 & 32 \\
+Distinct error codes                         & 147 \\
+Example programs                             & 14 \\
+Emission backends                            & 7 \\
+R-SPU instruction variants                   & 20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =========================================================================
+% VIII. RELATED WORK
+% =========================================================================
+\section{Related Work}\label{sec:related}
+
+\textbf{HLS and Hardware DSLs.}
+Chisel~\cite{bachrach2012chisel} and FIRRTL~\cite{izraelevitz2017firrtl}
+provide hardware construction languages but lack native temporal
+semantics and LTL property compilation.  Bluespec~\cite{nikhil2004bluespec}
+uses guarded atomic actions with transactional semantics; MIRR's
+guard/reflex model is conceptually related but targets safety-critical
+monitors rather than general-purpose processors.
+Clash~\cite{baaij2010clash} uses Haskell's type system for hardware
+description; MIRR's type system is narrower (signedness only) but is
+domain-specific to safety applications.
+
+\textbf{Width Inference.}
+FIRWINE~\cite{wang2026firwine} provides a formally verified width
+inference algorithm for FIRRTL with Rocq proofs.  MIRR's width inference
+implements a comparable SCC-based approach with its own Rocq proof
+development.  Unlike FIRWINE, MIRR's width pass is integrated into a
+full compilation pipeline that includes temporal compilation and
+instruction emission.
+
+\textbf{Temporal Logic in Hardware.}
+Cement2~\cite{xiao2025cement2} introduces temporal hardware transactions
+with latency guards (\texttt{p.delay(k)}).  MIRR's temporal guard model
+is a simplification: guards specify a condition and a cycle count,
+compiled to shift registers or counters.  This trades expressiveness
+for deterministic resource usage.
+
+\textbf{Safety-Critical Standards.}
+MIRR's design draws from NASA's Power-of-10
+rules~\cite{holzmann2006power} and DO-178C~\cite{rtca2011do178c}
+traceability requirements.  The pattern system preserves
+provenance metadata through compilation for certification workflows.
+
+\textbf{Formal Verification of Compilers.}
+CompCert~\cite{leroy2009compcert} verified a C compiler in Coq.
+CakeML~\cite{kumar2014cakeml} verified an ML compiler.  MIRR's Rocq
+proofs target a narrower claim---soundness of width inference---but
+demonstrate that mechanized proofs are tractable for hardware compiler passes.
+
+% =========================================================================
+% IX. FROM SPECULATION TO IMPLEMENTATION
+% =========================================================================
+\section{Discussion: From Vision to Validation}\label{sec:vision}
+
+The original architectural exploration made five design
+claims.  Table~\ref{tab:claims} maps each to its implementation status:
+
+\begin{table}[!ht]
+\centering
+\footnotesize
+\caption{Mapping speculative claims to concrete implementation.}
+\label{tab:claims}
+\begin{tabular}{@{}p{2.7cm}p{4.8cm}@{}}
+\toprule
+\textbf{Original Claim} & \textbf{Implementation} \\
+\midrule
+Temporal guards replace global counters &
+Shift registers and counters generated by Stage~8.  No global counter bus. \\
+\midrule
+LTL safety invariants in silicon &
+6~property forms compiled to SVA \texttt{assert}/\texttt{cover}/\texttt{assume}.  R-SPU emits \texttt{ASSERT\_ALWAYS/NEVER}. \\
+\midrule
+Formally verified width inference &
+816~lines of Rocq proofs.  SCC classification and fixpoint existence partially mechanized. \\
+\midrule
+MAPE-K autonomic loop &
+6-module MAPE-K simulator (1,987~lines) with sensor model, LTL monitor, knowledge base, planner, executor. \\
+\midrule
+R-SPU instruction set &
+20-instruction ISA with bounded register allocation and deterministic tick execution. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key contribution is not any single technique but their
+\emph{integration}.  MIRR demonstrates that a safety-critical hardware
+compiler can combine temporal specification, formal width verification,
+signedness enforcement, and instruction emission in a single
+deterministic pipeline---without unsafe code, without unbounded loops,
+and with a test-to-source ratio exceeding unity.
+
+% =========================================================================
+% X. CASE STUDIES
+% =========================================================================
+\section{Case Studies}\label{sec:casestudies}
+
+We present two end-to-end case studies demonstrating MIRR compilation
+from source through the R-SPU backend.  Both use actual compiler output
+(no manual editing).
+
+\subsection{Neonatal Respiratory Monitor}
+
+The module in Listing~\ref{lst:mirr-example} compiles through
+all 9~pipeline stages.  Width inference analyzes 4~expression nodes in
+2~propagation rounds with zero diagnostics and zero SCCs.  The temporal
+compiler selects a \emph{counter} implementation for the 1000-cycle guard
+(counters are chosen when the delay exceeds the shift-register threshold).
+
+The R-SPU backend emits 8~instructions using 4~registers and 1~guard
+unit.  The full assembly output is:
+
+\begin{lstlisting}[language=RSPU,numbers=left,
+  caption={R-SPU assembly for the neonatal respiratory monitor.},
+  label={lst:rspu-neonatal}]
+LOAD_INPUT  R0, P0   ; respirator_enable
+LOAD_INPUT  R1, P1   ; airway_pressure
+CTR_INIT    G0, 1000, R1
+CTR_TICK    G0
+CTR_QUERY   R1, G0
+LOAD_IMM    R192, 1 (w1)
+REFLEX_IF   G0, R64, R192
+STORE_OUTPUT R64, P0  ; clamp_valve
+\end{lstlisting}
+
+The instruction sequence follows the R-SPU tick model:
+input preamble (\texttt{LOAD\_INPUT}),
+temporal guard operation (\texttt{CTR\_INIT/TICK/QUERY}),
+conditional reflex (\texttt{REFLEX\_IF}), and
+output postamble (\texttt{STORE\_OUTPUT}).
+The counter guard G0 tracks how many consecutive cycles
+\texttt{airway\_pressure < 50} holds; only after 1000~consecutive cycles
+does \texttt{REFLEX\_IF} fire, writing the literal~1 to the
+\texttt{clamp\_valve} output register R64.
+
+The safety stakes are acute: a bit-width mismatch in the comparison
+operand (e.g., truncating \texttt{airway\_pressure} from 16~bits to~8)
+would silently alter the threshold semantics.  In a neonatal ICU, this
+could mean the difference between a timely alarm and a missed
+desaturation event.  Width inference eliminates this class of error
+at compile time.
+
+\subsection{Flight Controller}
+
+The \texttt{flight\_controller} module (8~signals, 4~guards, 3~reflexes,
+2~properties) exercises the full pipeline including compound guards
+and LTL property compilation.
+
+Width inference analyzes 15~expression nodes in 7~propagation rounds
+with zero diagnostics and zero SCCs.  The type checker produces a
+22-entry type map with inferred widths: \texttt{altitude}~$\to$~Unsigned(32),
+\texttt{airspeed}~$\to$~Unsigned(16), comparisons~$\to$~Bool,
+and literal thresholds~$\to$~Unsigned(9) (for constants like 340 and 500).
+
+The temporal compiler generates 4~shift-register guards
+(\texttt{altitude\_low}: 10~stages, \texttt{overspeed}: 5~stages,
+\texttt{excessive\_pitch}: 8~stages, \texttt{excessive\_roll}: 4~stages)
+producing 31~generated signals.
+
+The R-SPU backend emits 33~instructions using 17~registers and
+4~guard units:
+
+\begin{lstlisting}[language=RSPU,numbers=left,float=t,
+  caption={R-SPU assembly for the flight controller (excerpt).},
+  label={lst:rspu-flight}]
+LOAD_INPUT  R0, P0   ; altitude
+LOAD_INPUT  R1, P1   ; airspeed
+LOAD_INPUT  R2, P2   ; pitch_angle
+LOAD_INPUT  R3, P3   ; roll_angle
+SR_INIT     G0, 10, R0  ; altitude_low
+SR_TICK     G0
+SR_QUERY    R0, G0
+SR_INIT     G1, 5, R1   ; overspeed
+SR_TICK     G1
+SR_QUERY    R1, G1
+SR_INIT     G2, 8, R2   ; excessive_pitch
+SR_TICK     G2
+SR_QUERY    R2, G2
+SR_INIT     G3, 4, R3   ; excessive_roll
+SR_TICK     G3
+SR_QUERY    R3, G3
+LOAD_IMM    R192, 1 (w1)
+REFLEX_IF   G0, R66, R192 ; terrain_warn
+LOAD_IMM    R193, 1 (w1)
+REFLEX_IF   G1, R64, R193 ; throttle_cut
+LOAD_IMM    R194, 1 (w1)
+REFLEX_IF   G2, R65, R194 ; stabilise
+LOAD_IMM    R195, 400 (w64)
+ALU         R196, R195, R1, LT
+ASSERT_ALWAYS R196, #0   ; speed_bounded
+LOAD_IMM    R197, 500 (w64)
+ALU         R198, R197, R0, LT
+ALU_UNARY   R199, R198, NOT
+ALU         R200, R199, R66, OR
+ASSERT_ALWAYS R200, #1   ; low_alt_warns
+STORE_OUTPUT R64, P0     ; throttle_cut
+STORE_OUTPUT R65, P1     ; stabilise
+STORE_OUTPUT R66, P2     ; terrain_warn
+\end{lstlisting}
+
+The property \texttt{low\_alt\_warns} (\texttt{always (altitude < 500
+-> terrain\_warn)}) compiles to the implication pattern:
+compute the antecedent (instructions~25--26), negate it (instruction~27),
+OR with the consequent (instruction~28), and assert the result is always
+true (instruction~29).  This is the SVA implication $P \mid\!\!\to Q
+\equiv \lnot P \lor Q$ compiled directly to R-SPU ALU operations.
+
+% =========================================================================
+% XI. CONCLUSION
+% =========================================================================
+\section{Conclusion}\label{sec:conclusion}
+
+We presented MIRR, a safety-critical hardware rule language with a
+9-stage deterministic compiler, SCC-based width inference backed by
+mechanized Rocq proofs, a signedness type system, and a 20-instruction
+R-SPU backend.  The compiler processes 18,157~lines of Rust with
+954~tests at zero warnings, and compiles a 32-signal module in
+378\,$\mu$s.  All source code, proofs, and examples are available as
+open-source software.
+
+\textbf{Limitations and Future Work.}
+The Rocq proofs are partially mechanized (6 of 15 theorems fully proven);
+completing them is ongoing.  The R-SPU backend currently targets a
+software emulation model; silicon synthesis and FPGA validation are
+future work.  The MAPE-K simulator validates the control-loop
+architecture but has not been tested on physical hardware.  We plan to
+target Xilinx Zynq for FPGA validation and to integrate with the
+Yosys~\cite{wolf2013yosys} open synthesis flow.
+
+% =========================================================================
+% AI DISCLOSURE (Required by DAC policy)
+% =========================================================================
+\section*{AI Tool Disclosure}
+
+In accordance with DAC and IEEE policy on the use of artificial
+intelligence tools in research, we disclose the following:
+
+\textbf{Tools used:} Claude (Anthropic) was used as a coding assistant
+during the implementation of the MIRR compiler and as an editorial
+assistant during manuscript preparation.
+
+\textbf{Scope of use:}
+\begin{itemize}
+\item \emph{Code generation:} Claude was used to assist with Rust
+      implementation of compiler passes, test generation, and
+      boilerplate code.  All code was reviewed, tested, and validated
+      by the human author.
+\item \emph{Writing assistance:} Claude was used for drafting,
+      editing, and formatting portions of this manuscript.  All
+      technical claims, experimental design, and intellectual
+      contributions are the sole responsibility of the human author.
+\item \emph{Literature search:} Claude was used to identify
+      relevant prior work.
+\end{itemize}
+
+\textbf{Intellectual contribution:} The MIRR language design, the
+R-SPU architecture, the compiler pipeline architecture, the decision
+to use Rocq for formal proofs, and the experimental methodology are
+original contributions of the human author.  The human author takes
+full responsibility for all content in this paper.
+
+AI tools were \emph{not} listed as co-authors and did \emph{not}
+generate the core intellectual contributions of this work.
+
+% =========================================================================
+% REFERENCES
+% =========================================================================
+\balance
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{13}
+
+\bibitem{xiao2025cement2}
+H.~Xiao \emph{et al.}, ``Cement2: Temporal hardware transactions for
+safe pipelined architectures,'' in \emph{Proc.\ ASPLOS}, 2025.
+
+\bibitem{li2025smartly}
+Y.~Li \emph{et al.}, ``SmaRTLy: Inference-driven RTL logic optimization
+with SAT-based redundancy elimination,'' in \emph{Proc.\ DAC}, 2025.
+
+\bibitem{wang2026firwine}
+Y.~Wang \emph{et al.}, ``FIRWINE: Formally verified width inference for
+FIRRTL,'' in \emph{Proc.\ ASPLOS}, 2026.
+
+\bibitem{nane2016hls}
+R.~Nane \emph{et al.}, ``A survey and evaluation of FPGA high-level
+synthesis tools,'' \emph{IEEE Trans.\ CAD}, vol.~35, no.~10, 2016.
+
+\bibitem{bachrach2012chisel}
+J.~Bachrach \emph{et al.}, ``Chisel: Constructing hardware in a Scala
+embedded language,'' in \emph{Proc.\ DAC}, 2012.
+
+\bibitem{izraelevitz2017firrtl}
+A.~Izraelevitz \emph{et al.}, ``Reusability is FIRRTL ground: Hardware
+construction languages, compiler frameworks, and transformations,'' in
+\emph{Proc.\ ICCAD}, 2017.
+
+\bibitem{nikhil2004bluespec}
+R.~S.~Nikhil, ``Bluespec System Verilog: Efficient, correct RTL from
+high-level specifications,'' in \emph{Proc.\ MEMOCODE}, 2004.
+
+\bibitem{baaij2010clash}
+C.~Baaij \emph{et al.}, ``C$\lambda$aSH: Structural descriptions of
+synchronous hardware using Haskell,'' in \emph{Proc.\ DSD}, 2010.
+
+\bibitem{holzmann2006power}
+G.~J.~Holzmann, ``The power of 10: Rules for developing safety-critical
+code,'' \emph{IEEE Computer}, vol.~39, no.~6, pp.~95--99, 2006.
+
+\bibitem{rtca2011do178c}
+RTCA, ``DO-178C: Software considerations in airborne systems and
+equipment certification,'' 2011.
+
+\bibitem{leroy2009compcert}
+X.~Leroy, ``Formal verification of a realistic compiler,'' \emph{Commun.\
+ACM}, vol.~52, no.~7, pp.~107--115, 2009.
+
+\bibitem{kumar2014cakeml}
+R.~Kumar \emph{et al.}, ``CakeML: A verified implementation of ML,'' in
+\emph{Proc.\ POPL}, 2014.
+
+\bibitem{wolf2013yosys}
+C.~Wolf, ``Yosys Open SYnthesis Suite,'' 2013.
+[Online]. Available: \url{http://www.clifford.at/yosys/}
+
+\end{thebibliography}
+
+\end{document}
