@@ -43,6 +43,7 @@ pub mod simplify;
 pub mod span;
 pub mod suggest;
 pub mod temporal;
+pub mod toolchain;
 pub mod typeck;
 pub mod validation;
 pub mod width;

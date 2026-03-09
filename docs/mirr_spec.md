@@ -1,5 +1,10 @@
 ## MIRR Language – Minimal Core Specification (Draft)
 
+> **Deprecated.** This spec describes the Phase 1 minimal core only.
+> For the current language, see [Tutorial](tutorial) and [Type System](type-system).
+> Current MIRR includes signed types (`iN`), `property` declarations, `def`/`reflect`
+> pattern system, `prev()` temporal back-references, and 9 type error codes (E601–E609).
+
 This document specifies a **minimal MIRR core** designed for reflexive clinical hardware. The goal is to keep the surface language extremely small (3 primitives) while allowing powerful compiler passes (Cement2‑style timing, SmaRTLy‑style optimization, FIRWINE‑style width inference) underneath.This project is in the (EDA) Electronic Design Automation Domain.
 
 ### 1. Design goals

@@ -11,10 +11,10 @@ recursion) and runs to fixpoint to catch cascading reductions.
 
 ```
                 simplify_expr()
-.mirr source ──> parse ──> AST ────────────────> temporal lowering ──> netlist
-                                  ^                    |
-                  Phase 3 integration wired in         v
-                  src/temporal/mod.rs            Verilog / JSON / DOT
+.mirr source ──> parse ──> pattern expand ──> validate ──> typecheck ──> AST ────────────────> temporal lowering ──> netlist
+                                                                              ^                    |
+                                              Phase 3 integration wired in         v
+                                              src/temporal/mod.rs            Verilog / JSON / DOT / SVA
 ```
 
 The simplifier is wired into the temporal compilation pipeline: guard conditions
@@ -91,7 +91,7 @@ mirr-simplify <expr.json | program.mirr> [--stats]
 
 ## Testing
 
-58 tests in `tests/simplify_tests.rs` covering:
+58 tests in `tests/simplify_tests.rs` (count may increase with new campaigns) covering:
 - All boolean identity/annihilation rules (both operand positions)
 - All idempotence/absorption rules
 - All comparison constant folds

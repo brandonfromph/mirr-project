@@ -21,7 +21,6 @@ exclude:
   - testing/
   - mcp_server/
   - demo_viewer.html
-  - INDEX.md
   - mirr_spec.md
   - self_hosting_core_spec.md
   - self_hosting_ir_contract.md

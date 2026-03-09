@@ -21,7 +21,7 @@ HTML reports are written to `target/criterion/`.
 ## Benchmark groups
 
 - **parse/small**, **parse/medium**, **parse/large** — `parse_mirr()` only
-- **pipeline/small**, **pipeline/medium**, **pipeline/large** — full `run_pipeline()` (parse + validate + simplify + width + temporal)
+- **pipeline/small**, **pipeline/medium**, **pipeline/large** — full `run_pipeline()` (parse + pattern expand + validate + typecheck + simplify + width + temporal)
 
 ## Comparing changes
 

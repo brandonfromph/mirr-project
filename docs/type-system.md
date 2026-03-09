@@ -7,8 +7,8 @@ nav_order: 6
 
 > **Status:** Active
 > **Module:** `src/typeck/mod.rs`
-> **Campaigns:** TYPE-001, TYPE-002, TYPE-003
-> **Error codes:** E601–E607
+> **Campaigns:** TYPE-001 through TYPE-005
+> **Error codes:** E601–E609
 
 The MIRR type checker runs after semantic validation and before simplification.
 It enforces signedness consistency across all expressions: guard conditions,

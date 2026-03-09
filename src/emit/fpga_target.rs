@@ -20,6 +20,10 @@ pub enum FpgaTarget {
     IntelCyclone,
     /// Lattice iCE40 (Yosys + nextpnr flow).
     LatticeIce40,
+    /// Lattice ECP5 (Yosys + nextpnr-ecp5 flow).
+    LatticeEcp5,
+    /// Lattice Nexus / CrossLink-NX (Yosys + nextpnr-nexus flow).
+    LatticeNexus,
 }
 
 /// Maximum synchronizer stages allowed.
@@ -37,6 +41,8 @@ impl FpgaTarget {
             "xilinx-us" | "ultrascale" => Some(Self::XilinxUS),
             "intel-cyclone" | "cyclone" => Some(Self::IntelCyclone),
             "lattice-ice40" | "ice40" => Some(Self::LatticeIce40),
+            "lattice-ecp5" | "ecp5" => Some(Self::LatticeEcp5),
+            "lattice-nexus" | "nexus" | "crosslink-nx" => Some(Self::LatticeNexus),
             _ => None,
         }
     }
@@ -48,6 +54,8 @@ impl FpgaTarget {
             Self::Xilinx7 | Self::XilinxUS => "xdc",
             Self::IntelCyclone => "sdc",
             Self::LatticeIce40 => "pcf",
+            Self::LatticeEcp5 => "lpf",
+            Self::LatticeNexus => "pdc",
         }
     }
 
@@ -59,6 +67,8 @@ impl FpgaTarget {
             Self::XilinxUS => "MMCME4_ADV",
             Self::IntelCyclone => "altpll",
             Self::LatticeIce40 => "SB_PLL40_CORE",
+            Self::LatticeEcp5 => "EHXPLLL",
+            Self::LatticeNexus => "OSCA",
         }
     }
 
@@ -69,6 +79,8 @@ impl FpgaTarget {
             Self::Xilinx7 | Self::XilinxUS => "vivado",
             Self::IntelCyclone => "quartus_sh",
             Self::LatticeIce40 => "nextpnr-ice40",
+            Self::LatticeEcp5 => "nextpnr-ecp5",
+            Self::LatticeNexus => "nextpnr-nexus",
         }
     }
 
@@ -80,6 +92,8 @@ impl FpgaTarget {
             Self::XilinxUS => "xcku5p-ffvb676-2-e",
             Self::IntelCyclone => "5CSEBA6U23I7",
             Self::LatticeIce40 => "iCE40-HX8K-CT256",
+            Self::LatticeEcp5 => "LFE5U-85F-6BG381C",
+            Self::LatticeNexus => "LIFCL-40-9BG400C",
         }
     }
 
@@ -91,6 +105,8 @@ impl FpgaTarget {
             Self::XilinxUS => "Xilinx UltraScale+",
             Self::IntelCyclone => "Intel Cyclone",
             Self::LatticeIce40 => "Lattice iCE40",
+            Self::LatticeEcp5 => "Lattice ECP5",
+            Self::LatticeNexus => "Lattice Nexus",
         }
     }
 
@@ -102,6 +118,8 @@ impl FpgaTarget {
             Self::XilinxUS => "DSP48E2",
             Self::IntelCyclone => "cyclonev_mac",
             Self::LatticeIce40 => "SB_MAC16",
+            Self::LatticeEcp5 => "ALU54B",
+            Self::LatticeNexus => "MULT18X18",
         }
     }
 
@@ -112,6 +130,8 @@ impl FpgaTarget {
             Self::Xilinx7 | Self::XilinxUS => "(* use_dsp48 = \"yes\" *)",
             Self::IntelCyclone => "(* multstyle = \"dsp\" *)",
             Self::LatticeIce40 => "(* use_dsp = \"yes\" *)",
+            Self::LatticeEcp5 => "(* use_dsp = \"yes\" *)",
+            Self::LatticeNexus => "(* use_dsp = \"yes\" *)",
         }
     }
 
@@ -123,6 +143,48 @@ impl FpgaTarget {
             Self::XilinxUS => 27,
             Self::IntelCyclone => 27,
             Self::LatticeIce40 => 16,
+            Self::LatticeEcp5 => 18,
+            Self::LatticeNexus => 18,
+        }
+    }
+
+    /// The nextpnr binary name for this target, if applicable.
+    pub fn nextpnr_binary(&self) -> Option<&'static str> {
+        match self {
+            Self::LatticeIce40 => Some("nextpnr-ice40"),
+            Self::LatticeEcp5 => Some("nextpnr-ecp5"),
+            Self::LatticeNexus => Some("nextpnr-nexus"),
+            _ => None,
+        }
+    }
+
+    /// The icetime device flag for static timing analysis (iCE40 only).
+    pub fn icetime_device(&self) -> Option<&'static str> {
+        match self {
+            Self::LatticeIce40 => Some("hx8k"),
+            _ => None,
+        }
+    }
+
+    /// The Yosys synthesis command for this target.
+    pub fn yosys_synth_command(&self) -> &'static str {
+        match self {
+            Self::LatticeIce40 => "synth_ice40",
+            Self::LatticeEcp5 => "synth_ecp5",
+            Self::LatticeNexus => "synth_nexus",
+            Self::Xilinx7 | Self::XilinxUS => "synth_xilinx",
+            Self::IntelCyclone => "synth_intel",
+            Self::Generic => "synth",
+        }
+    }
+
+    /// The bitstream packing tool for this target, if applicable.
+    pub fn pack_tool(&self) -> Option<&'static str> {
+        match self {
+            Self::LatticeIce40 => Some("icepack"),
+            Self::LatticeEcp5 => Some("ecppack"),
+            Self::LatticeNexus => Some("prjoxide"),
+            _ => None,
         }
     }
 }

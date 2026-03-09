@@ -24,6 +24,8 @@ pub fn emit_constraints(result: &PipelineResult, target: &FpgaTarget) -> String 
         FpgaTarget::Xilinx7 | FpgaTarget::XilinxUS => emit_xdc(module, target),
         FpgaTarget::IntelCyclone => emit_sdc(module, target),
         FpgaTarget::LatticeIce40 => emit_pcf(module),
+        FpgaTarget::LatticeEcp5 => emit_lpf(module, target),
+        FpgaTarget::LatticeNexus => emit_pdc(module, target),
         FpgaTarget::Generic => emit_sdc(module, target),
     }
 }
@@ -35,6 +37,8 @@ pub fn emit_build_script(result: &PipelineResult, target: &FpgaTarget) -> String
         FpgaTarget::Xilinx7 | FpgaTarget::XilinxUS => emit_vivado_tcl(module, target),
         FpgaTarget::IntelCyclone => emit_quartus_tcl(module, target),
         FpgaTarget::LatticeIce40 => emit_lattice_sh(module, target),
+        FpgaTarget::LatticeEcp5 => emit_ecp5_sh(module, target),
+        FpgaTarget::LatticeNexus => emit_nexus_sh(module, target),
         FpgaTarget::Generic => emit_yosys_sh(module),
     }
 }
@@ -246,6 +250,151 @@ fn emit_yosys_sh(module: &Module) -> String {
         module.name
     ));
     out.push_str(&format!("echo \"Netlist ready: {}.json\"\n", module.name));
+
+    out
+}
+
+// -----------------------------------------------------------------------
+// Lattice ECP5 LPF constraints
+// -----------------------------------------------------------------------
+
+fn emit_lpf(module: &Module, target: &FpgaTarget) -> String {
+    let mut out = String::with_capacity(1024);
+
+    out.push_str(&format!(
+        "# Auto-generated LPF constraints for {} ({})\n",
+        module.name,
+        target.display_name()
+    ));
+    out.push_str("# Fill in LOC values for your board.\n\n");
+
+    out.push_str("FREQUENCY NET \"clk\" 100.000000 MHz;\n\n");
+
+    for s in &module.signals {
+        if s.kind == SignalKind::Internal {
+            continue;
+        }
+        let width = signal_width(&s.ty);
+        if width == 1 {
+            out.push_str(&format!("LOCATE COMP \"{}\" SITE \"PLACEHOLDER\";\n", s.name));
+            out.push_str(&format!("IOBUF PORT \"{}\" IO_TYPE=LVCMOS33;\n", s.name));
+        } else {
+            let mut bit = 0u32;
+            while bit < width {
+                out.push_str(&format!(
+                    "LOCATE COMP \"{}[{}]\" SITE \"PLACEHOLDER\";\n",
+                    s.name, bit
+                ));
+                bit += 1;
+            }
+        }
+    }
+
+    out
+}
+
+// -----------------------------------------------------------------------
+// Lattice Nexus PDC constraints
+// -----------------------------------------------------------------------
+
+fn emit_pdc(module: &Module, target: &FpgaTarget) -> String {
+    let mut out = String::with_capacity(1024);
+
+    out.push_str(&format!(
+        "# Auto-generated PDC constraints for {} ({})\n",
+        module.name,
+        target.display_name()
+    ));
+    out.push_str("# Fill in pin assignments for your board.\n\n");
+
+    out.push_str("create_clock -name {clk} -period 10.000 [get_ports clk]\n\n");
+
+    for s in &module.signals {
+        if s.kind == SignalKind::Internal {
+            continue;
+        }
+        let width = signal_width(&s.ty);
+        if width == 1 {
+            out.push_str(&format!(
+                "ldc_set_location -site {{PLACEHOLDER}} [get_ports {{{}}}]\n",
+                s.name
+            ));
+        } else {
+            let mut bit = 0u32;
+            while bit < width {
+                out.push_str(&format!(
+                    "ldc_set_location -site {{PLACEHOLDER}} [get_ports {{{}[{}]}}]\n",
+                    s.name, bit
+                ));
+                bit += 1;
+            }
+        }
+    }
+
+    out
+}
+
+// -----------------------------------------------------------------------
+// ECP5 build.sh (Yosys + nextpnr-ecp5 + ecppack)
+// -----------------------------------------------------------------------
+
+fn emit_ecp5_sh(module: &Module, target: &FpgaTarget) -> String {
+    let mut out = String::with_capacity(512);
+
+    out.push_str("#!/usr/bin/env bash\n");
+    out.push_str(&format!(
+        "# Auto-generated build script for {} ({})\n",
+        module.name,
+        target.display_name()
+    ));
+    out.push_str("set -euo pipefail\n\n");
+    out.push_str(&format!(
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+        module.name
+    ));
+    out.push_str(&format!(
+        "yosys -p \"read_verilog -sv {0}.sv; synth_ecp5 -top {0} -json {0}.json\"\n",
+        module.name
+    ));
+    out.push_str(&format!(
+        "nextpnr-ecp5 --85k --package CABGA381 --json {0}.json --lpf {0}.lpf --textcfg {0}.config\n",
+        module.name
+    ));
+    out.push_str(&format!("ecppack {0}.config {0}.bit\n", module.name));
+    out.push_str(&format!("echo \"Bitstream ready: {}.bit\"\n", module.name));
+
+    out
+}
+
+// -----------------------------------------------------------------------
+// Nexus build.sh (Yosys + nextpnr-nexus + prjoxide)
+// -----------------------------------------------------------------------
+
+fn emit_nexus_sh(module: &Module, target: &FpgaTarget) -> String {
+    let mut out = String::with_capacity(512);
+
+    out.push_str("#!/usr/bin/env bash\n");
+    out.push_str(&format!(
+        "# Auto-generated build script for {} ({})\n",
+        module.name,
+        target.display_name()
+    ));
+    out.push_str("set -euo pipefail\n\n");
+    out.push_str(&format!(
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+        module.name
+    ));
+    out.push_str(&format!(
+        "yosys -p \"read_verilog -sv {0}.sv; synth_nexus -top {0} -json {0}.json\"\n",
+        module.name
+    ));
+    out.push_str(&format!(
+        "nextpnr-nexus --device {} --json {1}.json --pdc {1}.pdc --fasm {1}.fasm\n",
+        target.default_part(),
+        module.name
+    ));
+    out.push_str(&format!("prjoxide pack {0}.fasm {0}.bit\n", module.name));
+    out.push_str(&format!("echo \"Bitstream ready: {}.bit\"\n", module.name));
 
     out
 }

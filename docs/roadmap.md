@@ -80,8 +80,10 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 ## Phase 0 – Foundation (Completed)
 
 {: .tip }
-> Phases 0 through 8 are complete. The compiler is operational with 954
-> passing tests, zero unsafe code, and zero clippy warnings.
+> Phases 0–4, 6, 7a, 7b complete. Phase 5 partial. Phase 7c+ not started.
+> The compiler is operational with 961 passing tests, zero unsafe code,
+> and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
+> Formal proofs: 27 Rocq theorems (14 fully mechanized, 13 axiomatized).
 
 - **Goal:** Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.
 - **Tasks:**
@@ -205,7 +207,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 5 – MAPE-K Simulation Harness (semi-Completed)
+## Phase 5 – MAPE-K Simulation Harness (Partial — Phase 5a Complete, 5b Not Started)
 
 - **Goal:** Simulate the Monitor–Analyze–Plan–Execute–Knowledge (MAPE-K) loop for clinical and safety-critical scenarios — transitioning R-SPU from "hardware as a resource" to "hardware as an agent."
 
@@ -255,7 +257,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Emit SystemVerilog RTL, JSON netlist, and DOT graph from the unified pipeline.
   - Single driver binary `mirr-compile` with `--emit verilog|dot|json` flags.
   - Bootstrap runner (`mirr-parse`) with parity checks against the unified pipeline.
-  - 954 tests passing, zero clippy warnings, zero unsafe code.
+  - 961 tests passing, zero clippy warnings, zero unsafe code.
 
 **Result artifact:** Unified driver binary `mirr-compile` that performs a full compile-analyze run with multiple output formats.
 
@@ -293,13 +295,13 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Bounded expansion: `MAX_EXPANSION_DEPTH=4`, `MAX_EXPANDED_ITEMS=256`, `MAX_PARAMS=32`, `MAX_ARGS=32`, `MAX_REFLECT_LINES=512`, `MAX_BRACE_DEPTH=16`.
   - Pipeline ordering: parse → `validate_pattern_defs` → `expand_patterns` → validate_module → simplify → width → temporal → emit.
   - New modules: `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs`.
-  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **954 total tests, zero clippy warnings.**
+  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **961 total tests, zero clippy warnings.**
 
 **Result artifact:** Reusable pattern definitions that expand at compile time into validated, origin-tagged hardware structures.
 
 ---
 
-## Phase 7 – Myth-Inspired Language & Formal Verification (Not Started)
+## Phase 7c+ – Myth-Inspired Language & Formal Verification (Not Started)
 
 - **Goal:** Evolve the MIRR DSL into a highly expressive language with formal correctness guarantees — and fully establish MIRR's third role as a Runtime Instruction Language the fabricated R-SPU chip understands natively.
 
@@ -420,6 +422,8 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 │   ├── simplify.rs                # Logic simplifier — 33 algebraic rules (Phase 3)
 │   ├── pipeline.rs                # Unified compilation pipeline (Phase 6)
 │   ├── mirr_executor.rs           # Signal evaluator used by MAPE-K harness (Phase 5)
+│   ├── diagnostic.rs              # Diagnostic formatting and error reporting (DIAG-001)
+│   ├── suggest.rs                 # Did-you-mean suggestions for misspelled identifiers (DIAG-001)
 │   ├── bin/
 │   │   ├── mirr-compile.rs        # Unified pipeline CLI: --emit verilog|dot|json|sva (Phase 6)
 │   │   ├── mirr-simplify.rs       # Standalone simplifier CLI
@@ -480,10 +484,11 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 ├── src/expand/                    # Pattern expansion engine (Phase 7b)
 │   └── mod.rs                     # expand_patterns(), name prefixing, scoping validation
 ├── tests/
-│   ├── *_tests.rs                 # Unit/integration suites (954 tests)
+│   ├── *_tests.rs                 # Unit/integration suites (961 tests)
 │   ├── property_tests.rs          # Property/SVA tests (Phase 7a)
 │   ├── pattern_tests.rs           # Pattern system tests (Phase 7b)
 │   ├── pattern_coverage_tests.rs  # Pattern coverage gap tests (Phase 7b)
+│   ├── synth_yosys_tests.rs       # End-to-end Yosys synthesis tests (SYNTH-001)
 │   └── fixtures/
 ├── proofs/                        # Rocq (Coq) formal proofs (ROCQ-001)
 │   └── width/                     # FIRWINE width inference proofs
@@ -536,3 +541,5 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 - [Type System](type-system) — TYPE campaign results
 - [R-SPU Reference](rspu-reference) — Phase 8 deliverable
 - [Migration Guide](migration-guide) — Breaking changes per version
+- [Glossary](glossary) — Project terminology and acronyms
+- [Contributing](contributing) — Coding standards, campaign workflow, error allocation

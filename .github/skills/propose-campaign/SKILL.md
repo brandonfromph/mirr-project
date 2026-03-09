@@ -355,6 +355,9 @@ Before finalizing the proposal, verify:
 - [ ] Verification commands are copy-pasteable
 - [ ] File manifest accounts for every touched file
 - [ ] **Wave plan included** for Campaign/Architecture scope (5+ steps)
+- [ ] **Living document updated** -- `paper/living-doc/` chapters reflect any
+      new features, metrics, or architectural changes; `metrics.tex` values
+      updated if any counts changed; row added to `campaign-log.tex`
 
 ---
 
@@ -608,11 +611,25 @@ Report:
 
 If any prohibition fails, fix it before closing out.
 
+### Phase 4.5 -- Living Document Gate
+
+After the Zero-Debt Gate, update the living document at `paper/living-doc/`:
+
+1. **Metrics update:** Update `metrics.tex` if any counts changed.
+2. **Chapter update:** Update relevant `ch-*.tex` files. Create new `ch-<slug>.tex`
+   for wholly new subsystems.
+3. **Campaign log:** Append row to `campaign-log.tex`.
+4. **Compile check:** `cd paper/living-doc && pdflatex main.tex` (deferred if pdflatex unavailable).
+
+**Mandatory for Campaign and Architecture scope.** Patch-scope may skip if no user-visible changes,
+but must still update `metrics.tex` if counts changed.
+
 ### Phase 5 — Close Out
 
 1. Update proposal status: `SIGNED — EXECUTED`
 2. Report final test count (must be >= starting count)
 3. List all files created and edited
+4. Confirm living document gate passed (or state Patch-scope exemption)
 
 ## Error Recovery
 
