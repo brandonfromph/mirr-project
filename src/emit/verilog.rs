@@ -19,7 +19,7 @@ use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 use crate::ast::MAX_EXPR_NODES;
 
 /// Maximum shift-register stages to emit inline before truncating.
-const MAX_SR_STAGES_INLINE: u64 = 1024;
+pub(crate) const MAX_SR_STAGES_INLINE: u64 = 1024;
 
 /// Emit SystemVerilog RTL from pipeline results.
 pub fn emit_sv(result: &PipelineResult) -> String {
