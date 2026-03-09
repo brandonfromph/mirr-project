@@ -210,6 +210,10 @@ fn emit_lattice_sh(module: &Module, target: &FpgaTarget) -> String {
     ));
     out.push_str("set -euo pipefail\n\n");
     out.push_str(&format!(
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+        module.name
+    ));
+    out.push_str(&format!(
         "yosys -p \"read_verilog -sv {0}.sv; synth_ice40 -top {0} -json {0}.json\"\n",
         module.name
     ));
@@ -233,6 +237,10 @@ fn emit_yosys_sh(module: &Module) -> String {
     out.push_str("#!/usr/bin/env bash\n");
     out.push_str(&format!("# Auto-generated Yosys synthesis script for {}\n", module.name));
     out.push_str("set -euo pipefail\n\n");
+    out.push_str(&format!(
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+        module.name
+    ));
     out.push_str(&format!(
         "yosys -p \"read_verilog -sv {0}.sv; synth -top {0}; write_json {0}.json\"\n",
         module.name

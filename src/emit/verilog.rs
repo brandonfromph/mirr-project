@@ -31,6 +31,27 @@ pub fn emit_sv_with_options(
     target: Option<FpgaTarget>,
     dsp_threshold: u32,
 ) -> String {
+    emit_sv_full(result, target, dsp_threshold, false)
+}
+
+/// Emit synthesis-clean SystemVerilog (no SVA properties).
+///
+/// Use this when targeting Yosys or other synthesis tools that
+/// cannot parse SVA `assert property` / `assume property` blocks.
+pub fn emit_sv_synthesis(
+    result: &PipelineResult,
+    target: Option<FpgaTarget>,
+    dsp_threshold: u32,
+) -> String {
+    emit_sv_full(result, target, dsp_threshold, true)
+}
+
+fn emit_sv_full(
+    result: &PipelineResult,
+    target: Option<FpgaTarget>,
+    dsp_threshold: u32,
+    strip_sva: bool,
+) -> String {
     let module = &result.program.module;
     let mut out = String::with_capacity(4096);
 
@@ -55,10 +76,77 @@ pub fn emit_sv_with_options(
 
     emit_reflex_logic(module, &dsp_reflexes, dsp_attr, &mut out);
 
-    let has_rst_n = module_has_rst_n(module);
-    emit_property_assertions(module, has_rst_n, &mut out);
+    if !strip_sva {
+        let has_rst_n = module_has_rst_n(module);
+        emit_property_assertions(module, has_rst_n, &mut out);
+    }
 
     emit_module_end(&mut out);
+
+    out
+}
+
+/// Emit a SystemVerilog bind file containing only SVA properties.
+///
+/// This produces a standalone module with the same port list as the
+/// original design, containing only SVA assertions. A `bind` statement
+/// connects it to the DUT for formal verification while keeping RTL
+/// synthesis-clean.
+pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
+    let module = &result.program.module;
+
+    if module.properties.is_empty() {
+        return String::new();
+    }
+
+    let mut out = String::with_capacity(2048);
+    let has_rst_n = module_has_rst_n(module);
+
+    out.push_str("// Auto-generated SVA bind file from MIRR compiler\n");
+    out.push_str(&format!("// Bind target: {}\n", module.name));
+    out.push_str("// Use with: read_verilog -sv <this_file> (formal verification only)\n\n");
+
+    // Emit the SVA wrapper module with the same ports.
+    let sva_mod_name = format!("{}_sva", module.name);
+    out.push_str(&format!("module {sva_mod_name} (\n"));
+
+    let needs_temporal = !module.guards.is_empty();
+    let has_clk = module.signals.iter().any(|s| s.name == "clk");
+    let has_rst = module.signals.iter().any(|s| s.name == "rst_n");
+
+    let mut ports: Vec<String> = Vec::new();
+    if needs_temporal && !has_clk {
+        ports.push("  input  logic        clk".to_string());
+    }
+    if needs_temporal && !has_rst {
+        ports.push("  input  logic        rst_n".to_string());
+    }
+    for s in &module.signals {
+        if s.kind == SignalKind::Input || s.kind == SignalKind::Output {
+            let dir = "input ";
+            let type_str = sv_type(&s.ty);
+            ports.push(format!("  {dir} {type_str} {}", s.name));
+        }
+    }
+    let port_count = ports.len();
+    for (i, port) in ports.iter().enumerate() {
+        let comma = if i + 1 < port_count { "," } else { "" };
+        out.push_str(&format!("{port}{comma}\n"));
+    }
+    out.push_str(");\n\n");
+
+    // Emit all SVA properties.
+    for prop in &module.properties {
+        emit_single_property(prop, has_rst_n, &mut out);
+    }
+
+    out.push_str("endmodule\n\n");
+
+    // Emit the bind statement.
+    out.push_str(&format!(
+        "bind {} {sva_mod_name} u_sva (.*);\n",
+        module.name
+    ));
 
     out
 }
@@ -320,23 +408,7 @@ fn emit_module_end(out: &mut String) {
 
 /// Map MIRR SignalType to SystemVerilog type string.
 fn sv_type(ty: &SignalType) -> String {
-    match ty {
-        SignalType::Bool => "logic       ".to_string(),
-        SignalType::Unsigned(w) => {
-            if *w == 1 {
-                "logic       ".to_string()
-            } else {
-                format!("logic [{:>2}:0]", w - 1)
-            }
-        }
-        SignalType::Signed(w) => {
-            if *w == 1 {
-                "logic signed".to_string()
-            } else {
-                format!("logic signed [{:>2}:0]", w - 1)
-            }
-        }
-    }
+    super::sv_type(ty)
 }
 
 /// Emit a ConditionKind as an inline SystemVerilog expression.

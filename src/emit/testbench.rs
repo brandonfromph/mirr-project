@@ -158,21 +158,5 @@ fn emit_tb_footer(out: &mut String) {
 
 /// Map MIRR SignalType to SystemVerilog type string for testbench.
 fn tb_type(ty: &SignalType) -> String {
-    match ty {
-        SignalType::Bool => "logic       ".to_string(),
-        SignalType::Unsigned(w) => {
-            if *w == 1 {
-                "logic       ".to_string()
-            } else {
-                format!("logic [{:>2}:0]", w - 1)
-            }
-        }
-        SignalType::Signed(w) => {
-            if *w == 1 {
-                "logic signed".to_string()
-            } else {
-                format!("logic signed [{:>2}:0]", w - 1)
-            }
-        }
-    }
+    super::sv_type(ty)
 }

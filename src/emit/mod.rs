@@ -67,3 +67,28 @@ pub(crate) fn expr_text_bounded(expr: &Expr, iters: &mut usize) -> String {
         }
     }
 }
+
+use crate::ast::types::SignalType;
+
+/// Map MIRR SignalType to SystemVerilog type string.
+///
+/// Shared by the verilog and testbench emitters.
+pub(crate) fn sv_type(ty: &SignalType) -> String {
+    match ty {
+        SignalType::Bool => "logic       ".to_string(),
+        SignalType::Unsigned(w) => {
+            if *w == 1 {
+                "logic       ".to_string()
+            } else {
+                format!("logic [{:>2}:0]", w - 1)
+            }
+        }
+        SignalType::Signed(w) => {
+            if *w == 1 {
+                "logic signed".to_string()
+            } else {
+                format!("logic signed [{:>2}:0]", w - 1)
+            }
+        }
+    }
+}

@@ -125,7 +125,7 @@ fn emit_shift_register_firrtl(
     sr: &crate::temporal::low_level_ir::ShiftRegisterGuard,
     out: &mut String,
 ) {
-    let stage_count = sr.delay_cycles.min(1024);
+    let stage_count = sr.delay_cycles.min(super::verilog::MAX_SR_STAGES_INLINE);
     let cond = emit_condition_firrtl(&sr.condition_kind);
 
     out.push_str(&format!(

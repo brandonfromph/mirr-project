@@ -29,6 +29,8 @@ fn main() {
     let mut dsp_threshold: u32 = nasa_rust_project::emit::dsp::DEFAULT_DSP_THRESHOLD;
     let mut emit_testbench = false;
     let mut emit_scaffold = false;
+    let mut strip_sva = false;
+    let mut sva_file: Option<String> = None;
 
     let mut i = 1;
     while i < args.len() {
@@ -71,6 +73,13 @@ fn main() {
             }
             "--testbench" => emit_testbench = true,
             "--scaffold" => emit_scaffold = true,
+            "--strip-sva" => strip_sva = true,
+            "--sva-file" => {
+                i += 1;
+                if i < args.len() {
+                    sva_file = Some(args[i].clone());
+                }
+            }
             "--stats" => show_stats = true,
             "--help" | "-h" => show_help = true,
             other => {
@@ -172,7 +181,11 @@ fn main() {
             } else {
                 Some(fpga_target)
             };
-            emit::verilog::emit_sv_with_options(&result, t, dsp_threshold)
+            if strip_sva {
+                emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
+            } else {
+                emit::verilog::emit_sv_with_options(&result, t, dsp_threshold)
+            }
         }
         "json" => match emit::json_netlist::emit_json(&result) {
             Ok(s) => s,
@@ -251,6 +264,18 @@ fn main() {
         }
     }
 
+    // Write separate SVA bind file if requested.
+    if let Some(ref sva_path) = sva_file {
+        let sva_content = emit::verilog::emit_sva_bind_file(&result);
+        if sva_content.is_empty() {
+            eprintln!("No properties to write to SVA bind file.");
+        } else if let Err(e) = std::fs::write(sva_path, &sva_content) {
+            eprintln!("Error writing SVA bind file '{sva_path}': {e}");
+        } else {
+            eprintln!("SVA bind file written to {sva_path}");
+        }
+    }
+
     // Emit synchronizer chain info if non-default.
     if sync_stages != 2 && (format == "verilog" || format == "sv") {
         eprintln!("  Sync stages: {sync_stages}");
@@ -323,6 +348,8 @@ fn print_help() {
     println!("  --dsp-threshold N   Min operand bits for DSP inference, 0 to disable (default: 9)");
     println!("  --testbench         Also emit a self-checking testbench (with --emit verilog)");
     println!("  --scaffold          Also emit constraint template and build script");
+    println!("  --strip-sva         Omit SVA assertions from verilog output (for synthesis)");
+    println!("  --sva-file FILE     Write SVA properties to a separate bind file");
     println!("  --dot-detail expr   Show full AST trees in DOT output");
     println!("  --stats             Print detailed pipeline statistics");
     println!("  --help, -h          Show this help");
