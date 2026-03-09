@@ -266,6 +266,22 @@ This map drives the compilation strategy during execution (see Part 2).
 For proposals with 5+ steps, include a **wave plan** that groups independent steps for parallel execution:
 
 ```markdown
+
+## Execution Protocol (MANDATORY)
+
+After proposal is written:
+1. Auto-sign if philosophy gate passed and debt audit complete
+2. Immediately spawn subagents using Task tool — NOT todos
+3. Pre-read ALL target files before spawning any agent
+4. Each Task agent prompt contains:
+   - Full file contents embedded verbatim
+   - Exact line numbers
+   - Exact replacement text
+   - Instruction: "Use only Read + Edit tools"
+   - Instruction: "2-line report only: DONE. X lines changed in Y file"
+5. Coordinator waits for all Tasks to complete
+6. Coordinator runs single CI gate
+7. Coordinator git commits with campaign message
 ### Wave Plan
 
 | Wave | Steps | Parallelizable? | Breakage expected? |
@@ -363,6 +379,14 @@ This codebase is engineered for predictability. Every change is planned in advan
 | **During any wave** | **Nothing** | Agents edit files. No compilation. The proposal already mapped every change. |
 | **After ALL waves complete** | Full CI gate (fmt + clippy + test + doc) | One compilation cycle validates everything |
 
+D3 EXCEPTION — Orphaned Features:
+Before deleting any dead function, ask:
+"Does this function implement real domain logic?"
+If YES → classify as ORPHANED, not dead.
+Orphaned features get a completion campaign, not deletion.
+Dead code markers: trivial helpers, debug prints, scaffolding.
+Orphaned markers: hardware logic, algorithms, domain knowledge.
+
 ### Exception: Known Breakage Points
 
 When the Breakage Map declares that a step changes an API signature that downstream steps depend on, and those downstream steps are in a **later wave**, use `cargo check` (type-checking only, no codegen, no tests) before launching the dependent wave. This costs ~15 seconds instead of ~120 seconds.
@@ -393,6 +417,13 @@ Final: Full CI gate
 | **New: 17 agents, deferred** | 1 × full CI gate | 1 × ~120s | ~45s | ~2.75 min |
 
 ## Agent Scaling: Maximum Parallelism (15+ Agents)
+
+Use the Task tool to spawn real parallel subagents.
+Each subagent receives:
+- Exact file contents embedded in prompt (no reads needed)
+- Exact line numbers for every edit
+- Only Read + Edit tools enabled
+- 2-line completion report only
 
 The deferred compilation strategy unlocks massive parallelism. Since no agent ever invokes `cargo`, agents are just reading and editing files — lightweight operations that scale to 15, 20, or more simultaneous agents without resource contention.
 
