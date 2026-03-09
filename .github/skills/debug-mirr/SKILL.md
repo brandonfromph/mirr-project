@@ -17,21 +17,42 @@ Run the file through the compiler:
 cargo run --bin mirr-compile -- --emit verilog <file.mirr> 2>&1
 ```
 
-Capture the full error output.
+Capture the full error output. If the error is in a specific backend, also try:
+
+```bash
+cargo run --bin mirr-compile -- --emit firrtl <file.mirr> 2>&1
+cargo run --bin mirr-compile -- --emit testbench <file.mirr> 2>&1
+```
 
 ## Step 2 — Decode the Error
 
-MIRR errors follow the format `[Exxx] <Category> error: <message>`.
+MIRR errors follow the format `[Exxx] <Category> error: [Eyyy] <message>`.
+
+The outer code (Exxx) identifies the category. The inner sub-code (Eyyy), if present, pinpoints the exact parser/pattern rule.
 
 | Code | Category | Where to look |
 |------|----------|---------------|
-| `[E100]` | Parse error | `src/parser/module_parser.rs`, `src/parser/expr_parser.rs`, `src/lexer/tokenizer.rs` |
-| `[E2xx]` | Semantic error (E201–E216) | `src/validation/semantic.rs`, `src/expand/mod.rs` |
+| `[E1xx]` | Parse error (E101-E166, E170-E181) | `src/parser/module_parser.rs`, `src/parser/expr_parser.rs`, `src/lexer/tokenizer.rs` |
+| `[E2xx]` | Semantic error (E201-E216) | `src/validation/semantic.rs`, `src/expand/mod.rs` |
 | `[E300]` | Temporal error | `src/temporal/compiler.rs`, `src/temporal/emit.rs` |
-| `[E400]` | Pattern error | `src/parser/pattern_parser.rs`, `src/expand/mod.rs`, `src/validation/semantic.rs` |
-| `[E5xx]` | Width inference error (E500–E511) | `src/width/solver.rs`, `src/width/scc_solver.rs`, `src/width/verify.rs` |
-| `[E6xx]` | Type error (E601–E607) | `src/typeck/`, `src/validation/semantic.rs` |
-| `[E7xx]` | R-SPU error (E701–E703) | `src/emit/rspu.rs`, `src/emit/rspu_regalloc.rs` |
+| `[E4xx]` | Pattern error (E400-E425) | `src/parser/pattern_parser.rs`, `src/expand/mod.rs`, `src/validation/semantic.rs` |
+| `[E5xx]` | Width inference error (E500-E511) | `src/width/solver.rs`, `src/width/scc_solver.rs`, `src/width/verify.rs` |
+| `[E6xx]` | Type error (E601-E609) | `src/typeck/`, `src/validation/semantic.rs` |
+| `[E7xx]` | R-SPU error (E701-E705) | `src/emit/rspu.rs`, `src/emit/rspu_regalloc.rs` |
+
+### Key Sub-Codes
+
+| Sub-code | Meaning |
+|----------|---------|
+| E114 | Too many tokens remaining after parse |
+| E141 | Expected `{` after guard name |
+| E151 | Expected `{` after reflex name |
+| E170 | Unexpected token in expression |
+| E216 | Single-writer violation (two reflexes write same signal) |
+| E300 | Guard condition can't be lowered to hardware |
+| E605 | Signed/unsigned width mismatch |
+| E608 | Mixed signedness in binary expression |
+| E609 | Negate applied to boolean |
 
 ## Step 3 — Locate the Source Line
 
@@ -40,7 +61,8 @@ Read the `.mirr` file the user provided. Map the error message to the specific l
 - **Parse errors**: Usually point to a specific declaration (signal, guard, reflex, property) with the name in the message. Find that declaration.
 - **Semantic errors**: Name the offending construct (e.g., `"Guard 'g' references undeclared signal 'x'"`). Find the guard named `g` and its `when` clause.
 - **Pattern errors**: Name the pattern definition or call site. Find `def <name>` or `<name>(...)` lines.
-- **Temporal errors**: Name the guard that can't be lowered. Find the guard declaration.
+- **Temporal errors**: Name the guard that can't be lowered. Find the guard declaration. Common cause: signal-to-signal comparison in `when` clause.
+- **Type errors**: Name the expression with mismatched types. Check for signed/unsigned mixing.
 
 ## Step 4 — Explain
 
@@ -67,8 +89,22 @@ Propose a minimal edit to fix the error. Show the corrected `.mirr` source. Only
 | `"Reflex 'X' assigns to input signal 'Y'"` | Writing to an input | Change signal to `out` or `internal` |
 | `"Duplicate signal/guard/reflex name"` | Name reuse | Rename one of the duplicates |
 | `"prev('X') with delay 0"` | Prev with zero delay | Use delay >= 1 |
-| `"formula must start with 'always' or 'never'"` | Wrong property keyword | Properties use `always (...)`, `never (...)`, or `always (P -> Q)` |
-| `"Signed/unsigned mismatch in expression"` | Mixing signed and unsigned types | Ensure both operands are signed (`i8`–`i64`) or both unsigned (`u8`–`u64`). Mixing is a type error (E6xx) |
+| `"formula must start with 'always' or 'never'"` | Wrong property keyword | Properties use `always (...)`, `never (...)`, `eventually within N (...)`, or `always (P followed_by N Q)` |
+| `"Signed/unsigned mismatch in expression"` | Mixing signed and unsigned types | Ensure both operands are signed (`i8`-`i64`) or both unsigned (`u8`-`u64`) |
+| `[E216] single-writer violation` | Two reflexes assign to same signal | Restructure so each signal is written by exactly one reflex |
+| `[E300] temporal lowering failure` | Signal-to-signal comparison in guard `when` | Use boolean flags or signal-vs-literal only |
+
+## Guard Condition Debugging
+
+The temporal compiler can only lower these forms to hardware:
+- `when signal` (boolean)
+- `when !signal` (negated boolean)
+- `when signal <op> literal` (comparison against constant)
+- Boolean AND/OR of the above
+
+If you see E300, check the guard's `when` clause for:
+- Signal-to-signal comparison (`when a == b`) — rewrite using boolean flags
+- Complex arithmetic (`when a + b > 100`) — compute in a reflex, store in an internal signal, guard on that
 
 ## MIRR Syntax Quick Reference
 
@@ -92,8 +128,8 @@ module <name> {
         never (<expression>);
         always (<expression> -> <expression>);
         never (<expression> -> <expression>);
-        eventually_within(<expression>, <N>);
-        always_followed_by(<expression>, <expression>, <N>);
+        eventually within <N> (<expression>);
+        always (<expression> followed_by <N> <expression>);
     }
 }
 ```

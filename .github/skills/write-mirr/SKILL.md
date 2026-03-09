@@ -18,9 +18,7 @@ Three is the organizing number at every layer:
 | Layer | The Three |
 |-------|-----------|
 | Primitives | `signal`, `guard`, `reflex` |
-| Property forms | `always`, `never`, `implies` |
 | Signal directions | `in`, `out`, `internal` |
-| Backend engines | Verilog, FIRRTL, JSON |
 
 The surface language stays tiny by design. Do not add a 4th to any triad. Complexity emerges from composition of three simple parts.
 
@@ -43,8 +41,9 @@ signal <name>: <direction> <type>;
 ```
 
 - **Directions**: `in`, `out`, `internal`
-- **Types**: `bool`, `u8`, `u16`, `u32`, `u64`
-- No implicit casting between types
+- **Unsigned types**: `bool`, `u8`, `u16`, `u32`, `u64`
+- **Signed types**: `i8`, `i16`, `i32`, `i64`
+- No implicit casting between types — signed/unsigned mismatch is error E608
 - Every signal line ends with `;`
 
 ### Guards (Temporal Conditions)
@@ -58,8 +57,18 @@ guard <name> {
 
 - The `when` clause takes a boolean expression over signals
 - The `for` clause specifies how many consecutive cycles the condition must hold
-- Guards compile to shift registers (small N) or counters (large N)
-- Expression operators: `&&`, `||`, `!`, `^`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `+`, `-`, `*`, `<<`, `>>`
+- Guards compile to shift registers (N <= 16) or counters (N > 16)
+- 1-cycle guards compile to purely combinational logic (no flip-flops)
+
+**Supported guard condition forms:**
+- Boolean signal: `when signal_name`
+- Negated signal: `when !signal_name`
+- Signal vs literal: `when signal > 100`, `when signal == true`
+- Boolean AND/OR of the above: `when a && b`, `when a || !b`
+
+**NOT supported in guard conditions:**
+- Signal-to-signal comparison: `when a == b` (use boolean health flags instead)
+- Signal-to-signal arithmetic: `when a + b > 100`
 
 ### Reflexes (Reactive Assignments)
 
@@ -72,48 +81,85 @@ reflex <name> {
 ```
 
 - The `on` clause references one or more guards by name
-- Multiple guards use `and`: `on guard_a and guard_b { ... }`
+- Multiple guards use `and`: `on guard_a and guard_b { ... }` — this compiles to AND logic
 - Assignments only write to `out` or `internal` signals — never `in`
 - No loops, conditionals, or function calls inside the body
 - Each assignment is `target = expression;`
+- **Single-writer rule (E216)**: each output/internal signal can only be assigned by ONE reflex
 
 ### Properties (Verification Assertions)
 
-Three forms only:
+Six forms:
 
 ```mirr
-// Invariant: P must always hold
+// Form 1 — Invariant: P must always hold
 property <name> {
     always (<expression>);
 }
 
-// Exclusion: P must never hold
+// Form 2 — Exclusion: P must never hold
 property <name> {
     never (<expression>);
 }
 
-// Implication: when P holds, Q must also hold
+// Form 3 — Implication: when P holds, Q must also hold
 property <name> {
     always (<antecedent> -> <consequent>);
+}
+
+// Form 4 — Negative implication: P should never imply Q
+property <name> {
+    never (<antecedent> -> <consequent>);
+}
+
+// Form 5 — Bounded liveness: P must eventually hold within N cycles
+property <name> {
+    eventually within <N> (<expression>);
+}
+
+// Form 6 — Response: P must be followed by Q within N cycles
+property <name> {
+    always (<expression> followed_by <N> <expression>);
+}
+```
+
+Properties also support directives inside the body:
+- `assert` — check at runtime / formal verification (default)
+- `assume` — constrain the environment (restrict formal search space)
+- `cover` — prove reachability (not dead code)
+
+```mirr
+property <name> {
+    assume always (<expression>);
+}
+
+property <name> {
+    cover eventually within <N> (<expression>);
 }
 ```
 
 - Properties generate SVA assertions — they do NOT affect RTL
 - Properties can reference any declared signal
-- Expressions in properties follow the same syntax as guard conditions
 
 ### Patterns (Reusable Templates)
 
 ```mirr
-def <name>(<param>: <direction> <type>, ...) {
-    // internal signal/guard/reflex declarations
+def <name>(<param>: signal <direction> <type>, ...) {
     reflect {
-        // body with substituted parameters
+        guard ${param}_g {
+            when ${param} > ${threshold}
+            for ${hold} cycles;
+        }
+        reflex ${param}_r {
+            on ${param}_g {
+                ${alarm} = true;
+            }
+        }
     }
 }
 
 // Call site:
-<name>(<arg1>, <arg2>, ...);
+<name>(<signal_arg>, <literal_arg>, ...);
 ```
 
 ## Valid Expression Operators
@@ -143,6 +189,7 @@ When writing MIRR source:
 - Signal widths must be explicitly typed — no inference at the language level
 - Module names, signal names, guard names, reflex names must be non-empty identifiers
 - Lines starting with `//` are comments and are stripped during parsing
+- Do not mix signed and unsigned operands in expressions — use one or the other
 
 ## Complete Example
 
@@ -171,11 +218,14 @@ module neonatal_respirator {
 
 ## Verification
 
-After writing a `.mirr` file, verify it compiles:
+After writing a `.mirr` file, verify it compiles to all backends:
 
 ```bash
 # Compile to all backends
 cargo run --bin mirr-compile -- --emit verilog <file.mirr>
 cargo run --bin mirr-compile -- --emit firrtl <file.mirr>
 cargo run --bin mirr-compile -- --emit json <file.mirr>
+
+# With FPGA target + testbench + scaffold
+cargo run --bin mirr-compile -- --emit verilog --target xilinx-7 --testbench --scaffold <file.mirr>
 ```

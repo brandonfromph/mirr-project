@@ -1,6 +1,6 @@
 ---
 name: propose-campaign
-description: 'Generate a rigorous, audited proposal for any MIRR change — from single-file fixes to multi-file campaigns — with risk analysis and constraints. Use this when planning changes to the MIRR compiler before implementing them.'
+description: 'Generate a rigorous, audited proposal for any MIRR change — from single-file fixes to multi-file campaigns — with risk analysis, constraints, and a parallel execution plan. Use this when planning changes to the MIRR compiler before implementing them.'
 argument-hint: 'What should this change accomplish? (e.g., "fix prev validation bug", "add error codes to all messages")'
 ---
 
@@ -17,16 +17,19 @@ proposals/
 ├── 001-SEM-001-2026-03-08.md   # Unique semantic error codes (E201-E215)
 ├── 002-TYPE-001-2026-03-08.md  # Semantic type checker (E601-E607) — Phase 7 foundation
 ├── 003-TYPE-002-2026-03-08.md  # Signed integer types (i1-i64) — extends type system
-├── 004-TYPE-003-2026-03-08.md  # Signed-aware width inference — bridges typeck↔width
+├── 004-TYPE-003-2026-03-08.md  # Signed-aware width inference — bridges typeck/width
 ├── 005-TYPE-004-2026-03-08.md  # Linear signal ownership (E216) — single-writer enforcement
 ├── 006-ROCQ-001-2026-03-08.md  # Width inference proofs in Rocq — formal verification
 ├── 007-TYPE005-RSPU001-2026-03-08.md  # Higher-order patterns + R-SPU ISA emission
+├── 011-SPAN001-LSP001-2026-03-09.md  # Span infrastructure + LSP server
+├── 012-ERR001-VSCODE001-2026-03-09.md # Error codes + diagnostics + VS Code extension
+├── 013-FPGA001-2026-03-09.md  # Synthesis-ready SystemVerilog emission
 └── ...                          # Future proposals follow NNN-ID-YYYY-MM-DD.md
 ```
 
 **Naming convention:** `NNN-CAMPAIGN_ID-YYYY-MM-DD.md` where NNN is a zero-padded sequence number.
 
-**Before proposing:** read the latest proposal to check for claimed error code ranges, open dependencies, and the Phase 7 sequencing graph. Error code ranges currently allocated: E1xx (parse), E2xx (semantic, E201-E216), E3xx (temporal), E4xx (pattern, E401-E403), E5xx (width, E500-E511), E6xx (type, E601-E607), E7xx (R-SPU, E701-E703).
+**Before proposing:** read the latest proposal to check for claimed error code ranges, open dependencies, and the Phase 7 sequencing graph. Error code ranges currently allocated: E1xx (parse, E101-E166, E170-E181), E2xx (semantic, E201-E216), E3xx (temporal), E4xx (pattern, E400-E425), E5xx (width, E500-E511), E6xx (type, E601-E609), E7xx (R-SPU, E701-E705).
 
 ## Scope Detection
 
@@ -36,7 +39,7 @@ Assess the change size first. This determines how much ceremony is needed:
 |------|--------------|-------------|------------|-----------------|
 | **Patch** | 1-2 | Read the files + their test files | 1-2 rows | Not needed |
 | **Campaign** | 3-9 | Read every file in affected subsystems | Full table | Required |
-| **Architecture** | 10+ | Full codebase audit | Full table + backward compat matrix | Required with dependency graph |
+| **Architecture** | 10+ | Full codebase audit | Full table + backward compat matrix | Required with dependency graph + **parallel wave plan** |
 
 All sizes require the Philosophy Gate and Verification steps. No exceptions.
 
@@ -44,7 +47,7 @@ All sizes require the Philosophy Gate and Verification steps. No exceptions.
 
 Before proposing ANY change, check it against the MIRR design principles:
 
-- **The generative power of three.** Signal, Guard, Reflex. Always, Never, Implies. If the proposal adds a 4th to any triad, it must be rejected or restructured. The surface language stays tiny.
+- **The generative power of three.** Signal, Guard, Reflex. If the proposal adds a 4th to any triad, it must be rejected or restructured. The surface language stays tiny.
 - **NASA Power-of-10 compliance.** No recursion, no unbounded loops, `#![forbid(unsafe_code)]`, `#![deny(warnings)]`. Every new algorithm must have an explicit iteration bound.
 - **Hardware-synthesizable.** Every language construct must map to finite, synthesizable hardware (shift registers, counters, gates). If it can't be synthesized, it doesn't belong.
 - **Properties don't affect hardware.** Properties are verification assertions only. They produce SVA, not RTL.
@@ -53,12 +56,12 @@ If the proposed campaign violates any of these, STOP and say why. Do not proceed
 
 ## MIRR Architecture Reference
 
-The compiler pipeline: parse -> validate -> expand patterns -> simplify -> width inference -> temporal compile -> emit.
+The compiler pipeline: parse -> validate -> expand patterns -> simplify -> width inference -> type check -> temporal compile -> emit.
 
 ```
 src/
 ├── ast/           # Types: Expr, Module, Guard, Reflex, Property, Pattern
-│   └── property.rs  # PropertyFormula (Always/Never/AlwaysImplies), PropertyDecl
+│   └── property.rs  # PropertyFormula (6 forms), PropertyDecl
 ├── parser/        # parse_mirr(), expr_parser, pattern_parser
 ├── lexer/         # Expression tokenizer (Token enum)
 ├── validation/    # semantic.rs: signal refs, duplicates, prev delays
@@ -67,19 +70,24 @@ src/
 ├── simplify.rs    # Boolean/arithmetic simplification
 ├── width/         # Width inference + SCC analysis (6 submodules)
 ├── temporal/      # Guard -> shift register/counter compilation
-├── emit/          # verilog.rs (SVA), firrtl.rs, json_netlist.rs, dot.rs, rspu.rs (R-SPU ISA)
+├── emit/          # verilog.rs, firrtl.rs, json_netlist.rs, dot.rs, rspu.rs,
+│   │                testbench.rs, fpga_scaffold.rs, fpga_target.rs
+│   └── mod.rs
+├── diagnostic.rs  # Rich diagnostic renderer (ERR-001)
+├── suggest.rs     # Did-you-mean fuzzy matcher (ERR-001)
 ├── pipeline.rs    # run_pipeline() orchestrates all stages
 ├── mape_k/        # MAPE-K autonomic simulator (6 submodules)
+├── lsp/           # LSP server (diagnostics.rs)
 └── bin/           # mirr-compile, mirr-simplify, mirr-width, mirr-simulate
-tests/             # 39 test files, 847 tests
-examples/          # 12 .mirr files (7 compilable, 2 error cases, 2 pattern demos, 1 signed)
+tests/             # 40+ test files, 900+ tests
+examples/          # .mirr files including tmr_sensor_fusion.mirr
 ```
 
 Key types: `MirrProgram`, `Module`, `Guard`, `Reflex`, `PropertyDecl`, `Expr`, `MirrError` (6 variants: ParseError, SemanticError, TemporalCompilationError, PatternError, TypeError, RspuError).
 
 Error codes: `[E1xx]` parse, `[E2xx]` semantic, `[E3xx]` temporal, `[E4xx]` pattern, `[E5xx]` width, `[E6xx]` type, `[E7xx]` R-SPU.
 
-Six property forms: `always (P)`, `never (P)`, `always (P -> Q)`, `never (P -> Q)`, `eventually_within(P, N)`, `always_followed_by(P, Q, N)`.
+Six property forms: `always (P)`, `never (P)`, `always (P -> Q)`, `never (P -> Q)`, `eventually within N (P)`, `always (P followed_by N Q)`.
 
 ## Step 1 — Audit
 
@@ -171,7 +179,7 @@ Organize into lettered sections (A, B, C, ...). Each section must include:
 | `tests/new_tests.rs` | N tests for feature X |
 ```
 
-## Step 4 — Execution Order
+## Step 4 — Execution Order with Parallel Wave Plan
 
 Table showing implementation sequence and dependencies:
 
@@ -183,6 +191,33 @@ Table showing implementation sequence and dependencies:
 ```
 
 Rule: after each step, `cargo build` must succeed with zero warnings.
+
+### Parallel Execution Strategy (Campaign and Architecture scope)
+
+For proposals with 5+ steps, include a **wave plan** that groups independent steps for parallel execution:
+
+```markdown
+### Wave Plan
+
+| Wave | Steps | Parallelizable? | Gate |
+|------|-------|-----------------|------|
+| 1 | 1-2, 3-4, 5-6 | Yes — touch different files | `cargo test --all` after all wave-1 edits applied |
+| 2 | 7-10 | Yes — all independent | `cargo test --all` after all wave-2 edits applied |
+| 3 | 11-12 | Sequential — depends on wave 2 | Full CI gate |
+```
+
+**Wave plan rules:**
+- Steps within a wave MUST touch different files (no merge conflicts)
+- Run `cargo test --all` ONCE per wave (not per step and not per agent) — this is critical for speed
+- Do NOT use worktree isolation for steps that edit different files — edit directly in the working tree
+- Each agent makes its edits, then the coordinator runs one combined test gate
+- If any test fails after a wave, identify which step caused it and fix before proceeding
+- Wave boundaries are the only mandatory sync points
+
+**Anti-patterns to avoid:**
+- Running `cargo test --all` inside every parallel agent (multiplies compile time by agent count)
+- Using git worktrees for non-conflicting edits (adds merge overhead for no benefit)
+- Waiting for agent A to finish before launching agent B when they touch different files
 
 ## Step 5 — Verification
 
@@ -196,10 +231,17 @@ cargo test --all
 cargo test --test <new_test_file>
 
 # Zero clippy warnings
-cargo clippy --all-targets --all-features -- -D warnings
+cargo clippy --all-targets -- -D warnings
+
+# Zero doc warnings
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
+
+# Formatting clean
+cargo fmt --check
 
 # Examples compile (if applicable)
 cargo run --bin mirr-compile -- --emit verilog examples/<file>.mirr
+cargo run --bin mirr-compile -- --emit verilog --target xilinx-7 --testbench --scaffold examples/<file>.mirr
 ```
 
 ## Step 6 — File Manifest
@@ -229,3 +271,5 @@ Before finalizing the proposal, verify:
 - [ ] Backward compatibility is explicitly addressed
 - [ ] Verification commands are copy-pasteable
 - [ ] File manifest accounts for every touched file
+- [ ] **Wave plan included** for Campaign/Architecture scope (5+ steps)
+- [ ] **Wave plan avoids per-agent test runs** — one `cargo test --all` per wave only
