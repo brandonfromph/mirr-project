@@ -9,7 +9,15 @@ use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 use nasa_rust_project::validation::validate_module;
 
 fn default_config() -> PipelineConfig {
-    PipelineConfig { typecheck: true, simplify: false, width: false, temporal: false, rspu: false }
+    PipelineConfig {
+        typecheck: true,
+        simplify: false,
+        width: false,
+        temporal: false,
+        rspu: false,
+        extended_typecheck: false,
+        simulate: false,
+    }
 }
 
 /// Helper: run pipeline and expect errors.

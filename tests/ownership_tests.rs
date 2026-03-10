@@ -14,13 +14,19 @@ extern crate nasa_rust_project;
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
+use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::validate_module;
 
 // ───────────────────── helpers ─────────────────────
 
 fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind, ty, origin: None, span: None }
+    SignalDecl {
+        name: name.to_string(),
+        kind,
+        ty: ExtendedType::from_core(ty),
+        origin: None,
+        span: None,
+    }
 }
 
 fn bool_out(name: &str) -> SignalDecl {
@@ -259,7 +265,7 @@ fn bool_output_two_writers_e216() {
             SignalDecl {
                 name: "trigger".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },

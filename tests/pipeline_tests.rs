@@ -94,6 +94,8 @@ fn pipeline_parse_only() {
         width: false,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(MINIMAL_MIRR, &config).expect("pipeline should succeed");
 
@@ -111,6 +113,8 @@ fn pipeline_simplify_without_width() {
         width: false,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(MINIMAL_MIRR, &config).expect("pipeline should succeed");
 
@@ -126,6 +130,8 @@ fn pipeline_width_without_temporal() {
         width: true,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(ARITHMETIC_MIRR, &config).expect("pipeline should succeed");
 
@@ -307,7 +313,7 @@ fn json_output_contains_ir_version() {
     let json_str = emit::json_netlist::emit_json(&result).unwrap();
     let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();
 
-    assert_eq!(parsed["ir_version"], "1.0");
+    assert_eq!(parsed["ir_version"], "2.0");
 }
 
 #[test]
@@ -361,6 +367,8 @@ fn json_output_null_when_stages_skipped() {
         width: false,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(MINIMAL_MIRR, &config).unwrap();
     let json_str = emit::json_netlist::emit_json(&result).unwrap();

@@ -78,7 +78,9 @@ module too_many {
 }
 "#;
     let msg = parse_err(source);
-    assert_eq!(msg, "[E100] Parse error: [E114] Too many tokens in signal declaration.");
+    // MEGA-1 tokenizer gives a more specific error than the old E114.
+    assert!(msg.contains("[E183]"), "Expected E183 (unexpected token), got: {msg}");
+    assert!(msg.contains("extra"), "Error should mention the unexpected token 'extra', got: {msg}");
 }
 
 #[test]

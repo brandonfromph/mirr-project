@@ -9,6 +9,9 @@ fuzz_target!(|data: &[u8]| {
             simplify: true,
             width: true,
             temporal: true,
+            rspu: false,
+            extended_typecheck: false,
+            simulate: false,
         };
         let _ = run_pipeline(s, &config);
     }

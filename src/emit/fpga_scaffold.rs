@@ -70,7 +70,7 @@ fn emit_xdc(module: &Module, target: &FpgaTarget) -> String {
         if s.kind == SignalKind::Internal {
             continue;
         }
-        let width = signal_width(&s.ty);
+        let width = signal_width(&s.ty.signal_type());
         if width == 1 {
             out.push_str(&format!(
                 "# set_property PACKAGE_PIN {{PLACEHOLDER}} [get_ports {}]\n",
@@ -142,7 +142,7 @@ fn emit_pcf(module: &Module) -> String {
         if s.kind == SignalKind::Internal {
             continue;
         }
-        let width = signal_width(&s.ty);
+        let width = signal_width(&s.ty.signal_type());
         if width == 1 {
             out.push_str(&format!("set_io {} PLACEHOLDER\n", s.name));
         } else {
@@ -274,7 +274,7 @@ fn emit_lpf(module: &Module, target: &FpgaTarget) -> String {
         if s.kind == SignalKind::Internal {
             continue;
         }
-        let width = signal_width(&s.ty);
+        let width = signal_width(&s.ty.signal_type());
         if width == 1 {
             out.push_str(&format!("LOCATE COMP \"{}\" SITE \"PLACEHOLDER\";\n", s.name));
             out.push_str(&format!("IOBUF PORT \"{}\" IO_TYPE=LVCMOS33;\n", s.name));
@@ -313,7 +313,7 @@ fn emit_pdc(module: &Module, target: &FpgaTarget) -> String {
         if s.kind == SignalKind::Internal {
             continue;
         }
-        let width = signal_width(&s.ty);
+        let width = signal_width(&s.ty.signal_type());
         if width == 1 {
             out.push_str(&format!(
                 "ldc_set_location -site {{PLACEHOLDER}} [get_ports {{{}}}]\n",
@@ -404,8 +404,5 @@ fn emit_nexus_sh(module: &Module, target: &FpgaTarget) -> String {
 // -----------------------------------------------------------------------
 
 fn signal_width(ty: &SignalType) -> u32 {
-    match ty {
-        SignalType::Bool => 1,
-        SignalType::Unsigned(w) | SignalType::Signed(w) => *w,
-    }
+    ty.width()
 }

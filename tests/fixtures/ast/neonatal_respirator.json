@@ -1,11 +1,11 @@
 {
-  "ir_version": "1.0",
+  "ir_version": "2.0",
   "module": {
     "name": "neonatal_respirator",
     "signals": [
-      { "name": "respirator_enable", "kind": "Input",  "ty": "Bool" },
-      { "name": "airway_pressure",   "kind": "Input",  "ty": { "Unsigned": 16 } },
-      { "name": "clamp_valve",       "kind": "Output", "ty": "Bool" }
+      { "name": "respirator_enable", "kind": "Input",  "ty": { "core": "Bool" } },
+      { "name": "airway_pressure",   "kind": "Input",  "ty": { "core": { "Unsigned": 16 } } },
+      { "name": "clamp_valve",       "kind": "Output", "ty": { "core": "Bool" } }
     ],
     "guards": [
       {

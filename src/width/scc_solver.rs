@@ -10,7 +10,6 @@
 
 use super::types::{SccInfo, SccKind, WidthDiag, MAX_SCC_SIZE};
 use crate::ast::program::{Guard, SignalDecl};
-use crate::ast::types::SignalType;
 
 /// Maximum iterations for Floyd-Warshall fixpoint in nonexpansive SCCs.
 /// Bounded by SCC_SIZE^2 (worst case for shortest-path convergence).
@@ -38,13 +37,7 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
     // Initialize widths from declarations.
     let mut widths: Vec<u32> = Vec::with_capacity(n);
     for &sig_idx in &scc.signal_indices {
-        let w = signals
-            .get(sig_idx)
-            .map(|s| match s.ty {
-                SignalType::Bool => 1u32,
-                SignalType::Unsigned(w) | SignalType::Signed(w) => w,
-            })
-            .unwrap_or(0);
+        let w = signals.get(sig_idx).map(|s| s.ty.signal_type().width()).unwrap_or(0);
         widths.push(w);
     }
 
@@ -130,10 +123,7 @@ pub fn solve_expansive(
         };
 
         // Strategy 1: Explicit type annotation.
-        let declared_width = match sig.ty {
-            SignalType::Bool => 1u32,
-            SignalType::Unsigned(w) | SignalType::Signed(w) => w,
-        };
+        let declared_width = sig.ty.signal_type().width();
 
         // If the signal has a non-default width (> 0), accept it.
         // In MIRR's strict typing, all signals have explicit types,

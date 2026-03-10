@@ -172,6 +172,8 @@ fn compile_and_diagnose(uri: &str, source: &str) -> Value {
         width: true,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
 
     match run_pipeline(source, &config) {

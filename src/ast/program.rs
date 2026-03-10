@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use super::expr::Expr;
 use super::pattern::{PatternCall, PatternDef, PatternOrigin};
 use super::property::PropertyDecl;
-use super::types::{SignalKind, SignalType};
+use super::types::{ExtendedType, SignalKind};
 use crate::span::Span;
 
 /// A signal declaration: name, direction (in/out/internal), and bit-width type.
@@ -22,9 +22,9 @@ pub struct SignalDecl {
     pub name: String,
     /// Direction: input, output, or internal.
     pub kind: SignalKind,
-    /// Bit-width type (bool, u8–u64, i8–i64).
+    /// Extended type: core SignalType + MEGA-1 annotations (linearity, effects, refinements, clock domain, phantom).
     #[serde(rename = "ty")]
-    pub ty: SignalType,
+    pub ty: ExtendedType,
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written signals).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
@@ -118,7 +118,7 @@ pub struct MirrProgram {
 /// Used by IR contract tests and parity gate.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MirrAstJson {
-    /// IR version string for contract tracking (currently "1.0").
+    /// IR version string for contract tracking (currently "2.0").
     pub ir_version: String,
     /// The compiled module AST.
     pub module: Module,
@@ -150,6 +150,6 @@ impl MirrAstJson {
         for call in &mut module.pattern_calls {
             call.span = None;
         }
-        Self { ir_version: "1.0".to_string(), module }
+        Self { ir_version: crate::ast::types::IR_VERSION.to_string(), module }
     }
 }

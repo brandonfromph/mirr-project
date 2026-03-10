@@ -6,7 +6,7 @@
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
+use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::emit;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
@@ -70,14 +70,14 @@ fn prev_guard_result() -> PipelineResult {
             SignalDecl {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(8),
+                ty: ExtendedType::from_core(SignalType::Unsigned(8)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
@@ -117,6 +117,8 @@ fn prev_guard_result() -> PipelineResult {
         temporal_netlist: None,
         rspu_program: None,
         type_map: None,
+        extended_type_map: None,
+        sim_result: None,
     }
 }
 

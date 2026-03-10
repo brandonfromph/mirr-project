@@ -1,12 +1,12 @@
 {
-  "ir_version": "1.0",
+  "ir_version": "2.0",
   "module": {
     "name": "seizure_monitor",
     "signals": [
-      { "name": "eeg_spike",      "kind": "Input",    "ty": "Bool" },
-      { "name": "artifact_noise", "kind": "Input",    "ty": "Bool" },
-      { "name": "alert",          "kind": "Output",   "ty": "Bool" },
-      { "name": "pattern_active", "kind": "Internal", "ty": "Bool" }
+      { "name": "eeg_spike",      "kind": "Input",    "ty": { "core": "Bool" } },
+      { "name": "artifact_noise", "kind": "Input",    "ty": { "core": "Bool" } },
+      { "name": "alert",          "kind": "Output",   "ty": { "core": "Bool" } },
+      { "name": "pattern_active", "kind": "Internal", "ty": { "core": "Bool" } }
     ],
     "guards": [
       {

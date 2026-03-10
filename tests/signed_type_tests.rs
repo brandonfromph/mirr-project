@@ -5,7 +5,9 @@
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
+use nasa_rust_project::ast::types::{
+    BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
+};
 use nasa_rust_project::parse_mirr;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 use nasa_rust_project::typeck::typecheck_module;
@@ -23,35 +25,35 @@ fn signed_module_with_guard(condition: Expr) -> Module {
             SignalDecl {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "su".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "si".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Signed(16),
+                ty: ExtendedType::from_core(SignalType::Signed(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "si8".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Signed(8),
+                ty: ExtendedType::from_core(SignalType::Signed(8)),
                 origin: None,
                 span: None,
             },
@@ -89,35 +91,35 @@ fn signed_module_with_assignment(target: &str, target_ty: SignalType, value: Exp
             SignalDecl {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: target.to_string(),
                 kind: SignalKind::Output,
-                ty: target_ty,
+                ty: ExtendedType::from_core(target_ty),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "su".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "si".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Signed(16),
+                ty: ExtendedType::from_core(SignalType::Signed(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "si8".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Signed(8),
+                ty: ExtendedType::from_core(SignalType::Signed(8)),
                 origin: None,
                 span: None,
             },
@@ -165,7 +167,7 @@ module test {
 }
 "#;
     let prog = parse_mirr(src).expect("should parse i16 type");
-    assert_eq!(prog.module.signals[0].ty, SignalType::Signed(16));
+    assert_eq!(prog.module.signals[0].ty.signal_type(), SignalType::Signed(16));
 }
 
 #[test]
@@ -186,7 +188,7 @@ module test {
 }
 "#;
     let prog = parse_mirr(src).expect("should parse i8 type");
-    assert_eq!(prog.module.signals[0].ty, SignalType::Signed(8));
+    assert_eq!(prog.module.signals[0].ty.signal_type(), SignalType::Signed(8));
 }
 
 #[test]
@@ -207,7 +209,7 @@ module test {
 }
 "#;
     let prog = parse_mirr(src).expect("should parse i32 type");
-    assert_eq!(prog.module.signals[0].ty, SignalType::Signed(32));
+    assert_eq!(prog.module.signals[0].ty.signal_type(), SignalType::Signed(32));
 }
 
 // ---------------------------------------------------------------------------
@@ -446,7 +448,7 @@ fn negate_unsigned_produces_signed() {
     m.signals.push(SignalDecl {
         name: "out_i32".to_string(),
         kind: SignalKind::Output,
-        ty: SignalType::Signed(32),
+        ty: ExtendedType::from_core(SignalType::Signed(32)),
         origin: None,
         span: None,
     });
@@ -589,7 +591,7 @@ module signed_test {
 }
 "#;
     let prog = parse_mirr(src).expect("should parse signed source");
-    assert_eq!(prog.module.signals[0].ty, SignalType::Signed(16));
+    assert_eq!(prog.module.signals[0].ty.signal_type(), SignalType::Signed(16));
     validate_module(&prog.module).unwrap();
     typecheck_module(&prog.module).expect("signed source should type-check");
 }
@@ -622,6 +624,8 @@ module signed_test {
         temporal: false,
         typecheck: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
     let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
@@ -660,6 +664,8 @@ module signed_test {
         temporal: false,
         typecheck: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
     let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);

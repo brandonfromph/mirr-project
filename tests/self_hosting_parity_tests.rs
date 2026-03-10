@@ -89,7 +89,7 @@ fn selfhost_neonatal_emits_valid_json() {
         serde_json::from_str(json_str).expect("emitted netlist must be valid JSON");
 
     // Structural contract assertions.
-    assert_eq!(val["ir_version"], "1.0", "ir_version must be 1.0");
+    assert_eq!(val["ir_version"], "2.0", "ir_version must be 2.0");
     assert!(val["guards"].is_array(), "guards must be an array");
     assert!(val["signals"].is_array(), "signals must be an array");
     assert!(val["statistics"].is_object(), "statistics must be an object");

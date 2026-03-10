@@ -15,6 +15,7 @@
 //! | E5xx   | 500–599   | Width inference errors   |
 //! | E6xx   | 600–699   | Type errors              |
 //! | E7xx   | 700–799   | R-SPU emission errors    |
+//! | E8xx   | 800–899   | S-expression errors      |
 //!
 //! See `docs/error_codes.md` for the full catalogue.
 // ---------------------------------------------------------------------------
@@ -41,6 +42,8 @@ pub enum MirrError {
     TypeError { message: String, span: Option<Span> },
     /// R-SPU emission error (E7xx).
     RspuError { message: String, span: Option<Span> },
+    /// S-expression error (E8xx).
+    SExprError { message: String, span: Option<Span> },
 }
 
 impl MirrError {
@@ -60,6 +63,7 @@ impl MirrError {
             Self::PatternError { message, .. } => Self::PatternError { message, span },
             Self::TypeError { message, .. } => Self::TypeError { message, span },
             Self::RspuError { message, .. } => Self::RspuError { message, span },
+            Self::SExprError { message, .. } => Self::SExprError { message, span },
         }
     }
 
@@ -71,7 +75,8 @@ impl MirrError {
             | Self::TemporalCompilationError { span, .. }
             | Self::PatternError { span, .. }
             | Self::TypeError { span, .. }
-            | Self::RspuError { span, .. } => *span,
+            | Self::RspuError { span, .. }
+            | Self::SExprError { span, .. } => *span,
         }
     }
 
@@ -83,7 +88,8 @@ impl MirrError {
             | Self::TemporalCompilationError { message, .. }
             | Self::PatternError { message, .. }
             | Self::TypeError { message, .. }
-            | Self::RspuError { message, .. } => message,
+            | Self::RspuError { message, .. }
+            | Self::SExprError { message, .. } => message,
         }
     }
 
@@ -102,6 +108,7 @@ impl MirrError {
             Self::TemporalCompilationError { .. } => Some("E300".to_string()),
             Self::PatternError { .. } => Some("E400".to_string()),
             Self::RspuError { .. } => Some("E700".to_string()),
+            Self::SExprError { .. } => Some("E800".to_string()),
             // SemanticError and TypeError embed codes in messages — no fallback.
             Self::SemanticError { .. } | Self::TypeError { .. } => None,
         }
@@ -218,6 +225,13 @@ impl fmt::Display for MirrError {
             }
             MirrError::RspuError { message, span } => {
                 write!(f, "[E700] R-SPU error: {}", message)?;
+                if let Some(s) = span {
+                    write!(f, " (line {})", s.start_line + 1)?;
+                }
+                Ok(())
+            }
+            MirrError::SExprError { message, span } => {
+                write!(f, "[E800] S-expression error: {}", message)?;
                 if let Some(s) = span {
                     write!(f, " (line {})", s.start_line + 1)?;
                 }

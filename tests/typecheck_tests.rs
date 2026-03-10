@@ -4,7 +4,9 @@
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
+use nasa_rust_project::ast::types::{
+    BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
+};
 use nasa_rust_project::parse_mirr;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 use nasa_rust_project::typeck::typecheck_module;
@@ -22,35 +24,35 @@ fn module_with_guard_condition(condition: Expr) -> Module {
             SignalDecl {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "n".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "m".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(8),
+                ty: ExtendedType::from_core(SignalType::Unsigned(8)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "out_u16".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
@@ -88,28 +90,28 @@ fn module_with_assignment(target: &str, target_ty: SignalType, value: Expr) -> M
             SignalDecl {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: target.to_string(),
                 kind: SignalKind::Output,
-                ty: target_ty,
+                ty: ExtendedType::from_core(target_ty),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "n".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "m".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(8),
+                ty: ExtendedType::from_core(SignalType::Unsigned(8)),
                 origin: None,
                 span: None,
             },
@@ -494,6 +496,8 @@ module typeck_pipeline {
         width: true,
         temporal: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     run_pipeline(src, &config).expect("well-typed program should pass full pipeline");
 }
@@ -523,6 +527,8 @@ module skip_typeck {
         width: true,
         temporal: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     run_pipeline(src, &config).expect("should pass with typecheck disabled");
 }

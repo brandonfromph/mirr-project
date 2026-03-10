@@ -27,7 +27,13 @@ use nasa_rust_project::width::WidthInferenceResult;
 // ---------------------------------------------------------------------------
 
 fn sig(name: &str, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty, origin: None, span: None }
+    SignalDecl {
+        name: name.to_string(),
+        kind: SignalKind::Internal,
+        ty: ExtendedType::from_core(ty),
+        origin: None,
+        span: None,
+    }
 }
 
 fn lit(v: u64) -> Expr {

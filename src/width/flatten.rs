@@ -151,7 +151,7 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
 
 /// Check whether a signal is declared as signed.
 fn is_signed(name: &str, signals: &[crate::ast::SignalDecl]) -> bool {
-    signals.iter().any(|s| s.name == name && matches!(s.ty, SignalType::Signed(_)))
+    signals.iter().any(|s| s.name == name && matches!(s.ty.signal_type(), SignalType::Signed(_)))
 }
 
 // ---------------------------------------------------------------------------

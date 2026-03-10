@@ -47,7 +47,7 @@ module test {
 "#;
     let program = parse_mirr(src).expect("parse failed");
     let ast_json = MirrAstJson::from_program(&program);
-    assert_eq!(ast_json.ir_version, "1.0");
+    assert_eq!(ast_json.ir_version, "2.0");
 }
 
 #[test]
@@ -120,7 +120,7 @@ module m {
     let ast_json = MirrAstJson::from_program(&program);
     let json_str = serde_json::to_string(&ast_json).expect("serialization failed");
     assert!(json_str.contains("\"ir_version\""), "JSON output must contain ir_version key");
-    assert!(json_str.contains("\"1.0\""), "ir_version value must be \"1.0\"");
+    assert!(json_str.contains("\"2.0\""), "ir_version value must be \"2.0\"");
 }
 
 #[test]
@@ -197,7 +197,7 @@ module test {
         .compile_temporal_guards(&program.module)
         .expect("compile failed");
     let netlist_json = TemporalNetlistJson::from_netlist(&netlist);
-    assert_eq!(netlist_json.ir_version, "1.0");
+    assert_eq!(netlist_json.ir_version, "2.0");
 }
 
 #[test]

@@ -76,7 +76,7 @@ fn emit_ports(module: &Module, out: &mut String) {
             SignalKind::Output => "output",
             SignalKind::Internal => continue, // handled as wires
         };
-        let ty = firrtl_type(&s.ty);
+        let ty = firrtl_type(&s.ty.signal_type());
         out.push_str(&format!("    {} {} : {}\n", dir, s.name, ty));
     }
 }
@@ -91,7 +91,7 @@ fn emit_internal_wires(module: &Module, out: &mut String) {
 
     out.push_str("\n    ; Internal signals\n");
     for s in &internals {
-        let ty = firrtl_type(&s.ty);
+        let ty = firrtl_type(&s.ty.signal_type());
         out.push_str(&format!("    wire {} : {}\n", s.name, ty));
     }
 }

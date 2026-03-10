@@ -77,8 +77,8 @@ module neonatal_respirator {
     assert_eq!(p.module.signals.len(), 3);
     assert_eq!(p.module.signals[0].name, "respirator_enable");
     assert_eq!(p.module.signals[0].kind, SignalKind::Input);
-    assert_eq!(p.module.signals[0].ty, SignalType::Bool);
-    assert_eq!(p.module.signals[1].ty, SignalType::Unsigned(16));
+    assert_eq!(p.module.signals[0].ty.signal_type(), SignalType::Bool);
+    assert_eq!(p.module.signals[1].ty.signal_type(), SignalType::Unsigned(16));
     assert_eq!(p.module.guards.len(), 1);
     assert_eq!(p.module.guards[0].name, "sustained_pressure_drop");
     assert_eq!(p.module.guards[0].condition, bin(BinaryOp::Lt, sig("airway_pressure"), int(50)));
@@ -103,8 +103,8 @@ module kinds {
     assert_eq!(p.module.signals[0].kind, SignalKind::Input);
     assert_eq!(p.module.signals[1].kind, SignalKind::Output);
     assert_eq!(p.module.signals[2].kind, SignalKind::Internal);
-    assert_eq!(p.module.signals[1].ty, SignalType::Unsigned(8));
-    assert_eq!(p.module.signals[2].ty, SignalType::Unsigned(32));
+    assert_eq!(p.module.signals[1].ty.signal_type(), SignalType::Unsigned(8));
+    assert_eq!(p.module.signals[2].ty.signal_type(), SignalType::Unsigned(32));
 }
 
 #[test]

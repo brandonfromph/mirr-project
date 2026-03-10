@@ -57,7 +57,7 @@ fn emit_tb_signals(module: &Module, out: &mut String) {
         if s.kind == SignalKind::Internal {
             continue;
         }
-        let type_str = tb_type(&s.ty);
+        let type_str = tb_type(&s.ty.signal_type());
         out.push_str(&format!("  {} tb_{};\n", type_str, s.name));
     }
     out.push('\n');
@@ -128,7 +128,7 @@ fn emit_tb_stimulus(module: &Module, out: &mut String) {
     out.push_str("    // Phase 2: Drive inputs to max range\n");
     for s in &module.signals {
         if s.kind == SignalKind::Input && s.name != "rst_n" {
-            let max_val = match &s.ty {
+            let max_val = match &s.ty.signal_type() {
                 SignalType::Bool => "'1".to_string(),
                 SignalType::Unsigned(w) => format!("{}'hFFFF", w),
                 SignalType::Signed(w) => format!("{}'h7FFF", w),

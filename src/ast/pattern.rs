@@ -9,16 +9,29 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::types::{SignalKind, SignalType};
+use super::types::{SignalKind, SignalType, TypeAnnotations};
 use crate::span::Span;
 
 /// The kind of a pattern parameter.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PatternParamKind {
     /// A signal reference: `signal in u16`, `signal out bool`, etc.
-    Signal { kind: SignalKind, ty: SignalType },
+    /// With MEGA-1 extensions: `signal in linear u16 where 0..1023 @clk #Tag`.
+    Signal {
+        kind: SignalKind,
+        ty: SignalType,
+        /// MEGA-1 extended type annotations.
+        #[serde(default, skip_serializing_if = "TypeAnnotations::is_default")]
+        annotations: TypeAnnotations,
+    },
     /// A compile-time constant: `u16`, `u32`, `bool`.
-    Constant { ty: SignalType },
+    /// With MEGA-1 extensions: `u16 where 0..1023`.
+    Constant {
+        ty: SignalType,
+        /// MEGA-1 extended type annotations.
+        #[serde(default, skip_serializing_if = "TypeAnnotations::is_default")]
+        annotations: TypeAnnotations,
+    },
     /// A pattern reference: `pattern` — accepts another pattern by name.
     Pattern,
 }

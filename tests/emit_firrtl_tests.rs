@@ -24,6 +24,8 @@ fn firrtl_no_temporal(src: &str) -> String {
         width: true,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
     emit_firrtl(&result)

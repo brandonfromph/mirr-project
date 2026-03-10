@@ -265,7 +265,7 @@ impl TemporalNetlistJson {
     /// Wrap a compiled netlist in the versioned JSON envelope.
     pub fn from_netlist(netlist: &TemporalNetlist) -> Self {
         Self {
-            ir_version: "1.0".to_string(),
+            ir_version: crate::ast::types::IR_VERSION.to_string(),
             guards: netlist.guards.clone(),
             signals: netlist.signals.clone(),
             statistics: netlist.statistics.clone(),

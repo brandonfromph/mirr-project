@@ -10,7 +10,7 @@
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
+use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::{run_pipeline, validate_module, PipelineConfig};
 
 // ---------------------------------------------------------------------------
@@ -41,14 +41,14 @@ fn module_with_properties(properties: Vec<PropertyDecl>) -> Module {
             SignalDecl {
                 name: "sensor".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "alarm".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
@@ -89,7 +89,15 @@ fn prop(name: &str, formula: PropertyFormula) -> PropertyDecl {
 }
 
 fn pipeline_config() -> PipelineConfig {
-    PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: false }
+    PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: false,
+        extended_typecheck: false,
+        simulate: false,
+    }
 }
 
 /// Helper: run pipeline expecting an error (avoids needing Debug on PipelineResult).
@@ -740,6 +748,8 @@ fn full_pipeline_existing_example_still_compiles() {
         width: true,
         temporal: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     run_pipeline(&src, &config).expect("safety_property.mirr should compile");
 }

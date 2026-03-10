@@ -29,11 +29,23 @@ pub struct PipelineConfig {
     pub temporal: bool,
     /// Run R-SPU instruction emission (requires temporal).
     pub rspu: bool,
+    /// Run MEGA-1 extended type checking (opt-in).
+    pub extended_typecheck: bool,
+    /// Run R-SPU ISA simulator after emission (requires rspu).
+    pub simulate: bool,
 }
 
 impl Default for PipelineConfig {
     fn default() -> Self {
-        Self { typecheck: true, simplify: true, width: true, temporal: true, rspu: false }
+        Self {
+            typecheck: true,
+            simplify: true,
+            width: true,
+            temporal: true,
+            rspu: false,
+            extended_typecheck: false,
+            simulate: false,
+        }
     }
 }
 
@@ -51,6 +63,10 @@ pub struct PipelineResult {
     pub rspu_program: Option<RspuProgram>,
     /// Expression type map from the type checker (None if stage was skipped).
     pub type_map: Option<crate::typeck::TypeMap>,
+    /// Extended type map from MEGA-1 checker (None if stage was skipped).
+    pub extended_type_map: Option<crate::typeck::extended::ExtendedTypeMap>,
+    /// ISA simulation result (None if stage was skipped).
+    pub sim_result: Option<crate::emit::rspu_sim::SimResult>,
 }
 
 impl PipelineResult {
@@ -86,12 +102,38 @@ pub fn run_pipeline(
         None
     };
 
+    // Stage 2.6: Extended type checking (opt-in MEGA-1).
+    let extended_type_map = if config.extended_typecheck {
+        let extended_decls: Vec<crate::typeck::extended::ExtendedSignalDecl> = program
+            .module
+            .signals
+            .iter()
+            .map(crate::typeck::extended::ExtendedSignalDecl::from_legacy)
+            .collect();
+        let ext_result = crate::typeck::extended::typecheck_extended(
+            &program.module,
+            &extended_decls,
+            &[],
+            &[],
+            &[],
+        );
+        if !ext_result.errors.is_empty() {
+            return Err(ext_result.errors);
+        }
+        Some(ext_result.type_map)
+    } else {
+        None
+    };
+
     // Stage 3: Simplify (optional).
     let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
 
     // Stage 4: Width inference (optional). Always includes SCC.
-    let width_result =
-        if config.width { Some(width::infer_program_widths_with_scc(&program)) } else { None };
+    let width_result = if config.width {
+        Some(width::infer_program_widths_with_scc(&program, type_map.as_ref()))
+    } else {
+        None
+    };
 
     // Stage 5: Temporal lowering (optional).
     let temporal_netlist = if config.temporal {
@@ -108,11 +150,25 @@ pub fn run_pipeline(
         temporal_netlist,
         rspu_program: None,
         type_map,
+        extended_type_map,
+        sim_result: None,
     };
 
     // Stage 6: R-SPU emission (optional, requires temporal).
     if config.rspu {
         result.rspu_program = Some(crate::emit::rspu::emit_rspu(&result)?);
+    }
+
+    // Stage 7: ISA simulation (optional, requires rspu program).
+    if config.simulate {
+        if let Some(ref prog) = result.rspu_program {
+            use crate::emit::rspu_isa::MAX_SIM_CYCLES;
+            use crate::emit::rspu_sim::RspuSimulator;
+            let mut sim = RspuSimulator::new();
+            let sim_out =
+                sim.run(prog, MAX_SIM_CYCLES).map_err(crate::error::PipelineErrors::from)?;
+            result.sim_result = Some(sim_out);
+        }
     }
 
     Ok(result)

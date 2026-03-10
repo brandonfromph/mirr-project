@@ -130,6 +130,8 @@ fn bench_pipeline(c: &mut Criterion) {
         width: true,
         temporal: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
 
     let mut group = c.benchmark_group("pipeline");

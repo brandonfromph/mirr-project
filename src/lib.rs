@@ -39,6 +39,7 @@ pub mod mirr_executor;
 pub mod mirr_runtime;
 pub mod parser;
 pub mod pipeline;
+pub mod sexpr;
 pub mod simplify;
 pub mod span;
 pub mod suggest;
@@ -54,7 +55,10 @@ pub use ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
 pub use ast::{MirrAstJson, MirrProgram};
 pub use bootstrap_runner::{BootstrapOpts, BootstrapResult, BootstrapRunner, StageResult};
 pub use emit::json_netlist::JsonNetlist;
+pub use emit::rspu_encoding::{decode, emit_binary, encode, EncodedInstruction};
 pub use emit::rspu_isa::{RspuInstruction, RspuProgram};
+pub use emit::rspu_sim::RspuSimulator;
+pub use emit::rspu_tagged::{RegisterFile, TaggedWord, TypeTag};
 pub use error::MirrError;
 pub use error::PipelineErrors;
 pub use mape_k::{MapeKSimulator, SimConfig, SimResult};
@@ -64,6 +68,7 @@ pub use simplify::SimplifyStats;
 pub use temporal::{
     low_level_ir::TemporalNetlist, low_level_ir::TemporalNetlistJson, TemporalGuardCompiler,
 };
+pub use typeck::extended::typecheck_extended;
 pub use typeck::typecheck_module;
 pub use validation::validate_module;
 pub use width::types::{WidthDiag, WidthExpr, WidthStats};

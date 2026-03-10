@@ -7,7 +7,7 @@
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
+use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::emit;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
@@ -118,14 +118,14 @@ fn prev_in_reflex_result() -> PipelineResult {
             SignalDecl {
                 name: "sensor".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "delta".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
@@ -169,6 +169,8 @@ fn prev_in_reflex_result() -> PipelineResult {
         temporal_netlist: None,
         rspu_program: None,
         type_map: None,
+        extended_type_map: None,
+        sim_result: None,
     }
 }
 

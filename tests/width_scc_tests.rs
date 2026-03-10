@@ -17,7 +17,7 @@
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
+use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::width;
 
 // =========================================================================
@@ -25,7 +25,13 @@ use nasa_rust_project::width;
 // =========================================================================
 
 fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind, ty, origin: None, span: None }
+    SignalDecl {
+        name: name.to_string(),
+        kind,
+        ty: ExtendedType::from_core(ty),
+        origin: None,
+        span: None,
+    }
 }
 
 fn guard(name: &str, cond: Expr, cycles: u64) -> Guard {
@@ -296,7 +302,7 @@ fn no_sccs_in_acyclic_program() {
         vec![guard("g1", signal_expr("a"), 1)],
         vec![reflex("r1", &["g1"], vec![assign("b", signal_expr("a"))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.sccs.len(), 0);
     assert_eq!(result.stats.scc_count, 0);
 }
@@ -309,7 +315,7 @@ fn single_self_loop_detected_as_scc() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 10)],
         vec![reflex("r1", &["g1"], vec![assign("x", add(prev("x", 1), int_lit(1)))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.sccs.len(), 1);
     assert_eq!(result.sccs[0].signal_indices.len(), 1);
 }
@@ -330,7 +336,7 @@ fn three_node_cycle_detected() {
             vec![assign("a", prev("c", 1)), assign("b", prev("a", 1)), assign("c", prev("b", 1))],
         )],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.stats.scc_count, 1);
     assert_eq!(result.sccs[0].signal_indices.len(), 3);
 }
@@ -347,7 +353,7 @@ fn singleton_without_self_loop_excluded() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("b", signal_expr("a"))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.stats.scc_count, 0);
 }
 
@@ -363,7 +369,7 @@ fn prev_plus_constant_classified_expansive() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 100)],
         vec![reflex("r1", &["g1"], vec![assign("counter", add(prev("counter", 1), int_lit(1)))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.sccs.len(), 1);
     assert_eq!(result.sccs[0].kind, width::types::SccKind::Expansive);
     assert_eq!(result.stats.expansive_count, 1);
@@ -380,7 +386,7 @@ fn pure_prev_chain_classified_nonexpansive() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("a", prev("b", 1)), assign("b", prev("a", 1))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.sccs.len(), 1);
     assert_eq!(result.sccs[0].kind, width::types::SccKind::Nonexpansive);
     assert_eq!(result.stats.nonexpansive_count, 1);
@@ -398,7 +404,7 @@ fn and_in_cycle_classified_nonexpansive() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("x", and_expr(prev("x", 1), signal_expr("mask")))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.sccs.len(), 1);
     assert_eq!(result.sccs[0].kind, width::types::SccKind::Nonexpansive);
 }
@@ -415,7 +421,7 @@ fn counter_with_explicit_annotation_resolves() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 255)],
         vec![reflex("r1", &["g1"], vec![assign("counter", add(prev("counter", 1), int_lit(1)))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     // Should resolve to u8 from the explicit annotation.
     let scc = &result.sccs[0];
     let solve = &result.scc_solves[0].1;
@@ -433,7 +439,7 @@ fn counter_with_guard_bound_infers_width() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 255)],
         vec![reflex("r1", &["g1"], vec![assign("counter", add(prev("counter", 1), int_lit(1)))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     // Explicit annotation takes priority — u8.
     // Phase 4a flags truncation (u9 -> u8), but SCC solver is clean.
     assert_eq!(result.scc_solves[0].1.widths[0], 8);
@@ -450,7 +456,7 @@ fn counter_with_large_guard_bound_infers_u10() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1000)],
         vec![reflex("r1", &["g1"], vec![assign("counter", add(prev("counter", 1), int_lit(1)))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.scc_solves[0].1.widths[0], 10);
     assert!(!result.has_errors());
 }
@@ -472,7 +478,7 @@ fn accumulator_plus_sensor_with_annotation() {
             vec![assign("accum", add(prev("accum", 1), signal_expr("sensor")))],
         )],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert!(!result.has_errors());
     // accum resolved from explicit annotation.
     assert!(result.scc_solves[0].1.widths[0] == 16);
@@ -488,7 +494,7 @@ fn expansive_scc_error_pinned_by_signal_name() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 0)],
         vec![reflex("r1", &["g1"], vec![assign("x", add(prev("x", 1), int_lit(1)))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert!(result.has_errors());
     let error_msgs: Vec<&str> = result
         .scc_diagnostics
@@ -518,7 +524,7 @@ fn two_signal_ring_preserves_width() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("a", prev("b", 1)), assign("b", prev("a", 1))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.sccs.len(), 1);
     assert_eq!(result.sccs[0].kind, width::types::SccKind::Nonexpansive);
     let solve = &result.scc_solves[0].1;
@@ -539,7 +545,7 @@ fn mixed_width_ring_takes_max() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("a", prev("b", 1)), assign("b", prev("a", 1))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     let solve = &result.scc_solves[0].1;
     // Floyd-Warshall converges both to max(8, 16) = 16.
     assert_eq!(solve.widths[0], 16);
@@ -567,7 +573,7 @@ fn three_node_ring_buffer_from_cement2() {
             ],
         )],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.sccs.len(), 1);
     assert_eq!(result.sccs[0].kind, width::types::SccKind::Nonexpansive);
     let solve = &result.scc_solves[0].1;
@@ -586,7 +592,7 @@ fn nonexpansive_no_anchor_produces_error() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("a", prev("b", 1)), assign("b", prev("a", 1))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert!(result.has_errors());
     assert!(
         result.scc_diagnostics.iter().any(|d| d.message.contains("no width anchor")),
@@ -610,7 +616,7 @@ fn acyclic_solution_verified_minimal() {
         vec![guard("g1", signal_expr("a"), 1)],
         vec![reflex("r1", &["g1"], vec![assign("b", signal_expr("a"))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert!(result.verification.is_minimal);
     assert!(result.verification.diagnostics.is_empty());
 }
@@ -626,14 +632,14 @@ fn nonexpansive_solution_verified_minimal() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("a", prev("b", 1)), assign("b", prev("a", 1))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert!(result.verification.is_minimal);
 }
 
 #[test]
 fn empty_program_trivially_minimal() {
     let prog = program("empty", vec![], vec![], vec![]);
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert!(result.verification.is_minimal);
     assert_eq!(result.stats.scc_count, 0);
 }
@@ -663,7 +669,7 @@ fn program_with_mixed_acyclic_and_cyclic() {
             ],
         )],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.stats.scc_count, 1);
     assert_eq!(result.stats.expansive_count, 1);
     assert!(!result.has_errors());
@@ -684,7 +690,7 @@ fn phase3_then_phase4b_integration() {
         )],
     );
     // First simplify, then run SCC analysis.
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.stats.scc_count, 1);
     assert!(!result.has_errors());
 }
@@ -721,7 +727,7 @@ fn program_with_both_expansive_and_nonexpansive_sccs() {
             ],
         )],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     assert_eq!(result.stats.scc_count, 2);
     assert_eq!(result.stats.expansive_count, 1);
     assert_eq!(result.stats.nonexpansive_count, 1);
@@ -739,7 +745,7 @@ fn scc_report_format_includes_signal_names() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 1)],
         vec![reflex("r1", &["g1"], vec![assign("a", prev("b", 1)), assign("b", prev("a", 1))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     let signal_names: Vec<String> = prog.module.signals.iter().map(|s| s.name.clone()).collect();
     let report = width::display::format_scc_report(&result.sccs, &signal_names);
     assert!(report.contains("SCCs detected: 1"));
@@ -754,7 +760,7 @@ fn stats_include_scc_fields() {
         vec![guard("g1", Expr::Literal(LiteralValue::Bool(true)), 10)],
         vec![reflex("r1", &["g1"], vec![assign("x", add(prev("x", 1), int_lit(1)))])],
     );
-    let result = width::infer_program_widths_with_scc(&prog);
+    let result = width::infer_program_widths_with_scc(&prog, None);
     let formatted = width::display::format_stats(&result.stats);
     assert!(formatted.contains("sccs=1"));
     assert!(formatted.contains("expansive=1"));

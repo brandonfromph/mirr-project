@@ -27,6 +27,7 @@ use crate::temporal::low_level_ir::{CompiledGuard, ConditionKind, TemporalNetlis
 
 use super::rspu_isa::*;
 use super::rspu_regalloc::{allocate_registers, RegAllocResult};
+use crate::emit::rspu_tagged::tag_from_signal_type;
 
 /// Emit an R-SPU program from pipeline results.
 ///
@@ -53,6 +54,20 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
             instrs.push(RspuInstruction::LoadInput { dst: r, port: port_idx });
             port_idx += 1;
         }
+    }
+
+    // Step 3.5: Emit TAG_LOAD for each signal (type tag metadata).
+    for sig in &module.signals {
+        let r = regs.reg(&sig.name);
+        let tag = tag_from_signal_type(&sig.ty.core);
+        // Encode TypeTag as u8 for the instruction field.
+        let tag_byte = match tag {
+            crate::emit::rspu_tagged::TypeTag::Uninitialized => 0u8,
+            crate::emit::rspu_tagged::TypeTag::Bool => 1u8,
+            crate::emit::rspu_tagged::TypeTag::Unsigned { width } => width,
+            crate::emit::rspu_tagged::TypeTag::Signed { width } => width.saturating_add(128),
+        };
+        instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
     }
 
     // Step 4: Temporal guard emission.

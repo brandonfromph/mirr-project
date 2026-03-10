@@ -12,7 +12,6 @@
 use super::scc_solver::SccSolveResult;
 use super::types::{SccInfo, WidthDiag, MAX_SIGNALS};
 use crate::ast::program::SignalDecl;
-use crate::ast::types::SignalType;
 
 /// Result of the Unique Least Solution verification.
 pub struct VerifyResult {
@@ -58,11 +57,7 @@ pub fn verify_least_solution(
                 None => continue,
             };
 
-            let (declared, sig_signed) = match sig.ty {
-                SignalType::Bool => (1u32, false),
-                SignalType::Unsigned(w) => (w, false),
-                SignalType::Signed(w) => (w, true),
-            };
+            let (declared, sig_signed) = sig.ty.signal_type().width_and_signed();
 
             // The solution width should equal the declared width for
             // signals with explicit annotations. If the solved width

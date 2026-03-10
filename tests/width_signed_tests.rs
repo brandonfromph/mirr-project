@@ -15,14 +15,22 @@ extern crate nasa_rust_project;
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
+use nasa_rust_project::ast::types::{
+    BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
+};
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 use nasa_rust_project::width;
 
 // ───────────────────── helpers ─────────────────────
 
 fn sig(name: &str, ty: SignalType) -> SignalDecl {
-    SignalDecl { name: name.to_string(), kind: SignalKind::Internal, ty, origin: None, span: None }
+    SignalDecl {
+        name: name.to_string(),
+        kind: SignalKind::Internal,
+        ty: ExtendedType::from_core(ty),
+        origin: None,
+        span: None,
+    }
 }
 
 fn signal(name: &str) -> Expr {
@@ -267,6 +275,8 @@ fn pipeline_result_has_type_map() {
         width: true,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_some(), "type_map should be Some when typecheck is enabled");
@@ -295,6 +305,8 @@ fn pipeline_result_no_type_map_when_skipped() {
         width: false,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_none(), "type_map should be None when typecheck is disabled");
@@ -326,6 +338,8 @@ fn signed_signal_e2e_pipeline() {
         width: true,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_some());
@@ -357,6 +371,8 @@ fn negate_unsigned_e2e_pipeline() {
         width: true,
         temporal: false,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(!result.has_width_errors(), "negating u8 into i16 should not produce width errors");

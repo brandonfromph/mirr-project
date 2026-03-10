@@ -109,7 +109,7 @@ fn emit_signal_nodes(module: &Module, out: &mut String) {
             SignalKind::Output => "house",
             SignalKind::Internal => "ellipse",
         };
-        let width_label = match s.ty {
+        let width_label = match s.ty.signal_type() {
             SignalType::Bool => "bool".to_string(),
             SignalType::Unsigned(w) => format!("u{w}"),
             SignalType::Signed(w) => format!("i{w}"),

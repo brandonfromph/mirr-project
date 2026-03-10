@@ -124,7 +124,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
     for s in &module.signals {
         if s.kind == SignalKind::Input || s.kind == SignalKind::Output {
             let dir = "input ";
-            let type_str = sv_type(&s.ty);
+            let type_str = sv_type(&s.ty.signal_type());
             ports.push(format!("  {dir} {type_str} {}", s.name));
         }
     }
@@ -197,7 +197,7 @@ fn emit_module_decl(module: &Module, out: &mut String) {
                 SignalKind::Output => "output",
                 SignalKind::Internal => "internal",
             };
-            let type_str = sv_type(&s.ty);
+            let type_str = sv_type(&s.ty.signal_type());
             ports.push(format!("  {dir} {type_str} {}", s.name));
         }
     }
@@ -221,7 +221,7 @@ fn emit_internal_signals(module: &Module, out: &mut String) {
             if let Some(ref origin) = s.origin {
                 out.push_str(&format!("  // Pattern: {origin}\n"));
             }
-            let type_str = sv_type(&s.ty);
+            let type_str = sv_type(&s.ty.signal_type());
             out.push_str(&format!("  {type_str} {};\n", s.name));
         }
         out.push('\n');
@@ -603,10 +603,7 @@ pub fn emit_synchronizer_chains(
             continue;
         }
 
-        let width = match &s.ty {
-            SignalType::Bool => 1u32,
-            SignalType::Unsigned(w) | SignalType::Signed(w) => *w,
-        };
+        let width = s.ty.signal_type().width();
         let sync_name = format!("{}_s", s.name);
         let sync_reg = format!("{}_sync", s.name);
 
@@ -634,7 +631,7 @@ pub fn emit_synchronizer_chains(
         out.push_str("  end\n");
 
         // Output: synchronized signal is the last stage.
-        let type_str = sv_type(&s.ty);
+        let type_str = sv_type(&s.ty.signal_type());
         out.push_str(&format!(
             "  {} {} = {}[{}:0];\n\n",
             type_str,

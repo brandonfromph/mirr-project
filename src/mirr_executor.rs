@@ -238,7 +238,7 @@ fn init_pools_for_program(
     // SAFETY: clear() on freshly constructed map — see MED-02 note above.
     p.persistent_env.clear();
     for s in &prog.module.signals {
-        match s.ty {
+        match s.ty.signal_type() {
             crate::ast::types::SignalType::Bool => {
                 p.persistent_env.insert(s.name.clone(), Value::Bool(false));
             }

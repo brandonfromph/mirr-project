@@ -12,8 +12,13 @@ pub mod fpga_scaffold;
 pub mod fpga_target;
 pub mod json_netlist;
 pub mod rspu;
+pub mod rspu_encoding;
+pub mod rspu_exceptions;
 pub mod rspu_isa;
 pub mod rspu_regalloc;
+pub mod rspu_sim;
+pub mod rspu_tagged;
+pub mod sexpr;
 pub mod testbench;
 pub mod verilog;
 

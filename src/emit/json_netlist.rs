@@ -132,8 +132,8 @@ pub fn build_netlist(result: &PipelineResult) -> JsonNetlist {
         .collect();
 
     JsonNetlist {
-        schema_version: "0.2.0".to_string(),
-        ir_version: "1.0".to_string(),
+        schema_version: "0.3.0".to_string(),
+        ir_version: crate::ast::types::IR_VERSION.to_string(),
         program,
         simplify_stats,
         width_stats,

@@ -243,9 +243,10 @@ fn main() {
         "testbench" => emit::testbench::emit_testbench(&result),
         "scaffold" => emit::fpga_scaffold::emit_constraints(&result, &fpga_target),
         "build-script" => emit::fpga_scaffold::emit_build_script(&result, &fpga_target),
+        "sexpr" | "s-expr" | "sexp" => emit::sexpr::emit_sexpr(&result),
         other => {
             eprintln!(
-                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, testbench, scaffold, or build-script."
+                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, testbench, scaffold, build-script, or sexpr."
             );
             process::exit(1);
         }
@@ -398,7 +399,7 @@ fn print_help() {
     println!();
     println!("Emission Options:");
     println!("  --emit FORMAT       Output format: dot, verilog, json, sva, firrtl, rspu,");
-    println!("                      testbench, scaffold, build-script (default: dot)");
+    println!("                      testbench, scaffold, build-script, sexpr (default: dot)");
     println!("  --output FILE, -o   Write output to FILE (default: stdout)");
     println!("  --target FAMILY     FPGA target: generic, xilinx-7, xilinx-us, intel-cyclone,");
     println!("                      lattice-ice40, lattice-ecp5, lattice-nexus (default: generic)");

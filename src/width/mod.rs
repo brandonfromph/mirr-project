@@ -19,7 +19,7 @@ pub mod verify;
 
 use crate::ast::expr::Expr;
 use crate::ast::program::{Assignment, SignalDecl};
-use crate::ast::types::SignalType;
+
 use types::{DiagSeverity, WidthDiag, WidthExpr, WidthStats};
 
 // ---------------------------------------------------------------------------
@@ -111,14 +111,10 @@ pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<
     let mut diags = result.diagnostics;
 
     // Look up target width and signedness.
-    let target_info = signals.iter().find(|s| s.name == assignment.target).map(|s| {
-        let (w, signed) = match s.ty {
-            SignalType::Bool => (1u32, false),
-            SignalType::Unsigned(w) => (w, false),
-            SignalType::Signed(w) => (w, true),
-        };
-        (w, signed)
-    });
+    let target_info = signals
+        .iter()
+        .find(|s| s.name == assignment.target)
+        .map(|s| s.ty.signal_type().width_and_signed());
 
     if let (Some(we), Some((tw, ts))) = (&result.expr, target_info) {
         let expr_w = we.width();
@@ -216,14 +212,10 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
             let mut diags = rhs_result.diagnostics;
 
             // Perform the truncation check inline.
-            let target_info = signals.iter().find(|s| s.name == a.target).map(|s| {
-                let (w, signed) = match s.ty {
-                    SignalType::Bool => (1u32, false),
-                    SignalType::Unsigned(w) => (w, false),
-                    SignalType::Signed(w) => (w, true),
-                };
-                (w, signed)
-            });
+            let target_info = signals
+                .iter()
+                .find(|s| s.name == a.target)
+                .map(|s| s.ty.signal_type().width_and_signed());
             if let (Some(we), Some((tw, ts))) = (&rhs_result.expr, target_info) {
                 diags.extend(solver::check_truncation(&a.target, tw, we.width(), ts));
             }
@@ -305,7 +297,10 @@ impl SccWidthResult {
 /// solve SCCs -> verify minimality.
 ///
 /// Bounded: all steps are individually bounded.
-pub fn infer_program_widths_with_scc(program: &crate::ast::MirrProgram) -> SccWidthResult {
+pub fn infer_program_widths_with_scc(
+    program: &crate::ast::MirrProgram,
+    _type_map: Option<&crate::typeck::TypeMap>,
+) -> SccWidthResult {
     // Step 1: Run Phase 4a (per-expression inference).
     let phase4a = infer_program_widths(program);
 

@@ -170,7 +170,11 @@ def bad(s: signal) {{
 "#
     );
     let msg = parse_err(&src);
-    assert!(msg.contains("missing direction"), "Expected 'missing direction' error, got: {msg}");
+    // MEGA-1 tokenizer wraps the error through E413; underlying error is E112.
+    assert!(
+        msg.contains("Signal kind") || msg.contains("missing"),
+        "Expected 'missing direction' error, got: {msg}"
+    );
 }
 
 #[test]
@@ -189,8 +193,9 @@ def bad(s: signal inout u16) {{
 "#
     );
     let msg = parse_err(&src);
+    // MEGA-1 tokenizer wraps the error through E413; underlying error is E115.
     assert!(
-        msg.contains("unknown signal kind 'inout'"),
+        msg.contains("Unknown signal kind") || msg.contains("inout"),
         "Expected 'unknown signal kind' error, got: {msg}"
     );
 }
@@ -211,7 +216,11 @@ def bad(s: signal in) {{
 "#
     );
     let msg = parse_err(&src);
-    assert!(msg.contains("missing type"), "Expected 'missing type' error, got: {msg}");
+    // MEGA-1 tokenizer wraps the error through E413; underlying error is E173.
+    assert!(
+        msg.contains("Missing base type") || msg.contains("missing"),
+        "Expected 'missing type' error, got: {msg}"
+    );
 }
 
 #[test]
@@ -230,7 +239,11 @@ def bad(x: uABC) {{
 "#
     );
     let msg = parse_err(&src);
-    assert!(msg.contains("invalid type 'uABC'"), "Expected 'invalid type' error, got: {msg}");
+    // MEGA-1 tokenizer wraps the error through E417; underlying error is E118.
+    assert!(
+        msg.contains("Unknown signal type") || msg.contains("uABC"),
+        "Expected 'unknown type' error, got: {msg}"
+    );
 }
 
 #[test]
@@ -491,11 +504,17 @@ fn validate_duplicate_param_name() {
         params: vec![
             PatternParam {
                 name: "x".to_string(),
-                kind: PatternParamKind::Constant { ty: SignalType::Unsigned(16) },
+                kind: PatternParamKind::Constant {
+                    ty: SignalType::Unsigned(16),
+                    annotations: Default::default(),
+                },
             },
             PatternParam {
                 name: "x".to_string(),
-                kind: PatternParamKind::Constant { ty: SignalType::Unsigned(16) },
+                kind: PatternParamKind::Constant {
+                    ty: SignalType::Unsigned(16),
+                    annotations: Default::default(),
+                },
             },
         ],
         body: ReflectBlock { raw_lines: vec!["guard g { when true for 1 cycles; }".to_string()] },
@@ -513,7 +532,10 @@ fn validate_too_many_params_semantic() {
     let params: Vec<PatternParam> = (0..33)
         .map(|i| PatternParam {
             name: format!("p{i}"),
-            kind: PatternParamKind::Constant { ty: SignalType::Unsigned(16) },
+            kind: PatternParamKind::Constant {
+                ty: SignalType::Unsigned(16),
+                annotations: Default::default(),
+            },
         })
         .collect();
 

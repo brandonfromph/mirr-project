@@ -48,6 +48,19 @@ paper/
 # Archived internal docs (not for public, preserved locally)
 docs/_archive/
 
+# Private campaign planning (never pushed)
+.campaigns-private.md
+
+# Campaign proposals — strategic plans, not public
+proposals/
+
+# Claude Code agent config and project intelligence
+.claude/
+CLAUDE.md
+
+# Agent skill definitions — internal workflow automation
+.github/skills/
+
 # LaTeX build artifacts
 *.pdf
 *.aux

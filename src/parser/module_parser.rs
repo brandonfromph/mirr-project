@@ -12,7 +12,7 @@ use super::skip_empty_and_comments;
 use crate::ast::pattern::PatternDef;
 use crate::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
 use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use crate::ast::types::{SignalKind, SignalType};
+use crate::ast::types::ExtendedType;
 use crate::error::MirrError;
 use crate::span::Span;
 
@@ -171,52 +171,19 @@ fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> 
     }
 
     let rest = rest.trim();
-    let mut parts = rest.split_whitespace();
 
-    let kind_str = parts
-        .next()
-        .ok_or_else(|| MirrError::new("[E112] Signal kind (in/out/internal) is missing."))?;
-    let ty_str =
-        parts.next().ok_or_else(|| MirrError::new("[E113] Signal type (bool/uN) is missing."))?;
+    // Delegate to the shared MEGA-1 tokenizer which handles:
+    //   <kind> [linear] [stateful|pure] <base_type> [where <refinement>] [@clock] [#phantom]
+    // Backward compatible: plain `<kind> <type>` produces default annotations.
+    let parsed = super::tokenize_signal_decl(rest).map_err(|e| e.with_span(span))?;
 
-    if parts.next().is_some() {
-        return Err(MirrError::new("[E114] Too many tokens in signal declaration."));
-    }
-
-    let kind = match kind_str {
-        "in" => SignalKind::Input,
-        "out" => SignalKind::Output,
-        "internal" => SignalKind::Internal,
-        other => {
-            return Err(MirrError::new(format!(
-                "[E115] Unknown signal kind: {other}. Expected 'in', 'out', or 'internal'."
-            )));
-        }
-    };
-
-    let ty = if ty_str == "bool" {
-        SignalType::Bool
-    } else if let Some(width_str) = ty_str.strip_prefix('u') {
-        let width: u32 = width_str.parse().map_err(|_| {
-            MirrError::new(format!(
-                "[E116] Invalid unsigned width in type '{ty_str}'. Expected something like 'u16'."
-            ))
-        })?;
-        SignalType::Unsigned(width)
-    } else if let Some(width_str) = ty_str.strip_prefix('i') {
-        let width: u32 = width_str.parse().map_err(|_| {
-            MirrError::new(format!(
-                "[E117] Invalid signed width in type '{ty_str}'. Expected something like 'i16'."
-            ))
-        })?;
-        SignalType::Signed(width)
-    } else {
-        return Err(MirrError::new(format!(
-            "[E118] Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'."
-        )));
-    };
-
-    Ok(SignalDecl { name: name.to_string(), kind, ty, origin: None, span })
+    Ok(SignalDecl {
+        name: name.to_string(),
+        kind: parsed.kind,
+        ty: ExtendedType::new(parsed.ty, parsed.annotations),
+        origin: None,
+        span,
+    })
 }
 
 fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {

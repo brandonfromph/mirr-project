@@ -5,7 +5,7 @@
 
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
+use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::parse_mirr;
 use nasa_rust_project::validate_module;
 
@@ -128,14 +128,14 @@ fn module_with_prev_in_guard(delay: u64) -> Module {
             SignalDecl {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(8),
+                ty: ExtendedType::from_core(SignalType::Unsigned(8)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
@@ -177,14 +177,14 @@ fn module_with_prev_in_reflex(delay: u64) -> Module {
             SignalDecl {
                 name: "x".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(8),
+                ty: ExtendedType::from_core(SignalType::Unsigned(8)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "y".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Unsigned(8),
+                ty: ExtendedType::from_core(SignalType::Unsigned(8)),
                 origin: None,
                 span: None,
             },
@@ -250,7 +250,7 @@ fn undeclared_signal_inside_prev_in_guard() {
         signals: vec![SignalDecl {
             name: "y".to_string(),
             kind: SignalKind::Output,
-            ty: SignalType::Bool,
+            ty: ExtendedType::from_core(SignalType::Bool),
             origin: None,
             span: None,
         }],
@@ -289,14 +289,14 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
             SignalDecl {
                 name: "a".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "b".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },

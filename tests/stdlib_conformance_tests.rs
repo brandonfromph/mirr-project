@@ -64,6 +64,7 @@ fn error_class(e: &MirrError) -> &'static str {
         MirrError::PatternError { .. } => "pattern",
         MirrError::TypeError { .. } => "type",
         MirrError::RspuError { .. } => "rspu",
+        MirrError::SExprError { .. } => "sexpr",
     }
 }
 

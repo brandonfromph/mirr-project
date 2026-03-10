@@ -12,7 +12,15 @@ use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 // ---------------------------------------------------------------------------
 
 fn rspu_config() -> PipelineConfig {
-    PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: true }
+    PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: true,
+        extended_typecheck: false,
+        simulate: false,
+    }
 }
 
 fn pipeline_ok(source: &str) -> PipelineResult {
@@ -25,7 +33,15 @@ fn pipeline_with_rspu(source: &str) -> RspuProgram {
 }
 
 fn temporal_config_no_rspu() -> PipelineConfig {
-    PipelineConfig { typecheck: true, simplify: true, width: true, temporal: true, rspu: false }
+    PipelineConfig {
+        typecheck: true,
+        simplify: true,
+        width: true,
+        temporal: true,
+        rspu: false,
+        extended_typecheck: false,
+        simulate: false,
+    }
 }
 
 /// Standard minimal module source (multi-line guard/reflex format).

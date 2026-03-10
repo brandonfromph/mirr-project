@@ -8,8 +8,16 @@
 //! and `proposals/003-TYPE-002-2026-03-08.md`.
 //!
 //! Error codes: E601–E607 (see `docs/error_codes.md`).
+//!
+//! ## MEGA-1 Extended Type System
+//!
+//! The `extended` submodule adds refinement types, linear types, effect types,
+//! clock domain qualifiers, phantom types, type-level naturals, dependent types,
+//! and session types. See `typeck::extended` for details. Error codes: E610–E625.
 
 #![forbid(unsafe_code)]
+
+pub mod extended;
 
 use std::collections::HashMap;
 
@@ -68,7 +76,7 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
     // Build signal type lookup table.
     let mut signals: HashMap<&str, SignalType> = HashMap::with_capacity(module.signals.len());
     for sig in &module.signals {
-        signals.insert(&sig.name, sig.ty);
+        signals.insert(&sig.name, sig.ty.signal_type());
     }
 
     let mut all_types: TypeMap = HashMap::new();

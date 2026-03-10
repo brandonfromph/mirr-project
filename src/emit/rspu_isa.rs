@@ -30,6 +30,15 @@ pub const MAX_GUARDS: usize = 64;
 /// Maximum instructions in a single R-SPU program.
 pub const MAX_INSTRUCTIONS: usize = 4096;
 
+/// Maximum cycle count for the ISA simulator.
+pub const MAX_SIM_CYCLES: u64 = 1_000_000;
+
+/// Maximum trap handlers in the exception table.
+pub const MAX_TRAP_HANDLERS: usize = 16;
+
+/// Maximum nested exception depth.
+pub const MAX_EXCEPTION_DEPTH: usize = 8;
+
 // ---------------------------------------------------------------------------
 // Register and port identifiers
 // ---------------------------------------------------------------------------
@@ -186,6 +195,34 @@ pub enum RspuInstruction {
     AssertAlways { cond: RegId, property_id: PropertyId },
     /// Assert that cond is never true (verification register, no datapath).
     AssertNever { cond: RegId, property_id: PropertyId },
+
+    // -- Exception tier (MEGA-3) -----------------------------------------
+    /// Raise software trap with error code.
+    Trap { code: u8 },
+    /// Conditional trap: if cond register != 0, raise trap with code.
+    TrapIf { cond: RegId, code: u8 },
+    /// Graceful halt: quiesce and stop (recoverable).
+    Halt,
+
+    // -- Control tier (MEGA-3) -------------------------------------------
+    /// Switch between reflex and host execution modes.
+    ModeSwitch { mode: u8 },
+    /// No operation (pipeline alignment / padding).
+    Nop,
+    /// Memory/pipeline fence (ordering barrier).
+    Fence,
+
+    // -- Tagged tier (MEGA-3) --------------------------------------------
+    /// Set type tag on a register.
+    TagLoad { dst: RegId, tag: u8 },
+    /// Trap E708 if register's tag doesn't match expected.
+    TagCheck { src: RegId, expected: u8 },
+    /// Copy type tag from src register into dst as integer value.
+    TagRead { dst: RegId, src: RegId },
+
+    // -- Temporal extension (MEGA-3) -------------------------------------
+    /// Set deadline counter; trap E715 on expiry.
+    DeadlineSet { cycles: u32 },
 }
 
 impl RspuInstruction {
@@ -212,6 +249,16 @@ impl RspuInstruction {
             Self::EmergencyStop => "EMERGENCY_STOP",
             Self::AssertAlways { .. } => "ASSERT_ALWAYS",
             Self::AssertNever { .. } => "ASSERT_NEVER",
+            Self::Trap { .. } => "TRAP",
+            Self::TrapIf { .. } => "TRAP_IF",
+            Self::Halt => "HALT",
+            Self::ModeSwitch { .. } => "MODE_SWITCH",
+            Self::TagLoad { .. } => "TAG_LOAD",
+            Self::TagCheck { .. } => "TAG_CHECK",
+            Self::TagRead { .. } => "TAG_READ",
+            Self::Nop => "NOP",
+            Self::Fence => "FENCE",
+            Self::DeadlineSet { .. } => "DEADLINE_SET",
         }
     }
 }
@@ -328,6 +375,16 @@ fn format_instruction(instr: &RspuInstruction) -> String {
         RspuInstruction::AssertNever { cond, property_id } => {
             format!("ASSERT_NEVER R{cond}, #{property_id}")
         }
+        RspuInstruction::Trap { code } => format!("TRAP        {code}"),
+        RspuInstruction::TrapIf { cond, code } => format!("TRAP_IF     R{cond}, {code}"),
+        RspuInstruction::Halt => "HALT".to_string(),
+        RspuInstruction::ModeSwitch { mode } => format!("MODE_SWITCH {mode}"),
+        RspuInstruction::Nop => "NOP".to_string(),
+        RspuInstruction::Fence => "FENCE".to_string(),
+        RspuInstruction::TagLoad { dst, tag } => format!("TAG_LOAD    R{dst}, T{tag}"),
+        RspuInstruction::TagCheck { src, expected } => format!("TAG_CHECK   R{src}, T{expected}"),
+        RspuInstruction::TagRead { dst, src } => format!("TAG_READ    R{dst}, R{src}"),
+        RspuInstruction::DeadlineSet { cycles } => format!("DEADLINE_SET {cycles}"),
     }
 }
 

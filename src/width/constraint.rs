@@ -7,7 +7,7 @@
 #![forbid(unsafe_code)]
 
 use super::types::{FlatNode, Width, WidthDiag, MAX_FLAT_NODES};
-use crate::ast::types::{BinaryOp, SignalType, UnaryOp};
+use crate::ast::types::{BinaryOp, UnaryOp};
 use crate::ast::SignalDecl;
 use serde::Serialize;
 
@@ -247,10 +247,7 @@ fn generate_binary_constraint(
 fn lookup_signal_width(name: &str, signals: &[SignalDecl]) -> Option<u32> {
     for s in signals {
         if s.name == name {
-            return match s.ty {
-                SignalType::Bool => Some(1),
-                SignalType::Unsigned(w) | SignalType::Signed(w) => Some(w),
-            };
+            return Some(s.ty.signal_type().width());
         }
     }
     None

@@ -1,7 +1,7 @@
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
 use nasa_rust_project::ast::types::LiteralValue;
-use nasa_rust_project::ast::types::{SignalKind, SignalType};
+use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
 use nasa_rust_project::mirr_executor::drive_parsed_module_with_interpreter;
 
 #[test]
@@ -18,14 +18,14 @@ fn test_guard_counter_lifetime() {
                 SignalDecl {
                     name: "input_byte_is_digit".to_string(),
                     kind: SignalKind::Input,
-                    ty: SignalType::Bool,
+                    ty: ExtendedType::from_core(SignalType::Bool),
                     origin: None,
                     span: None,
                 },
                 SignalDecl {
                     name: "emit_push_integer".to_string(),
                     kind: SignalKind::Internal,
-                    ty: SignalType::Bool,
+                    ty: ExtendedType::from_core(SignalType::Bool),
                     origin: None,
                     span: None,
                 },

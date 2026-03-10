@@ -6,9 +6,10 @@ nav_order: 6
 # MIRR Type System Reference
 
 > **Status:** Active
+> **MEGA-1 Extended:** Refinement types, linear types, effect types, clock domains, phantom tags — all wired into the pipeline via `typecheck_extended()`. Opt-in with `PipelineConfig::extended_typecheck`.
 > **Module:** `src/typeck/mod.rs`
-> **Campaigns:** TYPE-001 through TYPE-005
-> **Error codes:** E601–E609
+> **Campaigns:** TYPE-001 through TYPE-005, FOUNDATION-001, MEGA-1, MEGA-1b
+> **Error codes:** E601–E625
 
 The MIRR type checker runs after semantic validation and before simplification.
 It enforces signedness consistency across all expressions: guard conditions,
@@ -166,6 +167,11 @@ let result = run_pipeline(source, config)?;
 let type_map = &result.type_map;  // Option<TypeMap>
 ```
 
+The TypeMap is now wired into the compilation pipeline and will be consumed
+by width inference in a future update (proposal 025, Section F). An extended
+type map (`ExtendedTypeMap`) is defined in `src/typeck/extended.rs` for
+MEGA-1 programs.
+
 ---
 
 ## Error Codes
@@ -198,6 +204,79 @@ let config = PipelineConfig {
 When enabled, the type checker runs between semantic validation (Step 4) and
 simplification (Step 6) in the pipeline. If disabled, downstream passes still
 function correctly but without signedness enforcement.
+
+---
+
+## MEGA-1 Type Annotations (Phase 7c -- Complete)
+
+> **Status:** Complete (all sections of proposals 025 + 027 delivered). Extended type checker wired into pipeline.
+> **Module:** `src/typeck/extended.rs` (2138 lines)
+> **Error codes:** E610--E625
+
+MIRR's type system is being extended with compile-time annotations that
+encode hardware constraints directly in the type language. All annotations
+are opt-in -- existing programs remain valid. Annotations generate zero
+additional hardware; they are checked at compile time only.
+
+### Type Annotation Syntax
+
+Signal declarations now support optional qualifier and constraint syntax:
+
+```mirr
+signal sensor: in linear u16 where 0..1023 @clk_fast #Sensor;
+```
+
+Grammar:
+```text
+<kind> [linear] [stateful|pure] <base_type> [where <refinement>] [@<clock>] [#<Tag>]
+```
+
+### Linearity
+
+`linear` signals must be consumed exactly once per clock cycle. This
+prevents the hardware anti-pattern of multiple drivers on a single net.
+
+### Effect Qualification
+
+- `stateful` -- signal carries state across clock cycles (implies register)
+- `pure` -- signal is purely combinational (no register inference)
+
+### Refinement Types
+
+`where` clauses constrain signal value ranges at compile time:
+- `where 0..1023` -- inclusive range
+- `where value < 1024` -- predicate form
+
+### Clock Domain Qualifiers
+
+`@domain` annotations tag signals with their clock domain. Cross-domain
+assignments without explicit synchronizers produce E618.
+
+### Phantom Tags
+
+`#Tag` annotations add zero-cost provenance tracking. Mismatched phantom
+tags in assignments produce E620.
+
+### Extended Error Codes (E610--E625)
+
+| Code | Rule | Description |
+|------|------|-------------|
+| E610 | REF-BOUND | Refinement lower bound exceeds upper bound |
+| E611 | REF-RANGE | Value outside refinement range at compile time |
+| E612 | REF-WIDTH | Refinement bound exceeds declared bit-width capacity |
+| E613 | LIN-UNUSED | Linear signal declared but never consumed |
+| E614 | LIN-DOUBLE | Linear signal consumed more than once |
+| E615 | LIN-ESCAPE | Linear signal escapes owning module |
+| E616 | EFF-PURE | Stateful operation in pure context |
+| E617 | EFF-MIX | Stateful signal used in pure expression |
+| E618 | CLK-CROSS | Clock domain crossing without synchronizer |
+| E619 | CLK-UNDEF | Reference to undeclared clock domain |
+| E620 | PHT-MISMATCH | Phantom tag mismatch |
+| E621 | PHT-UNDEF | Reference to undeclared phantom tag |
+| E622 | NAT-OVERFLOW | Type-level natural exceeds MAX_TYPE_NAT |
+| E623 | NAT-MISMATCH | Dimension mismatch |
+| E624 | DEP-MISMATCH | Dependent type parameter mismatch |
+| E625 | SES-PROTOCOL | Session type protocol violation |
 
 ---
 

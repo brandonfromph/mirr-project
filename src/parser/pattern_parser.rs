@@ -9,7 +9,8 @@ use super::skip_empty_and_comments;
 use crate::ast::pattern::{
     PatternArg, PatternCall, PatternDef, PatternParam, PatternParamKind, ReflectBlock,
 };
-use crate::ast::types::{SignalKind, SignalType};
+#[allow(unused_imports)] // MEGA-1: SignalKind used by type annotation infrastructure
+use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 
 /// Maximum number of parameters in a pattern definition.
@@ -28,6 +29,8 @@ const MAX_BRACE_DEPTH: usize = 16;
 const KEYWORDS: &[&str] = &[
     "signal", "guard", "reflex", "property", "module", "def", "reflect", "when", "for", "on",
     "always", "never", "true", "false", "in", "out", "internal", "cycles", "bool", "and",
+    // MEGA-1 type annotation keywords:
+    "linear", "stateful", "pure", "where",
 ];
 
 // ---------------------------------------------------------------------------
@@ -192,6 +195,10 @@ fn parse_pattern_params(param_str: &str, name: &str) -> Result<Vec<PatternParam>
 }
 
 /// Parse a single parameter declaration like `sensor: signal in u16` or `low: u16`.
+///
+/// With MEGA-1 extensions, also handles:
+/// - `sensor: signal in linear u16 where 0..1023`
+/// - `low: u16 where 0..1023`
 fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, MirrError> {
     let (name_part, type_part) = param_str.split_once(':').ok_or_else(|| {
         pattern_err(format!("[E411] Pattern '{def_name}' parameter missing ':': {param_str}"))
@@ -209,68 +216,43 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
     // Check if it's a signal parameter (starts with "signal").
     if let Some(after_signal) = type_str.strip_prefix("signal") {
         let rest = after_signal.trim();
-        let mut tokens = rest.split_whitespace();
 
-        let kind_str = tokens.next().ok_or_else(|| {
+        // Delegate to the shared MEGA-1 tokenizer which handles:
+        //   <kind> [linear] [stateful|pure] <base_type> [where <refinement>] [@clock] [#phantom]
+        let parsed = crate::parser::tokenize_signal_decl(rest).map_err(|e| {
             pattern_err(format!(
-                "[E413] Pattern '{def_name}' signal parameter '{pname}' missing direction."
+                "[E413] Pattern '{def_name}' signal parameter '{pname}': {}",
+                e.message()
             ))
         })?;
 
-        let kind = match kind_str {
-            "in" => SignalKind::Input,
-            "out" => SignalKind::Output,
-            "internal" => SignalKind::Internal,
-            other => {
-                return Err(pattern_err(format!(
-                    "[E414] Pattern '{def_name}' parameter '{pname}': unknown signal kind '{other}'."
-                )));
-            }
-        };
-
-        let ty_str = tokens.next().ok_or_else(|| {
-            pattern_err(format!(
-                "[E415] Pattern '{def_name}' signal parameter '{pname}' missing type."
-            ))
-        })?;
-
-        let ty = parse_signal_type(ty_str, def_name, pname)?;
-
-        Ok(PatternParam { name: pname.to_string(), kind: PatternParamKind::Signal { kind, ty } })
+        Ok(PatternParam {
+            name: pname.to_string(),
+            kind: PatternParamKind::Signal {
+                kind: parsed.kind,
+                ty: parsed.ty,
+                annotations: parsed.annotations,
+            },
+        })
     } else if type_str == "pattern" {
         // Higher-order: pattern parameter.
         Ok(PatternParam { name: pname.to_string(), kind: PatternParamKind::Pattern })
     } else {
-        // Constant parameter.
-        let ty = parse_signal_type(type_str, def_name, pname)?;
-        Ok(PatternParam { name: pname.to_string(), kind: PatternParamKind::Constant { ty } })
-    }
-}
+        // Constant parameter — delegate to shared type parser.
+        // Handles: [qualifiers] <base_type> [where <refinement>] [@clock] [#phantom]
+        let (ty, annotations) =
+            crate::parser::parse_type_with_annotations(type_str).map_err(|e| {
+                pattern_err(format!(
+                    "[E417] Pattern '{def_name}' parameter '{pname}': {}",
+                    e.message()
+                ))
+            })?;
 
-/// Parse a type string like `bool`, `u16`, `u32`.
-fn parse_signal_type(ty_str: &str, def_name: &str, pname: &str) -> Result<SignalType, MirrError> {
-    if ty_str == "bool" {
-        return Ok(SignalType::Bool);
+        Ok(PatternParam {
+            name: pname.to_string(),
+            kind: PatternParamKind::Constant { ty, annotations },
+        })
     }
-    if let Some(width_str) = ty_str.strip_prefix('u') {
-        let width: u32 = width_str.parse().map_err(|_| {
-            pattern_err(format!(
-                "[E416] Pattern '{def_name}' parameter '{pname}': invalid type '{ty_str}'."
-            ))
-        })?;
-        return Ok(SignalType::Unsigned(width));
-    }
-    if let Some(width_str) = ty_str.strip_prefix('i') {
-        let width: u32 = width_str.parse().map_err(|_| {
-            pattern_err(format!(
-                "[E416] Pattern '{def_name}' parameter '{pname}': invalid type '{ty_str}'."
-            ))
-        })?;
-        return Ok(SignalType::Signed(width));
-    }
-    Err(pattern_err(format!(
-        "[E417] Pattern '{def_name}' parameter '{pname}': unknown type '{ty_str}'. Expected 'bool', 'uN', or 'iN'."
-    )))
 }
 
 /// Collect the raw lines of a reflect body (between opening and closing braces).

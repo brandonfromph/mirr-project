@@ -174,15 +174,21 @@ def all_kinds(
     assert_eq!(params.len(), 5);
     assert!(matches!(
         params[0].kind,
-        PatternParamKind::Signal { kind: SignalKind::Input, ty: SignalType::Unsigned(16) }
+        PatternParamKind::Signal { kind: SignalKind::Input, ty: SignalType::Unsigned(16), .. }
     ));
     assert!(matches!(
         params[1].kind,
-        PatternParamKind::Signal { kind: SignalKind::Output, ty: SignalType::Bool }
+        PatternParamKind::Signal { kind: SignalKind::Output, ty: SignalType::Bool, .. }
     ));
-    assert!(matches!(params[2].kind, PatternParamKind::Constant { ty: SignalType::Unsigned(16) }));
-    assert!(matches!(params[3].kind, PatternParamKind::Constant { ty: SignalType::Unsigned(32) }));
-    assert!(matches!(params[4].kind, PatternParamKind::Constant { ty: SignalType::Bool }));
+    assert!(matches!(
+        params[2].kind,
+        PatternParamKind::Constant { ty: SignalType::Unsigned(16), .. }
+    ));
+    assert!(matches!(
+        params[3].kind,
+        PatternParamKind::Constant { ty: SignalType::Unsigned(32), .. }
+    ));
+    assert!(matches!(params[4].kind, PatternParamKind::Constant { ty: SignalType::Bool, .. }));
 }
 
 #[test]

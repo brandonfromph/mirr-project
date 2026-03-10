@@ -80,10 +80,12 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 ## Phase 0 – Foundation (Completed)
 
 {: .tip }
-> Phases 0–4, 6, 7a, 7b complete. Phase 5 partial. Phase 7c+ not started.
-> The compiler is operational with 961 passing tests, zero unsafe code,
+> Phases 0--4, 6, 7a, 7b, 7c complete. Phase 5 partial.
+> The compiler is operational with ~1157 passing tests, zero unsafe code,
 > and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
 > Formal proofs: 27 Rocq theorems (14 fully mechanized, 13 axiomatized).
+> Code metrics: 22,315 source lines + 18,200 test lines = 40,515 total across 127 files.
+> Error codes: 162 unique codes (E100--E705).
 
 - **Goal:** Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.
 - **Tasks:**
@@ -257,7 +259,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Emit SystemVerilog RTL, JSON netlist, and DOT graph from the unified pipeline.
   - Single driver binary `mirr-compile` with `--emit verilog|dot|json` flags.
   - Bootstrap runner (`mirr-parse`) with parity checks against the unified pipeline.
-  - 961 tests passing, zero clippy warnings, zero unsafe code.
+  - 1041 tests passing, zero clippy warnings, zero unsafe code.
 
 **Result artifact:** Unified driver binary `mirr-compile` that performs a full compile-analyze run with multiple output formats.
 
@@ -295,61 +297,229 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Bounded expansion: `MAX_EXPANSION_DEPTH=4`, `MAX_EXPANDED_ITEMS=256`, `MAX_PARAMS=32`, `MAX_ARGS=32`, `MAX_REFLECT_LINES=512`, `MAX_BRACE_DEPTH=16`.
   - Pipeline ordering: parse → `validate_pattern_defs` → `expand_patterns` → validate_module → simplify → width → temporal → emit.
   - New modules: `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs`.
-  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **961 total tests, zero clippy warnings.**
+  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **1041 total tests, zero clippy warnings.**
 
 **Result artifact:** Reusable pattern definitions that expand at compile time into validated, origin-tagged hardware structures.
 
 ---
 
-## Phase 7c+ – Myth-Inspired Language & Formal Verification (Not Started)
+## Phase 7c — Advanced Type System (Complete)
 
-- **Goal:** Evolve the MIRR DSL into a highly expressive language with formal correctness guarantees — and fully establish MIRR's third role as a Runtime Instruction Language the fabricated R-SPU chip understands natively.
+- **Goal:** Extend MIRR's strict static type system with expressive type-level features that encode hardware constraints directly in the type language, enabling the compiler to reject physically invalid designs before synthesis.
 
 - **Scope:**
-  - **Advanced Type System:** dependent types, linear types, effect systems. Extends Strict Static Typing from Phase 1 — no implicit casting, every bit-width explicit, every `zext` visible.
-  - **Higher-Order Functions:** function composition and higher-order constructs for complex signal processing.
-  - **Metaprogramming:** template system and compile-time code generation for hardware specialization.
-  - **Formal Verification in Rocq:** implement width inference proofs in Rocq (formerly Coq) interactive theorem prover, matching the FIRWINE approach (Wang et al. 2026). Auto-extract verified executable from proofs. Formally proven compiler correctness — eliminates compiler-induced bugs at the mathematical level.
-  - **Hardware Synthesis:** generate optimized Verilog/VHDL/SystemVerilog from high-level specifications.
-  - **Performance Modeling:** predict timing, power, and area characteristics before synthesis.
-  - **Runtime Instruction Language:** same MIRR language used to write software that runs on the fabricated R-SPU natively. Seamless continuum from design-time specification to runtime operation.
+  - Dependent types for encoding hardware constraints (e.g., FIFO depth parameterized by pipeline stage count).
+  - Linear types for resource tracking: enforce one-writer, one-reader signal semantics at the type level, preventing accidental multi-driver nets.
+  - Refinement types with compile-time range checking (e.g., `u8{0..=200}` for physiological sensor bounds).
+  - Effect system distinguishing pure combinational logic from stateful sequential logic — prevents accidental register inference in combinational contexts.
+  - Type-level natural numbers for dimension-safe signal arrays and bus widths, eliminating width mismatch classes that FIRWINE currently catches at constraint-solving time.
+  - Substructural type qualifiers for clock domain crossing safety — signals tagged with their clock domain cannot be mixed without explicit synchronizer instantiation.
+  - Phantom types for unit-of-measure tracking (voltage, current, temperature) through signal processing chains.
+  - Extended Rocq proofs covering type system soundness: progress and preservation theorems for the core type language.
+  - Integration with Phase 4's FIRWINE solver: refinement type bounds feed directly into width constraint generation.
+  - Backward compatibility layer: existing MIRR programs without advanced type annotations remain valid (all new features opt-in).
 
-**Result artifact:** Production-grade compiler for "Million Dollar Labs" style rapid prototyping of safety-critical embedded systems.
+**Campaign 025 progress (FOUNDATION-001 + MEGA-1, Phase A--C):**
+- Parser-level type annotations: `Linearity`, `EffectQualifier`, `Refinement`, `TypeAnnotations` in `src/ast/types.rs`.
+- Token-stream signal parser: `tokenize_signal_decl()` in `src/parser/mod.rs` handling `linear`, `stateful`, `pure`, `where`, `@clock`, `#Tag` syntax.
+- Extended type checker: `src/typeck/extended.rs` (2138 lines) implementing refinement bounds, linear tracking, effect qualification, clock domain verification, phantom tags, session types. Error codes E610--E625.
+- Parser error codes E170--E183 for type annotation diagnostics.
+- Sections D--H completed by campaign MEGA-1b (proposal 027). Extended type checker wired into pipeline. Phase 7c closed.
+
+**Result artifact:** Type checker module (`src/typeck/`) extended with dependent, linear, and refinement type support, with Rocq-mechanized soundness proofs in `proofs/types/`.
 
 ---
 
-## Phase 8 – R-SPU Architecture Design & RTL Implementation (Not Started)
+### Phase 7d — S-Expression IR (MEGA-2)
 
-- **Goal:** Design and implement the Reflexive Processing Unit (R-SPU) hardware architecture.
-- **Scope:**
-  - **R-SPU Core Design:** RTL specification for the R-SPU processor core with reflexive capabilities.
-  - **FPGA Fabric Partitioning (Critical Architectural Constraint):** Static Shell (MAPE-K controller, Knowledge Base, LTL Checker) is NEVER reconfigured. Reconfigurable Tiles receive partial bitstreams from DPR Controller. Static Shell must remain stable for the system to maintain safety guarantees during dynamic reconfiguration.
-  - **Memory Architecture:** specialized memory hierarchies for temporal signal processing.
-  - **I/O Subsystem:** adaptive I/O interfaces for real-time sensor data.
-  - **Reconfiguration Engine:** DPR Controller manages partial bitstream loading into Reconfigurable Tiles. Cement2 ensures temporal synchrony during tile transitions.
-  - **Safety Mechanisms:** hardware fault detection, error correction, fail-safe modes. Safety Clamps (Critical Override) in static logic for immediate single-cycle hazard response. DPR security patterns (Sunkavilli et al. 2022) for FPGA design obfuscation.
-  - **LTL Assertion Layer:** hardware-accelerated LTL Checker evaluating safety invariants within each clock cycle. Intentionally higher silicon cost than AHL — necessary trade-off for clinical integrity. Standard methods protect the clock; the R-SPU's LTL layer protects the application.
-  - **Power Management:** dynamic voltage/frequency scaling for energy efficiency.
-
-**Result artifact:** Complete RTL implementation of the R-SPU processor, ready for FPGA synthesis and ASIC design.
+- **Status:** Complete
+- **Proposal:** 026-MEGA2-LISP-CORE-2026-03-10
+- **New module:** `src/sexpr/` (8 files, ~2,300 lines)
+- **New emit backend:** `--emit sexpr` (S-expression output)
+- **Error codes:** E800–E815 (S-expression errors)
+- **Tests:** ~120 new tests across 3 test files
+- **Key feature:** Bidirectional AST ↔ S-expression conversion with round-trip invariant
 
 ---
 
-## Phase 9 – R-SPU Fabric & Multi-Core Integration (Not Started)
+## Phase 7d — Metaprogramming & Code Generation (Complete)
+
+- **Goal:** Provide structured compile-time program transformation capabilities, extending Phase 7b's `def`/`reflect` pattern system into a full metaprogramming framework for parametric hardware generation.
+
+- **Scope:**
+  - Structured intermediate representation for compile-time program transformation — typed AST manipulation rather than text substitution.
+  - Hygienic macro system extending the `def`/`reflect` pattern system from Phase 7b, with guaranteed name hygiene across expansion boundaries.
+  - Reader extensions for domain-specific notations: timing constraint literals (`50ns`, `1.2GHz`), physical unit annotations, and signal range specifications.
+  - Compile-time evaluation engine for template instantiation with bounded execution (NASA P10 compliant: no unbounded recursion, configurable `MAX_EVAL_STEPS`).
+  - Parametric module generation: N-way Triple Modular Redundancy (TMR), configurable pipeline depths, variable-width crossbar switches — all from single parameterized definitions.
+  - Compile-time assertion system: `static_assert` for validating parameter constraints before expansion (e.g., TMR voter width must match data path width).
+  - Introspection API: patterns can query signal properties (width, direction, clock domain) of their arguments at expansion time.
+  - Code generation audit trail: every generated construct carries provenance metadata linking back to its macro definition and call site (extends Phase 7b's origin tagging).
+  - Integration with Phase 7c type system: macro parameters carry type constraints, expansion is type-checked before and after.
+  - Bounded expansion guarantees inherited from Phase 7b: `MAX_EXPANSION_DEPTH`, `MAX_EXPANDED_ITEMS` enforced across all metaprogramming constructs.
+
+**Result artifact:** Extended pattern expansion engine (`src/expand/`) with hygienic macros, compile-time evaluation, and parametric module generation. CLI flag `--expand-only` for inspecting expanded output before compilation.
+
+---
+
+## Phase 7e — R-SPU Instruction Set Architecture (Complete)
+
+- **Goal:** Define the formal Instruction Set Architecture (ISA) for the R-SPU execution model, establishing MIRR as the native instruction language that compiles to R-SPU microcode.
+
+- **Scope:**
+  - Formal ISA specification document with precise encoding formats, instruction semantics, and operational modes.
+  - MIRR as native instruction language: compile MIRR behavioral descriptions directly to R-SPU microcode sequences.
+  - Tagged-word architecture: every data word carries type metadata and provenance tags in hardware, enabling runtime type safety without software overhead.
+  - Hardware type dispatch: instruction decoder inspects type tags for zero-overhead polymorphic operation selection (e.g., fixed-point vs. integer arithmetic resolved by tag, not by opcode).
+  - Native temporal instruction support: `DELAY`, `GUARD_CHECK`, `PROPERTY_EVAL` as first-class ISA operations with dedicated execution units.
+  - Microcode generation from MIRR behavioral descriptions: the compiler emits microcode sequences that the R-SPU control unit executes directly.
+  - Dual-mode execution: deterministic reflex mode (cycle-accurate, bounded latency) and cognitive host mode (interrupt-driven, variable latency) selectable per instruction stream.
+  - Register file design: split register banks for temporal state (shift register shadows), combinational intermediates, and persistent configuration.
+  - Exception model: hardware traps for type tag violations, temporal deadline misses, and safety property failures — all routed to the MAPE-K Analyze stage.
+  - ISA simulation model in Rust: cycle-accurate software simulator for validating ISA semantics before RTL implementation in Phase 8.
+  - Instruction encoding density analysis: minimize code size for the on-chip instruction memory budget.
+
+**Result artifact:** Formal ISA specification (`docs/rspu_isa_spec.md`), Rust-based cycle-accurate ISA simulator (`src/emit/rspu_sim.rs`), and microcode assembler integrated into `mirr-compile --emit rspu`.
+
+**Delivered by MEGA-3 (2026-03-10):**
+  - Binary encoding: 32-bit fixed-width instruction words in 4 formats (R-type, I-type, G-type, S-type).
+  - Tagged-word register file: 256 registers with 4-bit type tags (`Bool`, `Unsigned`, `Signed`, `Uninitialized`) and 4-bit provenance tracking.
+  - Exception model with dual-mode execution: bounded trap depth (`MAX_EXCEPTION_DEPTH = 8`), handler table (`MAX_TRAP_HANDLERS = 16`), reflex-mode fail-safe (unhandled exception triggers `EMERGENCY_STOP`), host-mode trap-to-software.
+  - Cycle-accurate ISA simulator (`src/emit/rspu_sim.rs`) with bounded execution (`MAX_SIM_CYCLES`).
+  - ISA extended from 20 to 30 instructions: `TRAP`, `TRAP_IF`, `HALT`, `MODE_SWITCH`, `NOP`, `FENCE`, `TAG_LOAD`, `TAG_CHECK`, `TAG_READ`, `DEADLINE_SET`.
+  - Rocq formal proofs for encoding bijectivity and tagged-word invariants.
+  - Error codes E706–E715 activated for encoding, tagging, exceptions, simulation, and deadline enforcement.
+
+---
+
+## Phase 7f — Proof-Carrying Code Infrastructure (Not Started)
+
+- **Goal:** Implement a proof-carrying code framework where compiled R-SPU programs carry machine-checkable safety certificates alongside their executable code, enabling hardware-verified trust.
+
+- **Scope:**
+  - Proof-carrying code model: every compiled R-SPU binary includes a compact safety certificate attesting to specific verified properties.
+  - Certificate format design: compact proof witnesses checkable in bounded clock cycles by a hardware verification unit.
+  - Safety properties encoded in certificates: type safety (no tag violations), temporal safety (all deadlines met), width safety (no truncations), and resource safety (no multi-driver conflicts).
+  - Hardware proof verification unit specification: a dedicated on-chip module that validates certificates before permitting code execution on the R-SPU core.
+  - Integration with Rocq extraction: verified proof checkers extracted from Rocq proofs into synthesizable hardware descriptions.
+  - Total function enforcement: the MIRR compiler must prove termination for all R-SPU reflex-domain code — non-terminating programs are rejected at compile time.
+  - Termination analysis via structural recursion bounds and loop iteration limits (extends NASA P10 bounded-iteration requirement to a formal proof obligation).
+  - Certificate chaining: when modules compose, their certificates compose — system-level safety follows from component-level certificates.
+  - Revocation and versioning: certificates reference compiler version and proof context, enabling invalidation when compiler bugs are discovered.
+  - Bounded verification cost: certificate checking must complete within a configurable cycle budget (hard real-time requirement for safety-critical deployment).
+
+**Result artifact:** Certificate generation pass in the compiler (`src/certify/`), certificate format specification, and Rocq-extracted hardware proof checker RTL.
+
+---
+
+## Phase 7g — Symbolic Evaluation Engine (Not Started)
+
+- **Goal:** Build a hardware-acceleratable symbolic evaluation engine for runtime signal classification, constraint resolution, and logic optimization within the R-SPU execution model.
+
+- **Scope:**
+  - Hardware-accelerated pattern matching engine for classifying signal waveforms against known templates (e.g., QRS complex detection, sensor drift signatures).
+  - Constraint resolution engine for runtime sensor calibration: solve systems of inequalities derived from physical sensor models within bounded cycle budgets.
+  - Symbolic signal processing primitives: discrete differentiation, integration approximations, and moving-window statistics computed symbolically for precision analysis.
+  - Abstract interpretation passes realized as hardware acceleration targets: interval analysis, sign analysis, and range propagation for runtime signal characterization.
+  - Term rewriting engine for runtime logic optimization: dynamically simplify monitoring expressions as runtime knowledge narrows signal ranges.
+  - Bounded rewriting depth: all symbolic evaluation operations have configurable maximum step counts (NASA P10 compliance).
+  - Integration with Phase 3's SmaRTLy simplifier: the symbolic engine reuses algebraic simplification rules in a runtime context.
+  - Signal fingerprinting: compute compact signatures of signal behavior over configurable time windows for anomaly detection.
+  - Configurable precision modes: trade symbolic precision for evaluation speed based on current safety criticality level.
+  - Software simulation model in Rust before hardware realization: all symbolic primitives implemented and tested as software, then mapped to RTL in Phase 7h.
+
+**Result artifact:** Symbolic evaluation library (`src/symbolic/`) with Rust simulation model, hardware mapping annotations, and integration into the MAPE-K Analyze stage.
+
+---
+
+## Phase 7h — MAPE-K Hardware Realization (Not Started)
+
+- **Goal:** Port Phase 5's MAPE-K simulation harness to synthesizable RTL, creating a hardware-realized autonomic control loop with sub-microsecond response times.
+
+- **Scope:**
+  - Translate the Phase 5a Rust MAPE-K simulation model to synthesizable SystemVerilog RTL via the MIRR compilation pipeline.
+  - Hardware LTL checker with configurable property depth: evaluate temporal safety assertions within the current clock cycle using dedicated comparison and shift-register logic.
+  - On-chip knowledge base: pre-verified configuration library stored in on-chip SRAM or block RAM, indexed by fault signature for constant-time lookup.
+  - DPR controller with Cement2 temporal synchrony: manage partial bitstream loading into reconfigurable tiles without temporal discontinuity — no missed events during reconfiguration.
+  - Safety clamp integration: single-cycle hazard response implemented in the static shell — clamps engage independently of and prior to any DPR activity.
+  - Monitor stage hardware: shadow register chain with hardware pre-processing (threshold comparators, rate-of-change detectors) feeding the Analyze stage directly.
+  - Analyze stage hardware: LTL checker array with priority encoder for multi-property evaluation and fault classification.
+  - Plan stage hardware: lookup table indexed by fault classification, returning pre-verified bitstream identifiers and safety clamp configurations.
+  - Execute stage hardware: DPR sequencer with Cement2 guards ensuring reconfigurable tile transitions complete atomically with respect to the temporal domain.
+  - Formal verification of the hardware MAPE-K loop: Rocq proofs that the hardware realization preserves the safety properties validated in Phase 5's simulation.
+  - Area and timing budgets: LTL checker must meet target frequency with < 5% area overhead relative to the monitored design.
+
+**Result artifact:** Synthesizable MAPE-K RTL modules (`src/emit/mape_k_rtl.rs`), Yosys synthesis validation, and Rocq proofs of behavioral equivalence with the Phase 5 simulation model.
+
+---
+
+## Phase 7i — Verified Compilation Chain (Not Started)
+
+- **Goal:** Establish an end-to-end formally verified compilation chain from MIRR source code to gate-level netlist, providing mathematical proof that generated hardware preserves source-level semantics.
+
+- **Scope:**
+  - Rocq-verified compiler passes: extend Phase 4's width inference proofs to cover ALL compiler passes — parsing, type checking, simplification, temporal lowering, and code emission.
+  - CompCert-inspired verified compilation methodology: each compiler pass accompanied by a simulation relation proof showing output preserves input semantics.
+  - Proof that generated RTL preserves MIRR source semantics: formal simulation relation between MIRR behavioral specification and emitted SystemVerilog.
+  - End-to-end formal chain: source → typed IR → simplified IR → temporal IR → RTL → gate-level netlist, with verified preservation at each boundary.
+  - Verified constant folding: proof that compile-time evaluation produces the same result as runtime evaluation for all constant expressions.
+  - Verified width inference: extend existing Rocq proofs (27 theorems) to full coverage of the width constraint system including SCC cycles.
+  - Verified temporal lowering: proof that Cement2 shift-register synthesis preserves the temporal semantics of `delay(k)` guards.
+  - Verified simplification: proof that SmaRTLy-inspired algebraic rules preserve logical equivalence (all 33 rules individually proven).
+  - Certification artifacts for DO-178C Level A (aerospace) and IEC 62304 Class C (medical device software): compiler qualification data package derived from Rocq proofs.
+  - Regression proof infrastructure: CI pipeline runs Rocq proof checking on every commit, ensuring proofs remain valid as the compiler evolves.
+  - Proof maintenance tooling: when a compiler pass changes, identify which proofs are invalidated and require update.
+
+**Result artifact:** Fully verified compilation chain with Rocq proofs covering all passes (`proofs/` expanded to cover full pipeline), DO-178C/IEC 62304 certification data package, and CI-integrated proof regression suite.
+
+---
+
+## Phase 8a — R-SPU Core Architecture (Not Started)
+
+- **Goal:** Design and implement the R-SPU processor core with reflexive capabilities as synthesizable RTL.
+- **Scope:**
+  - Word architecture: 64-bit data words with type metadata tags for runtime type safety.
+  - Datapath design: ALU, FPU, dedicated evaluation units for signal processing.
+  - Register file with hardware type checking and provenance tracking.
+  - Memory subsystem with metadata support and bounded allocation.
+  - 5-stage pipeline with proof verification interlock stage.
+  - I/O subsystem: sensor interface with ADC/DAC integration points.
+  - Dual clock domains: deterministic reflex domain (synchronous) and cognitive host domain (asynchronous).
+  - Static shell (safety clamps, MAPE-K controller, LTL checker) — never reconfigured.
+  - Reconfigurable tiles receiving partial bitstreams via DPR controller.
+  - Mixed-signal interface layer for analog sensor front-end.
+  - Cement2 temporal primitives realized in silicon (shift registers, guard units).
+  - Exception handling: hardware-enforced safety modes on invariant violation.
+  - Power management: dynamic voltage/frequency scaling per tile.
+
+**Result artifact:** Complete RTL implementation of the R-SPU processor core, validated through Yosys synthesis and formal verification.
+
+---
+
+## Phase 8b — Multi-Core Fabric & Tape-Out Preparation (Not Started)
+
+- **Goal:** Scale R-SPU to multi-core fabric and prepare for physical implementation.
+- **Scope:**
+  - Network-on-Chip (NoC) interconnect for multi-R-SPU communication.
+  - Distributed knowledge base across cores with consistency protocol.
+  - Fault tolerance: redundancy and voting mechanisms for safety-critical multi-core.
+  - Consensus protocol for distributed property verification across cores.
+  - Thermal-aware placement with on-die sensor feedback.
+  - Host interface: PCIe/AXI bridge for host CPU to dispatch MIRR programs to R-SPU fabric.
+  - FPGA prototype: validated on Xilinx Ultrascale+ and/or Lattice Nexus development boards.
+  - Pre-silicon verification: gate-level simulation, formal equivalence checking, timing closure.
+  - Tape-out preparation: GDS-II generation, DRC (Design Rule Check), LVS (Layout vs Schematic).
+  - Power/performance/area (PPA) characterization from post-synthesis and post-layout data.
+
+**Result artifact:** Multi-core R-SPU fabric tape-out-ready design with FPGA prototype validation.
+
+---
+
+## Phase 9 — Production Deployment & Certification (Not Started)
 
 {: .note }
-> Phases 9 and 10 are forward-looking design goals. They describe the
+> Phase 9 is a forward-looking design goal. It describes the
 > intended trajectory of the project, not current capabilities.
-
-- **Goal:** Scale the R-SPU design to multi-core fabric architectures for complex, safety-critical embedded systems.
-- **Scope:**
-  - Interconnect Fabric, Distributed Memory, Load Balancing, Fault Tolerance, Thermal Management, Security.
-
-**Result artifact:** Multi-core R-SPU fabric, ready for deployment in safety-critical embedded systems.
-
----
-
-## Phase 10 – Production Deployment & Certification (Not Started)
 
 - **Goal:** Deploy R-SPU systems in real-world, safety-critical applications with full certification.
 - **Scope:**
@@ -445,8 +615,9 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 │   │   └── pattern_parser.rs      # Pattern definition and call parsing (Phase 7b)
 │   ├── validation/
 │   │   └── semantic.rs            # Includes property validation (Phase 7a)
-│   ├── typeck/                    # Type checker module (TYPE-001)
-│   │   └── mod.rs
+│   ├── typeck/                    # Type checker module (TYPE-001, MEGA-1)
+│   │   ├── mod.rs
+│   │   └── extended.rs            # MEGA-1 extended type checker (E610--E625)
 │   ├── emit/                      # Output emitters — 7 backends (Phase 6+)
 │   │   ├── mod.rs
 │   │   ├── verilog.rs             # SystemVerilog RTL + SVA assertions (Phase 7a)
@@ -484,7 +655,7 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 ├── src/expand/                    # Pattern expansion engine (Phase 7b)
 │   └── mod.rs                     # expand_patterns(), name prefixing, scoping validation
 ├── tests/
-│   ├── *_tests.rs                 # Unit/integration suites (961 tests)
+│   ├── *_tests.rs                 # Unit/integration suites (1041 tests)
 │   ├── property_tests.rs          # Property/SVA tests (Phase 7a)
 │   ├── pattern_tests.rs           # Pattern system tests (Phase 7b)
 │   ├── pattern_coverage_tests.rs  # Pattern coverage gap tests (Phase 7b)
@@ -525,6 +696,7 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 | DSP emission | `src/emit/dsp.rs` |
 | Testbench generation | `src/emit/testbench.rs` |
 | Type checking | `src/typeck/mod.rs` |
+| Type checking (extended) | `src/typeck/extended.rs` |
 | Unified pipeline | `src/pipeline.rs` |
 | Safety properties / SVA | `src/ast/property.rs`, `src/emit/verilog.rs` (SVA), `src/validation/semantic.rs` |
 | Pattern expansion | `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs` |

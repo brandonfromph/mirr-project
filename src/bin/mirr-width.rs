@@ -164,7 +164,7 @@ fn run_scc_mode(content: &str, show_stats: bool) {
     simplify_program(&mut program);
 
     // Run full Phase 4b SCC-based width inference.
-    let result = width::infer_program_widths_with_scc(&program);
+    let result = width::infer_program_widths_with_scc(&program, None);
 
     // Print Phase 4a summary.
     println!("MIRR Width Analysis (Phase 4b): {}", program.module.name);

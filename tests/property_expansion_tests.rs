@@ -5,7 +5,7 @@
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use nasa_rust_project::ast::property::{PropertyDecl, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType};
+use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::{run_pipeline, validate_module, PipelineConfig};
 
 // ---------------------------------------------------------------------------
@@ -36,14 +36,14 @@ fn module_with_properties(properties: Vec<PropertyDecl>) -> Module {
             SignalDecl {
                 name: "sensor".to_string(),
                 kind: SignalKind::Input,
-                ty: SignalType::Unsigned(16),
+                ty: ExtendedType::from_core(SignalType::Unsigned(16)),
                 origin: None,
                 span: None,
             },
             SignalDecl {
                 name: "alarm".to_string(),
                 kind: SignalKind::Output,
-                ty: SignalType::Bool,
+                ty: ExtendedType::from_core(SignalType::Bool),
                 origin: None,
                 span: None,
             },
@@ -221,6 +221,8 @@ module m {
         width: true,
         temporal: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     let result = run_pipeline(src, &config).expect("Pipeline should succeed");
     assert_eq!(result.program.module.properties.len(), 3);
@@ -243,6 +245,8 @@ fn existing_property_examples_compile() {
         width: true,
         temporal: true,
         rspu: false,
+        extended_typecheck: false,
+        simulate: false,
     };
     run_pipeline(&src, &config).expect("safety_property.mirr should compile");
 }
