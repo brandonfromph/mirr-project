@@ -81,6 +81,12 @@ violating the GPL already granted to the public.
 To cite MIRR, use [`CITATION.cff`](CITATION.cff) or cite the commit
 hash of the version you used.
 
+**Want this format for your own paper?** Fork the
+[LRA Template](https://github.com/brandonfromph/lra-template) — a
+reusable, GPL-3.0 scaffold for interactive research papers.
+See the [LRA-1.0 Specification](template/spec/LRA-1.0.md) for the
+formal standard.
+
 To verify claims locally:
 
 ```bash

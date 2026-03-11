@@ -1,0 +1,82 @@
+name: Deploy LRA to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate LRA structure
+        run: |
+          echo "Checking LRA-1.0 compliance..."
+          errors=0
+
+          # Required sections
+          for section in abstract claims references citation; do
+            if ! grep -q "id=\"$section\"" index.html; then
+              echo "FAIL: Missing required section: $section"
+              errors=$((errors + 1))
+            fi
+          done
+
+          # Required files
+          for file in index.html paper.css LICENSE CITATION.cff; do
+            if [ ! -f "$file" ]; then
+              echo "FAIL: Missing required file: $file"
+              errors=$((errors + 1))
+            fi
+          done
+
+          # GPL-3.0 license check
+          if ! grep -q "GNU GENERAL PUBLIC LICENSE" LICENSE; then
+            echo "FAIL: LICENSE does not contain GPL-3.0 text"
+            errors=$((errors + 1))
+          fi
+
+          # Noscript check (Silver tier)
+          if grep -q 'class="demo"' index.html; then
+            if ! grep -q '<noscript>' index.html; then
+              echo "WARN: Has demo sections but no <noscript> fallback (Silver requires this)"
+            fi
+          fi
+
+          if [ "$errors" -gt 0 ]; then
+            echo "::error::LRA validation failed with $errors error(s)"
+            exit 1
+          fi
+
+          echo "LRA-1.0 structure validation passed"
+
+      - name: Inject commit hash
+        run: |
+          HASH=$(git rev-parse --short HEAD)
+          sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

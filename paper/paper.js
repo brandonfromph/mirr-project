@@ -153,6 +153,7 @@ function compile() {
   const source = document.getElementById('mirr-source').value;
   const format = document.getElementById('emit-format').value;
   const output = document.getElementById('compiler-output');
+  output.setAttribute('aria-busy', 'true');
   const label  = document.getElementById('output-label');
 
   if (source.length > MAX_SOURCE_BYTES) {
@@ -176,6 +177,7 @@ function compile() {
     output.textContent = result.err;
     output.classList.add('error');
   }
+  output.setAttribute('aria-busy', 'false');
 }
 
 async function runBenchmarks() {
@@ -236,6 +238,15 @@ document.getElementById('emit-format')
 
 document.getElementById('bench-btn')
   .addEventListener('click', runBenchmarks);
+
+// Keyboard shortcut: Ctrl+Enter or Cmd+Enter to compile
+document.getElementById('mirr-source')
+  .addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      compile();
+    }
+  });
 
 // Boot
 initWasm();

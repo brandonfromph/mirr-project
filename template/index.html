@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[Paper Title]</title>
+  <link rel="stylesheet" href="paper.css">
+  <link rel="icon" href="data:,">
+  <meta name="description" content="<!-- REPLACE: one-sentence description of your paper -->">
+  <meta property="og:title" content="[Paper Title]">
+  <meta property="og:description" content="Living Research Artifact — interactive research paper with in-browser tool execution.">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary">
+</head>
+<body>
+
+<header>
+  <h1><!-- REPLACE: Your Paper Title --></h1>
+  <p class="meta">
+    <!-- REPLACE: Author Name --> · <!-- REPLACE: Month Year --> ·
+    Version <span class="tool-version">&mdash;</span> ·
+    <a href="LICENSE">GPL-3.0</a> ·
+    <a href="CITATION.cff">CITATION.cff</a>
+  </p>
+</header>
+
+<noscript>
+  <p>This paper includes interactive demos that require JavaScript.
+  All text, tables, and figures are readable without JavaScript.</p>
+</noscript>
+
+<main>
+
+<section id="abstract">
+  <h2>Abstract</h2>
+  <p><!-- REPLACE: Your abstract. State the problem, approach, and key results. --></p>
+  <p>
+    <strong>This paper is a Living Research Artifact.</strong> Every claim
+    below is verifiable in the browser &mdash; the tool runs as WebAssembly,
+    the source is in the repo, and the paper is GPL-3.0 licensed so it can
+    never be paywalled.
+  </p>
+</section>
+
+<section id="claims">
+  <h2>Claims</h2>
+  <p><!-- REPLACE: Brief intro to your claims --></p>
+  <ol>
+    <li id="claim-1">
+      <!-- REPLACE: First verifiable claim -->
+      <a href="#demo-1">[Evidence &darr;]</a>
+    </li>
+    <li id="claim-2">
+      <!-- REPLACE: Second claim (link to evidence if interactive) -->
+    </li>
+    <li id="claim-3">
+      <!-- REPLACE: Third claim -->
+    </li>
+  </ol>
+</section>
+
+<section id="demo-1" class="demo">
+  <h2>Demo &mdash; <!-- REPLACE: Tool Name -->
+    <span class="claim-refs">
+      (verifies <a href="#claim-1">claim 1</a>)
+    </span>
+  </h2>
+  <p><!-- REPLACE: Describe what this demo does and why it matters. --></p>
+
+  <div class="demo-controls">
+    <select id="example-select">
+      <option value="">-- load example --</option>
+      <option value="example1">Example 1</option>
+      <option value="example2">Example 2</option>
+    </select>
+    <button id="run-btn" aria-label="Run tool">Run</button>
+  </div>
+
+  <div class="split-pane">
+    <div class="pane">
+      <label>Input</label>
+      <textarea id="tool-input" rows="18" spellcheck="false"
+        placeholder="Enter input here..."></textarea>
+    </div>
+    <div class="pane">
+      <label>Output <span id="output-label"></span></label>
+      <pre id="tool-output" class="output" aria-live="polite" role="status">
+Tool loading...</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Body sections — add as many as your paper needs -->
+
+<section id="introduction">
+  <h2>1. Introduction</h2>
+  <p><!-- REPLACE: Motivate the problem. What gap does this work fill? --></p>
+  <p><!-- REPLACE: State your approach and why it is different. --></p>
+  <h3>Contributions</h3>
+  <ol>
+    <li><!-- REPLACE: Contribution 1 --></li>
+    <li><!-- REPLACE: Contribution 2 --></li>
+    <li><!-- REPLACE: Contribution 3 --></li>
+  </ol>
+</section>
+
+<section id="method">
+  <h2>2. Method</h2>
+  <p><!-- REPLACE: Describe your approach, algorithm, or system design. --></p>
+  <h3><!-- REPLACE: Subsection title --></h3>
+  <table class="data-table">
+    <thead>
+      <tr><th><!-- REPLACE --></th><th><!-- REPLACE --></th><th><!-- REPLACE --></th></tr>
+    </thead>
+    <tbody>
+      <tr><td><!-- REPLACE --></td><td><!-- REPLACE --></td><td><!-- REPLACE --></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="evaluation">
+  <h2>3. Evaluation</h2>
+  <p><!-- REPLACE: Describe your evaluation methodology. --></p>
+  <h3>Results</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Metric</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><!-- REPLACE --></td><td><!-- REPLACE --></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="limitations">
+  <h2>4. Limitations</h2>
+  <ul>
+    <li><!-- REPLACE: Limitation 1 --></li>
+    <li><!-- REPLACE: Limitation 2 --></li>
+  </ul>
+</section>
+
+<section id="references">
+  <h2>References</h2>
+  <ol class="references">
+    <li id="ref-1"><!-- REPLACE: First reference in academic citation format --></li>
+    <li id="ref-2"><!-- REPLACE: Second reference --></li>
+  </ol>
+</section>
+
+<section id="citation">
+  <h2>How to Cite This Work</h2>
+  <pre id="citation-block">
+<!-- REPLACE: Your BibTeX entry -->
+@software{your_project,
+  title  = {Your Paper Title},
+  author = {Your Name},
+  year   = {2026},
+  url    = {https://github.com/you/your-project},
+  license = {GPL-3.0}
+}
+  </pre>
+  <p>
+    Or use <a href="CITATION.cff">CITATION.cff</a> for
+    citation managers. Cite by commit hash for exact reproducibility.
+  </p>
+</section>
+
+</main>
+
+<footer>
+  <p>
+    Living Research Artifact &middot; GPL-3.0 &middot;
+    Built from commit <code id="commit-hash">dev</code> &middot;
+    No external dependencies &middot; No server required
+  </p>
+  <p>
+    Standard: <a href="spec/LRA-1.0.md">LRA-1.0</a> &middot;
+    Template: <a href="https://github.com/brandonfromph/lra-template">lra-template</a>
+  </p>
+</footer>
+
+<script type="module" src="paper.js"></script>
+</body>
+</html>

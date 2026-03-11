@@ -149,6 +149,13 @@ jobs:
           sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" paper/index.html
           sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" paper/index.html
 
+      - name: Validate paper structure
+        run: |
+          grep -q '<section id="abstract">' paper/index.html
+          grep -q '<section id="claims">' paper/index.html
+          grep -q '<section id="references">' paper/index.html
+          echo "Paper structure validation passed"
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

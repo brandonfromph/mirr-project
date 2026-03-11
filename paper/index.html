@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MIRR: A Safety-Critical HDL Compiler</title>
   <link rel="stylesheet" href="paper.css">
+  <link rel="icon" href="data:,">
+  <meta name="description" content="MIRR: A safety-critical HDL compiler with formal width inference. Living Research Artifact — interactive paper with in-browser compiler.">
+  <meta property="og:title" content="MIRR: A Safety-Critical HDL Compiler">
+  <meta property="og:description" content="Interactive research paper — compile temporal specifications to SystemVerilog, FIRRTL, and R-SPU assembly live in the browser.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://brandonfromph.github.io/mirr-project/paper/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MIRR: A Safety-Critical HDL Compiler">
+  <meta name="twitter:description" content="Living Research Artifact — compiler runs as WebAssembly, proofs in the repo, GPL-3.0 licensed.">
 </head>
 <body>
 
@@ -26,6 +35,8 @@
   playground and benchmark demo will not load, but all body sections,
   tables, and text below are fully readable without JavaScript.</p>
 </noscript>
+
+<main>
 
 <section id="abstract">
   <h2>Abstract</h2>
@@ -108,7 +119,7 @@
       <option value="json">&#8594; JSON Netlist</option>
       <option value="dot">&#8594; DOT Graph</option>
     </select>
-    <button id="compile-btn">Compile</button>
+    <button id="compile-btn" aria-label="Compile MIRR source code">Compile</button>
   </div>
 
   <div class="split-pane">
@@ -121,7 +132,7 @@
     </div>
     <div class="pane">
       <label>Output <span id="output-label"></span></label>
-      <pre id="compiler-output" class="output">
+      <pre id="compiler-output" class="output" aria-live="polite" role="status">
 Compiler loading...</pre>
     </div>
   </div>
@@ -138,8 +149,8 @@ Compiler loading...</pre>
     measure wall-clock time in your browser. Bounded algorithms
     produce predictable compile times.
   </p>
-  <button id="bench-btn">Run Benchmarks</button>
-  <table id="benchmark-table">
+  <button id="bench-btn" aria-label="Run compilation benchmarks">Run Benchmarks</button>
+  <table id="benchmark-table" class="data-table">
     <thead>
       <tr>
         <th>Target</th>
@@ -249,7 +260,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
             | "always_followed_by(" expr "," expr "," N ")"
   </pre>
   <h3>Property Forms &rarr; SVA Compilation</h3>
-  <table id="property-table">
+  <table id="property-table" class="data-table">
     <thead>
       <tr><th>MIRR Form</th><th>SVA Output</th></tr>
     </thead>
@@ -271,7 +282,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     E601&ndash;E609.  The extended type system adds 8 certification-oriented
     features (E610&ndash;E625):
   </p>
-  <table id="extended-types-table">
+  <table id="extended-types-table" class="data-table">
     <thead>
       <tr><th>Feature</th><th>Errors</th><th>Purpose</th></tr>
     </thead>
@@ -294,7 +305,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     The pipeline processes MIRR source through 9 deterministic stages, each
     with explicit bounds on iteration depth and node count.
   </p>
-  <table id="pipeline-table">
+  <table id="pipeline-table" class="data-table">
     <thead>
       <tr><th>Stage</th><th>Name</th><th>Bound</th><th>Output</th></tr>
     </thead>
@@ -341,7 +352,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     values (bounded by MAX_FLAT_NODES = 512).  Each node generates one
     of 10 constraint kinds:
   </p>
-  <table id="constraint-table">
+  <table id="constraint-table" class="data-table">
     <thead>
       <tr><th>Constraint</th><th>Rule</th></tr>
     </thead>
@@ -375,7 +386,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     mechanized (Qed), 13 axiomatized (Admitted).
     See <a href="#claim-2">claim 2</a>.
   </p>
-  <table id="proofs-table">
+  <table id="proofs-table" class="data-table">
     <thead>
       <tr><th>ID</th><th>Theorem</th><th>File</th><th>Status</th></tr>
     </thead>
@@ -412,7 +423,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     instruction-level target.  The backend spans 3,291 lines across 6 files.
   </p>
   <h3>ISA v2: 30 Instructions, 7 Tiers</h3>
-  <table id="rspu-isa-table">
+  <table id="rspu-isa-table" class="data-table">
     <thead>
       <tr><th>Tier</th><th>Instructions</th><th>Count</th></tr>
     </thead>
@@ -448,7 +459,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
 <section id="evaluation">
   <h2>6. Evaluation</h2>
   <h3>Test Suite</h3>
-  <table id="test-summary-table">
+  <table id="test-summary-table" class="data-table">
     <thead>
       <tr><th>Metric</th><th>Value</th></tr>
     </thead>
@@ -471,7 +482,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     <strong>Run these benchmarks live in
     <a href="#demo-benchmarks">the benchmark demo above</a>.</strong>
   </p>
-  <table id="native-bench-table">
+  <table id="native-bench-table" class="data-table">
     <thead>
       <tr><th>Benchmark</th><th>Signals</th><th>Guards</th><th>Time (&mu;s)</th></tr>
     </thead>
@@ -490,7 +501,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     errors after SVA property stripping, confirming that properties are
     verification-only.
   </p>
-  <table id="synthesis-table">
+  <table id="synthesis-table" class="data-table">
     <thead>
       <tr><th>Module</th><th>Sig.</th><th>Grd.</th><th>Cells</th><th>DFF</th><th>Comb.</th></tr>
     </thead>
@@ -595,11 +606,17 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </p>
 </section>
 
+</main>
+
 <footer>
   <p>
     MIRR Living Research Artifact &middot; GPL-3.0 &middot;
     Built from commit <code id="footer-hash">dev</code> &middot;
     No external dependencies &middot; No server required
+  </p>
+  <p>
+    The interactive format of this paper is available as a
+    <a href="https://github.com/brandonfromph/lra-template">reusable template</a>.
   </p>
 </footer>
 
