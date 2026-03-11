@@ -163,6 +163,14 @@ pre.output.error { color: var(--error); }
 #native-bench-table th, #synthesis-table th { background: var(--demo-bg); }
 #benchmark-table tr.error td { color: var(--error); }
 
+/* References */
+.references {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  padding-left: 2rem;
+}
+.references li { margin-bottom: 0.5rem; }
+
 /* Citation */
 #citation-block {
   background: var(--demo-bg);
@@ -172,6 +180,18 @@ pre.output.error { color: var(--error); }
   font-size: 0.85rem;
   overflow: auto;
 }
+
+/* Footer */
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: #777;
+  text-align: center;
+}
+footer a { color: #777; }
 
 /* Responsive */
 @media (max-width: 600px) {

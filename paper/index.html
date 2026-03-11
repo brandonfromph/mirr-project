@@ -12,6 +12,7 @@
   <h1>MIRR: A Safety-Critical HDL Compiler<br>
       with Formal Width Inference</h1>
   <p class="meta">
+    Brandon &middot; March 2026 &middot;
     Version <span class="mirr-version">&mdash;</span> &middot;
     Commit <code id="commit-hash">dev</code> &middot;
     <a href="../LICENSE">GPL-3.0</a> &middot;
@@ -392,10 +393,10 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </table>
   <h3>Proof Coverage Map</h3>
   <p>
-    <strong>Above the proof boundary</strong> (formally verified): width
-    solver (T1&ndash;T9), SCC analysis (T10&ndash;T13), constraint soundness
-    (T4&ndash;T8), flattening (T14), truncation (T15), R-SPU encoding (T26),
-    tag safety (T27).
+    <strong>Above the proof boundary</strong> (mechanized or axiomatized): width
+    solver (T1&ndash;T9, 3 Admitted), SCC analysis (T10&ndash;T13), constraint
+    soundness (T4&ndash;T8), flattening (T14), truncation (T15), R-SPU
+    encoding (T26), tag safety (T27).
     <br>
     <strong>Below the proof boundary</strong> (tested only): parser,
     validator, emitters, temporal compiler, MAPE-K, S-expression, pattern
@@ -532,8 +533,53 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </ul>
 </section>
 
+<section id="references">
+  <h2>References</h2>
+  <ol class="references">
+    <li id="ref-1">J. Bachrach <em>et al.</em>, &ldquo;Chisel: Constructing
+        hardware in a Scala embedded language,&rdquo; in <em>Proc. DAC</em>,
+        2012.</li>
+    <li id="ref-2">C. Baaij <em>et al.</em>, &ldquo;C&lambda;aSH: Structural
+        descriptions of synchronous hardware using Haskell,&rdquo; in
+        <em>Proc. Euromicro Conf. on Digital System Design</em>, 2010.</li>
+    <li id="ref-3">R. S. Nikhil, &ldquo;Bluespec System Verilog: Efficient,
+        correct RTL from high-level specifications,&rdquo; in <em>Proc.
+        MEMOCODE</em>, 2004.</li>
+    <li id="ref-4">A. Izraelevitz <em>et al.</em>, &ldquo;Reusability is FIRRTL
+        ground: Hardware construction languages, compiler frameworks, and
+        transformations,&rdquo; in <em>Proc. ICCAD</em>, 2017.</li>
+    <li id="ref-5">C. Wolf, &ldquo;Yosys Open SYnthesis Suite,&rdquo; 2013.
+        <a href="https://yosyshq.net/yosys/">yosyshq.net/yosys</a></li>
+    <li id="ref-6">G. J. Holzmann, &ldquo;The Power of 10: Rules for
+        developing safety-critical code,&rdquo; <em>IEEE Computer</em>,
+        vol. 39, no. 6, pp. 95&ndash;97, 2006.</li>
+    <li id="ref-7">RTCA, &ldquo;DO-254: Design Assurance Guidance for Airborne
+        Electronic Hardware,&rdquo; 2000.</li>
+    <li id="ref-8">RTCA, &ldquo;DO-178C: Software Considerations in Airborne
+        Systems and Equipment Certification,&rdquo; 2011.</li>
+    <li id="ref-9">A. Pnueli, &ldquo;The temporal logic of programs,&rdquo;
+        in <em>18th Annual Symp. on Foundations of Computer Science</em>,
+        IEEE, 1977.</li>
+    <li id="ref-10">R. Tarjan, &ldquo;Depth-first search and linear graph
+        algorithms,&rdquo; <em>SIAM J. Computing</em>, vol. 1, no. 2,
+        pp. 146&ndash;160, 1972.</li>
+    <li id="ref-11">J. McCarthy, &ldquo;Recursive functions of symbolic
+        expressions and their computation by machine, Part I,&rdquo;
+        <em>Commun. ACM</em>, vol. 3, no. 4, pp. 184&ndash;195, 1960.</li>
+    <li id="ref-12">J. O. Kephart and D. M. Chess, &ldquo;The vision of
+        autonomic computing,&rdquo; <em>IEEE Computer</em>, vol. 36,
+        no. 1, pp. 41&ndash;50, 2003.</li>
+    <li id="ref-13">Y. Wang <em>et al.</em>, &ldquo;FIRWINE: Formally verified
+        width inference for FIRRTL,&rdquo; in <em>Proc. ASPLOS</em>,
+        2026.</li>
+    <li id="ref-14">H. Nane <em>et al.</em>, &ldquo;A survey and evaluation of
+        FPGA high-level synthesis tools,&rdquo; <em>IEEE Trans. CAD</em>,
+        vol. 35, no. 10, pp. 1591&ndash;1604, 2016.</li>
+  </ol>
+</section>
+
 <section id="citation">
-  <h2>8. Citation</h2>
+  <h2>How to Cite This Work</h2>
   <pre id="citation-block">
 @software{mirr2026,
   title  = {MIRR: A Safety-Critical HDL Compiler},
@@ -548,6 +594,14 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     citation managers. Cite by commit hash for exact reproducibility.
   </p>
 </section>
+
+<footer>
+  <p>
+    MIRR Living Research Artifact &middot; GPL-3.0 &middot;
+    Built from commit <code id="footer-hash">dev</code> &middot;
+    No external dependencies &middot; No server required
+  </p>
+</footer>
 
 <script type="module" src="paper.js"></script>
 </body>
