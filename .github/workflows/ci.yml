@@ -78,3 +78,80 @@ jobs:
             exit 1
           fi
           echo "All examples compiled successfully"
+
+  wasm-build:
+    name: WASM Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Build WASM crate
+        run: wasm-pack build crates/mirr-wasm --target web --out-dir ../../demos --release
+
+      - name: Verify WASM output
+        run: test -f demos/mirr_wasm_bg.wasm && echo "WASM build OK"
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirr-wasm
+          path: demos/
+
+  proofs:
+    name: Coq Proofs
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Coq
+        run: sudo apt-get install -y coq
+      - name: Build width proofs
+        run: make -C proofs/width
+      - name: Build rspu proofs
+        run: make -C proofs/rspu
+      - name: Verify zero Admitted
+        run: |
+          COUNT=$(grep -r "Admitted\." proofs/ | wc -l)
+          echo "Admitted count: $COUNT"
+          test "$COUNT" -eq 13
+
+  pages-deploy:
+    name: Deploy to GitHub Pages
+    needs: [wasm-build, proofs]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mirr-wasm
+          path: demos/
+
+      - name: Inject build metadata
+        run: |
+          HASH=$(git rev-parse --short HEAD)
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" paper/index.html
+          sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" paper/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages

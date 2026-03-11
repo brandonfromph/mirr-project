@@ -66,6 +66,38 @@ The language has exactly three constructs — **Signal**, **Guard**, **Reflex** 
 
 ---
 
+## Living Research Artifact
+
+MIRR is published as a Living Research Artifact (LRA) — an interactive
+paper where the compiler runs live in the browser.
+
+**[Read the interactive paper](https://brandonfromph.github.io/mirr-project/paper/)**
+
+The paper, the compiler, the Coq proofs, and the browser demos are one
+GPL-3.0 licensed artifact. The paper cannot be separated from the code
+and submitted to a journal under a Copyright Transfer Agreement without
+violating the GPL already granted to the public.
+
+To cite MIRR, use [`CITATION.cff`](CITATION.cff) or cite the commit
+hash of the version you used.
+
+To verify claims locally:
+
+```bash
+# Build and run the compiler
+cargo run --bin mirr-compile -- --emit verilog examples/tmr_sensor_fusion.mirr
+
+# Build the wasm demo
+rustup target add wasm32-unknown-unknown
+cargo install wasm-pack
+wasm-pack build crates/mirr-wasm --target web --out-dir ../../demos --release
+
+# Serve locally
+cd paper && python3 -m http.server 8080
+```
+
+---
+
 ## Getting started
 
 ### Prerequisites
@@ -112,7 +144,7 @@ cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit json
 | [Tutorial](docs/tutorial.md) | 10-lesson beginner guide — no hardware experience needed |
 | [Error Codes](docs/error_codes.md) | Complete catalogue of compiler diagnostics (E1xx–E7xx) |
 | [Type System](docs/type-system.md) | Signed/unsigned types, width inference, and error codes |
-| [R-SPU Reference](docs/rspu-reference.md) | R-SPU instruction set architecture and register file |
+| [R-SPU ISA Spec](docs/rspu_isa_spec.md) | R-SPU instruction set architecture and register file |
 | [Migration Guide](docs/migration-guide.md) | Upgrade notes for 0.1.0 to 0.2.0 |
 | [Roadmap](docs/roadmap.md) | Phase 0–10 project roadmap |
 | [CHANGELOG](CHANGELOG.md) | Versioned change history |

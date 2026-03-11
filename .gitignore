@@ -42,8 +42,12 @@ node_modules/
 # Test artifacts
 path/
 
-# Paper (lives in separate private repo)
-paper/
+# Paper WASM build artifacts (CI-built, not committed)
+# Source files (index.html, paper.css, paper.js) ARE tracked
+paper/living-doc/*.aux
+paper/living-doc/*.log
+paper/living-doc/*.out
+paper/living-doc/*.synctex.gz
 
 # Archived internal docs (not for public, preserved locally)
 docs/_archive/
@@ -51,8 +55,8 @@ docs/_archive/
 # Private campaign planning (never pushed)
 .campaigns-private.md
 
-# Campaign proposals — strategic plans, not public
-proposals/
+# Campaign proposals — tracked for LRA provenance
+# proposals/
 
 # Claude Code agent config and project intelligence
 .claude/
@@ -66,3 +70,10 @@ CLAUDE.md
 *.aux
 *.out
 *.synctex.gz
+
+# WASM build outputs (CI-built, not committed)
+demos/*.wasm
+demos/*.js
+demos/*.d.ts
+demos/package.json
+!demos/.gitkeep

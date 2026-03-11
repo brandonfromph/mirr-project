@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: "MIRR: A Safety-Critical HDL Compiler"
+message: "If you use this software, please cite it using the metadata below."
+type: software
+authors:
+  - given-names: Brandon
+    alias: brandonfromph
+repository-code: "https://github.com/brandonfromph/mirr-project"
+license: GPL-3.0
+version: "0.2.0"
+date-released: "2026-03-11"
+keywords:
+  - compiler
+  - hardware
+  - safety-critical
+  - verilog
+  - dsl
+  - living-research-artifact
+abstract: >-
+  MIRR is a safety-critical domain-specific language compiler that transforms
+  temporal behavioral specifications into synthesizable SystemVerilog RTL,
+  FIRRTL, R-SPU assembly, and S-expression intermediate representations.
+  The project follows NASA Power-of-10 coding rules and includes formal
+  verification via Rocq proofs.
