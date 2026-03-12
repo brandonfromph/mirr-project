@@ -21,6 +21,8 @@ Definition width := nat.
 
 Definition MAX_WIDTH : nat := 64.
 
+Definition MAX_SCC_SIZE : nat := 64.
+
 (** ** Binary and Unary Operators *)
 
 Inductive binop : Type :=
