@@ -57,6 +57,7 @@ impl MacroExpander {
     ///
     /// - Parameters (in `param_names`) are bound to their actual arguments from `bindings`
     /// - All other string literals that look like identifiers get a hygiene suffix
+    #[allow(clippy::only_used_in_recursion)]
     fn rename_internal(
         &self,
         expr: &SExpr,

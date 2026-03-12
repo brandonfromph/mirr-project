@@ -1,0 +1,15 @@
+module undecl_test {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r {
+        on g {
+            nonexistent = true;
+        }
+    }
+}

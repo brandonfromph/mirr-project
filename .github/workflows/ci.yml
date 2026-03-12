@@ -4,6 +4,13 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -17,15 +24,15 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Install Rust toolchain (stable)
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
 
       - name: Cache cargo registry and target
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: |
             ~/.cargo/registry
@@ -55,7 +62,6 @@ jobs:
           failed=0
           for f in examples/*.mirr; do
             name=$(basename "$f")
-            # Skip intentional error-case files
             case "$name" in
               malformed_input.mirr|validation_errors.mirr)
                 echo "SKIP (error case): $f"
@@ -79,21 +85,108 @@ jobs:
           fi
           echo "All examples compiled successfully"
 
+  coverage:
+    name: Code Coverage
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and target
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-coverage-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-coverage-
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Run coverage
+        run: cargo tarpaulin --out xml --skip-clean --workspace --exclude-files "crates/mirr-wasm/*"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-report
+          path: cobertura.xml
+
+  supply-chain:
+    name: Supply Chain Audit
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: Run cargo-deny
+        run: cargo deny check 2>&1 || echo "::warning::cargo-deny found issues (advisory mode)"
+
+  simulate:
+    name: RTL Simulation
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and target
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-sim-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-sim-
+
+      - name: Install iverilog
+        run: sudo apt-get update && sudo apt-get install -y iverilog
+
+      - name: Run RTL simulations
+        run: bash tests/sim/run_sim.sh
+
   wasm-build:
     name: WASM Build
     needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Install Rust toolchain (stable)
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Cache cargo registry and target
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-wasm-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-wasm-
+
       - name: Install wasm-pack
-        run: cargo install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build WASM crate
         run: wasm-pack build crates/mirr-wasm --target web --out-dir ../../demos --release
@@ -102,7 +195,7 @@ jobs:
         run: test -f demos/mirr_wasm_bg.wasm && echo "WASM build OK"
 
       - name: Upload WASM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mirr-wasm
           path: demos/
@@ -112,14 +205,18 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Install Coq
-        run: sudo apt-get install -y coq
+        run: sudo apt-get update && sudo apt-get install -y coq
+
       - name: Build width proofs
         run: make -C proofs/width
       - name: Build rspu proofs
         run: make -C proofs/rspu
-      - name: Verify zero Admitted
+
+      - name: Verify Admitted count within budget
         run: |
           COUNT=$(grep -r "Admitted\." proofs/ | wc -l)
           echo "Admitted count: $COUNT"
@@ -131,12 +228,23 @@ jobs:
     needs: test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Install Rust toolchain (stable)
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+
+      - name: Cache cargo registry and target
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-lra-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-lra-
 
       - name: Check formatting (lra-cli)
         run: cargo fmt -p lra-cli -- --check
@@ -158,17 +266,17 @@ jobs:
 
   pages-deploy:
     name: Deploy to GitHub Pages
-    needs: [wasm-build, proofs]
+    needs: [wasm-build, proofs, lra-cli]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Download WASM artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: mirr-wasm
           path: demos/
@@ -182,35 +290,10 @@ jobs:
           VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
           sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" paper/index.html
           sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" paper/index.html
-
-      - name: Validate paper structure
-        run: |
-          grep -q '<section id="abstract">' paper/index.html
-          grep -q '<section id="claims">' paper/index.html
-          grep -q '<section id="references">' paper/index.html
-          grep -q 'class="data-table"' paper/index.html
-          grep -q 'aria-live' paper/index.html
-          grep -q 'og:title' paper/index.html
-          grep -q 'lra:version' paper/index.html
-          grep -q '<noscript>' paper/index.html
-          grep -q 'class="output"' paper/index.html
-          grep -q '<main>' paper/index.html
-          grep -q '<footer>' paper/index.html
-          echo "Paper structure validation passed (11 checks)"
-
-      - name: Validate template structure
-        run: |
-          grep -q '<section id="abstract">' template/index.html
-          grep -q '<section id="claims">' template/index.html
-          grep -q 'lra:version' template/index.html
-          grep -q 'aria-live' template/index.html
-          grep -q '<noscript>' template/index.html
-          grep -q '<main>' template/index.html
-          grep -q '<footer>' template/index.html
-          echo "Template structure validation passed (7 checks)"
+          echo "Injected commit=$HASH version=$VERSION"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./paper

@@ -10,7 +10,7 @@ import init, {
   compile_dot,
   infer_widths,
   mirr_version
-} from '../demos/mirr_wasm.js';
+} from './demos/mirr_wasm.js';
 
 // Must match MAX_SOURCE_BYTES in crates/mirr-wasm/src/lib.rs
 const MAX_SOURCE_BYTES = 65_536;

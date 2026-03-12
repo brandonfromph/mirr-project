@@ -4,15 +4,15 @@
 //
 // GPL-3.0 — see LICENSE for terms.
 
-var CACHE_NAME = 'mirr-lra-v3';
+var CACHE_NAME = 'mirr-lra-v4';
 var ASSETS = [
   'index.html',
   'paper.css',
   'paper.js',
   'lra-client.js',
   'lra-card.svg',
-  '../demos/mirr_wasm.js',
-  '../demos/mirr_wasm_bg.wasm'
+  './demos/mirr_wasm.js',
+  './demos/mirr_wasm_bg.wasm'
 ];
 
 // ── LRA Protocol v1.0 — MIRR metadata ──────────────────────────────

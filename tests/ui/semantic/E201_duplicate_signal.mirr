@@ -1,0 +1,15 @@
+module dup_test {
+    signal a: in bool;
+    signal a: out bool;
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r {
+        on g {
+            a = true;
+        }
+    }
+}
