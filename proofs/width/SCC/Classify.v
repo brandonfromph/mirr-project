@@ -67,4 +67,29 @@ Corollary nonexpansive_bounded : forall nodes component,
       nth_error nodes i = Some (FNBinary op l r) ->
       is_expansive_binop op = false.
 Proof.
-Admitted.
+  intros nodes component Hclass.
+  apply classify_sound in Hclass.
+  induction component as [|hd tl IHtl].
+  - intros i Hin. inversion Hin.
+  - intros i Hin op l r Hnth.
+    simpl in Hclass.
+    destruct (nth_error nodes hd) eqn:Hhd.
+    + destruct f.
+      * (* FNLiteral *) apply IHtl; [exact Hclass | | exact Hnth].
+        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
+      * (* FNSignal *) apply IHtl; [exact Hclass | | exact Hnth].
+        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
+      * (* FNUnary *) apply IHtl; [exact Hclass | | exact Hnth].
+        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
+      * (* FNBinary *)
+        destruct (is_expansive_binop b) eqn:Hexp.
+        -- discriminate.
+        -- destruct Hin as [Heq|Htl].
+           ++ subst. rewrite Hhd in Hnth. injection Hnth as -> -> ->.
+              exact Hexp.
+           ++ apply IHtl; [exact Hclass | exact Htl | exact Hnth].
+      * (* FNPrev *) apply IHtl; [exact Hclass | | exact Hnth].
+        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
+    + apply IHtl; [exact Hclass | | exact Hnth].
+      destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
+Qed.

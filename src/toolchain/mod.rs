@@ -21,6 +21,7 @@
 #![forbid(unsafe_code)]
 
 pub mod eqy;
+pub mod formal;
 pub mod icetime;
 pub mod sby;
 pub mod verilator;

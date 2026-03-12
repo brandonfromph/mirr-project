@@ -136,6 +136,7 @@ fn pipeline_xor_guard_ok_when_temporal_disabled() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(XOR_GUARD_MIRR, &config);
     assert!(result.is_ok(), "XOR guard should pass when temporal is disabled");
@@ -155,6 +156,7 @@ fn pipeline_no_simplify_yes_width_yes_temporal() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let source = r#"
 module combo1 {
@@ -189,6 +191,7 @@ fn pipeline_yes_simplify_no_width_yes_temporal() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let source = r#"
 module combo2 {

@@ -74,7 +74,10 @@ Theorem add_sound : forall a b,
   b < Nat.pow 2 (Nat.max a b) ->
   a + b < Nat.pow 2 (S (Nat.max a b)).
 Proof.
-Admitted.
+  intros a b H1 H2.
+  rewrite Nat.pow_succ_r; [| lia].
+  lia.
+Qed.
 
 (** T5: mul_sound — left+right bits suffice for multiplication. *)
 Theorem mul_sound : forall a wa b wb,
@@ -82,7 +85,10 @@ Theorem mul_sound : forall a wa b wb,
   b < Nat.pow 2 wb ->
   a * b < Nat.pow 2 (wa + wb).
 Proof.
-Admitted.
+  intros a wa b wb Ha Hb.
+  rewrite Nat.pow_add_r.
+  nia.
+Qed.
 
 (** T6: sub_sound — max(left,right) bits suffice for subtraction
     (unsigned: result wraps to same width). *)
@@ -99,7 +105,11 @@ Theorem shift_sound : forall a wa s,
   a < Nat.pow 2 wa ->
   a * Nat.pow 2 s < Nat.pow 2 (wa + s).
 Proof.
-Admitted.
+  intros a wa s H.
+  rewrite Nat.pow_add_r.
+  assert (Nat.pow 2 s <> 0) by (apply Nat.pow_nonzero; lia).
+  nia.
+Qed.
 
 (** T8: negate_unsigned_sound — N+1 bits suffice for unsigned negate. *)
 Theorem negate_unsigned_sound : forall a wa,

@@ -120,6 +120,7 @@ fn prev_guard_result() -> PipelineResult {
         type_map: None,
         extended_type_map: None,
         sim_result: None,
+        mape_k_result: None,
     }
 }
 

@@ -38,15 +38,75 @@ Qed.
 
     If the underlying state grows, the constraint output grows. *)
 
+(** Helper: lookup is monotone w.r.t. state ordering. *)
+Lemma lookup_monotone : forall s1 s2 i,
+  s1 ⊑ s2 -> lookup s1 i <= lookup s2 i.
+Proof. intros. apply H. Qed.
+
 Theorem monotonicity : forall c s1 s2 n1 w1 n2 w2,
   s1 ⊑ s2 ->
   eval_constraint c s1 = Some (n1, w1) ->
   eval_constraint c s2 = Some (n2, w2) ->
   n1 = n2 /\ w1 <= w2.
 Proof.
-  (* Each constraint variant uses max, +, or identity on its inputs.
-     All are monotone in their operands. Case analysis on c. *)
-Admitted.
+  intros c s1 s2 n1 w1 n2 w2 Hle H1 H2.
+  destruct c; simpl in H1, H2.
+  - (* Fixed *)
+    injection H1 as <- <-. injection H2 as <- <-. split; [reflexivity | lia].
+  - (* MaxPlusOne *)
+    destruct ((lookup s1 n =? 0) && (lookup s1 n0 =? 0))%bool eqn:E1; [discriminate|].
+    destruct ((lookup s2 n =? 0) && (lookup s2 n0 =? 0))%bool eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    assert (Hl := lookup_monotone _ _ n Hle).
+    assert (Hr := lookup_monotone _ _ n0 Hle). lia.
+  - (* MaxOf *)
+    destruct ((lookup s1 n =? 0) && (lookup s1 n0 =? 0))%bool eqn:E1; [discriminate|].
+    destruct ((lookup s2 n =? 0) && (lookup s2 n0 =? 0))%bool eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    assert (Hl := lookup_monotone _ _ n Hle).
+    assert (Hr := lookup_monotone _ _ n0 Hle). lia.
+  - (* SumOf *)
+    destruct ((lookup s1 n =? 0) && (lookup s1 n0 =? 0))%bool eqn:E1; [discriminate|].
+    destruct ((lookup s2 n =? 0) && (lookup s2 n0 =? 0))%bool eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    assert (Hl := lookup_monotone _ _ n Hle).
+    assert (Hr := lookup_monotone _ _ n0 Hle). lia.
+  - (* LeftPlusConst *)
+    destruct (lookup s1 n =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 n =? 0) eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    assert (Hl := lookup_monotone _ _ n Hle). lia.
+  - (* LeftPlusMaxShift *)
+    destruct (lookup s1 n =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 n =? 0) eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    assert (Hl := lookup_monotone _ _ n Hle). lia.
+  - (* LeftMinusConst *)
+    destruct (lookup s1 n =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 n =? 0) eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    assert (Hl := lookup_monotone _ _ n Hle). lia.
+  - (* SameAs *)
+    destruct (lookup s1 n0 =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 n0 =? 0) eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    exact (lookup_monotone _ _ n0 Hle).
+  - (* SameAsPlusOne *)
+    destruct (lookup s1 n0 =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 n0 =? 0) eqn:E2; [discriminate|].
+    injection H1 as <- <-. injection H2 as <- <-.
+    split; [reflexivity|].
+    assert (Hl := lookup_monotone _ _ n0 Hle). lia.
+  - (* Boolean *)
+    injection H1 as <- <-. injection H2 as <- <-. split; [reflexivity | lia].
+Qed.
 
 (** ** T3: A full solver round is monotone
 
@@ -65,10 +125,52 @@ Fixpoint apply_constraints (cs : list wconstraint) (st : solver_state) : solver_
       in apply_constraints rest st'
   end.
 
+(** Helper: update only increases or preserves entries. *)
+Lemma update_preserves_le : forall st i w,
+  lookup st i <= w ->
+  st ⊑ update st i w.
+Proof.
+  unfold state_le.
+  induction st as [|hd tl IHtl].
+  - intros. simpl. lia.
+  - intros [|i'] w Hw j; simpl.
+    + (* i = 0 *)
+      destruct j; simpl; lia.
+    + (* i = S i' *)
+      destruct j; simpl.
+      * lia.
+      * apply IHtl. simpl in Hw. exact Hw.
+Qed.
+
+(** Helper: state_le is preserved through one constraint application. *)
+Lemma one_step_monotone : forall c st,
+  st ⊑ (match eval_constraint c st with
+         | Some (n, w) =>
+             if lookup st n <? w then update st n w else st
+         | None => st
+         end).
+Proof.
+  intros c st.
+  destruct (eval_constraint c st) as [[n w]|] eqn:Heval.
+  - destruct (lookup st n <? w) eqn:Hlt.
+    + apply Nat.ltb_lt in Hlt.
+      apply update_preserves_le. lia.
+    + apply state_le_refl.
+  - apply state_le_refl.
+Qed.
+
 Theorem evaluate_monotone : forall cs st,
   st ⊑ apply_constraints cs st.
 Proof.
-  (* By induction on cs. Each step either leaves the state unchanged
-     or increases one entry. The remaining steps preserve the increase
-     by monotonicity of eval_constraint. *)
-Admitted.
+  induction cs as [|c rest IHrest].
+  - intros. simpl. apply state_le_refl.
+  - intros. simpl.
+    set (st' := match eval_constraint c st with
+                | Some (n, w) =>
+                    if lookup st n <? w then update st n w else st
+                | None => st
+                end).
+    apply state_le_trans with st'.
+    + apply one_step_monotone.
+    + apply IHrest.
+Qed.

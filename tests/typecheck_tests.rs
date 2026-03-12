@@ -499,6 +499,7 @@ module typeck_pipeline {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     run_pipeline(src, &config).expect("well-typed program should pass full pipeline");
 }
@@ -530,6 +531,7 @@ module skip_typeck {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     run_pipeline(src, &config).expect("should pass with typecheck disabled");
 }

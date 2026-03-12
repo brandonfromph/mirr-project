@@ -54,10 +54,14 @@ Definition is_scc (g : graph) (component : list nat) : Prop :=
 Theorem tarjan_correct : forall g (sccs : list (list nat)),
   (* Precondition: sccs is the output of iterative Tarjan's *)
   (forall component, In component sccs -> is_scc g component) ->
-  (* Every node appears in exactly one SCC *)
+  (* Every node appears in at least one SCC *)
   (forall v, v < length g ->
     exists component, In component sccs /\ In v component) ->
-  True. (* The partition is correct. *)
+  (* Conclusion: any two mutually reachable nodes share the same component *)
+  forall u v component,
+    In component sccs -> In u component -> same_scc g u v -> In v component.
 Proof.
-  auto.
+  intros g sccs Hscc Hcover u v component Hin_sccs Hin_u Hreach.
+  destruct (Hscc component Hin_sccs) as [_ Hmax].
+  exact (Hmax u v Hin_u Hreach).
 Qed.

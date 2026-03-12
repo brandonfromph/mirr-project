@@ -519,6 +519,7 @@ fn run_toolchain_operations(
             let config = nasa_rust_project::toolchain::sby::SbyConfig {
                 bmc_depth: formal_depth,
                 prove: formal_prove,
+                cover: false,
                 engine,
             };
             let sby_content = nasa_rust_project::toolchain::sby::generate_sby_config(

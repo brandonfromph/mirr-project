@@ -61,7 +61,7 @@ pub use emit::rspu_sim::RspuSimulator;
 pub use emit::rspu_tagged::{RegisterFile, TaggedWord, TypeTag};
 pub use error::MirrError;
 pub use error::PipelineErrors;
-pub use mape_k::{MapeKSimulator, SimConfig, SimResult};
+pub use mape_k::{MapeKResult, MapeKSimulator, SimConfig};
 pub use parser::parse_mirr;
 pub use pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 pub use simplify::SimplifyStats;

@@ -97,6 +97,7 @@ fn pipeline_parse_only() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(MINIMAL_MIRR, &config).expect("pipeline should succeed");
 
@@ -116,6 +117,7 @@ fn pipeline_simplify_without_width() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(MINIMAL_MIRR, &config).expect("pipeline should succeed");
 
@@ -133,6 +135,7 @@ fn pipeline_width_without_temporal() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(ARITHMETIC_MIRR, &config).expect("pipeline should succeed");
 
@@ -370,6 +373,7 @@ fn json_output_null_when_stages_skipped() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(MINIMAL_MIRR, &config).unwrap();
     let json_str = emit::json_netlist::emit_json(&result).unwrap();

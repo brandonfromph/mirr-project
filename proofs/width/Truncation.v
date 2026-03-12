@@ -30,16 +30,22 @@ Definition no_truncation (target_w expr_w : width) : Prop :=
 
 Theorem truncation_correct_positive : forall target_w expr_w,
   truncates target_w expr_w ->
-  True. (* Placeholder: emits exactly one E505 diagnostic. *)
+  exists v, v < Nat.pow 2 expr_w /\ ~(v < Nat.pow 2 target_w).
 Proof.
-  auto.
+  intros target_w expr_w [Hexpr Htarget].
+  exists (Nat.pow 2 target_w). split.
+  - apply Nat.pow_lt_mono_r; lia.
+  - lia.
 Qed.
 
 Theorem truncation_correct_negative : forall target_w expr_w,
   no_truncation target_w expr_w ->
-  True. (* Placeholder: emits zero diagnostics. *)
+  forall v, v < Nat.pow 2 expr_w -> v < Nat.pow 2 target_w.
 Proof.
-  auto.
+  intros target_w expr_w Hno v Hv.
+  unfold no_truncation in Hno.
+  apply Nat.lt_le_trans with (m := Nat.pow 2 expr_w); [exact Hv|].
+  apply Nat.pow_le_mono_r; lia.
 Qed.
 
 (** The truncation check is decidable. *)

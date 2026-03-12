@@ -627,6 +627,7 @@ module signed_test {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
     let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
@@ -667,6 +668,7 @@ module signed_test {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
     let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);

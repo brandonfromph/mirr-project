@@ -48,6 +48,7 @@ mod tests {
             type_map: None,
             extended_type_map: None,
             sim_result: None,
+            mape_k_result: None,
         };
         let output = emit_sexpr(&result);
         assert!(output.contains("module"));

@@ -36,6 +36,7 @@ fn full_config() -> PipelineConfig {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     }
 }
 

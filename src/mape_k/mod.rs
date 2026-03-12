@@ -27,6 +27,7 @@
 #![forbid(unsafe_code)]
 
 pub mod analyzer;
+pub mod bridge;
 pub mod executor;
 pub mod knowledge;
 pub mod ltl;
@@ -74,7 +75,7 @@ pub struct SimConfig {
 
 /// Result of a completed MAPE-K simulation run.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SimResult {
+pub struct MapeKResult {
     /// Total ticks simulated.
     pub total_ticks: u64,
     /// Total property violations detected.
@@ -91,7 +92,7 @@ pub struct SimResult {
     pub adaptation_log: Vec<AdaptationRecord>,
 }
 
-impl SimResult {
+impl MapeKResult {
     /// Generate a human-readable summary of the simulation.
     pub fn summary(&self) -> String {
         let mut s = String::with_capacity(256);
@@ -170,7 +171,7 @@ impl MapeKSimulator {
 
     /// Run the simulation for the given number of ticks.
     /// Ticks are clamped to MAX_TICKS.
-    pub fn run(&mut self, ticks: u64) -> SimResult {
+    pub fn run(&mut self, ticks: u64) -> MapeKResult {
         let max_ticks = ticks.min(MAX_TICKS);
 
         for _ in 0..max_ticks {
@@ -234,11 +235,11 @@ impl MapeKSimulator {
         self.monitor.advance_tick();
     }
 
-    fn build_result(&self) -> SimResult {
+    fn build_result(&self) -> MapeKResult {
         let final_state: Vec<(String, u64)> =
             self.signal_env.iter().map(|(k, v)| (k.clone(), *v)).collect();
 
-        SimResult {
+        MapeKResult {
             total_ticks: self.monitor.tick(),
             total_violations: self.total_violations,
             total_adaptations: self.total_adaptations,

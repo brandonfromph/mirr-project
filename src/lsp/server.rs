@@ -174,6 +174,7 @@ fn compile_and_diagnose(uri: &str, source: &str) -> Value {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
 
     match run_pipeline(source, &config) {

@@ -98,6 +98,7 @@ fn pipeline_config() -> PipelineConfig {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     }
 }
 
@@ -751,6 +752,7 @@ fn full_pipeline_existing_example_still_compiles() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     run_pipeline(&src, &config).expect("safety_property.mirr should compile");
 }

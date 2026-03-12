@@ -33,6 +33,8 @@ pub struct PipelineConfig {
     pub extended_typecheck: bool,
     /// Run R-SPU ISA simulator after emission (requires rspu).
     pub simulate: bool,
+    /// Run MAPE-K autonomic simulation (requires temporal).
+    pub mape_k: bool,
 }
 
 impl Default for PipelineConfig {
@@ -45,6 +47,7 @@ impl Default for PipelineConfig {
             rspu: false,
             extended_typecheck: false,
             simulate: false,
+            mape_k: false,
         }
     }
 }
@@ -67,6 +70,8 @@ pub struct PipelineResult {
     pub extended_type_map: Option<crate::typeck::extended::ExtendedTypeMap>,
     /// ISA simulation result (None if stage was skipped).
     pub sim_result: Option<crate::emit::rspu_sim::SimResult>,
+    /// MAPE-K simulation result (None if stage was skipped).
+    pub mape_k_result: Option<crate::mape_k::MapeKResult>,
 }
 
 impl PipelineResult {
@@ -152,6 +157,7 @@ pub fn run_pipeline(
         type_map,
         extended_type_map,
         sim_result: None,
+        mape_k_result: None,
     };
 
     // Stage 6: R-SPU emission (optional, requires temporal).
@@ -168,6 +174,21 @@ pub fn run_pipeline(
             let sim_out =
                 sim.run(prog, MAX_SIM_CYCLES).map_err(crate::error::PipelineErrors::from)?;
             result.sim_result = Some(sim_out);
+        }
+    }
+
+    // Stage 8: MAPE-K autonomic simulation (optional).
+    if config.mape_k {
+        match crate::mape_k::bridge::bridge_from_pipeline(&result) {
+            Ok(sim_config) => {
+                let mut sim = crate::mape_k::MapeKSimulator::new(sim_config);
+                const MAX_MAPE_K_TICKS: u64 = 1024;
+                result.mape_k_result = Some(sim.run(MAX_MAPE_K_TICKS));
+            }
+            Err(_bridge_errors) => {
+                // Bridge conversion failed — skip MAPE-K silently.
+                // Errors are not fatal; the pipeline continues.
+            }
         }
     }
 

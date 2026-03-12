@@ -25,6 +25,7 @@ fn default_config() -> PipelineConfig {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     }
 }
 
@@ -133,6 +134,48 @@ pub fn infer_widths(source: &str) -> String {
         Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
             Ok(json_str) => ok_json(&json_str),
             Err(e) => err_json(&e.to_string()),
+        },
+        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+    }
+}
+
+#[wasm_bindgen]
+pub fn simulate_rspu(source: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return err_json(&msg);
+    }
+    let config = PipelineConfig {
+        rspu: true,
+        temporal: true,
+        simulate: true,
+        ..default_config()
+    };
+    match run_pipeline(source, &config) {
+        Ok(result) => match result.sim_result {
+            Some(ref sim) => ok_json(&format!("{:?}", sim)),
+            None => err_json("No R-SPU simulation result produced"),
+        },
+        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+    }
+}
+
+#[wasm_bindgen]
+pub fn simulate_mapek(source: &str, _ticks: u32) -> String {
+    if let Err(msg) = check_length(source) {
+        return err_json(&msg);
+    }
+    let config = PipelineConfig {
+        temporal: true,
+        mape_k: true,
+        ..default_config()
+    };
+    match run_pipeline(source, &config) {
+        Ok(result) => match &result.mape_k_result {
+            Some(res) => match serde_json::to_string(res) {
+                Ok(json) => ok_json(&json),
+                Err(e) => err_json(&e.to_string()),
+            },
+            None => err_json("MAPE-K simulation produced no result"),
         },
         Err(errors) => err_json(&format_pipeline_errors(&errors)),
     }

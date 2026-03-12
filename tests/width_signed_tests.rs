@@ -277,6 +277,7 @@ fn pipeline_result_has_type_map() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_some(), "type_map should be Some when typecheck is enabled");
@@ -307,6 +308,7 @@ fn pipeline_result_no_type_map_when_skipped() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_none(), "type_map should be None when typecheck is disabled");
@@ -340,6 +342,7 @@ fn signed_signal_e2e_pipeline() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(result.type_map.is_some());
@@ -373,6 +376,7 @@ fn negate_unsigned_e2e_pipeline() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
+        mape_k: false,
     };
     let result = run_pipeline(source, &config).unwrap();
     assert!(!result.has_width_errors(), "negating u8 into i16 should not produce width errors");
