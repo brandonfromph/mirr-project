@@ -281,20 +281,30 @@ jobs:
           name: mirr-wasm
           path: demos/
 
-      - name: Copy WASM to paper directory
-        run: cp -r demos/ paper/demos/
-
-      - name: Inject build metadata
+      - name: Prepare paper for docs site
         run: |
+          # Copy paper into docs/paper/ so Jekyll serves it at /mirr-project/paper/
+          mkdir -p docs/paper/demos
+          cp paper/index.html paper/paper.css paper/paper.js paper/sw.js docs/paper/
+          cp paper/lra-card.svg paper/lra-client.js docs/paper/ 2>/dev/null || true
+          cp paper/LICENSE paper/CITATION.cff docs/paper/ 2>/dev/null || true
+          cp -r demos/* docs/paper/demos/
+
+          # Inject build metadata
           HASH=$(git rev-parse --short HEAD)
           VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" paper/index.html
-          sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" paper/index.html
+          sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" docs/paper/index.html
+          sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" docs/paper/index.html
           echo "Injected commit=$HASH version=$VERSION"
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./paper
-          publish_branch: gh-pages
+      - name: Commit paper to docs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/paper/
+          if git diff --cached --quiet; then
+            echo "No changes to paper, skipping commit"
+          else
+            git commit -m "ci: deploy interactive paper to docs/paper/"
+            git push
+          fi

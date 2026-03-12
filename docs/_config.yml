@@ -38,8 +38,6 @@ exclude:
   - mcp_phase1_tasks.md
   - mcp_roadmap.md
   - benchmarks.md
-  - paper/paper.js
-  - paper/paper.css
   - demos/
   - crates/
   - src/
