@@ -266,7 +266,7 @@ jobs:
 
   pages-deploy:
     name: Deploy to GitHub Pages
-    needs: [wasm-build, proofs, lra-cli]
+    needs: [wasm-build, lra-cli]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -305,6 +305,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to paper, skipping commit"
           else
-            git commit -m "ci: deploy interactive paper to docs/paper/"
+            git commit -m "ci: deploy interactive paper to docs/paper/ [skip ci]"
             git push
           fi

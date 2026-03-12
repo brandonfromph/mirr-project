@@ -1,43 +1,47 @@
-# Generated Makefile for MIRR width proofs.
+# Makefile for MIRR width proofs.
 # Requires: coqc (Rocq/Coq compiler)
 #
 # Usage:
-#   make        — compile all proofs
-#   make clean  — remove compiled artifacts
+#   make        - compile all proofs
+#   make clean  - remove compiled artifacts
 
-COQPROJECT := _CoqProject
+COQC := coqc
+COQFLAGS := -R . MirrWidth
 
-ifeq ($(wildcard $(COQPROJECT)),)
-$(error _CoqProject not found. Run from proofs/width/ directory.)
-endif
+VFILES := \
+  Types.v \
+  MinBits.v \
+  Constraint.v \
+  Flatten.v \
+  Monotone.v \
+  Solver.v \
+  Truncation.v \
+  Integration.v \
+  SCC/Tarjan.v \
+  SCC/Classify.v \
+  SCC/Nonexpansive.v
 
-# Use coq_makefile if available; otherwise manual fallback.
-COQMAKEFILE := $(shell command -v coq_makefile 2>/dev/null)
-
-ifdef COQMAKEFILE
-# Auto-generated rules via coq_makefile.
-Makefile.coq: $(COQPROJECT)
-	$(COQMAKEFILE) -f $(COQPROJECT) -o Makefile.coq
-
--include Makefile.coq
-
-clean::
-	$(if $(wildcard Makefile.coq),$(MAKE) -f Makefile.coq clean,)
-	rm -f Makefile.coq Makefile.coq.conf
-else
-# Manual fallback: compile each .v file individually.
-VFILES := $(shell grep '\.v$$' $(COQPROJECT))
 VOFILES := $(VFILES:.v=.vo)
 
 all: $(VOFILES)
 
-%.vo: %.v
-	coqc -R . MirrWidth $<
+# Explicit dependency ordering (from Require Import analysis)
+Types.vo: Types.v
+MinBits.vo: MinBits.v Types.vo
+Constraint.vo: Constraint.v Types.vo
+Flatten.vo: Flatten.v Types.vo
+Monotone.vo: Monotone.v Types.vo Constraint.vo
+Solver.vo: Solver.v Types.vo Constraint.vo Monotone.vo
+Truncation.vo: Truncation.v Types.vo
+Integration.vo: Integration.v Types.vo MinBits.vo Constraint.vo Monotone.vo Solver.vo Flatten.vo Truncation.vo
+SCC/Tarjan.vo: SCC/Tarjan.v Types.vo
+SCC/Classify.vo: SCC/Classify.v Types.vo
+SCC/Nonexpansive.vo: SCC/Nonexpansive.v Types.vo Constraint.vo
 
-SCC/%.vo: SCC/%.v
-	coqc -R . MirrWidth $<
+%.vo: %.v
+	$(COQC) $(COQFLAGS) $<
 
 clean:
 	rm -f $(VOFILES) $(VFILES:.v=.glob) $(VFILES:.v=.vok) $(VFILES:.v=.vos)
-	rm -f SCC/*.vo SCC/*.glob SCC/*.vok SCC/*.vos
-endif
+
+.PHONY: all clean
