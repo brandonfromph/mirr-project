@@ -176,10 +176,12 @@ fn multiple_sensors_feed_independent_monitor_windows() {
         test_sensor("pressure", 120, 0, 20),
         test_sensor("heart_rate", 72, 0, 30),
     ];
-    let names: Vec<String> = sensors_cfg.iter().map(|c| c.name.clone()).collect();
-    let name_refs: Vec<&str> = names.iter().map(|s| s.as_str()).collect();
-    let mut sensors: Vec<SensorModel> = sensors_cfg.into_iter().map(SensorModel::new).collect();
+    // Build monitor first while we can still borrow sensors_cfg for names.
+    // Monitor::new clones the names into its internal HashMap, so the borrow
+    // is released before into_iter() consumes sensors_cfg.
+    let name_refs: Vec<&str> = sensors_cfg.iter().map(|c| c.name.as_str()).collect();
     let mut monitor = Monitor::new(16, &name_refs);
+    let mut sensors: Vec<SensorModel> = sensors_cfg.into_iter().map(SensorModel::new).collect();
 
     for _tick in 0..MAX_TEST_TICKS.min(20) {
         for sensor in &mut sensors {

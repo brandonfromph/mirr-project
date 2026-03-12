@@ -11,18 +11,43 @@
 Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.micromega.Lia.
+Require Import Coq.Arith.Wf_nat.
 Require Import Types.
 
 (** ** Specification
 
     [min_bits v] returns the smallest [w] such that [v < 2^w].
-    Special case: [min_bits 0 = 1] (a single bit is needed to hold zero). *)
+    Special case: [min_bits 0 = 1] (a single bit is needed to hold zero).
 
-Fixpoint min_bits (v : nat) : width :=
+    Uses well-founded recursion on [lt] because [Nat.div2] is not
+    structurally decreasing — Coq's termination checker cannot
+    verify that [Fixpoint] terminates when recurring on [Nat.div2 v]. *)
+
+Definition min_bits_body (v : nat)
+  (rec : forall v', v' < v -> width) : width :=
   match v with
   | 0 => 1
-  | _ => 1 + min_bits (Nat.div2 v)
+  | S _ => 1 + rec (Nat.div2 v) (Nat.lt_div2 v (ltac:(lia)))
   end.
+
+Definition min_bits (v : nat) : width :=
+  Fix lt_wf (fun _ => width) min_bits_body v.
+
+(** Unfolding equation: [min_bits 0 = 1]. *)
+Lemma min_bits_0 : min_bits 0 = 1.
+Proof. reflexivity. Qed.
+
+(** Unfolding equation: [min_bits (S n) = 1 + min_bits (div2 (S n))]. *)
+Lemma min_bits_S : forall n,
+  min_bits (S n) = 1 + min_bits (Nat.div2 (S n)).
+Proof.
+  intros n.
+  unfold min_bits at 1.
+  rewrite Fix_eq.
+  - simpl. reflexivity.
+  - intros x f g Hfg. unfold min_bits_body.
+    destruct x; [reflexivity | f_equal; apply Hfg].
+Qed.
 
 (** ** Correctness: value fits in result width *)
 
@@ -47,8 +72,8 @@ Proof.
   unfold fits.
   induction v as [v IHv] using lt_wf_ind.
   destruct v as [|v'].
-  - simpl. lia.
-  - simpl min_bits.
+  - rewrite min_bits_0. simpl. lia.
+  - rewrite min_bits_S.
     rewrite Nat.pow_succ_r; [|lia].
     assert (Hdiv : Nat.div2 (S v') < S v') by (apply Nat.lt_div2; lia).
     specialize (IHv _ Hdiv).
@@ -65,8 +90,8 @@ Proof.
   induction v as [v IHv] using lt_wf_ind.
   intros w Hfit.
   destruct v as [|v'].
-  - simpl. lia.
-  - simpl min_bits.
+  - rewrite min_bits_0. lia.
+  - rewrite min_bits_S.
     destruct w as [|w'].
     + lia.
     + assert (Hdiv : Nat.div2 (S v') < S v') by (apply Nat.lt_div2; lia).
