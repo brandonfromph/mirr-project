@@ -192,7 +192,10 @@ jobs:
         run: wasm-pack build crates/mirr-wasm --target web --out-dir ../../demos --release
 
       - name: Verify WASM output
-        run: test -f demos/mirr_wasm_bg.wasm && echo "WASM build OK"
+        run: |
+          test -f demos/mirr_wasm_bg.wasm || { echo "FAIL: missing mirr_wasm_bg.wasm"; exit 1; }
+          test -f demos/mirr_wasm.js || { echo "FAIL: missing mirr_wasm.js"; exit 1; }
+          echo "WASM build OK: .wasm + .js glue present"
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -269,42 +272,81 @@ jobs:
     needs: [wasm-build, lra-cli]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@4eb9f110bac952a8b68ecf92e3b5c7a987594ba6 # v1.292.0
+        with:
+          ruby-version: '3.3'
+          working-directory: docs
+          bundler-cache: true
+
+      - name: Build Jekyll site
+        run: |
+          cd docs
+          bundle exec jekyll build --destination ../_site
+        env:
+          JEKYLL_ENV: production
 
       - name: Download WASM artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: mirr-wasm
-          path: demos/
+          path: _wasm/
 
-      - name: Prepare paper for docs site
+      - name: Assemble paper into site
         run: |
-          # Copy paper into docs/paper/ so Jekyll serves it at /mirr-project/paper/
-          mkdir -p docs/paper/demos
-          cp paper/index.html paper/paper.css paper/paper.js paper/sw.js docs/paper/
-          cp paper/lra-card.svg paper/lra-client.js docs/paper/ 2>/dev/null || true
-          cp paper/LICENSE paper/CITATION.cff docs/paper/ 2>/dev/null || true
-          cp -r demos/* docs/paper/demos/
+          mkdir -p _site/paper/demos
+
+          # Copy paper source files (single source of truth: paper/)
+          cp paper/index.html paper/paper.css paper/paper.js paper/sw.js _site/paper/
+          cp paper/lra-card.svg paper/lra-client.js _site/paper/
+          cp paper/LICENSE paper/CITATION.cff _site/paper/
+
+          # Copy WASM build artifacts
+          cp _wasm/mirr_wasm.js _site/paper/demos/
+          cp _wasm/mirr_wasm_bg.wasm _site/paper/demos/
 
           # Inject build metadata
           HASH=$(git rev-parse --short HEAD)
           VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" docs/paper/index.html
-          sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" docs/paper/index.html
-          echo "Injected commit=$HASH version=$VERSION"
+          sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" _site/paper/index.html
+          sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" _site/paper/index.html
+          echo "Assembled paper with commit=$HASH version=$VERSION"
 
-      - name: Commit paper to docs
+      - name: Verify paper structure
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/paper/
-          if git diff --cached --quiet; then
-            echo "No changes to paper, skipping commit"
-          else
-            git commit -m "ci: deploy interactive paper to docs/paper/ [skip ci]"
-            git push
-          fi
+          test -f _site/paper/index.html || { echo "FAIL: missing index.html"; exit 1; }
+          test -f _site/paper/paper.js || { echo "FAIL: missing paper.js"; exit 1; }
+          test -f _site/paper/demos/mirr_wasm.js || { echo "FAIL: missing mirr_wasm.js"; exit 1; }
+          test -f _site/paper/demos/mirr_wasm_bg.wasm || { echo "FAIL: missing mirr_wasm_bg.wasm"; exit 1; }
+          echo "Paper verification: all 4 critical files present"
+          ls -la _site/paper/demos/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: _site/
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
