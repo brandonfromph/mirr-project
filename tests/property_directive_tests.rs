@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Tests for the property system expansion campaign:
 //!
 //! - PropertyDirective: Assert, Cover, Assume

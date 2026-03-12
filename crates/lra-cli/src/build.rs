@@ -329,42 +329,53 @@ fn preprocess_math(input: &str) -> String {
 fn preprocess_citations(input: &str) -> (String, Vec<String>) {
     let mut result = String::with_capacity(input.len());
     let mut citations: Vec<String> = Vec::new();
-    let bytes = input.as_bytes();
-    let len = bytes.len();
-    let mut i = 0;
+    let len = input.len();
 
-    const MAX_BYTES: usize = 4_000_000;
-    let effective_len = if len > MAX_BYTES { MAX_BYTES } else { len };
+    const MAX_CHARS: usize = 4_000_000;
+    let effective = if len > MAX_CHARS { &input[..MAX_CHARS] } else { input };
 
-    while i < effective_len {
+    let mut chars = effective.char_indices().peekable();
+    while let Some((_i, c)) = chars.next() {
         // Look for [@key]
-        if bytes[i] == b'[' && i + 1 < effective_len && bytes[i + 1] == b'@' {
-            let start = i + 2;
-            let mut end = start;
-            while end < effective_len && bytes[end] != b']' {
-                end += 1;
-            }
-            if end < effective_len {
-                let key = &input[start..end];
-                // Find or insert citation
-                let num = if let Some(pos) = citations.iter().position(|c| c == key) {
-                    pos + 1
-                } else {
-                    if citations.len() < MAX_REFERENCES {
-                        citations.push(key.to_string());
+        if c == '[' {
+            if let Some(&(_, '@')) = chars.peek() {
+                chars.next(); // consume '@'
+                let start = if let Some(&(s, _)) = chars.peek() { s } else { break };
+                let mut end = start;
+                let mut found = false;
+                while let Some(&(e, ch)) = chars.peek() {
+                    if ch == ']' {
+                        end = e;
+                        found = true;
+                        chars.next(); // consume ']'
+                        break;
                     }
-                    citations.len()
-                };
-                result.push_str(&format!(
-                    "<a href=\"#ref-{}\" class=\"citation\">[{}]</a>",
-                    num, num
-                ));
-                i = end + 1;
+                    chars.next();
+                }
+                if found {
+                    let key = &effective[start..end];
+                    let num = if let Some(pos) = citations.iter().position(|c| c == key) {
+                        pos + 1
+                    } else {
+                        if citations.len() < MAX_REFERENCES {
+                            citations.push(key.to_string());
+                        }
+                        citations.len()
+                    };
+                    result.push_str(&format!(
+                        "<a href=\"#ref-{}\" class=\"citation\">[{}]</a>",
+                        num, num
+                    ));
+                    continue;
+                }
+                // Malformed — output the consumed chars literally
+                result.push('[');
+                result.push('@');
+                result.push_str(&effective[start..end]);
                 continue;
             }
         }
-        result.push(bytes[i] as char);
-        i += 1;
+        result.push(c);
     }
 
     (result, citations)

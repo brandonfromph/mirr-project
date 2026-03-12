@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Temporal Guard Emitter Tests
 //!
 //! Requirement coverage: P2-REQ-007, P2-REQ-008

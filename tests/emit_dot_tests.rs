@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! DOT emitter edge-case tests.
 //!
 //! Covers Prev back-edges (dashed red), complex guard cluster nodes,

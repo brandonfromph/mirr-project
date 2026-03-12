@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Testbench emission tests.
 //!
 //! Verifies the auto-generated testbench contains all required elements:

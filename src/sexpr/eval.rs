@@ -44,227 +44,339 @@ impl Default for EvalState {
 /// Evaluate an S-expression in the given state.
 ///
 /// Bounded by `MAX_EVAL_STEPS` and `MAX_EVAL_DEPTH`.
-/// No recursion in the Rust implementation — uses explicit depth tracking.
+/// Uses an explicit continuation stack — no recursion, per NASA Power-of-10.
 pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
-    state.steps_remaining = state
-        .steps_remaining
-        .checked_sub(1)
-        .ok_or_else(|| sexpr_err("[E812] Evaluation steps exceed MAX_EVAL_STEPS"))?;
-
-    if state.depth > MAX_EVAL_DEPTH {
-        return Err(sexpr_err("[E811] Evaluation depth exceeds MAX_EVAL_DEPTH"));
+    /// What to do with any value produced by evaluating a sub-expression.
+    enum Cont {
+        /// (if _ then else) — condition just evaluated.
+        IfCond { then_expr: SExpr, else_expr: SExpr },
+        /// Collecting evaluated items for a list / generic form.
+        Collect { done: Vec<SExpr>, remaining: Vec<SExpr> },
+        /// car — extract head from evaluated arg.
+        Car,
+        /// cdr — extract tail from evaluated arg.
+        Cdr,
+        /// cons — head evaluated, now need to eval tail.
+        ConsHead { tail_expr: SExpr },
+        /// cons — tail evaluated, head already known.
+        ConsTail { head_val: SExpr },
+        /// eq? — first arg done, need to eval second.
+        EqFirst { second_expr: SExpr },
+        /// eq? — second arg done, first already known.
+        EqSecond { first_val: SExpr },
+        /// Type predicate (symbol?, list?, integer?, bool?).
+        TypePred(TypePredKind),
+        /// match-type — type value evaluated, now dispatch clauses.
+        MatchType { clauses: Vec<SExpr> },
+        /// match-type clause body evaluated — truncate env.
+        MatchTypeRestore { env_depth: usize },
+        /// Quasiquote: collecting items for a list within quasiquote.
+        QQCollect { done: Vec<SExpr>, remaining: Vec<SExpr> },
     }
 
-    match expr {
-        // Atoms self-evaluate.
-        SExpr::Integer(_) | SExpr::Bool(_) | SExpr::Str(_) => Ok(expr.clone()),
-
-        // Symbols: look up in environment.
-        SExpr::Symbol(name) => lookup(&state.env, name),
-
-        // Quote: return unevaluated.
-        SExpr::Quote(inner) => Ok((**inner).clone()),
-
-        // Quasiquote: evaluate unquotes inside.
-        SExpr::Quasiquote(inner) => {
-            state.depth += 1;
-            let result = eval_quasiquote(inner, state);
-            state.depth -= 1;
-            result
-        }
-
-        // Unquote outside quasiquote is an error.
-        SExpr::Unquote(_) => Err(sexpr_err("[E805] Unquote outside quasiquote")),
-
-        // List: dispatch on head form.
-        SExpr::List(items) => {
-            if items.is_empty() {
-                return Ok(SExpr::list(vec![]));
-            }
-            state.depth += 1;
-            let result = eval_list(items, state);
-            state.depth -= 1;
-            result
-        }
+    enum TypePredKind {
+        Symbol,
+        List,
+        Integer,
+        Bool,
     }
-}
 
-/// Evaluate a list form (dispatch on head symbol).
-fn eval_list(items: &[SExpr], state: &mut EvalState) -> Result<SExpr, MirrError> {
-    let head = match items[0].as_symbol() {
-        Some(s) => s,
-        None => {
-            // Not a special form — evaluate all and return as list.
-            let mut result = Vec::new();
-            for item in items {
-                result.push(eval(item, state)?);
-            }
-            return Ok(SExpr::list(result));
-        }
-    };
+    let mut stack: Vec<Cont> = Vec::new();
+    let mut current = expr.clone();
 
-    match head {
-        "quote" => {
-            if items.len() < 2 {
-                return Err(sexpr_err("[E806] quote requires one argument"));
-            }
-            Ok(items[1].clone())
-        }
-
-        "if" => {
-            if items.len() < 4 {
-                return Err(sexpr_err("[E806] if requires condition, then, else"));
-            }
-            let cond = eval(&items[1], state)?;
-            let is_true = match &cond {
-                SExpr::Bool(b) => *b,
-                SExpr::Integer(n) => *n != 0,
-                SExpr::List(l) => !l.is_empty(),
-                _ => true,
-            };
-            if is_true {
-                eval(&items[2], state)
-            } else {
-                eval(&items[3], state)
-            }
-        }
-
-        "list" => {
-            let mut result = Vec::new();
-            for item in &items[1..] {
-                result.push(eval(item, state)?);
-            }
-            Ok(SExpr::list(result))
-        }
-
-        "car" => {
-            if items.len() < 2 {
-                return Err(sexpr_err("[E806] car requires one argument"));
-            }
-            let val = eval(&items[1], state)?;
-            match val {
-                SExpr::List(ref l) if !l.is_empty() => Ok(l[0].clone()),
-                _ => Err(sexpr_err("[E805] car requires a non-empty list")),
-            }
-        }
-
-        "cdr" => {
-            if items.len() < 2 {
-                return Err(sexpr_err("[E806] cdr requires one argument"));
-            }
-            let val = eval(&items[1], state)?;
-            match val {
-                SExpr::List(ref l) if !l.is_empty() => Ok(SExpr::list(l[1..].to_vec())),
-                _ => Err(sexpr_err("[E805] cdr requires a non-empty list")),
-            }
-        }
-
-        "cons" => {
-            if items.len() < 3 {
-                return Err(sexpr_err("[E806] cons requires head and tail"));
-            }
-            let head_val = eval(&items[1], state)?;
-            let tail_val = eval(&items[2], state)?;
-            match tail_val {
-                SExpr::List(mut l) => {
-                    l.insert(0, head_val);
-                    Ok(SExpr::list(l))
-                }
-                _ => Ok(SExpr::list(vec![head_val, tail_val])),
-            }
-        }
-
-        "eq?" => {
-            if items.len() < 3 {
-                return Err(sexpr_err("[E806] eq? requires two arguments"));
-            }
-            let a = eval(&items[1], state)?;
-            let b = eval(&items[2], state)?;
-            Ok(SExpr::Bool(a == b))
-        }
-
-        "symbol?" => {
-            if items.len() < 2 {
-                return Err(sexpr_err("[E806] symbol? requires one argument"));
-            }
-            let val = eval(&items[1], state)?;
-            Ok(SExpr::Bool(val.is_symbol()))
-        }
-
-        "list?" => {
-            if items.len() < 2 {
-                return Err(sexpr_err("[E806] list? requires one argument"));
-            }
-            let val = eval(&items[1], state)?;
-            Ok(SExpr::Bool(val.is_list()))
-        }
-
-        "integer?" => {
-            if items.len() < 2 {
-                return Err(sexpr_err("[E806] integer? requires one argument"));
-            }
-            let val = eval(&items[1], state)?;
-            Ok(SExpr::Bool(val.is_integer()))
-        }
-
-        "bool?" => {
-            if items.len() < 2 {
-                return Err(sexpr_err("[E806] bool? requires one argument"));
-            }
-            let val = eval(&items[1], state)?;
-            Ok(SExpr::Bool(val.is_bool()))
-        }
-
-        "match-type" => {
-            if items.len() < 3 {
-                return Err(sexpr_err("[E806] match-type requires type and clauses"));
-            }
-            let type_val = eval(&items[1], state)?;
-            eval_match_type(&type_val, &items[2..], state)
-        }
-
-        _ => {
-            // Unknown form — look up head in env, if not found evaluate all.
-            let mut result = Vec::new();
-            for item in items {
-                result.push(eval(item, state)?);
-            }
-            Ok(SExpr::list(result))
-        }
-    }
-}
-
-/// Evaluate match-type dispatch.
-fn eval_match_type(
-    type_val: &SExpr,
-    clauses: &[SExpr],
-    state: &mut EvalState,
-) -> Result<SExpr, MirrError> {
+    let max_iters = MAX_EVAL_STEPS;
     let mut iter_count = 0usize;
-    for clause in clauses {
-        iter_count += 1;
-        if iter_count > MAX_SEXPR_NODES {
-            return Err(sexpr_err("[E804] match-type exceeded iteration budget"));
-        }
-        let clause_items =
-            clause.as_list().ok_or_else(|| sexpr_err("[E806] match-type clause must be a list"))?;
-        if clause_items.len() < 2 {
-            return Err(sexpr_err("[E806] match-type clause requires pattern and body"));
-        }
-        let pattern = &clause_items[0];
-        let body = &clause_items[1];
 
-        let env_depth = state.env.len();
-        if match_type_pattern(type_val, pattern, state)? {
-            let result = eval(body, state);
-            state.env.truncate(env_depth);
-            return result;
+    'main: loop {
+        iter_count += 1;
+        if iter_count > max_iters {
+            return Err(sexpr_err("[E812] Evaluation steps exceed MAX_EVAL_STEPS"));
         }
-        // match_type_pattern returned false — no bindings were pushed.
+        if stack.len() + state.depth > MAX_EVAL_DEPTH {
+            return Err(sexpr_err("[E811] Evaluation depth exceeds MAX_EVAL_DEPTH"));
+        }
+
+        state.steps_remaining = state
+            .steps_remaining
+            .checked_sub(1)
+            .ok_or_else(|| sexpr_err("[E812] Evaluation steps exceed MAX_EVAL_STEPS"))?;
+
+        // ── Evaluate `current` to produce a value ──────────────────
+        let value = match &current {
+            SExpr::Integer(_) | SExpr::Bool(_) | SExpr::Str(_) => current.clone(),
+            SExpr::Symbol(name) => lookup(&state.env, name)?,
+            SExpr::Quote(inner) => (**inner).clone(),
+            SExpr::Unquote(_) => {
+                return Err(sexpr_err("[E805] Unquote outside quasiquote"));
+            }
+            SExpr::Quasiquote(inner) => {
+                // Quasiquote: evaluate unquotes, leave rest as-is.
+                match inner.as_ref() {
+                    SExpr::Unquote(qq_inner) => {
+                        current = (**qq_inner).clone();
+                        continue 'main;
+                    }
+                    SExpr::List(items) if !items.is_empty() => {
+                        let remaining: Vec<SExpr> = items[1..].to_vec();
+                        stack.push(Cont::QQCollect { done: Vec::new(), remaining });
+                        // Quasiquote-evaluate items[0].
+                        current = qq_wrap(items[0].clone());
+                        continue 'main;
+                    }
+                    other => other.clone(),
+                }
+            }
+            SExpr::List(items) if items.is_empty() => SExpr::list(vec![]),
+            SExpr::List(items) => {
+                let head = items[0].as_symbol();
+                match head {
+                    Some("quote") => {
+                        if items.len() < 2 {
+                            return Err(sexpr_err("[E806] quote requires one argument"));
+                        }
+                        items[1].clone()
+                    }
+                    Some("if") => {
+                        if items.len() < 4 {
+                            return Err(sexpr_err("[E806] if requires condition, then, else"));
+                        }
+                        stack.push(Cont::IfCond {
+                            then_expr: items[2].clone(),
+                            else_expr: items[3].clone(),
+                        });
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("list") => {
+                        if items.len() <= 1 {
+                            SExpr::list(vec![])
+                        } else {
+                            let remaining: Vec<SExpr> = items[2..].to_vec();
+                            stack.push(Cont::Collect { done: Vec::new(), remaining });
+                            current = items[1].clone();
+                            continue 'main;
+                        }
+                    }
+                    Some("car") => {
+                        if items.len() < 2 {
+                            return Err(sexpr_err("[E806] car requires one argument"));
+                        }
+                        stack.push(Cont::Car);
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("cdr") => {
+                        if items.len() < 2 {
+                            return Err(sexpr_err("[E806] cdr requires one argument"));
+                        }
+                        stack.push(Cont::Cdr);
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("cons") => {
+                        if items.len() < 3 {
+                            return Err(sexpr_err("[E806] cons requires head and tail"));
+                        }
+                        stack.push(Cont::ConsHead { tail_expr: items[2].clone() });
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("eq?") => {
+                        if items.len() < 3 {
+                            return Err(sexpr_err("[E806] eq? requires two arguments"));
+                        }
+                        stack.push(Cont::EqFirst { second_expr: items[2].clone() });
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("symbol?") => {
+                        if items.len() < 2 {
+                            return Err(sexpr_err("[E806] symbol? requires one argument"));
+                        }
+                        stack.push(Cont::TypePred(TypePredKind::Symbol));
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("list?") => {
+                        if items.len() < 2 {
+                            return Err(sexpr_err("[E806] list? requires one argument"));
+                        }
+                        stack.push(Cont::TypePred(TypePredKind::List));
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("integer?") => {
+                        if items.len() < 2 {
+                            return Err(sexpr_err("[E806] integer? requires one argument"));
+                        }
+                        stack.push(Cont::TypePred(TypePredKind::Integer));
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("bool?") => {
+                        if items.len() < 2 {
+                            return Err(sexpr_err("[E806] bool? requires one argument"));
+                        }
+                        stack.push(Cont::TypePred(TypePredKind::Bool));
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    Some("match-type") => {
+                        if items.len() < 3 {
+                            return Err(sexpr_err("[E806] match-type requires type and clauses"));
+                        }
+                        stack.push(Cont::MatchType { clauses: items[2..].to_vec() });
+                        current = items[1].clone();
+                        continue 'main;
+                    }
+                    _ => {
+                        // Unknown form: evaluate all items and return as list.
+                        let remaining: Vec<SExpr> = items[1..].to_vec();
+                        stack.push(Cont::Collect { done: Vec::new(), remaining });
+                        current = items[0].clone();
+                        continue 'main;
+                    }
+                }
+            }
+        };
+
+        // ── Apply continuations to value ───────────────────────────
+        let mut val = value;
+        loop {
+            if stack.is_empty() {
+                return Ok(val);
+            }
+            match stack.pop().unwrap() {
+                Cont::IfCond { then_expr, else_expr } => {
+                    let is_true = match &val {
+                        SExpr::Bool(b) => *b,
+                        SExpr::Integer(n) => *n != 0,
+                        SExpr::List(l) => !l.is_empty(),
+                        _ => true,
+                    };
+                    current = if is_true { then_expr } else { else_expr };
+                    continue 'main;
+                }
+                Cont::Collect { mut done, remaining } => {
+                    done.push(val);
+                    if remaining.is_empty() {
+                        val = SExpr::list(done);
+                        // keep unwinding
+                    } else {
+                        stack.push(Cont::Collect { done, remaining: remaining[1..].to_vec() });
+                        current = remaining[0].clone();
+                        continue 'main;
+                    }
+                }
+                Cont::Car => match val {
+                    SExpr::List(ref l) if !l.is_empty() => {
+                        val = l[0].clone();
+                    }
+                    _ => {
+                        return Err(sexpr_err("[E805] car requires a non-empty list"));
+                    }
+                },
+                Cont::Cdr => match val {
+                    SExpr::List(ref l) if !l.is_empty() => {
+                        val = SExpr::list(l[1..].to_vec());
+                    }
+                    _ => {
+                        return Err(sexpr_err("[E805] cdr requires a non-empty list"));
+                    }
+                },
+                Cont::ConsHead { tail_expr } => {
+                    stack.push(Cont::ConsTail { head_val: val });
+                    current = tail_expr;
+                    continue 'main;
+                }
+                Cont::ConsTail { head_val } => match val {
+                    SExpr::List(mut l) => {
+                        l.insert(0, head_val);
+                        val = SExpr::list(l);
+                    }
+                    _ => {
+                        val = SExpr::list(vec![head_val, val]);
+                    }
+                },
+                Cont::EqFirst { second_expr } => {
+                    stack.push(Cont::EqSecond { first_val: val });
+                    current = second_expr;
+                    continue 'main;
+                }
+                Cont::EqSecond { first_val } => {
+                    val = SExpr::Bool(first_val == val);
+                }
+                Cont::TypePred(kind) => {
+                    val = SExpr::Bool(match kind {
+                        TypePredKind::Symbol => val.is_symbol(),
+                        TypePredKind::List => val.is_list(),
+                        TypePredKind::Integer => val.is_integer(),
+                        TypePredKind::Bool => val.is_bool(),
+                    });
+                }
+                Cont::MatchType { clauses } => {
+                    let type_val = val;
+                    let mut matched = false;
+                    let mut clause_iters = 0usize;
+                    for clause in &clauses {
+                        clause_iters += 1;
+                        if clause_iters > MAX_SEXPR_NODES {
+                            return Err(sexpr_err("[E804] match-type exceeded iteration budget"));
+                        }
+                        let clause_items = clause
+                            .as_list()
+                            .ok_or_else(|| sexpr_err("[E806] match-type clause must be a list"))?;
+                        if clause_items.len() < 2 {
+                            return Err(sexpr_err(
+                                "[E806] match-type clause requires pattern and body",
+                            ));
+                        }
+                        let pattern = &clause_items[0];
+                        let body = &clause_items[1];
+                        let env_depth = state.env.len();
+                        if match_type_pattern(&type_val, pattern, state)? {
+                            stack.push(Cont::MatchTypeRestore { env_depth });
+                            current = body.clone();
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if matched {
+                        continue 'main;
+                    }
+                    return Err(sexpr_err("[E805] No match-type clause matched"));
+                }
+                Cont::MatchTypeRestore { env_depth } => {
+                    state.env.truncate(env_depth);
+                    // val passes through
+                }
+                Cont::QQCollect { mut done, remaining } => {
+                    done.push(val);
+                    if remaining.is_empty() {
+                        val = SExpr::list(done);
+                        // keep unwinding
+                    } else {
+                        stack.push(Cont::QQCollect { done, remaining: remaining[1..].to_vec() });
+                        current = qq_wrap(remaining[0].clone());
+                        continue 'main;
+                    }
+                }
+            }
+        }
     }
-    Err(sexpr_err("[E805] No match-type clause matched"))
 }
 
+/// Convert an S-expression for quasiquote evaluation:
+/// - Unquote(x) → just x (evaluate it normally)
+/// - List → wrap in Quasiquote so the main loop enters QQ mode
+/// - Atoms → wrap in Quote so they self-evaluate
+fn qq_wrap(expr: SExpr) -> SExpr {
+    match expr {
+        SExpr::Unquote(inner) => *inner,
+        SExpr::List(_) => SExpr::Quasiquote(Box::new(expr)),
+        other => SExpr::Quote(Box::new(other)),
+    }
+}
 /// Match a type value against a pattern, binding variables.
 fn match_type_pattern(
     type_val: &SExpr,
@@ -297,22 +409,7 @@ fn match_type_pattern(
     }
 }
 
-/// Evaluate quasiquote: process unquotes, leave rest as-is.
-fn eval_quasiquote(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
-    match expr {
-        SExpr::Unquote(inner) => eval(inner, state),
-        SExpr::List(items) => {
-            let mut result = Vec::new();
-            for item in items {
-                result.push(eval_quasiquote(item, state)?);
-            }
-            Ok(SExpr::list(result))
-        }
-        _ => Ok(expr.clone()),
-    }
-}
-
-/// Look up a symbol in the environment.
+/// Look up a symbol binding in the environment (most-recent first).
 fn lookup(env: &[(String, SExpr)], name: &str) -> Result<SExpr, MirrError> {
     env.iter()
         .rev()

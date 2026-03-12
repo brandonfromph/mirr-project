@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use nasa_rust_project::mirr_driver;
 use nasa_rust_project::mirr_driver::collect_tokens_from_pushes;
 use nasa_rust_project::mirr_executor;

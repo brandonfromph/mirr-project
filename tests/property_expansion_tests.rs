@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Tests for the property system hardening campaign:
 //! - Bug fix: prev() delay validation now applies to properties
 //! - Refactor: PropertyFormula::exprs() / exprs_mut() centralize variant dispatch

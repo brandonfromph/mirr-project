@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
 use nasa_rust_project::ast::types::LiteralValue;

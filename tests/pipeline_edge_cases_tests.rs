@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Pipeline edge-case tests.
 //!
 //! Covers semantic error propagation, has_width_errors() == true,

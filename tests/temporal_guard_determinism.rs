@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use nasa_rust_project::mirr_executor::drive_parsed_module_with_interpreter;
 use nasa_rust_project::parser::parse_mirr;
 use std::fs;

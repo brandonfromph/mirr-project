@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Temporal compiler edge-case tests.
 //!
 //! Covers complex guard with OR, ConditionKind::try_from_expr for Literal

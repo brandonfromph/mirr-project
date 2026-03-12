@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! MIRR Self-Hosting Parity Tests — CI Gate
 //!
 //! These integration tests verify that the Rust compiler pipeline produces

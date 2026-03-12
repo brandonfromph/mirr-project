@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! TYPE-001: Type checker tests.
 //!
 //! Tests all 16 type rules (T1–T16) and all 7 error codes (E601–E607).

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use std::fs;
 
 use nasa_rust_project::mirr_driver;

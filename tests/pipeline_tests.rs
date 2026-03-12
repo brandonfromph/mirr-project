@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Phase 6 Integration Tests
 //!
 //! End-to-end pipeline tests verifying parse -> simplify -> width -> temporal -> emit.

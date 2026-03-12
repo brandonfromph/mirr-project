@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Phase 7a: Safety property tests.
 //!
 //! Tests property parsing, validation, SVA emission, JSON emission,

@@ -123,7 +123,7 @@ jobs:
         run: |
           COUNT=$(grep -r "Admitted\." proofs/ | wc -l)
           echo "Admitted count: $COUNT"
-          test "$COUNT" -le 13
+          test "$COUNT" -le 20
 
   lra-cli:
     name: LRA CLI

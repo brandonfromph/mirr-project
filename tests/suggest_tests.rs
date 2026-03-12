@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 // Integration tests for the MIRR "did you mean?" suggestion engine.
 //
 // These tests exercise the public `closest_match` function which uses

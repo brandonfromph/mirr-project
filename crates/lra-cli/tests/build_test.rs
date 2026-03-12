@@ -3,17 +3,6 @@
 use std::fs;
 use std::path::Path;
 use std::process::Command;
-
-/// Helper to get the lra binary path.
-#[allow(dead_code)]
-fn lra_bin() -> std::path::PathBuf {
-    let mut path = std::env::current_exe().unwrap();
-    path.pop(); // remove test binary name
-    path.pop(); // remove deps/
-    path.push("lra");
-    path
-}
-
 /// Create a unique temp directory for a test and clean any prior run.
 fn setup_temp(name: &str) -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(name);

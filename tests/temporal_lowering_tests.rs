@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Temporal Guard Lowering Tests
 //!
 //! Requirement coverage: P2-REQ-001 through P2-REQ-006, P2-REQ-013 through P2-REQ-015

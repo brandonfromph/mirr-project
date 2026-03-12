@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Tests for source span propagation through the parser.
 //!
 //! Verifies that parsed AST nodes carry correct line-level spans and

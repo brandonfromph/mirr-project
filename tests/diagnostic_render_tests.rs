@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 // Integration tests for the MIRR diagnostic rendering engine.
 //
 // These tests exercise the public API of `nasa_rust_project::diagnostic`

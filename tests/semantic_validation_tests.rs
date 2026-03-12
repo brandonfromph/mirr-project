@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Semantic validation edge-case tests.
 //!
 //! Covers duplicate name detection, Prev delay=0 errors, and

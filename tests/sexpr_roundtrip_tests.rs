@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Round-trip tests: AST -> S-expr -> AST for all parseable examples.
 
 use nasa_rust_project::parser::parse_mirr;

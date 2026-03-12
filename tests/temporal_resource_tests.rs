@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Temporal Guard Resource Estimation Tests
 //!
 //! Requirement coverage: P2-REQ-009 through P2-REQ-012

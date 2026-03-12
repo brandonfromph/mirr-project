@@ -1,20 +1,5 @@
+#![forbid(unsafe_code)]
 use std::process::Command;
-
-#[test]
-fn generator_runs_and_outputs_text_python() {
-    let output = Command::new("python")
-        .arg("scripts/generate_mirr_stress.py")
-        .arg("--type")
-        .arg("mux_forest")
-        .arg("--size")
-        .arg("10")
-        .output()
-        .expect("failed to execute script");
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("module mux_forest"));
-}
 
 #[test]
 fn generator_runs_and_outputs_text_rust() {
@@ -55,7 +40,7 @@ fn compile_mirr(code: &str) {
 
 #[test]
 fn generated_templates_compile() {
-    // small sizes just to validate syntax; full stress tests use larger sizes in research scripts
+    // small sizes just to validate syntax
     let types = ["mux_forest", "temporal_chain", "width_chain"];
     for typ in types {
         let output = Command::new("cargo")

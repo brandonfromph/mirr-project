@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Tests for R-SPU instruction emission backend.
 //!
 //! Covers register allocation, instruction emission for each MIRR primitive,

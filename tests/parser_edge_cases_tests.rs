@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Parser edge-case tests.
 //!
 //! Covers unbalanced parentheses, expr depth limits, standalone subtraction,

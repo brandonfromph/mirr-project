@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! FPGA scaffold emission tests.
 //!
 //! Verifies constraint file and build script generation for all supported

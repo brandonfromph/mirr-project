@@ -1,3 +1,4 @@
+// NOTE: This test requires unsafe for GlobalAlloc — the sole permitted exception.
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
 

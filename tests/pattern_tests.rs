@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Phase 7b: Homoiconic pattern system tests.
 //!
 //! Tests pattern definition parsing, pattern call parsing, substitution,

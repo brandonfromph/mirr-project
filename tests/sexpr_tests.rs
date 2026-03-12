@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Tests for S-expression parser, printer, and type helpers.
 
 use nasa_rust_project::sexpr::parser::parse_sexpr;

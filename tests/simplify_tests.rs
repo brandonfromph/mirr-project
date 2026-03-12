@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Comprehensive tests for MIRR logic simplification (Phase 3).
 //!
 //! Covers: boolean identity/annihilation, idempotence/absorption, comparison

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! TYPE-002: Signed integer type tests.
 //!
 //! Tests signed type parsing, type checking, assignment compatibility,

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Phase 7b coverage gap tests — 60 tests for untested error paths,
 //! boundary conditions, and emission code paths.
 //!

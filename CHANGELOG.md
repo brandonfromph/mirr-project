@@ -38,7 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- `MirrError::LexicalError` dead code variant cleanup completed.
 - 12 unused error code variants removed from `typeck::extended`.
 - `print_sexpr_compact` function (replaced by S-expression pretty-printer).
 

@@ -1,8 +1,8 @@
 //! Bounded S-expression text parser.
 //!
 //! Parses S-expression text into `SExpr` values with explicit bounds
-//! on depth, node count, and input size. No recursion — uses an
-//! explicit stack per NASA Power-of-10 compliance.
+//! on depth, node count, and input size. Uses an explicit stack —
+//! no recursion, per NASA Power-of-10 compliance.
 
 #![forbid(unsafe_code)]
 
@@ -171,79 +171,143 @@ pub fn parse_sexpr(input: &str) -> Result<SExpr, MirrError> {
 
 /// Parse a single S-expression from the token stream.
 ///
-/// Uses an explicit stack for list parsing (no recursion).
+/// Uses an explicit stack — no recursion, per NASA Power-of-10.
 fn parse_one(
     tokens: &[Token],
     pos: &mut usize,
     depth: usize,
     node_count: &mut usize,
 ) -> Result<SExpr, MirrError> {
-    if depth >= MAX_SEXPR_DEPTH {
-        return Err(sexpr_err("[E803] S-expression nesting exceeds MAX_SEXPR_DEPTH"));
+    /// Stack frame for iterative parsing.
+    enum Frame {
+        /// Collecting items for a list; push result, keep going until ')'.
+        BuildList { items: Vec<SExpr>, depth: usize },
+        /// Wrap the completed child in Quote / Quasiquote / Unquote.
+        Wrap(WrapKind),
     }
-    if *pos >= tokens.len() {
-        return Err(sexpr_err("[E801] Unexpected end of S-expression input"));
-    }
-    *node_count += 1;
-    if *node_count > MAX_SEXPR_NODES {
-        return Err(sexpr_err("[E804] S-expression tree exceeds MAX_SEXPR_NODES"));
+    enum WrapKind {
+        Quote,
+        Quasiquote,
+        Unquote,
     }
 
-    match &tokens[*pos] {
-        Token::OpenParen => {
-            *pos += 1;
-            let mut items = Vec::new();
-            // Bounded: at most MAX_SEXPR_NODES items.
-            let mut list_iters = 0usize;
-            while *pos < tokens.len() && tokens[*pos] != Token::CloseParen {
-                list_iters += 1;
-                if list_iters > MAX_SEXPR_NODES {
-                    return Err(sexpr_err("[E804] List exceeds MAX_SEXPR_NODES elements"));
+    let mut stack: Vec<Frame> = Vec::new();
+    // Seed stack depth check with caller's depth.
+    let mut current_depth = depth;
+
+    // Outer loop: keeps running until we produce a final result.
+    let max_iters = MAX_SEXPR_NODES * 3;
+    let mut iters = 0usize;
+    loop {
+        iters += 1;
+        if iters > max_iters {
+            return Err(sexpr_err("[E804] Parse iteration limit exceeded"));
+        }
+
+        // ── Read one token and produce either a leaf or push a frame ──
+        if current_depth >= MAX_SEXPR_DEPTH {
+            return Err(sexpr_err("[E803] S-expression nesting exceeds MAX_SEXPR_DEPTH"));
+        }
+        if *pos >= tokens.len() {
+            return Err(sexpr_err("[E801] Unexpected end of S-expression input"));
+        }
+        *node_count += 1;
+        if *node_count > MAX_SEXPR_NODES {
+            return Err(sexpr_err("[E804] S-expression tree exceeds MAX_SEXPR_NODES"));
+        }
+
+        let result = match &tokens[*pos] {
+            Token::OpenParen => {
+                *pos += 1;
+                // Check for immediate close → empty list.
+                if *pos < tokens.len() && tokens[*pos] == Token::CloseParen {
+                    *pos += 1;
+                    SExpr::List(vec![])
+                } else {
+                    stack.push(Frame::BuildList { items: Vec::new(), depth: current_depth });
+                    current_depth += 1;
+                    continue; // go read the first child
                 }
-                let item = parse_one(tokens, pos, depth + 1, node_count)?;
-                items.push(item);
             }
-            if *pos >= tokens.len() {
-                return Err(sexpr_err("[E802] Unbalanced parentheses — missing ')'"));
+            Token::CloseParen => {
+                return Err(sexpr_err("[E802] Unexpected ')' — unbalanced parentheses"));
             }
-            *pos += 1; // consume ')'
-            Ok(SExpr::List(items))
-        }
-        Token::CloseParen => Err(sexpr_err("[E802] Unexpected ')' — unbalanced parentheses")),
-        Token::Quote => {
-            *pos += 1;
-            let inner = parse_one(tokens, pos, depth + 1, node_count)?;
-            Ok(SExpr::Quote(Box::new(inner)))
-        }
-        Token::Backtick => {
-            *pos += 1;
-            let inner = parse_one(tokens, pos, depth + 1, node_count)?;
-            Ok(SExpr::Quasiquote(Box::new(inner)))
-        }
-        Token::Comma => {
-            *pos += 1;
-            let inner = parse_one(tokens, pos, depth + 1, node_count)?;
-            Ok(SExpr::Unquote(Box::new(inner)))
-        }
-        Token::Symbol(s) => {
-            let result = SExpr::Symbol(s.clone());
-            *pos += 1;
-            Ok(result)
-        }
-        Token::Integer(n) => {
-            let result = SExpr::Integer(*n);
-            *pos += 1;
-            Ok(result)
-        }
-        Token::Bool(b) => {
-            let result = SExpr::Bool(*b);
-            *pos += 1;
-            Ok(result)
-        }
-        Token::Str(s) => {
-            let result = SExpr::Str(s.clone());
-            *pos += 1;
-            Ok(result)
+            Token::Quote => {
+                *pos += 1;
+                stack.push(Frame::Wrap(WrapKind::Quote));
+                current_depth += 1;
+                continue;
+            }
+            Token::Backtick => {
+                *pos += 1;
+                stack.push(Frame::Wrap(WrapKind::Quasiquote));
+                current_depth += 1;
+                continue;
+            }
+            Token::Comma => {
+                *pos += 1;
+                stack.push(Frame::Wrap(WrapKind::Unquote));
+                current_depth += 1;
+                continue;
+            }
+            Token::Symbol(s) => {
+                *pos += 1;
+                SExpr::Symbol(s.clone())
+            }
+            Token::Integer(n) => {
+                *pos += 1;
+                SExpr::Integer(*n)
+            }
+            Token::Bool(b) => {
+                *pos += 1;
+                SExpr::Bool(*b)
+            }
+            Token::Str(s) => {
+                *pos += 1;
+                SExpr::Str(s.clone())
+            }
+        };
+
+        // ── Unwind: apply pending frames to the result ──
+        let mut val = result;
+        loop {
+            match stack.last() {
+                None => return Ok(val),
+                Some(Frame::Wrap(_)) => {
+                    if let Some(Frame::Wrap(kind)) = stack.pop() {
+                        val = match kind {
+                            WrapKind::Quote => SExpr::Quote(Box::new(val)),
+                            WrapKind::Quasiquote => SExpr::Quasiquote(Box::new(val)),
+                            WrapKind::Unquote => SExpr::Unquote(Box::new(val)),
+                        };
+                        current_depth = current_depth.saturating_sub(1);
+                        // keep unwinding — maybe another Wrap or BuildList above
+                    }
+                }
+                Some(Frame::BuildList { .. }) => {
+                    // Add val to the list and check for more items or ')'.
+                    if let Some(Frame::BuildList { mut items, depth: d }) = stack.pop() {
+                        items.push(val);
+                        if items.len() > MAX_SEXPR_NODES {
+                            return Err(sexpr_err("[E804] List exceeds MAX_SEXPR_NODES elements"));
+                        }
+                        if *pos < tokens.len() && tokens[*pos] == Token::CloseParen {
+                            // List complete.
+                            *pos += 1;
+                            val = SExpr::List(items);
+                            current_depth = d;
+                            // keep unwinding
+                        } else if *pos >= tokens.len() {
+                            return Err(sexpr_err("[E802] Unbalanced parentheses — missing ')'"));
+                        } else {
+                            // More items — push frame back and parse next child.
+                            current_depth = d + 1;
+                            stack.push(Frame::BuildList { items, depth: d });
+                            break; // break inner loop, outer loop reads next token
+                        }
+                    }
+                }
+            }
         }
     }
 }

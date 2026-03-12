@@ -134,11 +134,8 @@ cargo test   # all tests should pass with zero warnings
 ## Usage
 
 ```bash
-# Simplify logic
-cargo run --bin mirr-simplify -- --stats examples/neonatal_respirator.mirr
-
-# Check bit widths
-cargo run --bin mirr-width -- examples/neonatal_respirator.mirr
+# Compile to S-expression IR
+cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit sexpr
 
 # Full pipeline — emit SystemVerilog RTL
 cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit verilog

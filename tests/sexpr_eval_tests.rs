@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Tests for S-expression eval, macros, and reader macros.
 
 use nasa_rust_project::sexpr::eval::{eval, EvalState};

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! ERR-002: Multi-error accumulation tests.
 //!
 //! Verifies that the compiler reports multiple errors per compilation

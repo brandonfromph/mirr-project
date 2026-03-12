@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Phase 4 width inference integration tests.
 //!
 //! Categories:

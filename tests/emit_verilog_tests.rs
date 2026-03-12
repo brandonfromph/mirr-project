@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! SystemVerilog emitter tests.
 //!
 //! Covers internal signals, multi-guard reflex OR join, Prev as _d delay,
