@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <title>Living Research Artifact</title>
+  <desc>Social card for this LRA paper</desc>
+  <rect width="1200" height="630" fill="#1a1a1a"/>
+  <rect width="1200" height="6" fill="#2d5fa6"/>
+  <!-- Title placeholder -->
+  <text x="600" y="230" text-anchor="middle" fill="#f0f0f0"
+    font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="bold">
+    [Your Paper Title]
+  </text>
+  <!-- Subtitle -->
+  <text x="600" y="300" text-anchor="middle" fill="#aaaaaa"
+    font-family="system-ui, -apple-system, sans-serif" font-size="28">
+    Living Research Artifact
+  </text>
+  <!-- Divider -->
+  <line x1="400" y1="350" x2="800" y2="350" stroke="#333333" stroke-width="1"/>
+  <!-- Stats placeholder -->
+  <text x="600" y="410" text-anchor="middle" fill="#888888"
+    font-family="system-ui, -apple-system, sans-serif" font-size="22">
+    GPL-3.0 · Built with LRA Template
+  </text>
+  <!-- URL -->
+  <text x="600" y="560" text-anchor="middle" fill="#555555"
+    font-family="monospace" font-size="18">
+    github.com/brandonfromph/lra-template
+  </text>
+</svg>

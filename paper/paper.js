@@ -160,6 +160,7 @@ function compile() {
     output.textContent =
       `Source too large (${source.length} bytes). Limit is ${MAX_SOURCE_BYTES} bytes.`;
     output.classList.add('error');
+    output.setAttribute('aria-busy', 'false');
     return;
   }
 
@@ -194,12 +195,19 @@ async function runBenchmarks() {
 
   for (const fmt of formats) {
     const compiler = COMPILERS[fmt];
-    const start = performance.now();
-    const raw = compiler(source);
-    const elapsed = (performance.now() - start).toFixed(2);
-
-    const result = JSON.parse(raw);
-    const lines = result.ok ? result.ok.split('\n').length : 0;
+    let elapsed, lines, isError;
+    try {
+      const start = performance.now();
+      const raw = compiler(source);
+      elapsed = (performance.now() - start).toFixed(2);
+      const result = JSON.parse(raw);
+      lines = result.ok ? result.ok.split('\n').length : 0;
+      isError = !!result.err;
+    } catch (err) {
+      elapsed = 'ERROR';
+      lines = 0;
+      isError = true;
+    }
 
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -207,7 +215,7 @@ async function runBenchmarks() {
       <td>${elapsed}</td>
       <td>${lines}</td>
     `;
-    if (result.err) {
+    if (isError) {
       row.classList.add('error');
     }
     tbody.appendChild(row);
@@ -250,3 +258,73 @@ document.getElementById('mirr-source')
 
 // Boot
 initWasm();
+
+// ── LRA Protocol bridge (Phase 4) ──────────────────────────────────
+// Service Worker relays lra.run_tool requests here because only the
+// page has access to the WASM module.
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', function(event) {
+    var data = event.data || {};
+    if (data.type !== 'lra.run_tool.relay') return;
+    if (!wasmReady) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'lra.run_tool.response',
+        relay_id: data.relay_id,
+        error: { code: -32000, message: 'WASM compiler not loaded yet' }
+      });
+      return;
+    }
+    var input = (data.params && data.params.input) || '';
+    var format = (data.params && data.params.format) || 'verilog';
+    var fn = COMPILERS[format];
+    if (!fn) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'lra.run_tool.response',
+        relay_id: data.relay_id,
+        error: { code: -32602, message: 'Unknown format: ' + format }
+      });
+      return;
+    }
+    try {
+      var raw = fn(input);
+      var result = JSON.parse(raw);
+      navigator.serviceWorker.controller.postMessage({
+        type: 'lra.run_tool.response',
+        relay_id: data.relay_id,
+        result: result
+      });
+    } catch (e) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'lra.run_tool.response',
+        relay_id: data.relay_id,
+        error: { code: -32603, message: e.message }
+      });
+    }
+  });
+}
+
+// ── LRA Protocol: cross-origin query handler ───────────────────────
+// When another paper embeds us in an iframe, it sends postMessage
+// requests. We forward them to our Service Worker for dispatch.
+
+window.addEventListener('message', function(event) {
+  var data = event.data;
+  if (!data || data.jsonrpc !== '2.0' || !data.method) return;
+  if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+
+  navigator.serviceWorker.controller.postMessage(data);
+
+  function onReply(e) {
+    if (e.data && e.data.id === data.id) {
+      navigator.serviceWorker.removeEventListener('message', onReply);
+      event.source.postMessage(e.data, '*');
+    }
+  }
+  navigator.serviceWorker.addEventListener('message', onReply);
+});
+
+// Register Service Worker for offline support + protocol
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function() {});
+}

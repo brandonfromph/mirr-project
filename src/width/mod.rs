@@ -99,13 +99,18 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
 }
 
 // ---------------------------------------------------------------------------
-// Public API: assignment truncation check
+// Public API: single-assignment truncation check (test + diagnostic use)
 // ---------------------------------------------------------------------------
 
 /// Check a single assignment for unsafe truncation.
 ///
 /// Runs width inference on the RHS expression, then compares the inferred
 /// width against the target signal's declared width.
+///
+/// The main pipeline uses [`infer_program_widths`] instead, which inlines this
+/// logic to accumulate per-node statistics. This entry point exists for
+/// integration tests and external tooling that need to check one assignment
+/// in isolation without constructing a full `MirrProgram`.
 pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<WidthDiag> {
     let result = infer_widths(&assignment.value, signals);
     let mut diags = result.diagnostics;

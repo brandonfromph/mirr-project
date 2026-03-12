@@ -158,53 +158,93 @@ fn guard_name(guard: &CompiledGuard) -> String {
 // Temporal guard emission
 // ---------------------------------------------------------------------------
 
+/// Maximum depth for guard tree processing (NASA P10: no recursion).
+const MAX_GUARD_DEPTH: usize = 64;
+
+/// Explicit work-stack item for bounded guard traversal.
+enum GuardWork<'a> {
+    /// Process a single guard (may push sub-work for Complex guards).
+    Process(&'a CompiledGuard),
+    /// Emit combination logic for a Complex guard after its sub-guards are emitted.
+    Combine { name: &'a str, sub_guards: &'a [CompiledGuard] },
+}
+
 /// Emit instructions for all temporal guards.
 ///
 /// For each guard: init, tick, query (deterministic three-instruction pattern).
+/// Complex guards are flattened via an explicit work-stack (NASA P10: no recursion).
+/// Bounded: at most `MAX_GUARD_DEPTH * 4` iterations.
 fn emit_temporal_guards(
     guards: &[CompiledGuard],
     regs: &RegAllocResult,
     guard_map: &HashMap<String, GuardId>,
     instrs: &mut Vec<RspuInstruction>,
 ) -> Result<(), MirrError> {
-    for guard in guards {
-        match guard {
-            CompiledGuard::ShiftRegister(sr) => {
-                let gid = guard_map[&sr.name];
-                let cond_reg = condition_to_reg(&sr.condition_kind, regs);
-                instrs.push(RspuInstruction::SrInit {
-                    guard: gid,
-                    length: sr.delay_cycles as u32,
-                    cond: cond_reg,
-                });
-                instrs.push(RspuInstruction::SrTick { guard: gid });
-                instrs.push(RspuInstruction::SrQuery { dst: cond_reg, guard: gid });
-            }
-            CompiledGuard::Counter(cg) => {
-                let gid = guard_map[&cg.name];
-                let cond_reg = condition_to_reg(&cg.condition_kind, regs);
-                instrs.push(RspuInstruction::CtrInit {
-                    guard: gid,
-                    target: cg.target_count,
-                    cond: cond_reg,
-                });
-                instrs.push(RspuInstruction::CtrTick { guard: gid });
-                instrs.push(RspuInstruction::CtrQuery { dst: cond_reg, guard: gid });
-            }
-            CompiledGuard::Complex(cx) => {
-                // Complex guards have sub-guards; emit them, then combine.
-                emit_temporal_guards(&cx.sub_guards, regs, guard_map, instrs)?;
+    // Explicit work-stack to avoid recursion (NASA P10).
+    let mut work: Vec<GuardWork<'_>> = Vec::with_capacity(MAX_GUARD_DEPTH);
+
+    // Push initial guards in reverse order (stack is LIFO).
+    for guard in guards.iter().rev() {
+        work.push(GuardWork::Process(guard));
+    }
+
+    let max_iterations = MAX_GUARD_DEPTH * 4;
+    let mut visited = 0usize;
+
+    while let Some(item) = work.pop() {
+        visited += 1;
+        if visited > max_iterations {
+            return Err(rspu_err(
+                "[E706] R-SPU guard tree exceeds maximum iteration bound.".to_string(),
+            ));
+        }
+
+        match item {
+            GuardWork::Process(guard) => match guard {
+                CompiledGuard::ShiftRegister(sr) => {
+                    let gid = guard_map[&sr.name];
+                    let cond_reg = condition_to_reg(&sr.condition_kind, regs);
+                    instrs.push(RspuInstruction::SrInit {
+                        guard: gid,
+                        length: sr.delay_cycles as u32,
+                        cond: cond_reg,
+                    });
+                    instrs.push(RspuInstruction::SrTick { guard: gid });
+                    instrs.push(RspuInstruction::SrQuery { dst: cond_reg, guard: gid });
+                }
+                CompiledGuard::Counter(cg) => {
+                    let gid = guard_map[&cg.name];
+                    let cond_reg = condition_to_reg(&cg.condition_kind, regs);
+                    instrs.push(RspuInstruction::CtrInit {
+                        guard: gid,
+                        target: cg.target_count,
+                        cond: cond_reg,
+                    });
+                    instrs.push(RspuInstruction::CtrTick { guard: gid });
+                    instrs.push(RspuInstruction::CtrQuery { dst: cond_reg, guard: gid });
+                }
+                CompiledGuard::Complex(cx) => {
+                    // Push combine step first (will execute after sub-guards).
+                    work.push(GuardWork::Combine { name: &cx.name, sub_guards: &cx.sub_guards });
+                    // Push sub-guards in reverse order for correct processing order.
+                    for sub in cx.sub_guards.iter().rev() {
+                        work.push(GuardWork::Process(sub));
+                    }
+                }
+            },
+            GuardWork::Combine { name, sub_guards } => {
                 // The complex guard itself is derived from combination logic.
-                // For now, emit a GUARD_AND if it has exactly 2 sub-guards.
-                let gid = guard_map[&cx.name];
-                if cx.sub_guards.len() == 2 {
-                    let a_gid = guard_map[&guard_name(&cx.sub_guards[0])];
-                    let b_gid = guard_map[&guard_name(&cx.sub_guards[1])];
+                // Emit a GUARD_AND if it has exactly 2 sub-guards.
+                let gid = guard_map[name];
+                if sub_guards.len() == 2 {
+                    let a_gid = guard_map[&guard_name(&sub_guards[0])];
+                    let b_gid = guard_map[&guard_name(&sub_guards[1])];
                     instrs.push(RspuInstruction::GuardAnd { dst: gid, a: a_gid, b: b_gid });
                 }
             }
         }
     }
+
     Ok(())
 }
 

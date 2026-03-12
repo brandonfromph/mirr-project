@@ -23,20 +23,15 @@
 //! | Code | Rule | Description |
 //! |------|------|-------------|
 //! | E610 | REF-BOUND | Refinement lower bound exceeds upper bound |
-//! | E611 | REF-RANGE | Value outside refinement range at compile time |
 //! | E612 | REF-WIDTH | Refinement bound exceeds declared bit-width capacity |
 //! | E613 | LIN-UNUSED | Linear signal declared but never consumed |
 //! | E614 | LIN-DOUBLE | Linear signal consumed more than once in a clock cycle |
-//! | E615 | LIN-ESCAPE | Linear signal escapes its owning module boundary |
 //! | E616 | EFF-PURE | Pure (combinational) context contains stateful operation |
 //! | E617 | EFF-MIX | Effect mismatch: stateful signal used in pure expression |
 //! | E618 | CLK-CROSS | Clock domain crossing without synchronizer |
 //! | E619 | CLK-UNDEF | Reference to undeclared clock domain |
 //! | E620 | PHT-MISMATCH | Phantom tag mismatch in assignment or comparison |
 //! | E621 | PHT-UNDEF | Reference to undeclared phantom tag |
-//! | E622 | NAT-OVERFLOW | Type-level natural exceeds MAX_TYPE_NAT |
-//! | E623 | NAT-MISMATCH | Type-level natural dimension mismatch in operation |
-//! | E624 | DEP-MISMATCH | Dependent type parameter mismatch |
 //! | E625 | SES-PROTOCOL | Session type protocol violation (unexpected message) |
 
 #![forbid(unsafe_code)]
@@ -775,16 +770,12 @@ pub struct SessionTransition {
 pub mod error_codes {
     /// Refinement lower bound exceeds upper bound.
     pub const E610_REF_BOUND: &str = "E610";
-    /// Value outside refinement range at compile time.
-    pub const E611_REF_RANGE: &str = "E611";
     /// Refinement bound exceeds declared bit-width capacity.
     pub const E612_REF_WIDTH: &str = "E612";
     /// Linear signal declared but never consumed.
     pub const E613_LIN_UNUSED: &str = "E613";
     /// Linear signal consumed more than once in a clock cycle.
     pub const E614_LIN_DOUBLE: &str = "E614";
-    /// Linear signal escapes its owning module boundary.
-    pub const E615_LIN_ESCAPE: &str = "E615";
     /// Pure (combinational) context contains stateful operation.
     pub const E616_EFF_PURE: &str = "E616";
     /// Effect mismatch: stateful signal used in pure expression.
@@ -797,12 +788,6 @@ pub mod error_codes {
     pub const E620_PHT_MISMATCH: &str = "E620";
     /// Reference to undeclared phantom tag.
     pub const E621_PHT_UNDEF: &str = "E621";
-    /// Type-level natural exceeds MAX_TYPE_NAT.
-    pub const E622_NAT_OVERFLOW: &str = "E622";
-    /// Type-level natural dimension mismatch in operation.
-    pub const E623_NAT_MISMATCH: &str = "E623";
-    /// Dependent type parameter mismatch.
-    pub const E624_DEP_MISMATCH: &str = "E624";
     /// Session type protocol violation (unexpected message/transition).
     pub const E625_SES_PROTOCOL: &str = "E625";
 }
@@ -951,7 +936,7 @@ pub struct ExtendedTypeCheckResult {
 ///    declared refinement bounds (E610-E612).
 ///
 /// 3. **Linear type checking** — builds a per-cycle use-count map for every
-///    linear signal and verifies exactly-once consumption (E613-E615).
+///    linear signal and verifies exactly-once consumption (E613-E614).
 ///    Interacts with E216: E216 ensures single writer, E613/E614 ensure
 ///    single reader, together forming exclusive ownership.
 ///
@@ -964,13 +949,7 @@ pub struct ExtendedTypeCheckResult {
 /// 6. **Phantom tag checking** — verifies tag compatibility on assignments
 ///    and comparisons (E620-E621).
 ///
-/// 7. **Type-level natural checking** — verifies dimension compatibility
-///    on array operations (E622-E623).
-///
-/// 8. **Dependent type checking** — verifies parameter consistency on
-///    parameterized types (E624).
-///
-/// 9. **Session type checking** — verifies protocol state transitions
+/// 7. **Session type checking** — verifies protocol state transitions
 ///    across module boundaries (E625).
 ///
 /// Bounded: each phase iterates over a finite collection (signals, guards,
@@ -2158,26 +2137,21 @@ mod tests {
     fn error_codes_are_distinct() {
         let codes = [
             error_codes::E610_REF_BOUND,
-            error_codes::E611_REF_RANGE,
             error_codes::E612_REF_WIDTH,
             error_codes::E613_LIN_UNUSED,
             error_codes::E614_LIN_DOUBLE,
-            error_codes::E615_LIN_ESCAPE,
             error_codes::E616_EFF_PURE,
             error_codes::E617_EFF_MIX,
             error_codes::E618_CLK_CROSS,
             error_codes::E619_CLK_UNDEF,
             error_codes::E620_PHT_MISMATCH,
             error_codes::E621_PHT_UNDEF,
-            error_codes::E622_NAT_OVERFLOW,
-            error_codes::E623_NAT_MISMATCH,
-            error_codes::E624_DEP_MISMATCH,
             error_codes::E625_SES_PROTOCOL,
         ];
         let mut seen = std::collections::HashSet::new();
         for code in &codes {
             assert!(seen.insert(*code), "Duplicate error code: {}", code);
         }
-        assert_eq!(codes.len(), 16);
+        assert_eq!(codes.len(), 11);
     }
 }

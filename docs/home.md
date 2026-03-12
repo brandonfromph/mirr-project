@@ -15,7 +15,7 @@ permalink: /
   </p>
   <div class="mirr-status-bar">
     <span><span class="mirr-status-dot green"></span> Compiler operational</span>
-    <span><span class="mirr-status-dot blue"></span> 7 emit targets</span>
+    <span><span class="mirr-status-dot blue"></span> 10 emit targets</span>
     <span><span class="mirr-status-dot amber"></span> v0.3.0</span>
   </div>
 </div>
@@ -76,11 +76,14 @@ If `airway_pressure` stays below 50 for 1000 consecutive clock cycles,
 | [Tutorial](tutorial) | 10-lesson beginner guide -- no hardware experience needed |
 | [Error Codes](error_codes) | Complete catalogue of compiler diagnostics |
 | [Type System](type-system) | Signed/unsigned types, width inference, and error codes |
-| [R-SPU Reference](rspu-reference) | R-SPU instruction set architecture and register file |
+| [R-SPU Reference](rspu_isa_spec) | R-SPU instruction set architecture and register file |
 | [Migration Guide](migration-guide) | Upgrade notes for 0.1.0 through 0.3.0 |
 | [Roadmap](roadmap) | Phase 0-10 project roadmap |
 | [Glossary](glossary) | Project terminology and acronyms |
 | [Contributing](contributing) | Coding standards, workflow, error allocation |
+| [FPGA Targets Guide](fpga-targets-guide) | FPGA toolchain, synthesis, and target configuration |
+| [MAPE-K Guide](mape-k-guide) | Autonomic feedback loop simulator and LTL monitoring |
+| [S-Expression Guide](sexpr-guide) | Homoiconic S-expression IR, round-trip invariant |
 | [Documentation Index](INDEX) | Canonical index for all project docs |
 
 ## Getting Started

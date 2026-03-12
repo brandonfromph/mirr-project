@@ -88,3 +88,86 @@ fn expr_contains_mul_bounded(expr: &Expr, count: &mut usize) -> bool {
         Expr::Literal(_) | Expr::Signal(_) | Expr::Prev { .. } => false,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::expr::Expr;
+    use crate::ast::program::{Assignment, Module, Reflex};
+    use crate::ast::types::{BinaryOp, LiteralValue};
+
+    fn make_module(reflexes: Vec<Reflex>) -> Module {
+        Module {
+            name: "test_dsp".to_string(),
+            signals: vec![],
+            guards: vec![],
+            reflexes,
+            pattern_calls: vec![],
+            pattern_origins: vec![],
+            properties: vec![],
+            span: None,
+        }
+    }
+
+    fn make_reflex(name: &str, assignments: Vec<Assignment>) -> Reflex {
+        Reflex {
+            name: name.to_string(),
+            guard_names: vec![],
+            assignments,
+            origin: None,
+            span: None,
+        }
+    }
+
+    fn make_assignment(target: &str, value: Expr) -> Assignment {
+        Assignment { target: target.to_string(), value, span: None }
+    }
+
+    #[test]
+    fn test_dsp_no_multiply() {
+        let module = make_module(vec![make_reflex(
+            "r1",
+            vec![make_assignment("out", Expr::Literal(LiteralValue::Integer(42)))],
+        )]);
+        let analysis = analyze_dsp(&module, DEFAULT_DSP_THRESHOLD);
+        assert!(analysis.candidates.is_empty());
+        assert_eq!(analysis.threshold_bits, DEFAULT_DSP_THRESHOLD);
+    }
+
+    #[test]
+    fn test_dsp_detects_multiply() {
+        let mul_expr = Expr::Binary {
+            op: BinaryOp::Mul,
+            left: Box::new(Expr::Signal("a".to_string())),
+            right: Box::new(Expr::Signal("b".to_string())),
+        };
+        let module =
+            make_module(vec![make_reflex("r1", vec![make_assignment("product", mul_expr)])]);
+        let analysis = analyze_dsp(&module, DEFAULT_DSP_THRESHOLD);
+        assert_eq!(analysis.candidates.len(), 1);
+        assert_eq!(analysis.candidates[0].reflex_name, "r1");
+        assert_eq!(analysis.candidates[0].target_signal, "product");
+    }
+
+    #[test]
+    fn test_dsp_nested_multiply() {
+        let mul_expr = Expr::Binary {
+            op: BinaryOp::Add,
+            left: Box::new(Expr::Binary {
+                op: BinaryOp::Mul,
+                left: Box::new(Expr::Signal("a".to_string())),
+                right: Box::new(Expr::Signal("b".to_string())),
+            }),
+            right: Box::new(Expr::Literal(LiteralValue::Integer(1))),
+        };
+        let module = make_module(vec![make_reflex("r1", vec![make_assignment("out", mul_expr)])]);
+        let analysis = analyze_dsp(&module, DEFAULT_DSP_THRESHOLD);
+        assert_eq!(analysis.candidates.len(), 1);
+    }
+
+    #[test]
+    fn test_dsp_respects_max_candidates() {
+        let analysis = analyze_dsp(&make_module(vec![]), DEFAULT_DSP_THRESHOLD);
+        assert!(analysis.candidates.len() <= MAX_DSP_CANDIDATES);
+    }
+}

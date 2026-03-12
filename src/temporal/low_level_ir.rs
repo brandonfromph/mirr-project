@@ -388,27 +388,6 @@ impl GeneratedSignal {
     pub fn comparator(name: String) -> Self {
         Self { name, ty: SignalType::Bool, kind: GeneratedSignalKind::Comparator, source: None }
     }
-
-    /// Create a logic gate output signal
-    pub fn logic_gate(name: String, gate_type: &str, inputs: Vec<String>) -> Self {
-        let source = if inputs.len() == 1 {
-            Some(Expr::Signal(inputs[0].clone()))
-        } else if inputs.len() == 2 {
-            Some(Expr::Binary {
-                left: Box::new(Expr::Signal(inputs[0].clone())),
-                op: match gate_type {
-                    "AND" => BinaryOp::And,
-                    "OR" => BinaryOp::Or,
-                    "XOR" => BinaryOp::Xor,
-                    _ => BinaryOp::And,
-                },
-                right: Box::new(Expr::Signal(inputs[1].clone())),
-            })
-        } else {
-            None
-        };
-        Self { name, ty: SignalType::Bool, kind: GeneratedSignalKind::LogicGate, source }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -545,11 +524,12 @@ mod tests {
         netlist.add_signal(GeneratedSignal::shift_register_stage("sr1".to_string(), 0));
         netlist.add_signal(GeneratedSignal::shift_register_stage("sr2".to_string(), 1));
         netlist.add_signal(GeneratedSignal::counter("counter1".to_string(), 8));
-        netlist.add_signal(GeneratedSignal::logic_gate(
-            "gate1".to_string(),
-            "AND",
-            vec!["a".to_string(), "b".to_string()],
-        ));
+        netlist.add_signal(GeneratedSignal {
+            name: "gate1".to_string(),
+            ty: SignalType::Bool,
+            kind: GeneratedSignalKind::LogicGate,
+            source: None,
+        });
 
         assert_eq!(netlist.statistics.shift_registers_used, 2);
         assert_eq!(netlist.statistics.counters_used, 1);

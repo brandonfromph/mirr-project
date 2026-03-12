@@ -20,6 +20,9 @@ use crate::error::MirrError;
 use crate::sexpr::parser::sexpr_err;
 use crate::sexpr::types::SExpr;
 
+/// Maximum nesting depth for expression conversion/parsing (NASA Power-of-10).
+const MAX_CONVERT_DEPTH: usize = 64;
+
 // =========================================================================
 // AST -> S-Expression
 // =========================================================================
@@ -251,26 +254,71 @@ fn convert_formula(f: &PropertyFormula) -> SExpr {
     }
 }
 
+/// Work item for iterative `convert_expr` (replaces recursion).
+enum ConvertWork<'a> {
+    /// Process an expression node.
+    Process(&'a Expr),
+    /// Compose a unary S-expression from one result.
+    BuildUnary(&'static str),
+    /// Compose a binary S-expression from two results.
+    BuildBinary(&'static str),
+}
+
 fn convert_expr(expr: &Expr) -> SExpr {
-    match expr {
-        Expr::Literal(LiteralValue::Bool(b)) => SExpr::Bool(*b),
-        Expr::Literal(LiteralValue::Integer(n)) => SExpr::Integer(*n),
-        Expr::Signal(name) => SExpr::list(vec![SExpr::sym("signal"), SExpr::str_val(name)]),
-        Expr::Prev { signal, delay } => {
-            SExpr::list(vec![SExpr::sym("prev"), SExpr::str_val(signal), SExpr::int(*delay)])
+    const MAX_ITER: usize = MAX_CONVERT_DEPTH * 4;
+    let mut work_stack: Vec<ConvertWork<'_>> = Vec::with_capacity(MAX_CONVERT_DEPTH);
+    let mut result_stack: Vec<SExpr> = Vec::with_capacity(MAX_CONVERT_DEPTH);
+    work_stack.push(ConvertWork::Process(expr));
+
+    let mut iterations: usize = 0;
+    while let Some(work) = work_stack.pop() {
+        iterations += 1;
+        if iterations > MAX_ITER {
+            break;
         }
-        Expr::Unary { op, operand } => {
-            let op_sym = match op {
-                UnaryOp::Not => "not",
-                UnaryOp::Negate => "negate",
-            };
-            SExpr::list(vec![SExpr::sym(op_sym), convert_expr(operand)])
-        }
-        Expr::Binary { op, left, right } => {
-            let op_sym = binop_to_symbol(*op);
-            SExpr::list(vec![SExpr::sym(op_sym), convert_expr(left), convert_expr(right)])
+        match work {
+            ConvertWork::Process(e) => match e {
+                Expr::Literal(LiteralValue::Bool(b)) => result_stack.push(SExpr::Bool(*b)),
+                Expr::Literal(LiteralValue::Integer(n)) => result_stack.push(SExpr::Integer(*n)),
+                Expr::Signal(name) => {
+                    result_stack
+                        .push(SExpr::list(vec![SExpr::sym("signal"), SExpr::str_val(name)]));
+                }
+                Expr::Prev { signal, delay } => {
+                    result_stack.push(SExpr::list(vec![
+                        SExpr::sym("prev"),
+                        SExpr::str_val(signal),
+                        SExpr::int(*delay),
+                    ]));
+                }
+                Expr::Unary { op, operand } => {
+                    let op_sym = match op {
+                        UnaryOp::Not => "not",
+                        UnaryOp::Negate => "negate",
+                    };
+                    work_stack.push(ConvertWork::BuildUnary(op_sym));
+                    work_stack.push(ConvertWork::Process(operand));
+                }
+                Expr::Binary { op, left, right } => {
+                    let op_sym = binop_to_symbol(*op);
+                    work_stack.push(ConvertWork::BuildBinary(op_sym));
+                    work_stack.push(ConvertWork::Process(right));
+                    work_stack.push(ConvertWork::Process(left));
+                }
+            },
+            ConvertWork::BuildUnary(op_sym) => {
+                let operand = result_stack.pop().unwrap_or(SExpr::Bool(false));
+                result_stack.push(SExpr::list(vec![SExpr::sym(op_sym), operand]));
+            }
+            ConvertWork::BuildBinary(op_sym) => {
+                let right = result_stack.pop().unwrap_or(SExpr::Bool(false));
+                let left = result_stack.pop().unwrap_or(SExpr::Bool(false));
+                result_stack.push(SExpr::list(vec![SExpr::sym(op_sym), left, right]));
+            }
         }
     }
+
+    result_stack.pop().unwrap_or(SExpr::Bool(false))
 }
 
 fn binop_to_symbol(op: BinaryOp) -> &'static str {
@@ -773,71 +821,113 @@ fn parse_formula(sexpr: &SExpr) -> Result<PropertyFormula, MirrError> {
     }
 }
 
+/// Work item for iterative `parse_expr` (replaces recursion).
+enum ParseWork<'a> {
+    /// Parse an S-expression node into an Expr.
+    Process(&'a SExpr),
+    /// Compose a unary Expr from one result.
+    BuildUnary(UnaryOp),
+    /// Compose a binary Expr from two results.
+    BuildBinary(BinaryOp),
+}
+
 fn parse_expr(sexpr: &SExpr) -> Result<Expr, MirrError> {
-    match sexpr {
-        SExpr::Bool(b) => Ok(Expr::Literal(LiteralValue::Bool(*b))),
-        SExpr::Integer(n) => Ok(Expr::Literal(LiteralValue::Integer(*n))),
-        SExpr::List(items) if !items.is_empty() => {
-            let head = items[0]
-                .as_symbol()
-                .ok_or_else(|| sexpr_err("[E805] Expression head must be a symbol"))?;
-            match head {
-                "signal" => {
-                    if items.len() < 2 {
-                        return Err(sexpr_err("[E806] signal-ref requires name"));
+    const MAX_ITER: usize = MAX_CONVERT_DEPTH * 4;
+    let mut work_stack: Vec<ParseWork<'_>> = Vec::with_capacity(MAX_CONVERT_DEPTH);
+    let mut result_stack: Vec<Expr> = Vec::with_capacity(MAX_CONVERT_DEPTH);
+    work_stack.push(ParseWork::Process(sexpr));
+
+    let mut iterations: usize = 0;
+    while let Some(work) = work_stack.pop() {
+        iterations += 1;
+        if iterations > MAX_ITER {
+            return Err(sexpr_err("[E808] Expression nesting exceeds maximum depth"));
+        }
+        match work {
+            ParseWork::Process(s) => match s {
+                SExpr::Bool(b) => result_stack.push(Expr::Literal(LiteralValue::Bool(*b))),
+                SExpr::Integer(n) => result_stack.push(Expr::Literal(LiteralValue::Integer(*n))),
+                SExpr::List(items) if !items.is_empty() => {
+                    let head = items[0]
+                        .as_symbol()
+                        .ok_or_else(|| sexpr_err("[E805] Expression head must be a symbol"))?;
+                    match head {
+                        "signal" => {
+                            if items.len() < 2 {
+                                return Err(sexpr_err("[E806] signal-ref requires name"));
+                            }
+                            let name = items[1]
+                                .as_str_val()
+                                .ok_or_else(|| sexpr_err("[E806] signal name must be string"))?
+                                .to_string();
+                            result_stack.push(Expr::Signal(name));
+                        }
+                        "prev" => {
+                            if items.len() < 3 {
+                                return Err(sexpr_err("[E806] prev requires signal and delay"));
+                            }
+                            let signal = items[1]
+                                .as_str_val()
+                                .ok_or_else(|| sexpr_err("[E806] prev signal must be string"))?
+                                .to_string();
+                            let delay = items[2]
+                                .as_integer()
+                                .ok_or_else(|| sexpr_err("[E806] prev delay must be integer"))?;
+                            result_stack.push(Expr::Prev { signal, delay });
+                        }
+                        "not" => {
+                            if items.len() < 2 {
+                                return Err(sexpr_err("[E806] not requires operand"));
+                            }
+                            work_stack.push(ParseWork::BuildUnary(UnaryOp::Not));
+                            work_stack.push(ParseWork::Process(&items[1]));
+                        }
+                        "negate" => {
+                            if items.len() < 2 {
+                                return Err(sexpr_err("[E806] negate requires operand"));
+                            }
+                            work_stack.push(ParseWork::BuildUnary(UnaryOp::Negate));
+                            work_stack.push(ParseWork::Process(&items[1]));
+                        }
+                        _ => {
+                            // Binary operator
+                            if items.len() < 3 {
+                                return Err(sexpr_err(format!(
+                                    "[E805] Unknown or incomplete expression form: {head}"
+                                )));
+                            }
+                            let op = symbol_to_binop(head)?;
+                            work_stack.push(ParseWork::BuildBinary(op));
+                            work_stack.push(ParseWork::Process(&items[2]));
+                            work_stack.push(ParseWork::Process(&items[1]));
+                        }
                     }
-                    let name = items[1]
-                        .as_str_val()
-                        .ok_or_else(|| sexpr_err("[E806] signal name must be string"))?
-                        .to_string();
-                    Ok(Expr::Signal(name))
                 }
-                "prev" => {
-                    if items.len() < 3 {
-                        return Err(sexpr_err("[E806] prev requires signal and delay"));
-                    }
-                    let signal = items[1]
-                        .as_str_val()
-                        .ok_or_else(|| sexpr_err("[E806] prev signal must be string"))?
-                        .to_string();
-                    let delay = items[2]
-                        .as_integer()
-                        .ok_or_else(|| sexpr_err("[E806] prev delay must be integer"))?;
-                    Ok(Expr::Prev { signal, delay })
-                }
-                "not" => {
-                    if items.len() < 2 {
-                        return Err(sexpr_err("[E806] not requires operand"));
-                    }
-                    Ok(Expr::Unary { op: UnaryOp::Not, operand: Box::new(parse_expr(&items[1])?) })
-                }
-                "negate" => {
-                    if items.len() < 2 {
-                        return Err(sexpr_err("[E806] negate requires operand"));
-                    }
-                    Ok(Expr::Unary {
-                        op: UnaryOp::Negate,
-                        operand: Box::new(parse_expr(&items[1])?),
-                    })
-                }
-                _ => {
-                    // Binary operator
-                    if items.len() < 3 {
-                        return Err(sexpr_err(format!(
-                            "[E805] Unknown or incomplete expression form: {head}"
-                        )));
-                    }
-                    let op = symbol_to_binop(head)?;
-                    Ok(Expr::Binary {
-                        op,
-                        left: Box::new(parse_expr(&items[1])?),
-                        right: Box::new(parse_expr(&items[2])?),
-                    })
-                }
+                _ => return Err(sexpr_err("[E805] Invalid expression S-expression")),
+            },
+            ParseWork::BuildUnary(op) => {
+                let operand = result_stack
+                    .pop()
+                    .ok_or_else(|| sexpr_err("[E808] Missing operand in expression stack"))?;
+                result_stack.push(Expr::Unary { op, operand: Box::new(operand) });
+            }
+            ParseWork::BuildBinary(op) => {
+                let right = result_stack
+                    .pop()
+                    .ok_or_else(|| sexpr_err("[E808] Missing right operand in expression stack"))?;
+                let left = result_stack
+                    .pop()
+                    .ok_or_else(|| sexpr_err("[E808] Missing left operand in expression stack"))?;
+                result_stack.push(Expr::Binary {
+                    op,
+                    left: Box::new(left),
+                    right: Box::new(right),
+                });
             }
         }
-        _ => Err(sexpr_err("[E805] Invalid expression S-expression")),
     }
+
+    result_stack.pop().ok_or_else(|| sexpr_err("[E808] Empty expression result"))
 }
 
 fn symbol_to_binop(sym: &str) -> Result<BinaryOp, MirrError> {

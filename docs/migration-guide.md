@@ -196,14 +196,14 @@ covers all breaking and notable changes.
 
 | Campaign | Description |
 |----------|-------------|
-| **SEM-001** | `prev(signal, delay)` temporal back-references with semantic validation (delay ≥ 1) and E215 error code |
+| **SEM-001** | `prev(signal, delay)` temporal back-references with semantic validation (delay ≥ 1) and E209 error code |
 | **TYPE-001** | Signed integer types `i8`, `i16`, `i32`, `i64` via `SignalType::Signed(u8)` and unary negate operator `UnaryOp::Negate` |
 | **TYPE-002** | Type checker module `src/typeck/` with `typecheck_module()`, enforcing signedness consistency, E6xx errors (E601–E609) |
 | **TYPE-003** | Width inference updated for signed types with two's complement semantics, E5xx errors updated |
 | **TYPE-004** | 3 new property forms: `never (P -> Q)`, `eventually_within(P, N)`, `always_followed_by(P, Q, N)` — total 6 property forms |
 | **TYPE-005** | Higher-order patterns — `PatternParamKind::Pattern` and `PatternArg::PatternRef` for passing patterns as arguments |
 | **ROCQ-001** | Rocq/Coq proof framework in `proofs/` directory |
-| **RSPU-001** | R-SPU instruction set backend — `emit_rspu()`, `RspuProgram`, `RspuInstruction`, register allocator, E7xx errors (E701–E705) |
+| **RSPU-001** | R-SPU instruction set backend — `emit_rspu()`, `RspuProgram`, `RspuInstruction`, register allocator, E7xx errors (E700–E714) |
 
 ---
 
@@ -307,10 +307,11 @@ The structured error code table is extended with the following new entries:
 
 | Prefix | Category | Example |
 |--------|----------|---------|
-| `[E216]` | Semantic error — duplicate property name | `Semantic error: [E216] Duplicate property name: 'watchdog'.` |
+| `[E210]` | Semantic error — duplicate property name | `Semantic error: [E210] Duplicate property name: 'watchdog'.` |
 | `[E5xx]` | Width inference errors (E500–E511) | `Width error: [E500] Cannot infer width for signal 'x'.` |
 | `[E6xx]` | Type errors (E601–E609) | `Type error: [E601] Signedness mismatch in binary operation.` |
-| `[E7xx]` | R-SPU errors (E701–E705) | `RSPU error: [E701] Register allocation failed for signal 'y'.` |
+| `[E7xx]` | R-SPU errors (E701–E715) | `RSPU error: [E701] Register allocation failed for signal 'y'.` |
+| `[E8xx]` | S-expression errors (E800–E815) | `SExpr error: [E800] Invalid token in S-expression.` |
 
 The full error code table (0.1.0 through 0.3.0) is:
 
@@ -322,7 +323,8 @@ The full error code table (0.1.0 through 0.3.0) is:
 | `[E4xx]` (E400–E425) | Pattern errors |
 | `[E5xx]` (E500–E511) | Width inference errors |
 | `[E6xx]` (E601–E609) | Type errors |
-| `[E7xx]` (E701–E705) | R-SPU backend errors |
+| `[E7xx]` (E701–E715) | R-SPU backend errors |
+| `[E8xx]` (E800–E815) | S-expression errors |
 
 ---
 
@@ -330,6 +332,6 @@ The full error code table (0.1.0 through 0.3.0) is:
 
 - [Error Codes](error_codes) — Complete error code catalogue
 - [Type System](type-system) — New type rules added in 0.2.0+
-- [R-SPU Reference](rspu-reference) — R-SPU backend added in 0.3.0
+- [R-SPU ISA Spec](rspu_isa_spec) — R-SPU backend added in 0.3.0
 - [Tutorial](tutorial) — Updated for all current features
 - [Roadmap](roadmap) — Upcoming changes to plan for

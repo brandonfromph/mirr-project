@@ -13,6 +13,8 @@
   --mono: ui-monospace, 'Cascadia Code', 'Source Code Pro',
           Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   --serif: Georgia, 'Times New Roman', Times, serif;
+  --muted: #666;
+  --muted-dk: #555;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,6 +25,8 @@
     --demo-bg: #222;
     --border: #444;
     --error: #ff6b6b;
+    --muted: #aaa;
+    --muted-dk: #bbb;
   }
 }
 
@@ -39,9 +43,14 @@ body {
 
 h1 { font-size: 1.5rem; line-height: 1.3; margin-bottom: 0.5rem; }
 h2 { font-size: 1.15rem; margin-top: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; }
+h3 { font-size: 1rem; margin-top: 1.5rem; }
 
 header { margin-bottom: 2rem; }
-.meta  { font-family: var(--mono); font-size: 0.8rem; color: #555; }
+.meta  { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+
+nav[aria-label] { font-family: var(--mono); font-size: 0.8rem; margin-bottom: 1.5rem; color: var(--muted); }
+nav[aria-label] a { color: var(--muted-dk); text-decoration: none; }
+nav[aria-label] a:hover { color: var(--accent); text-decoration: underline; }
 
 p, li { margin-bottom: 0.6rem; }
 ol, ul { padding-left: 1.5rem; }
@@ -71,7 +80,7 @@ section { overflow-x: auto; }
   margin: 2rem 0;
 }
 .demo h2 { border-bottom-color: var(--border); margin-top: 0; }
-.claim-refs { font-size: 0.8rem; font-weight: normal; color: #555; }
+.claim-refs { font-size: 0.8rem; font-weight: normal; color: var(--muted); }
 
 /* Controls */
 .demo-controls {
@@ -107,7 +116,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   display: block;
   font-family: var(--mono);
   font-size: 0.75rem;
-  color: #555;
+  color: var(--muted);
   margin-bottom: 0.25rem;
 }
 textarea, pre.output {
@@ -128,7 +137,10 @@ pre.output {
   margin: 0;
 }
 pre.output.error { color: var(--error); }
-textarea:focus { border-color: var(--accent); }
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* Data tables — one class for all paper tables */
 .data-table {
@@ -171,10 +183,10 @@ footer {
   border-top: 1px solid var(--border);
   font-family: var(--mono);
   font-size: 0.75rem;
-  color: #777;
+  color: var(--muted);
   text-align: center;
 }
-footer a { color: #777; }
+footer a { color: var(--muted-dk); }
 
 /* Responsive */
 @media (max-width: 600px) {
@@ -185,8 +197,9 @@ footer a { color: #777; }
 /* Print — paper renders as readable static page */
 @media print {
   .demo-controls, button, select, textarea { display: none; }
+  nav[aria-label] { display: none; }
   pre.output { border: none; padding: 0; }
   .split-pane { display: block; }
   body { max-width: 100%; font-size: 11pt; }
-  a::after { content: " (" attr(href) ")"; font-size: 0.75em; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.75em; }
 }

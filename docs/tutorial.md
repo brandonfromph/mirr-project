@@ -620,7 +620,7 @@ for different signals or thresholds. Do not use patterns for one-off logic.
 
 ## Lesson 8: Reading compiler output
 
-The MIRR compiler can emit six output formats. Each serves a different
+The MIRR compiler can emit ten output formats. Each serves a different
 purpose.
 
 ### Verilog (`--emit verilog`)
@@ -636,16 +636,42 @@ Intel Quartus, Synopsys Design Compiler).
 cargo run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr
 ```
 
-### SVA (`--emit sva`)
+### FIRRTL (`--emit firrtl`)
 
-SVA stands for SystemVerilog Assertions. This output contains the formal
-verification checks generated from your `property` blocks.
+FIRRTL (Flexible Intermediate Representation for Register-Transfer Level)
+is an intermediate format used by the FIRRTL compiler framework
+(originally from UC Berkeley's Chisel project).
 
-**Who reads it:** Formal verification tools (Cadence JasperGold, Synopsys
-VC Formal, or any SVA-compatible checker).
+**Who reads it:** FIRRTL-based toolchains for further hardware
+transformations.
 
 ```bash
-cargo run --bin mirr-compile -- --emit sva examples/safety_property.mirr
+cargo run --bin mirr-compile -- --emit firrtl examples/neonatal_respirator.mirr
+```
+
+### R-SPU Assembly (`--emit rspu`)
+
+R-SPU (Reflex Signal Processing Unit) is MIRR's instruction-level backend.
+It compiles your module into a bounded instruction sequence for a
+safety-critical processor architecture.
+
+**Who uses it:** Embedded safety systems, custom silicon targets, MAPE-K
+runtime monitors.
+
+```bash
+cargo run --bin mirr-compile -- --emit rspu examples/neonatal_respirator.mirr
+```
+
+### DOT (`--emit dot`)
+
+DOT is a graph description language used by Graphviz. The output is a
+visual diagram showing how signals, guards, and reflexes connect.
+
+**Who reads it:** You, for debugging and understanding your design.
+
+```bash
+cargo run --bin mirr-compile -- --emit dot examples/neonatal_respirator.mirr
+# Then open the .dot file with Graphviz or an online viewer
 ```
 
 ### JSON (`--emit json`)
@@ -669,47 +695,65 @@ The JSON output includes:
 cargo run --bin mirr-compile -- --emit json examples/neonatal_respirator.mirr
 ```
 
-### DOT (`--emit dot`)
+### Testbench (`--emit testbench`)
 
-DOT is a graph description language used by Graphviz. The output is a
-visual diagram showing how signals, guards, and reflexes connect.
+Generates a SystemVerilog testbench that instantiates the compiled module
+and drives stimulus for basic smoke-testing.
 
-**Who reads it:** You, for debugging and understanding your design.
-
-```bash
-cargo run --bin mirr-compile -- --emit dot examples/neonatal_respirator.mirr
-# Then open the .dot file with Graphviz or an online viewer
-```
-
-### FIRRTL (`--emit firrtl`)
-
-FIRRTL (Flexible Intermediate Representation for Register-Transfer Level)
-is an intermediate format used by the FIRRTL compiler framework
-(originally from UC Berkeley's Chisel project).
-
-**Who reads it:** FIRRTL-based toolchains for further hardware
-transformations.
+**Who reads it:** Hardware engineers running simulation in Vivado, Quartus,
+or open-source simulators like Verilator.
 
 ```bash
-cargo run --bin mirr-compile -- --emit firrtl examples/neonatal_respirator.mirr
+cargo run --bin mirr-compile -- --emit testbench examples/neonatal_respirator.mirr
 ```
 
-### R-SPU Assembly (programmatic API)
+### S-expression IR (`--emit sexpr`)
 
-R-SPU (Reflex Signal Processing Unit) is MIRR's instruction-level backend.
-It compiles your module into a bounded instruction sequence for a
-safety-critical processor architecture.
+Emits the compiled design as an S-expression intermediate representation.
+Useful for tool interop, custom analysis passes, and round-trip testing.
 
-**Who uses it:** Embedded safety systems, custom silicon targets, MAPE-K
-runtime monitors.
+**Who reads it:** Toolchain developers, custom analysis scripts, the
+MIRR S-expression evaluator.
 
-R-SPU emission is available through the Rust API:
+```bash
+cargo run --bin mirr-compile -- --emit sexpr examples/neonatal_respirator.mirr
+```
 
-```rust
-let config = PipelineConfig { rspu: true, ..PipelineConfig::default() };
-let result = run_pipeline(source, &config)?;
-let program = result.rspu_program.unwrap();
-println!("{}", program.emit_asm());
+### FPGA Scaffold (`--emit fpga_scaffold`)
+
+Generates a complete FPGA project scaffold including pin constraints,
+clock configuration, and top-level wrappers for supported FPGA targets.
+
+**Who reads it:** FPGA engineers targeting Xilinx, Lattice, or Intel
+development boards.
+
+```bash
+cargo run --bin mirr-compile -- --emit fpga_scaffold examples/neonatal_respirator.mirr
+```
+
+### Build Script (`--emit build_script`)
+
+Generates a Makefile or build script that invokes the appropriate
+synthesis toolchain for the selected target.
+
+**Who reads it:** CI pipelines, build systems, hardware engineers
+automating synthesis flows.
+
+```bash
+cargo run --bin mirr-compile -- --emit build_script examples/neonatal_respirator.mirr
+```
+
+### DSP (`--emit dsp`)
+
+Emits a DSP (Digital Signal Processing) block description for modules
+that use arithmetic-heavy signal chains, targeting dedicated DSP slices
+on FPGAs.
+
+**Who reads it:** DSP engineers, FPGA synthesis tools that map to
+hardware multiplier/accumulator blocks.
+
+```bash
+cargo run --bin mirr-compile -- --emit dsp examples/neonatal_respirator.mirr
 ```
 
 ---
@@ -730,7 +774,8 @@ the problem belongs to.
 | `[E4xx]` | Pattern error | Something went wrong during pattern expansion (E400–E425) |
 | `[E5xx]` | Width error | Bit-width inference found an inconsistency (E500–E511) |
 | `[E6xx]` | Type error | Type checker found a type mismatch (E601–E609) |
-| `[E7xx]` | R-SPU error | R-SPU instruction emission failed (E701–E705) |
+| `[E7xx]` | R-SPU error | R-SPU instruction emission failed (E701–E715) |
+| `[E8xx]` | S-expression error | S-expression IR processing failed (E800–E815) |
 
 ### [E1xx] Parse errors
 
@@ -901,6 +946,6 @@ can describe.
 
 - [Error Codes](error_codes) — Full list of compiler diagnostics
 - [Type System](type-system) — Signed/unsigned types and inference rules
-- [R-SPU Reference](rspu-reference) — Instruction set architecture
+- [R-SPU ISA Spec](rspu_isa_spec) — Instruction set architecture
 - [Migration Guide](migration-guide) — Upgrading from an earlier version
 - [Roadmap](roadmap) — Project phases and what comes next

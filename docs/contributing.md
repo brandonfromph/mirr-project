@@ -41,13 +41,14 @@ Error codes are allocated per subsystem to avoid collisions:
 
 | Range | Subsystem | Module |
 |-------|-----------|--------|
-| E1xx | Parser | `src/parser/` |
-| E2xx | Semantic validation | `src/validation/` |
-| E3xx | Width inference | `src/width/` |
-| E4xx | Temporal compiler | `src/temporal/` |
-| E5xx | Pattern expansion | `src/expand/` |
-| E6xx | Type checker | `src/typeck/` |
-| E7xx | Toolchain | `src/toolchain/` |
+| E1xx | Parse errors (lexer + parser) | `src/lexer/`, `src/parser/` |
+| E2xx | Semantic / validation errors | `src/validation/` |
+| E3xx | Temporal compilation errors | `src/temporal/` |
+| E4xx | Pattern matching errors | `src/expand/` |
+| E5xx | Width inference errors | `src/width/` |
+| E6xx | Extended type checking errors | `src/typeck/` |
+| E7xx | R-SPU backend errors | `src/emit/rspu.rs` |
+| E8xx | S-expression IR errors | `src/sexpr/` |
 
 When adding a new error code:
 1. Choose the next sequential number in the appropriate range

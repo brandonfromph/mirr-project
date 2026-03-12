@@ -1,6 +1,6 @@
 [package]
 name = "nasa-rust-project"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "MIRR compiler — a safety-critical DSL for hardware-software co-design targeting SystemVerilog RTL"
 authors = ["Brandon <brandonfromph@users.noreply.github.com>"]
@@ -53,5 +53,5 @@ name = "emit_analysis_bench"
 harness = false
 
 [workspace]
-members = [".", "crates/mirr-wasm"]
+members = [".", "crates/mirr-wasm", "crates/lra-cli"]
 

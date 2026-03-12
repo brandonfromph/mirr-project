@@ -102,10 +102,3 @@ fn format_short_list(items: &[SExpr], node_count: &mut usize) -> String {
     buf.push(')');
     buf
 }
-
-/// Compact single-line printer (no indentation, no line breaks).
-///
-/// Useful for debug output and error messages.
-pub fn print_sexpr_compact(sexpr: &SExpr) -> String {
-    sexpr.to_string()
-}

@@ -254,9 +254,13 @@ fn eval_match_type(
         let pattern = &clause_items[0];
         let body = &clause_items[1];
 
+        let env_depth = state.env.len();
         if match_type_pattern(type_val, pattern, state)? {
-            return eval(body, state);
+            let result = eval(body, state);
+            state.env.truncate(env_depth);
+            return result;
         }
+        // match_type_pattern returned false — no bindings were pushed.
     }
     Err(sexpr_err("[E805] No match-type clause matched"))
 }

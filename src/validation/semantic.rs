@@ -357,7 +357,10 @@ fn validate_prev_delays(
 
 /// Collect all signal references from an expression tree.
 /// Uses an explicit stack to avoid recursion.
+/// Bounded: at most MAX_EXPR_NODES iterations.
 pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
+    let mut iterations = 0usize;
+
     // Pre-allocate with reasonable capacity estimate.
     // In practice, expressions rarely have more than 10-20 signal references.
     let mut refs = Vec::with_capacity(16);
@@ -365,6 +368,10 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
     stack.push(expr);
 
     while let Some(node) = stack.pop() {
+        iterations += 1;
+        if iterations > MAX_EXPR_NODES {
+            break;
+        }
         match node {
             Expr::Signal(name) => refs.push(name.clone()),
             Expr::Prev { signal, .. } => refs.push(signal.clone()),

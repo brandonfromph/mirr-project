@@ -36,7 +36,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Check formatting
-        run: cargo fmt -- --check
+        run: cargo fmt --all -- --check
 
       - name: Run clippy (deny warnings)
         run: cargo clippy --all-targets --all-features -- -D warnings
@@ -123,7 +123,38 @@ jobs:
         run: |
           COUNT=$(grep -r "Admitted\." proofs/ | wc -l)
           echo "Admitted count: $COUNT"
-          test "$COUNT" -eq 13
+          test "$COUNT" -le 13
+
+  lra-cli:
+    name: LRA CLI
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Check formatting (lra-cli)
+        run: cargo fmt -p lra-cli -- --check
+
+      - name: Run clippy (lra-cli)
+        run: cargo clippy -p lra-cli --all-targets -- -D warnings
+
+      - name: Build lra-cli
+        run: cargo build -p lra-cli
+
+      - name: Run lra-cli tests
+        run: cargo test -p lra-cli
+
+      - name: Validate MIRR paper
+        run: cd paper && cargo run -p lra-cli -- validate index.html
+
+      - name: Validate template
+        run: cd template && cargo run -p lra-cli -- validate index.html
 
   pages-deploy:
     name: Deploy to GitHub Pages
@@ -142,6 +173,9 @@ jobs:
           name: mirr-wasm
           path: demos/
 
+      - name: Copy WASM to paper directory
+        run: cp -r demos/ paper/demos/
+
       - name: Inject build metadata
         run: |
           HASH=$(git rev-parse --short HEAD)
@@ -154,11 +188,30 @@ jobs:
           grep -q '<section id="abstract">' paper/index.html
           grep -q '<section id="claims">' paper/index.html
           grep -q '<section id="references">' paper/index.html
-          echo "Paper structure validation passed"
+          grep -q 'class="data-table"' paper/index.html
+          grep -q 'aria-live' paper/index.html
+          grep -q 'og:title' paper/index.html
+          grep -q 'lra:version' paper/index.html
+          grep -q '<noscript>' paper/index.html
+          grep -q 'class="output"' paper/index.html
+          grep -q '<main>' paper/index.html
+          grep -q '<footer>' paper/index.html
+          echo "Paper structure validation passed (11 checks)"
+
+      - name: Validate template structure
+        run: |
+          grep -q '<section id="abstract">' template/index.html
+          grep -q '<section id="claims">' template/index.html
+          grep -q 'lra:version' template/index.html
+          grep -q 'aria-live' template/index.html
+          grep -q '<noscript>' template/index.html
+          grep -q '<main>' template/index.html
+          grep -q '<footer>' template/index.html
+          echo "Template structure validation passed (7 checks)"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
+          publish_dir: ./paper
           publish_branch: gh-pages

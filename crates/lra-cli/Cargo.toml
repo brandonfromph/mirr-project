@@ -1,0 +1,21 @@
+[package]
+name = "lra-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Brandon"]
+description = "CLI tool for the Living Research Artifact standard"
+license = "GPL-3.0"
+repository = "https://github.com/brandonfromph/mirr-project"
+readme = "README.md"
+keywords = ["lra", "interactive-paper", "validation", "academic"]
+categories = ["command-line-utilities", "web-programming"]
+
+[[bin]]
+name = "lra"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.4.0", features = ["derive"] }
+tiny_http = "0.12"
+notify = "6.1"
+pulldown-cmark = { version = "0.10", default-features = false, features = ["html"] }

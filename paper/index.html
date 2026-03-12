@@ -6,14 +6,39 @@
   <title>MIRR: A Safety-Critical HDL Compiler</title>
   <link rel="stylesheet" href="paper.css">
   <link rel="icon" href="data:,">
+  <link rel="canonical" href="https://brandonfromph.github.io/mirr-project/paper/">
   <meta name="description" content="MIRR: A safety-critical HDL compiler with formal width inference. Living Research Artifact — interactive paper with in-browser compiler.">
   <meta property="og:title" content="MIRR: A Safety-Critical HDL Compiler">
   <meta property="og:description" content="Interactive research paper — compile temporal specifications to SystemVerilog, FIRRTL, and R-SPU assembly live in the browser.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://brandonfromph.github.io/mirr-project/paper/">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="MIRR: A Safety-Critical HDL Compiler">
   <meta name="twitter:description" content="Living Research Artifact — compiler runs as WebAssembly, proofs in the repo, GPL-3.0 licensed.">
+  <meta name="lra:version" content="1.0">
+  <meta name="lra:capability" content="mirr-compiler">
+  <meta name="lra:license" content="GPL-3.0">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta name="lra:abstract" content="MIRR is an open-source Rust compiler for safety-critical hardware-software co-design. It compiles temporal guards, guarded reflexes, and LTL safety properties through a 9-stage deterministic pipeline into 9 emission backends. Width inference is backed by 1,077 lines of Rocq proofs.">
+  <meta name="lra:keywords" content="HDL, compiler, safety-critical, formal verification, width inference, SystemVerilog, FIRRTL, WASM, NASA Power-of-10">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "name": "MIRR: A Safety-Critical HDL Compiler with Formal Width Inference",
+    "author": { "@type": "Person", "name": "Brandon" },
+    "datePublished": "2026-03",
+    "description": "A safety-critical HDL compiler with formal width inference, 9 emission backends, and 1,077 lines of Rocq proofs.",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "url": "https://brandonfromph.github.io/mirr-project/paper/",
+    "codeRepository": "https://github.com/brandonfromph/mirr-project",
+    "keywords": ["HDL", "compiler", "safety-critical", "formal verification", "width inference"]
+  }
+  </script>
+
 </head>
 <body>
 
@@ -29,6 +54,19 @@
     <a href="https://github.com/brandonfromph/mirr-project">Source</a>
   </p>
 </header>
+
+<nav aria-label="Paper sections">
+  <a href="#abstract">Abstract</a> &middot;
+  <a href="#claims">Claims</a> &middot;
+  <a href="#demo-playground">Demo</a> &middot;
+  <a href="#introduction">1</a> &middot;
+  <a href="#language">2</a> &middot;
+  <a href="#pipeline">3</a> &middot;
+  <a href="#width">4</a> &middot;
+  <a href="#rspu">5</a> &middot;
+  <a href="#evaluation">6</a> &middot;
+  <a href="#references">Refs</a>
+</nav>
 
 <noscript>
   <p>This paper requires JavaScript for interactive demos. The compiler
@@ -69,22 +107,22 @@
 <section id="claims">
   <h2>Claims</h2>
   <ol>
-    <li id="claim-1">
+    <li id="claim-1" data-lra-claim="1">
       MIRR compiles temporal specifications to correct SystemVerilog,
       FIRRTL, R-SPU assembly, S-expression IR, JSON netlist, and DOT
       graph.
-      <a href="#demo-playground">[Evidence &darr;]</a>
+      <a href="#demo-playground" data-lra-evidence="demo-playground">[Evidence &darr;]</a>
     </li>
-    <li id="claim-2">
+    <li id="claim-2" data-lra-claim="2">
       Width inference is sound: no assignment silently truncates a
       value. Backed by 27 Rocq theorems (14 fully mechanized).
     </li>
-    <li id="claim-3">
+    <li id="claim-3" data-lra-claim="3">
       All compiler algorithms are bounded: no unbounded recursion or
       iteration exists. Every loop has an explicit MAX_* constant.
-      <a href="#demo-benchmarks">[Evidence &darr;]</a>
+      <a href="#demo-benchmarks" data-lra-evidence="demo-benchmarks">[Evidence &darr;]</a>
     </li>
-    <li id="claim-4">
+    <li id="claim-4" data-lra-claim="4">
       The compiler is safe: <code>#![forbid(unsafe_code)]</code>
       on every source file.
     </li>
@@ -105,18 +143,18 @@
   </p>
 
   <div class="demo-controls">
-    <select id="example-select">
+    <select id="example-select" aria-label="Load example">
       <option value="">-- load example --</option>
       <option value="tmr">TMR Sensor Fusion</option>
       <option value="flight">Flight Controller</option>
       <option value="respirator">Neonatal Respirator</option>
     </select>
-    <select id="emit-format">
+    <select id="emit-format" aria-label="Output format">
       <option value="verilog">&#8594; SystemVerilog</option>
       <option value="firrtl">&#8594; FIRRTL</option>
       <option value="rspu">&#8594; R-SPU Assembly</option>
       <option value="sexpr">&#8594; S-expression IR</option>
-      <option value="json">&#8594; JSON Netlist</option>
+      <option value="json">&#8594; Width Analysis (JSON)</option>
       <option value="dot">&#8594; DOT Graph</option>
     </select>
     <button id="compile-btn" aria-label="Compile MIRR source code">Compile</button>
@@ -124,7 +162,7 @@
 
   <div class="split-pane">
     <div class="pane">
-      <label>MIRR Source</label>
+      <label for="mirr-source">MIRR Source</label>
       <textarea id="mirr-source" rows="18"
         spellcheck="false"
         placeholder="module example {&#10;  signal clk: in bool;&#10;}">

@@ -85,3 +85,60 @@ pub fn verify_least_solution(
 
     VerifyResult { is_minimal, diagnostics }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::program::SignalDecl;
+    use crate::ast::types::SignalKind;
+    use crate::width::types::SccKind;
+
+    fn make_signal(name: &str, width: u32) -> SignalDecl {
+        SignalDecl {
+            name: name.to_string(),
+            kind: SignalKind::Internal,
+            ty: crate::ast::types::SignalType::Unsigned(width).into(),
+            origin: None,
+            span: None,
+        }
+    }
+
+    #[test]
+    fn test_verify_minimal_solution() {
+        let scc = SccInfo { signal_indices: vec![0, 1], kind: SccKind::Nonexpansive };
+        let solve = SccSolveResult { widths: vec![8, 16], diagnostics: vec![] };
+        let signals = vec![make_signal("a", 8), make_signal("b", 16)];
+
+        let result = verify_least_solution(&[(scc, solve)], &signals);
+        assert!(result.is_minimal);
+        assert!(result.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn test_verify_under_solved_triggers_bug() {
+        let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Nonexpansive };
+        let solve = SccSolveResult { widths: vec![4], diagnostics: vec![] };
+        let signals = vec![make_signal("x", 8)];
+
+        let result = verify_least_solution(&[(scc, solve)], &signals);
+        assert!(!result.is_minimal);
+        assert_eq!(result.diagnostics.len(), 1);
+    }
+
+    #[test]
+    fn test_verify_width_1_skipped() {
+        let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Nonexpansive };
+        let solve = SccSolveResult { widths: vec![1], diagnostics: vec![] };
+        let signals = vec![make_signal("flag", 1)];
+
+        let result = verify_least_solution(&[(scc, solve)], &signals);
+        assert!(result.is_minimal);
+    }
+
+    #[test]
+    fn test_verify_empty_input() {
+        let result = verify_least_solution(&[], &[]);
+        assert!(result.is_minimal);
+        assert!(result.diagnostics.is_empty());
+    }
+}

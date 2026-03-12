@@ -196,7 +196,7 @@ Type checking is optional and controlled by `PipelineConfig::typecheck`:
 
 ```rust
 let config = PipelineConfig {
-    typecheck: true,   // Enable type checking (default: false)
+    typecheck: true,   // Enable type checking (default: true)
     // ...
 };
 ```
@@ -283,6 +283,6 @@ tags in assignments produce E620.
 ## See Also
 
 - [Error Codes](error_codes) — Full error code catalogue (E6xx section)
-- [Tutorial](tutorial) — Lesson 8: Signed types
-- [R-SPU Reference](rspu-reference) — How types map to R-SPU registers
+- [Tutorial](tutorial.md) — Lesson 8: Reading compiler output
+- [R-SPU ISA Spec](rspu_isa_spec.md) — How types map to R-SPU registers
 - [Roadmap](roadmap) — TYPE campaigns overview

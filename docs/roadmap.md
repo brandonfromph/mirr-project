@@ -696,7 +696,7 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 | DSP emission | `src/emit/dsp.rs` |
 | Testbench generation | `src/emit/testbench.rs` |
 | Type checking | `src/typeck/mod.rs` |
-| Type checking (extended) | `src/typeck/extended.rs` |
+| Type checking (extended) | `src/typeck/extended.ars` |
 | Unified pipeline | `src/pipeline.rs` |
 | Safety properties / SVA | `src/ast/property.rs`, `src/emit/verilog.rs` (SVA), `src/validation/semantic.rs` |
 | Pattern expansion | `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs` |
@@ -711,7 +711,7 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 - [Tutorial](tutorial) — Learn the language from scratch
 - [Error Codes](error_codes) — Error codes introduced per phase
 - [Type System](type-system) — TYPE campaign results
-- [R-SPU Reference](rspu-reference) — Phase 8 deliverable
+- [R-SPU Reference](rspu_isa_spec) — Phase 8 deliverable
 - [Migration Guide](migration-guide) — Breaking changes per version
 - [Glossary](glossary) — Project terminology and acronyms
 - [Contributing](contributing) — Coding standards, campaign workflow, error allocation

@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Criterion benchmarks for the MIRR compiler pipeline.
 //!
 //! Three tiers — small, medium, large — exercise parse_mirr() and run_pipeline()

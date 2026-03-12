@@ -247,23 +247,19 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
         // R-type with ALU funct in lower bits
         // ALU has 14 ops but only 2 funct bits — encode op in src2 field instead
         RspuInstruction::Alu { op, dst, a, b } => {
-            // Use extended encoding: op in bits [9:6] of payload, b in [5:2], funct=0
-            // Actually: R-type has src2(8 bits) — encode alu_op in the high nibble of src2
+            // I-type encoding: dst=dst, src=a, imm10 = (b << 4) | op_code
+            // op_code occupies 4 bits [3:0], b occupies 6 bits [9:4].
+            // Validate b fits in 6 bits — registers >= 64 would be silently
+            // truncated, producing incorrect binary output.
             let op_code = alu_op_to_funct(*op);
-            // Pack: dst=dst, src1=a, src2=b, but we need the op too.
-            // Reuse funct(2) for sub-variant, pack the full alu op in src2 upper bits.
-            // Since b is RegId (u8), and op fits in 4 bits, combine:
-            // lower 4 bits of src2 = alu_op, but that would corrupt register ID.
-            // Better: use two words? No — keep 1 word. Use the funct field + src2 split.
-            // Simplest approach: pack ALU op in funct as an extended field.
-            // We have src2(8 bits) available. Registers are 0-255 but actual registers
-            // are constrained to known ranges. We'll encode as:
-            //   R-type variant where funct encodes 2 LSBs of alu_op, and bit[9:8] of
-            //   src2 field encode the remaining 2 bits.
-            // Actually simpler: just pack op_code into low 4 bits of funct|src2-low.
-            // Let's just use a wider approach: pack as I-type with
-            // dst=dst, src=a, imm10 = (b << 4) | op_code
-            let imm = (((*b as u16) << 4) | (op_code as u16)) & 0x3FF;
+            if *b > 63 {
+                return Err(rspu_err(format!(
+                    "[E706] ALU register b index {} exceeds 6-bit field max (63); \
+                     use MOV to copy to a low register first",
+                    b
+                )));
+            }
+            let imm = ((*b as u16) << 4) | (op_code as u16);
             pack_i_type(OP_ALU, *dst, *a, imm)
         }
         // I-type
@@ -272,6 +268,13 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
             // This gives 7 bits for immediate (0-127) and 3 bits for op.
             // For larger immediates, user must use LoadImm + ALU register form.
             let op_code = alu_op_to_funct(*op) as u16;
+            if op_code > 7 {
+                return Err(rspu_err(format!(
+                    "[E706] ALU_IMM alu_op {} exceeds 3-bit field max (7); \
+                     comparison ops (Eq/Ne/Lt/Le/Gt/Ge) require the register ALU form",
+                    op_code
+                )));
+            }
             let imm7 = if *imm > 127 {
                 return Err(rspu_err(format!(
                     "[E706] ALU_IMM immediate {imm} exceeds 7-bit field max (127)"
@@ -279,7 +282,7 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
             } else {
                 *imm as u16
             };
-            let packed = ((op_code & 0x7) << 7) | imm7;
+            let packed = (op_code << 7) | imm7;
             pack_i_type(OP_ALU_IMM, *dst, *a, packed)
         }
         // R-type
@@ -732,6 +735,28 @@ mod tests {
     #[test]
     fn test_v2_roundtrip_deadline_set() {
         roundtrip(&RspuInstruction::DeadlineSet { cycles: 1000 });
+    }
+
+    #[test]
+    fn test_alu_b_register_overflow_returns_e706() {
+        // Register b=192 exceeds the 6-bit field (max 63).
+        let instr = RspuInstruction::Alu { op: AluOp::Add, dst: 10, a: 0, b: 192 };
+        let result = encode(&instr);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().message().to_string();
+        assert!(msg.contains("E706"), "expected E706, got: {msg}");
+        assert!(msg.contains("register b index"), "expected register b message, got: {msg}");
+    }
+
+    #[test]
+    fn test_alu_imm_comparison_op_overflow_returns_e706() {
+        // AluOp::Eq has funct code 8, which exceeds the 3-bit field (max 7).
+        let instr = RspuInstruction::AluImm { op: AluOp::Eq, dst: 10, a: 0, imm: 1 };
+        let result = encode(&instr);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().message().to_string();
+        assert!(msg.contains("E706"), "expected E706, got: {msg}");
+        assert!(msg.contains("alu_op"), "expected alu_op overflow message, got: {msg}");
     }
 
     #[test]

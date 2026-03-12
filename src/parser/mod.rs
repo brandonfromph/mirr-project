@@ -58,7 +58,7 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
 // Backward compatible: plain `<kind> <type>` declarations still parse
 // identically — the tokenizer simply produces default (empty) annotations.
 //
-// Error codes: E170–E183 for extended annotation errors.
+// Error codes: E177–E179, E182–E183, E190–E197 for extended annotation errors.
 // =========================================================================
 
 use crate::ast::types::{EffectQualifier, Linearity, Refinement, SignalKind, TypeAnnotations};
@@ -139,7 +139,6 @@ pub(crate) fn tokenize_signal_decl(rest: &str) -> Result<TokenizedSignalDecl, Mi
 ///
 /// A bare `<base_type>` token (e.g. `"u16"`) produces default annotations,
 /// identical to the previous `parse_signal_type_str()` call.
-#[allow(dead_code)] // MEGA-1: will be used by extended type checker (typeck::extended)
 pub(crate) fn parse_type_with_annotations(
     type_str: &str,
 ) -> Result<(crate::ast::types::SignalType, TypeAnnotations), MirrError> {
@@ -191,7 +190,7 @@ fn parse_qualified_type(
             "linear" => {
                 if annotations.linearity == Linearity::Linear {
                     return Err(MirrError::new(
-                        "[E170] Duplicate 'linear' qualifier in signal declaration.",
+                        "[E190] Duplicate 'linear' qualifier in signal declaration.",
                     ));
                 }
                 annotations.linearity = Linearity::Linear;
@@ -201,7 +200,7 @@ fn parse_qualified_type(
             "stateful" => {
                 if annotations.effect != EffectQualifier::Unspecified {
                     return Err(MirrError::new(
-                        "[E172] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
+                        "[E191] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
                     ));
                 }
                 annotations.effect = EffectQualifier::Stateful;
@@ -211,7 +210,7 @@ fn parse_qualified_type(
             "pure" => {
                 if annotations.effect != EffectQualifier::Unspecified {
                     return Err(MirrError::new(
-                        "[E172] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
+                        "[E191] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
                     ));
                 }
                 annotations.effect = EffectQualifier::Pure;
@@ -225,7 +224,7 @@ fn parse_qualified_type(
     // --- Phase 2: Base type (required) ---
     if pos >= tokens.len() {
         return Err(MirrError::new(
-            "[E173] Missing base type after qualifiers. Expected 'bool', 'uN', or 'iN'.",
+            "[E192] Missing base type after qualifiers. Expected 'bool', 'uN', or 'iN'.",
         ));
     }
 
@@ -247,7 +246,7 @@ fn parse_qualified_type(
             // --- Refinement clause ---
             if annotations.refinement.is_some() {
                 return Err(MirrError::new(
-                    "[E180] Duplicate 'where' clause in signal declaration.",
+                    "[E196] Duplicate 'where' clause in signal declaration.",
                 ));
             }
             pos += 1;
@@ -263,7 +262,7 @@ fn parse_qualified_type(
 
             if pos == ref_start {
                 return Err(MirrError::new(
-                    "[E174] Empty refinement clause after 'where'. Expected range 'N..M' or predicate.",
+                    "[E193] Empty refinement clause after 'where'. Expected range 'N..M' or predicate.",
                 ));
             }
 
@@ -273,12 +272,12 @@ fn parse_qualified_type(
             // --- Clock domain ---
             if annotations.clock_domain.is_some() {
                 return Err(MirrError::new(
-                    "[E181] Duplicate clock domain annotation in signal declaration.",
+                    "[E197] Duplicate clock domain annotation in signal declaration.",
                 ));
             }
             if domain.is_empty() {
                 return Err(MirrError::new(
-                    "[E176] Empty clock domain: expected identifier after '@'.",
+                    "[E195] Empty clock domain: expected identifier after '@'.",
                 ));
             }
             if !is_valid_identifier(domain) {
@@ -336,17 +335,17 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
     if let Some((lo_str, hi_str)) = trimmed.split_once("..=") {
         let lo = lo_str.trim().parse::<u64>().map_err(|_| {
             MirrError::new(format!(
-                "[E174] Malformed range refinement: '{lo_str}' is not a valid integer.",
+                "[E193] Malformed range refinement: '{lo_str}' is not a valid integer.",
             ))
         })?;
         let hi = hi_str.trim().parse::<u64>().map_err(|_| {
             MirrError::new(format!(
-                "[E174] Malformed range refinement: '{hi_str}' is not a valid integer.",
+                "[E193] Malformed range refinement: '{hi_str}' is not a valid integer.",
             ))
         })?;
         if lo > hi {
             return Err(MirrError::new(format!(
-                "[E175] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
+                "[E194] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
             )));
         }
         return Ok(Refinement::Range { lo, hi });
@@ -356,17 +355,17 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
     if let Some((lo_str, hi_str)) = trimmed.split_once("..") {
         let lo = lo_str.trim().parse::<u64>().map_err(|_| {
             MirrError::new(format!(
-                "[E174] Malformed range refinement: '{lo_str}' is not a valid integer.",
+                "[E193] Malformed range refinement: '{lo_str}' is not a valid integer.",
             ))
         })?;
         let hi = hi_str.trim().parse::<u64>().map_err(|_| {
             MirrError::new(format!(
-                "[E174] Malformed range refinement: '{hi_str}' is not a valid integer.",
+                "[E193] Malformed range refinement: '{hi_str}' is not a valid integer.",
             ))
         })?;
         if lo > hi {
             return Err(MirrError::new(format!(
-                "[E175] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
+                "[E194] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
             )));
         }
         return Ok(Refinement::Range { lo, hi });
@@ -375,7 +374,7 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
     // Predicate form: store the raw expression string.
     if trimmed.is_empty() {
         return Err(MirrError::new(
-            "[E174] Empty refinement clause. Expected range 'N..M' or predicate expression.",
+            "[E193] Empty refinement clause. Expected range 'N..M' or predicate expression.",
         ));
     }
 

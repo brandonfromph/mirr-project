@@ -30,14 +30,17 @@ Canonical index for all project documentation. Updated each campaign.
 | [Error Codes](error_codes) | Active | Error codes introduced per phase |
 | [Logic Simplification](logic_simplification) | Active | Phase 3 simplifier architecture and rules |
 | [Benchmarks](benchmarks) | Active | Criterion benchmark tiers and usage |
-| [Glossary](glossary) | Active | Project terminology and acronyms (~30 terms) |
+| [Glossary](glossary) | Active | Project terminology and acronyms (~55 terms) |
 | [Contributing](contributing) | Active | Coding standards, campaign workflow, error allocation |
+| [FPGA Targets Guide](fpga-targets-guide) | Active | FPGA toolchain, synthesis, and target configuration |
+| [MAPE-K Guide](mape-k-guide) | Active | Autonomic feedback loop simulator and LTL monitoring |
+| [S-Expression Guide](sexpr-guide) | Active | Homoiconic S-expression IR, round-trip invariant |
 
 ## Architecture References
 
 | Document | Status | Description |
 |----------|--------|-------------|
-| [R-SPU Reference](rspu-reference) | Active | Phase 8 R-SPU architecture deliverable |
+| [R-SPU ISA v2 Specification](rspu_isa_spec) | Active | R-SPU instruction set architecture v2 specification |
 | [Migration Guide](migration-guide) | Active | Breaking changes per version |
 | [Phase 2 Temporal Guard Compiler](phase2_temporal_guard_compiler) | Frozen | Original Phase 2 design notes |
 
@@ -92,7 +95,19 @@ All proposals live in `proposals/` and follow the campaign workflow.
 | 020 | DOC-002 | 2026-03-09 | Executed |
 | 021 | SYNTH-001 | 2026-03-09 | Executed |
 | 022 | PAPER-001 | 2026-03-09 | Executed |
-| 023 | PHASE7-FOUNDATION | 2026-03-10 | Executing |
+| 023 | PHASE7-FOUNDATION | 2026-03-10 | Executed |
+| 024 | MEGA-1a | 2026-03-10 | Executed |
+| 025 | MEGA-1b | 2026-03-11 | Executed |
+| 026 | MEGA-2 | 2026-03-11 | Executed |
+| 027 | MEGA-3 | 2026-03-11 | Executed |
+| 028 | AUDIT-001 | 2026-03-11 | Executed |
+| 029 | STD-001 | 2026-03-12 | Executed |
+| 030 | LRA-001 | 2026-03-11 | Executed |
+| 031 | LRA-002 | 2026-03-11 | Executed |
+| 032 | STD-001-LRA | 2026-03-12 | Executed |
+| 033 | LRA-PHASE1 | 2026-03-12 | Executed |
+| 034 | LRA-PHASE2 | 2026-03-12 | Executed |
+| 035 | LRA-PHASE3-PHASE4 | 2026-03-12 | Executed |
 
 ---
 

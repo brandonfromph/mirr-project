@@ -354,5 +354,5 @@ CLI errors are rendered through `render_diagnostic()` in `mirr-compile`. LSP dia
 
 - [Tutorial](tutorial) — Lesson 9: Common errors
 - [Type System](type-system) — Type rules behind E6xx errors
-- [R-SPU Reference](rspu-reference) — Resource limits behind E7xx errors
+- [R-SPU Reference](rspu_isa_spec) — Resource limits behind E7xx errors
 - [Migration Guide](migration-guide) — New error codes added per version

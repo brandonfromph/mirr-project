@@ -102,6 +102,12 @@ wasm-pack build crates/mirr-wasm --target web --out-dir ../../demos --release
 cd paper && python3 -m http.server 8080
 ```
 
+### lra-cli
+
+The `lra-cli` tool manages LRA projects from the command line. Install with
+`cargo install lra-cli`. Subcommands: `init`, `validate`, `serve`, `badge`,
+`build`.
+
 ---
 
 ## Getting started
@@ -148,10 +154,13 @@ cargo run --bin mirr-compile -- examples/neonatal_respirator.mirr --emit json
 | Document | Description |
 |----------|-------------|
 | [Tutorial](docs/tutorial.md) | 10-lesson beginner guide — no hardware experience needed |
-| [Error Codes](docs/error_codes.md) | Complete catalogue of compiler diagnostics (E1xx–E7xx) |
+| [Error Codes](docs/error_codes.md) | Complete catalogue of compiler diagnostics (E1xx–E8xx) |
 | [Type System](docs/type-system.md) | Signed/unsigned types, width inference, and error codes |
 | [R-SPU ISA Spec](docs/rspu_isa_spec.md) | R-SPU instruction set architecture and register file |
-| [Migration Guide](docs/migration-guide.md) | Upgrade notes for 0.1.0 to 0.2.0 |
+| [Migration Guide](docs/migration-guide.md) | Upgrade notes for 0.1.0 to 0.3.0 |
+| [FPGA Targets Guide](docs/fpga-targets-guide.md) | Board support for iCE40, ECP5, Xilinx 7, Ultrascale, Gowin, Efinix |
+| [MAPE-K Guide](docs/mape-k-guide.md) | Autonomic Monitor–Analyze–Plan–Execute–Knowledge loop |
+| [S-Expression Guide](docs/sexpr-guide.md) | Homoiconic IR, reader macros, and bounded evaluation |
 | [Roadmap](docs/roadmap.md) | Phase 0–10 project roadmap |
 | [CHANGELOG](CHANGELOG.md) | Versioned change history |
 

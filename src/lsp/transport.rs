@@ -62,3 +62,52 @@ pub fn write_message(output: &mut impl Write, body: &str) -> io::Result<()> {
     output.write_all(body.as_bytes())?;
     output.flush()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn test_read_message_basic() {
+        let body = r#"{"jsonrpc":"2.0","id":1}"#;
+        let frame = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
+        let mut input = Cursor::new(frame.into_bytes());
+        let msg = read_message(&mut input).unwrap().unwrap();
+        assert_eq!(msg, body);
+    }
+
+    #[test]
+    fn test_read_message_eof() {
+        let mut input = Cursor::new(Vec::<u8>::new());
+        let msg = read_message(&mut input).unwrap();
+        assert!(msg.is_none());
+    }
+
+    #[test]
+    fn test_read_message_too_large() {
+        let frame = format!("Content-Length: {}\r\n\r\n", MAX_MESSAGE_BYTES + 1);
+        let mut input = Cursor::new(frame.into_bytes());
+        let err = read_message(&mut input).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn test_write_message_roundtrip() {
+        let body = r#"{"result":"ok"}"#;
+        let mut buf = Vec::new();
+        write_message(&mut buf, body).unwrap();
+
+        let mut input = Cursor::new(buf);
+        let msg = read_message(&mut input).unwrap().unwrap();
+        assert_eq!(msg, body);
+    }
+
+    #[test]
+    fn test_read_message_missing_content_length() {
+        let frame = b"X-Custom: foo\r\n\r\nhello";
+        let mut input = Cursor::new(frame.to_vec());
+        let err = read_message(&mut input).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+    }
+}
