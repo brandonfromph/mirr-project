@@ -144,12 +144,7 @@ pub fn simulate_rspu(source: &str) -> String {
     if let Err(msg) = check_length(source) {
         return err_json(&msg);
     }
-    let config = PipelineConfig {
-        rspu: true,
-        temporal: true,
-        simulate: true,
-        ..default_config()
-    };
+    let config = PipelineConfig { rspu: true, temporal: true, simulate: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => match result.sim_result {
             Some(ref sim) => ok_json(&format!("{:?}", sim)),
@@ -164,11 +159,7 @@ pub fn simulate_mapek(source: &str, _ticks: u32) -> String {
     if let Err(msg) = check_length(source) {
         return err_json(&msg);
     }
-    let config = PipelineConfig {
-        temporal: true,
-        mape_k: true,
-        ..default_config()
-    };
+    let config = PipelineConfig { temporal: true, mape_k: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => match &result.mape_k_result {
             Some(res) => match serde_json::to_string(res) {

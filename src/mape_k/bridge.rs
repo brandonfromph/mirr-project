@@ -75,10 +75,7 @@ impl std::fmt::Display for BridgeError {
                 write!(f, "too many signals for bridge: {count} > {MAX_BRIDGE_SIGNALS}")
             }
             Self::TooManyProperties { count } => {
-                write!(
-                    f,
-                    "too many properties for bridge: {count} > {MAX_BRIDGE_PROPERTIES}"
-                )
+                write!(f, "too many properties for bridge: {count} > {MAX_BRIDGE_PROPERTIES}")
             }
             Self::UnsupportedFormula { description } => {
                 write!(f, "unsupported formula: {description}")
@@ -137,10 +134,7 @@ pub fn bridge_from_pipeline(result: &PipelineResult) -> Result<SimConfig, Vec<Br
 /// - `Bool`: base_value = 1, noise = 0 (deterministic toggle)
 /// - `Unsigned(w)`: base_value = midpoint of [0, 2^w - 1], noise = 2
 /// - `Signed(w)`: base_value = 0, noise = 2
-fn extract_sensors(
-    result: &PipelineResult,
-    errors: &mut Vec<BridgeError>,
-) -> Vec<SensorConfig> {
+fn extract_sensors(result: &PipelineResult, errors: &mut Vec<BridgeError>) -> Vec<SensorConfig> {
     let signals = &result.program.module.signals;
 
     // Count input signals only.
@@ -304,16 +298,17 @@ fn lower_formula(formula: &PropertyFormula) -> Result<TemporalProperty, String> 
             let pred = lower_expr_to_predicate(expr)?;
             Ok(TemporalProperty::EventuallyWithin(pred, u64::from(*cycles)))
         }
-        PropertyFormula::AlwaysImplies { .. } => Err(
-            "AlwaysImplies requires two signals; cannot lower to a single predicate".to_string(),
-        ),
-        PropertyFormula::NeverImplies { .. } => Err(
-            "NeverImplies requires two signals; cannot lower to a single predicate".to_string(),
-        ),
-        PropertyFormula::AlwaysFollowedBy { .. } => Err(
-            "AlwaysFollowedBy requires two signals; cannot lower to a single predicate"
-                .to_string(),
-        ),
+        PropertyFormula::AlwaysImplies { .. } => {
+            Err("AlwaysImplies requires two signals; cannot lower to a single predicate"
+                .to_string())
+        }
+        PropertyFormula::NeverImplies { .. } => {
+            Err("NeverImplies requires two signals; cannot lower to a single predicate".to_string())
+        }
+        PropertyFormula::AlwaysFollowedBy { .. } => {
+            Err("AlwaysFollowedBy requires two signals; cannot lower to a single predicate"
+                .to_string())
+        }
     }
 }
 
@@ -360,10 +355,7 @@ fn lower_binary_predicate(
             BinaryOp::Gt => Ok(SignalPredicate::GreaterThan(name.clone(), threshold)),
             BinaryOp::Ge => {
                 // signal >= N  is equivalent to signal > N-1.
-                Ok(SignalPredicate::GreaterThan(
-                    name.clone(),
-                    threshold.saturating_sub(1),
-                ))
+                Ok(SignalPredicate::GreaterThan(name.clone(), threshold.saturating_sub(1)))
             }
             _ => {
                 // For And/Or/Eq/Ne/Add etc., fall back to IsTrue on the left signal.
@@ -373,8 +365,7 @@ fn lower_binary_predicate(
     }
 
     // Fallback: try to extract any signal name from the expression tree.
-    let name = extract_signal_name(left)
-        .or_else(|_| extract_signal_name(right))?;
+    let name = extract_signal_name(left).or_else(|_| extract_signal_name(right))?;
     Ok(SignalPredicate::IsTrue(name))
 }
 
@@ -453,10 +444,7 @@ mod tests {
     use crate::ast::SignalDecl;
 
     /// Build a minimal `PipelineResult` with the given signals and properties.
-    fn stub_pipeline(
-        signals: Vec<SignalDecl>,
-        properties: Vec<PropertyDecl>,
-    ) -> PipelineResult {
+    fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> PipelineResult {
         let module = Module {
             name: "test_mod".to_string(),
             signals,
@@ -563,10 +551,8 @@ mod tests {
 
     #[test]
     fn always_signal_lowers_to_always_is_true() {
-        let props = vec![assert_property(
-            "p1",
-            PropertyFormula::Always(Expr::Signal("alive".to_string())),
-        )];
+        let props =
+            vec![assert_property("p1", PropertyFormula::Always(Expr::Signal("alive".to_string())))];
         let result = stub_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
 
@@ -608,10 +594,7 @@ mod tests {
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
             config.properties[0],
-            TemporalProperty::EventuallyWithin(
-                SignalPredicate::IsTrue("ready".to_string()),
-                10
-            )
+            TemporalProperty::EventuallyWithin(SignalPredicate::IsTrue("ready".to_string()), 10)
         );
     }
 
@@ -666,14 +649,8 @@ mod tests {
     #[test]
     fn action_table_has_one_entry_per_property() {
         let props = vec![
-            assert_property(
-                "p1",
-                PropertyFormula::Always(Expr::Signal("a".to_string())),
-            ),
-            assert_property(
-                "p2",
-                PropertyFormula::Always(Expr::Signal("b".to_string())),
-            ),
+            assert_property("p1", PropertyFormula::Always(Expr::Signal("a".to_string()))),
+            assert_property("p2", PropertyFormula::Always(Expr::Signal("b".to_string()))),
         ];
         let result = stub_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
@@ -737,9 +714,7 @@ mod tests {
             PropertyFormula::Always(Expr::Binary {
                 op: BinaryOp::Lt,
                 left: Box::new(Expr::Signal("pressure".to_string())),
-                right: Box::new(Expr::Literal(
-                    crate::ast::types::LiteralValue::Integer(100),
-                )),
+                right: Box::new(Expr::Literal(crate::ast::types::LiteralValue::Integer(100))),
             }),
         )];
         let result = stub_pipeline(Vec::new(), props);
@@ -760,9 +735,7 @@ mod tests {
             PropertyFormula::Always(Expr::Binary {
                 op: BinaryOp::Gt,
                 left: Box::new(Expr::Signal("rate".to_string())),
-                right: Box::new(Expr::Literal(
-                    crate::ast::types::LiteralValue::Integer(50),
-                )),
+                right: Box::new(Expr::Literal(crate::ast::types::LiteralValue::Integer(50))),
             }),
         )];
         let result = stub_pipeline(Vec::new(), props);

@@ -94,19 +94,13 @@ pub fn run_formal_pipeline(
 ) -> Result<FormalResult, ToolchainError> {
     // 1. Check sby availability.
     if !registry.is_available(Tool::Sby) {
-        return Err(ToolchainError::ToolNotFound {
-            tool: "sby".to_string(),
-        });
+        return Err(ToolchainError::ToolNotFound { tool: "sby".to_string() });
     }
 
     // 2. Clamp depth and build sby-level config.
     let depth = config.bmc_depth.min(MAX_FORMAL_DEPTH);
-    let sby_cfg = SbyConfig {
-        bmc_depth: depth,
-        prove: config.prove,
-        cover: false,
-        engine: config.engine,
-    };
+    let sby_cfg =
+        SbyConfig { bmc_depth: depth, prove: config.prove, cover: false, engine: config.engine };
 
     let sv_path = Path::new(&config.sv_path);
     let bind_path_buf; // keep the Path alive if needed
@@ -197,21 +191,12 @@ fn parse_sby_verdicts(stdout: &str) -> Vec<PropertyVerdict> {
         };
 
         // Extract the engine/property name (text between "] " and ": PASS/FAIL").
-        let name = after_bracket
-            .trim()
-            .split(": ")
-            .next()
-            .unwrap_or("unknown")
-            .to_string();
+        let name = after_bracket.trim().split(": ").next().unwrap_or("unknown").to_string();
 
         if verdicts.len() >= MAX_FORMAL_PROPERTIES {
             break;
         }
-        verdicts.push(PropertyVerdict {
-            name,
-            task: task.to_string(),
-            status,
-        });
+        verdicts.push(PropertyVerdict { name, task: task.to_string(), status });
     }
 
     verdicts
