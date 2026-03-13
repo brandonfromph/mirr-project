@@ -36,7 +36,7 @@ Truncation.vo: Truncation.v Types.vo
 Integration.vo: Integration.v Types.vo MinBits.vo Constraint.vo Monotone.vo Solver.vo Flatten.vo Truncation.vo
 SCC/Tarjan.vo: SCC/Tarjan.v Types.vo
 SCC/Classify.vo: SCC/Classify.v Types.vo
-SCC/Nonexpansive.vo: SCC/Nonexpansive.v Types.vo Constraint.vo
+SCC/Nonexpansive.vo: SCC/Nonexpansive.v Types.vo Constraint.vo Monotone.vo
 
 %.vo: %.v
 	$(COQC) $(COQFLAGS) $<

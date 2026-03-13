@@ -11,6 +11,7 @@
 
 use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use serde::Serialize;
 
 /// Maximum expression tree depth the simplifier will traverse.
 /// Matches the parser's MAX_EXPR_DEPTH to guarantee we never exceed stack budget.
@@ -25,7 +26,7 @@ const MAX_PASSES: usize = 8;
 // ---------------------------------------------------------------------------
 
 /// Statistics from a simplification run.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SimplifyStats {
     /// Total number of rule applications across all passes.
     pub rules_applied: usize,

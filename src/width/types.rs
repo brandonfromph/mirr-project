@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 use crate::ast::types::{BinaryOp, UnaryOp};
+use serde::Serialize;
 
 // ---------------------------------------------------------------------------
 // Width
@@ -14,7 +15,7 @@ use crate::ast::types::{BinaryOp, UnaryOp};
 /// Resolved bit-width for a single expression node.
 ///
 /// Valid range: 1..=64.  A width of 0 means "unresolved" during solving.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct Width(pub u32);
 
 impl Width {
@@ -55,7 +56,7 @@ impl std::fmt::Display for Width {
 ///
 /// Parallel tree to `crate::ast::Expr`, produced by the width inference pass.
 /// Every node carries its resolved `Width`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum WidthExpr {
     /// Literal constant with its minimum bit-width.
     Literal { value: u64, width: Width },
@@ -119,7 +120,7 @@ pub const MAX_SIGNALS: usize = 1024;
 pub const MAX_SCC_SIZE: usize = 64;
 
 /// Classification of a strongly connected component.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum SccKind {
     /// Values can grow (contains Add, Mul, Shl on cycle path).
     Expansive,
@@ -128,7 +129,7 @@ pub enum SccKind {
 }
 
 /// Information about a detected SCC in the width dependency graph.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SccInfo {
     /// Indices of signals in this SCC (into the signal declarations array).
     pub signal_indices: Vec<usize>,
@@ -141,7 +142,7 @@ pub struct SccInfo {
 // ---------------------------------------------------------------------------
 
 /// Severity of a width diagnostic.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum DiagSeverity {
     /// Hard error — compilation must stop.
     Error,
@@ -152,7 +153,7 @@ pub enum DiagSeverity {
 }
 
 /// A diagnostic emitted by the width inference pass.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct WidthDiag {
     /// Severity level (error, warning, or info).
     pub severity: DiagSeverity,
@@ -236,7 +237,7 @@ impl std::fmt::Display for WidthDiag {
 // ---------------------------------------------------------------------------
 
 /// Aggregate statistics from a width inference run.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct WidthStats {
     /// Number of expression nodes analyzed.
     pub nodes_analyzed: usize,

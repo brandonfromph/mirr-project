@@ -25,10 +25,10 @@ Require Import Types.
 
 Definition min_bits_body (v : nat)
   (rec : forall v', v' < v -> width) : width :=
-  match v with
-  | 0 => 1
-  | S _ => 1 + rec (Nat.div2 v) (Nat.lt_div2 v (ltac:(lia)))
-  end.
+  match v as k return (forall v', v' < k -> width) -> width with
+  | 0   => fun _ => 1
+  | S n => fun r => 1 + r (Nat.div2 (S n)) (Nat.lt_div2 (S n) (Nat.lt_0_succ n))
+  end rec.
 
 Definition min_bits (v : nat) : width :=
   Fix lt_wf (fun _ => width) min_bits_body v.
@@ -62,7 +62,12 @@ Proof. intros. apply Nat.lt_div2. lia. Qed.
 (** Helper: value bounded by double of half. *)
 Lemma le_double_div2 : forall n, n <= 2 * Nat.div2 n + 1.
 Proof.
-  intros. rewrite <- Nat.div2_odd. lia.
+  intro n.
+  assert (H : Nat.div2 n = n / 2) by apply Nat.div2_div.
+  rewrite H.
+  assert (n mod 2 <= 1) by (apply Nat.lt_succ_r; apply Nat.mod_upper_bound; lia).
+  assert (n = 2 * (n / 2) + n mod 2) by (symmetry; apply Nat.div_mod; lia).
+  lia.
 Qed.
 
 (** T13: min_bits_correct — the result of min_bits is tight. *)

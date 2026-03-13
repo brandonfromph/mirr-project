@@ -212,7 +212,9 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install Coq
-        run: sudo apt-get update && sudo apt-get install -y coq
+        run: |
+          sudo apt-get update && sudo apt-get install -y coq
+          coqc --version
 
       - name: Build width proofs
         run: make -C proofs/width
@@ -297,10 +299,14 @@ jobs:
           working-directory: docs
           bundler-cache: true
 
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+
       - name: Build Jekyll site
         run: |
           cd docs
-          bundle exec jekyll build --destination ../_site
+          bundle exec jekyll build --destination ../_site --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: production
 
@@ -338,9 +344,6 @@ jobs:
           test -f _site/paper/demos/mirr_wasm_bg.wasm || { echo "FAIL: missing mirr_wasm_bg.wasm"; exit 1; }
           echo "Paper verification: all 4 critical files present"
           ls -la _site/paper/demos/
-
-      - name: Configure Pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1

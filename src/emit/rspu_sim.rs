@@ -22,6 +22,7 @@ use crate::emit::rspu_isa::{
 };
 use crate::emit::rspu_tagged::{check_alu_tags, RegisterFile, TaggedWord, TypeTag};
 use crate::error::MirrError;
+use serde::Serialize;
 
 // ---------------------------------------------------------------------------
 // Constants (NASA P10 bounded-resource model)
@@ -52,7 +53,7 @@ pub enum StepResult {
 // ---------------------------------------------------------------------------
 
 /// Result of a complete simulation run.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SimResult {
     /// Total cycles executed.
     pub cycles: u64,

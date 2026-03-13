@@ -86,24 +86,38 @@ Proof.
     + specialize (IHtl i'). lia.
 Qed.
 
-(** Lemma: nonexpansive state-dependent constraints do not increase
-    the max width. Fixed and Boolean produce constant widths that
-    may exceed the state max; these hold under the SCC solver's
-    anchor initialization invariant but cannot be proven without
-    a precondition.  We prove the state-dependent cases and leave
-    Fixed/Boolean with an explicit precondition or Admitted. *)
+(** Helper: if some entry in the state is positive, the max is >= 1. *)
+Lemma exists_pos_implies_max_ge_1 : forall st,
+  (exists i, lookup st i > 0) -> 1 <= fold_right Nat.max 0 st.
+Proof.
+  induction st as [|hd tl IHtl].
+  - (* Base: lookup [] i = 0 for all i, contradicts > 0. *)
+    intros [i Hi]. simpl in Hi. lia.
+  - intros [i Hi]. destruct i as [|i'].
+    + (* Witness is head. *)
+      simpl. simpl in Hi. lia.
+    + (* Witness is in tail. *)
+      simpl. simpl in Hi.
+      assert (Htl : 1 <= fold_right Nat.max 0 tl).
+      { apply IHtl. exists i'. exact Hi. }
+      lia.
+Qed.
+
+(** Lemma: nonexpansive constraints do not increase the max width,
+    given that Fixed widths are bounded by the state max (anchor
+    invariant) and the state has at least one positive entry. *)
 Lemma nonexpansive_max_bound : forall c st n w,
   is_nonexpansive c ->
   eval_constraint c st = Some (n, w) ->
+  (forall n' w', c = Fixed n' w' -> w' <= fold_right Nat.max 0 st) ->
+  (exists i, lookup st i > 0) ->
   w <= fold_right Nat.max 0 st.
 Proof.
-  intros c st n w Hne Heval.
+  intros c st n w Hne Heval Hfixed Hpos.
   destruct c; simpl in Hne; try contradiction; simpl in Heval.
   - (* Fixed node w0 *)
     injection Heval as <- <-.
-    (* Fixed: cannot prove w0 <= fold_right max 0 st in general.
-       Requires external anchor invariant. *)
-    admit.
+    apply (Hfixed n w). reflexivity.
   - (* MaxOf node left right *)
     destruct ((lookup st n1 =? 0) && (lookup st n2 =? 0))%bool eqn:Econd;
     [discriminate | injection Heval as <- <-].
@@ -117,6 +131,5 @@ Proof.
     exact (lookup_le_fold_max st n0).
   - (* Boolean node *)
     injection Heval as <- <-.
-    (* w = 1, need 1 <= fold_right max 0 st — requires nonempty state. *)
-    admit.
-Admitted.
+    exact (exists_pos_implies_max_ge_1 st Hpos).
+Qed.

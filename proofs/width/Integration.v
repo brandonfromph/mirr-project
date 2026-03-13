@@ -101,7 +101,6 @@ Qed.
 
     Remaining Admitted:
     - T1 (solver_terminates): needs potential function Φ = Σ(MAX_WIDTH - w_i)
-    - step_one_monotone: needs Coq verification of None-guard case analysis
-    - Encoding.v: 4 bitvector roundtrip proofs (need MathComp/Bitv library)
-    - SCC/Nonexpansive.v: 1 (Fixed/Boolean edge cases)
+    - step_one_monotone: Proven (Qed) — variable reference corrected
+    - Encoding.v: 0 Admitted (all 4 roundtrip proofs closed with Z.bits_inj' + Z.testbit)
 *)
