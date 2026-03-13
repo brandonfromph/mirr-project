@@ -102,5 +102,5 @@ Qed.
     Remaining Admitted:
     - T1 (solver_terminates): needs potential function Φ = Σ(MAX_WIDTH - w_i)
     - step_one_monotone: Admitted — variable-reference fix pending (F1)
-    - Encoding.v: 0 Admitted (all 4 roundtrip proofs closed with Z.bits_inj' + Z.testbit)
+    - Encoding.v: 0 Admitted (all 6 roundtrip proofs closed with Z.bits_inj' + Z.testbit)
 *)

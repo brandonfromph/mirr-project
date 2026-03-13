@@ -63,8 +63,17 @@
   <a href="#language">2</a> &middot;
   <a href="#pipeline">3</a> &middot;
   <a href="#width">4</a> &middot;
-  <a href="#rspu">5</a> &middot;
-  <a href="#evaluation">6</a> &middot;
+  <a href="#type-system">5</a> &middot;
+  <a href="#semantics">6</a> &middot;
+  <a href="#sexpr">7</a> &middot;
+  <a href="#mapek">8</a> &middot;
+  <a href="#rspu">9</a> &middot;
+  <a href="#evaluation">10</a> &middot;
+  <a href="#assurance">11</a> &middot;
+  <a href="#case-studies">12</a> &middot;
+  <a href="#traced-example">13</a> &middot;
+  <a href="#toolchain">14</a> &middot;
+  <a href="#conclusion">15</a> &middot;
   <a href="#references">Refs</a>
 </nav>
 
@@ -163,7 +172,7 @@
   <div class="split-pane">
     <div class="pane">
       <label for="mirr-source">MIRR Source</label>
-      <textarea id="mirr-source" rows="18"
+      <textarea id="mirr-source" rows="28"
         spellcheck="false"
         placeholder="module example {&#10;  signal clk: in bool;&#10;}">
       </textarea>
@@ -374,6 +383,15 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     E7xx (R-SPU), E8xx (S-expression).  Every error carries a source span,
     severity, and structured message.  Negative tests cover all 189 codes.
   </p>
+  <h3>Interactive Pipeline Visualization</h3>
+  <p>
+    Compile the current playground source through all 9 stages and inspect
+    intermediate representations.
+  </p>
+  <button id="pipeline-viz-btn" aria-label="Run pipeline visualization">Run Pipeline Stages</button>
+  <div id="pipeline-viz-output" class="pipeline-viz" aria-live="polite">
+    <p>Click Run Pipeline Stages to trace the compilation pipeline.</p>
+  </div>
 </section>
 
 <section id="width">
@@ -452,10 +470,214 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     expander&mdash;covered by <span data-metric="totalTests">2,491</span> tests and
     <code>#![forbid(unsafe_code)]</code>.
   </p>
+  <h3>Interactive Proof Dashboard</h3>
+  <p>
+    Query the compiler&rsquo;s built-in proof status table.  Shows all
+    <span data-metric="rocqTheorems">55</span> theorems with
+    mechanization status.
+  </p>
+  <button id="proof-dash-btn" aria-label="Load proof status dashboard">Load Proof Status</button>
+  <div id="proof-dash-output" class="proof-grid" aria-live="polite">
+    <p>Click Load Proof Status to query the WASM compiler.</p>
+  </div>
+</section>
+
+<section id="type-system">
+  <h2>5. Type System</h2>
+  <p>
+    The core type checker (480 lines, 16 inference rules) enforces the
+    <em>cross-category invariant</em>: signed and unsigned types never mix
+    in the same expression.  Unlike software languages that silently widen
+    <code>unsigned</code> to <code>int</code>, MIRR rejects such coercions
+    because sign extension alters the bit pattern reaching downstream
+    logic&mdash;a deliberate trade of convenience for correctness in
+    safety-critical HDL compilation.
+  </p>
+  <h3>Bounded Inference Algorithm</h3>
+  <p>
+    Type inference uses a two-phase explicit work stack with zero recursion,
+    bounded by <code>MAX_EXPR_NODES = 512</code>.  Phase 1 walks the AST
+    and pushes nodes in post-order; Phase 2 pops and evaluates bottom-up.
+    This mirrors recursive traversal while satisfying NASA Power-of-10
+    Rule 1 (no recursion) and Rule 2 (bounded iteration).
+  </p>
+  <h3>Core Type Rules</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Error</th><th>Rule</th><th>Enforces</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>E601</td><td>GuardBool</td><td>Guard condition must be <code>bool</code></td></tr>
+      <tr><td>E602</td><td>PropertyBool</td><td>Property body must be <code>bool</code></td></tr>
+      <tr><td>E603</td><td>ArithHomogeneous</td><td>Arithmetic operands same signedness</td></tr>
+      <tr><td>E604</td><td>ComparisonHomogeneous</td><td>Comparison operands same signedness</td></tr>
+      <tr><td>E605</td><td>NegationWidening</td><td>Negate <code>u_N</code> &rarr; <code>i_{N+1}</code></td></tr>
+      <tr><td>E606</td><td>BitwiseSameType</td><td>Bitwise operands same type and width</td></tr>
+      <tr><td>E607</td><td>ShiftUnsigned</td><td>Shift amount must be unsigned</td></tr>
+      <tr><td>E608</td><td>CrossCategory</td><td>No signed/unsigned mixing</td></tr>
+      <tr><td>E609</td><td>AssignCompat</td><td>RHS assignable to LHS type</td></tr>
+    </tbody>
+  </table>
+  <h3>Extended Type System (8 Features)</h3>
+  <p>
+    The extended type checker adds 8 certification-oriented features
+    (E610&ndash;E625), each opt-in via <code>PipelineConfig</code>.
+    The extended checker runs 7 phases, each bounded by
+    <code>MAX_EXTENDED_TYPE_NODES = 512</code>.  Features target
+    DO-254 Level A certification workflows: refinement types for
+    value-range bounds, linear types for consume-exactly-once resources,
+    effect types for pure/stateful separation, clock domains for CDC
+    crossing detection, phantom types for provenance tagging, type-level
+    naturals for dimension checking, dependent types for value-dependent
+    constraints, and session types for protocol conformance.
+  </p>
+</section>
+
+<section id="semantics">
+  <h2>6. Formal Semantics</h2>
+  <p>
+    Safety-critical systems require mathematical certainty that a compiler
+    preserves meaning.  MIRR&rsquo;s big-step operational semantics specify
+    what a module <em>means</em> per clock cycle, while the R-SPU transition
+    rules specify how compiled code <em>executes</em> on the target processor.
+  </p>
+  <h3>Module Semantics</h3>
+  <p>
+    Module state is a triple &sigma; = (signals, guards, outputs).  One clock
+    cycle executes in two phases: Phase 1 evaluates all guards against input
+    state &sigma;<sub>0</sub> to produce guard vector &sigma;<sub>1</sub>;
+    Phase 2 evaluates all reflexes against &sigma;<sub>1</sub> to produce
+    output state &sigma;<sub>2</sub>.  The two-phase structure prevents
+    guard&ndash;reflex circular dependencies within a single cycle.
+  </p>
+  <p>
+    Guard implementations use shift registers (N-bit history window, fires
+    when all N bits are 1) or saturating counters (fires when counter &ge; N).
+    Reflex conflict freedom is enforced statically by errors E205/E206&mdash;no
+    two reflexes drive the same output.
+  </p>
+  <h3>R-SPU State Machine</h3>
+  <p>
+    The R-SPU state is a quintuple S = (regs, guards, pc, cycle, halted).
+    The 256-entry tagged register file stores (value, type tag, provenance
+    tag) per register; 64 guard slots track temporal state.  Each instruction
+    completes in exactly one clock cycle with no branches or interrupts in
+    Reflex mode.  The transition relation S &rarr; S&prime; is a total
+    function on non-halted states.
+  </p>
+  <h3>Determinism Theorem</h3>
+  <p>
+    <strong>Theorem 1 (Semantic Determinism):</strong> For any MIRR module M
+    and initial state &sigma;<sub>0</sub>, the output state &sigma;<sub>n</sub>
+    after n clock cycles is uniquely determined.
+    <br>
+    <strong>Corollary 1 (Bit-Exact Reproducibility):</strong> Given identical
+    input sequences, two independent executions produce identical output
+    sequences at every cycle boundary&mdash;whether in the R-SPU simulator,
+    synthesized RTL, or FIRRTL backend.  This is a prerequisite for DO-254
+    certification, where reproducible builds are mandatory.
+  </p>
+</section>
+
+<section id="sexpr">
+  <h2>7. S-Expression IR</h2>
+  <p>
+    The homoiconic S-expression intermediate representation (IR) serves three
+    purposes: (1) enable compile-time metaprogramming via code-as-data
+    transformation, (2) provide a serializable, human-readable IR for
+    debugging and tooling, and (3) validate self-hosting by establishing a
+    verified round-trip invariant between the AST and the S-expression
+    encoding.
+  </p>
+  <h3>SExpr Variants</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Variant</th><th>Content</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Symbol</code></td><td>Identifier string</td></tr>
+      <tr><td><code>Integer</code></td><td><code>u64</code> value</td></tr>
+      <tr><td><code>Bool</code></td><td><code>true</code> / <code>false</code></td></tr>
+      <tr><td><code>Str</code></td><td>String literal</td></tr>
+      <tr><td><code>List</code></td><td>Ordered sequence of S-expressions</td></tr>
+      <tr><td><code>Quote</code></td><td>Unevaluated datum</td></tr>
+      <tr><td><code>Quasiquote</code></td><td>Template with splicing</td></tr>
+      <tr><td><code>Unquote</code></td><td>Splice point inside quasiquote</td></tr>
+    </tbody>
+  </table>
+  <h3>Bounded Eval/Apply Core</h3>
+  <p>
+    The eval engine (318 lines) implements a bounded eval/apply interpreter
+    for compile-time metaprogramming.  Evaluation is strictly bounded:
+    <code>MAX_EVAL_STEPS = 10,000</code> steps and
+    <code>MAX_EVAL_DEPTH = 32</code> nested frames.  Macro expansion is
+    bounded by <code>MAX_MACRO_EXPAND_DEPTH = 8</code>.  This enables
+    compile-time code generation while guaranteeing termination.
+  </p>
+  <h3>Round-Trip Invariant</h3>
+  <p>
+    The bidirectional converter guarantees:
+    <code>parse_mirr(s) = sexpr_to_ast(ast_to_sexpr(parse_mirr(s)))</code>.
+    This invariant is verified by 25 self-hosting tests.
+  </p>
+</section>
+
+<section id="mapek">
+  <h2>8. MAPE-K Autonomic Simulator</h2>
+  <p>
+    The MAPE-K feedback loop (Monitor, Analyze, Plan, Execute over a shared
+    Knowledge base) is the canonical framework for self-adaptive systems.
+    MIRR implements a deterministic MAPE-K simulator that validates whether
+    the hardware monitors designed in MIRR can observe and respond to runtime
+    anomalies under fault injection.
+  </p>
+  <h3>Four-Phase Execution</h3>
+  <p>
+    Four phases execute in strict sequence each tick:
+    &sigma;<sub>t+1</sub> = E(P(A(M(&sigma;<sub>t</sub>, sensors),
+    K<sub>t</sub>), K<sub>t</sub>), K<sub>t</sub>).
+    The simulator spans <span data-metric="mapekSubmodules">8</span>
+    submodules: orchestrator, monitor (ring buffer), analyzer (LTL
+    evaluation), planner (priority-based action selection), executor,
+    knowledge (bounded FIFO), LTL property types, and deterministic
+    sensor simulation (LCG PRNG).
+  </p>
+  <h3>Bounded Temporal Operators</h3>
+  <p>
+    Three temporal operators evaluate over rolling windows of sensor data:
+    <strong>Always</strong> G(P)&mdash;scan entire window, return false on
+    first violation; <strong>Eventually-within</strong> F<sub>&le;N</sub>(P)&mdash;inspect
+    last N entries; <strong>Persists</strong> P for N ticks&mdash;track
+    consecutive satisfying ticks, fire when count &ge; N.  All algorithms
+    are iterative with O(window_size) complexity, bounded by
+    <code>MAX_WINDOW_SIZE = 1,024</code>.
+  </p>
+  <h3>Knowledge Base &amp; Audit Trail</h3>
+  <p>
+    The knowledge component maintains a bounded FIFO ring buffer
+    (<code>MAX_LOG_ENTRIES = 4,096</code>).  Each record stores tick number,
+    triggering property index, action taken, pre/post state snapshots, and a
+    success flag.  The knowledge base exports to JSON for DO-254 evidence
+    trails.
+  </p>
+  <h3>Interactive MAPE-K Dashboard</h3>
+  <p>
+    Run the MAPE-K simulator with the neonatal scenario.  The dashboard
+    shows sensor traces, property violations, and autonomic actions over
+    the simulation timeline.
+  </p>
+  <div class="sim-panel">
+    <div class="sim-controls">
+      <label for="mapek-ticks">Ticks:</label>
+      <input type="number" id="mapek-ticks" value="100" min="1" max="10000" aria-label="Simulation ticks">
+      <button id="mapek-sim-btn" aria-label="Run MAPE-K simulation">Simulate MAPE-K</button>
+    </div>
+    <pre id="mapek-sim-output" class="sim-output" aria-live="polite">Click Simulate MAPE-K to run.</pre>
+  </div>
 </section>
 
 <section id="rspu">
-  <h2>5. R-SPU Backend</h2>
+  <h2>9. R-SPU Backend</h2>
   <p>
     The Reflex Signal Processing Unit (R-SPU) is a safety-critical
     instruction-level target.  The backend spans 3,291 lines across 6 files.
@@ -492,10 +714,24 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     (R128&ndash;R191), temporaries (R192&ndash;R255).  Runtime tag checking on
     all ALU operations provides defense-in-depth (Rocq theorem T27).
   </p>
+  <h3>Interactive R-SPU Simulator</h3>
+  <p>
+    Compile the current playground source to R-SPU assembly and simulate
+    execution.  The simulator traces register state, guard firings, and
+    cycle count.
+  </p>
+  <div class="sim-panel">
+    <div class="sim-controls">
+      <label for="rspu-cycles">Cycles:</label>
+      <input type="number" id="rspu-cycles" value="10" min="1" max="1000" aria-label="Simulation cycles">
+      <button id="rspu-sim-btn" aria-label="Run R-SPU simulation">Simulate R-SPU</button>
+    </div>
+    <pre id="rspu-sim-output" class="sim-output" aria-live="polite">Click Simulate R-SPU to run.</pre>
+  </div>
 </section>
 
 <section id="evaluation">
-  <h2>6. Evaluation</h2>
+  <h2>10. Evaluation</h2>
   <h3>Test Suite</h3>
   <table id="test-summary-table" class="data-table">
     <thead>
@@ -569,8 +805,226 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </ol>
 </section>
 
-<section id="limitations">
-  <h2>7. Limitations</h2>
+<section id="assurance">
+  <h2>11. Safety Assurance Argument</h2>
+  <p>
+    Safety-critical hardware certification under DO-254 requires a structured
+    assurance case: a hierarchy of claims, evidence, and identified gaps.  No
+    existing HDL compiler provides such an argument.  MIRR&rsquo;s assurance
+    case is presented as six layers, ordered from strongest to weakest
+    evidence, following the principle that honest disclosure of gaps is more
+    credible than inflated coverage claims.
+  </p>
+  <h3>Layered Assurance Case</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Layer</th><th>Evidence</th><th>Coverage</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1. Formally proven</td>
+        <td><span data-metric="rocqTheorems">55</span> Rocq theorems (<span data-metric="rocqProofLines">1,833</span> proof lines)</td>
+        <td>Width inference, R-SPU encoding</td>
+      </tr>
+      <tr>
+        <td>2. Statically enforced</td>
+        <td><code>#![forbid(unsafe_code)]</code> on 92 files, <code>#![deny(warnings)]</code></td>
+        <td>Memory safety, dead code elimination</td>
+      </tr>
+      <tr>
+        <td>3. Bounded by construction</td>
+        <td>Every loop bounded by <code>MAX_*</code> constants</td>
+        <td>WCET analysis, termination</td>
+      </tr>
+      <tr>
+        <td>4. Tested</td>
+        <td><span data-metric="totalTests">2,491</span> tests (1.57:1 test-to-source ratio)</td>
+        <td>Golden-output, negative (189 codes), round-trip</td>
+      </tr>
+      <tr>
+        <td>5. Dynamically checked</td>
+        <td>R-SPU tagged-word registers, 7 exception codes</td>
+        <td>Runtime type confusion detection</td>
+      </tr>
+      <tr>
+        <td>6. Known gaps</td>
+        <td><span data-metric="rocqAxiomatized">2</span> Admitted theorems, pen-and-paper semantics</td>
+        <td>Components below proof boundary</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>Principal Bounds</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Constant</th><th>Value</th><th>Scope</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>MAX_EXPANSION_DEPTH</code></td><td>4</td><td>Pattern expansion</td></tr>
+      <tr><td><code>MAX_EXPANDED_ITEMS</code></td><td>256</td><td>Pattern expansion</td></tr>
+      <tr><td><code>MAX_REGISTERS</code></td><td>256</td><td>R-SPU register file</td></tr>
+      <tr><td><code>MAX_GUARDS</code></td><td>64</td><td>R-SPU guard slots</td></tr>
+      <tr><td><code>MAX_INSTRUCTIONS</code></td><td>4,096</td><td>R-SPU program</td></tr>
+      <tr><td><code>MAX_SIM_CYCLES</code></td><td>1,000,000</td><td>R-SPU simulation</td></tr>
+      <tr><td><code>MAX_WINDOW_SIZE</code></td><td>1,024</td><td>MAPE-K temporal</td></tr>
+      <tr><td><code>MAX_LOG_ENTRIES</code></td><td>4,096</td><td>MAPE-K knowledge</td></tr>
+    </tbody>
+  </table>
+  <h3>Residual Risk</h3>
+  <p>
+    The primary residual risk is that the formal operational semantics have
+    not yet been mechanized in a proof assistant.  While big-step evaluation
+    rules, R-SPU transition rules, and a determinism theorem are established,
+    they remain pen-and-paper results.  The assurance case rests on defense
+    in depth: six complementary layers, each catching classes of defects
+    that the others miss.
+  </p>
+</section>
+
+<section id="case-studies">
+  <h2>12. Case Studies</h2>
+  <p>
+    Three end-to-end case studies exercise progressively larger subsets of
+    the pipeline.  All outputs are actual compiler results&mdash;no manual
+    editing.
+  </p>
+  <h3>Case Study Summary</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>Neonatal</th>
+        <th>Flight</th>
+        <th>TMR</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Signals</td><td>3</td><td>8</td><td>27</td></tr>
+      <tr><td>Guards</td><td>1</td><td>4</td><td>13</td></tr>
+      <tr><td>Reflexes</td><td>1</td><td>3</td><td>12</td></tr>
+      <tr><td>Properties</td><td>0</td><td>2</td><td>7</td></tr>
+      <tr><td>R-SPU instructions</td><td>8</td><td>33</td><td>&mdash;</td></tr>
+      <tr><td>Width nodes</td><td>4</td><td>15</td><td>&mdash;</td></tr>
+      <tr><td>Propagation rounds</td><td>2</td><td>7</td><td>&mdash;</td></tr>
+      <tr><td>Yosys cells</td><td>89</td><td>212</td><td>207</td></tr>
+      <tr><td>DFFs</td><td>11</td><td>27</td><td>55</td></tr>
+    </tbody>
+  </table>
+  <h3>Neonatal Respiratory Monitor</h3>
+  <p>
+    Exercises the counter-comparator path.  The guard monitors
+    <code>airway_pressure &lt; 50</code> for 1,000 consecutive cycles.
+    Because 1,000 &gt; 16 (shift-register threshold), the compiler selects a
+    counter-comparator using 11 flip-flops instead of 1,000 shift register
+    stages&mdash;a 91% area reduction.
+  </p>
+  <h3>Flight Controller</h3>
+  <p>
+    Exercises shift-register guards and LTL property compilation.  All 4
+    guards use delays &le; 16 cycles, so shift registers are used:
+    <code>altitude_low</code> (10 stages), <code>overspeed</code> (5),
+    <code>excessive_pitch</code> (8), <code>excessive_roll</code> (4) = 31
+    generated signals.  The property <code>low_alt_warns</code> compiles to
+    the SVA implication pattern <code>P |-> Q</code>.
+  </p>
+  <h3>TMR Sensor Fusion</h3>
+  <p>
+    Exercises pattern instantiation, majority voting, fault detection, and
+    watchdog timers.  The TMR module&rsquo;s lower cell count relative to
+    the flight controller (207 vs. 212) despite 3.25&times; more guards
+    illustrates counter-comparator area efficiency: the watchdog uses a
+    7-bit counter (7 DFFs) for 64 cycles, versus 64 DFFs for a shift
+    register.
+  </p>
+</section>
+
+<section id="traced-example">
+  <h2>13. End-to-End Compilation Trace</h2>
+  <p>
+    To make the pipeline concrete, this section traces the neonatal
+    respiratory monitor through all nine stages.  Each stage&rsquo;s
+    intermediate representation is shown, demonstrating deterministic
+    lowering from domain-specific source to multi-backend emission.
+  </p>
+  <h3>Pipeline Trace Summary</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Stage</th><th>Name</th><th>Key Output</th><th>Errors</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Source</td><td>14-line MIRR program</td><td>0</td></tr>
+      <tr><td>2</td><td>Lexer</td><td>Typed tokens with spans</td><td>0</td></tr>
+      <tr><td>3</td><td>AST</td><td>Typed AST nodes</td><td>0</td></tr>
+      <tr><td>4</td><td>Pattern Expansion</td><td>No-op (no patterns)</td><td>0</td></tr>
+      <tr><td>5</td><td>Semantic Validation</td><td>E201&ndash;E216 checks</td><td>0</td></tr>
+      <tr><td>6</td><td>Type Checking</td><td><code>u16 &lt; int &rarr; bool</code></td><td>0</td></tr>
+      <tr><td>7</td><td>Width Inference</td><td>4 nodes, 2 rounds, 0 SCCs</td><td>0</td></tr>
+      <tr><td>8</td><td>Temporal Compile</td><td>Counter-comparator, 11 DFFs</td><td>0</td></tr>
+      <tr><td>9</td><td>Emission</td><td>SV + R-SPU + S-expr</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <h3>Temporal Compilation Detail</h3>
+  <p>
+    The temporal compiler classifies the guard with delay N = 1,000 cycles.
+    Since N &gt; T<sub>sr</sub> = 16, the counter-comparator strategy is
+    selected.  The generated hardware: a <code>u11</code> saturating
+    up-counter, a condition comparator, and a guard output.  The counter
+    uses 11 flip-flops plus one 11-bit comparator, versus 1,000 flip-flops
+    for a shift register&mdash;a 90.9&times; area reduction.
+  </p>
+  <h3>Deterministic Multi-Target Emission</h3>
+  <p>
+    The same 14-line MIRR source produces SystemVerilog RTL for synthesis,
+    R-SPU assembly for the Reflexive Processing Unit, and S-expression IR
+    for metaprogramming&mdash;all from a single invocation of
+    <code>run_pipeline</code>.  No stage introduces nondeterminism; this
+    is a prerequisite for DO-254 certification where reproducible builds
+    are mandatory.
+  </p>
+</section>
+
+<section id="toolchain">
+  <h2>14. Toolchain Integration</h2>
+  <p>
+    The MIRR toolchain provides wrappers for five external EDA tools:
+    Yosys (synthesis), Verilator (lint), SymbiYosys (formal verification),
+    EQY (equivalence checking), and icetime (timing analysis).  All 11
+    synthesizable examples compile through Yosys with zero errors.
+  </p>
+  <h3>FPGA Scaffold Generation</h3>
+  <p>
+    The <code>--emit fpga-scaffold</code> flag generates a complete iCE40
+    HX8K project directory: top-level wrapper with clock/reset, pin
+    constraint file (<code>.pcf</code>), Yosys synthesis script, nextpnr
+    place-and-route script, and a Makefile.  This enables one-command
+    synthesis-to-bitstream for prototyping.
+  </p>
+  <h3>LSP Integration</h3>
+  <p>
+    The LSP module provides Language Server Protocol support for VS Code.
+    Diagnostics from all 8 error code ranges (E1xx&ndash;E8xx) are mapped
+    to LSP severity levels: E1xx/E2xx errors map to Error, E5xx width
+    warnings map to Warning, E4xx pattern hints map to Information.
+  </p>
+  <h3>Planned Integration</h3>
+  <p>
+    SymbiYosys for bounded model checking of SVA properties,
+    nextpnr for timing-driven place-and-route,
+    icetime for static timing analysis,
+    and EQY for formal equivalence checking between MIRR backends.
+  </p>
+</section>
+
+<section id="conclusion">
+  <h2>15. Conclusion</h2>
+  <p>
+    We presented MIRR, a safety-critical hardware rule language with a Rust
+    compiler (26,990 lines, 92 files, zero <code>unsafe</code> blocks) that
+    compiles temporal guards, guarded reflexes, and LTL safety properties
+    through a 9-stage deterministic pipeline into 9 emission backends.
+    All 11 synthesizable examples compile through Yosys with zero errors,
+    and the full pipeline processes a 32-signal module in 378 microseconds.
+  </p>
+  <h3>Limitations</h3>
   <ul>
     <li>Source input bounded to 64 KiB in the browser demo.</li>
     <li>Signed guard lowering is not yet supported.</li>
@@ -579,8 +1033,24 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     <li><span data-metric="rocqAxiomatized">2</span> of <span data-metric="rocqTheorems">55</span> Rocq theorems use Admitted stubs.</li>
     <li>No FPGA bitstream generation in the browser&mdash;Yosys
         synthesis requires the native toolchain.</li>
+    <li>Scalability ceiling: largest tested module has 27 signals and
+        13 guards; industrial systems may require hundreds of monitors.</li>
+    <li>Clock domain crossing not supported&mdash;single clock domain assumed.</li>
+    <li>Formal semantics remain pen-and-paper; full Rocq mechanization
+        is future work.</li>
+  </ul>
+  <h3>Future Directions</h3>
+  <ul>
+    <li>Fixed-point types (<code>fixed&lt;I,F&gt;</code>) for DSP pipelines.</li>
+    <li>MiniSAT integration for compile-time property checking of guard
+        conditions.</li>
+    <li>DPR controller generation for Xilinx/Intel FPGAs.</li>
+    <li>Multi-core R-SPU configurations with inter-core messaging.</li>
+    <li>DO-254 Level A certification pathway.</li>
   </ul>
 </section>
+
+<!-- #limitations absorbed into #conclusion (section 15) -->
 
 <section id="references">
   <h2>References</h2>

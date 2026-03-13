@@ -19,14 +19,6 @@ import init, {
 // Must match MAX_SOURCE_BYTES in crates/mirr-wasm/src/lib.rs
 const MAX_SOURCE_BYTES = 65_536;
 
-// Load metrics from metrics.json for auto-sync
-var METRICS = null;
-function loadMetrics() {
-  return fetch('metrics.json')
-    .then(function(r) { return r.json(); })
-    .then(function(data) { METRICS = data; return data; })
-    .catch(function() { METRICS = null; });
-}
 
 // Embedded examples — avoids fetch() dependency
 const EXAMPLES = {
@@ -145,7 +137,6 @@ async function initWasm() {
   try {
     await init();
     wasmReady = true;
-    loadMetrics();
     document.getElementById('compiler-output').textContent =
       '// Compiler ready. Type MIRR source or load an example.';
     // Inject version
@@ -183,16 +174,22 @@ function compile() {
   const compiler = COMPILERS[format];
   if (!compiler) return;
 
-  const result = JSON.parse(compiler(source));
+  try {
+    const result = JSON.parse(compiler(source));
 
-  if (result.ok !== undefined) {
-    output.textContent = result.ok;
-    output.classList.remove('error');
-  } else if (result.err !== undefined) {
-    output.textContent = result.err;
+    if (result.ok !== undefined) {
+      output.textContent = result.ok;
+      output.classList.remove('error');
+    } else if (result.err !== undefined) {
+      output.textContent = result.err;
+      output.classList.add('error');
+    }
+  } catch (e) {
+    output.textContent = 'Compilation error: ' + (e.message || e);
     output.classList.add('error');
+  } finally {
+    output.setAttribute('aria-busy', 'false');
   }
-  output.setAttribute('aria-busy', 'false');
 }
 
 async function runBenchmarks() {
@@ -202,7 +199,7 @@ async function runBenchmarks() {
   const tbody = document.getElementById('benchmark-rows');
   btn.disabled = true;
   btn.textContent = 'Running...';
-  tbody.innerHTML = '';
+  while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
 
   const formats = ['verilog', 'firrtl', 'rspu', 'sexpr', 'json', 'dot'];
   const source = EXAMPLES.tmr;
@@ -224,11 +221,15 @@ async function runBenchmarks() {
     }
 
     const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${fmt}</td>
-      <td>${elapsed}</td>
-      <td>${lines}</td>
-    `;
+    const tdFmt = document.createElement('td');
+    tdFmt.textContent = fmt;
+    const tdTime = document.createElement('td');
+    tdTime.textContent = elapsed;
+    const tdLines = document.createElement('td');
+    tdLines.textContent = lines;
+    row.appendChild(tdFmt);
+    row.appendChild(tdTime);
+    row.appendChild(tdLines);
     if (isError) {
       row.classList.add('error');
     }
@@ -261,6 +262,24 @@ function handleProofStatus() {
   }
 }
 
+function handleRspuSim(source, cycles) {
+  try {
+    var result = simulate_rspu(source, cycles);
+    return JSON.parse(result);
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+function handleMapekSim(ticks) {
+  try {
+    var result = simulate_mapek(ticks);
+    return JSON.parse(result);
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 // Wire up controls
 document.getElementById('compile-btn')
   .addEventListener('click', compile);
@@ -279,6 +298,120 @@ document.getElementById('emit-format')
 
 document.getElementById('bench-btn')
   .addEventListener('click', runBenchmarks);
+
+// Pipeline Visualization button
+document.getElementById('pipeline-viz-btn')
+  .addEventListener('click', function() {
+    if (!wasmReady) return;
+    var source = document.getElementById('mirr-source').value;
+    var output = document.getElementById('pipeline-viz-output');
+    var data = handlePipelineViz(source);
+    output.textContent = '';
+    if (data.error) {
+      output.textContent = 'Error: ' + data.error;
+      output.classList.add('error');
+    } else if (data.ok) {
+      var stages = data.ok;
+      for (var i = 0; i < stages.length && i < 20; i++) {
+        var stageEl = document.createElement('div');
+        stageEl.className = 'pipeline-stage';
+        var nameEl = document.createElement('strong');
+        nameEl.textContent = stages[i].name || ('Stage ' + (i + 1));
+        stageEl.appendChild(nameEl);
+        if (stages[i].output) {
+          var preEl = document.createElement('pre');
+          preEl.textContent = stages[i].output.substring(0, 500);
+          stageEl.appendChild(preEl);
+        }
+        output.appendChild(stageEl);
+        if (i < stages.length - 1) {
+          var arrow = document.createElement('div');
+          arrow.className = 'pipeline-arrow';
+          arrow.textContent = '\u2193';
+          output.appendChild(arrow);
+        }
+      }
+      output.classList.remove('error');
+    } else {
+      output.textContent = JSON.stringify(data, null, 2);
+    }
+  });
+
+// Proof Dashboard button
+document.getElementById('proof-dash-btn')
+  .addEventListener('click', function() {
+    if (!wasmReady) return;
+    var output = document.getElementById('proof-dash-output');
+    var data = handleProofStatus();
+    output.textContent = '';
+    if (data.error) {
+      output.textContent = 'Error: ' + data.error;
+      output.classList.add('error');
+    } else if (data.ok) {
+      var proofs = data.ok;
+      for (var i = 0; i < proofs.length && i < 100; i++) {
+        var status = proofs[i].status || 'unknown';
+        var itemEl = document.createElement('div');
+        itemEl.className = 'proof-item';
+        var badge = document.createElement('span');
+        badge.className = status === 'Proven' ? 'proof-badge proven' : 'proof-badge admitted';
+        badge.textContent = status;
+        itemEl.appendChild(badge);
+        itemEl.appendChild(document.createTextNode(' '));
+        var nameEl = document.createElement('strong');
+        nameEl.textContent = proofs[i].name || '';
+        itemEl.appendChild(nameEl);
+        if (proofs[i].file) {
+          var fileEl = document.createElement('small');
+          fileEl.textContent = ' (' + proofs[i].file + ')';
+          itemEl.appendChild(fileEl);
+        }
+        output.appendChild(itemEl);
+      }
+      output.classList.remove('error');
+    } else {
+      output.textContent = JSON.stringify(data, null, 2);
+    }
+  });
+
+// R-SPU Simulation button
+document.getElementById('rspu-sim-btn')
+  .addEventListener('click', function() {
+    if (!wasmReady) return;
+    var source = document.getElementById('mirr-source').value;
+    var cycles = parseInt(document.getElementById('rspu-cycles').value, 10) || 10;
+    var output = document.getElementById('rspu-sim-output');
+    var data = handleRspuSim(source, cycles);
+    if (data.error) {
+      output.textContent = 'Error: ' + data.error;
+      output.classList.add('error');
+    } else if (data.ok) {
+      output.textContent = typeof data.ok === 'string' ? data.ok : JSON.stringify(data.ok, null, 2);
+      output.classList.remove('error');
+    } else {
+      output.textContent = JSON.stringify(data, null, 2);
+      output.classList.remove('error');
+    }
+  });
+
+// MAPE-K Simulation button
+document.getElementById('mapek-sim-btn')
+  .addEventListener('click', function() {
+    if (!wasmReady) return;
+    var ticks = parseInt(document.getElementById('mapek-ticks').value, 10) || 100;
+    var output = document.getElementById('mapek-sim-output');
+    var data = handleMapekSim(ticks);
+    if (data.error) {
+      output.textContent = 'Error: ' + data.error;
+      output.classList.add('error');
+    } else if (data.ok) {
+      output.textContent = typeof data.ok === 'string' ? data.ok : JSON.stringify(data.ok, null, 2);
+      output.classList.remove('error');
+    } else {
+      output.textContent = JSON.stringify(data, null, 2);
+      output.classList.remove('error');
+    }
+  });
 
 // Keyboard shortcut: Ctrl+Enter or Cmd+Enter to compile
 document.getElementById('mirr-source')

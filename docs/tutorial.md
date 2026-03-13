@@ -94,7 +94,7 @@ write safety rules that become physical circuits.
 MIRR is built on exactly three concepts. Every MIRR program uses only
 these three:
 
-```
+```mirr
 Signal  -  a wire carrying data
 Guard   -  a condition that watches signals over time
 Reflex  -  an action that fires when a guard triggers
@@ -113,7 +113,7 @@ Think of signals like pipes in a plumbing system. Some pipes bring water
 in (`in`), some carry water out (`out`), and some are internal connections
 you cannot see from outside.
 
-```
+```mirr
 signal airway_pressure: in u16;    // a 16-bit number coming in
 signal clamp_valve:     out bool;  // a true/false value going out
 ```
@@ -129,7 +129,7 @@ When it detects smoke persisting for a certain duration, it triggers.
 But the detector itself does not spray water — that is someone else's
 job.
 
-```
+```mirr
 guard sustained_pressure_drop {
     when airway_pressure < 50
     for 1000 cycles;
@@ -147,7 +147,7 @@ It is the only way to change an output signal.
 Think of a reflex like the sprinkler system connected to the smoke
 detector. When the detector triggers, the sprinkler activates.
 
-```
+```mirr
 reflex emergency_clamp {
     on sustained_pressure_drop {
         clamp_valve = true;
@@ -183,7 +183,7 @@ Every MIRR program lives inside a `module`. A module is like a chip
 boundary — it declares what signals go in, what signals come out, and
 what logic runs inside.
 
-```
+```mirr
 module neonatal_respirator {
     // signals, guards, and reflexes go here
 }
@@ -211,7 +211,7 @@ we want to engage an emergency clamp valve.
 
 Create a file called `my_respirator.mirr` with the following content:
 
-```
+```mirr
 module neonatal_respirator {
     signal respirator_enable: in bool;
     signal airway_pressure:   in u16;
@@ -343,7 +343,7 @@ Combine conditions:
 
 `prev()` lets you look at a signal's value from a previous clock cycle.
 
-```
+```mirr
 prev(airway_pressure, 1)   // the value of airway_pressure one cycle ago
 prev(airway_pressure, 3)   // the value three cycles ago
 ```
@@ -384,7 +384,7 @@ Every guard has two parts:
 1. **`when <condition>`** — what to watch for
 2. **`for N cycles`** — how long it must persist
 
-```
+```mirr
 guard overheating {
     when temperature > 100
     for 5 cycles;
@@ -419,7 +419,7 @@ counter reaches N.
 
 You can use `prev()` in guard conditions to detect changes:
 
-```
+```mirr
 guard pressure_spike {
     when airway_pressure > prev(airway_pressure, 1) + 20
     for 1 cycles;
@@ -445,7 +445,7 @@ reads these assertions and mathematically proves whether they hold.
 
 ### The three property formulas (basic)
 
-```
+```mirr
 property pressure_bounded {
     always (airway_pressure > 10);
 }
@@ -453,7 +453,7 @@ property pressure_bounded {
 
 `always (P)` means: "P must be true on every single clock cycle."
 
-```
+```mirr
 property no_spurious_clamp {
     never (clamp_valve && airway_pressure > 200);
 }
@@ -462,7 +462,7 @@ property no_spurious_clamp {
 `never (P)` means: "P must never be true on any clock cycle." This is
 equivalent to `always (!P)` but reads more naturally.
 
-```
+```mirr
 property low_triggers_clamp {
     always (airway_pressure < 50 -> clamp_valve);
 }
@@ -474,7 +474,7 @@ Q."
 
 ### The three property formulas (advanced)
 
-```
+```mirr
 property never_drop_implies_alarm {
     never (airway_pressure < 30 -> !clamp_valve);
 }
@@ -482,7 +482,7 @@ property never_drop_implies_alarm {
 
 `never (P -> Q)` means: "it must never be the case that P implies Q."
 
-```
+```mirr
 property clamp_reachable {
     cover eventually within 100 (clamp_valve);
 }
@@ -492,7 +492,7 @@ property clamp_reachable {
 N clock cycles from reset." This is used to prove that something CAN
 happen — that a state is reachable.
 
-```
+```mirr
 property clamp_follows_drop {
     always (airway_pressure < 50 followed_by 5 clamp_valve);
 }
@@ -514,7 +514,7 @@ do with it:
 
 Example with explicit directive:
 
-```
+```mirr
 property clamp_reachable {
     cover eventually within 100 (clamp_valve);
 }
@@ -551,7 +551,7 @@ with different parameters.
 
 ### Defining a pattern with `def` and `reflect`
 
-```
+```mirr
 def threshold_guard(
     sensor: signal in u16,
     limit:  u16,
@@ -591,7 +591,7 @@ Breaking it down:
 
 Inside a module, call the pattern like a function:
 
-```
+```mirr
 module dual_sensor {
     signal temperature:    in  u16;
     signal pressure:       in  u16;
@@ -781,7 +781,7 @@ the problem belongs to.
 
 **Unbalanced parentheses:**
 
-```
+```mirr
 // Wrong:
 guard g {
     when (pressure < 50
@@ -797,7 +797,7 @@ guard g {
 
 **Too many tokens:**
 
-```
+```mirr
 // Wrong:
 signal x: in out bool;
 ```
@@ -812,7 +812,7 @@ signal x: in out bool;
 
 **Duplicate names:**
 
-```
+```mirr
 // Wrong:
 signal x: in bool;
 signal x: out bool;   // x declared twice
@@ -826,7 +826,7 @@ Semantic error: [E201] Duplicate signal name: 'x'. First defined at line 2.
 
 **Undeclared signal reference:**
 
-```
+```mirr
 guard g {
     when ghost > 50      // 'ghost' is not declared
     for 1 cycles;
@@ -842,7 +842,7 @@ suggests the closest match when a similar name exists.
 
 **Invalid `prev()` delay:**
 
-```
+```mirr
 property p {
     always (prev(sensor, 0) > 50);   // delay 0 is invalid
 }
@@ -863,7 +863,7 @@ guards into counter circuits). They are rare in normal usage.
 
 **Undefined pattern:**
 
-```
+```mirr
 module m {
     signal x: in u16;
     undefined_pattern(x);    // no such pattern exists

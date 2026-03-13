@@ -150,16 +150,6 @@ body {
   font-weight: 600;
 }
 
-.site-nav .nav-section {
-  margin-top: 1.25rem;
-  padding: 0 1.5rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-
 .site-nav .paper-link {
   margin-top: 1.5rem;
   padding-top: 1rem;
@@ -259,19 +249,6 @@ pre code {
   padding: 0;
   font-size: 0.85rem;
 }
-
-/* MIRR syntax highlighting in code blocks */
-.mirr-kw     { color: #00E5FF; }              /* keywords */
-.mirr-dir    { color: #8B5CF6; }              /* in/out/internal */
-.mirr-type   { color: #22C55E; }              /* u8, bool, etc. */
-.mirr-num    { color: #f59e0b; }              /* numbers */
-.mirr-bool   { color: #f59e0b; }              /* true/false */
-.mirr-op     { color: #94a3b8; }              /* operators */
-.mirr-cmt    { color: #475569; font-style: italic; } /* comments */
-.mirr-name   { color: #e2e8f0; }              /* identifiers */
-.mirr-tmpl   { color: #fb923c; }              /* ${param} */
-.mirr-ann    { color: #c084fc; font-style: italic; } /* @clock */
-.mirr-tag    { color: #f472b6; }              /* #Phantom */
 
 /* ============================================================
    Tables
@@ -498,3 +475,76 @@ tr:hover td {
     border: 1px solid #ccc;
   }
 }
+
+/* ===== MIRR syntax highlighting — Ouroboros triad ===== */
+.mirr-kw   { color: #00E5FF; font-weight: 600; }
+.mirr-dir  { color: #8B5CF6; }
+.mirr-type { color: #22C55E; }
+.mirr-num  { color: #f59e0b; }
+.mirr-bool { color: #f59e0b; }
+.mirr-op   { color: #94a3b8; }
+.mirr-cmt  { color: #475569; font-style: italic; }
+.mirr-name { color: #f1f5f9; }
+.mirr-tmpl { color: #fb923c; }
+.mirr-ann  { color: #c084fc; font-style: italic; }
+.mirr-tag  { color: #f472b6; }
+
+/* ===== Per-page TOC ===== */
+.page-toc {
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  font-size: 0.8rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--border, rgba(148,163,184,.12));
+}
+.page-toc a { color: var(--text-dim, #b0bec5); text-decoration: none; display: block; padding: 0.2rem 0; }
+.page-toc a:hover { color: var(--accent, #00E5FF); }
+.page-toc a.active { color: var(--accent, #00E5FF); font-weight: 600; }
+
+/* ===== Hero enhancement ===== */
+.mirr-hero { position: relative; }
+.mirr-hero > * { position: relative; z-index: 1; }
+.mirr-hero .mirr-hero-title {
+  background: linear-gradient(135deg, #00E5FF, #8B5CF6, #22C55E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.mirr-hero::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(0,229,255,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.mirr-hero .mirr-hero-logo {
+  filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.15));
+}
+
+/* ===== Search widget ===== */
+.search-container {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border, rgba(148,163,184,.12));
+}
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-code, #0c1222);
+  border: 1px solid var(--border, rgba(148,163,184,.12));
+  border-radius: 6px;
+  color: var(--text-bright, #f1f5f9);
+  font-size: 0.85rem;
+}
+.search-input::placeholder { color: var(--text-dim, #475569); }
+.search-input:focus { outline: none; border-color: var(--accent, #00E5FF); box-shadow: 0 0 0 2px rgba(0,229,255,.15); }
+.search-results { list-style: none; padding: 0; margin: 0.5rem 0 0 0; }
+.search-results li { padding: 0.4rem 0.75rem; border-radius: 4px; cursor: pointer; }
+.search-results li:hover { background: var(--bg-code, #121a30); }
+.search-results a { color: var(--text-bright, #f1f5f9); text-decoration: none; }
