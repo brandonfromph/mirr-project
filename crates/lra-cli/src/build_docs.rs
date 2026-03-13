@@ -427,14 +427,6 @@ fn build_nav(entries: &[&NavEntry]) -> String {
         ));
     }
 
-    // Search bar
-    nav.push_str("    <div class=\"search-container\">\n");
-    nav.push_str("      <input type=\"search\" class=\"search-input\" id=\"doc-search\" placeholder=\"Search docs...\" aria-label=\"Search documentation\">\n");
-    nav.push_str(
-        "      <ul class=\"search-results\" id=\"search-results\" role=\"listbox\"></ul>\n",
-    );
-    nav.push_str("    </div>\n");
-
     // Paper link
     nav.push_str("    <div class=\"paper-link\"><a href=\"paper/index.html\">Interactive Paper &rarr;</a></div>\n");
     nav.push_str("  </nav>");
@@ -472,6 +464,10 @@ fn assemble_page(
   <header class="site-header">
     <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
     <h1>MIRR <span>Documentation</span></h1>
+    <div class="search-container">
+      <input type="search" class="search-input" id="doc-search" placeholder="Search docs..." aria-label="Search documentation">
+      <ul class="search-results" id="search-results" role="listbox"></ul>
+    </div>
     <button class="menu-toggle" onclick="document.querySelector('.site-nav').classList.toggle('open')">Menu</button>
     <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
   </header>
