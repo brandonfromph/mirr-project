@@ -18,7 +18,6 @@
     "Programming Languages",
     "Themes"
   ],
-  "activationEvents": [],
   "contributes": {
     "languages": [
       {
