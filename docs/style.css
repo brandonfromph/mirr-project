@@ -477,17 +477,20 @@ tr:hover td {
 }
 
 /* ===== MIRR syntax highlighting — Ouroboros triad ===== */
-.mirr-kw   { color: #00E5FF; font-weight: 600; }
-.mirr-dir  { color: #8B5CF6; }
-.mirr-type { color: #22C55E; }
-.mirr-num  { color: #f59e0b; }
-.mirr-bool { color: #f59e0b; }
-.mirr-op   { color: #94a3b8; }
-.mirr-cmt  { color: #475569; font-style: italic; }
-.mirr-name { color: #f1f5f9; }
-.mirr-tmpl { color: #fb923c; }
-.mirr-ann  { color: #c084fc; font-style: italic; }
-.mirr-tag  { color: #f472b6; }
+.mirr-kw     { color: #00E5FF; font-weight: 600; }   /* General keywords (cyan) */
+.mirr-signal { color: #00E5FF; font-weight: 600; }   /* Signal construct (cyan) */
+.mirr-guard  { color: #22C55E; font-weight: 600; }   /* Guard construct (green) */
+.mirr-reflex { color: #8B5CF6; font-weight: 600; }   /* Reflex construct (violet) */
+.mirr-dir    { color: #8B5CF6; }
+.mirr-type   { color: #22C55E; }
+.mirr-num    { color: #f59e0b; }
+.mirr-bool   { color: #f59e0b; }
+.mirr-op     { color: #94a3b8; }
+.mirr-cmt    { color: #475569; font-style: italic; }
+.mirr-name   { color: #f1f5f9; }
+.mirr-tmpl   { color: #fb923c; }
+.mirr-ann    { color: #c084fc; font-style: italic; }
+.mirr-tag    { color: #f472b6; }
 
 /* ===== Per-page TOC ===== */
 .page-toc {

@@ -746,10 +746,17 @@ fn highlight_mirr(code: &str) -> String {
 
 fn classify_mirr_token(token: &str) -> &'static str {
     match token {
-        "module" | "input" | "output" | "wire" | "reg" | "always" | "assign" | "temporal"
-        | "require" | "ensure" | "reflex" | "if" | "else" | "for" | "let" | "fn" | "struct"
-        | "enum" | "match" | "return" | "guard" | "signal" | "when" | "on" | "cycles"
-        | "property" | "pattern" | "prev" | "use" => "mirr-kw",
+        // Signal construct — Cyan (#00E5FF)
+        "signal" | "input" | "output" | "wire" | "reg" | "assign" => "mirr-signal",
+        // Guard construct — Green (#22C55E)
+        "guard" | "when" | "cycles" | "for" => "mirr-guard",
+        // Reflex construct — Violet (#8B5CF6)
+        "reflex" | "on" => "mirr-reflex",
+        // General keywords — Cyan
+        "module" | "always" | "temporal" | "require" | "ensure" | "if" | "else" | "let" | "fn"
+        | "struct" | "enum" | "match" | "return" | "property" | "pattern" | "prev" | "use" => {
+            "mirr-kw"
+        }
         "in" | "out" | "internal" => "mirr-dir",
         "u1" | "u2" | "u3" | "u4" | "u5" | "u6" | "u7" | "u8" | "u9" | "u10" | "u11" | "u12"
         | "u13" | "u14" | "u15" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" | "bool"

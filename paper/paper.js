@@ -289,6 +289,7 @@ document.getElementById('example-select')
     const key = e.target.value;
     if (key && EXAMPLES[key]) {
       document.getElementById('mirr-source').value = EXAMPLES[key];
+      updateHighlight();
       compile();
     }
   });
@@ -494,3 +495,104 @@ window.addEventListener('message', function(event) {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function() {});
 }
+
+// ── MIRR syntax highlighting ────────────────────────────────────────
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function highlightMirr(code) {
+  var MAX_LINES = 500;
+  var signalKw = {signal:1,input:1,output:1,wire:1,reg:1,assign:1};
+  var guardKw = {guard:1,when:1,cycles:1,for:1};
+  var reflexKw = {reflex:1,on:1};
+  var generalKw = {module:1,always:1,temporal:1,require:1,ensure:1,if:1,else:1,
+    let:1,fn:1,struct:1,enum:1,match:1,return:1,property:1,pattern:1,prev:1,use:1};
+  var dirs = {in:1,out:1,internal:1};
+  var types = {u1:1,u2:1,u3:1,u4:1,u5:1,u6:1,u7:1,u8:1,u9:1,u10:1,u11:1,u12:1,
+    u13:1,u14:1,u15:1,u16:1,u32:1,u64:1,i8:1,i16:1,i32:1,i64:1,bool:1,bit:1,clock:1,reset:1};
+  var bools = {true:1,false:1};
+  var lines = code.split('\n');
+  var result = [];
+  for (var i = 0; i < Math.min(lines.length, MAX_LINES); i++) {
+    var line = lines[i];
+    var trimmed = line.trimStart ? line.trimStart() : line.replace(/^\s+/, '');
+    if (trimmed.indexOf('//') === 0) {
+      var leading = line.substring(0, line.length - trimmed.length);
+      result.push(escapeHtml(leading) + '<span class="mirr-cmt">' + escapeHtml(trimmed) + '</span>');
+      continue;
+    }
+    var out = '';
+    var j = 0;
+    while (j < line.length) {
+      var ch = line[j];
+      if (ch === '/' && j + 1 < line.length && line[j + 1] === '/') {
+        out += '<span class="mirr-cmt">' + escapeHtml(line.substring(j)) + '</span>';
+        break;
+      }
+      if (/[a-zA-Z_]/.test(ch)) {
+        var ident = '';
+        while (j < line.length && /[a-zA-Z0-9_]/.test(line[j])) { ident += line[j++]; }
+        var cls = signalKw[ident] ? 'mirr-signal' :
+                  guardKw[ident] ? 'mirr-guard' :
+                  reflexKw[ident] ? 'mirr-reflex' :
+                  generalKw[ident] ? 'mirr-kw' :
+                  dirs[ident] ? 'mirr-dir' :
+                  types[ident] ? 'mirr-type' :
+                  bools[ident] ? 'mirr-bool' : 'mirr-name';
+        out += '<span class="' + cls + '">' + escapeHtml(ident) + '</span>';
+        continue;
+      }
+      if (/[0-9]/.test(ch)) {
+        var num = '';
+        while (j < line.length && /[0-9_xbo]/.test(line[j])) { num += line[j++]; }
+        out += '<span class="mirr-num">' + escapeHtml(num) + '</span>';
+        continue;
+      }
+      if (ch === '@') {
+        var ann = '@'; j++;
+        while (j < line.length && /[a-zA-Z0-9_]/.test(line[j])) { ann += line[j++]; }
+        out += '<span class="mirr-ann">' + escapeHtml(ann) + '</span>';
+        continue;
+      }
+      if (ch === '#') {
+        var tag = '#'; j++;
+        while (j < line.length && /[a-zA-Z0-9_]/.test(line[j])) { tag += line[j++]; }
+        out += '<span class="mirr-tag">' + escapeHtml(tag) + '</span>';
+        continue;
+      }
+      if (/[+\-*=<>!&|^~%]/.test(ch)) {
+        out += '<span class="mirr-op">' + escapeHtml(ch) + '</span>';
+        j++; continue;
+      }
+      out += escapeHtml(ch);
+      j++;
+    }
+    result.push(out);
+  }
+  return result.join('\n');
+}
+
+function updateHighlight() {
+  var textarea = document.getElementById('mirr-source');
+  var overlay = document.getElementById('highlight-overlay');
+  if (overlay && textarea) {
+    overlay.innerHTML = highlightMirr(textarea.value) + '\n';
+    overlay.scrollTop = textarea.scrollTop;
+    overlay.scrollLeft = textarea.scrollLeft;
+  }
+}
+
+(function initHighlight() {
+  var textarea = document.getElementById('mirr-source');
+  var overlay = document.getElementById('highlight-overlay');
+  if (textarea && overlay) {
+    textarea.addEventListener('input', updateHighlight);
+    textarea.addEventListener('scroll', function() {
+      overlay.scrollTop = textarea.scrollTop;
+      overlay.scrollLeft = textarea.scrollLeft;
+    });
+    updateHighlight();
+  }
+})();

@@ -172,10 +172,13 @@
   <div class="split-pane">
     <div class="pane">
       <label for="mirr-source">MIRR Source</label>
-      <textarea id="mirr-source" rows="28"
-        spellcheck="false"
-        placeholder="module example {&#10;  signal clk: in bool;&#10;}">
-      </textarea>
+      <div class="editor-container">
+        <pre class="highlight-overlay" id="highlight-overlay" aria-hidden="true"></pre>
+        <textarea id="mirr-source" rows="28"
+          spellcheck="false"
+          placeholder="module example {&#10;  signal clk: in bool;&#10;}">
+        </textarea>
+      </div>
     </div>
     <div class="pane">
       <label>Output <span id="output-label"></span></label>
