@@ -84,7 +84,7 @@ If `airway_pressure` stays below 50 for 1000 consecutive clock cycles,
 | [FPGA Targets Guide](fpga-targets-guide) | FPGA toolchain, synthesis, and target configuration |
 | [MAPE-K Guide](mape-k-guide) | Autonomic feedback loop simulator and LTL monitoring |
 | [S-Expression Guide](sexpr-guide) | Homoiconic S-expression IR, round-trip invariant |
-| [Documentation Index](INDEX) | Canonical index for all project docs |
+| [Documentation Index](doc-index) | Canonical index for all project docs |
 
 ## Getting Started
 

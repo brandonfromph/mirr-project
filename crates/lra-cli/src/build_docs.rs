@@ -470,6 +470,11 @@ fn assemble_page(
 
   {nav}
 
+  <div class="search-container">
+    <input type="search" class="search-input" id="doc-search" placeholder="Search docs..." aria-label="Search documentation">
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+  </div>
+
   <div class="content-wrapper">
 {toc_section}  <main class="{content_class}">
 {body}
@@ -485,6 +490,43 @@ fn assemble_page(
   for (var i = 0; i < links.length; i++) {{
     links[i].classList.remove('active');
     if (links[i].getAttribute('href') === path) {{ links[i].classList.add('active'); }}
+  }}
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {{
+    searchInput.addEventListener('focus', function() {{
+      if (!searchData) {{
+        fetch('search-index.json')
+          .then(function(r) {{ return r.json(); }})
+          .then(function(data) {{ searchData = data; }})
+          .catch(function() {{ searchData = []; }});
+      }}
+    }});
+    searchInput.addEventListener('input', function() {{
+      var q = this.value.trim().toLowerCase();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var count = 0;
+      for (var j = 0; j < searchData.length && count < MAX_RESULTS; j++) {{
+        var entry = searchData[j];
+        if (entry.title.toLowerCase().indexOf(q) !== -1 || entry.summary.toLowerCase().indexOf(q) !== -1) {{
+          var li = document.createElement('li');
+          var a = document.createElement('a');
+          a.href = entry.url;
+          a.textContent = entry.title;
+          li.appendChild(a);
+          resultsList.appendChild(li);
+          count++;
+        }}
+      }}
+    }});
+    document.addEventListener('click', function(e) {{
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    }});
   }}
 }})();
 </script>
