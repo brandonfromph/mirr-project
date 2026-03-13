@@ -2,23 +2,13 @@
 // No external dependencies. No npm. No CDN.
 // GPL-3.0 — same license as the compiler.
 
-import init, {
-  compile_verilog,
-  compile_firrtl,
-  compile_rspu,
-  compile_sexpr,
-  compile_dot,
-  infer_widths,
-  mirr_version,
-  compile_pipeline_stages,
-  proof_status,
-  simulate_rspu,
-  simulate_mapek
-} from './demos/mirr_wasm.js';
-
 // Must match MAX_SOURCE_BYTES in crates/mirr-wasm/src/lib.rs
 const MAX_SOURCE_BYTES = 65_536;
 
+// WASM exports — populated by dynamic import so syntax highlighting
+// survives if the WASM shim is missing or fails to load.
+var COMPILERS = {};
+let wasmReady = false;
 
 // Embedded examples — avoids fetch() dependency
 const EXAMPLES = {
@@ -121,49 +111,51 @@ const EXAMPLES = {
 }`
 };
 
-// Map format names to per-function WASM exports
-const COMPILERS = {
-  verilog: compile_verilog,
-  firrtl:  compile_firrtl,
-  rspu:    compile_rspu,
-  sexpr:   compile_sexpr,
-  json:    infer_widths,
-  dot:     compile_dot
-};
-
-let wasmReady = false;
+var compile_pipeline_stages, proof_status, simulate_rspu, simulate_mapek, mirr_version;
 
 async function initWasm() {
   try {
-    await init();
+    var wasm = await import('./demos/mirr_wasm.js');
+    await wasm.default();
+    COMPILERS = {
+      verilog: wasm.compile_verilog,
+      firrtl:  wasm.compile_firrtl,
+      rspu:    wasm.compile_rspu,
+      sexpr:   wasm.compile_sexpr,
+      json:    wasm.infer_widths,
+      dot:     wasm.compile_dot
+    };
+    compile_pipeline_stages = wasm.compile_pipeline_stages;
+    proof_status = wasm.proof_status;
+    simulate_rspu = wasm.simulate_rspu;
+    simulate_mapek = wasm.simulate_mapek;
+    mirr_version = wasm.mirr_version;
     wasmReady = true;
     document.getElementById('compiler-output').textContent =
       '// Compiler ready. Type MIRR source or load an example.';
-    // Inject version
-    const vResult = JSON.parse(mirr_version());
+    var vResult = JSON.parse(mirr_version());
     if (vResult.ok) {
       document.querySelectorAll('.mirr-version')
-        .forEach(el => el.textContent = vResult.ok);
+        .forEach(function(el) { el.textContent = vResult.ok; });
     }
   } catch (err) {
     document.getElementById('compiler-output').textContent =
-      'Failed to load compiler WASM: ' + err.message;
-    document.getElementById('compiler-output').classList.add('error');
+      'Compiler WASM not available — syntax highlighting still active.';
   }
 }
 
 function compile() {
   if (!wasmReady) return;
 
-  const source = document.getElementById('mirr-source').value;
-  const format = document.getElementById('emit-format').value;
-  const output = document.getElementById('compiler-output');
+  var source = document.getElementById('mirr-source').value;
+  var format = document.getElementById('emit-format').value;
+  var output = document.getElementById('compiler-output');
   output.setAttribute('aria-busy', 'true');
-  const label  = document.getElementById('output-label');
+  var label  = document.getElementById('output-label');
 
   if (source.length > MAX_SOURCE_BYTES) {
     output.textContent =
-      `Source too large (${source.length} bytes). Limit is ${MAX_SOURCE_BYTES} bytes.`;
+      'Source too large (' + source.length + ' bytes). Limit is ' + MAX_SOURCE_BYTES + ' bytes.';
     output.classList.add('error');
     output.setAttribute('aria-busy', 'false');
     return;
@@ -171,11 +163,14 @@ function compile() {
 
   label.textContent = '(' + format + ')';
 
-  const compiler = COMPILERS[format];
-  if (!compiler) return;
+  var compiler = COMPILERS[format];
+  if (!compiler) {
+    output.setAttribute('aria-busy', 'false');
+    return;
+  }
 
   try {
-    const result = JSON.parse(compiler(source));
+    var result = JSON.parse(compiler(source));
 
     if (result.ok !== undefined) {
       output.textContent = result.ok;
@@ -195,23 +190,24 @@ function compile() {
 async function runBenchmarks() {
   if (!wasmReady) return;
 
-  const btn = document.getElementById('bench-btn');
-  const tbody = document.getElementById('benchmark-rows');
+  var btn = document.getElementById('bench-btn');
+  var tbody = document.getElementById('benchmark-rows');
   btn.disabled = true;
   btn.textContent = 'Running...';
   while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
 
-  const formats = ['verilog', 'firrtl', 'rspu', 'sexpr', 'json', 'dot'];
-  const source = EXAMPLES.tmr;
+  var formats = ['verilog', 'firrtl', 'rspu', 'sexpr', 'json', 'dot'];
+  var source = EXAMPLES.tmr;
 
-  for (const fmt of formats) {
-    const compiler = COMPILERS[fmt];
-    let elapsed, lines, isError;
+  for (var fi = 0; fi < formats.length; fi++) {
+    var fmt = formats[fi];
+    var compiler = COMPILERS[fmt];
+    var elapsed, lines, isError;
     try {
-      const start = performance.now();
-      const raw = compiler(source);
+      var start = performance.now();
+      var raw = compiler(source);
       elapsed = (performance.now() - start).toFixed(2);
-      const result = JSON.parse(raw);
+      var result = JSON.parse(raw);
       lines = result.ok ? result.ok.split('\n').length : 0;
       isError = !!result.err;
     } catch (err) {
@@ -220,12 +216,12 @@ async function runBenchmarks() {
       isError = true;
     }
 
-    const row = document.createElement('tr');
-    const tdFmt = document.createElement('td');
+    var row = document.createElement('tr');
+    var tdFmt = document.createElement('td');
     tdFmt.textContent = fmt;
-    const tdTime = document.createElement('td');
+    var tdTime = document.createElement('td');
     tdTime.textContent = elapsed;
-    const tdLines = document.createElement('td');
+    var tdLines = document.createElement('td');
     tdLines.textContent = lines;
     row.appendChild(tdFmt);
     row.appendChild(tdTime);
@@ -236,7 +232,7 @@ async function runBenchmarks() {
     tbody.appendChild(row);
 
     // Yield to browser between targets so UI stays responsive
-    await new Promise(r => setTimeout(r, 0));
+    await new Promise(function(r) { setTimeout(r, 0); });
   }
 
   btn.disabled = false;
@@ -285,8 +281,8 @@ document.getElementById('compile-btn')
   .addEventListener('click', compile);
 
 document.getElementById('example-select')
-  .addEventListener('change', e => {
-    const key = e.target.value;
+  .addEventListener('change', function(e) {
+    var key = e.target.value;
     if (key && EXAMPLES[key]) {
       document.getElementById('mirr-source').value = EXAMPLES[key];
       updateHighlight();
@@ -416,14 +412,14 @@ document.getElementById('mapek-sim-btn')
 
 // Keyboard shortcut: Ctrl+Enter or Cmd+Enter to compile
 document.getElementById('mirr-source')
-  .addEventListener('keydown', e => {
+  .addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       compile();
     }
   });
 
-// Boot
+// Boot WASM (non-blocking — page works without it)
 initWasm();
 
 // ── LRA Protocol bridge (Phase 4) ──────────────────────────────────
@@ -434,8 +430,10 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', function(event) {
     var data = event.data || {};
     if (data.type !== 'lra.run_tool.relay') return;
+    var sw = navigator.serviceWorker.controller;
+    if (!sw) return;
     if (!wasmReady) {
-      navigator.serviceWorker.controller.postMessage({
+      sw.postMessage({
         type: 'lra.run_tool.response',
         relay_id: data.relay_id,
         error: { code: -32000, message: 'WASM compiler not loaded yet' }
@@ -446,7 +444,7 @@ if ('serviceWorker' in navigator) {
     var format = (data.params && data.params.format) || 'verilog';
     var fn = COMPILERS[format];
     if (!fn) {
-      navigator.serviceWorker.controller.postMessage({
+      sw.postMessage({
         type: 'lra.run_tool.response',
         relay_id: data.relay_id,
         error: { code: -32602, message: 'Unknown format: ' + format }
@@ -456,13 +454,13 @@ if ('serviceWorker' in navigator) {
     try {
       var raw = fn(input);
       var result = JSON.parse(raw);
-      navigator.serviceWorker.controller.postMessage({
+      sw.postMessage({
         type: 'lra.run_tool.response',
         relay_id: data.relay_id,
         result: result
       });
     } catch (e) {
-      navigator.serviceWorker.controller.postMessage({
+      sw.postMessage({
         type: 'lra.run_tool.response',
         relay_id: data.relay_id,
         error: { code: -32603, message: e.message }
@@ -594,5 +592,8 @@ function updateHighlight() {
       overlay.scrollLeft = textarea.scrollLeft;
     });
     updateHighlight();
+    // Activate transparent text only after overlay is working
+    var container = textarea.closest('.editor-container');
+    if (container) container.classList.add('highlight-active');
   }
 })();

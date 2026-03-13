@@ -533,7 +533,7 @@ fn assemble_page(
 </html>
 "#,
         title = escape_html(title),
-        css = css_path,
+        css = escape_html(css_path),
         nav = nav_html,
         toc_section = toc_section,
         content_class = content_class,
