@@ -380,7 +380,6 @@ footer a { color: var(--text-tertiary); }
   margin: 0;
   color: transparent;
 }
-.highlight-overlay span { color: revert; }
 .editor-container textarea {
   position: relative;
   z-index: 2;
