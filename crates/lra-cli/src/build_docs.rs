@@ -427,6 +427,14 @@ fn build_nav(entries: &[&NavEntry]) -> String {
         ));
     }
 
+    // Search bar
+    nav.push_str("    <div class=\"search-container\">\n");
+    nav.push_str("      <input type=\"search\" class=\"search-input\" id=\"doc-search\" placeholder=\"Search docs...\" aria-label=\"Search documentation\">\n");
+    nav.push_str(
+        "      <ul class=\"search-results\" id=\"search-results\" role=\"listbox\"></ul>\n",
+    );
+    nav.push_str("    </div>\n");
+
     // Paper link
     nav.push_str("    <div class=\"paper-link\"><a href=\"paper/index.html\">Interactive Paper &rarr;</a></div>\n");
     nav.push_str("  </nav>");
@@ -470,11 +478,6 @@ fn assemble_page(
 
   {nav}
 
-  <div class="search-container">
-    <input type="search" class="search-input" id="doc-search" placeholder="Search docs..." aria-label="Search documentation">
-    <ul class="search-results" id="search-results" role="listbox"></ul>
-  </div>
-
   <div class="content-wrapper">
 {toc_section}  <main class="{content_class}">
 {body}
@@ -513,7 +516,7 @@ fn assemble_page(
       var count = 0;
       for (var j = 0; j < searchData.length && count < MAX_RESULTS; j++) {{
         var entry = searchData[j];
-        if (entry.title.toLowerCase().indexOf(q) !== -1 || entry.summary.toLowerCase().indexOf(q) !== -1) {{
+        if (entry.title.toLowerCase().indexOf(q) !== -1 || entry.snippet.toLowerCase().indexOf(q) !== -1) {{
           var li = document.createElement('li');
           var a = document.createElement('a');
           a.href = entry.url;
