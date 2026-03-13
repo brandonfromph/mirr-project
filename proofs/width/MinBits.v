@@ -66,7 +66,7 @@ Proof.
   assert (H : Nat.div2 n = n / 2) by apply Nat.div2_div.
   rewrite H.
   assert (n mod 2 <= 1) by (apply Nat.lt_succ_r; apply Nat.mod_upper_bound; lia).
-  assert (n = 2 * (n / 2) + n mod 2) by (symmetry; apply Nat.div_mod; lia).
+  assert (n = 2 * (n / 2) + n mod 2) by (rewrite (Nat.div_mod_eq n 2); lia).
   lia.
 Qed.
 
