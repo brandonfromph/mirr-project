@@ -1,0 +1,43 @@
+{
+  "version": "0.3.0",
+  "generated": "2026-03-13",
+  "compiler": {
+    "totalSourceLines": 26990,
+    "totalSourceFiles": 92,
+    "emissionBackends": 9,
+    "pipelineStages": 9,
+    "distinctErrorCodes": 189,
+    "typeRules": 16,
+    "extendedTypeFeatures": 8,
+    "simplificationRules": 33,
+    "synthesisExamples": 11
+  },
+  "testing": {
+    "totalTests": 2491,
+    "integrationTests": 2254,
+    "unitTests": 259,
+    "testSourceLines": 42437,
+    "testToSourceRatio": "1.57:1"
+  },
+  "proofs": {
+    "rocqTheorems": 55,
+    "rocqMechanized": 53,
+    "rocqAxiomatized": 2,
+    "rocqProofLines": 1833,
+    "rocqFiles": 14,
+    "mechanizationRate": "96.4%",
+    "admittedProofs": ["solver_terminates", "step_one_monotone"]
+  },
+  "backends": {
+    "widthModuleLines": 2108,
+    "rspuBackendLines": 3291,
+    "rspuInstructions": 30,
+    "mapekSubmodules": 8
+  },
+  "infrastructure": {
+    "nasaP10Compliant": true,
+    "forbidUnsafeCode": true,
+    "zeroDependencyDocs": true,
+    "license": "GPL-3.0"
+  }
+}

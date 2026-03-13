@@ -20,6 +20,7 @@ pub mod verify;
 use crate::ast::expr::Expr;
 use crate::ast::program::{Assignment, SignalDecl};
 
+use serde::Serialize;
 use types::{DiagSeverity, WidthDiag, WidthExpr, WidthStats};
 
 // ---------------------------------------------------------------------------
@@ -27,6 +28,7 @@ use types::{DiagSeverity, WidthDiag, WidthExpr, WidthStats};
 // ---------------------------------------------------------------------------
 
 /// Result of width inference on a single expression.
+#[derive(Serialize)]
 pub struct WidthInferenceResult {
     /// Width-annotated expression tree (None if flattening failed).
     pub expr: Option<WidthExpr>,
@@ -135,6 +137,7 @@ pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<
 // ---------------------------------------------------------------------------
 
 /// Result of width inference on an entire module.
+#[derive(Serialize)]
 pub struct ProgramWidthResult {
     /// Per-guard condition inference results (guard_name, result).
     pub guard_results: Vec<(String, WidthInferenceResult)>,
@@ -239,6 +242,7 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
 // ---------------------------------------------------------------------------
 
 /// Result of SCC-based width analysis on an entire module.
+#[derive(Serialize)]
 pub struct SccWidthResult {
     /// Phase 4a results (per-expression inference).
     pub phase4a: ProgramWidthResult,

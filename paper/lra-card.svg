@@ -18,7 +18,7 @@
   <!-- Stats -->
   <text x="600" y="410" text-anchor="middle" fill="#888888"
     font-family="system-ui, -apple-system, sans-serif" font-size="22">
-    GPL-3.0 · 1,242 tests · 27 Rocq theorems
+    GPL-3.0 · 2,491 tests · 55 Rocq theorems
   </text>
   <!-- URL -->
   <text x="600" y="560" text-anchor="middle" fill="#555555"

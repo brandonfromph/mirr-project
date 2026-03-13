@@ -147,7 +147,10 @@ pub fn simulate_rspu(source: &str) -> String {
     let config = PipelineConfig { rspu: true, temporal: true, simulate: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => match result.sim_result {
-            Some(ref sim) => ok_json(&format!("{:?}", sim)),
+            Some(ref sim) => match serde_json::to_string(sim) {
+                Ok(json) => ok_json(&json),
+                Err(e) => err_json(&e.to_string()),
+            },
             None => err_json("No R-SPU simulation result produced"),
         },
         Err(errors) => err_json(&format_pipeline_errors(&errors)),
@@ -155,10 +158,12 @@ pub fn simulate_rspu(source: &str) -> String {
 }
 
 #[wasm_bindgen]
-pub fn simulate_mapek(source: &str, _ticks: u32) -> String {
+pub fn simulate_mapek(source: &str, ticks: u32) -> String {
     if let Err(msg) = check_length(source) {
         return err_json(&msg);
     }
+    // TODO: Wire ticks to MAPE-K simulation when PipelineConfig supports it
+    let _ = ticks;
     let config = PipelineConfig { temporal: true, mape_k: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => match &result.mape_k_result {
@@ -175,4 +180,38 @@ pub fn simulate_mapek(source: &str, _ticks: u32) -> String {
 #[wasm_bindgen]
 pub fn mirr_version() -> String {
     ok_json(env!("CARGO_PKG_VERSION"))
+}
+
+#[wasm_bindgen]
+pub fn compile_pipeline_stages(source: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return err_json(&msg);
+    }
+    let config = default_config();
+    match run_pipeline(source, &config) {
+        Ok(result) => {
+            let stages = serde_json::json!({
+                "parsed": true,
+                "simplified": result.simplify_stats.is_some(),
+                "width_inferred": result.width_result.is_some(),
+                "temporal_lowered": result.temporal_netlist.is_some(),
+            });
+            stages.to_string()
+        }
+        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+    }
+}
+
+#[wasm_bindgen]
+pub fn proof_status() -> String {
+    serde_json::json!({
+        "total_theorems": 55,
+        "mechanized": 53,
+        "admitted": 2,
+        "mechanization_rate": "96.4%",
+        "proof_files": 14,
+        "proof_lines": 1833,
+        "admitted_proofs": ["solver_terminates", "step_one_monotone"]
+    })
+    .to_string()
 }

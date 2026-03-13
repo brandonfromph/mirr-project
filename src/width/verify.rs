@@ -12,8 +12,10 @@
 use super::scc_solver::SccSolveResult;
 use super::types::{SccInfo, WidthDiag, MAX_SIGNALS};
 use crate::ast::program::SignalDecl;
+use serde::Serialize;
 
 /// Result of the Unique Least Solution verification.
+#[derive(Serialize)]
 pub struct VerifyResult {
     /// True if the solution was verified as minimal.
     pub is_minimal: bool,

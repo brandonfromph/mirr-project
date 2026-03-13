@@ -10,12 +10,14 @@
 
 use super::types::{SccInfo, SccKind, WidthDiag, MAX_SCC_SIZE};
 use crate::ast::program::{Guard, SignalDecl};
+use serde::Serialize;
 
 /// Maximum iterations for Floyd-Warshall fixpoint in nonexpansive SCCs.
 /// Bounded by SCC_SIZE^2 (worst case for shortest-path convergence).
 const MAX_FLOYD_WARSHALL_ITERS: usize = MAX_SCC_SIZE * MAX_SCC_SIZE;
 
 /// Result of solving a single SCC.
+#[derive(Serialize)]
 pub struct SccSolveResult {
     /// Resolved widths for each signal in the SCC.
     /// Indexed parallel to `SccInfo::signal_indices`.
