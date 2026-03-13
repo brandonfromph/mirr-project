@@ -9,11 +9,24 @@ import init, {
   compile_sexpr,
   compile_dot,
   infer_widths,
-  mirr_version
+  mirr_version,
+  compile_pipeline_stages,
+  proof_status,
+  simulate_rspu,
+  simulate_mapek
 } from './demos/mirr_wasm.js';
 
 // Must match MAX_SOURCE_BYTES in crates/mirr-wasm/src/lib.rs
 const MAX_SOURCE_BYTES = 65_536;
+
+// Load metrics from metrics.json for auto-sync
+var METRICS = null;
+function loadMetrics() {
+  return fetch('metrics.json')
+    .then(function(r) { return r.json(); })
+    .then(function(data) { METRICS = data; return data; })
+    .catch(function() { METRICS = null; });
+}
 
 // Embedded examples — avoids fetch() dependency
 const EXAMPLES = {
@@ -132,6 +145,7 @@ async function initWasm() {
   try {
     await init();
     wasmReady = true;
+    loadMetrics();
     document.getElementById('compiler-output').textContent =
       '// Compiler ready. Type MIRR source or load an example.';
     // Inject version
@@ -226,6 +240,25 @@ async function runBenchmarks() {
 
   btn.disabled = false;
   btn.textContent = 'Run Benchmarks';
+}
+
+function handlePipelineViz(source) {
+  try {
+    var result = compile_pipeline_stages(source);
+    var stages = JSON.parse(result);
+    return stages;
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+function handleProofStatus() {
+  try {
+    var result = proof_status();
+    return JSON.parse(result);
+  } catch (e) {
+    return { error: e.message };
+  }
 }
 
 // Wire up controls

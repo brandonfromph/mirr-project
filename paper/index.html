@@ -22,7 +22,7 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
-  <meta name="lra:abstract" content="MIRR is an open-source Rust compiler for safety-critical hardware-software co-design. It compiles temporal guards, guarded reflexes, and LTL safety properties through a 9-stage deterministic pipeline into 9 emission backends. Width inference is backed by 1,077 lines of Rocq proofs.">
+  <meta name="lra:abstract" content="MIRR is an open-source Rust compiler for safety-critical hardware-software co-design. It compiles temporal guards, guarded reflexes, and LTL safety properties through a 9-stage deterministic pipeline into 9 emission backends. Width inference is backed by 1,833 lines of Rocq proofs.">
   <meta name="lra:keywords" content="HDL, compiler, safety-critical, formal verification, width inference, SystemVerilog, FIRRTL, WASM, NASA Power-of-10">
   <script type="application/ld+json">
   {
@@ -31,7 +31,7 @@
     "name": "MIRR: A Safety-Critical HDL Compiler with Formal Width Inference",
     "author": { "@type": "Person", "name": "Brandon" },
     "datePublished": "2026-03",
-    "description": "A safety-critical HDL compiler with formal width inference, 9 emission backends, and 1,077 lines of Rocq proofs.",
+    "description": "A safety-critical HDL compiler with formal width inference, 9 emission backends, and 1,833 lines of Rocq proofs.",
     "license": "https://www.gnu.org/licenses/gpl-3.0.html",
     "url": "https://brandonfromph.github.io/mirr-project/paper/",
     "codeRepository": "https://github.com/brandonfromph/mirr-project",
@@ -88,13 +88,13 @@
     deterministic pipeline into 9 emission backends including SystemVerilog
     RTL, FIRRTL, and a novel 30-instruction R-SPU ISA with 32-bit binary
     encoding, tagged-word registers, and cycle-accurate simulation.  Width
-    inference is backed by 1,077 lines of Rocq proofs (27 theorems across
-    13 files).  A signedness type system with 16 inference rules rejects
+    inference is backed by <span data-metric="rocqProofLines">1,833</span> lines of Rocq proofs (<span data-metric="rocqTheorems">55</span> theorems across
+    14 files).  A signedness type system with 16 inference rules rejects
     mixed signed/unsigned expressions.  A homoiconic S-expression IR
     enables code-as-data transformation with a verified round-trip
     invariant.  The compiler enforces NASA Power-of-10 compliance: bounded
     iteration, zero recursion, and explicit resource limits throughout.
-    A test suite of 1,242 tests achieves a 0.73:1 test-to-source ratio.
+    A test suite of <span data-metric="totalTests">2,491</span> tests achieves a 1.57:1 test-to-source ratio.
   </p>
   <p>
     <strong>This paper is a Living Research Artifact.</strong>  Every claim
@@ -115,7 +115,7 @@
     </li>
     <li id="claim-2" data-lra-claim="2">
       Width inference is sound: no assignment silently truncates a
-      value. Backed by 27 Rocq theorems (14 fully mechanized).
+      value. Backed by <span data-metric="rocqTheorems">55</span> Rocq theorems (<span data-metric="rocqMechanized">53</span> fully mechanized).
     </li>
     <li id="claim-3" data-lra-claim="3">
       All compiler algorithms are bounded: no unbounded recursion or
@@ -233,8 +233,8 @@ Compiler loading...</pre>
         backends: SystemVerilog RTL, FIRRTL, JSON netlist, Graphviz DOT,
         R-SPU assembly, R-SPU binary, S-expression IR, SystemVerilog
         testbench, and FPGA scaffold.</li>
-    <li><strong>SCC-based width inference</strong> with 1,077 lines of Rocq
-        proofs (27 theorems, 14 mechanized, across 13 proof files).</li>
+    <li><strong>SCC-based width inference</strong> with <span data-metric="rocqProofLines">1,833</span> lines of Rocq
+        proofs (<span data-metric="rocqTheorems">55</span> theorems, <span data-metric="rocqMechanized">53</span> mechanized, across 14 proof files).</li>
     <li>A <strong>signedness type system</strong> (16 rules, E601&ndash;E609)
         rejecting mixed signed/unsigned expressions.</li>
     <li>An <strong>extended type system</strong> with 8 features: refinement
@@ -246,7 +246,7 @@ Compiler loading...</pre>
         invariant and bounded eval/apply core.</li>
     <li>A <strong>MAPE-K feedback loop simulator</strong> for autonomic
         observability with LTL property monitoring.</li>
-    <li><strong>1,242 tests</strong> at a 0.73:1 test-to-source ratio, with
+    <li><strong><span data-metric="totalTests">2,491</span> tests</strong> at a 1.57:1 test-to-source ratio, with
         92 <code>#![forbid(unsafe_code)]</code> directives and 0 Clippy
         warnings.</li>
   </ol>
@@ -420,8 +420,8 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </p>
   <h3>Rocq Proof Coverage</h3>
   <p>
-    27 theorems across 13 files (1,077 lines of Rocq).  14 fully
-    mechanized (Qed), 13 axiomatized (Admitted).
+    <span data-metric="rocqTheorems">55</span> theorems across 14 files (<span data-metric="rocqProofLines">1,833</span> lines of Rocq).  <span data-metric="rocqMechanized">53</span> fully
+    mechanized (Qed), <span data-metric="rocqAxiomatized">2</span> axiomatized (Admitted).
     See <a href="#claim-2">claim 2</a>.
   </p>
   <table id="proofs-table" class="data-table">
@@ -443,13 +443,13 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   <h3>Proof Coverage Map</h3>
   <p>
     <strong>Above the proof boundary</strong> (mechanized or axiomatized): width
-    solver (T1&ndash;T9, 3 Admitted), SCC analysis (T10&ndash;T13), constraint
+    solver (T1&ndash;T9, 2 Admitted), SCC analysis (T10&ndash;T13), constraint
     soundness (T4&ndash;T8), flattening (T14), truncation (T15), R-SPU
     encoding (T26), tag safety (T27).
     <br>
     <strong>Below the proof boundary</strong> (tested only): parser,
     validator, emitters, temporal compiler, MAPE-K, S-expression, pattern
-    expander&mdash;covered by 1,242 tests and
+    expander&mdash;covered by <span data-metric="totalTests">2,491</span> tests and
     <code>#![forbid(unsafe_code)]</code>.
   </p>
 </section>
@@ -502,15 +502,15 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
       <tr><th>Metric</th><th>Value</th></tr>
     </thead>
     <tbody>
-      <tr><td>Integration tests</td><td>1,005</td></tr>
-      <tr><td>Unit tests</td><td>213</td></tr>
-      <tr><td>Total tests</td><td>1,242</td></tr>
+      <tr><td>Integration tests</td><td>2,254</td></tr>
+      <tr><td>Unit tests</td><td>259</td></tr>
+      <tr><td>Total tests</td><td><span data-metric="totalTests">2,491</span></td></tr>
       <tr><td>Test failures</td><td>0</td></tr>
       <tr><td>Clippy warnings</td><td>0</td></tr>
       <tr><td><code>#![forbid(unsafe_code)]</code></td><td>92 files</td></tr>
-      <tr><td>Test-to-source ratio</td><td>0.73:1</td></tr>
+      <tr><td>Test-to-source ratio</td><td>1.57:1</td></tr>
       <tr><td>Source lines</td><td>26,990</td></tr>
-      <tr><td>Test lines</td><td>19,705</td></tr>
+      <tr><td>Test lines</td><td>42,437</td></tr>
     </tbody>
   </table>
   <h3>Compilation Benchmarks</h3>
@@ -554,17 +554,17 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </table>
   <h3>Safety Assurance (6 Layers)</h3>
   <ol>
-    <li><strong>Formally proven</strong>: 27 Rocq theorems cover width
-        inference and R-SPU encoding (1,077 proof lines).</li>
+    <li><strong>Formally proven</strong>: <span data-metric="rocqTheorems">55</span> Rocq theorems cover width
+        inference and R-SPU encoding (<span data-metric="rocqProofLines">1,833</span> proof lines).</li>
     <li><strong>Statically enforced</strong>: 16 type rules + 8 extended
         features reject unsafe programs at compile time.</li>
     <li><strong>Bounded by construction</strong>: every loop bounded by
         MAX_* constants, zero recursion, zero unsafe code.</li>
-    <li><strong>Tested</strong>: 1,242 tests including golden-output,
+    <li><strong>Tested</strong>: <span data-metric="totalTests">2,491</span> tests including golden-output,
         negative (all 189 error codes), and round-trip invariant tests.</li>
     <li><strong>Dynamically checked</strong>: R-SPU tagged-word register
         file catches type confusion at execution time.</li>
-    <li><strong>Known gaps</strong>: 13 Admitted Rocq theorems,
+    <li><strong>Known gaps</strong>: <span data-metric="rocqAxiomatized">2</span> Admitted Rocq theorems,
         components below the proof boundary rely on testing.</li>
   </ol>
 </section>
@@ -576,7 +576,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     <li>Signed guard lowering is not yet supported.</li>
     <li>The LSP server is not compiled to WebAssembly.</li>
     <li>The R-SPU simulator is not exposed via WASM (native only).</li>
-    <li>13 of 27 Rocq theorems use Admitted stubs.</li>
+    <li><span data-metric="rocqAxiomatized">2</span> of <span data-metric="rocqTheorems">55</span> Rocq theorems use Admitted stubs.</li>
     <li>No FPGA bitstream generation in the browser&mdash;Yosys
         synthesis requires the native toolchain.</li>
   </ul>
@@ -659,5 +659,26 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
 </footer>
 
 <script type="module" src="paper.js"></script>
+<script>
+// Auto-sync metrics from metrics.json
+(function() {
+  fetch('metrics.json').then(function(r) { return r.json(); }).then(function(M) {
+    var flat = {};
+    Object.keys(M).forEach(function(section) {
+      if (typeof M[section] === 'object' && !Array.isArray(M[section])) {
+        Object.keys(M[section]).forEach(function(k) { flat[k] = M[section][k]; });
+      }
+    });
+    var spans = document.querySelectorAll('[data-metric]');
+    for (var i = 0; i < spans.length; i++) {
+      var key = spans[i].getAttribute('data-metric');
+      if (flat[key] !== undefined) {
+        var val = flat[key];
+        spans[i].textContent = typeof val === 'number' ? val.toLocaleString() : val;
+      }
+    }
+  }).catch(function() {});
+})();
+</script>
 </body>
 </html>
