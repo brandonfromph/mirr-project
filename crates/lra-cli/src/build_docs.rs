@@ -428,7 +428,7 @@ fn build_nav(entries: &[&NavEntry]) -> String {
     }
 
     // Paper link
-    nav.push_str("    <div class=\"paper-link\"><a href=\"../paper/index.html\">Interactive Paper &rarr;</a></div>\n");
+    nav.push_str("    <div class=\"paper-link\"><a href=\"paper/index.html\">Interactive Paper &rarr;</a></div>\n");
     nav.push_str("  </nav>");
     nav
 }
