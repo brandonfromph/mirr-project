@@ -16,7 +16,7 @@
     { "open": "{", "close": "}" },
     { "open": "(", "close": ")" },
     { "open": "[", "close": "]" },
-    { "open": "\"", "close": "\"", "notIn": ["string"] }
+    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] }
   ],
   "surroundingPairs": [
     ["{", "}"],
@@ -26,8 +26,19 @@
   ],
   "folding": {
     "markers": {
-      "start": "^\\s*\\{",
-      "end": "^\\s*\\}"
+      "start": "\\{",
+      "end": "\\}"
     }
-  }
+  },
+  "onEnterRules": [
+    {
+      "beforeText": "^.*\\{\\s*$",
+      "afterText": "^\\s*\\}",
+      "action": { "indent": "indentOutdent", "appendText": "    " }
+    },
+    {
+      "beforeText": "^.*\\{\\s*$",
+      "action": { "indent": "indent", "appendText": "    " }
+    }
+  ]
 }

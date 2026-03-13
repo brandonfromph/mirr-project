@@ -91,6 +91,9 @@ run-mirr.ps1
 # Frozen DAC paper LaTeX source (double-blind)
 paper/dac2027-mirr.tex
 
+# Coq scratch files
+proofs/width/scratch.v
+
 # Catch-all for future private planning documents
 *-private*
 

@@ -1,0 +1,10 @@
+{
+  "iconDefinitions": {
+    "mirr-icon": {
+      "iconPath": "./mirr-file.svg"
+    }
+  },
+  "fileExtensions": {
+    "mirr": "mirr-icon"
+  }
+}

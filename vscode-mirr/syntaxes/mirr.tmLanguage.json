@@ -4,12 +4,25 @@
   "scopeName": "source.mirr",
   "patterns": [
     { "include": "#comments" },
+    { "include": "#module-declaration" },
+    { "include": "#guard-declaration" },
+    { "include": "#reflex-declaration" },
+    { "include": "#property-declaration" },
+    { "include": "#pattern-declaration" },
     { "include": "#keywords-control" },
     { "include": "#keywords-signal" },
+    { "include": "#keywords-temporal" },
+    { "include": "#keywords-property" },
+    { "include": "#keywords-qualifier" },
     { "include": "#types" },
     { "include": "#constants" },
+    { "include": "#clock-domain" },
+    { "include": "#phantom-tag" },
+    { "include": "#range-literal" },
+    { "include": "#operators" },
     { "include": "#numbers" },
     { "include": "#template-params" },
+    { "include": "#punctuation" },
     { "include": "#identifiers" }
   ],
   "repository": {
@@ -21,35 +34,158 @@
         }
       ]
     },
+    "module-declaration": {
+      "match": "\\b(module)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.module.mirr" },
+        "2": { "name": "entity.name.type.module.mirr" }
+      }
+    },
+    "guard-declaration": {
+      "match": "\\b(guard)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.guard.mirr" },
+        "2": { "name": "entity.name.function.guard.mirr" }
+      }
+    },
+    "reflex-declaration": {
+      "match": "\\b(reflex)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.reflex.mirr" },
+        "2": { "name": "entity.name.function.reflex.mirr" }
+      }
+    },
+    "property-declaration": {
+      "match": "\\b(property)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.property.mirr" },
+        "2": { "name": "entity.name.function.property.mirr" }
+      }
+    },
+    "pattern-declaration": {
+      "match": "\\b(def)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.pattern.mirr" },
+        "2": { "name": "entity.name.function.pattern.mirr" }
+      }
+    },
     "keywords-control": {
       "patterns": [
         {
           "name": "keyword.control.mirr",
-          "match": "\\b(module|guard|reflex|property|def|reflect|when|for|on|always|never|cycles|and|eventually|within|followed_by|cover|assume|assert|prev)\\b"
+          "match": "\\b(module|guard|reflex|property|def|reflect|on|and)\\b"
         }
       ]
     },
     "keywords-signal": {
       "patterns": [
         {
-          "name": "keyword.other.mirr",
-          "match": "\\b(signal|in|out|internal)\\b"
+          "name": "keyword.other.signal.mirr",
+          "match": "\\b(signal)\\b"
+        },
+        {
+          "name": "keyword.other.direction.mirr",
+          "match": "\\b(in|out|internal)\\b"
+        }
+      ]
+    },
+    "keywords-temporal": {
+      "patterns": [
+        {
+          "name": "keyword.control.temporal.mirr",
+          "match": "\\b(when|for|cycles|sustained|prev)\\b"
+        }
+      ]
+    },
+    "keywords-property": {
+      "patterns": [
+        {
+          "name": "keyword.control.property.mirr",
+          "match": "\\b(always|never|eventually|within|followed_by|cover|assume|assert)\\b"
+        }
+      ]
+    },
+    "keywords-qualifier": {
+      "patterns": [
+        {
+          "name": "storage.modifier.mirr",
+          "match": "\\b(linear|stateful|pure|where|pattern)\\b"
         }
       ]
     },
     "types": {
       "patterns": [
         {
-          "name": "storage.type.mirr",
-          "match": "\\b(bool|[ui][0-9]+)\\b"
+          "name": "storage.type.primitive.mirr",
+          "match": "\\b(bool)\\b"
+        },
+        {
+          "name": "storage.type.unsigned.mirr",
+          "match": "\\b(u[0-9]+)\\b"
+        },
+        {
+          "name": "storage.type.signed.mirr",
+          "match": "\\b(i[0-9]+)\\b"
         }
       ]
     },
     "constants": {
       "patterns": [
         {
-          "name": "constant.language.mirr",
+          "name": "constant.language.boolean.mirr",
           "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "clock-domain": {
+      "patterns": [
+        {
+          "name": "variable.annotation.clock-domain.mirr",
+          "match": "@[a-zA-Z_][a-zA-Z0-9_]*"
+        }
+      ]
+    },
+    "phantom-tag": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.phantom.mirr",
+          "match": "#[A-Z][a-zA-Z0-9_]*"
+        }
+      ]
+    },
+    "range-literal": {
+      "patterns": [
+        {
+          "name": "keyword.operator.range.mirr",
+          "match": "\\.\\.\\.?=?"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.mirr",
+          "match": "&&|\\|\\||!"
+        },
+        {
+          "name": "keyword.operator.comparison.mirr",
+          "match": "==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.arithmetic.mirr",
+          "match": "\\+|-|\\*"
+        },
+        {
+          "name": "keyword.operator.bitwise.mirr",
+          "match": "\\^|<<|>>"
+        },
+        {
+          "name": "keyword.operator.implication.mirr",
+          "match": "->"
+        },
+        {
+          "name": "keyword.operator.assignment.mirr",
+          "match": "="
         }
       ]
     },
@@ -57,7 +193,7 @@
       "patterns": [
         {
           "name": "constant.numeric.decimal.mirr",
-          "match": "\\b[0-9]+\\b"
+          "match": "\\b[0-9][0-9_]*\\b"
         }
       ]
     },
@@ -69,10 +205,38 @@
         }
       ]
     },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.terminator.mirr",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.separator.colon.mirr",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.section.braces.begin.mirr",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.braces.end.mirr",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.section.parens.begin.mirr",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.parens.end.mirr",
+          "match": "\\)"
+        }
+      ]
+    },
     "identifiers": {
       "patterns": [
         {
-          "name": "entity.name.function.mirr",
+          "name": "entity.name.function.call.mirr",
           "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
         }
       ]

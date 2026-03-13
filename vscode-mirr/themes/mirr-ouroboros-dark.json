@@ -1,0 +1,197 @@
+{
+  "name": "MIRR Ouroboros Dark",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#0b1020",
+    "editor.foreground": "#b0bec5",
+    "editorCursor.foreground": "#00E5FF",
+    "editor.selectionBackground": "#1c2534",
+    "editor.lineHighlightBackground": "#0d1521",
+    "editorLineNumber.foreground": "#334155",
+    "editorLineNumber.activeForeground": "#64748b",
+    "sideBar.background": "#0a0f16",
+    "sideBar.foreground": "#b0bec5",
+    "sideBarTitle.foreground": "#e2e8f0",
+    "activityBar.background": "#080c14",
+    "activityBar.foreground": "#00E5FF",
+    "statusBar.background": "#0a0f16",
+    "statusBar.foreground": "#64748b",
+    "titleBar.activeBackground": "#0a0f16",
+    "titleBar.activeForeground": "#e2e8f0",
+    "tab.activeBackground": "#0d1521",
+    "tab.inactiveBackground": "#0a0f16",
+    "tab.activeForeground": "#e2e8f0",
+    "tab.inactiveForeground": "#64748b",
+    "terminal.background": "#0b1020",
+    "terminal.foreground": "#b0bec5",
+    "terminal.ansiCyan": "#00E5FF",
+    "terminal.ansiMagenta": "#8B5CF6",
+    "terminal.ansiGreen": "#22C55E",
+    "focusBorder": "#00E5FF44",
+    "editorBracketMatch.border": "#00E5FF66",
+    "editorBracketMatch.background": "#00E5FF11"
+  },
+  "tokenColors": [
+    {
+      "name": "Comments",
+      "scope": "comment",
+      "settings": {
+        "foreground": "#475569",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Module/Guard/Reflex/Property declarations",
+      "scope": [
+        "keyword.declaration.module.mirr",
+        "keyword.declaration.guard.mirr",
+        "keyword.declaration.reflex.mirr",
+        "keyword.declaration.property.mirr",
+        "keyword.declaration.pattern.mirr"
+      ],
+      "settings": {
+        "foreground": "#00E5FF",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Control keywords",
+      "scope": [
+        "keyword.control.mirr",
+        "keyword.control.temporal.mirr",
+        "keyword.control.property.mirr"
+      ],
+      "settings": {
+        "foreground": "#00E5FF"
+      }
+    },
+    {
+      "name": "Signal keyword",
+      "scope": "keyword.other.signal.mirr",
+      "settings": {
+        "foreground": "#00E5FF"
+      }
+    },
+    {
+      "name": "Signal direction (in/out/internal)",
+      "scope": "keyword.other.direction.mirr",
+      "settings": {
+        "foreground": "#8B5CF6"
+      }
+    },
+    {
+      "name": "Type qualifiers (linear/stateful/pure/where)",
+      "scope": "storage.modifier.mirr",
+      "settings": {
+        "foreground": "#8B5CF6",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Types — bool",
+      "scope": "storage.type.primitive.mirr",
+      "settings": {
+        "foreground": "#22C55E"
+      }
+    },
+    {
+      "name": "Types — unsigned (u8, u16, u32…)",
+      "scope": "storage.type.unsigned.mirr",
+      "settings": {
+        "foreground": "#22C55E"
+      }
+    },
+    {
+      "name": "Types — signed (i8, i16, i32…)",
+      "scope": "storage.type.signed.mirr",
+      "settings": {
+        "foreground": "#4ade80"
+      }
+    },
+    {
+      "name": "Boolean constants (true/false)",
+      "scope": "constant.language.boolean.mirr",
+      "settings": {
+        "foreground": "#f59e0b"
+      }
+    },
+    {
+      "name": "Numeric literals",
+      "scope": "constant.numeric.decimal.mirr",
+      "settings": {
+        "foreground": "#f59e0b"
+      }
+    },
+    {
+      "name": "Module/guard/reflex/property names",
+      "scope": [
+        "entity.name.type.module.mirr",
+        "entity.name.function.guard.mirr",
+        "entity.name.function.reflex.mirr",
+        "entity.name.function.property.mirr",
+        "entity.name.function.pattern.mirr"
+      ],
+      "settings": {
+        "foreground": "#e2e8f0"
+      }
+    },
+    {
+      "name": "Function calls",
+      "scope": "entity.name.function.call.mirr",
+      "settings": {
+        "foreground": "#38bdf8"
+      }
+    },
+    {
+      "name": "Template parameters ${...}",
+      "scope": "variable.parameter.template.mirr",
+      "settings": {
+        "foreground": "#fb923c"
+      }
+    },
+    {
+      "name": "Clock domain annotations @domain",
+      "scope": "variable.annotation.clock-domain.mirr",
+      "settings": {
+        "foreground": "#c084fc",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Phantom type tags #Tag",
+      "scope": "entity.name.tag.phantom.mirr",
+      "settings": {
+        "foreground": "#f472b6"
+      }
+    },
+    {
+      "name": "Operators",
+      "scope": [
+        "keyword.operator.logical.mirr",
+        "keyword.operator.comparison.mirr",
+        "keyword.operator.arithmetic.mirr",
+        "keyword.operator.bitwise.mirr",
+        "keyword.operator.implication.mirr",
+        "keyword.operator.assignment.mirr",
+        "keyword.operator.range.mirr"
+      ],
+      "settings": {
+        "foreground": "#94a3b8"
+      }
+    },
+    {
+      "name": "Punctuation",
+      "scope": [
+        "punctuation.terminator.mirr",
+        "punctuation.separator.colon.mirr",
+        "punctuation.section.braces.begin.mirr",
+        "punctuation.section.braces.end.mirr",
+        "punctuation.section.parens.begin.mirr",
+        "punctuation.section.parens.end.mirr"
+      ],
+      "settings": {
+        "foreground": "#64748b"
+      }
+    }
+  ]
+}

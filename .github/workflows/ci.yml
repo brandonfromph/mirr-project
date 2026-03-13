@@ -292,23 +292,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@4eb9f110bac952a8b68ecf92e3b5c7a987594ba6 # v1.292.0
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and target
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
-          ruby-version: '3.3'
-          working-directory: docs
-          bundler-cache: true
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-pages-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-pages-
 
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
-      - name: Build Jekyll site
+      - name: Build docs with lra-cli (zero-dependency Rust-powered)
+        run: cargo run -p lra-cli -- build-docs docs -o _site
+
+      - name: Copy docs assets
         run: |
-          cd docs
-          bundle exec jekyll build --destination ../_site --baseurl "${{ steps.pages.outputs.base_path }}"
-        env:
-          JEKYLL_ENV: production
+          mkdir -p _site/assets/images _site/paper/demos
+          cp -r docs/assets/images/* _site/assets/images/ 2>/dev/null || true
+
+          # Copy paper source files
+          cp paper/index.html paper/paper.css paper/paper.js paper/sw.js _site/paper/
+          cp paper/lra-card.svg paper/lra-client.js _site/paper/
+          cp paper/LICENSE paper/CITATION.cff _site/paper/
 
       - name: Download WASM artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -316,33 +329,27 @@ jobs:
           name: mirr-wasm
           path: _wasm/
 
-      - name: Assemble paper into site
+      - name: Install WASM and inject metadata
         run: |
-          mkdir -p _site/paper/demos
-
-          # Copy paper source files (single source of truth: paper/)
-          cp paper/index.html paper/paper.css paper/paper.js paper/sw.js _site/paper/
-          cp paper/lra-card.svg paper/lra-client.js _site/paper/
-          cp paper/LICENSE paper/CITATION.cff _site/paper/
-
-          # Copy WASM build artifacts
           cp _wasm/mirr_wasm.js _site/paper/demos/
           cp _wasm/mirr_wasm_bg.wasm _site/paper/demos/
 
-          # Inject build metadata
           HASH=$(git rev-parse --short HEAD)
           VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
           sed -i "s/id=\"commit-hash\">dev/id=\"commit-hash\">$HASH/g" _site/paper/index.html
           sed -i "s/id=\"footer-hash\">dev/id=\"footer-hash\">$HASH/g" _site/paper/index.html
-          echo "Assembled paper with commit=$HASH version=$VERSION"
+          echo "Assembled site with commit=$HASH version=$VERSION"
 
-      - name: Verify paper structure
+      - name: Verify site structure
         run: |
-          test -f _site/paper/index.html || { echo "FAIL: missing index.html"; exit 1; }
+          test -f _site/index.html || { echo "FAIL: missing docs index.html"; exit 1; }
+          test -f _site/style.css || { echo "FAIL: missing style.css"; exit 1; }
+          test -f _site/paper/index.html || { echo "FAIL: missing paper/index.html"; exit 1; }
           test -f _site/paper/paper.js || { echo "FAIL: missing paper.js"; exit 1; }
           test -f _site/paper/demos/mirr_wasm.js || { echo "FAIL: missing mirr_wasm.js"; exit 1; }
           test -f _site/paper/demos/mirr_wasm_bg.wasm || { echo "FAIL: missing mirr_wasm_bg.wasm"; exit 1; }
-          echo "Paper verification: all 4 critical files present"
+          echo "Site verification OK — built by lra-cli (zero external dependencies)"
+          echo "Docs pages: $(ls _site/*.html | wc -l)"
           ls -la _site/paper/demos/
 
       - name: Upload Pages artifact

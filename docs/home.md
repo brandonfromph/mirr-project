@@ -5,7 +5,7 @@ permalink: /
 ---
 
 <div class="mirr-hero" markdown="0">
-  <img src="{{ site.baseurl }}/assets/images/mirr_logo.svg"
+  <img src="assets/images/mirr_logo.svg"
        alt="MIRR ouroboros logo" class="mirr-hero-logo">
   <h1 class="mirr-hero-title">MIRR</h1>
   <p class="mirr-tagline">A hardware rule language for safety-critical systems.</p>
@@ -98,8 +98,7 @@ cargo build
 cargo run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr
 ```
 
-{: .tip }
-> MIRR requires no hardware experience. Start with the [Tutorial](tutorial) for a
+> **Tip:** MIRR requires no hardware experience. Start with the [Tutorial](tutorial) for a
 > step-by-step introduction to signals, guards, and reflexes.
 
 ## License

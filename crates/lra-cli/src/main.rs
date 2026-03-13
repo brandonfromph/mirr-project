@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 
 mod badge;
 mod build;
+mod build_docs;
 mod init;
 mod serve;
 mod validate;
@@ -50,6 +51,18 @@ enum Command {
         #[arg(short, long, default_value = "index.html")]
         output: String,
     },
+    /// Build a docs directory of Markdown files into static HTML pages
+    BuildDocs {
+        /// Input directory containing .md files
+        #[arg(default_value = "docs")]
+        input_dir: String,
+        /// Output directory for .html files
+        #[arg(short, long, default_value = "_site")]
+        output_dir: String,
+        /// Path to CSS file (relative to output)
+        #[arg(long, default_value = "style.css")]
+        css: String,
+    },
 }
 
 fn main() {
@@ -60,6 +73,9 @@ fn main() {
         Command::Serve { port } => serve::run(port),
         Command::Badge { path } => badge::run(&path),
         Command::Build { input, output } => build::run(&input, &output),
+        Command::BuildDocs { input_dir, output_dir, css } => {
+            build_docs::run(&input_dir, &output_dir, &css)
+        }
     };
     std::process::exit(code);
 }
