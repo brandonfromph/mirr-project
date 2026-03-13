@@ -32,7 +32,7 @@ pub fn run(input_dir: &str, output_dir: &str, css_path: &str) -> i32 {
     let mut md_files: Vec<_> = match fs::read_dir(input) {
         Ok(entries) => entries
             .filter_map(|e| e.ok())
-            .filter(|e| e.path().extension().map_or(false, |ext| ext == "md"))
+            .filter(|e| e.path().extension() == Some(std::ffi::OsStr::new("md")))
             .collect(),
         Err(e) => {
             eprintln!("Error reading directory: {}", e);
@@ -733,10 +733,8 @@ fn heading_to_slug(text: &str) -> String {
             for lower in ch.to_lowercase() {
                 slug.push(lower);
             }
-        } else if ch == ' ' || ch == '-' {
-            if !slug.ends_with('-') {
-                slug.push('-');
-            }
+        } else if (ch == ' ' || ch == '-') && !slug.ends_with('-') {
+            slug.push('-');
         }
     }
     // Trim trailing hyphens
