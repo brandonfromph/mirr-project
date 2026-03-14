@@ -311,6 +311,100 @@ Compiler loading...</pre>
         92 <code>#![forbid(unsafe_code)]</code> directives and 0 Clippy
         warnings.</li>
   </ol>
+
+  <figure id="fig-1">
+    <svg viewBox="0 0 900 420" class="architecture-svg" role="img" aria-label="MIRR system architecture diagram">
+      <rect width="900" height="420" fill="var(--surface-1, #0c1222)" rx="8"/>
+      <text x="450" y="28" fill="var(--text-primary, #f1f5f9)" font-size="13" font-weight="bold" text-anchor="middle" font-family="monospace">MIRR System Architecture</text>
+      <!-- Source -->
+      <rect x="360" y="42" width="180" height="32" rx="6" fill="#1565c0" stroke="#42a5f5" stroke-width="1.5"/>
+      <text x="450" y="63" fill="white" font-size="10" text-anchor="middle" font-family="monospace">MIRR Source (Signal / Guard / Reflex)</text>
+      <!-- Pipeline row 1 -->
+      <rect x="20" y="94" width="105" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="var(--cyan,#00e5ff)" stroke-width="1"/>
+      <text x="73" y="113" fill="var(--cyan,#00e5ff)" font-size="9" text-anchor="middle" font-family="monospace">1. Parse</text>
+      <rect x="138" y="94" width="105" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="var(--cyan,#00e5ff)" stroke-width="1"/>
+      <text x="191" y="113" fill="var(--cyan,#00e5ff)" font-size="9" text-anchor="middle" font-family="monospace">2-3. Expand</text>
+      <rect x="256" y="94" width="105" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="var(--cyan,#00e5ff)" stroke-width="1"/>
+      <text x="309" y="113" fill="var(--cyan,#00e5ff)" font-size="9" text-anchor="middle" font-family="monospace">4. Validate</text>
+      <rect x="374" y="94" width="105" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="var(--cyan,#00e5ff)" stroke-width="1"/>
+      <text x="427" y="109" fill="var(--cyan,#00e5ff)" font-size="9" text-anchor="middle" font-family="monospace">5. Typecheck</text>
+      <text x="427" y="120" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">16 rules + 8 ext.</text>
+      <rect x="492" y="94" width="105" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="var(--cyan,#00e5ff)" stroke-width="1"/>
+      <text x="545" y="109" fill="var(--cyan,#00e5ff)" font-size="9" text-anchor="middle" font-family="monospace">6. Simplify</text>
+      <text x="545" y="120" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">33 rewrites</text>
+      <rect x="610" y="94" width="130" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="#ff9800" stroke-width="1.5"/>
+      <text x="675" y="109" fill="#ff9800" font-size="9" text-anchor="middle" font-family="monospace">7. Width Infer</text>
+      <text x="675" y="120" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">55 Rocq theorems</text>
+      <rect x="753" y="94" width="125" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="#ab47bc" stroke-width="1.5"/>
+      <text x="816" y="109" fill="#ab47bc" font-size="9" text-anchor="middle" font-family="monospace">8. Temporal</text>
+      <text x="816" y="120" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">SR / CC strategy</text>
+      <!-- Arrows row 1 -->
+      <line x1="450" y1="74" x2="73" y2="94" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <line x1="125" y1="109" x2="138" y2="109" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <line x1="243" y1="109" x2="256" y2="109" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <line x1="361" y1="109" x2="374" y2="109" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <line x1="479" y1="109" x2="492" y2="109" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <line x1="597" y1="109" x2="610" y2="109" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <line x1="740" y1="109" x2="753" y2="109" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <!-- Emission hub -->
+      <rect x="350" y="148" width="200" height="30" rx="5" fill="var(--surface-3,#162040)" stroke="#66bb6a" stroke-width="1.5"/>
+      <text x="450" y="167" fill="#66bb6a" font-size="10" text-anchor="middle" font-family="monospace">9. Emission &mdash; 9 backends</text>
+      <line x1="816" y1="124" x2="550" y2="152" stroke="var(--text-ghost,#64748b)" stroke-width="0.8"/>
+      <!-- Backend boxes -->
+      <rect x="20" y="204" width="120" height="42" rx="5" fill="#1565c0" fill-opacity="0.15" stroke="#42a5f5" stroke-width="1"/>
+      <text x="80" y="222" fill="#42a5f5" font-size="9" text-anchor="middle" font-family="monospace">SystemVerilog</text>
+      <text x="80" y="234" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">RTL + SVA</text>
+      <rect x="152" y="204" width="120" height="42" rx="5" fill="#2e7d32" fill-opacity="0.15" stroke="#66bb6a" stroke-width="1"/>
+      <text x="212" y="222" fill="#66bb6a" font-size="9" text-anchor="middle" font-family="monospace">R-SPU</text>
+      <text x="212" y="234" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">ASM + Binary</text>
+      <rect x="284" y="204" width="120" height="42" rx="5" fill="#6a1b9a" fill-opacity="0.15" stroke="#ab47bc" stroke-width="1"/>
+      <text x="344" y="222" fill="#ab47bc" font-size="9" text-anchor="middle" font-family="monospace">S-Expr IR</text>
+      <text x="344" y="234" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">Code-as-data</text>
+      <rect x="416" y="204" width="120" height="42" rx="5" fill="#e65100" fill-opacity="0.15" stroke="#ff9800" stroke-width="1"/>
+      <text x="476" y="222" fill="#ff9800" font-size="9" text-anchor="middle" font-family="monospace">FIRRTL</text>
+      <text x="476" y="234" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">CHIPS Alliance</text>
+      <rect x="548" y="204" width="120" height="42" rx="5" fill="var(--surface-3,#162040)" stroke="var(--border-medium,#334155)" stroke-width="1"/>
+      <text x="608" y="222" fill="var(--text-secondary,#b0bec5)" font-size="9" text-anchor="middle" font-family="monospace">JSON / DOT</text>
+      <text x="608" y="234" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">Netlist + Graph</text>
+      <rect x="680" y="204" width="120" height="42" rx="5" fill="var(--surface-3,#162040)" stroke="var(--border-medium,#334155)" stroke-width="1"/>
+      <text x="740" y="222" fill="var(--text-secondary,#b0bec5)" font-size="9" text-anchor="middle" font-family="monospace">Testbench</text>
+      <text x="740" y="234" fill="var(--text-secondary,#b0bec5)" font-size="7" text-anchor="middle" font-family="monospace">SV TB + FPGA</text>
+      <!-- Lines from emission to backends -->
+      <line x1="450" y1="178" x2="80" y2="204" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <line x1="450" y1="178" x2="212" y2="204" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <line x1="450" y1="178" x2="344" y2="204" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <line x1="450" y1="178" x2="476" y2="204" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <line x1="450" y1="178" x2="608" y2="204" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <line x1="450" y1="178" x2="740" y2="204" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <!-- Downstream tools -->
+      <rect x="20" y="272" width="120" height="38" rx="5" fill="var(--surface-2,#121a30)" stroke="#42a5f5" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="80" y="289" fill="#42a5f5" font-size="9" text-anchor="middle" font-family="monospace">Yosys Synthesis</text>
+      <text x="80" y="300" fill="var(--text-ghost,#64748b)" font-size="7" text-anchor="middle" font-family="monospace">Gate-level netlist</text>
+      <rect x="152" y="272" width="120" height="38" rx="5" fill="var(--surface-2,#121a30)" stroke="#66bb6a" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="212" y="289" fill="#66bb6a" font-size="9" text-anchor="middle" font-family="monospace">R-SPU Simulator</text>
+      <text x="212" y="300" fill="var(--text-ghost,#64748b)" font-size="7" text-anchor="middle" font-family="monospace">Tagged words</text>
+      <rect x="284" y="272" width="120" height="38" rx="5" fill="var(--surface-2,#121a30)" stroke="#ab47bc" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="344" y="289" fill="#ab47bc" font-size="9" text-anchor="middle" font-family="monospace">MAPE-K Loop</text>
+      <text x="344" y="300" fill="var(--text-ghost,#64748b)" font-size="7" text-anchor="middle" font-family="monospace">Autonomic monitor</text>
+      <line x1="80" y1="246" x2="80" y2="272" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <line x1="212" y1="246" x2="212" y2="272" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <line x1="344" y1="246" x2="344" y2="272" stroke="var(--text-ghost,#64748b)" stroke-width="0.6"/>
+      <!-- Rocq proofs box -->
+      <rect x="510" y="272" width="370" height="38" rx="5" fill="#ff9800" fill-opacity="0.08" stroke="#ff9800" stroke-width="1"/>
+      <text x="695" y="288" fill="#ff9800" font-size="9" text-anchor="middle" font-family="monospace">Rocq Proofs &mdash; 1,906 lines, 55 theorems</text>
+      <text x="695" y="300" fill="var(--text-ghost,#64748b)" font-size="7" text-anchor="middle" font-family="monospace">Width soundness &bull; Monotonicity &bull; Fixpoint &bull; R-SPU encoding</text>
+      <line x1="675" y1="124" x2="695" y2="272" stroke="#ff9800" stroke-width="0.6" stroke-dasharray="4,3"/>
+      <!-- Legend -->
+      <text x="20" y="340" fill="var(--text-ghost,#64748b)" font-size="8" font-family="monospace">Legend:</text>
+      <rect x="65" y="332" width="10" height="10" rx="2" fill="var(--surface-3,#162040)" stroke="var(--cyan,#00e5ff)" stroke-width="1"/>
+      <text x="80" y="341" fill="var(--text-ghost,#64748b)" font-size="8" font-family="monospace">Pipeline stage</text>
+      <rect x="175" y="332" width="10" height="10" rx="2" fill="#ff9800" fill-opacity="0.1" stroke="#ff9800" stroke-width="1"/>
+      <text x="190" y="341" fill="var(--text-ghost,#64748b)" font-size="8" font-family="monospace">Formally verified</text>
+      <rect x="295" y="332" width="10" height="10" rx="2" fill="var(--surface-2,#121a30)" stroke="var(--border-medium,#334155)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="310" y="341" fill="var(--text-ghost,#64748b)" font-size="8" font-family="monospace">External tooling</text>
+    </svg>
+    <figcaption><strong>Figure 1:</strong> MIRR system architecture. The 9-stage pipeline compiles source to 9 emission backends. Width inference (Stage 7) is backed by 1,906 lines of Rocq proofs. The R-SPU path includes cycle-accurate simulation with tagged-word runtime type checking and MAPE-K autonomic monitoring.</figcaption>
+  </figure>
 </section>
 
 <section id="language">
@@ -342,6 +436,7 @@ Compiler loading...</pre>
     synthesized circuit.
   </p>
   <h3>Formal Grammar (core fragment)</h3>
+  <figure id="fig-2">
   <pre class="output">
 program   ::= {patterndef} module
 module    ::= "module" ID "{" {item} "}"
@@ -358,8 +453,25 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
             | "eventually_within(" expr "," N ")"
             | "always_followed_by(" expr "," expr "," N ")"
   </pre>
+  <figcaption><strong>Figure 2:</strong> MIRR formal grammar (core fragment). Operator precedence: * &gt; +,- &gt; &lt;&lt;,&gt;&gt; &gt; relational &gt; ==,!= &gt; ^ &gt; &amp;&amp; &gt; ||. Pattern definitions (def/reflect) are omitted for brevity.</figcaption>
+  </figure>
+
+  <h3>Pattern System</h3>
+  <table id="table-i" class="data-table">
+    <caption><strong>Table I:</strong> Pattern parameter and argument kinds. Type compatibility is enforced at expansion time.</caption>
+    <thead>
+      <tr><th>Param Kind</th><th>Accepts</th><th>Syntax</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>signal</code></td><td>Signal references</td><td><code>in u16</code></td></tr>
+      <tr><td><code>constant</code></td><td>Integer/bool literals</td><td><code>u16</code>, <code>bool</code></td></tr>
+      <tr><td><code>pattern</code></td><td>Pattern references</td><td><code>pattern</code></td></tr>
+    </tbody>
+  </table>
+
   <h3>Property Forms &rarr; SVA Compilation</h3>
-  <table id="property-table" class="data-table">
+  <table id="table-ii" class="data-table">
+    <caption><strong>Table II:</strong> LTL property form compilation to SVA.</caption>
     <thead>
       <tr><th>MIRR Form</th><th>SVA Output</th></tr>
     </thead>

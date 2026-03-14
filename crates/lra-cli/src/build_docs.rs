@@ -458,6 +458,9 @@ fn assemble_page(
   <title>{title} — MIRR Documentation</title>
   <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
   <link rel="stylesheet" href="{css}">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 <div class="site">
@@ -494,6 +497,8 @@ fn assemble_page(
   var searchInput = document.getElementById('doc-search');
   var resultsList = document.getElementById('search-results');
   var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {{}};
   var MAX_RESULTS = 8;
 
   if (searchInput) {{
@@ -501,25 +506,62 @@ fn assemble_page(
       if (!searchData) {{
         fetch('search-index.json')
           .then(function(r) {{ return r.json(); }})
-          .then(function(data) {{ searchData = data; }})
+          .then(function(data) {{
+            searchData = data;
+            for (var k = 0; k < data.length; k++) {{ searchMap[data[k].url] = data[k]; }}
+            if (typeof lunr !== 'undefined') {{
+              lunrIndex = lunr(function() {{
+                this.ref('url');
+                this.field('title', {{ boost: 3 }});
+                this.field('headings', {{ boost: 2 }});
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {{
+                  this.add({{ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet }});
+                }}
+              }});
+            }}
+          }})
           .catch(function() {{ searchData = []; }});
       }}
     }});
     searchInput.addEventListener('input', function() {{
-      var q = this.value.trim().toLowerCase();
+      var q = this.value.trim();
       resultsList.innerHTML = '';
       if (!q || !searchData) return;
-      var count = 0;
-      for (var j = 0; j < searchData.length && count < MAX_RESULTS; j++) {{
-        var entry = searchData[j];
-        if (entry.title.toLowerCase().indexOf(q) !== -1 || entry.snippet.toLowerCase().indexOf(q) !== -1) {{
-          var li = document.createElement('li');
-          var a = document.createElement('a');
-          a.href = entry.url;
-          a.textContent = entry.title;
-          li.appendChild(a);
-          resultsList.appendChild(li);
-          count++;
+      var results = [];
+      if (lunrIndex) {{
+        try {{ results = lunrIndex.search(q); }} catch(e) {{}}
+        if (results.length === 0) {{
+          try {{ results = lunrIndex.search(q + '*'); }} catch(e) {{}}
+        }}
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {{
+          var entry = searchMap[results[j].ref];
+          if (entry) {{
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.href = entry.url;
+            a.textContent = entry.title;
+            li.appendChild(a);
+            resultsList.appendChild(li);
+            count++;
+          }}
+        }}
+      }} else {{
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {{
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {{
+            var li2 = document.createElement('li');
+            var a2 = document.createElement('a');
+            a2.href = entry2.url;
+            a2.textContent = entry2.title;
+            li2.appendChild(a2);
+            resultsList.appendChild(li2);
+            count2++;
+          }}
         }}
       }}
     }});

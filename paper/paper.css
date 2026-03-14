@@ -380,6 +380,44 @@ pre.output.error { color: var(--error); }
 .data-table tr:hover td { background: var(--surface-3); }
 .data-table tr.error td { color: var(--error); }
 
+/* Figures */
+figure {
+  margin: 1.5rem 0;
+  padding: 0;
+}
+figure svg, figure img {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+}
+figcaption {
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Code listings (numbered) */
+.listing {
+  margin: 1.5rem 0;
+}
+.listing-caption {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+.listing pre {
+  margin: 0;
+  font-size: 0.78rem;
+  border-radius: 8px;
+  padding: 0.8rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
 /* References */
 .references {
   font-size: 0.9rem;
