@@ -289,10 +289,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   grid-template-columns: 1fr;
   gap: 0.75rem;
 }
-@media (min-width: 900px) {
-  .split-pane { grid-template-columns: 1fr 1fr; }
-}
-.pane label {
+.pane label, .pane .pane-label {
   display: block;
   font-family: var(--mono);
   font-size: 0.75rem;
@@ -523,6 +520,8 @@ footer a { color: var(--text-tertiary); }
   .data-table tr.error td { color: #b91c1c; }
   .proof-bar-proven { background: #333; color: #fff; }
   .proof-bar-admitted { background: #666; color: #fff; }
+  .proof-badge.proven { color: #166534; border-color: #166534; }
+  .proof-badge.admitted { color: #92400e; border-color: #92400e; }
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.75em; }
   @page { margin: 2cm; }
 }
@@ -563,12 +562,8 @@ footer a { color: var(--text-tertiary); }
     background: var(--bg-secondary, #1a1a2e);
     border-radius: 8px;
     font-family: 'JetBrains Mono', monospace;
-    overflow-x: auto;
-    scrollbar-width: thin;
-}
-
-.waveform-svg::-webkit-scrollbar {
-    height: 8px;
+    display: block;
+    max-width: 100%;
 }
 
 .waveform-grid {
@@ -606,6 +601,8 @@ footer a { color: var(--text-tertiary); }
     background: var(--bg-secondary, #1a1a2e);
     border-radius: 8px;
     font-family: 'JetBrains Mono', monospace;
+    display: block;
+    max-width: 100%;
 }
 
 .circuit-node-Input { fill: #1565c0; stroke: #42a5f5; }

@@ -127,7 +127,7 @@
     RTL, FIRRTL, and a novel 30-instruction R-SPU ISA with 32-bit binary
     encoding, tagged-word registers, and cycle-accurate simulation.  Width
     inference is backed by <span data-metric="rocqProofLines">1,906</span> lines of Rocq proofs (<span data-metric="rocqTheorems">55</span> theorems across
-    14 files).  A signedness type system with 16 inference rules rejects
+    <span data-metric="rocqFiles">12</span> files).  A signedness type system with 16 inference rules rejects
     mixed signed/unsigned expressions.  A homoiconic S-expression IR
     enables code-as-data transformation with a verified round-trip
     invariant.  The compiler enforces NASA Power-of-10 compliance: bounded
@@ -209,7 +209,7 @@
       </div>
     </div>
     <div class="pane">
-      <label>Output <span id="output-label"></span></label>
+      <span class="pane-label">Output <span id="output-label"></span></span>
       <pre id="compiler-output" class="output" aria-live="polite" role="status">
 Compiler loading...</pre>
     </div>
@@ -235,15 +235,6 @@ Compiler loading...</pre>
       <noscript><p>Circuit graph visualization requires JavaScript.</p></noscript>
     </div>
   </div>
-
-  <!-- SVG Arrowhead for Circuit Graph -->
-  <svg style="position:absolute;width:0;height:0;">
-    <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
-      </marker>
-    </defs>
-  </svg>
 </section>
 
 <section id="demo-benchmarks" class="demo">
@@ -304,7 +295,7 @@ Compiler loading...</pre>
         R-SPU assembly, R-SPU binary, S-expression IR, SystemVerilog
         testbench, and FPGA scaffold.</li>
     <li><strong>SCC-based width inference</strong> with <span data-metric="rocqProofLines">1,906</span> lines of Rocq
-        proofs (<span data-metric="rocqTheorems">55</span> theorems, <span data-metric="rocqMechanized">52</span> mechanized, across 14 proof files).</li>
+        proofs (<span data-metric="rocqTheorems">55</span> theorems, <span data-metric="rocqMechanized">52</span> mechanized, across <span data-metric="rocqFiles">12</span> proof files).</li>
     <li>A <strong>signedness type system</strong> (16 rules, E601&ndash;E609)
         rejecting mixed signed/unsigned expressions.</li>
     <li>An <strong>extended type system</strong> with 8 features: refinement
@@ -965,7 +956,7 @@ rspu/TaggedWord.v ──┐
   </figure>
 
   <div class="proof-bar"><div class="proof-bar-proven" style="width:94.5%">52 Proven</div><div class="proof-bar-admitted" style="width:5.5%">3</div></div>
-  <button class="sim-btn" id="proof-live-btn">Load Live Status</button><div id="proof-live-output" class="sim-output"></div>
+  <button id="proof-live-btn">Load Live Status</button><div id="proof-live-output" class="sim-output"></div>
 </section>
 
 <section id="sexpr">
@@ -1208,7 +1199,7 @@ rspu/TaggedWord.v ──┐
 
   <h4>Exception Model</h4>
   <p>The exception subsystem (336 lines) defines 7 exception codes with default actions:</p>
-  <table>
+  <table class="data-table">
     <caption>R-SPU exception model. Default actions apply when no handler is registered.</caption>
     <thead>
       <tr><th>Code</th><th>Exception</th><th>Default Action</th></tr>
@@ -1234,7 +1225,7 @@ rspu/TaggedWord.v ──┐
   <h3>Tier Architecture</h3>
   <p>The 30-instruction ISA is organized into 7 tiers by complexity. Higher tiers may be
      excluded for area-constrained targets without affecting lower-tier programs:</p>
-  <table>
+  <table class="data-table">
     <caption>R-SPU ISA v2: 30 instructions across 7 tiers.</caption>
     <thead>
       <tr><th>Tier</th><th>Instructions</th><th>Count</th></tr>
@@ -1257,8 +1248,6 @@ rspu/TaggedWord.v ──┐
   </p>
   <div class="sim-panel">
     <div class="sim-controls">
-      <label for="rspu-cycles">Cycles:</label>
-      <input type="number" id="rspu-cycles" value="10" min="1" max="1000" aria-label="Simulation cycles">
       <button id="rspu-sim-btn" aria-label="Run R-SPU simulation">Simulate R-SPU</button>
     </div>
     <pre id="rspu-sim-output" class="sim-output" aria-live="polite">Click Simulate R-SPU to run.</pre>
@@ -1801,13 +1790,13 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
   <h2>16. Related Work</h2>
 
   <h3>Hardware Construction Languages</h3>
-  <p>Chisel [<a href="#ref-1">1</a>] and its intermediate representation FIRRTL [<a href="#ref-2">2</a>]
+  <p>Chisel [<a href="#ref-1">1</a>] and its intermediate representation FIRRTL [<a href="#ref-4">4</a>]
      provide a Scala-embedded hardware construction language with parameterized generators.
      Chisel&rsquo;s strength is hardware abstraction via Scala classes and traits; its weakness
      is the absence of built-in temporal specification or formal verification of compiler passes.</p>
-  <p>Clash [<a href="#ref-3">3</a>] uses Haskell&rsquo;s type system to describe synchronous hardware,
+  <p>Clash [<a href="#ref-2">2</a>] uses Haskell&rsquo;s type system to describe synchronous hardware,
      leveraging parametric polymorphism and type-level naturals for compile-time dimension checking.
-     Bluespec [<a href="#ref-4">4</a>] employs guarded atomic actions with transactional semantics,
+     Bluespec [<a href="#ref-3">3</a>] employs guarded atomic actions with transactional semantics,
      providing a scheduling model that is more expressive than MIRR&rsquo;s guard/reflex model but
      without explicit temporal cycle-count specifications.</p>
   <p>None of these languages provides native temporal guard specifications, LTL property
@@ -1852,7 +1841,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
      instruction-level backend (ISA), S-expression IR (SE), and MAPE-K simulator (MK).
      MIRR is, to our knowledge, the only open-source system that combines all seven in a
      single deterministic pipeline.</p>
-  <table>
+  <table class="data-table">
     <caption>Table 1: Feature comparison with related systems.</caption>
     <thead>
       <tr><th>System</th><th>TG</th><th>LTL</th><th>TS</th><th>FP</th><th>ISA</th><th>SE</th><th>MK</th></tr>
@@ -1872,7 +1861,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
   <h3>Quantitative Comparison</h3>
   <p>Table&nbsp;2 compares measurable evidence across the systems, limited to peer-reviewed
      publications or public release documentation.</p>
-  <table>
+  <table class="data-table">
     <caption>Table 2: Quantitative comparison of HDL systems. &ldquo;&mdash;&rdquo; indicates
     the metric is not applicable or not reported.</caption>
     <thead>
@@ -1904,7 +1893,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
   <p>The original architectural exploration made five design claims. The table below maps
      each to its implementation status, updated with MEGA-1/2/3 evidence.</p>
 
-  <table>
+  <table class="data-table">
     <caption>Mapping speculative claims to implementation evidence.</caption>
     <thead>
       <tr><th>Claim</th><th>Evidence</th></tr>
@@ -2076,7 +2065,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
      execute, close out. This section records the history of changes to the living document
      and the compiler. Each entry corresponds to a campaign or documentation update.</p>
 
-  <table>
+  <table class="data-table">
     <caption>Campaign log: full history of MIRR development proposals.</caption>
     <thead>
       <tr><th>ID</th><th>Date</th><th>Summary</th></tr>
@@ -2292,6 +2281,9 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"
         integrity="sha512-tXHFLFVaasTvIEFYN8K6UlGvb6Sh1ealAA8YxjpezWMio6u0vU9KfGFzKVth49xh2affuBfmLGY8t2G5pZH+zg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+        integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="module" src="paper.js"></script>
 <script>

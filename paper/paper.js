@@ -357,7 +357,7 @@ function handleProofStatus() {
   }
 }
 
-function handleRspuSim(source, cycles) {
+function handleRspuSim(source) {
   try {
     var result = simulate_rspu(source);
     return JSON.parse(result);
@@ -504,9 +504,8 @@ document.getElementById('rspu-sim-btn')
   .addEventListener('click', function() {
     if (!wasmReady) return;
     var source = getSource();
-    var cycles = parseInt(document.getElementById('rspu-cycles').value, 10) || 10;
     var output = document.getElementById('rspu-sim-output');
-    var data = handleRspuSim(source, cycles);
+    var data = handleRspuSim(source);
     if (data.error) {
       output.textContent = 'Error: ' + data.error;
       output.classList.add('error');
@@ -657,8 +656,7 @@ function renderWaveform(containerId, traceJson) {
     const svgWidth = NAME_WIDTH + totalCycles * CYCLE_WIDTH + 20;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', svgWidth);
-    svg.setAttribute('height', svgHeight);
+    svg.setAttribute('viewBox', '0 0 ' + svgWidth + ' ' + svgHeight);
     svg.setAttribute('class', 'waveform-svg');
 
     // Cycle grid lines
@@ -766,8 +764,7 @@ function renderCircuitGraph(containerId, graphJson) {
     const svgHeight = Math.max(400, nodes.length * 60 + 40);
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', svgWidth);
-    svg.setAttribute('height', svgHeight);
+    svg.setAttribute('viewBox', '0 0 ' + svgWidth + ' ' + svgHeight);
     svg.setAttribute('class', 'circuit-graph-svg');
 
     // Arrowhead marker definition
@@ -906,31 +903,47 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
     }
 });
 
-/* ── Search (Jekyll-quality) ── */
+/* ── Full-text search (lunr.js) ── */
 (function initSearch() {
     var MAX_SEARCH_NODES = 200;
-    var MAX_SEARCH_RESULTS = 8;
-    var SNIPPET_WINDOW = 80;
+    var MAX_SEARCH_RESULTS = 10;
+    var SNIPPET_WINDOW = 100;
     var input = document.getElementById('site-search');
     var resultsBox = document.getElementById('search-results');
     var kbdHint = document.querySelector('.search-kbd');
     if (!input || !resultsBox) return;
 
-    /* --- Build index: section id, title (with §number), full text --- */
-    var index = [];
+    /* --- Build document store from all sections --- */
+    var docs = [];
+    var docMap = {};
     var sections = document.querySelectorAll('section[id]');
     for (var i = 0; i < sections.length && i < MAX_SEARCH_NODES; i++) {
         var sec = sections[i];
         var heading = sec.querySelector('h2, h3');
         var title = heading ? heading.textContent.trim() : sec.id;
-        var text = sec.textContent.substring(0, 1200).replace(/\s+/g, ' ').trim();
-        index.push({ id: sec.id, title: title, text: text });
+        var text = sec.textContent.replace(/\s+/g, ' ').trim();
+        var doc = { id: sec.id, title: title, text: text };
+        docs.push(doc);
+        docMap[sec.id] = doc;
+    }
+
+    /* --- Build lunr index (stemmed, tokenized, ranked) --- */
+    var lunrIndex = null;
+    if (typeof lunr !== 'undefined') {
+        lunrIndex = lunr(function() {
+            this.ref('id');
+            this.field('title', { boost: 3 });
+            this.field('text');
+            for (var j = 0; j < docs.length; j++) {
+                this.add(docs[j]);
+            }
+        });
     }
 
     var activeIndex = -1;
     var debounceTimer = null;
 
-    /* --- Feature 1: Ctrl+K / Cmd+K / '/' keyboard shortcut --- */
+    /* --- Ctrl+K / Cmd+K / '/' keyboard shortcut --- */
     document.addEventListener('keydown', function(e) {
         var isSlash = e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey;
         var isCtrlK = e.key === 'k' && (e.ctrlKey || e.metaKey);
@@ -951,7 +964,7 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
         debounceTimer = setTimeout(doSearch, 150);
     });
 
-    /* --- Feature 3: Keyboard navigation (arrows, Enter, Escape) --- */
+    /* --- Keyboard navigation (arrows, Enter, Escape) --- */
     input.addEventListener('keydown', function(e) {
         var items = resultsBox.querySelectorAll('a.search-result-item');
         if (e.key === 'Escape') {
@@ -1005,7 +1018,7 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
         }
     });
 
-    /* --- Feature 5: Hide kbd hint on focus, show on blur --- */
+    /* --- Hide kbd hint on focus, show on blur --- */
     if (kbdHint) {
         input.addEventListener('focus', function() { kbdHint.hidden = true; });
         input.addEventListener('blur', function() {
@@ -1013,46 +1026,77 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
         });
     }
 
-    /* --- Feature 2 & 4: Search with snippets, highlighting, section numbers --- */
+    /* --- Extract snippet around a query term in text --- */
+    function extractSnippet(text, query) {
+        var lower = text.toLowerCase();
+        var terms = query.toLowerCase().split(/\s+/);
+        var pos = -1;
+        for (var t = 0; t < terms.length; t++) {
+            pos = lower.indexOf(terms[t]);
+            if (pos !== -1) break;
+        }
+        if (pos === -1) pos = 0;
+        var start = Math.max(0, pos - SNIPPET_WINDOW / 2);
+        var end = Math.min(text.length, pos + query.length + SNIPPET_WINDOW / 2);
+        return (start > 0 ? '\u2026' : '') +
+            text.substring(start, end) +
+            (end < text.length ? '\u2026' : '');
+    }
+
+    /* --- Fallback substring search (when lunr CDN unavailable) --- */
+    function substringSearch(query) {
+        var matches = [];
+        var q = query.toLowerCase();
+        for (var i = 0; i < docs.length && matches.length < MAX_SEARCH_RESULTS; i++) {
+            var d = docs[i];
+            if (d.title.toLowerCase().indexOf(q) !== -1 || d.text.toLowerCase().indexOf(q) !== -1) {
+                matches.push({ id: d.id, title: d.title, snippet: extractSnippet(d.text, query) });
+            }
+        }
+        return matches;
+    }
+
+    /* --- Main search function --- */
     function doSearch() {
-        var query = input.value.trim().toLowerCase();
+        var query = input.value.trim();
         if (query.length < 2) { resultsBox.hidden = true; activeIndex = -1; return; }
 
         var matches = [];
-        for (var i = 0; i < index.length && matches.length < MAX_SEARCH_RESULTS; i++) {
-            var entry = index[i];
-            var titleLower = entry.title.toLowerCase();
-            var textLower = entry.text.toLowerCase();
-            var titlePos = titleLower.indexOf(query);
-            var textPos = textLower.indexOf(query);
-            if (titlePos !== -1 || textPos !== -1) {
-                /* Extract snippet around match */
-                var snippet = '';
-                var matchSource = textPos !== -1 ? entry.text : entry.title;
-                var matchPos = textPos !== -1 ? textPos : titlePos;
-                var start = Math.max(0, matchPos - SNIPPET_WINDOW / 2);
-                var end = Math.min(matchSource.length, matchPos + query.length + SNIPPET_WINDOW / 2);
-                snippet = (start > 0 ? '…' : '') +
-                    matchSource.substring(start, end) +
-                    (end < matchSource.length ? '…' : '');
-                matches.push({ id: entry.id, title: entry.title, snippet: snippet });
+
+        if (lunrIndex) {
+            /* lunr search: try exact first, then wildcard */
+            var results = lunrIndex.search(query);
+            if (results.length === 0 && query.indexOf('*') === -1) {
+                results = lunrIndex.search(query + '*');
             }
+            for (var i = 0; i < results.length && matches.length < MAX_SEARCH_RESULTS; i++) {
+                var doc = docMap[results[i].ref];
+                if (doc) {
+                    matches.push({
+                        id: doc.id,
+                        title: doc.title,
+                        snippet: extractSnippet(doc.text, query)
+                    });
+                }
+            }
+        } else {
+            matches = substringSearch(query);
         }
 
         if (matches.length === 0) {
-            resultsBox.innerHTML = '<div class="search-no-results">No results for &ldquo;' +
-                escapeHtml(query) + '&rdquo;</div>';
+            resultsBox.innerHTML = '<div class="search-no-results">No results for \u201c' +
+                escapeHtml(query) + '\u201d</div>';
         } else {
             var html = '';
+            var safeQuery = escapeHtml(query);
+            var reTerms = safeQuery.split(/\s+/).map(function(t) {
+                return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }).join('|');
+            var re = new RegExp('(' + reTerms + ')', 'gi');
             for (var j = 0; j < matches.length; j++) {
                 var m = matches[j];
-                var safeTitle = escapeHtml(m.title);
-                var safeSnippet = escapeHtml(m.snippet);
-                /* Highlight query in both title and snippet (after escaping) */
-                var safeQuery = escapeHtml(query);
-                var re = new RegExp('(' + safeQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-                safeTitle = safeTitle.replace(re, '<mark>$1</mark>');
-                safeSnippet = safeSnippet.replace(re, '<mark>$1</mark>');
+                var safeTitle = escapeHtml(m.title).replace(re, '<mark>$1</mark>');
+                var safeSnippet = escapeHtml(m.snippet).replace(re, '<mark>$1</mark>');
                 html += '<a class="search-result-item" href="#' + escapeHtml(m.id) + '" role="option">' +
                     '<span class="search-result-title">' + safeTitle + '</span>' +
                     '<span class="search-result-snippet">' + safeSnippet + '</span>' +
@@ -1063,7 +1107,7 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
         resultsBox.hidden = false;
         activeIndex = -1;
 
-        /* Clicking a result closes the dropdown */
+        /* Clicking a result closes dropdown */
         var links = resultsBox.querySelectorAll('a');
         for (var k = 0; k < links.length; k++) {
             links[k].addEventListener('click', function() {
