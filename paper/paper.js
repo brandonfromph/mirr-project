@@ -111,6 +111,92 @@ const EXAMPLES = {
 }`
 };
 
+// ── CodeMirror MIRR mode + editor init ────────────────────────────────
+
+var cmEditor = null;
+
+function getSource() {
+  if (cmEditor) return cmEditor.getValue();
+  var ta = document.getElementById('mirr-source');
+  return ta ? ta.value : '';
+}
+
+function setSource(text) {
+  if (cmEditor) { cmEditor.setValue(text); return; }
+  var ta = document.getElementById('mirr-source');
+  if (ta) ta.value = text;
+}
+
+(function initCodeMirror() {
+  if (typeof CodeMirror === 'undefined') return;
+
+  // Define MIRR language mode
+  CodeMirror.defineMode('mirr', function() {
+    var signalKw = /^(signal|input|output|wire|reg|assign)\b/;
+    var guardKw  = /^(guard|when|cycles|for)\b/;
+    var reflexKw = /^(reflex|on)\b/;
+    var generalKw = /^(module|always|temporal|require|ensure|if|else|let|fn|struct|enum|match|return|property|pattern|prev|use)\b/;
+    var dirs     = /^(in|out|internal)\b/;
+    var types    = /^(u[0-9]+|i[0-9]+|bool|bit|clock|reset)\b/;
+    var bools    = /^(true|false)\b/;
+
+    return {
+      startState: function() { return {}; },
+      token: function(stream) {
+        // Comments
+        if (stream.match('//')) { stream.skipToEnd(); return 'comment'; }
+        // Whitespace
+        if (stream.eatSpace()) return null;
+        // Annotations
+        if (stream.match(/@[a-zA-Z_]\w*/)) return 'meta';
+        // Tags
+        if (stream.match(/#[a-zA-Z_]\w*/)) return 'tag';
+        // Numbers
+        if (stream.match(/0x[0-9a-fA-F_]+/) || stream.match(/0b[01_]+/) || stream.match(/0o[0-7_]+/) || stream.match(/[0-9][0-9_]*/)) return 'number';
+        // Identifiers and keywords
+        if (stream.match(/[a-zA-Z_]\w*/)) {
+          var w = stream.current();
+          if (signalKw.test(w))  return 'keyword';
+          if (guardKw.test(w))   return 'def';
+          if (reflexKw.test(w))  return 'builtin';
+          if (generalKw.test(w)) return 'keyword';
+          if (dirs.test(w))      return 'qualifier';
+          if (types.test(w))     return 'type';
+          if (bools.test(w))     return 'atom';
+          return 'variable';
+        }
+        // Operators
+        if (stream.match(/[+\-*=<>!&|^~%]+/)) return 'operator';
+        // Braces / parens
+        if (stream.match(/[{}()\[\];:,]/)) return 'punctuation';
+        // Advance one char if nothing matched
+        stream.next();
+        return null;
+      }
+    };
+  });
+
+  var textarea = document.getElementById('mirr-source');
+  if (!textarea) return;
+
+  cmEditor = CodeMirror.fromTextArea(textarea, {
+    mode: 'mirr',
+    theme: 'material-darker',
+    lineNumbers: true,
+    matchBrackets: false,
+    indentUnit: 4,
+    tabSize: 4,
+    indentWithTabs: false,
+    lineWrapping: true,
+    viewportMargin: Infinity,
+    extraKeys: {
+      'Ctrl-Enter': function() { compile(); },
+      'Cmd-Enter':  function() { compile(); }
+    }
+  });
+  cmEditor.setSize(null, 350);
+})();
+
 var compile_pipeline_stages, proof_status, simulate_rspu, simulate_mapek, mirr_version, simulate_waveform, compile_graph_data;
 
 async function initWasm() {
@@ -149,7 +235,7 @@ async function initWasm() {
 function compile() {
   if (!wasmReady) return;
 
-  var source = document.getElementById('mirr-source').value;
+  var source = getSource();
   var format = document.getElementById('emit-format').value;
   var output = document.getElementById('compiler-output');
   output.setAttribute('aria-busy', 'true');
@@ -297,8 +383,7 @@ document.getElementById('example-select')
   .addEventListener('change', function(e) {
     var key = e.target.value;
     if (key && EXAMPLES[key]) {
-      document.getElementById('mirr-source').value = EXAMPLES[key];
-      updateHighlight();
+      setSource(EXAMPLES[key]);
       compile();
     }
   });
@@ -313,7 +398,7 @@ document.getElementById('bench-btn')
 document.getElementById('pipeline-viz-btn')
   .addEventListener('click', function() {
     if (!wasmReady) return;
-    var source = document.getElementById('mirr-source').value;
+    var source = getSource();
     var output = document.getElementById('pipeline-viz-output');
     var data = handlePipelineViz(source);
     output.textContent = '';
@@ -418,7 +503,7 @@ if (proofLiveBtn) {
 document.getElementById('rspu-sim-btn')
   .addEventListener('click', function() {
     if (!wasmReady) return;
-    var source = document.getElementById('mirr-source').value;
+    var source = getSource();
     var cycles = parseInt(document.getElementById('rspu-cycles').value, 10) || 10;
     var output = document.getElementById('rspu-sim-output');
     var data = handleRspuSim(source, cycles);
@@ -440,7 +525,7 @@ document.getElementById('mapek-sim-btn')
     if (!wasmReady) return;
     var ticks = parseInt(document.getElementById('mapek-ticks').value, 10) || 100;
     var output = document.getElementById('mapek-sim-output');
-    var data = handleMapekSim(document.getElementById('mirr-source').value, ticks);
+    var data = handleMapekSim(getSource(), ticks);
     if (data.error) {
       output.textContent = 'Error: ' + data.error;
       output.classList.add('error');
@@ -453,14 +538,16 @@ document.getElementById('mapek-sim-btn')
     }
   });
 
-// Keyboard shortcut: Ctrl+Enter or Cmd+Enter to compile
-document.getElementById('mirr-source')
-  .addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      compile();
-    }
-  });
+// Keyboard shortcut fallback: Ctrl+Enter (when CodeMirror is not active)
+if (!cmEditor) {
+  document.getElementById('mirr-source')
+    .addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        compile();
+      }
+    });
+}
 
 // Boot WASM (non-blocking — page works without it)
 initWasm();
@@ -537,109 +624,11 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function() {});
 }
 
-// ── MIRR syntax highlighting ────────────────────────────────────────
+// ── HTML utilities ──────────────────────────────────────────────────
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
-
-function highlightMirr(code) {
-  var MAX_LINES = 500;
-  var signalKw = {signal:1,input:1,output:1,wire:1,reg:1,assign:1};
-  var guardKw = {guard:1,when:1,cycles:1,for:1};
-  var reflexKw = {reflex:1,on:1};
-  var generalKw = {module:1,always:1,temporal:1,require:1,ensure:1,if:1,else:1,
-    let:1,fn:1,struct:1,enum:1,match:1,return:1,property:1,pattern:1,prev:1,use:1};
-  var dirs = {in:1,out:1,internal:1};
-  var types = {u1:1,u2:1,u3:1,u4:1,u5:1,u6:1,u7:1,u8:1,u9:1,u10:1,u11:1,u12:1,
-    u13:1,u14:1,u15:1,u16:1,u32:1,u64:1,i8:1,i16:1,i32:1,i64:1,bool:1,bit:1,clock:1,reset:1};
-  var bools = {true:1,false:1};
-  var lines = code.split('\n');
-  var result = [];
-  for (var i = 0; i < Math.min(lines.length, MAX_LINES); i++) {
-    var line = lines[i];
-    var trimmed = line.trimStart ? line.trimStart() : line.replace(/^\s+/, '');
-    if (trimmed.indexOf('//') === 0) {
-      var leading = line.substring(0, line.length - trimmed.length);
-      result.push(escapeHtml(leading) + '<span class="mirr-cmt">' + escapeHtml(trimmed) + '</span>');
-      continue;
-    }
-    var out = '';
-    var j = 0;
-    while (j < line.length) {
-      var ch = line[j];
-      if (ch === '/' && j + 1 < line.length && line[j + 1] === '/') {
-        out += '<span class="mirr-cmt">' + escapeHtml(line.substring(j)) + '</span>';
-        break;
-      }
-      if (/[a-zA-Z_]/.test(ch)) {
-        var ident = '';
-        while (j < line.length && /[a-zA-Z0-9_]/.test(line[j])) { ident += line[j++]; }
-        var cls = signalKw[ident] ? 'mirr-signal' :
-                  guardKw[ident] ? 'mirr-guard' :
-                  reflexKw[ident] ? 'mirr-reflex' :
-                  generalKw[ident] ? 'mirr-kw' :
-                  dirs[ident] ? 'mirr-dir' :
-                  types[ident] ? 'mirr-type' :
-                  bools[ident] ? 'mirr-bool' : 'mirr-name';
-        out += '<span class="' + cls + '">' + escapeHtml(ident) + '</span>';
-        continue;
-      }
-      if (/[0-9]/.test(ch)) {
-        var num = '';
-        while (j < line.length && /[0-9_xbo]/.test(line[j])) { num += line[j++]; }
-        out += '<span class="mirr-num">' + escapeHtml(num) + '</span>';
-        continue;
-      }
-      if (ch === '@') {
-        var ann = '@'; j++;
-        while (j < line.length && /[a-zA-Z0-9_]/.test(line[j])) { ann += line[j++]; }
-        out += '<span class="mirr-ann">' + escapeHtml(ann) + '</span>';
-        continue;
-      }
-      if (ch === '#') {
-        var tag = '#'; j++;
-        while (j < line.length && /[a-zA-Z0-9_]/.test(line[j])) { tag += line[j++]; }
-        out += '<span class="mirr-tag">' + escapeHtml(tag) + '</span>';
-        continue;
-      }
-      if (/[+\-*=<>!&|^~%]/.test(ch)) {
-        out += '<span class="mirr-op">' + escapeHtml(ch) + '</span>';
-        j++; continue;
-      }
-      out += escapeHtml(ch);
-      j++;
-    }
-    result.push(out);
-  }
-  return result.join('\n');
-}
-
-function updateHighlight() {
-  var textarea = document.getElementById('mirr-source');
-  var overlay = document.getElementById('highlight-overlay');
-  if (overlay && textarea) {
-    overlay.innerHTML = highlightMirr(textarea.value) + '\n';
-    overlay.scrollTop = textarea.scrollTop;
-    overlay.scrollLeft = textarea.scrollLeft;
-  }
-}
-
-(function initHighlight() {
-  var textarea = document.getElementById('mirr-source');
-  var overlay = document.getElementById('highlight-overlay');
-  if (textarea && overlay) {
-    textarea.addEventListener('input', updateHighlight);
-    textarea.addEventListener('scroll', function() {
-      overlay.scrollTop = textarea.scrollTop;
-      overlay.scrollLeft = textarea.scrollLeft;
-    });
-    updateHighlight();
-    // Activate transparent text only after overlay is working
-    var container = textarea.closest('.editor-container');
-    if (container) container.classList.add('highlight-active');
-  }
-})();
 
 // ── Waveform Renderer (Campaign B3) ──
 
@@ -874,7 +863,7 @@ function drawEdge(svg, fromPos, toPos, label) {
 // ── Button Wiring (Campaign B7) ──
 
 document.getElementById('btn-simulate-waveform')?.addEventListener('click', async function() {
-    var source = document.getElementById('mirr-source').value;
+    var source = getSource();
     var cyclesInput = document.getElementById('sim-cycles');
     var cycles = cyclesInput ? parseInt(cyclesInput.value || '32', 10) : 32;
     var container = document.getElementById('waveform-container');
@@ -897,7 +886,7 @@ document.getElementById('btn-simulate-waveform')?.addEventListener('click', asyn
 });
 
 document.getElementById('btn-view-circuit')?.addEventListener('click', async function() {
-    var source = document.getElementById('mirr-source').value;
+    var source = getSource();
     var container = document.getElementById('graph-container');
     if (!container) return;
 
@@ -917,73 +906,171 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
     }
 });
 
-/* ── Search ── */
+/* ── Search (Jekyll-quality) ── */
 (function initSearch() {
-    var MAX_SEARCH_NODES = 2000;
-    var MAX_SEARCH_RESULTS = 10;
+    var MAX_SEARCH_NODES = 200;
+    var MAX_SEARCH_RESULTS = 8;
+    var SNIPPET_WINDOW = 80;
     var input = document.getElementById('site-search');
     var resultsBox = document.getElementById('search-results');
+    var kbdHint = document.querySelector('.search-kbd');
     if (!input || !resultsBox) return;
 
+    /* --- Build index: section id, title (with §number), full text --- */
     var index = [];
     var sections = document.querySelectorAll('section[id]');
-    var nodeCount = 0;
-    for (var i = 0; i < sections.length && nodeCount < MAX_SEARCH_NODES; i++) {
+    for (var i = 0; i < sections.length && i < MAX_SEARCH_NODES; i++) {
         var sec = sections[i];
         var heading = sec.querySelector('h2, h3');
         var title = heading ? heading.textContent.trim() : sec.id;
-        var text = sec.textContent.substring(0, 500).replace(/\s+/g, ' ').trim();
+        var text = sec.textContent.substring(0, 1200).replace(/\s+/g, ' ').trim();
         index.push({ id: sec.id, title: title, text: text });
-        nodeCount++;
     }
 
+    var activeIndex = -1;
     var debounceTimer = null;
-    input.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(doSearch, 200);
+
+    /* --- Feature 1: Ctrl+K / Cmd+K / '/' keyboard shortcut --- */
+    document.addEventListener('keydown', function(e) {
+        var isSlash = e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey;
+        var isCtrlK = e.key === 'k' && (e.ctrlKey || e.metaKey);
+        if (isSlash || isCtrlK) {
+            var tag = document.activeElement ? document.activeElement.tagName : '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+                if (document.activeElement !== input) return;
+            }
+            e.preventDefault();
+            input.focus();
+            input.select();
+        }
     });
 
+    /* --- Input handler with debounce --- */
+    input.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(doSearch, 150);
+    });
+
+    /* --- Feature 3: Keyboard navigation (arrows, Enter, Escape) --- */
     input.addEventListener('keydown', function(e) {
+        var items = resultsBox.querySelectorAll('a.search-result-item');
         if (e.key === 'Escape') {
             input.value = '';
             resultsBox.hidden = true;
+            activeIndex = -1;
+            input.blur();
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (items.length === 0) return;
+            activeIndex = (activeIndex + 1) % items.length;
+            highlightItem(items);
+            return;
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (items.length === 0) return;
+            activeIndex = activeIndex <= 0 ? items.length - 1 : activeIndex - 1;
+            highlightItem(items);
+            return;
+        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeIndex >= 0 && activeIndex < items.length) {
+                items[activeIndex].click();
+            } else if (items.length > 0) {
+                items[0].click();
+            }
+            return;
         }
     });
 
+    function highlightItem(items) {
+        for (var i = 0; i < items.length; i++) {
+            if (i === activeIndex) {
+                items[i].classList.add('search-result-active');
+                items[i].scrollIntoView({ block: 'nearest' });
+            } else {
+                items[i].classList.remove('search-result-active');
+            }
+        }
+    }
+
+    /* --- Hide on outside click --- */
     document.addEventListener('click', function(e) {
         if (!input.contains(e.target) && !resultsBox.contains(e.target)) {
             resultsBox.hidden = true;
+            activeIndex = -1;
         }
     });
 
+    /* --- Feature 5: Hide kbd hint on focus, show on blur --- */
+    if (kbdHint) {
+        input.addEventListener('focus', function() { kbdHint.hidden = true; });
+        input.addEventListener('blur', function() {
+            if (!input.value) kbdHint.hidden = false;
+        });
+    }
+
+    /* --- Feature 2 & 4: Search with snippets, highlighting, section numbers --- */
     function doSearch() {
         var query = input.value.trim().toLowerCase();
-        if (query.length < 2) { resultsBox.hidden = true; return; }
+        if (query.length < 2) { resultsBox.hidden = true; activeIndex = -1; return; }
+
         var matches = [];
         for (var i = 0; i < index.length && matches.length < MAX_SEARCH_RESULTS; i++) {
             var entry = index[i];
-            if (entry.title.toLowerCase().indexOf(query) !== -1 ||
-                entry.text.toLowerCase().indexOf(query) !== -1) {
-                matches.push(entry);
+            var titleLower = entry.title.toLowerCase();
+            var textLower = entry.text.toLowerCase();
+            var titlePos = titleLower.indexOf(query);
+            var textPos = textLower.indexOf(query);
+            if (titlePos !== -1 || textPos !== -1) {
+                /* Extract snippet around match */
+                var snippet = '';
+                var matchSource = textPos !== -1 ? entry.text : entry.title;
+                var matchPos = textPos !== -1 ? textPos : titlePos;
+                var start = Math.max(0, matchPos - SNIPPET_WINDOW / 2);
+                var end = Math.min(matchSource.length, matchPos + query.length + SNIPPET_WINDOW / 2);
+                snippet = (start > 0 ? '…' : '') +
+                    matchSource.substring(start, end) +
+                    (end < matchSource.length ? '…' : '');
+                matches.push({ id: entry.id, title: entry.title, snippet: snippet });
             }
         }
+
         if (matches.length === 0) {
-            resultsBox.innerHTML = '<div class="search-result-item search-no-results">No results</div>';
+            resultsBox.innerHTML = '<div class="search-no-results">No results for &ldquo;' +
+                escapeHtml(query) + '&rdquo;</div>';
         } else {
             var html = '';
             for (var j = 0; j < matches.length; j++) {
-                html += '<a class="search-result-item" href="#' + escapeHtml(matches[j].id) +
-                    '" role="option">' + escapeHtml(matches[j].title) + '</a>';
+                var m = matches[j];
+                var safeTitle = escapeHtml(m.title);
+                var safeSnippet = escapeHtml(m.snippet);
+                /* Highlight query in both title and snippet (after escaping) */
+                var safeQuery = escapeHtml(query);
+                var re = new RegExp('(' + safeQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                safeTitle = safeTitle.replace(re, '<mark>$1</mark>');
+                safeSnippet = safeSnippet.replace(re, '<mark>$1</mark>');
+                html += '<a class="search-result-item" href="#' + escapeHtml(m.id) + '" role="option">' +
+                    '<span class="search-result-title">' + safeTitle + '</span>' +
+                    '<span class="search-result-snippet">' + safeSnippet + '</span>' +
+                    '</a>';
             }
             resultsBox.innerHTML = html;
         }
         resultsBox.hidden = false;
+        activeIndex = -1;
 
+        /* Clicking a result closes the dropdown */
         var links = resultsBox.querySelectorAll('a');
         for (var k = 0; k < links.length; k++) {
             links[k].addEventListener('click', function() {
                 resultsBox.hidden = true;
                 input.value = '';
+                activeIndex = -1;
+                if (kbdHint) kbdHint.hidden = false;
             });
         }
     }

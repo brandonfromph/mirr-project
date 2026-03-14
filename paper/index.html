@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MIRR Compiler — Interactive Paper</title>
   <link rel="stylesheet" href="paper.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.css"
+        integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/theme/material-darker.min.css"
+        integrity="sha512-2OhXH4Il3n2tHKwLLSDPhrkgnLBC+6lHGGQzSFi3chgVB6DJ/v6+nbx+XYO9CugQyHVF/8D/0k3Hx1eaUK2K9g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="icon" href="data:,">
   <link rel="canonical" href="https://brandonfromph.github.io/mirr-project/paper/">
   <meta name="description" content="MIRR: A safety-critical HDL compiler with formal width inference. Living Research Artifact — interactive paper with in-browser compiler.">
@@ -55,6 +61,7 @@
       <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.45 4.39l4.26 4.26a.75.75 0 11-1.06 1.06l-4.26-4.26A7 7 0 012 9z" clip-rule="evenodd"/>
       </svg>
+      <kbd class="search-kbd" aria-hidden="true">Ctrl K</kbd>
       <div id="search-results" role="listbox" aria-label="Search results" hidden></div>
     </div>
   </div>
@@ -195,7 +202,6 @@
     <div class="pane">
       <label for="mirr-source">MIRR Source</label>
       <div class="editor-container">
-        <pre class="highlight-overlay" id="highlight-overlay" aria-hidden="true"></pre>
         <textarea id="mirr-source" rows="28"
           spellcheck="false"
           placeholder="module example {&#10;  signal clk: in bool;&#10;}">
@@ -2284,6 +2290,9 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
   </p>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"
+        integrity="sha512-tXHFLFVaasTvIEFYN8K6UlGvb6Sh1ealAA8YxjpezWMio6u0vU9KfGFzKVth49xh2affuBfmLGY8t2G5pZH+zg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="module" src="paper.js"></script>
 <script>
 // Auto-sync metrics from metrics.json
