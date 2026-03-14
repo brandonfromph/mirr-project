@@ -744,11 +744,11 @@ function renderSignalWave(svg, signal, yBase, laneHeight, nameWidth, cycleWidth)
 // ── Circuit Graph Renderer (Campaign B4) ──
 
 function renderCircuitGraph(containerId, graphJson) {
-    const container = document.getElementById(containerId);
+    var container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
 
-    let graph;
+    var graph;
     try {
         graph = typeof graphJson === 'string' ? JSON.parse(graphJson) : graphJson;
     } catch (e) {
@@ -756,105 +756,111 @@ function renderCircuitGraph(containerId, graphJson) {
         return;
     }
 
-    const nodes = graph.nodes || [];
-    const edges = graph.edges || [];
-    const positions = layoutGraph(nodes, edges);
-
-    const svgWidth = 900;
-    const svgHeight = Math.max(400, nodes.length * 60 + 40);
-
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 ' + svgWidth + ' ' + svgHeight);
-    svg.setAttribute('class', 'circuit-graph-svg');
-
-    // Arrowhead marker definition
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-    marker.setAttribute('id', 'arrowhead');
-    marker.setAttribute('markerWidth', '10');
-    marker.setAttribute('markerHeight', '7');
-    marker.setAttribute('refX', '10');
-    marker.setAttribute('refY', '3.5');
-    marker.setAttribute('orient', 'auto');
-    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
-    polygon.setAttribute('fill', '#666');
-    marker.appendChild(polygon);
-    defs.appendChild(marker);
-    svg.appendChild(defs);
-
-    // Draw edges first (behind nodes)
-    edges.forEach(function(edge) {
-        var fromPos = positions[edge.from];
-        var toPos = positions[edge.to];
-        if (fromPos && toPos) {
-            drawEdge(svg, fromPos, toPos, edge.label);
-        }
-    });
-
-    // Draw nodes
-    nodes.forEach(function(node) {
-        var pos = positions[node.id];
-        if (pos) {
-            drawNode(svg, node, pos.x, pos.y);
-        }
-    });
-
-    container.appendChild(svg);
-}
-
-function layoutGraph(nodes, edges) {
-    var positions = {};
-    var columns = { 'Input': 100, 'Output': 800, 'Guard': 350, 'Reflex': 600, 'Internal': 500 };
-    var counts = { 'Input': 0, 'Output': 0, 'Guard': 0, 'Reflex': 0, 'Internal': 0 };
-
-    nodes.forEach(function(node) {
-        var col = columns[node.type] || 450;
-        var row = counts[node.type] || 0;
-        positions[node.id] = { x: col, y: 40 + row * 60 };
-        counts[node.type] = (counts[node.type] || 0) + 1;
-    });
-
-    return positions;
-}
-
-function drawNode(svg, node, x, y) {
-    var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', x - 50);
-    rect.setAttribute('y', y - 15);
-    rect.setAttribute('width', 100);
-    rect.setAttribute('height', 30);
-    rect.setAttribute('rx', 8);
-    rect.setAttribute('class', 'circuit-node-' + (node.type || 'Internal'));
-    rect.setAttribute('stroke-width', '2');
-    svg.appendChild(rect);
-
-    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', x);
-    text.setAttribute('y', y);
-    text.setAttribute('class', 'circuit-node-label');
-    text.textContent = node.label || node.id;
-    svg.appendChild(text);
-}
-
-function drawEdge(svg, fromPos, toPos, label) {
-    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    var mx = (fromPos.x + toPos.x) / 2;
-    var d = 'M ' + (fromPos.x + 50) + ' ' + fromPos.y +
-            ' C ' + mx + ' ' + fromPos.y + ', ' + mx + ' ' + toPos.y +
-            ', ' + (toPos.x - 50) + ' ' + toPos.y;
-    path.setAttribute('d', d);
-    path.setAttribute('class', 'circuit-edge');
-    svg.appendChild(path);
-
-    if (label) {
-        var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', mx);
-        text.setAttribute('y', (fromPos.y + toPos.y) / 2 - 8);
-        text.setAttribute('class', 'circuit-edge-label');
-        text.textContent = label;
-        svg.appendChild(text);
+    if (typeof d3 === 'undefined') {
+        container.innerHTML = '<pre class="viz-error">D3.js not loaded</pre>';
+        return;
     }
+
+    var nodes = (graph.nodes || []).map(function(n) { return Object.assign({}, n); });
+    var edges = (graph.edges || []).map(function(e) {
+        return { source: e.from, target: e.to, label: e.label };
+    });
+
+    var width = 900;
+    var height = Math.max(400, nodes.length * 60 + 40);
+
+    var svg = d3.select(container).append('svg')
+        .attr('viewBox', '0 0 ' + width + ' ' + height)
+        .attr('class', 'circuit-graph-svg');
+
+    // Zoom + pan
+    var g = svg.append('g');
+    svg.call(d3.zoom()
+        .scaleExtent([0.3, 4])
+        .on('zoom', function(event) { g.attr('transform', event.transform); })
+    );
+
+    // Arrowhead marker
+    g.append('defs').append('marker')
+        .attr('id', 'arrowhead')
+        .attr('markerWidth', 10).attr('markerHeight', 7)
+        .attr('refX', 18).attr('refY', 3.5)
+        .attr('orient', 'auto')
+      .append('polygon')
+        .attr('points', '0 0, 10 3.5, 0 7')
+        .attr('fill', '#666');
+
+    // Force simulation
+    var simulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(edges).id(function(d) { return d.id; }).distance(160))
+        .force('charge', d3.forceManyBody().strength(-400))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collide', d3.forceCollide(60))
+        .force('x', d3.forceX(function(d) {
+            var col = { Input: width * 0.1, Output: width * 0.9, Guard: width * 0.4, Reflex: width * 0.65 };
+            return col[d.type] || width / 2;
+        }).strength(0.3))
+        .force('y', d3.forceY(height / 2).strength(0.05));
+
+    // Edge lines
+    var link = g.selectAll('.circuit-edge')
+        .data(edges).enter().append('path')
+        .attr('class', 'circuit-edge')
+        .attr('marker-end', 'url(#arrowhead)');
+
+    // Edge labels
+    var linkLabel = g.selectAll('.circuit-edge-label')
+        .data(edges.filter(function(e) { return e.label; }))
+        .enter().append('text')
+        .attr('class', 'circuit-edge-label')
+        .text(function(d) { return d.label; });
+
+    // Node groups
+    var node = g.selectAll('.circuit-node-group')
+        .data(nodes).enter().append('g')
+        .attr('class', 'circuit-node-group')
+        .call(d3.drag()
+            .on('start', function(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x; d.fy = d.y;
+            })
+            .on('drag', function(event, d) { d.fx = event.x; d.fy = event.y; })
+            .on('end', function(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null; d.fy = null;
+            })
+        );
+
+    node.append('rect')
+        .attr('width', 100).attr('height', 30).attr('rx', 8)
+        .attr('x', -50).attr('y', -15)
+        .attr('class', function(d) { return 'circuit-node-' + (d.type || 'Internal'); })
+        .attr('stroke-width', 2);
+
+    node.append('text')
+        .attr('class', 'circuit-node-label')
+        .text(function(d) { return d.label || d.id; });
+
+    // Tick: update positions each frame
+    var MAX_TICKS = 300;
+    var tickCount = 0;
+    simulation.on('tick', function() {
+        tickCount++;
+        if (tickCount > MAX_TICKS) { simulation.stop(); return; }
+
+        link.attr('d', function(d) {
+            var mx = (d.source.x + d.target.x) / 2;
+            return 'M ' + d.source.x + ' ' + d.source.y +
+                   ' C ' + mx + ' ' + d.source.y + ', ' + mx + ' ' + d.target.y +
+                   ', ' + d.target.x + ' ' + d.target.y;
+        });
+
+        linkLabel
+            .attr('x', function(d) { return (d.source.x + d.target.x) / 2; })
+            .attr('y', function(d) { return (d.source.y + d.target.y) / 2 - 8; });
+
+        node.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+    });
 }
 
 // ── Button Wiring (Campaign B7) ──
