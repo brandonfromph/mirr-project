@@ -418,6 +418,64 @@ figcaption {
   overflow-x: auto;
 }
 
+/* Natural deduction inference rules */
+.inference-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+.inference-rule {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.inference-rule .rule-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.inference-rule .premises {
+  padding: 0 0.25rem 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.inference-rule .rule-line {
+  width: 100%;
+  height: 1px;
+  background: var(--accent);
+  min-width: 4rem;
+}
+.inference-rule .conclusion {
+  padding: 0.25rem 0.25rem 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.inference-rule .rule-name {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--accent);
+  font-variant: small-caps;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  align-self: center;
+}
+@media print {
+  .inference-rules { background: #fff; border-color: #ccc; }
+  .inference-rule .premises,
+  .inference-rule .conclusion { color: #000; }
+  .inference-rule .rule-line { background: #000; }
+  .inference-rule .rule-name { color: #333; }
+}
+
 /* References */
 .references {
   font-size: 0.9rem;

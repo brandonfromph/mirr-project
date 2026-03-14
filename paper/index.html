@@ -1062,6 +1062,216 @@ Qed.</pre>
     This mirrors recursive traversal while satisfying NASA Power-of-10
     Rule 1 (no recursion) and Rule 2 (bounded iteration).
   </p>
+
+  <h3>Formal Inference Rules</h3>
+  <p>The judgment &Gamma; &vdash; e : &tau; reads: &ldquo;under signal environment &Gamma;,
+     expression <em>e</em> has type &tau;.&rdquo;  &Gamma; maps signal names to their declared types.
+     All 16 rules are extracted directly from <code>typeck/mod.rs</code>.</p>
+
+  <h4>Atoms</h4>
+  <div class="inference-rules">
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&nbsp;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; true : bool</div>
+      </div>
+      <div class="rule-name">T-Lit-Bool</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&nbsp;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; n : u<sub>min_bits(n)</sub></div>
+      </div>
+      <div class="rule-name">T-Lit-Int</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">x : &tau; &isin; &Gamma;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; x : &tau;</div>
+      </div>
+      <div class="rule-name">T-Signal</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">x : &tau; &isin; &Gamma;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; prev(x) : &tau;</div>
+      </div>
+      <div class="rule-name">T-Prev</div>
+    </div>
+  </div>
+
+  <h4>Arithmetic &amp; Shift</h4>
+  <div class="inference-rules">
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : u<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : u<sub>v</sub> &nbsp;&nbsp; &oplus; &isin; {+, &minus;, &times;}</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : u<sub>max(w,v)</sub></div>
+      </div>
+      <div class="rule-name">T-Arith-U</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : i<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : i<sub>v</sub> &nbsp;&nbsp; &oplus; &isin; {+, &minus;, &times;}</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : i<sub>max(w,v)</sub></div>
+      </div>
+      <div class="rule-name">T-Arith-S</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : u<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : u<sub>v</sub> &nbsp;&nbsp; &oplus; &isin; {&laquo;, &raquo;}</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : u<sub>w</sub></div>
+      </div>
+      <div class="rule-name">T-Shift</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : u<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : i<sub>v</sub></div>
+        <div class="rule-line"></div>
+        <div class="conclusion"><em>reject</em> &mdash; E608</div>
+      </div>
+      <div class="rule-name">T-Cross</div>
+    </div>
+  </div>
+
+  <h4>Logic &amp; Bitwise</h4>
+  <div class="inference-rules">
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : bool &nbsp;&nbsp; &Gamma; &vdash; b : bool &nbsp;&nbsp; &oplus; &isin; {&and;, &or;}</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : bool</div>
+      </div>
+      <div class="rule-name">T-Logic</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : &tau; &nbsp;&nbsp; &Gamma; &vdash; b : &tau;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : &tau;</div>
+      </div>
+      <div class="rule-name">T-Xor</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; e : &tau;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; &not;e : &tau;</div>
+      </div>
+      <div class="rule-name">T-Not</div>
+    </div>
+  </div>
+
+  <h4>Comparison</h4>
+  <div class="inference-rules">
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : u<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : u<sub>v</sub> &nbsp;&nbsp; &oplus; &isin; {&lt;, &le;, &gt;, &ge;}</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : bool</div>
+      </div>
+      <div class="rule-name">T-Ord</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; a : &tau; &nbsp;&nbsp; &Gamma; &vdash; b : &tau; &nbsp;&nbsp; same_cat(&tau;) &nbsp;&nbsp; &oplus; &isin; {=, &ne;}</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : bool</div>
+      </div>
+      <div class="rule-name">T-Eq</div>
+    </div>
+  </div>
+
+  <h4>Negation &amp; Context</h4>
+  <div class="inference-rules">
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; e : u<sub>N</sub></div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; &minus;e : i<sub>N+1</sub></div>
+      </div>
+      <div class="rule-name">T-Neg-U</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; e : i<sub>N</sub></div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; &minus;e : i<sub>N</sub></div>
+      </div>
+      <div class="rule-name">T-Neg-S</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&Gamma; &vdash; cond : bool</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; guard(cond, N) &nbsp; <em>ok</em></div>
+      </div>
+      <div class="rule-name">T-Guard</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">x : &tau;<sub>1</sub> &isin; &Gamma; &nbsp;&nbsp; &Gamma; &vdash; e : &tau;<sub>2</sub> &nbsp;&nbsp; &tau;<sub>2</sub> &le; &tau;<sub>1</sub></div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&Gamma; &vdash; x := e &nbsp; <em>ok</em></div>
+      </div>
+      <div class="rule-name">T-Assign</div>
+    </div>
+  </div>
+
+  <h4>Assignment Compatibility (&tau;<sub>2</sub> &le; &tau;<sub>1</sub>)</h4>
+  <p>The subtyping relation &tau;<sub>2</sub> &le; &tau;<sub>1</sub> holds when a value of type &tau;<sub>2</sub>
+     can be implicitly widened to &tau;<sub>1</sub> without loss. Five rules capture all valid conversions;
+     the cross-category invariant (u<sub>w</sub> &nleq; i<sub>v</sub>) is the cornerstone of MIRR&rsquo;s
+     type safety for hardware.</p>
+  <div class="inference-rules">
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&nbsp;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">&tau; &le; &tau;</div>
+      </div>
+      <div class="rule-name">S-Refl</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&nbsp;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">bool &le; u<sub>1</sub></div>
+      </div>
+      <div class="rule-name">S-Bool-U1</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">&nbsp;</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">u<sub>1</sub> &le; bool</div>
+      </div>
+      <div class="rule-name">S-U1-Bool</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">N &le; M</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">u<sub>N</sub> &le; u<sub>M</sub></div>
+      </div>
+      <div class="rule-name">S-Widen-U</div>
+    </div>
+    <div class="inference-rule">
+      <div class="rule-body">
+        <div class="premises">N &le; M</div>
+        <div class="rule-line"></div>
+        <div class="conclusion">i<sub>N</sub> &le; i<sub>M</sub></div>
+      </div>
+      <div class="rule-name">S-Widen-S</div>
+    </div>
+  </div>
+
   <h3>Core Type Rules</h3>
   <table class="data-table">
     <caption>Table IX: Core type inference rules (E601&ndash;E609).</caption>
