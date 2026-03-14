@@ -225,6 +225,7 @@ module m {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
     let result = run_pipeline(src, &config).expect("Pipeline should succeed");
     assert_eq!(result.program.module.properties.len(), 3);
@@ -250,6 +251,7 @@ fn existing_property_examples_compile() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
     run_pipeline(&src, &config).expect("safety_property.mirr should compile");
 }

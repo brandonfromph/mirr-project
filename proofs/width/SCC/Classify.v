@@ -74,22 +74,31 @@ Proof.
   - intros i Hin op l r Hnth.
     simpl in Hclass.
     destruct (nth_error nodes hd) eqn:Hhd.
-    + destruct f.
-      * (* FNLiteral *) apply IHtl; [exact Hclass | | exact Hnth].
-        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
-      * (* FNSignal *) apply IHtl; [exact Hclass | | exact Hnth].
-        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
-      * (* FNUnary *) apply IHtl; [exact Hclass | | exact Hnth].
-        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
+    + destruct f as [?v|?nm ?sg|?uop ?opd|bop bl br|?sig ?dl ?sg].
+      * (* FNLiteral *)
+        assert (Hin' : In i tl) by
+          (destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl]).
+        exact (IHtl Hclass i Hin' op l r Hnth).
+      * (* FNSignal *)
+        assert (Hin' : In i tl) by
+          (destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl]).
+        exact (IHtl Hclass i Hin' op l r Hnth).
+      * (* FNUnary *)
+        assert (Hin' : In i tl) by
+          (destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl]).
+        exact (IHtl Hclass i Hin' op l r Hnth).
       * (* FNBinary *)
-        destruct (is_expansive_binop b) eqn:Hexp.
+        destruct (is_expansive_binop bop) eqn:Hexp.
         -- discriminate.
         -- destruct Hin as [Heq|Htl].
            ++ subst. rewrite Hhd in Hnth. injection Hnth as -> -> ->.
               exact Hexp.
-           ++ apply IHtl; [exact Hclass | exact Htl | exact Hnth].
-      * (* FNPrev *) apply IHtl; [exact Hclass | | exact Hnth].
-        destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
-    + apply IHtl; [exact Hclass | | exact Hnth].
-      destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl].
+           ++ exact (IHtl Hclass i Htl op l r Hnth).
+      * (* FNPrev *)
+        assert (Hin' : In i tl) by
+          (destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl]).
+        exact (IHtl Hclass i Hin' op l r Hnth).
+    + assert (Hin' : In i tl) by
+        (destruct Hin as [Heq|Htl]; [subst; rewrite Hhd in Hnth; discriminate | exact Htl]).
+      exact (IHtl Hclass i Hin' op l r Hnth).
 Qed.

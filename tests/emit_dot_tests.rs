@@ -121,6 +121,8 @@ fn prev_guard_result() -> PipelineResult {
         extended_type_map: None,
         sim_result: None,
         mape_k_result: None,
+        sat_stats: None,
+        retiming_stats: None,
     }
 }
 

@@ -248,6 +248,9 @@ fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
                     emit_expr_inline(&cx.combination_logic),
                 ));
             }
+            CompiledGuard::DynamicCounter(dc) => {
+                emit_dynamic_counter_guard(dc, out);
+            }
         }
     }
 }
@@ -338,6 +341,50 @@ fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mu
     out.push_str(&format!(
         "  assign {} = ({} >= {});\n\n",
         cg.output_signal, cg.counter_signal, cg.target_count,
+    ));
+}
+
+fn emit_dynamic_counter_guard(
+    dc: &crate::temporal::low_level_ir::DynamicCounterGuard,
+    out: &mut String,
+) {
+    let cond_desc = dc.condition_kind.describe();
+    let width = dc.counter_width();
+    out.push_str(&format!(
+        "  // Guard: {} — {} for dynamic delay (max {} cycles)\n",
+        dc.name, cond_desc, dc.max_delay
+    ));
+
+    // Counter register.
+    out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), dc.counter_signal));
+
+    // Dynamic target wire.
+    let target_signal = format!("{}_target", dc.name);
+    out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), target_signal));
+    out.push_str(&format!("  assign {} = {};\n", target_signal, emit_expr_inline(&dc.delay_expr)));
+
+    // Condition wire.
+    out.push_str(&format!("  logic {}_cond;\n", dc.name));
+    out.push_str(&format!(
+        "  assign {}_cond = {};\n",
+        dc.name,
+        emit_condition_expr(&dc.condition_kind),
+    ));
+
+    // Counter always_ff block.
+    out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", dc.counter_signal));
+    out.push_str(&format!("    else if (!{}_cond)\n      {} <= '0;\n", dc.name, dc.counter_signal));
+    out.push_str(&format!(
+        "    else if ({0} < {1})\n      {0} <= {0} + 1;\n",
+        dc.counter_signal, target_signal
+    ));
+    out.push_str("  end\n");
+
+    // Output: guard fires when counter reaches dynamic target.
+    out.push_str(&format!(
+        "  assign {} = ({} >= {});\n\n",
+        dc.output_signal, dc.counter_signal, target_signal
     ));
 }
 

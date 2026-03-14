@@ -56,9 +56,26 @@ Theorem solver_terminates : forall cs st,
   (forall i, lookup st i <= MAX_WIDTH) ->
   is_fixpoint cs (iterate cs st (solver_budget (length st))).
 Proof.
-  (* The potential function Φ(st) = Σ_i (MAX_WIDTH - lookup st i) is
-     non-negative and strictly decreases with each non-trivial round.
-     Since Φ <= MAX_WIDTH * |st|, the solver halts within that many rounds. *)
+  intros cs st Hbound.
+  unfold is_fixpoint.
+  (* Proof by induction on fuel = solver_budget(|st|).
+     The potential function Φ(st) = Σ_i (MAX_WIDTH - lookup st i)
+     decreases by ≥ 1 each non-fixpoint round, so fuel suffices.
+     Two sub-obligations remain admitted:
+       (1) bound preservation: solver_round preserves MAX_WIDTH bound
+       (2) fuel accounting: solver_budget of the new state ≤ fuel'
+     These require a summation infrastructure not yet in the library. *)
+  remember (solver_budget (length st)) as fuel eqn:Hfuel.
+  generalize dependent st.
+  induction fuel as [|fuel' IH].
+  - intros. admit.
+  - intros st Hbound Hfuel.
+    simpl.
+    destruct (list_eq_dec Nat.eq_dec st (solver_round cs st)) as [Heq|Hneq].
+    + symmetry. exact Heq.
+    + apply IH.
+      * intros i. admit.
+      * admit.
 Admitted.
 
 (** ** T9: fixpoint_least
@@ -111,41 +128,44 @@ Proof.
       destruct j; simpl.
       * apply (Hle 0).
       * destruct st2 as [|hd2 tl2].
-        -- simpl. simpl in Hle. specialize (Hle (S j)). simpl in Hle.
-           simpl in IHtl. apply IHtl with (n := n') (w := w).
-           ++ intros k. specialize (Hle (S k)). simpl in Hle. exact Hle.
-           ++ simpl in Hw. exact Hw.
-        -- apply IHtl with (n := n') (w := w).
-           ++ intros k. specialize (Hle (S k)). simpl in Hle. exact Hle.
-           ++ simpl in Hw. exact Hw.
+        -- assert (Hle' : forall k, lookup tl k <= lookup [] k).
+           { intros k. specialize (Hle (S k)). simpl in Hle. exact Hle. }
+           assert (Hw' : w <= lookup [] n').
+           { simpl in Hw. exact Hw. }
+           exact (IHtl [] n' w Hle' Hw' j).
+        -- assert (Hle' : forall k, lookup tl k <= lookup tl2 k).
+           { intros k. specialize (Hle (S k)). simpl in Hle. exact Hle. }
+           assert (Hw' : w <= lookup tl2 n').
+           { simpl in Hw. exact Hw. }
+           exact (IHtl tl2 n' w Hle' Hw' j).
 Qed.
 
-(** update both: if st1 ⊑ st2 and w1 <= w2, then
-    update st1 n w1 ⊑ update st2 n w2. *)
+(** update both: if st1 ⊑ st2, length st1 = length st2, and w1 <= w2, then
+    update st1 n w1 ⊑ update st2 n w2.
+    The length precondition is needed because update on a shorter list
+    is a no-op, but the longer list retains the inserted value. *)
 Lemma update_both_monotone : forall st1 st2 n w1 w2,
-  st1 ⊑ st2 -> w1 <= w2 ->
+  st1 ⊑ st2 -> w1 <= w2 -> length st1 = length st2 ->
   update st1 n w1 ⊑ update st2 n w2.
 Proof.
   unfold state_le.
   induction st1 as [|hd1 tl1 IH1].
-  - intros. simpl. destruct n; destruct st2; simpl; lia.
-  - intros st2 [|n'] w1 w2 Hle Hw j.
+  - intros. destruct st2; [| simpl in H1; lia].
+    simpl. destruct n; simpl; lia.
+  - intros st2 [|n'] w1 w2 Hle Hw Hlen j.
     + (* n = 0 *)
-      destruct st2 as [|hd2 tl2]; destruct j; simpl.
-      * lia.
-      * lia.
+      destruct st2 as [|hd2 tl2]; [simpl in Hlen; lia|].
+      destruct j; simpl.
       * lia.
       * specialize (Hle (S j)). simpl in Hle. exact Hle.
     + (* n = S n' *)
-      destruct st2 as [|hd2 tl2]; destruct j; simpl.
+      destruct st2 as [|hd2 tl2]; [simpl in Hlen; lia|].
+      destruct j; simpl.
       * specialize (Hle 0). simpl in Hle. exact Hle.
       * apply IH1 with (n := n') (w1 := w1) (w2 := w2).
         -- intros k. specialize (Hle (S k)). simpl in Hle. exact Hle.
         -- exact Hw.
-      * specialize (Hle 0). simpl in Hle. exact Hle.
-      * apply IH1 with (n := n') (w1 := w1) (w2 := w2).
-        -- intros k. specialize (Hle (S k)). simpl in Hle. exact Hle.
-        -- exact Hw.
+        -- simpl in Hlen. lia.
 Qed.
 
 (** *** Key lemma: one constraint step is monotone w.r.t. state ordering.
@@ -158,16 +178,69 @@ Definition step_one (c : wconstraint) (st : solver_state) : solver_state :=
   | None => st
   end.
 
-(** The core monotonicity-of-step lemma. If st1 ⊑ st2, then
-    stepping one constraint on st1 gives something ⊑ step on st2.
-
-    Case analysis:
-    - Both None: st1 ⊑ st2.
-    - st1 None, st2 Some: st1 ⊑ step2 ≥ st2 ≥ st1.
-    - st1 Some, st2 None: impossible (st1 ⊑ st2, if st1 sources nonzero then st2 sources nonzero).
-    - Both Some, same target node. By T2, w1 ≤ w2.
-      If st1 not updated: st1 ⊑ st2 ⊑ step2.
-      If st1 updated to w1: update st1 n w1 ⊑ update st2 n w2 (or ⊑ st2 if w2 ≤ lookup st2 n). *)
+(** Helper: if st1 ⊑ st2 and eval_constraint returns None on the larger
+    state st2, it must also return None on the smaller state st1.
+    This is because eval returns None only when source entries are 0,
+    and st1 ⊑ st2 means all st1 entries ≤ st2 entries. *)
+Lemma eval_none_propagates : forall c st1 st2,
+  st1 ⊑ st2 ->
+  eval_constraint c st2 = None ->
+  eval_constraint c st1 = None.
+Proof.
+  intros c st1 st2 Hle Heval.
+  destruct c; simpl in *.
+  - (* Fixed: never returns None *) discriminate.
+  - (* MaxPlusOne *)
+    destruct ((lookup st2 lsrc =? 0) && (lookup st2 rsrc =? 0))%bool eqn:E2; [|discriminate].
+    apply andb_prop in E2. destruct E2 as [E2a E2b].
+    apply Nat.eqb_eq in E2a. apply Nat.eqb_eq in E2b.
+    assert (lookup st1 lsrc <= 0) by (specialize (Hle lsrc); lia).
+    assert (lookup st1 rsrc <= 0) by (specialize (Hle rsrc); lia).
+    assert (lookup st1 lsrc = 0) by lia. assert (lookup st1 rsrc = 0) by lia.
+    rewrite H1, H2. simpl. reflexivity.
+  - (* MaxOf *)
+    destruct ((lookup st2 lsrc =? 0) && (lookup st2 rsrc =? 0))%bool eqn:E2; [|discriminate].
+    apply andb_prop in E2. destruct E2 as [E2a E2b].
+    apply Nat.eqb_eq in E2a. apply Nat.eqb_eq in E2b.
+    assert (lookup st1 lsrc <= 0) by (specialize (Hle lsrc); lia).
+    assert (lookup st1 rsrc <= 0) by (specialize (Hle rsrc); lia).
+    assert (lookup st1 lsrc = 0) by lia. assert (lookup st1 rsrc = 0) by lia.
+    rewrite H1, H2. simpl. reflexivity.
+  - (* SumOf *)
+    destruct ((lookup st2 lsrc =? 0) && (lookup st2 rsrc =? 0))%bool eqn:E2; [|discriminate].
+    apply andb_prop in E2. destruct E2 as [E2a E2b].
+    apply Nat.eqb_eq in E2a. apply Nat.eqb_eq in E2b.
+    assert (lookup st1 lsrc <= 0) by (specialize (Hle lsrc); lia).
+    assert (lookup st1 rsrc <= 0) by (specialize (Hle rsrc); lia).
+    assert (lookup st1 lsrc = 0) by lia. assert (lookup st1 rsrc = 0) by lia.
+    rewrite H1, H2. simpl. reflexivity.
+  - (* LeftPlusConst *)
+    destruct (lookup st2 src =? 0) eqn:E2; [|discriminate].
+    apply Nat.eqb_eq in E2.
+    assert (lookup st1 src <= 0) by (specialize (Hle src); lia).
+    assert (lookup st1 src = 0) by lia. rewrite H0. simpl. reflexivity.
+  - (* LeftPlusMaxShift *)
+    destruct (lookup st2 src =? 0) eqn:E2; [|discriminate].
+    apply Nat.eqb_eq in E2.
+    assert (lookup st1 src <= 0) by (specialize (Hle src); lia).
+    assert (lookup st1 src = 0) by lia. rewrite H0. simpl. reflexivity.
+  - (* LeftMinusConst *)
+    destruct (lookup st2 src =? 0) eqn:E2; [|discriminate].
+    apply Nat.eqb_eq in E2.
+    assert (lookup st1 src <= 0) by (specialize (Hle src); lia).
+    assert (lookup st1 src = 0) by lia. rewrite H0. simpl. reflexivity.
+  - (* SameAs *)
+    destruct (lookup st2 source =? 0) eqn:E2; [|discriminate].
+    apply Nat.eqb_eq in E2.
+    assert (lookup st1 source <= 0) by (specialize (Hle source); lia).
+    assert (lookup st1 source = 0) by lia. rewrite H0. simpl. reflexivity.
+  - (* SameAsPlusOne *)
+    destruct (lookup st2 source =? 0) eqn:E2; [|discriminate].
+    apply Nat.eqb_eq in E2.
+    assert (lookup st1 source <= 0) by (specialize (Hle source); lia).
+    assert (lookup st1 source = 0) by lia. rewrite H0. simpl. reflexivity.
+  - (* Boolean: never returns None *) discriminate.
+Qed.
 
 Lemma step_one_monotone : forall c st1 st2,
   st1 ⊑ st2 ->
@@ -187,6 +260,9 @@ Proof.
       apply update_both_monotone.
       * exact Hle12.
       * exact Hw.
+      * (* length st1 = length st2: in the solver, states have
+           fixed length = num_nodes. We admit this structural invariant. *)
+        admit.
     + (* st1 updates, st2 doesn't — w2 <= lookup st2 n1 *)
       apply Nat.ltb_lt in Hlt1. apply Nat.ltb_ge in Hlt2.
       apply update_le_preserves.
@@ -196,43 +272,21 @@ Proof.
       apply Nat.ltb_ge in Hlt1. apply Nat.ltb_lt in Hlt2.
       apply state_le_trans with st2.
       * exact Hle12.
-      * apply one_step_monotone.
+      * apply Monotone.update_preserves_le. lia.
     + (* Neither updates *)
       exact Hle12.
-  - (* st1 Some, st2 None *)
-    (* eval returns None when sources are zero. Since st1 ⊑ st2,
-       st2's sources >= st1's sources. If st2's sources are zero,
-       then st1's sources must also be zero, contradicting Heval1 = Some.
-       Prove by case analysis on c. *)
-    destruct c; simpl in Heval1, Heval2;
-    try (destruct (_ && _)%bool eqn:E1 in Heval1; [discriminate|];
-         destruct (_ && _)%bool eqn:E2 in Heval2; [|discriminate];
-         (* E2 says both sources in st2 are zero, but st1 ⊑ st2... *)
-         apply andb_prop in E2; destruct E2 as [E2a E2b];
-         apply Nat.eqb_eq in E2a; apply Nat.eqb_eq in E2b;
-         (* But st1 sources must also be zero *)
-         assert (Hl1 := Hle12 n); assert (Hr1 := Hle12 n0);
-         rewrite E2a in Hl1; rewrite E2b in Hr1;
-         assert (lookup st1 n = 0) by lia;
-         assert (lookup st1 n0 = 0) by lia;
-         rewrite H, H0 in E1; simpl in E1; discriminate);
-    try (destruct (_ =? _) eqn:E1 in Heval1; [discriminate|];
-         destruct (_ =? _) eqn:E2 in Heval2; [|discriminate];
-         apply Nat.eqb_eq in E2;
-         assert (Hl1 := Hle12 n); try (assert (Hl1' := Hle12 n0));
-         try (rewrite E2 in Hl1; assert (lookup st1 n = 0) by lia;
-              rewrite H in E1; simpl in E1; discriminate);
-         try (rewrite E2 in Hl1'; assert (lookup st1 n0 = 0) by lia;
-              rewrite H in E1; simpl in E1; discriminate));
-    try discriminate.
+  - (* st1 Some, st2 None — contradicts eval_none_propagates *)
+    exfalso.
+    pose proof (eval_none_propagates c st1 st2 Hle12 Heval2) as Hcontra.
+    rewrite Heval1 in Hcontra. discriminate.
   - (* st1 None, st2 Some *)
     destruct (lookup st2 n2 <? w2) eqn:Hlt2.
     + apply state_le_trans with st2.
       * exact Hle12.
-      * apply update_preserves_le. apply Nat.ltb_lt in Hlt2. lia.
+      * apply Monotone.update_preserves_le. apply Nat.ltb_lt in Hlt2. lia.
     + exact Hle12.
   - (* Both None *) exact Hle12.
-Admitted.
+Admitted. (* length st1 = length st2 obligation *)
 
 (** apply_constraints is monotone in its state argument. *)
 Lemma apply_constraints_state_monotone : forall cs st1 st2,

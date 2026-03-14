@@ -63,11 +63,16 @@ Theorem nonexpansive_convergence : forall cs st,
   st ⊑ iterate cs st fuel.
 Proof.
   intros cs st Hne Hanchor fuel Hfuel.
-  induction fuel as [|fuel' IHfuel'].
-  - simpl. apply state_le_refl.
-  - simpl. apply state_le_trans with (apply_constraints cs st).
-    + apply evaluate_monotone.
-    + apply IHfuel'. lia.
+  (* Prove a stronger statement generalized over all states. *)
+  assert (Hgen : forall f s, s ⊑ apply_constraints cs s ->
+          s ⊑ iterate cs s f).
+  { induction f as [|f' IHf'].
+    - intros. simpl. apply state_le_refl.
+    - intros s Hmono. simpl.
+      apply state_le_trans with (apply_constraints cs s).
+      + exact Hmono.
+      + apply IHf'. apply evaluate_monotone. }
+  apply Hgen. apply evaluate_monotone.
 Qed.
 
 (** The key insight: nonexpansive constraints propagate existing
@@ -117,18 +122,22 @@ Proof.
   destruct c; simpl in Hne; try contradiction; simpl in Heval.
   - (* Fixed node w0 *)
     injection Heval as <- <-.
-    apply (Hfixed n w). reflexivity.
-  - (* MaxOf node left right *)
-    destruct ((lookup st n1 =? 0) && (lookup st n2 =? 0))%bool eqn:Econd;
+    apply (Hfixed node w0). reflexivity.
+  - (* MaxOf node lsrc rsrc *)
+    destruct ((lookup st lsrc =? 0) && (lookup st rsrc =? 0))%bool eqn:Econd;
     [discriminate | injection Heval as <- <-].
-    assert (H1 := lookup_le_fold_max st n1).
-    assert (H2 := lookup_le_fold_max st n2). lia.
-  - (* LeftMinusConst node left amount *)
-    destruct (lookup st n1 =? 0) eqn:E; [discriminate | injection Heval as <- <-].
-    assert (H1 := lookup_le_fold_max st n1). lia.
+    assert (H1 := lookup_le_fold_max st lsrc).
+    assert (H2 := lookup_le_fold_max st rsrc). lia.
+  - (* LeftMinusConst node src shift_amount *)
+    destruct (lookup st src =? 0) eqn:E; [discriminate | injection Heval as <- <-].
+    assert (H1 := lookup_le_fold_max st src).
+    remember (lookup st src - shift_amount) as diff eqn:Hdiff.
+    destruct diff.
+    + exact (exists_pos_implies_max_ge_1 st Hpos).
+    + lia.
   - (* SameAs node source *)
-    destruct (lookup st n0 =? 0) eqn:E; [discriminate | injection Heval as <- <-].
-    exact (lookup_le_fold_max st n0).
+    destruct (lookup st source =? 0) eqn:E; [discriminate | injection Heval as <- <-].
+    exact (lookup_le_fold_max st source).
   - (* Boolean node *)
     injection Heval as <- <-.
     exact (exists_pos_implies_max_ge_1 st Hpos).

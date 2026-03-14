@@ -117,6 +117,15 @@ fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
                 let expr = emit_expr_firrtl(&cx.combination_logic);
                 out.push_str(&format!("    connect {} , {}\n", cx.output_signal, expr));
             }
+            CompiledGuard::DynamicCounter(dc) => {
+                out.push_str(&format!(
+                    "\n    ; Dynamic counter guard: {} (max {} cycles)\n",
+                    dc.name, dc.max_delay
+                ));
+                let width = dc.counter_width();
+                out.push_str(&format!("    reg {} : UInt<{}>, clock\n", dc.counter_signal, width));
+                out.push_str(&format!("    wire {} : UInt<1>\n", dc.output_signal));
+            }
         }
     }
 }

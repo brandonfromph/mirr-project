@@ -223,6 +223,15 @@ fn emit_temporal_subgraph(netlist: &TemporalNetlist, out: &mut String) {
                 ));
                 nodes_emitted += 1;
             }
+            CompiledGuard::DynamicCounter(dc) => {
+                out.push_str(&format!(
+                    "    {} [label=\"DYN: {} (max {}c)\" shape=record];\n",
+                    sanitize_id(&dc.output_signal),
+                    dc.name,
+                    dc.max_delay,
+                ));
+                nodes_emitted += 1;
+            }
         }
     }
 

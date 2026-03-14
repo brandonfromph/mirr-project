@@ -77,7 +77,9 @@ code {
 }
 
 /* Sections — overflow-x for wide tables on narrow screens */
-section { overflow-x: auto; }
+section { overflow-x: auto; scrollbar-width: thin; }
+section::-webkit-scrollbar { height: 8px; }
+section::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
 
 /* Claims */
 #claims ol { padding-left: 1.25rem; }
@@ -147,10 +149,13 @@ textarea, pre.output {
 }
 pre.output {
   overflow: auto;
+  scrollbar-width: thin;
   white-space: pre;
   margin: 0;
   min-height: 300px;
 }
+pre.output::-webkit-scrollbar { height: 8px; width: 8px; }
+pre.output::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
 pre.output.error { color: var(--error); }
 textarea:focus-visible {
   outline: 2px solid var(--cyan);
@@ -194,7 +199,10 @@ textarea:focus-visible {
   padding: 1rem;
   font-size: 0.85rem;
   overflow: auto;
+  scrollbar-width: thin;
 }
+#citation-block::-webkit-scrollbar { height: 8px; width: 8px; }
+#citation-block::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
 
 /* Footer */
 footer {
@@ -234,8 +242,11 @@ footer a { color: var(--text-tertiary); }
   gap: 0.5rem;
   align-items: center;
   overflow-x: auto;
+  scrollbar-width: thin;
   padding: 1rem 0;
 }
+.pipeline-viz::-webkit-scrollbar { height: 8px; }
+.pipeline-viz::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
 .pipeline-stage {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
@@ -245,16 +256,6 @@ footer a { color: var(--text-tertiary); }
   border: 1px solid var(--border-subtle);
   transition: all 150ms;
   white-space: nowrap;
-}
-.pipeline-stage.active {
-  background: var(--glow-cyan);
-  border-color: var(--cyan);
-  color: var(--cyan);
-}
-.pipeline-stage.error {
-  background: var(--glow-error);
-  border-color: var(--error);
-  color: var(--error);
 }
 .pipeline-arrow { color: var(--text-ghost); font-size: 0.75rem; }
 
@@ -274,6 +275,9 @@ footer a { color: var(--text-tertiary); }
   font-family: var(--mono);
   font-size: 0.8rem;
 }
+.proof-bar { display: flex; height: 24px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-medium); margin: 1rem 0; }
+.proof-bar-proven { background: #4caf50; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
+.proof-bar-admitted { background: #ff9800; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
 /* Simulation panels */
 .sim-panel {
   background: var(--surface-1);
@@ -290,6 +294,7 @@ footer a { color: var(--text-tertiary); }
 .sim-controls {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
   align-items: center;
   margin-bottom: 0.75rem;
 }
@@ -301,7 +306,10 @@ footer a { color: var(--text-tertiary); }
   padding: 0.75rem;
   max-height: 300px;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
+.sim-output::-webkit-scrollbar { width: 8px; }
+.sim-output::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -320,10 +328,69 @@ footer a { color: var(--text-tertiary); }
   body { padding-left: 3rem; padding-right: 3rem; }
 }
 
+/* ── Search ── */
+.search-container {
+    position: relative;
+    max-width: 400px;
+    margin: 0.5rem auto 0;
+}
+#site-search {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--text-primary, #e0e0e0);
+    background: var(--bg-secondary, #1a1a2e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 6px;
+    outline: none;
+}
+#site-search:focus {
+    border-color: var(--cyan, #22d3ee);
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.15);
+}
+#search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary, #1a1a2e);
+    border: 1px solid var(--border-color, #333);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    z-index: 10;
+    isolation: isolate;
+}
+#search-results::-webkit-scrollbar { width: 8px; }
+#search-results::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
+.search-result-item {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-primary, #e0e0e0);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-color, #333);
+    font-size: 0.85rem;
+}
+.search-result-item:hover {
+    background: var(--bg-tertiary, #252545);
+}
+.search-no-results {
+    color: var(--text-secondary, #888);
+    font-style: italic;
+}
+.sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
 /* Print — paper renders as readable static page */
 @media print {
   .demo-controls, button, select, textarea, .pipeline-viz, .sim-panel, .sim-controls,
-  .editor-container, .highlight-overlay, nav[aria-label] { display: none; }
+  .editor-container, .highlight-overlay, nav[aria-label], .search-container { display: none; }
   pre.output { border: none; padding: 0; }
   .split-pane { display: block; }
   body { max-width: 100%; font-size: 11pt; color: #000; background: #fff; padding: 0; }
@@ -338,6 +405,15 @@ footer a { color: var(--text-tertiary); }
   .mirr-num, .mirr-bool { color: #b45309; }
   .mirr-op, .mirr-name { color: #000; }
   .mirr-cmt { color: #555; }
+  .meta { color: #1a1a1a; }
+  .claim-refs { color: #333; }
+  footer, footer a { color: #333; }
+  .mirr-ann { color: #5b21b6; }
+  .mirr-tag { color: #9d174d; }
+  pre.output.error { color: #b91c1c; }
+  .data-table tr.error td { color: #b91c1c; }
+  .proof-bar-proven { background: #333; color: #fff; }
+  .proof-bar-admitted { background: #666; color: #fff; }
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.75em; }
   @page { margin: 2cm; }
 }
@@ -388,4 +464,109 @@ footer a { color: var(--text-tertiary); }
 }
 .editor-container.highlight-active textarea {
   color: transparent;
+}
+
+/* ── Waveform Visualization ── */
+
+.waveform-svg {
+    background: var(--bg-secondary, #1a1a2e);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.waveform-svg::-webkit-scrollbar {
+    height: 8px;
+}
+
+.waveform-grid {
+    stroke: var(--border-color, #333);
+    stroke-width: 0.5;
+    stroke-dasharray: 2,4;
+}
+
+.waveform-signal-input { stroke: #4fc3f7; fill: none; stroke-width: 2; }
+.waveform-signal-guard { stroke: #66bb6a; fill: none; stroke-width: 2; }
+.waveform-signal-output { stroke: #ffb74d; fill: none; stroke-width: 2; }
+
+.waveform-signal-label {
+    fill: var(--text-primary, #e0e0e0);
+    font-size: 12px;
+    dominant-baseline: middle;
+}
+
+.waveform-value-label {
+    fill: var(--text-secondary, #b0b0b0);
+    font-size: 10px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+.waveform-cycle-label {
+    fill: var(--text-secondary, #888);
+    font-size: 10px;
+    text-anchor: middle;
+}
+
+/* ── Circuit Graph Visualization ── */
+
+.circuit-graph-svg {
+    background: var(--bg-secondary, #1a1a2e);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.circuit-node-Input { fill: #1565c0; stroke: #42a5f5; }
+.circuit-node-Output { fill: #2e7d32; stroke: #66bb6a; }
+.circuit-node-Guard { fill: #e65100; stroke: #ff9800; }
+.circuit-node-Reflex { fill: #6a1b9a; stroke: #ab47bc; }
+.circuit-node-Internal { fill: #37474f; stroke: #78909c; }
+
+.circuit-node-label {
+    fill: white;
+    font-size: 11px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+.circuit-edge {
+    stroke: var(--text-secondary, #666);
+    stroke-width: 1.5;
+    fill: none;
+    marker-end: url(#arrowhead);
+}
+
+.circuit-edge-label {
+    fill: var(--text-secondary, #888);
+    font-size: 9px;
+    text-anchor: middle;
+}
+
+.viz-panel {
+    margin-top: 1rem;
+    min-height: 100px;
+}
+
+.viz-error {
+    color: #ef5350;
+    padding: 1rem;
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+/* W3: Print overrides for visualization */
+@media print {
+    .waveform-svg { background: white; }
+    .waveform-signal-input { stroke: #1565c0; }
+    .waveform-signal-guard { stroke: #2e7d32; }
+    .waveform-signal-output { stroke: #e65100; }
+    .waveform-signal-label { fill: #000; }
+    .waveform-value-label { fill: #333; }
+    .waveform-cycle-label { fill: #333; }
+    .waveform-grid { stroke: #ccc; }
+    .circuit-graph-svg { background: white; }
+    .circuit-node-label { fill: #000; }
+    .circuit-edge { stroke: #333; }
+    .circuit-edge-label { fill: #333; }
 }

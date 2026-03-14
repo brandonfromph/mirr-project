@@ -176,6 +176,7 @@ module test_module {
             CompiledGuard::ShiftRegister(sr) => sr.name.as_str(),
             CompiledGuard::Counter(c) => c.name.as_str(),
             CompiledGuard::Complex(cx) => cx.name.as_str(),
+            CompiledGuard::DynamicCounter(dc) => dc.name.as_str(),
         })
         .collect();
 

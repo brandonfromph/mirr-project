@@ -134,6 +134,7 @@ fn bench_pipeline(c: &mut Criterion) {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let mut group = c.benchmark_group("pipeline");

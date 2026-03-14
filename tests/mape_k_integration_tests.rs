@@ -915,6 +915,7 @@ fn bridge_converts_always_property_from_mirr_source() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result =
@@ -964,6 +965,7 @@ fn bridge_converts_never_property_from_mirr_source() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
@@ -993,6 +995,7 @@ fn bridge_converts_eventually_within_from_mirr_source() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
@@ -1026,6 +1029,7 @@ property p_assume {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
@@ -1068,6 +1072,7 @@ module sensor_test {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
@@ -1095,6 +1100,7 @@ fn bridge_bool_sensor_has_correct_defaults() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
@@ -1121,6 +1127,7 @@ fn bridge_unsigned_sensor_has_midpoint_base() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
@@ -1151,6 +1158,7 @@ fn bridge_default_window_and_capacity() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
@@ -1186,6 +1194,7 @@ fn end_to_end_pipeline_bridge_simulator_normal() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
@@ -1218,7 +1227,8 @@ fn end_to_end_pipeline_with_mape_k_flag() {
         rspu: false,
         extended_typecheck: false,
         simulate: false,
-        mape_k: true, // enable MAPE-K stage in pipeline
+        mape_k: true,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed with mape_k=true");
@@ -1271,6 +1281,7 @@ module multi_prop {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
@@ -2006,6 +2017,7 @@ fn bridge_unsupported_always_implies_produces_error() {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");

@@ -23,6 +23,8 @@ pub struct PipelineConfig {
     pub typecheck: bool,
     /// Run Phase 3 simplification.
     pub simplify: bool,
+    /// Run SAT-based simplification after heuristic simplification.
+    pub sat_simplify: bool,
     /// Run Phase 4 width inference.
     pub width: bool,
     /// Run Phase 2 temporal lowering.
@@ -35,6 +37,12 @@ pub struct PipelineConfig {
     pub simulate: bool,
     /// Run MAPE-K autonomic simulation (requires temporal).
     pub mape_k: bool,
+    /// MAPE-K partition configuration (None = unified/default).
+    pub mape_k_partition: Option<crate::mape_k::partition::PartitionConfig>,
+    /// MAPE-K tick count override (None = use default 1024).
+    pub mape_k_ticks: Option<u32>,
+    /// Run register retiming optimization after temporal lowering.
+    pub retiming: bool,
 }
 
 impl Default for PipelineConfig {
@@ -42,12 +50,16 @@ impl Default for PipelineConfig {
         Self {
             typecheck: true,
             simplify: true,
+            sat_simplify: false,
             width: true,
             temporal: true,
             rspu: false,
             extended_typecheck: false,
             simulate: false,
             mape_k: false,
+            mape_k_partition: None,
+            mape_k_ticks: None,
+            retiming: false,
         }
     }
 }
@@ -58,6 +70,8 @@ pub struct PipelineResult {
     pub program: MirrProgram,
     /// Simplification stats (None if stage was skipped).
     pub simplify_stats: Option<SimplifyStats>,
+    /// SAT simplification stats (None if stage was skipped).
+    pub sat_stats: Option<SatSimplifyPipelineStats>,
     /// Width inference results (None if stage was skipped).
     pub width_result: Option<SccWidthResult>,
     /// Temporal netlist (None if stage was skipped).
@@ -72,6 +86,8 @@ pub struct PipelineResult {
     pub sim_result: Option<crate::emit::rspu_sim::SimResult>,
     /// MAPE-K simulation result (None if stage was skipped).
     pub mape_k_result: Option<crate::mape_k::MapeKResult>,
+    /// Retiming optimization stats (None if stage was skipped).
+    pub retiming_stats: Option<crate::temporal::retiming::RetimingStats>,
 }
 
 impl PipelineResult {
@@ -133,6 +149,10 @@ pub fn run_pipeline(
     // Stage 3: Simplify (optional).
     let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
 
+    // Stage 3b: SAT-based simplification (optional, runs after heuristic).
+    let sat_stats =
+        if config.sat_simplify { Some(sat_simplify_program(&mut program)) } else { None };
+
     // Stage 4: Width inference (optional). Always includes SCC.
     let width_result = if config.width {
         Some(width::infer_program_widths_with_scc(&program, type_map.as_ref()))
@@ -141,9 +161,21 @@ pub fn run_pipeline(
     };
 
     // Stage 5: Temporal lowering (optional).
-    let temporal_netlist = if config.temporal {
+    let mut temporal_netlist = if config.temporal {
         let mut compiler = TemporalGuardCompiler::new();
         Some(compiler.compile_temporal_guards(&program.module)?)
+    } else {
+        None
+    };
+
+    // Stage 5b: Retiming optimization (optional, requires temporal).
+    let retiming_stats = if config.retiming {
+        if let Some(ref mut netlist) = temporal_netlist {
+            let rconf = crate::temporal::retiming::RetimingConfig { enabled: true, max_passes: 4 };
+            Some(crate::temporal::retiming::retime(netlist, &rconf))
+        } else {
+            None
+        }
     } else {
         None
     };
@@ -151,6 +183,7 @@ pub fn run_pipeline(
     let mut result = PipelineResult {
         program,
         simplify_stats,
+        sat_stats,
         width_result,
         temporal_netlist,
         rspu_program: None,
@@ -158,6 +191,7 @@ pub fn run_pipeline(
         extended_type_map,
         sim_result: None,
         mape_k_result: None,
+        retiming_stats,
     };
 
     // Stage 6: R-SPU emission (optional, requires temporal).
@@ -182,8 +216,8 @@ pub fn run_pipeline(
         match crate::mape_k::bridge::bridge_from_pipeline(&result) {
             Ok(sim_config) => {
                 let mut sim = crate::mape_k::MapeKSimulator::new(sim_config);
-                const MAX_MAPE_K_TICKS: u64 = 1024;
-                result.mape_k_result = Some(sim.run(MAX_MAPE_K_TICKS));
+                let ticks = config.mape_k_ticks.map(|t| t.min(10_000) as u64).unwrap_or(1024);
+                result.mape_k_result = Some(sim.run(ticks));
             }
             Err(_bridge_errors) => {
                 // Bridge conversion failed — skip MAPE-K silently.
@@ -242,4 +276,42 @@ fn simplify_one(expr: &mut crate::ast::Expr, total: &mut SimplifyStats) {
     total.rules_applied += stats.rules_applied;
     total.nodes_before += stats.nodes_before;
     total.nodes_after += stats.nodes_after;
+}
+
+/// Aggregate SAT simplification statistics for the full pipeline.
+#[derive(Debug, Clone, Default)]
+pub struct SatSimplifyPipelineStats {
+    /// Total SAT equivalence checks performed.
+    pub checks_performed: usize,
+    /// Total checks that confirmed equivalence.
+    pub equivalences_confirmed: usize,
+    /// Whether any check hit solver bounds.
+    pub had_unknown: bool,
+}
+
+/// Run SAT-based simplification on all guard conditions and reflex assignments.
+///
+/// Bounded: delegates to `sat::simplify_with_sat` which has internal bounds.
+fn sat_simplify_program(program: &mut MirrProgram) -> SatSimplifyPipelineStats {
+    let mut total = SatSimplifyPipelineStats::default();
+
+    for g in &mut program.module.guards {
+        let result = crate::sat::simplify_with_sat(g.condition.clone());
+        g.condition = result.expr;
+        total.checks_performed += result.checks_performed;
+        total.equivalences_confirmed += result.equivalences_confirmed;
+        total.had_unknown |= result.had_unknown;
+    }
+
+    for r in &mut program.module.reflexes {
+        for a in &mut r.assignments {
+            let result = crate::sat::simplify_with_sat(a.value.clone());
+            a.value = result.expr;
+            total.checks_performed += result.checks_performed;
+            total.equivalences_confirmed += result.equivalences_confirmed;
+            total.had_unknown |= result.had_unknown;
+        }
+    }
+
+    total
 }

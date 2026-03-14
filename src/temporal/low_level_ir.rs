@@ -151,6 +151,8 @@ pub enum CompiledGuard {
     Counter(CounterGuard),
     /// Complex guard with multiple components
     Complex(ComplexGuard),
+    /// Dynamic counter guard for expression-valued delays
+    DynamicCounter(DynamicCounterGuard),
 }
 
 /// Shift register-based temporal guard
@@ -200,6 +202,30 @@ pub struct ComplexGuard {
     pub output_signal: String,
     /// Final combination logic
     pub combination_logic: Expr,
+}
+
+/// Maximum dynamic delay in cycles (2^20).
+/// NASA P10: all counter registers bounded.
+pub const MAX_DYNAMIC_DELAY: u64 = 1_048_576;
+
+/// A guard with a dynamic (expression-valued) delay.
+///
+/// Compiles to a counter that counts up to a runtime-computed target.
+/// The `max_delay` field bounds the counter register width.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DynamicCounterGuard {
+    /// Original guard name
+    pub name: String,
+    /// Output signal name
+    pub output_signal: String,
+    /// Lowered condition semantics
+    pub condition_kind: ConditionKind,
+    /// The expression computing the delay cycle count at runtime.
+    pub delay_expr: Expr,
+    /// Static upper bound on the delay value (for counter width sizing).
+    pub max_delay: u64,
+    /// Name of the counter register signal.
+    pub counter_signal: String,
 }
 
 /// Generated signal for temporal implementation
@@ -334,6 +360,9 @@ impl TemporalNetlist {
                     max_delay = max_delay.max(c.target_count);
                 }
                 CompiledGuard::Complex(_) => {}
+                CompiledGuard::DynamicCounter(dc) => {
+                    max_delay = max_delay.max(dc.max_delay);
+                }
             }
         }
         self.statistics.max_delay_cycles = max_delay;
@@ -456,6 +485,33 @@ impl ComplexGuard {
     /// Create a complex guard
     pub fn new(name: String, sub_guards: Vec<CompiledGuard>, combination_logic: Expr) -> Self {
         Self { output_signal: format!("{name}_out"), name, sub_guards, combination_logic }
+    }
+}
+
+impl DynamicCounterGuard {
+    /// Create a dynamic counter guard for expression-valued delays.
+    pub fn new(
+        name: String,
+        condition_kind: ConditionKind,
+        delay_expr: Expr,
+        max_delay: u64,
+    ) -> Self {
+        Self {
+            counter_signal: format!("{name}_dyn_counter"),
+            output_signal: format!("{name}_out"),
+            name,
+            condition_kind,
+            delay_expr,
+            max_delay,
+        }
+    }
+
+    /// Bit-width needed for the counter register.
+    pub fn counter_width(&self) -> u32 {
+        if self.max_delay <= 1 {
+            return 1;
+        }
+        64 - (self.max_delay - 1).leading_zeros()
     }
 }
 

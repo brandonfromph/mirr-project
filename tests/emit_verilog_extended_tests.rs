@@ -139,6 +139,8 @@ fn result_from_module(module: Module) -> PipelineResult {
         extended_type_map: None,
         sim_result: None,
         mape_k_result: None,
+        sat_stats: None,
+        retiming_stats: None,
     }
 }
 
@@ -154,6 +156,8 @@ fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResu
         extended_type_map: None,
         sim_result: None,
         mape_k_result: None,
+        sat_stats: None,
+        retiming_stats: None,
     }
 }
 

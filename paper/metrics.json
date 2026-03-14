@@ -1,38 +1,38 @@
 {
   "version": "0.3.0",
-  "generated": "2026-03-13",
+  "generated": "2026-03-14",
   "compiler": {
-    "totalSourceLines": 26990,
-    "totalSourceFiles": 92,
+    "totalSourceLines": 30719,
+    "totalSourceFiles": 101,
     "emissionBackends": 9,
     "pipelineStages": 9,
-    "distinctErrorCodes": 189,
+    "distinctErrorCodes": 197,
     "typeRules": 16,
     "extendedTypeFeatures": 8,
     "simplificationRules": 33,
     "synthesisExamples": 11
   },
   "testing": {
-    "totalTests": 2491,
-    "integrationTests": 2254,
-    "unitTests": 259,
-    "testSourceLines": 42437,
-    "testToSourceRatio": "1.57:1"
+    "totalTests": 2601,
+    "integrationTests": 2309,
+    "unitTests": 292,
+    "testSourceLines": 43432,
+    "testToSourceRatio": "1.41:1"
   },
   "proofs": {
     "rocqTheorems": 55,
-    "rocqMechanized": 53,
-    "rocqAxiomatized": 2,
-    "rocqProofLines": 1833,
-    "rocqFiles": 14,
-    "mechanizationRate": "96.4%",
-    "admittedProofs": ["solver_terminates", "step_one_monotone"]
+    "rocqMechanized": 52,
+    "rocqAxiomatized": 3,
+    "rocqProofLines": 1906,
+    "rocqFiles": 12,
+    "mechanizationRate": "94.5%",
+    "admittedProofs": ["solver_terminates", "step_one_monotone", "min_bits_minimal"]
   },
   "backends": {
     "widthModuleLines": 2108,
     "rspuBackendLines": 3291,
     "rspuInstructions": 30,
-    "mapekSubmodules": 8
+    "mapekSubmodules": 10
   },
   "infrastructure": {
     "nasaP10Compliant": true,

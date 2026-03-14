@@ -151,6 +151,7 @@ fn guard_name(guard: &CompiledGuard) -> String {
         CompiledGuard::ShiftRegister(sr) => sr.name.clone(),
         CompiledGuard::Counter(cg) => cg.name.clone(),
         CompiledGuard::Complex(cx) => cx.name.clone(),
+        CompiledGuard::DynamicCounter(dc) => dc.name.clone(),
     }
 }
 
@@ -230,6 +231,17 @@ fn emit_temporal_guards(
                     for sub in cx.sub_guards.iter().rev() {
                         work.push(GuardWork::Process(sub));
                     }
+                }
+                CompiledGuard::DynamicCounter(dc) => {
+                    let gid = guard_map[&dc.name];
+                    let cond_reg = condition_to_reg(&dc.condition_kind, regs);
+                    instrs.push(RspuInstruction::CtrInit {
+                        guard: gid,
+                        target: dc.max_delay,
+                        cond: cond_reg,
+                    });
+                    instrs.push(RspuInstruction::CtrTick { guard: gid });
+                    instrs.push(RspuInstruction::CtrQuery { dst: cond_reg, guard: gid });
                 }
             },
             GuardWork::Combine { name, sub_guards } => {

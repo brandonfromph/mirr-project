@@ -4,16 +4,14 @@
 //
 // GPL-3.0 — see LICENSE for terms.
 
-var CACHE_NAME = 'mirr-lra-v6';
+var CACHE_NAME = 'mirr-v8';
 var ASSETS = [
   'index.html',
   'paper.css',
   'paper.js',
   'lra-client.js',
   'lra-card.svg',
-  'metrics.json',
-  './demos/mirr_wasm.js',
-  './demos/mirr_wasm_bg.wasm'
+  'metrics.json'
 ];
 
 // ── LRA Protocol v1.0 — MIRR metadata ──────────────────────────────
@@ -24,7 +22,7 @@ var LRA_META = {
   date: '2026-03',
   license: 'GPL-3.0',
   version: '0.3.0',
-  abstract: 'MIRR is an open-source Rust compiler for safety-critical hardware-software co-design. It compiles temporal guards, guarded reflexes, and LTL safety properties through a 9-stage deterministic pipeline into 9 emission backends. Width inference is backed by 1,833 lines of Rocq proofs with 55 theorems (53 mechanized, 96.4% mechanization rate).',
+  abstract: 'MIRR is an open-source Rust compiler for safety-critical hardware-software co-design. It compiles temporal guards, guarded reflexes, and LTL safety properties through a 9-stage deterministic pipeline into 9 emission backends. Width inference is backed by 1,833 lines of Rocq proofs with 55 theorems (52 mechanized, 94.5% mechanization rate).',
   keywords: ['HDL', 'compiler', 'safety-critical', 'formal verification',
              'width inference', 'SystemVerilog', 'FIRRTL', 'WASM',
              'NASA Power-of-10'],

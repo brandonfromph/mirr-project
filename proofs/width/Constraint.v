@@ -10,6 +10,7 @@
 
 Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.PeanoNat.
+Require Import Coq.Bool.Bool.
 Require Import Coq.micromega.Lia.
 Require Import Types.
 
@@ -25,31 +26,31 @@ Require Import Types.
 Definition eval_constraint (c : wconstraint) (st : solver_state) : option (nat * width) :=
   match c with
   | Fixed node w => Some (node, w)
-  | MaxPlusOne node left right =>
-      let lw := lookup st left in
-      let rw := lookup st right in
+  | MaxPlusOne node lsrc rsrc =>
+      let lw := lookup st lsrc in
+      let rw := lookup st rsrc in
       if (lw =? 0) && (rw =? 0) then None
       else Some (node, S (Nat.max lw rw))
-  | MaxOf node left right =>
-      let lw := lookup st left in
-      let rw := lookup st right in
+  | MaxOf node lsrc rsrc =>
+      let lw := lookup st lsrc in
+      let rw := lookup st rsrc in
       if (lw =? 0) && (rw =? 0) then None
       else Some (node, Nat.max lw rw)
-  | SumOf node left right =>
-      let lw := lookup st left in
-      let rw := lookup st right in
+  | SumOf node lsrc rsrc =>
+      let lw := lookup st lsrc in
+      let rw := lookup st rsrc in
       if (lw =? 0) && (rw =? 0) then None
       else Some (node, lw + rw)
-  | LeftPlusConst node left amount =>
-      let lw := lookup st left in
+  | LeftPlusConst node src amount =>
+      let lw := lookup st src in
       if lw =? 0 then None
       else Some (node, lw + amount)
-  | LeftPlusMaxShift node left =>
-      let lw := lookup st left in
+  | LeftPlusMaxShift node src =>
+      let lw := lookup st src in
       if lw =? 0 then None
       else Some (node, lw + 63)
-  | LeftMinusConst node left amount =>
-      let lw := lookup st left in
+  | LeftMinusConst node src amount =>
+      let lw := lookup st src in
       if lw =? 0 then None
       else Some (node, Nat.max 1 (lw - amount))
   | SameAs node source =>
@@ -116,13 +117,6 @@ Theorem negate_unsigned_sound : forall a wa,
   a < Nat.pow 2 wa ->
   a < Nat.pow 2 (S wa).
 Proof.
-  intros. lia.
+  intros. rewrite Nat.pow_succ_r; [|lia]. lia.
 Qed.
 
-(** T8b: negate_signed_same — signed negate preserves width. *)
-Theorem negate_signed_same : forall a wa,
-  a < Nat.pow 2 wa ->
-  a < Nat.pow 2 wa.
-Proof.
-  auto.
-Qed.

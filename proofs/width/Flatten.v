@@ -8,6 +8,7 @@
 
 Require Import Coq.Arith.Arith.
 Require Import Coq.Lists.List.
+Require Import Coq.micromega.Lia.
 Require Import Types.
 Import ListNotations.
 

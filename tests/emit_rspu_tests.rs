@@ -22,6 +22,7 @@ fn rspu_config() -> PipelineConfig {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     }
 }
 
@@ -44,6 +45,7 @@ fn temporal_config_no_rspu() -> PipelineConfig {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     }
 }
 

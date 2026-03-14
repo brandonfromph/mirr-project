@@ -31,7 +31,8 @@ Proof. unfold state_le. auto. Qed.
 Lemma state_le_trans : forall s1 s2 s3,
   s1 ⊑ s2 -> s2 ⊑ s3 -> s1 ⊑ s3.
 Proof.
-  unfold state_le. intros. lia.
+  unfold state_le. intros s1 s2 s3 H12 H23 i.
+  specialize (H12 i). specialize (H23 i). lia.
 Qed.
 
 (** ** T2: Monotonicity of individual constraint evaluation
@@ -54,56 +55,59 @@ Proof.
   - (* Fixed *)
     injection H1 as <- <-. injection H2 as <- <-. split; [reflexivity | lia].
   - (* MaxPlusOne *)
-    destruct ((lookup s1 n =? 0) && (lookup s1 n0 =? 0))%bool eqn:E1; [discriminate|].
-    destruct ((lookup s2 n =? 0) && (lookup s2 n0 =? 0))%bool eqn:E2; [discriminate|].
+    destruct ((lookup s1 lsrc =? 0) && (lookup s1 rsrc =? 0))%bool eqn:E1; [discriminate|].
+    destruct ((lookup s2 lsrc =? 0) && (lookup s2 rsrc =? 0))%bool eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    assert (Hl := lookup_monotone _ _ n Hle).
-    assert (Hr := lookup_monotone _ _ n0 Hle). lia.
+    assert (Hl := lookup_monotone _ _ lsrc Hle).
+    assert (Hr := lookup_monotone _ _ rsrc Hle). lia.
   - (* MaxOf *)
-    destruct ((lookup s1 n =? 0) && (lookup s1 n0 =? 0))%bool eqn:E1; [discriminate|].
-    destruct ((lookup s2 n =? 0) && (lookup s2 n0 =? 0))%bool eqn:E2; [discriminate|].
+    destruct ((lookup s1 lsrc =? 0) && (lookup s1 rsrc =? 0))%bool eqn:E1; [discriminate|].
+    destruct ((lookup s2 lsrc =? 0) && (lookup s2 rsrc =? 0))%bool eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    assert (Hl := lookup_monotone _ _ n Hle).
-    assert (Hr := lookup_monotone _ _ n0 Hle). lia.
+    assert (Hl := lookup_monotone _ _ lsrc Hle).
+    assert (Hr := lookup_monotone _ _ rsrc Hle). lia.
   - (* SumOf *)
-    destruct ((lookup s1 n =? 0) && (lookup s1 n0 =? 0))%bool eqn:E1; [discriminate|].
-    destruct ((lookup s2 n =? 0) && (lookup s2 n0 =? 0))%bool eqn:E2; [discriminate|].
+    destruct ((lookup s1 lsrc =? 0) && (lookup s1 rsrc =? 0))%bool eqn:E1; [discriminate|].
+    destruct ((lookup s2 lsrc =? 0) && (lookup s2 rsrc =? 0))%bool eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    assert (Hl := lookup_monotone _ _ n Hle).
-    assert (Hr := lookup_monotone _ _ n0 Hle). lia.
+    assert (Hl := lookup_monotone _ _ lsrc Hle).
+    assert (Hr := lookup_monotone _ _ rsrc Hle). lia.
   - (* LeftPlusConst *)
-    destruct (lookup s1 n =? 0) eqn:E1; [discriminate|].
-    destruct (lookup s2 n =? 0) eqn:E2; [discriminate|].
+    destruct (lookup s1 src =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 src =? 0) eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    assert (Hl := lookup_monotone _ _ n Hle). lia.
+    assert (Hl := lookup_monotone _ _ src Hle). lia.
   - (* LeftPlusMaxShift *)
-    destruct (lookup s1 n =? 0) eqn:E1; [discriminate|].
-    destruct (lookup s2 n =? 0) eqn:E2; [discriminate|].
+    destruct (lookup s1 src =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 src =? 0) eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    assert (Hl := lookup_monotone _ _ n Hle). lia.
+    assert (Hl := lookup_monotone _ _ src Hle). lia.
   - (* LeftMinusConst *)
-    destruct (lookup s1 n =? 0) eqn:E1; [discriminate|].
-    destruct (lookup s2 n =? 0) eqn:E2; [discriminate|].
+    destruct (lookup s1 src =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 src =? 0) eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    assert (Hl := lookup_monotone _ _ n Hle). lia.
+    assert (Hl := lookup_monotone _ _ src Hle).
+    (* Nat.max 1 (x - c) was simpl'd. Fold it back for lia. *)
+    change (match ?x with 0 => 1 | S m' => S m' end) with (Nat.max 1 x) in *.
+    lia.
   - (* SameAs *)
-    destruct (lookup s1 n0 =? 0) eqn:E1; [discriminate|].
-    destruct (lookup s2 n0 =? 0) eqn:E2; [discriminate|].
+    destruct (lookup s1 source =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 source =? 0) eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    exact (lookup_monotone _ _ n0 Hle).
+    exact (lookup_monotone _ _ source Hle).
   - (* SameAsPlusOne *)
-    destruct (lookup s1 n0 =? 0) eqn:E1; [discriminate|].
-    destruct (lookup s2 n0 =? 0) eqn:E2; [discriminate|].
+    destruct (lookup s1 source =? 0) eqn:E1; [discriminate|].
+    destruct (lookup s2 source =? 0) eqn:E2; [discriminate|].
     injection H1 as <- <-. injection H2 as <- <-.
     split; [reflexivity|].
-    assert (Hl := lookup_monotone _ _ n0 Hle). lia.
+    assert (Hl := lookup_monotone _ _ source Hle). lia.
   - (* Boolean *)
     injection H1 as <- <-. injection H2 as <- <-. split; [reflexivity | lia].
 Qed.
@@ -135,7 +139,7 @@ Proof.
   - intros. simpl. lia.
   - intros [|i'] w Hw j; simpl.
     + (* i = 0 *)
-      destruct j; simpl; lia.
+      simpl in Hw. destruct j; simpl; lia.
     + (* i = S i' *)
       destruct j; simpl.
       * lia.

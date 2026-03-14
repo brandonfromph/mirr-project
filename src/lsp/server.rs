@@ -175,6 +175,7 @@ fn compile_and_diagnose(uri: &str, source: &str) -> Value {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
 
     match run_pipeline(source, &config) {

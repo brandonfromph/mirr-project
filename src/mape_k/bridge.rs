@@ -458,6 +458,7 @@ mod tests {
         PipelineResult {
             program: MirrProgram { patterns: Vec::new(), module },
             simplify_stats: None,
+            sat_stats: None,
             width_result: None,
             temporal_netlist: None,
             rspu_program: None,
@@ -465,6 +466,7 @@ mod tests {
             extended_type_map: None,
             sim_result: None,
             mape_k_result: None,
+            retiming_stats: None,
         }
     }
 

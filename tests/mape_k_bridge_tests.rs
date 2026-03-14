@@ -57,6 +57,8 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         extended_type_map: None,
         sim_result: None,
         mape_k_result: None,
+        sat_stats: None,
+        retiming_stats: None,
     }
 }
 
@@ -73,6 +75,8 @@ fn parse_to_pipeline(source: &str) -> PipelineResult {
         extended_type_map: None,
         sim_result: None,
         mape_k_result: None,
+        sat_stats: None,
+        retiming_stats: None,
     }
 }
 
@@ -1649,6 +1653,7 @@ module m {
         extended_typecheck: false,
         simulate: false,
         mape_k: true,
+        ..PipelineConfig::default()
     };
     let result =
         run_pipeline(source, &config).expect("full pipeline should succeed for simple module");
@@ -1688,6 +1693,7 @@ module m {
         extended_typecheck: false,
         simulate: false,
         mape_k: false,
+        ..PipelineConfig::default()
     };
     let result =
         run_pipeline(source, &config).expect("full pipeline should succeed for simple module");

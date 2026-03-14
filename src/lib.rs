@@ -39,6 +39,7 @@ pub mod mirr_executor;
 pub mod mirr_runtime;
 pub mod parser;
 pub mod pipeline;
+pub mod sat;
 pub mod sexpr;
 pub mod simplify;
 pub mod span;

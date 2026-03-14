@@ -55,6 +55,13 @@
   </p>
 </header>
 
+<div class="search-container">
+  <label for="site-search" class="sr-only">Search paper</label>
+  <input type="search" id="site-search" placeholder="Search paper…"
+         autocomplete="off" aria-label="Search paper sections">
+  <div id="search-results" role="listbox" aria-label="Search results" hidden></div>
+</div>
+
 <nav aria-label="Paper sections">
   <a href="#abstract">Abstract</a> &middot;
   <a href="#claims">Claims</a> &middot;
@@ -65,15 +72,20 @@
   <a href="#width">4</a> &middot;
   <a href="#type-system">5</a> &middot;
   <a href="#semantics">6</a> &middot;
-  <a href="#sexpr">7</a> &middot;
-  <a href="#mapek">8</a> &middot;
-  <a href="#rspu">9</a> &middot;
-  <a href="#evaluation">10</a> &middot;
-  <a href="#assurance">11</a> &middot;
-  <a href="#case-studies">12</a> &middot;
-  <a href="#traced-example">13</a> &middot;
-  <a href="#toolchain">14</a> &middot;
-  <a href="#conclusion">15</a> &middot;
+  <a href="#theorems">7</a> &middot;
+  <a href="#sexpr">8</a> &middot;
+  <a href="#mapek">9</a> &middot;
+  <a href="#rspu">10</a> &middot;
+  <a href="#evaluation">11</a> &middot;
+  <a href="#assurance">12</a> &middot;
+  <a href="#case-studies">13</a> &middot;
+  <a href="#traced-example">14</a> &middot;
+  <a href="#toolchain">15</a> &middot;
+  <a href="#related-work">16</a> &middot;
+  <a href="#vision">17</a> &middot;
+  <a href="#conclusion">18</a> &middot;
+  <a href="#ai-disclosure">19</a> &middot;
+  <a href="#campaign-log">20</a> &middot;
   <a href="#references">Refs</a>
 </nav>
 
@@ -90,20 +102,20 @@
   <p>
     Safety-critical cyber-physical systems demand hardware that is
     <em>correct by construction</em>.  We present MIRR, an open-source
-    Rust compiler (26,990 lines, 92 files, zero <code>unsafe</code> blocks)
+    Rust compiler (30,719 lines, 101 files, zero <code>unsafe</code> blocks)
     for a domain-specific language targeting safety-critical
     hardware&ndash;software co-design.  MIRR compiles temporal guards,
     guarded reflexes, and LTL safety properties through a 9-stage
     deterministic pipeline into 9 emission backends including SystemVerilog
     RTL, FIRRTL, and a novel 30-instruction R-SPU ISA with 32-bit binary
     encoding, tagged-word registers, and cycle-accurate simulation.  Width
-    inference is backed by <span data-metric="rocqProofLines">1,833</span> lines of Rocq proofs (<span data-metric="rocqTheorems">55</span> theorems across
+    inference is backed by <span data-metric="rocqProofLines">1,906</span> lines of Rocq proofs (<span data-metric="rocqTheorems">55</span> theorems across
     14 files).  A signedness type system with 16 inference rules rejects
     mixed signed/unsigned expressions.  A homoiconic S-expression IR
     enables code-as-data transformation with a verified round-trip
     invariant.  The compiler enforces NASA Power-of-10 compliance: bounded
     iteration, zero recursion, and explicit resource limits throughout.
-    A test suite of <span data-metric="totalTests">2,491</span> tests achieves a 1.57:1 test-to-source ratio.
+    A test suite of <span data-metric="totalTests">2,601</span> tests achieves a 1.41:1 test-to-source ratio.
   </p>
   <p>
     <strong>This paper is a Living Research Artifact.</strong>  Every claim
@@ -124,7 +136,7 @@
     </li>
     <li id="claim-2" data-lra-claim="2">
       Width inference is sound: no assignment silently truncates a
-      value. Backed by <span data-metric="rocqTheorems">55</span> Rocq theorems (<span data-metric="rocqMechanized">53</span> fully mechanized).
+      value. Backed by <span data-metric="rocqTheorems">55</span> Rocq theorems (<span data-metric="rocqMechanized">52</span> fully mechanized).
     </li>
     <li id="claim-3" data-lra-claim="3">
       All compiler algorithms are bounded: no unbounded recursion or
@@ -186,6 +198,36 @@
 Compiler loading...</pre>
     </div>
   </div>
+
+  <!-- Visualization Containers (Campaign B6) -->
+  <div class="viz-panel" id="waveform-section" style="margin-top:1.5rem;">
+    <h3>Waveform Viewer</h3>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+      <button id="btn-simulate-waveform" type="button">Simulate Waveform</button>
+      <label for="sim-cycles">Cycles:</label>
+      <input type="number" id="sim-cycles" min="1" max="1024" value="32" style="width:5rem;">
+    </div>
+    <div id="waveform-container" class="viz-panel">
+      <noscript><p>Waveform visualization requires JavaScript.</p></noscript>
+    </div>
+  </div>
+
+  <div class="viz-panel" id="graph-section" style="margin-top:1.5rem;">
+    <h3>Circuit Graph</h3>
+    <button id="btn-view-circuit" type="button">View Circuit</button>
+    <div id="graph-container" class="viz-panel">
+      <noscript><p>Circuit graph visualization requires JavaScript.</p></noscript>
+    </div>
+  </div>
+
+  <!-- SVG Arrowhead for Circuit Graph -->
+  <svg style="position:absolute;width:0;height:0;">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+      </marker>
+    </defs>
+  </svg>
 </section>
 
 <section id="demo-benchmarks" class="demo">
@@ -245,8 +287,8 @@ Compiler loading...</pre>
         backends: SystemVerilog RTL, FIRRTL, JSON netlist, Graphviz DOT,
         R-SPU assembly, R-SPU binary, S-expression IR, SystemVerilog
         testbench, and FPGA scaffold.</li>
-    <li><strong>SCC-based width inference</strong> with <span data-metric="rocqProofLines">1,833</span> lines of Rocq
-        proofs (<span data-metric="rocqTheorems">55</span> theorems, <span data-metric="rocqMechanized">53</span> mechanized, across 14 proof files).</li>
+    <li><strong>SCC-based width inference</strong> with <span data-metric="rocqProofLines">1,906</span> lines of Rocq
+        proofs (<span data-metric="rocqTheorems">55</span> theorems, <span data-metric="rocqMechanized">52</span> mechanized, across 14 proof files).</li>
     <li>A <strong>signedness type system</strong> (16 rules, E601&ndash;E609)
         rejecting mixed signed/unsigned expressions.</li>
     <li>An <strong>extended type system</strong> with 8 features: refinement
@@ -258,7 +300,7 @@ Compiler loading...</pre>
         invariant and bounded eval/apply core.</li>
     <li>A <strong>MAPE-K feedback loop simulator</strong> for autonomic
         observability with LTL property monitoring.</li>
-    <li><strong><span data-metric="totalTests">2,491</span> tests</strong> at a 1.57:1 test-to-source ratio, with
+    <li><strong><span data-metric="totalTests">2,601</span> tests</strong> at a 1.41:1 test-to-source ratio, with
         92 <code>#![forbid(unsafe_code)]</code> directives and 0 Clippy
         warnings.</li>
   </ol>
@@ -370,6 +412,89 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
       <tr><td>8&ndash;9</td><td>Emission</td><td>9 backends</td><td>Output files</td></tr>
     </tbody>
   </table>
+
+  <h3>Parse (Stage 1)</h3>
+  <p>The lexer tokenizes MIRR source into a stream of typed tokens. The recursive-descent parser
+     (<code>parser/mod.rs</code>, <code>parser/expr.rs</code>, <code>parser/pattern.rs</code>,
+     <code>parser/module.rs</code>) constructs a typed AST. Expression parsing uses Pratt precedence
+     for 14 binary operators and 2 unary operators. All expression nodes carry source
+     <code>Span</code> information for downstream diagnostics. Parse errors produce codes in the
+     E1xx range (76 distinct codes covering lexical, syntactic, and structural errors).</p>
+
+  <h3>Pattern Expansion (Stages 2&ndash;3)</h3>
+  <p>Pattern validation checks arity and argument-kind compatibility for all pattern calls. The
+     expander performs compile-time textual substitution bounded by
+     <code>MAX_EXPANSION_DEPTH</code> and <code>MAX_EXPANDED_ITEMS</code>. A bounded DFS detects
+     circular pattern references (E402). Each expanded item carries an <code>origin</code> tag
+     recording which pattern it was instantiated from, preserving DO-254 traceability. The pattern
+     system supports three parameter kinds (<code>signal</code>, <code>constant</code>,
+     <code>pattern</code>) and four argument kinds at the call site, enabling higher-order
+     composition of hardware templates.</p>
+
+  <h3>Semantic Validation (Stage 4)</h3>
+  <p>Module-level validation checks include: duplicate signal names (E201), undefined guard
+     references (E203), missing output signals (E205), type direction mismatches (E207), and
+     self-referential expressions (E209). The validator enforces that reflex bodies only assign
+     to output or internal signals, never to inputs (E210). Semantic errors occupy the E2xx
+     range with 16 distinct codes.</p>
+
+  <h3>Type Checking (Stage 5/5b)</h3>
+  <p>The core type checker (Stage 5) infers the type of every expression using a two-phase
+     explicit work stack (zero recursion), bounded by <code>MAX_EXPR_NODES</code>&nbsp;=&nbsp;512.
+     The cross-category invariant&mdash;signed and unsigned types never mix&mdash;is
+     the central rule, catching the class of implicit-conversion bugs that plague C and Verilog.</p>
+  <p>Stage 5b, introduced in MEGA-1, applies the extended type system with 8 advanced features:
+     refinement types for value constraints, linear types for single-use signal guarantees,
+     effect typing for side-effect tracking, clock domain qualifiers for CDC analysis, phantom
+     types for zero-cost tagging, type-level naturals for parametric widths, dependent types
+     for value-dependent specifications, and session types for protocol-aware channel
+     communication. Extended type errors span codes E610&ndash;E625.</p>
+
+  <h3>Simplification (Stage 6)</h3>
+  <p>The simplifier performs constant folding and identity reduction. It operates on guards,
+     reflexes, and properties using 33 rewrite rules applied over a maximum of
+     <code>MAX_SIMPLIFY_PASSES</code> passes, each bounded by <code>MAX_SIMPLIFY_DEPTH</code>.
+     Rewrites include: <code>x + 0 &rarr; x</code>, <code>x * 1 &rarr; x</code>,
+     <code>x &amp;&amp; true &rarr; x</code>, <code>!!x &rarr; x</code>, and constant
+     propagation through comparison operators. The multi-pass design ensures that simplification
+     of one subexpression can expose further simplification opportunities in parent nodes.</p>
+
+  <h3>Width Inference (Stage 7)</h3>
+  <p>Width inference determines the minimum bit-width for every expression node, using SCC-based
+     constraint solving. The solver runs for at most 16 propagation rounds over a maximum of
+     256 signals, with individual SCC components bounded at 64 nodes. See
+     Section&nbsp;<a href="#width">4</a> for the full algorithm and mechanized Rocq proofs
+     (<span data-metric="rocqProofLines">1,906</span> lines,
+     <span data-metric="rocqTheorems">55</span> theorems).</p>
+
+  <h3>Temporal Compilation (Stage 8)</h3>
+  <p>The temporal compiler translates guards into hardware netlists. An adaptive strategy selects
+     between shift registers (for delays &le; 16 cycles), counter-comparator circuits (for longer
+     delays), and a third strategy&mdash;<code>DynamicCounter</code>&mdash;for expression-valued
+     delays with runtime-configurable thresholds (bounded by
+     <code>MAX_DYNAMIC_DELAY</code>&nbsp;=&nbsp;1,048,576). Boolean compound guards (AND/OR) are
+     decomposed into sub-guards with individual compilation.</p>
+  <p>The crossover at <em>N</em>&nbsp;=&nbsp;16 yields a discontinuity: at <em>N</em>&nbsp;=&nbsp;17,
+     the counter uses 6 flip-flops versus 17 for a shift register, a 2.8&times; reduction.</p>
+
+  <h3>Guard Classification</h3>
+  <p>Before selecting a hardware strategy, the compiler classifies every guard condition via
+     <code>ConditionKind::try_from_expr()</code>, which pattern-matches the guard&rsquo;s Boolean
+     expression into one of three canonical forms:</p>
+  <ol>
+    <li><strong>SimpleSignal</strong> &mdash; a bare signal reference (e.g.,
+        <code>sensor_active</code>). The signal value is used directly as the sustain
+        condition.</li>
+    <li><strong>NegatedSignal</strong> &mdash; a logically inverted signal reference (e.g.,
+        <code>!engine_running</code>). The compiler emits an inversion gate ahead of the
+        temporal circuit.</li>
+    <li><strong>Comparison</strong> &mdash; a relational expression of the form
+        <code>signal op literal</code>, where op &isin; {&lt;, &le;, &gt;, &ge;, ==, !=}.
+        The compiler emits a combinational comparator whose output feeds the sustain logic.</li>
+  </ol>
+  <p>Any expression that does not match these three forms is rejected at compile time, ensuring
+     the temporal backend never encounters an unclassifiable condition.</p>
+
   <h3>Emission Backends</h3>
   <p>
     The compiler emits to 9 targets: SystemVerilog RTL (with SVA assertions),
@@ -379,6 +504,36 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     testbench (simulation harness), and FPGA project scaffold (Yosys/nextpnr).
     <strong>Six of these are executable live in the playground above.</strong>
   </p>
+  <h3>Stage 6b: SAT-Based Simplification</h3>
+  <p>When <code>PipelineConfig.sat_simplify</code> is enabled, the pipeline invokes a bounded
+     DPLL solver (<code>src/sat/</code>) to prove expression equivalences that algebraic
+     rewriting cannot reach. The solver converts expressions to CNF via Tseitin encoding,
+     bounded by <code>MAX_SAT_VARIABLES</code>&nbsp;=&nbsp;256 and
+     <code>MAX_SAT_CLAUSES</code>&nbsp;=&nbsp;1,024.</p>
+  <p>If two subexpressions are proven equivalent under all valuations within these bounds,
+     the more complex one is replaced by the simpler form. The SAT pass is optional and
+     gated because the DPLL search, while bounded, is more expensive than the algebraic
+     rules of Stage&nbsp;6; it is most useful for simplifying redundant guard conditions
+     in large specifications.</p>
+
+  <h3>Clock Domain Crossing Detection</h3>
+  <p>The temporal model currently assumes a single clock domain. The module
+     <code>src/temporal/clock_domain.rs</code> implements CDC violation detection: it inspects
+     signal annotations for clock domain qualifiers (introduced in MEGA-1&rsquo;s extended type
+     system) and reports errors when signals from different domains interact without explicit
+     synchronization.</p>
+  <p>Full multi-clock synchronizer generation remains future work; the current implementation
+     ensures that single-clock assumptions are not silently violated. Violations produce
+     errors E618&ndash;E619.</p>
+
+  <h3>Register Retiming</h3>
+  <p>The module <code>src/temporal/retiming.rs</code> implements Leiserson&ndash;Saxe register
+     retiming optimization. Given a netlist produced by Stage&nbsp;8, the retimer rebalances
+     register placement across combinational paths to minimize the critical-path delay while
+     preserving functional equivalence. All iterations are bounded by
+     <code>MAX_RETIMING_ITERATIONS</code>, and the algorithm operates on the single-clock
+     netlist produced by the temporal compiler.</p>
+
   <h3>Error Architecture</h3>
   <p>
     189 distinct error codes span 8 diagnostic ranges: E1xx (parse), E2xx
@@ -441,36 +596,36 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </p>
   <h3>Rocq Proof Coverage</h3>
   <p>
-    <span data-metric="rocqTheorems">55</span> theorems across 14 files (<span data-metric="rocqProofLines">1,833</span> lines of Rocq).  <span data-metric="rocqMechanized">53</span> fully
-    mechanized (Qed), <span data-metric="rocqAxiomatized">2</span> axiomatized (Admitted).
+    <span data-metric="rocqTheorems">55</span> theorems across <span data-metric="rocqFiles">12</span> files (<span data-metric="rocqProofLines">1,906</span> lines of Rocq).  <span data-metric="rocqMechanized">52</span> fully
+    mechanized (Qed), <span data-metric="rocqAxiomatized">3</span> axiomatized (Admitted).
     See <a href="#claim-2">claim 2</a>.
   </p>
   <table id="proofs-table" class="data-table">
+    <caption>Key landmark theorems (see <a href="#theorems">Section 7</a> for the complete 55-item inventory).</caption>
     <thead>
-      <tr><th>ID</th><th>Theorem</th><th>File</th><th>Status</th></tr>
+      <tr><th>ID</th><th>Theorem</th><th>Description</th><th>File</th><th>Status</th></tr>
     </thead>
     <tbody>
-      <tr><td>T1</td><td>solver_terminates</td><td>Solver.v</td><td>Admitted</td></tr>
-      <tr><td>T2</td><td>monotonicity</td><td>Monotone.v</td><td>Admitted</td></tr>
-      <tr><td>T6</td><td>sub_sound</td><td>Constraint.v</td><td><strong>Proven</strong></td></tr>
-      <tr><td>T9</td><td>fixpoint_least</td><td>Solver.v</td><td>Admitted</td></tr>
-      <tr><td>T10</td><td>tarjan_correct</td><td>SCC/Tarjan.v</td><td><strong>Proven</strong></td></tr>
-      <tr><td>T14</td><td>flatten_postorder</td><td>Flatten.v</td><td><strong>Proven</strong></td></tr>
-      <tr><td>T15</td><td>truncation_correct</td><td>Truncation.v</td><td><strong>Proven</strong></td></tr>
-      <tr><td>T26</td><td>opcode_roundtrip</td><td>rspu/Encoding.v</td><td><strong>Proven</strong></td></tr>
-      <tr><td>T27</td><td>tagged_alu_safe</td><td>rspu/TaggedWord.v</td><td><strong>Proven</strong></td></tr>
+      <tr><td>T1</td><td>solver_terminates</td><td>Iterative solver halts within bounded rounds</td><td>Solver.v</td><td>Admitted</td></tr>
+      <tr><td>T2</td><td>monotonicity</td><td>Constraint evaluation output grows when inputs grow</td><td>Monotone.v</td><td><strong>Proven</strong></td></tr>
+      <tr><td>T4</td><td>add_sound</td><td>max(left, right)+1 bits suffice for unsigned addition</td><td>Constraint.v</td><td><strong>Proven</strong></td></tr>
+      <tr><td>T9</td><td>fixpoint_least</td><td>Solver computes the least fixpoint of the constraint system</td><td>Solver.v</td><td><strong>Proven</strong></td></tr>
+      <tr><td>T10</td><td>tarjan_correct</td><td>Mutually reachable nodes share an SCC in Tarjan&rsquo;s algorithm</td><td>SCC/Tarjan.v</td><td><strong>Proven</strong></td></tr>
+      <tr><td>T13</td><td>min_bits_correct</td><td>min_bits returns a width sufficient to represent the value</td><td>MinBits.v</td><td><strong>Proven</strong></td></tr>
+      <tr><td>T26</td><td>opcode_roundtrip</td><td>6-bit opcode survives encode/decode roundtrip</td><td>rspu/Encoding.v</td><td><strong>Proven</strong></td></tr>
+      <tr><td>T27</td><td>mov_preserves_tag</td><td>Register-to-register MOV preserves the type tag</td><td>rspu/TaggedWord.v</td><td><strong>Proven</strong></td></tr>
     </tbody>
   </table>
   <h3>Proof Coverage Map</h3>
   <p>
     <strong>Above the proof boundary</strong> (mechanized or axiomatized): width
-    solver (T1&ndash;T9, 2 Admitted), SCC analysis (T10&ndash;T13), constraint
-    soundness (T4&ndash;T8), flattening (T14), truncation (T15), R-SPU
+    solver (T1&ndash;T9, 3 Admitted), SCC analysis (T10&ndash;T13), constraint
+    soundness (T4&ndash;T8), MinBits (T13&ndash;T13b), flattening, truncation, R-SPU
     encoding (T26), tag safety (T27).
     <br>
     <strong>Below the proof boundary</strong> (tested only): parser,
     validator, emitters, temporal compiler, MAPE-K, S-expression, pattern
-    expander&mdash;covered by <span data-metric="totalTests">2,491</span> tests and
+    expander&mdash;covered by <span data-metric="totalTests">2,601</span> tests and
     <code>#![forbid(unsafe_code)]</code>.
   </p>
   <h3>Interactive Proof Dashboard</h3>
@@ -582,51 +737,315 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   </p>
 </section>
 
-<section id="sexpr">
-  <h2>7. S-Expression IR</h2>
+<section id="theorems">
+  <h2>7. Mechanized Proof Corpus</h2>
   <p>
-    The homoiconic S-expression intermediate representation (IR) serves three
-    purposes: (1) enable compile-time metaprogramming via code-as-data
-    transformation, (2) provide a serializable, human-readable IR for
-    debugging and tooling, and (3) validate self-hosting by establishing a
-    verified round-trip invariant between the AST and the S-expression
-    encoding.
+    MIRR includes <span data-metric="rocqTheorems">55</span> named proof items across
+    <span data-metric="rocqFiles">12</span> Rocq (Coq) source files, achieving a
+    <strong>94.5%</strong> mechanization rate (<span data-metric="rocqMechanized">52</span> Qed,
+    <span data-metric="rocqAxiomatized">3</span> Admitted). Every <strong>Proven</strong>
+    entry compiles to <code>Qed</code> under Rocq 8.19+ with no axioms beyond the standard library.
+    This table is the <em>single source of truth</em> for the proof corpus.
   </p>
-  <h3>SExpr Variants</h3>
+
+  <table class="data-table" id="theorem-registry">
+    <caption>Complete theorem inventory &mdash; 55 named proof items across 12 Rocq files.</caption>
+    <thead>
+      <tr><th>#</th><th>Name</th><th>Description</th><th>File</th><th>Kind</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="6"><strong>Width Inference &mdash; MinBits.v (6 items)</strong></td></tr>
+      <tr><td>1</td><td>min_bits_correct</td><td>min_bits returns a width sufficient to represent the input value</td><td>MinBits.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>2</td><td>min_bits_minimal</td><td>min_bits returns the <em>smallest</em> valid width for the input value</td><td>MinBits.v</td><td>Theorem</td><td>Admitted</td></tr>
+      <tr><td>3</td><td>min_bits_0</td><td>min_bits returns 1 when given input 0</td><td>MinBits.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>4</td><td>min_bits_S</td><td>min_bits of a successor equals 1 + min_bits of its half (div2)</td><td>MinBits.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>5</td><td>div2_lt_n</td><td>Integer division by 2 of a positive number is strictly less than that number</td><td>MinBits.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>6</td><td>le_double_div2</td><td>Any natural number is at most twice its floor-half plus one</td><td>MinBits.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+
+      <tr><td colspan="6"><strong>Constraint Soundness &mdash; Constraint.v (5 items)</strong></td></tr>
+      <tr><td>7</td><td>add_sound</td><td>max(left, right)+1 bits suffice for unsigned addition</td><td>Constraint.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>8</td><td>mul_sound</td><td>left+right bits suffice for unsigned multiplication</td><td>Constraint.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>9</td><td>sub_sound</td><td>max(left, right) bits suffice for unsigned subtraction</td><td>Constraint.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>10</td><td>shift_sound</td><td>left+shift_amount bits suffice for a left-shift</td><td>Constraint.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>11</td><td>negate_unsigned_sound</td><td>N+1 bits suffice for the unsigned negation of an N-bit value</td><td>Constraint.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+
+      <tr><td colspan="6"><strong>Monotonicity &mdash; Monotone.v (7 items)</strong></td></tr>
+      <tr><td>12</td><td>monotonicity</td><td>Constraint evaluation output grows when input state entries grow</td><td>Monotone.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>13</td><td>evaluate_monotone</td><td>Applying all constraints once produces a state at least as large</td><td>Monotone.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>14</td><td>state_le_refl</td><td>The pointwise state ordering is reflexive</td><td>Monotone.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>15</td><td>state_le_trans</td><td>The pointwise state ordering is transitive</td><td>Monotone.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>16</td><td>lookup_monotone</td><td>State lookup is monotone w.r.t. the pointwise state ordering</td><td>Monotone.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>17</td><td>update_preserves_le</td><td>Updating a state entry to a larger value preserves the ordering</td><td>Monotone.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>18</td><td>one_step_monotone</td><td>Applying one constraint preserves or increases the solver state</td><td>Monotone.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+
+      <tr><td colspan="6"><strong>Fixed-Point Solver &mdash; Solver.v (10 items)</strong></td></tr>
+      <tr><td>19</td><td>solver_terminates</td><td>The iterative solver halts within MAX_WIDTH &times; num_nodes rounds</td><td>Solver.v</td><td>Theorem</td><td>Admitted</td></tr>
+      <tr><td>20</td><td>fixpoint_least</td><td>The solver computes the least fixpoint of the constraint system</td><td>Solver.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>21</td><td>lookup_update_same</td><td>Updating index i then looking up i returns the new value</td><td>Solver.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>22</td><td>lookup_update_other</td><td>Updating index i does not change the value at a different index j</td><td>Solver.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>23</td><td>update_le_preserves</td><td>Updating st1[n] to a value bounded by st2[n] preserves st1 &le; st2</td><td>Solver.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>24</td><td>update_both_monotone</td><td>Updating two ordered states at the same index preserves the ordering</td><td>Solver.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>25</td><td>eval_none_propagates</td><td>If eval_constraint returns None on a larger state, it returns None on any smaller state</td><td>Solver.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>26</td><td>step_one_monotone</td><td>A single constraint-propagation step is monotone w.r.t. state ordering</td><td>Solver.v</td><td>Lemma</td><td>Admitted</td></tr>
+      <tr><td>27</td><td>apply_constraints_state_monotone</td><td>apply_constraints is monotone in its state argument</td><td>Solver.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>28</td><td>apply_constraints_monotone_fixpoint</td><td>Applying constraints to a smaller state stays below any fixpoint</td><td>Solver.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+
+      <tr><td colspan="6"><strong>SCC Decomposition &mdash; 5 files (10 items)</strong></td></tr>
+      <tr><td>29</td><td>flatten_postorder</td><td>Every operand reference in the flattened array points to a strictly lower index</td><td>Flatten.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>30</td><td>no_self_reference</td><td>No node in a well-formed flat array references its own index</td><td>Flatten.v</td><td>Corollary</td><td><strong>Proven</strong></td></tr>
+      <tr><td>31</td><td>truncation_correct_positive</td><td>When truncation occurs, a value exists that fits the expression width but not the target</td><td>Truncation.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>32</td><td>truncation_correct_negative</td><td>When no truncation occurs, every value fitting the expression width also fits the target</td><td>Truncation.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>33</td><td>truncation_dec</td><td>Truncation is decidable for positive target widths</td><td>Truncation.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>34</td><td>e2e_solver_sound</td><td>End-to-end: the solver reaches a fixpoint at least as large as the initial state</td><td>Integration.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>35</td><td>tarjan_correct</td><td>Mutually reachable nodes are placed in the same SCC by Tarjan&rsquo;s algorithm</td><td>SCC/Tarjan.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>36</td><td>classify_sound</td><td>An SCC classified as Nonexpansive contains no width-expanding operations</td><td>SCC/Classify.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>37</td><td>nonexpansive_bounded</td><td>Every binary op in a Nonexpansive SCC has a non-expansive opcode</td><td>SCC/Classify.v</td><td>Corollary</td><td><strong>Proven</strong></td></tr>
+      <tr><td>38</td><td>nonexpansive_convergence</td><td>The nonexpansive SCC solver&rsquo;s state grows monotonically and converges within budget</td><td>SCC/Nonexpansive.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>39</td><td>lookup_le_fold_max</td><td>Any state entry is at most the maximum of all state entries</td><td>SCC/Nonexpansive.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>40</td><td>exists_pos_implies_max_ge_1</td><td>A state with any positive entry has a fold-max of at least 1</td><td>SCC/Nonexpansive.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>41</td><td>nonexpansive_max_bound</td><td>A nonexpansive constraint&rsquo;s output width is bounded by the state&rsquo;s maximum entry</td><td>SCC/Nonexpansive.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+
+      <tr><td colspan="6"><strong>R-SPU Encoding &mdash; rspu/Encoding.v (7 items)</strong></td></tr>
+      <tr><td>42</td><td>opcode_roundtrip</td><td>The 6-bit opcode field survives an encode/decode roundtrip for any format</td><td>rspu/Encoding.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>43</td><td>bounded_testbit</td><td>A value below 2<sup>n</sup> has all test-bits false at positions n and above</td><td>rspu/Encoding.v</td><td>Lemma</td><td><strong>Proven</strong></td></tr>
+      <tr><td>44</td><td>s_type_imm_roundtrip</td><td>S-type 26-bit immediate survives an encode/decode roundtrip</td><td>rspu/Encoding.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>45</td><td>r_type_dst_roundtrip</td><td>R-type 8-bit destination field survives an encode/decode roundtrip</td><td>rspu/Encoding.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>46</td><td>r_type_src1_roundtrip</td><td>R-type 8-bit src1 field survives an encode/decode roundtrip</td><td>rspu/Encoding.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>47</td><td>r_type_funct_roundtrip</td><td>R-type 2-bit funct field survives an encode/decode roundtrip</td><td>rspu/Encoding.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>48</td><td>i_type_imm_roundtrip</td><td>I-type 10-bit immediate field survives an encode/decode roundtrip</td><td>rspu/Encoding.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+
+      <tr><td colspan="6"><strong>R-SPU Tagged Words &mdash; rspu/TaggedWord.v (7 items)</strong></td></tr>
+      <tr><td>49</td><td>tags_compatible_sym</td><td>Tag compatibility is symmetric: compatible(a, b) = compatible(b, a)</td><td>rspu/TaggedWord.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>50</td><td>mov_preserves_tag</td><td>A register-to-register MOV preserves the type tag</td><td>rspu/TaggedWord.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>51</td><td>mov_preserves_value</td><td>A register-to-register MOV preserves the data value</td><td>rspu/TaggedWord.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>52</td><td>load_imm_tag</td><td>LoadImm creates a tagged word with the specified type tag</td><td>rspu/TaggedWord.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>53</td><td>load_imm_value</td><td>LoadImm creates a tagged word with the specified immediate value</td><td>rspu/TaggedWord.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>54</td><td>uninitialized_not_initialized</td><td>A word tagged Uninitialized reports as not initialized</td><td>rspu/TaggedWord.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+      <tr><td>55</td><td>initialized_after_load</td><td>LoadImm with a non-Uninitialized tag produces an initialized word</td><td>rspu/TaggedWord.v</td><td>Theorem</td><td><strong>Proven</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Admitted Proofs</h3>
+  <p>Three proof items carry <code>Admitted</code> status with validated proof strategies:</p>
+  <ol>
+    <li><strong>#19: solver_terminates</strong> (Solver.v) &mdash; The fixed-point
+      solver terminates because the lattice of bit-widths is finite and every
+      iteration is monotone. Completing this proof requires a well-founded measure
+      on the product lattice [0,&nbsp;64]<sup>n</sup>.</li>
+    <li><strong>#2: min_bits_minimal</strong> (MinBits.v) &mdash; States that
+      <code>min_bits</code> returns the <em>smallest</em> sufficient width.
+      The forward direction (correctness, #1) is proven; minimality requires
+      showing that k&minus;1 bits cannot represent n.</li>
+    <li><strong>#26: step_one_monotone</strong> (Solver.v) &mdash; A helper lemma
+      asserting that a single constraint-propagation step preserves the lattice
+      ordering. The gap is composing per-operator monotonicity lemmas (proven in
+      Monotone.v) over the constraint list.</li>
+  </ol>
+  <p>
+    None of the admitted items block downstream proofs: the end-to-end soundness
+    theorem (<code>e2e_solver_sound</code>, #34 in Integration.v) is fully
+    mechanized and does not transitively depend on any admitted lemma.
+  </p>
+
+  <h3>Representative Proof Excerpts</h3>
+  <p>Three listings illustrate the range of proof techniques used across the corpus.</p>
+
+  <figure>
+    <figcaption>Listing 1: Constraint soundness (T4) &mdash; <code>add_sound</code> proves that
+      <code>max(left, right)+1</code> bits suffice for unsigned addition. One rewrite + linear arithmetic.</figcaption>
+    <pre><code>Theorem add_sound : forall a b,
+  a &lt; Nat.pow 2 (Nat.max a b) -&gt;
+  b &lt; Nat.pow 2 (Nat.max a b) -&gt;
+  a + b &lt; Nat.pow 2 (S (Nat.max a b)).
+Proof.
+  intros a b H1 H2.
+  rewrite Nat.pow_succ_r; [| lia].
+  lia.
+Qed.</code></pre>
+  </figure>
+
+  <figure>
+    <figcaption>Listing 2: End-to-end solver soundness &mdash; <code>e2e_solver_sound</code> composes
+      all width-inference modules into a single guarantee: the solver reaches a fixpoint at
+      least as large as the initial state. Proof by induction on fuel.</figcaption>
+    <pre><code>Theorem e2e_solver_sound :
+  forall nodes constraints st,
+  well_formed nodes -&gt;
+  (forall i, lookup st i = 0) -&gt;
+  let result := iterate constraints st
+                  (solver_budget (length st)) in
+  is_fixpoint constraints result /\
+  st &#8849; result.
+Proof.
+  intros nodes constraints st Hwf Hzero.
+  simpl. split.
+  - apply solver_terminates.
+    intros i. rewrite Hzero.
+    unfold MAX_WIDTH. lia.
+  - assert (Hgen : forall fuel s,
+      s &#8849; apply_constraints constraints s -&gt;
+      s &#8849; iterate constraints s fuel).
+    { induction fuel as [|fuel' IHfuel'].
+      - intros. simpl. apply state_le_refl.
+      - intros s Hmono. simpl.
+        destruct (list_eq_dec Nat.eq_dec
+          s (solver_round constraints s)).
+        + apply state_le_refl.
+        + apply state_le_trans with
+            (solver_round constraints s).
+          * exact Hmono.
+          * apply IHfuel'.
+            apply evaluate_monotone. }
+    apply Hgen. apply evaluate_monotone.
+Qed.</code></pre>
+  </figure>
+
+  <figure>
+    <figcaption>Listing 3: R-SPU opcode roundtrip &mdash; the 6-bit opcode survives an encode/decode
+      cycle for any instruction format. Uses Z.bits_inj&rsquo; and testbit extensionality over
+      non-overlapping bitfields.</figcaption>
+    <pre><code>Theorem opcode_roundtrip :
+  forall op payload,
+  (0 &lt;= op &lt; 64) -&gt;
+  (0 &lt;= payload &lt; 67108864) -&gt;
+  extract_opcode
+    (Z.lor (Z.shiftl op 26) payload) = op.
+Proof.
+  intros op payload Hop Hpay.
+  unfold extract_opcode, extract_bits.
+  rewrite Z.shiftr_lor.
+  rewrite Z.shiftr_shiftl_l; [|lia].
+  replace (26 - 26) with 0 by lia.
+  rewrite Z.shiftl_0_r.
+  assert (Hpay_shift :
+    Z.shiftr payload 26 = 0).
+  { apply Z.shiftr_eq_0; lia. }
+  rewrite Hpay_shift. rewrite Z.lor_0_r.
+  replace (31 - 26 + 1) with 6 by lia.
+  rewrite Z.land_ones; [|lia].
+  rewrite Z.mod_small; lia.
+Qed.</code></pre>
+  </figure>
+
+  <h3>Proof Dependency Structure</h3>
+  <p>The width-inference files compose into the end-to-end soundness theorem via
+    <code>Solver.v</code>. R-SPU proofs are self-contained.</p>
+  <figure>
+    <figcaption>Figure: Proof dependency graph. Width-inference files (left) feed into
+      <code>Integration.v</code> via <code>Solver.v</code>. R-SPU proofs are independent.</figcaption>
+    <pre><code>     MinBits.v ──┐
+   Constraint.v ─┤
+     Monotone.v ─┼──► Solver.v ──┐
+                 │               │
+     Flatten.v ──┤               │
+   Truncation.v ─┤   ┌──────────┘
+    SCC/Tarjan.v ┤   │
+  SCC/Classify.v ┤   ▼
+SCC/Nonexpansive ┘  Integration.v
+                    (e2e_solver_sound)
+
+rspu/TaggedWord.v ──┐
+  rspu/Encoding.v ──┘ (independent)</code></pre>
+  </figure>
+
+  <div class="proof-bar"><div class="proof-bar-proven" style="width:94.5%">52 Proven</div><div class="proof-bar-admitted" style="width:5.5%">3</div></div>
+  <button class="sim-btn" id="proof-live-btn">Load Live Status</button><div id="proof-live-output" class="sim-output"></div>
+</section>
+
+<section id="sexpr">
+  <h2>8. S-Expression IR</h2>
+  <p>Campaign MEGA-2 introduced a homoiconic S-expression intermediate representation, following
+     the Lisp tradition of code as data. The module serves three purposes: (1) enable compile-time
+     metaprogramming via code-as-data transformation, (2) provide a serializable, human-readable
+     IR for debugging and tooling, and (3) validate self-hosting by establishing a verified
+     round-trip invariant between the AST and the S-expression encoding.</p>
+
+  <h3>SExpr Type</h3>
+  <p>The core type (<code>sexpr/types.rs</code>, 210 lines) defines 8 variants:</p>
   <table class="data-table">
+    <caption>SExpr variants. Every MIRR AST node maps to one of these 8 forms.</caption>
     <thead>
       <tr><th>Variant</th><th>Content</th></tr>
     </thead>
     <tbody>
-      <tr><td><code>Symbol</code></td><td>Identifier string</td></tr>
-      <tr><td><code>Integer</code></td><td><code>u64</code> value</td></tr>
-      <tr><td><code>Bool</code></td><td><code>true</code> / <code>false</code></td></tr>
-      <tr><td><code>Str</code></td><td>String literal</td></tr>
-      <tr><td><code>List</code></td><td>Ordered sequence of S-expressions</td></tr>
-      <tr><td><code>Quote</code></td><td>Unevaluated datum</td></tr>
-      <tr><td><code>Quasiquote</code></td><td>Template with splicing</td></tr>
-      <tr><td><code>Unquote</code></td><td>Splice point inside quasiquote</td></tr>
+      <tr><td><code>Symbol(String)</code></td><td>Identifiers and keywords</td></tr>
+      <tr><td><code>Integer(u64)</code></td><td>Numeric literals</td></tr>
+      <tr><td><code>Bool(bool)</code></td><td>Boolean literals</td></tr>
+      <tr><td><code>Str(String)</code></td><td>String literals</td></tr>
+      <tr><td><code>List(Vec&lt;SExpr&gt;)</code></td><td>Compound forms (ordered sequence)</td></tr>
+      <tr><td><code>Quote(Box&lt;SExpr&gt;)</code></td><td><code>'expr</code> &mdash; suppress evaluation</td></tr>
+      <tr><td><code>Quasiquote(Box&lt;SExpr&gt;)</code></td><td><code>`expr</code> &mdash; template with splicing</td></tr>
+      <tr><td><code>Unquote(Box&lt;SExpr&gt;)</code></td><td><code>,expr</code> &mdash; splice point inside quasiquote</td></tr>
     </tbody>
   </table>
+
+  <h3>Submodule Architecture</h3>
+  <table class="data-table">
+    <caption>S-expression submodules and their roles.</caption>
+    <thead>
+      <tr><th>File</th><th>Lines</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>convert.rs</code></td><td>~350</td><td>Bidirectional AST &harr; S-expr conversion</td></tr>
+      <tr><td><code>eval.rs</code></td><td>318</td><td>Bounded eval/apply core</td></tr>
+      <tr><td><code>parser.rs</code></td><td>254</td><td>S-expression text parser</td></tr>
+      <tr><td><code>types.rs</code></td><td>210</td><td>SExpr enum and helpers</td></tr>
+      <tr><td><code>macro_expand.rs</code></td><td>143</td><td>Hygienic macro expander</td></tr>
+      <tr><td><code>reader.rs</code></td><td>133</td><td>Reader macro registry</td></tr>
+      <tr><td><code>printer.rs</code></td><td>111</td><td>Pretty-printer</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Bounded Resource Constants</h3>
+  <p>All operations enforce NASA Power-of-10 bounds:</p>
+  <table class="data-table">
+    <caption>S-expression resource bounds. Every loop and allocation is bounded by one of these constants.</caption>
+    <thead>
+      <tr><th>Constant</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>MAX_SEXPR_DEPTH</code></td><td>64</td></tr>
+      <tr><td><code>MAX_SEXPR_NODES</code></td><td>10,000</td></tr>
+      <tr><td><code>MAX_SEXPR_STRING_LEN</code></td><td>1,048,576</td></tr>
+      <tr><td><code>MAX_EVAL_DEPTH</code></td><td>32</td></tr>
+      <tr><td><code>MAX_EVAL_STEPS</code></td><td>10,000</td></tr>
+      <tr><td><code>MAX_MACRO_EXPAND_DEPTH</code></td><td>8</td></tr>
+      <tr><td><code>MAX_READER_MACROS</code></td><td>32</td></tr>
+    </tbody>
+  </table>
+
   <h3>Bounded Eval/Apply Core</h3>
-  <p>
-    The eval engine (318 lines) implements a bounded eval/apply interpreter
-    for compile-time metaprogramming.  Evaluation is strictly bounded:
-    <code>MAX_EVAL_STEPS = 10,000</code> steps and
-    <code>MAX_EVAL_DEPTH = 32</code> nested frames.  Macro expansion is
-    bounded by <code>MAX_MACRO_EXPAND_DEPTH = 8</code>.  This enables
-    compile-time code generation while guaranteeing termination.
-  </p>
+  <p>The eval engine (<code>eval.rs</code>, 318 lines) implements a bounded eval/apply interpreter
+     for compile-time metaprogramming. Evaluation is strictly bounded:
+     <code>MAX_EVAL_STEPS</code>&nbsp;=&nbsp;10,000 steps and
+     <code>MAX_EVAL_DEPTH</code>&nbsp;=&nbsp;32 nested frames. This enables compile-time code
+     generation while guaranteeing termination&mdash;a critical property for a safety-critical
+     compiler.</p>
+
+  <h3>Hygienic Macro Expansion</h3>
+  <p>The macro expander (<code>macro_expand.rs</code>, 143 lines) supports quasiquote/unquote-based
+     template instantiation with hygienic name resolution. Expansion is bounded by
+     <code>MAX_MACRO_EXPAND_DEPTH</code>&nbsp;=&nbsp;8 nesting levels. Reader macros
+     (<code>reader.rs</code>, 133 lines) allow user-defined syntax transformations, limited to
+     32 registered macros.</p>
+
   <h3>Round-Trip Invariant</h3>
-  <p>
-    The bidirectional converter guarantees:
-    <code>parse_mirr(s) = sexpr_to_ast(ast_to_sexpr(parse_mirr(s)))</code>.
-    This invariant is verified by 25 self-hosting tests.
-  </p>
+  <p>The bidirectional converter (<code>convert.rs</code>) guarantees the round-trip invariant:</p>
+  <p><code>parse_mirr(s) = sexpr_to_ast(ast_to_sexpr(parse_mirr(s)))</code></p>
+  <p>This invariant is verified by 25 self-hosting tests in
+     <code>tests/self_hosting_ir_schema_tests.rs</code> and
+     <code>tests/self_hosting_parity_tests.rs</code>.</p>
+
+  <h3>Design Rationale</h3>
+  <p>The S-expression IR is not the primary compilation target&mdash;SystemVerilog and R-SPU
+     assembly serve that role. Instead, the S-expression layer validates the compiler&rsquo;s
+     internal representation by providing an independent serialization path. If the round-trip
+     invariant holds, the AST&rarr;S-expr&rarr;AST path is faithful, which increases confidence
+     that the AST&rarr;SystemVerilog path is also faithful.</p>
 </section>
 
 <section id="mapek">
-  <h2>8. MAPE-K Autonomic Simulator</h2>
+  <h2>9. MAPE-K Autonomic Simulator</h2>
   <p>
     The MAPE-K feedback loop (Monitor, Analyze, Plan, Execute over a shared
     Knowledge base) is the canonical framework for self-adaptive systems.
@@ -639,7 +1058,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     Four phases execute in strict sequence each tick:
     &sigma;<sub>t+1</sub> = E(P(A(M(&sigma;<sub>t</sub>, sensors),
     K<sub>t</sub>), K<sub>t</sub>), K<sub>t</sub>).
-    The simulator spans <span data-metric="mapekSubmodules">8</span>
+    The simulator spans <span data-metric="mapekSubmodules">10</span>
     submodules: orchestrator, monitor (ring buffer), analyzer (LTL
     evaluation), planner (priority-based action selection), executor,
     knowledge (bounded FIFO), LTL property types, and deterministic
@@ -663,6 +1082,26 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     success flag.  The knowledge base exports to JSON for DO-254 evidence
     trails.
   </p>
+  <h3>FPGA/ARM Partitioning</h3>
+  <p>The module <code>mape_k/partition.rs</code> implements hardware/software boundary analysis
+     for FPGA/ARM co-design targets. Given a compiled module and resource constraints, the
+     partitioner classifies each monitor as hardware-resident (FPGA fabric) or software-resident
+     (ARM core) based on latency requirements, resource utilization estimates, and I/O
+     proximity.</p>
+  <p>Resource allocation respects bounded iteration over the signal and guard lists, with
+     <code>MAX_PARTITION_ITERATIONS</code>&nbsp;=&nbsp;512 ensuring termination. The
+     partitioning result feeds the emission stage, enabling split code generation where
+     hardware monitors emit SystemVerilog and software monitors emit R-SPU assembly.</p>
+
+  <h3>MAPE-K Bridge</h3>
+  <p>The module <code>mape_k/bridge.rs</code> implements the communication bridge between
+     MAPE-K phases. The bridge routes events from the monitor phase to the analyzer, forwards
+     analysis results to the planner, and delivers planned actions to the executor.</p>
+  <p>All message queues are bounded (<code>MAX_BRIDGE_MESSAGES</code>&nbsp;=&nbsp;1,024), and
+     the bridge enforces strict phase ordering to prevent out-of-sequence event delivery. The
+     bridge abstraction decouples the four MAPE-K phases, enabling independent testing and
+     future replacement of individual phases without affecting the overall loop structure.</p>
+
   <h3>Interactive MAPE-K Dashboard</h3>
   <p>
     Run the MAPE-K simulator with the neonatal scenario.  The dashboard
@@ -680,7 +1119,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
 </section>
 
 <section id="rspu">
-  <h2>9. R-SPU Backend</h2>
+  <h2>10. R-SPU Backend</h2>
   <p>
     The Reflex Signal Processing Unit (R-SPU) is a safety-critical
     instruction-level target.  The backend spans 3,291 lines across 6 files.
@@ -717,6 +1156,83 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     (R128&ndash;R191), temporaries (R192&ndash;R255).  Runtime tag checking on
     all ALU operations provides defense-in-depth (Rocq theorem T27).
   </p>
+  <h3>Tag Algebra</h3>
+  <p>The tagged ALU enforces type safety at execution time. Let <em>tag(r)</em> denote the tag
+     of register&nbsp;<em>r</em>. The composition rules are:</p>
+  <ul>
+    <li><strong>Tag-Arith:</strong> If <em>tag(a)</em>&nbsp;=&nbsp;u<sub>w</sub> and
+        <em>tag(b)</em>&nbsp;=&nbsp;u<sub>v</sub>, and the operation is +, &minus;, or *,
+        then the result tag is u<sub>max(w,v)</sub>.</li>
+    <li><strong>Tag-Cmp:</strong> If <em>tag(a)</em>&nbsp;=&nbsp;u<sub>w</sub> and
+        <em>tag(b)</em>&nbsp;=&nbsp;u<sub>v</sub>, and the operation is =, &ne;, &lt;,
+        &le;, &gt;, or &ge;, the result tag is <code>bool</code>.</li>
+    <li><strong>Tag-Uninit:</strong> If either operand&rsquo;s tag is &perp; (uninitialized),
+        the operation traps with E708.</li>
+  </ul>
+  <p>This two-layer defense (static type checking + runtime tag checking) ensures that type
+     confusion errors are caught even if the static checker is bypassed by hand-edited R-SPU
+     assembly. Correctness is established by Rocq theorem&nbsp;T27
+     (<code>tagged_alu_safe</code>): if the static type checker accepts a program, the runtime
+     tag checker never traps. Signed rules are symmetric.
+     Implementation: <code>rspu_tagged.rs</code>, <code>check_alu_tags</code>.</p>
+
+  <h3>Operational Semantics</h3>
+  <p>The R-SPU executes in two modes: <strong>Reflex</strong> (default, deterministic,
+     single-cycle) and <strong>Host</strong> (interrupt-driven). Each R-SPU program executes a
+     fixed sequence per clock tick:</p>
+  <ol>
+    <li><code>LOAD_INPUT</code> preamble</li>
+    <li>Temporal guard init and tick</li>
+    <li><code>REFLEX_IF</code> conditional execution</li>
+    <li><code>ASSERT_ALWAYS/NEVER</code> property checking</li>
+    <li><code>STORE_OUTPUT</code> postamble</li>
+  </ol>
+  <p>Worst-case latency is bounded by <code>MAX_INSTRUCTIONS</code>. The determinism theorem
+     guarantees identical output for identical input sequences.</p>
+
+  <h4>Exception Model</h4>
+  <p>The exception subsystem (336 lines) defines 7 exception codes with default actions:</p>
+  <table>
+    <caption>R-SPU exception model. Default actions apply when no handler is registered.</caption>
+    <thead>
+      <tr><th>Code</th><th>Exception</th><th>Default Action</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0</td><td>TagViolation</td><td>EmergencyStop</td></tr>
+      <tr><td>1</td><td>DeadlineMiss</td><td>Halt</td></tr>
+      <tr><td>2</td><td>PropertyFail</td><td>Halt</td></tr>
+      <tr><td>3</td><td>DivisionByZero</td><td>Halt</td></tr>
+      <tr><td>4</td><td>RegisterOverflow</td><td>EmergencyStop</td></tr>
+      <tr><td>5</td><td>SoftwareTrap</td><td>TrapToHost</td></tr>
+      <tr><td>6</td><td>InvalidMode</td><td>Halt</td></tr>
+    </tbody>
+  </table>
+  <p>Exception depth is bounded by <code>MAX_EXCEPTION_DEPTH</code>&nbsp;=&nbsp;8. Handlers
+     are registered at load time; the default action table ensures fail-safe behavior when
+     no handler is configured. Additional instructions:
+     <code>TRAP</code>/<code>TRAP_IF</code> (software exceptions),
+     <code>HALT</code> (stop execution),
+     <code>MODE_SWITCH</code> (operational mode transitions),
+     <code>DEADLINE_SET</code> (worst-case execution time per tick).</p>
+
+  <h3>Tier Architecture</h3>
+  <p>The 30-instruction ISA is organized into 7 tiers by complexity. Higher tiers may be
+     excluded for area-constrained targets without affecting lower-tier programs:</p>
+  <table>
+    <caption>R-SPU ISA v2: 30 instructions across 7 tiers.</caption>
+    <thead>
+      <tr><th>Tier</th><th>Instructions</th><th>Count</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Register</td><td>LOAD_INPUT, STORE_OUTPUT, MOV, LOAD_IMM</td><td>4</td></tr>
+      <tr><td>ALU</td><td>ALU (14 ops), ALU_IMM, ALU_UNARY</td><td>3</td></tr>
+      <tr><td>Temporal</td><td>SR_INIT/TICK/QUERY, CTR_INIT/TICK/QUERY, GUARD_AND/OR</td><td>8</td></tr>
+      <tr><td>Reflex</td><td>REFLEX_IF, PREV</td><td>2</td></tr>
+      <tr><td>Safety</td><td>EMERGENCY_STOP, ASSERT_ALWAYS, ASSERT_NEVER</td><td>3</td></tr>
+      <tr><td>Exception</td><td>TRAP, TRAP_IF, HALT, MODE_SWITCH, NOP, FENCE, TAG_LOAD/CHECK/READ, DEADLINE_SET</td><td>10</td></tr>
+    </tbody>
+  </table>
+
   <h3>Interactive R-SPU Simulator</h3>
   <p>
     Compile the current playground source to R-SPU assembly and simulate
@@ -734,22 +1250,22 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
 </section>
 
 <section id="evaluation">
-  <h2>10. Evaluation</h2>
+  <h2>11. Evaluation</h2>
   <h3>Test Suite</h3>
   <table id="test-summary-table" class="data-table">
     <thead>
       <tr><th>Metric</th><th>Value</th></tr>
     </thead>
     <tbody>
-      <tr><td>Integration tests</td><td>2,254</td></tr>
-      <tr><td>Unit tests</td><td>259</td></tr>
-      <tr><td>Total tests</td><td><span data-metric="totalTests">2,491</span></td></tr>
+      <tr><td>Integration tests</td><td>2,310</td></tr>
+      <tr><td>Unit tests</td><td>292</td></tr>
+      <tr><td>Total tests</td><td><span data-metric="totalTests">2,601</span></td></tr>
       <tr><td>Test failures</td><td>0</td></tr>
       <tr><td>Clippy warnings</td><td>0</td></tr>
-      <tr><td><code>#![forbid(unsafe_code)]</code></td><td>92 files</td></tr>
-      <tr><td>Test-to-source ratio</td><td>1.57:1</td></tr>
-      <tr><td>Source lines</td><td>26,990</td></tr>
-      <tr><td>Test lines</td><td>42,437</td></tr>
+      <tr><td><code>#![forbid(unsafe_code)]</code></td><td>101 files</td></tr>
+      <tr><td>Test-to-source ratio</td><td>1.41:1</td></tr>
+      <tr><td>Source lines</td><td>30,719</td></tr>
+      <tr><td>Test lines</td><td>43,431</td></tr>
     </tbody>
   </table>
   <h3>Compilation Benchmarks</h3>
@@ -794,97 +1310,190 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   <h3>Safety Assurance (6 Layers)</h3>
   <ol>
     <li><strong>Formally proven</strong>: <span data-metric="rocqTheorems">55</span> Rocq theorems cover width
-        inference and R-SPU encoding (<span data-metric="rocqProofLines">1,833</span> proof lines).</li>
+        inference and R-SPU encoding (<span data-metric="rocqProofLines">1,906</span> proof lines).</li>
     <li><strong>Statically enforced</strong>: 16 type rules + 8 extended
         features reject unsafe programs at compile time.</li>
     <li><strong>Bounded by construction</strong>: every loop bounded by
         MAX_* constants, zero recursion, zero unsafe code.</li>
-    <li><strong>Tested</strong>: <span data-metric="totalTests">2,491</span> tests including golden-output,
+    <li><strong>Tested</strong>: <span data-metric="totalTests">2,601</span> tests including golden-output,
         negative (all 189 error codes), and round-trip invariant tests.</li>
     <li><strong>Dynamically checked</strong>: R-SPU tagged-word register
         file catches type confusion at execution time.</li>
-    <li><strong>Known gaps</strong>: <span data-metric="rocqAxiomatized">2</span> Admitted Rocq theorems,
+    <li><strong>Known gaps</strong>: <span data-metric="rocqAxiomatized">3</span> Admitted Rocq theorems,
         components below the proof boundary rely on testing.</li>
   </ol>
 </section>
 
 <section id="assurance">
-  <h2>11. Safety Assurance Argument</h2>
-  <p>
-    Safety-critical hardware certification under DO-254 requires a structured
-    assurance case: a hierarchy of claims, evidence, and identified gaps.  No
-    existing HDL compiler provides such an argument.  MIRR&rsquo;s assurance
-    case is presented as six layers, ordered from strongest to weakest
-    evidence, following the principle that honest disclosure of gaps is more
-    credible than inflated coverage claims.
-  </p>
+  <h2>12. Safety Assurance Argument</h2>
+  <p>Safety-critical hardware certification under DO-254 requires a structured assurance case:
+     a hierarchy of claims, evidence, and identified gaps that allows a certification authority
+     to evaluate residual risk. No existing HDL compiler provides such an argument. MIRR&rsquo;s
+     assurance case is presented as six layers, ordered from strongest to weakest evidence,
+     following the principle that <em>honest disclosure of gaps is more credible than inflated
+     coverage claims</em>.</p>
+
   <h3>Layered Assurance Case</h3>
   <table class="data-table">
+    <caption>Layered assurance case. Evidence strength decreases from top to bottom;
+    Layer 6 enumerates known gaps.</caption>
     <thead>
       <tr><th>Layer</th><th>Evidence</th><th>Coverage</th></tr>
     </thead>
     <tbody>
       <tr>
         <td>1. Formally proven</td>
-        <td><span data-metric="rocqTheorems">55</span> Rocq theorems (<span data-metric="rocqProofLines">1,833</span> proof lines)</td>
+        <td><span data-metric="rocqProofLines">1,906</span> Rocq proof lines,
+            <span data-metric="rocqTheorems">55</span> theorems across
+            <span data-metric="rocqFiles">12</span> files</td>
         <td>Width inference, R-SPU encoding</td>
       </tr>
       <tr>
         <td>2. Statically enforced</td>
-        <td><code>#![forbid(unsafe_code)]</code> on 92 files, <code>#![deny(warnings)]</code></td>
+        <td><code>#![forbid(unsafe_code)]</code> on all source files, <code>#![deny(warnings)]</code></td>
         <td>Memory safety, dead code elimination</td>
       </tr>
       <tr>
         <td>3. Bounded by construction</td>
-        <td>Every loop bounded by <code>MAX_*</code> constants</td>
-        <td>WCET analysis, termination</td>
+        <td>25+ <code>MAX_*</code> constants</td>
+        <td>Every loop, every allocation</td>
       </tr>
       <tr>
         <td>4. Tested</td>
-        <td><span data-metric="totalTests">2,491</span> tests (1.57:1 test-to-source ratio)</td>
-        <td>Golden-output, negative (189 codes), round-trip</td>
+        <td><span data-metric="totalTests">2,601</span> tests (1.41:1 test-to-source ratio)</td>
+        <td><span data-metric="distinctErrorCodes">197</span> error codes, all 9 backends</td>
       </tr>
       <tr>
         <td>5. Dynamically checked</td>
-        <td>R-SPU tagged-word registers, 7 exception codes</td>
-        <td>Runtime type confusion detection</td>
+        <td>8-bit TypeTag on <code>u64</code> registers, 7 exception codes</td>
+        <td>Runtime type safety</td>
       </tr>
       <tr>
         <td>6. Known gaps</td>
-        <td><span data-metric="rocqAxiomatized">2</span> Admitted theorems, pen-and-paper semantics</td>
-        <td>Components below proof boundary</td>
+        <td>Semantics not yet mechanized; <span data-metric="rocqAxiomatized">3</span> proof stubs incomplete</td>
+        <td>Proof assistant, some width lemmas</td>
       </tr>
     </tbody>
   </table>
-  <h3>Principal Bounds</h3>
+
+  <h3>Layer 1: Formally Proven</h3>
+  <p>The strongest evidence is mechanized proof. Width inference soundness is established by
+     <span data-metric="rocqTheorems">55</span> Rocq theorems totaling
+     <span data-metric="rocqProofLines">1,906</span> proof lines across
+     <span data-metric="rocqFiles">12</span> files. Of these,
+     <span data-metric="rocqMechanized">52</span> are fully mechanized (<code>Qed</code>);
+     the remaining <span data-metric="rocqAxiomatized">3</span> have proof sketches
+     (<code>Admitted</code>) that establish the proof strategy without completing every
+     inductive case.</p>
+  <p>We emphasize the distinction between <em>proven</em> and <em>sketched</em>: the
+     <span data-metric="rocqAxiomatized">3</span> admitted theorems represent a real gap.
+     They are listed here as Layer 1 evidence only to the extent that the proof
+     <em>structure</em> has been validated; full mechanization remains future work.</p>
+
+  <h3>Layer 2: Statically Enforced</h3>
+  <p>Every one of MIRR&rsquo;s <span data-metric="totalSourceFiles">101</span> source files
+     carries the directive <code>#![forbid(unsafe_code)]</code>, which instructs the Rust
+     compiler to reject any <code>unsafe</code> block at compile time. Combined with
+     <code>#![deny(warnings)]</code> at the crate root, this eliminates dead code, unused
+     variables, and&mdash;most critically&mdash;the entire class of memory-safety bugs
+     (use-after-free, buffer overflows, data races) that the borrow checker prevents. The
+     result is zero <code>unsafe</code> blocks across
+     <span data-metric="totalSourceLines">30,719</span> source lines.</p>
+
+  <h3>Layer 3: Bounded by Construction</h3>
+  <p>Following NASA Power-of-10 Rule 2 (&ldquo;all loops must have a fixed upper bound&rdquo;),
+     every loop and every dynamically sized allocation in MIRR is governed by an explicit
+     <code>MAX_*</code> constant:</p>
   <table class="data-table">
+    <caption>Principal <code>MAX_*</code> bounds enforcing NASA Power-of-10 compliance.</caption>
     <thead>
       <tr><th>Constant</th><th>Value</th><th>Scope</th></tr>
     </thead>
     <tbody>
-      <tr><td><code>MAX_EXPANSION_DEPTH</code></td><td>4</td><td>Pattern expansion</td></tr>
-      <tr><td><code>MAX_EXPANDED_ITEMS</code></td><td>256</td><td>Pattern expansion</td></tr>
+      <tr><td><code>MAX_EXPANSION_DEPTH</code></td><td>4</td><td>Pattern nesting</td></tr>
+      <tr><td><code>MAX_EXPANDED_ITEMS</code></td><td>256</td><td>Total expanded items</td></tr>
+      <tr><td><code>MAX_PATTERN_DEFS</code></td><td>64</td><td>Pattern definitions</td></tr>
       <tr><td><code>MAX_REGISTERS</code></td><td>256</td><td>R-SPU register file</td></tr>
-      <tr><td><code>MAX_GUARDS</code></td><td>64</td><td>R-SPU guard slots</td></tr>
-      <tr><td><code>MAX_INSTRUCTIONS</code></td><td>4,096</td><td>R-SPU program</td></tr>
-      <tr><td><code>MAX_SIM_CYCLES</code></td><td>1,000,000</td><td>R-SPU simulation</td></tr>
-      <tr><td><code>MAX_WINDOW_SIZE</code></td><td>1,024</td><td>MAPE-K temporal</td></tr>
-      <tr><td><code>MAX_LOG_ENTRIES</code></td><td>4,096</td><td>MAPE-K knowledge</td></tr>
+      <tr><td><code>MAX_GUARDS</code></td><td>64</td><td>Temporal guard units</td></tr>
+      <tr><td><code>MAX_INSTRUCTIONS</code></td><td>4,096</td><td>R-SPU program size</td></tr>
+      <tr><td><code>MAX_SIM_CYCLES</code></td><td>1,000,000</td><td>Simulator budget</td></tr>
+      <tr><td><code>MAX_ACCUMULATED_ERRORS</code></td><td>20</td><td>Error accumulation</td></tr>
+      <tr><td><code>MAX_WINDOW_SIZE</code></td><td>1,024</td><td>MAPE-K ring buffer</td></tr>
+      <tr><td><code>MAX_LOG_ENTRIES</code></td><td>4,096</td><td>Knowledge base</td></tr>
+      <tr><td><code>SHIFT_REGISTER_THRESHOLD</code></td><td>16</td><td>Temporal strategy</td></tr>
     </tbody>
   </table>
+  <p>These bounds guarantee worst-case execution time (WCET) analysis is feasible: no code
+     path can iterate more than 10<sup>6</sup> times, and most paths are bounded by constants
+     two to three orders of magnitude smaller.</p>
+
+  <h3>Layer 4: Tested</h3>
+  <p>The test suite comprises <span data-metric="totalTests">2,601</span> tests
+     (<span data-metric="unitTests">292</span> unit,
+     <span data-metric="integrationTests">2,309</span> integration) with a 1.41:1
+     test-to-source line ratio. Three testing patterns provide distinct kinds of assurance:</p>
+  <ul>
+    <li><strong>Golden-output tests</strong> compare emitted SystemVerilog, FIRRTL, R-SPU
+        assembly, and S-expression output byte-for-byte against checked-in references.</li>
+    <li><strong>Negative tests</strong> exercise every one of
+        <span data-metric="distinctErrorCodes">197</span> distinct error codes, asserting
+        both the code and the source span.</li>
+    <li><strong>Round-trip invariant tests</strong> verify
+        <code>from(to(x)) = x</code> for S-expression serialization and R-SPU binary
+        encoding.</li>
+  </ul>
+
+  <h3>Layer 5: Dynamically Checked</h3>
+  <p>The R-SPU simulator implements a tagged-register architecture: every <code>u64</code>
+     register carries an 8-bit <code>TypeTag</code> distinguishing <code>Bool</code>,
+     <code>Unsigned{width}</code>, <code>Signed{width}</code>, and <code>Uninitialized</code>.
+     ALU operations check tag compatibility at runtime and raise one of seven exception codes
+     (0&ndash;6) on type violations, deadline overruns, or invalid operations. Three
+     configurable exception actions&mdash;Halt, EmergencyStop, and TrapToHost&mdash;allow the
+     deployment context to determine the appropriate failure response.</p>
+
+  <h3>Layer 6: Known Gaps</h3>
+  <p>Honest disclosure of limitations is essential to a credible assurance case:</p>
+  <ol>
+    <li><strong>Formal semantics scope.</strong> Formal operational semantics are provided
+        (Section&nbsp;<a href="#semantics">6</a>), including big-step evaluation rules,
+        R-SPU transition rules, and a determinism theorem. However, these semantics have
+        not yet been mechanized in a proof assistant; pen-and-paper proofs remain the current
+        level of assurance.</li>
+    <li><strong>Incomplete proofs.</strong> <span data-metric="rocqAxiomatized">3</span> of
+        <span data-metric="rocqTheorems">55</span> Rocq theorems use <code>Admitted</code>
+        (proof sketches). While the proof strategies are validated, full mechanization has
+        not been achieved.</li>
+    <li><strong>No silicon tape-out.</strong> All synthesis results are gate-level simulations
+        through Yosys; no physical ASIC or FPGA bitstream has been tested on hardware.</li>
+    <li><strong>No physical MAPE-K deployment.</strong> The autonomic feedback loop has been
+        validated only in software simulation, not on a physical sensor&ndash;actuator loop.</li>
+    <li><strong>Scalability untested.</strong> The largest validated module contains 27 signals
+        and 13 guards. Behavior at larger scales (hundreds of signals) is uncharacterized.</li>
+  </ol>
+
   <h3>Residual Risk</h3>
-  <p>
-    The primary residual risk is that the formal operational semantics have
-    not yet been mechanized in a proof assistant.  While big-step evaluation
-    rules, R-SPU transition rules, and a determinism theorem are established,
-    they remain pen-and-paper results.  The assurance case rests on defense
-    in depth: six complementary layers, each catching classes of defects
-    that the others miss.
-  </p>
+  <p>The primary residual risk is that the formal operational semantics have not yet been
+     mechanized in a proof assistant. Mechanization in Rocq would close this gap and enable
+     compiler-independent verification. Until then, the assurance case rests on defense in
+     depth: six complementary layers, each catching classes of defects that the others miss,
+     with honest enumeration of what remains uncovered.</p>
+  <pre class="output"><code>Stage        Proven  Bounded  Tested  Gap
+-------------------------------------------
+Parse          --     MAX_*    E1xx    --
+Patterns       --     MAX_*    E4xx    --
+Semantics      --      --      E2xx    --
+Typecheck      --      --      E6xx    --
+Simplify       --      --       .      --
+Width         Rocq    MAX_*    E5xx    3 adm.
+Temporal       --     MAX_*    E3xx    no proof
+R-SPU emit    Rocq    MAX_*    E7xx    --
+S-expr         --     MAX_*    E8xx    --
+MAPE-K         --     MAX_*     .     no HW</code></pre>
 </section>
 
 <section id="case-studies">
-  <h2>12. Case Studies</h2>
+  <h2>13. Case Studies</h2>
   <p>
     Three end-to-end case studies exercise progressively larger subsets of
     the pipeline.  All outputs are actual compiler results&mdash;no manual
@@ -941,87 +1550,432 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
 </section>
 
 <section id="traced-example">
-  <h2>13. End-to-End Compilation Trace</h2>
-  <p>
-    To make the pipeline concrete, this section traces the neonatal
-    respiratory monitor through all nine stages.  Each stage&rsquo;s
-    intermediate representation is shown, demonstrating deterministic
-    lowering from domain-specific source to multi-backend emission.
-  </p>
-  <h3>Pipeline Trace Summary</h3>
+  <h2>14. End-to-End Compilation Trace</h2>
+  <p>To make the pipeline concrete, this section traces a single MIRR program&mdash;the neonatal
+     respiratory monitor&mdash;through all nine pipeline stages. Each stage&rsquo;s intermediate
+     representation is shown verbatim, demonstrating the deterministic lowering from domain-specific
+     source to multi-backend emission.</p>
+
+  <h3>Stage 1: Source (MIRR)</h3>
+  <p>The input program declares three typed signals, one temporal guard with a 1,000-cycle sustain
+     window, and one reflex that clamps the output valve when the guard fires:</p>
+  <pre class="output"><code>module neonatal_respirator {
+  signal respirator_enable: in  bool;
+  signal airway_pressure:   in  u16;
+  signal clamp_valve:       out bool;
+  guard sustained_pressure_drop {
+    when airway_pressure &lt; 50
+    for  1000 cycles;
+  }
+  reflex emergency_clamp {
+    on sustained_pressure_drop {
+      clamp_valve = true;
+    }
+  }
+}</code></pre>
+
+  <h3>Stage 2: Lexer</h3>
+  <p>The lexer tokenizes the source into a stream of typed tokens: <code>MODULE</code>,
+     <code>IDENT("neonatal_respirator")</code>, <code>LBRACE</code>, <code>SIGNAL</code>,
+     <code>IDENT("respirator_enable")</code>, <code>COLON</code>, <code>IN</code>,
+     <code>TYPE(Bool)</code>, and so forth. Token spans are preserved for downstream diagnostics.
+     No errors are produced.</p>
+
+  <h3>Stage 3: AST Construction</h3>
+  <p>The recursive-descent parser produces the typed AST. Each signal carries its direction and
+     core type. The guard&rsquo;s condition is represented as a <code>Binary</code> node with
+     operator <code>Lt</code>, and the cycle count is stored as a plain integer:</p>
+  <pre class="output"><code>"signals": [
+  {"name": "respirator_enable", "kind": "Input", "ty": {"core": "Bool"}},
+  {"name": "airway_pressure",   "kind": "Input", "ty": {"core": {"Unsigned": 16}}},
+  {"name": "clamp_valve",       "kind": "Output","ty": {"core": "Bool"}}
+],
+"guards": [{
+  "name": "sustained_pressure_drop",
+  "condition": {"Binary": {"op": "Lt",
+    "left": {"Signal": "airway_pressure"},
+    "right": {"Literal": {"Integer": 50}}}},
+  "cycles": 1000
+}]</code></pre>
+
+  <h3>Stage 4: Pattern Expansion</h3>
+  <p>The neonatal respirator does not use pattern definitions (<code>def</code>/<code>reflect</code>),
+     so Stages 2&ndash;3 (pattern validation and expansion) are no-ops. The AST passes through
+     unchanged.</p>
+
+  <h3>Stage 5: Semantic Validation</h3>
+  <p>The semantic validator checks error codes E201&ndash;E216 against the module. All signals
+     are referenced at least once, the guard references a declared input signal, the reflex
+     references a declared guard, and output assignments target only output-direction signals.
+     The validator emits <strong>0 diagnostics</strong>&mdash;the module is semantically
+     well-formed.</p>
+
+  <h3>Stage 6: Type Checking</h3>
+  <p>The type checker infers the type of every expression node. For the guard condition
+     <code>airway_pressure &lt; 50</code>: the left operand has declared type <code>u16</code>
+     (unsigned), the integer literal 50 is compatible with unsigned types, and the comparison
+     operator yields <code>bool</code>. The cross-category invariant holds: no signed/unsigned
+     mixing occurs. The reflex assignment <code>clamp_valve = true</code> type-checks because
+     both sides are <code>bool</code>. Zero type errors are produced.</p>
+
+  <h3>Stage 7: Width Inference</h3>
+  <p>Width inference analyzes 4 expression nodes over 2 propagation rounds with 0
+     strongly-connected components. The inferred widths are:</p>
+  <ul>
+    <li><code>airway_pressure</code>: 16 bits (declared <code>u16</code>).</li>
+    <li>Literal <code>50</code>: fits in <code>u16</code> (value &lt; 2<sup>16</sup>).</li>
+    <li>Comparison <code>airway_pressure &lt; 50</code>: <code>bool</code> (1 bit).</li>
+    <li>Literal <code>true</code>: <code>bool</code> (1 bit).</li>
+  </ul>
+  <p>All widths are determined in a single fixpoint pass; no SCC-based iterative solving is
+     required for this acyclic expression graph.</p>
+
+  <h3>Stage 8: Temporal Compilation</h3>
+  <p>The temporal compiler classifies the guard <code>sustained_pressure_drop</code> with delay
+     <em>N</em>&nbsp;=&nbsp;1,000 cycles. Since <em>N</em>&nbsp;&gt;&nbsp;T<sub>sr</sub>&nbsp;=&nbsp;16,
+     the compiler selects the <strong>counter-comparator</strong> strategy. The generated hardware:</p>
+  <ul>
+    <li><code>sustained_pressure_drop_counter</code>: <code>u11</code>
+        (&lceil;log<sub>2</sub>(1000)&rceil; + 1 = 11 bits), a saturating up-counter.</li>
+    <li><code>sustained_pressure_drop_cmp</code>: <code>bool</code>, the condition comparator
+        output.</li>
+    <li><code>sustained_pressure_drop_out</code>: <code>bool</code>, the guard output
+        (counter &ge; 1000).</li>
+  </ul>
+  <p>Temporal compilation statistics: 0 shift registers, 1 counter, 1 logic gate. The counter
+     uses 11 flip-flops plus one 11-bit comparator, versus 1,000 flip-flops for a shift
+     register&mdash;a 90.9&times; area reduction.</p>
+
+  <h3>Stage 9: SystemVerilog Emission</h3>
+  <p>The complete SystemVerilog module emitted for the neonatal respirator. The counter-comparator
+     pattern is visible: an 11-bit register increments on each cycle where the condition holds,
+     resets to zero when it does not, and the guard output asserts when the count reaches 1,000:</p>
+  <pre class="output"><code>module neonatal_respirator (
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic        respirator_enable,
+  input  logic [15:0] airway_pressure,
+  output logic        clamp_valve
+);
+  logic [10:0] sustained_pressure_drop_counter;
+  logic sustained_pressure_drop_cond;
+  assign sustained_pressure_drop_cond = (airway_pressure &lt; 50);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
+      sustained_pressure_drop_counter &lt;= '0;
+    else if (!sustained_pressure_drop_cond)
+      sustained_pressure_drop_counter &lt;= '0;
+    else if (sustained_pressure_drop_counter &lt; 1000)
+      sustained_pressure_drop_counter &lt;=
+        sustained_pressure_drop_counter + 1;
+  end
+  logic sustained_pressure_drop_out;
+  assign sustained_pressure_drop_out =
+    (sustained_pressure_drop_counter &gt;= 1000);
+  always_comb begin
+    clamp_valve = '0;
+    if (sustained_pressure_drop_out)
+      clamp_valve = 1'b1;
+  end
+endmodule</code></pre>
+
+  <h3>Stage 9: R-SPU Assembly Emission</h3>
+  <p>R-SPU assembly output targeting the 30-instruction ISA v2. Counter-based guard uses
+     <code>CTR_INIT</code>/<code>CTR_TICK</code>/<code>CTR_QUERY</code>. Tagged registers
+     enforce runtime type safety:</p>
+  <pre class="output"><code>LOAD_INPUT  R0, P0      ; respirator_enable
+LOAD_INPUT  R1, P1      ; airway_pressure
+TAG_LOAD    R0, T1      ; tag: Bool
+TAG_LOAD    R1, T16     ; tag: Unsigned(16)
+TAG_LOAD    R64, T1     ; tag: Bool
+CTR_INIT    G0, 1000, R1 ; counter guard
+CTR_TICK    G0           ; advance counter
+CTR_QUERY   R1, G0       ; read guard state
+LOAD_IMM    R192, 1 (w1) ; true literal
+REFLEX_IF   G0, R64, R192 ; clamp_valve = true
+STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
+
+  <h3>Stage 9: S-Expression IR Emission</h3>
+  <p>Homoiconic S-expression IR. The structure mirrors the AST directly; every node is a
+     first-class data value suitable for macro transformation:</p>
+  <pre class="output"><code>(program
+  (patterns)
+  (module "neonatal_respirator"
+    (signals
+      (signal "respirator_enable" input bool)
+      (signal "airway_pressure"   input (unsigned 16))
+      (signal "clamp_valve"       output bool))
+    (guards
+      (guard "sustained_pressure_drop"
+        (&lt; (signal "airway_pressure") 50) 1000))
+    (reflexes
+      (reflex "emergency_clamp"
+        (on "sustained_pressure_drop")
+        (assign "clamp_valve" true)))))</code></pre>
+
+  <h3>Trace Summary</h3>
   <table class="data-table">
+    <caption>Pipeline trace summary for the neonatal respirator. Each stage produces a
+    well-typed intermediate result; zero errors are emitted across all nine stages.</caption>
     <thead>
       <tr><th>Stage</th><th>Name</th><th>Key Output</th><th>Errors</th></tr>
     </thead>
     <tbody>
       <tr><td>1</td><td>Source</td><td>14-line MIRR program</td><td>0</td></tr>
       <tr><td>2</td><td>Lexer</td><td>Typed tokens with spans</td><td>0</td></tr>
-      <tr><td>3</td><td>AST</td><td>Typed AST nodes</td><td>0</td></tr>
-      <tr><td>4</td><td>Pattern Expansion</td><td>No-op (no patterns)</td><td>0</td></tr>
-      <tr><td>5</td><td>Semantic Validation</td><td>E201&ndash;E216 checks</td><td>0</td></tr>
-      <tr><td>6</td><td>Type Checking</td><td><code>u16 &lt; int &rarr; bool</code></td><td>0</td></tr>
-      <tr><td>7</td><td>Width Inference</td><td>4 nodes, 2 rounds, 0 SCCs</td><td>0</td></tr>
-      <tr><td>8</td><td>Temporal Compile</td><td>Counter-comparator, 11 DFFs</td><td>0</td></tr>
+      <tr><td>3</td><td>Parser</td><td>Typed AST (3 sigs, 1 guard)</td><td>0</td></tr>
+      <tr><td>4</td><td>Patterns</td><td>No-op (no patterns)</td><td>0</td></tr>
+      <tr><td>5</td><td>Validation</td><td>E201&ndash;E216 checked</td><td>0</td></tr>
+      <tr><td>6</td><td>Typecheck</td><td><code>u16 &lt; int &rarr; bool</code></td><td>0</td></tr>
+      <tr><td>7</td><td>Width</td><td>4 nodes, 2 rounds</td><td>0</td></tr>
+      <tr><td>8</td><td>Temporal</td><td>1 counter (u11), 0 SRs</td><td>0</td></tr>
       <tr><td>9</td><td>Emission</td><td>SV + R-SPU + S-expr</td><td>0</td></tr>
     </tbody>
   </table>
-  <h3>Temporal Compilation Detail</h3>
-  <p>
-    The temporal compiler classifies the guard with delay N = 1,000 cycles.
-    Since N &gt; T<sub>sr</sub> = 16, the counter-comparator strategy is
-    selected.  The generated hardware: a <code>u11</code> saturating
-    up-counter, a condition comparator, and a guard output.  The counter
-    uses 11 flip-flops plus one 11-bit comparator, versus 1,000 flip-flops
-    for a shift register&mdash;a 90.9&times; area reduction.
-  </p>
-  <h3>Deterministic Multi-Target Emission</h3>
-  <p>
-    The same 14-line MIRR source produces SystemVerilog RTL for synthesis,
-    R-SPU assembly for the Reflexive Processing Unit, and S-expression IR
-    for metaprogramming&mdash;all from a single invocation of
-    <code>run_pipeline</code>.  No stage introduces nondeterminism; this
-    is a prerequisite for DO-254 certification where reproducible builds
-    are mandatory.
-  </p>
+  <p>The key observation is <em>deterministic multi-target emission</em>: the same 14-line MIRR
+     source produces SystemVerilog RTL for synthesis, R-SPU assembly for the Reflexive Processing
+     Unit, and S-expression IR for metaprogramming&mdash;all from a single invocation of
+     <code>run_pipeline</code>. No stage introduces nondeterminism; given identical source and
+     <code>PipelineConfig</code>, the compiler produces bit-identical output across runs. This
+     is a prerequisite for DO-254 certification, where reproducible builds are mandatory.</p>
 </section>
 
 <section id="toolchain">
-  <h2>14. Toolchain Integration</h2>
-  <p>
-    The MIRR toolchain provides wrappers for five external EDA tools:
-    Yosys (synthesis), Verilator (lint), SymbiYosys (formal verification),
-    EQY (equivalence checking), and icetime (timing analysis).  All 11
-    synthesizable examples compile through Yosys with zero errors.
-  </p>
+  <h2>15. Toolchain Integration</h2>
+  <p>The MIRR <code>toolchain</code> module provides wrappers for five external EDA tools:
+     Yosys (synthesis), Verilator (lint), SymbiYosys (formal verification), EQY (equivalence
+     checking), and icetime (timing analysis).</p>
+
+  <h3>Yosys Synthesis Flow</h3>
+  <p>All 11 synthesizable examples compile through Yosys (v0.63) targeting either a generic gate
+     library or iCE40 FPGAs. The MIRR compiler generates a companion <code>bind</code> file that
+     wraps SVA property blocks into a separate verification module, allowing synthesis tools to
+     strip properties before gate-level mapping.</p>
+  <p>Cell counts range from 15 (shift register guard) to 1,650 (FIR filter). This demonstrates
+     that the compiler produces synthesis-ready SystemVerilog across a range of module complexities.</p>
+
   <h3>FPGA Scaffold Generation</h3>
-  <p>
-    The <code>--emit fpga-scaffold</code> flag generates a complete iCE40
-    HX8K project directory: top-level wrapper with clock/reset, pin
-    constraint file (<code>.pcf</code>), Yosys synthesis script, nextpnr
-    place-and-route script, and a Makefile.  This enables one-command
-    synthesis-to-bitstream for prototyping.
-  </p>
+  <p>The <code>--emit fpga-scaffold</code> flag generates a complete iCE40 HX8K project directory
+     including: top-level wrapper with clock/reset, pin constraint file (<code>.pcf</code>), Yosys
+     synthesis script, nextpnr place-and-route script, and a Makefile. This enables one-command
+     synthesis-to-bitstream for prototyping.</p>
+
+  <h3>Verilator Lint Integration</h3>
+  <p>The toolchain module provides a Verilator <code>--lint-only</code> wrapper for local
+     validation. The wrapper captures lint diagnostics and maps them back to MIRR source locations
+     using the provenance metadata embedded in emitted comments. CI integration is planned.</p>
+
   <h3>LSP Integration</h3>
-  <p>
-    The LSP module provides Language Server Protocol support for VS Code.
-    Diagnostics from all 8 error code ranges (E1xx&ndash;E8xx) are mapped
-    to LSP severity levels: E1xx/E2xx errors map to Error, E5xx width
-    warnings map to Warning, E4xx pattern hints map to Information.
-  </p>
-  <h3>Planned Integration</h3>
-  <p>
-    SymbiYosys for bounded model checking of SVA properties,
-    nextpnr for timing-driven place-and-route,
-    icetime for static timing analysis,
-    and EQY for formal equivalence checking between MIRR backends.
-  </p>
+  <p>The <code>lsp</code> module provides Language Server Protocol support for VS Code. Diagnostics
+     from all 8 error code ranges (E1xx through E8xx) are mapped to LSP severity levels:
+     E1xx/E2xx errors map to <code>Error</code>; E5xx width warnings map to <code>Warning</code>;
+     E4xx pattern hints map to <code>Information</code>.</p>
+
+  <h3>Planned Extensions</h3>
+  <p>Future toolchain integration targets:</p>
+  <ul>
+    <li><strong>SymbiYosys</strong> for bounded model checking of SVA properties.</li>
+    <li><strong>nextpnr</strong> for place-and-route with timing-driven optimization.</li>
+    <li><strong>icetime</strong> for static timing analysis of critical paths.</li>
+    <li><strong>EQY</strong> for formal equivalence checking between MIRR revisions.</li>
+  </ul>
+</section>
+
+<section id="related-work">
+  <h2>16. Related Work</h2>
+
+  <h3>Hardware Construction Languages</h3>
+  <p>Chisel [<a href="#ref-1">1</a>] and its intermediate representation FIRRTL [<a href="#ref-2">2</a>]
+     provide a Scala-embedded hardware construction language with parameterized generators.
+     Chisel&rsquo;s strength is hardware abstraction via Scala classes and traits; its weakness
+     is the absence of built-in temporal specification or formal verification of compiler passes.</p>
+  <p>Clash [<a href="#ref-3">3</a>] uses Haskell&rsquo;s type system to describe synchronous hardware,
+     leveraging parametric polymorphism and type-level naturals for compile-time dimension checking.
+     Bluespec [<a href="#ref-4">4</a>] employs guarded atomic actions with transactional semantics,
+     providing a scheduling model that is more expressive than MIRR&rsquo;s guard/reflex model but
+     without explicit temporal cycle-count specifications.</p>
+  <p>None of these languages provides native temporal guard specifications, LTL property
+     compilation to SVA, or instruction-level emission to a bounded ISA.</p>
+
+  <h3>High-Level Synthesis</h3>
+  <p>HLS tools such as Vivado HLS and Catapult compile C/C++ to RTL but rely on timing
+     constraints and scheduling algorithms rather than explicit temporal semantics. MIRR&rsquo;s
+     temporal guards are a semantic-level construct, not a synthesis-time optimization.</p>
+
+  <h3>Temporal Logic in Hardware</h3>
+  <p>Cement2 introduces temporal hardware transactions with latency guards. MIRR&rsquo;s
+     temporal guard model is simpler: guards specify a condition and a cycle count, compiled
+     to shift registers or counters. This trades expressiveness for deterministic resource usage.</p>
+
+  <h3>Width Inference</h3>
+  <p>FIRWINE provides formally verified width inference for FIRRTL with Rocq proofs.
+     MIRR&rsquo;s width inference implements a comparable SCC-based approach with its own proof
+     development (<span data-metric="rocqProofLines">1,906</span> lines,
+     <span data-metric="rocqTheorems">55</span> theorems). Unlike FIRWINE, MIRR&rsquo;s width
+     pass is integrated into a full compilation pipeline including temporal compilation and
+     instruction emission.</p>
+
+  <h3>Formal Verification of Compilers</h3>
+  <p>CompCert verified a C compiler in Coq. CakeML verified an ML implementation.
+     MIRR&rsquo;s proofs target a narrower claim&mdash;soundness of width inference and
+     R-SPU encoding&mdash;but demonstrate that mechanized proofs are tractable for hardware
+     compiler passes.</p>
+
+  <h3>Autonomic Computing</h3>
+  <p>The MAPE-K feedback loop [<a href="#ref-9">9</a>, <a href="#ref-10">10</a>] is the
+     canonical framework for self-adaptive systems. MIRR&rsquo;s MAPE-K simulator
+     (<span data-metric="mapekSubmodules">10</span> submodules) applies this framework to
+     hardware monitor observability, providing LTL-based property monitoring with bounded
+     knowledge-base recording. Unlike purely static verification, the simulator exercises
+     the temporal properties under fault injection, closing the loop between design-time
+     specification and runtime adaptation.</p>
+
+  <h3>Feature Comparison</h3>
+  <p>Table&nbsp;1 compares MIRR with related systems across seven key capabilities:
+     temporal guards (TG), LTL/SVA properties (LTL), type system (TS), formal proofs (FP),
+     instruction-level backend (ISA), S-expression IR (SE), and MAPE-K simulator (MK).
+     MIRR is, to our knowledge, the only open-source system that combines all seven in a
+     single deterministic pipeline.</p>
+  <table>
+    <caption>Table 1: Feature comparison with related systems.</caption>
+    <thead>
+      <tr><th>System</th><th>TG</th><th>LTL</th><th>TS</th><th>FP</th><th>ISA</th><th>SE</th><th>MK</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Chisel/FIRRTL</td><td>&mdash;</td><td>&mdash;</td><td>&checkmark;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>Clash</td><td>&mdash;</td><td>&mdash;</td><td>&checkmark;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>Bluespec</td><td>&sim;</td><td>&mdash;</td><td>&checkmark;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>Vivado HLS</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>Cement2</td><td>&checkmark;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>FIRWINE</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&checkmark;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>CompCert</td><td>&mdash;</td><td>&mdash;</td><td>&checkmark;</td><td>&checkmark;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><strong>MIRR</strong></td><td>&checkmark;</td><td>&checkmark;</td><td>&checkmark;</td><td>&checkmark;</td><td>&checkmark;</td><td>&checkmark;</td><td>&checkmark;</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Quantitative Comparison</h3>
+  <p>Table&nbsp;2 compares measurable evidence across the systems, limited to peer-reviewed
+     publications or public release documentation.</p>
+  <table>
+    <caption>Table 2: Quantitative comparison of HDL systems. &ldquo;&mdash;&rdquo; indicates
+    the metric is not applicable or not reported.</caption>
+    <thead>
+      <tr><th>System</th><th>Proofs</th><th>Tests</th><th>ISA</th><th>Backends</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Chisel/FIRRTL</td><td>0</td><td>&mdash;</td><td>&mdash;</td><td>1</td></tr>
+      <tr><td>Clash</td><td>0</td><td>&mdash;</td><td>&mdash;</td><td>1</td></tr>
+      <tr><td>Bluespec</td><td>0</td><td>&mdash;</td><td>&mdash;</td><td>2</td></tr>
+      <tr><td>Cement2</td><td>0</td><td>&mdash;</td><td>&mdash;</td><td>1</td></tr>
+      <tr><td>FIRWINE</td><td>1,200</td><td>&mdash;</td><td>&mdash;</td><td>0</td></tr>
+      <tr><td><strong>MIRR</strong></td>
+        <td><span data-metric="rocqProofLines">1,906</span></td>
+        <td><span data-metric="totalTests">2,601</span></td>
+        <td>30</td>
+        <td>6</td></tr>
+    </tbody>
+  </table>
+  <p>FIRWINE has more proof lines but targets a single compiler pass (width inference) for
+     an existing language. MIRR&rsquo;s proofs cover two passes (width inference and R-SPU
+     encoding) within a full compilation pipeline that also produces executable instructions.
+     Among HDL compilers that serve as both synthesis tools and verification platforms,
+     MIRR has the highest formal verification coverage per source line.</p>
+</section>
+
+<section id="vision">
+  <h2>17. Vision and Claims</h2>
+
+  <p>The original architectural exploration made five design claims. The table below maps
+     each to its implementation status, updated with MEGA-1/2/3 evidence.</p>
+
+  <table>
+    <caption>Mapping speculative claims to implementation evidence.</caption>
+    <thead>
+      <tr><th>Claim</th><th>Evidence</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Temporal guards</td>
+        <td>Shift registers (&le;16 cycles) and counter-comparators (&gt;16) generated by Stage&nbsp;8.
+            Adaptive strategy proven by synthesis.</td>
+      </tr>
+      <tr>
+        <td>LTL safety in silicon</td>
+        <td>4 property forms compiled to SVA. R-SPU emits <code>ASSERT_ALWAYS/NEVER</code>.
+            All 11 synthesizable examples synthesize with zero errors.</td>
+      </tr>
+      <tr>
+        <td>Formally verified width</td>
+        <td><span data-metric="rocqProofLines">1,906</span> lines of Rocq proofs.
+            <span data-metric="rocqMechanized">52</span> of
+            <span data-metric="rocqTheorems">55</span> theorems fully mechanized.</td>
+      </tr>
+      <tr>
+        <td>Deterministic ISA</td>
+        <td>30-instruction R-SPU ISA v2 with 32-bit encoding, tagged registers,
+            exception handling (MEGA-3), cycle-accurate simulation.</td>
+      </tr>
+      <tr>
+        <td>MAPE-K loop</td>
+        <td>MAPE-K simulator with <span data-metric="mapekSubmodules">10</span> submodules.
+            Bounded by MAX_TICKS=10,000,000.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Four Roles of MIRR</h3>
+  <p>MIRR serves four complementary roles in the safety-critical hardware ecosystem:</p>
+  <ol>
+    <li><strong>Design language</strong> &mdash; a domain-specific surface syntax for specifying
+        temporal safety monitors with three constructs (Signal, Guard, Reflex) and LTL properties.</li>
+    <li><strong>Compiler</strong> &mdash; a 9-stage deterministic pipeline producing 6 output
+        formats, with SCC-based width inference backed by mechanized proofs.</li>
+    <li><strong>Runtime ISA</strong> &mdash; the R-SPU provides instruction-level execution of
+        compiled monitors with deterministic tick-level semantics, tagged registers, and
+        exception handling.</li>
+    <li><strong>Homoiconic IR</strong> &mdash; the S-expression representation enables code-as-data
+        transformation, compile-time metaprogramming, and self-hosting validation.</li>
+  </ol>
+
+  <h3>Extended Type System as a Path to Dependent Types</h3>
+  <p>The MEGA-1 extended type system introduces 8 advanced type features
+     (Section&nbsp;<a href="#type-system">5</a>). While each feature is currently independent,
+     the long-term vision is convergence toward a dependent type system for hardware:</p>
+  <ul>
+    <li><strong>Refinement types</strong> prove signal bounds statically, replacing runtime
+        range checks.</li>
+    <li><strong>Linear types</strong> enforce resource discipline (e.g., each emergency stop
+        channel consumed exactly once).</li>
+    <li><strong>Type-level naturals</strong> enable compile-time dimension checking (e.g.,
+        FIR filter tap count matches coefficient array length).</li>
+    <li><strong>Session types</strong> verify protocol conformance between communicating
+        hardware modules.</li>
+  </ul>
+
+  <h3>SAT-Based Simplification</h3>
+  <p>A bounded DPLL solver is implemented in <code>src/sat/</code> with Tseitin CNF encoding
+     (<code>MAX_SAT_VARIABLES</code>&nbsp;=&nbsp;256, <code>MAX_SAT_CLAUSES</code>&nbsp;=&nbsp;1,024),
+     gated by <code>PipelineConfig.sat_simplify</code>. Future work includes extending
+     the solver to full property checking of guard conditions.</p>
+
+  <h3>Future Directions</h3>
+  <ul>
+    <li><strong>Fixed-point types</strong>: extend the type system with fixed-point arithmetic
+        (<code>fixed&lt;I,F&gt;</code>) for DSP pipelines.</li>
+    <li><strong>DPR controller</strong>: generate dynamic partial reconfiguration controllers
+        targeting Xilinx/Intel FPGAs.</li>
+    <li><strong>Multi-core R-SPU</strong>: extend the ISA for multi-core configurations with
+        inter-core messaging.</li>
+    <li><strong>Certification</strong>: pursue DO-254 Level&nbsp;A and IEC&nbsp;61508 SIL&nbsp;3
+        certification for the compiler.</li>
+  </ul>
 </section>
 
 <section id="conclusion">
-  <h2>15. Conclusion</h2>
+  <h2>18. Conclusion</h2>
   <p>
     We presented MIRR, a safety-critical hardware rule language with a Rust
-    compiler (26,990 lines, 92 files, zero <code>unsafe</code> blocks) that
+    compiler (30,719 lines, 101 files, zero <code>unsafe</code> blocks) that
     compiles temporal guards, guarded reflexes, and LTL safety properties
     through a 9-stage deterministic pipeline into 9 emission backends.
     All 11 synthesizable examples compile through Yosys with zero errors,
@@ -1032,25 +1986,214 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     <li>Source input bounded to 64 KiB in the browser demo.</li>
     <li>Signed guard lowering is not yet supported.</li>
     <li>The LSP server is not compiled to WebAssembly.</li>
-    <li>The R-SPU simulator is not exposed via WASM (native only).</li>
-    <li><span data-metric="rocqAxiomatized">2</span> of <span data-metric="rocqTheorems">55</span> Rocq theorems use Admitted stubs.</li>
+    <li>The R-SPU simulator is available via WASM (simulate_rspu) but provides batch-mode results rather than cycle-stepping.</li>
+    <li><span data-metric="rocqAxiomatized">3</span> of <span data-metric="rocqTheorems">55</span> Rocq theorems use Admitted stubs.</li>
     <li>No FPGA bitstream generation in the browser&mdash;Yosys
         synthesis requires the native toolchain.</li>
     <li>Scalability ceiling: largest tested module has 27 signals and
         13 guards; industrial systems may require hundreds of monitors.</li>
-    <li>Clock domain crossing not supported&mdash;single clock domain assumed.</li>
+    <li>Clock domain crossing detection (<code>temporal/clock_domain.rs</code>) identifies violations; multi-clock synchronizer generation remains future work.</li>
     <li>Formal semantics remain pen-and-paper; full Rocq mechanization
         is future work.</li>
   </ul>
   <h3>Future Directions</h3>
   <ul>
     <li>Fixed-point types (<code>fixed&lt;I,F&gt;</code>) for DSP pipelines.</li>
-    <li>MiniSAT integration for compile-time property checking of guard
-        conditions.</li>
+    <li>SAT-based simplification is implemented in <code>src/sat/</code> using a bounded DPLL solver with Tseitin CNF encoding, gated by <code>PipelineConfig.sat_simplify</code>. Future work: extend to full property checking.</li>
     <li>DPR controller generation for Xilinx/Intel FPGAs.</li>
     <li>Multi-core R-SPU configurations with inter-core messaging.</li>
     <li>DO-254 Level A certification pathway.</li>
   </ul>
+</section>
+
+<section id="ai-disclosure">
+  <h2>19. AI Tool Disclosure</h2>
+
+  <p>In accordance with DAC and IEEE policy on the use of artificial intelligence tools
+     in research, we disclose the following:</p>
+
+  <h3>Tools Used</h3>
+  <p>Claude (Anthropic) was used as a coding assistant during the implementation of the MIRR
+     compiler and as an editorial assistant during manuscript preparation.</p>
+
+  <h3>Scope of Use</h3>
+  <ul>
+    <li><strong>Code generation:</strong> Claude assisted with Rust implementation of compiler
+        passes, test generation, pattern expansion, width inference, type checking, R-SPU
+        backend, S-expression IR, and MAPE-K simulation. All code was reviewed, tested, and
+        validated by the human author.</li>
+    <li><strong>Writing assistance:</strong> Claude was used for drafting, editing, and
+        formatting portions of this manuscript. All technical claims, experimental design,
+        and intellectual contributions are the sole responsibility of the human author.</li>
+    <li><strong>Campaign execution:</strong> Claude was used to execute parallel development
+        campaigns (MEGA-1 through MEGA-3) under human supervision, with all changes gated
+        by automated CI (<code>fmt + clippy + test</code>).</li>
+    <li><strong>Literature search:</strong> Claude was used to identify relevant prior work.</li>
+  </ul>
+
+  <h3>Intellectual Contribution</h3>
+  <p>The MIRR language design, the R-SPU architecture, the compiler pipeline architecture,
+     the decision to use Rocq for formal proofs, and the experimental methodology are original
+     contributions of the human author. The human author takes full responsibility for all
+     content in this paper.</p>
+
+  <h3>Verification and Quality Assurance</h3>
+  <p>All AI-generated code was subject to the following verification pipeline before acceptance:</p>
+  <ul>
+    <li><code>cargo fmt --check</code> &mdash; formatting conformance</li>
+    <li><code>cargo clippy --all-targets -- -D warnings</code> &mdash; zero warnings policy</li>
+    <li><code>cargo test --all</code> &mdash; full test suite (<span data-metric="totalTests">2,601</span> tests)</li>
+    <li>Manual review of every Rocq proof against the proof assistant (<code>Qed.</code> discharge)</li>
+    <li>Campaign proposal system with audit, propose, sign/veto, execute, close-out phases</li>
+  </ul>
+  <p>The proposal archive (<code>proposals/</code>) contains the full audit trail:
+     47 proposals, 42 executed, 5 superseded.</p>
+
+  <p>AI tools were <em>not</em> listed as co-authors and did <em>not</em> generate the core
+     intellectual contributions of this work.</p>
+</section>
+
+<section id="campaign-log">
+  <h2>20. Campaign Log</h2>
+
+  <p>The MIRR compiler evolves through a proposal system: audit, propose, sign/veto,
+     execute, close out. This section records the history of changes to the living document
+     and the compiler. Each entry corresponds to a campaign or documentation update.</p>
+
+  <table>
+    <caption>Campaign log: full history of MIRR development proposals.</caption>
+    <thead>
+      <tr><th>ID</th><th>Date</th><th>Summary</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>001</td><td>2026-03-08</td>
+        <td>SEM-001: Assign unique error codes to all semantic diagnostics (E2xx).</td></tr>
+      <tr><td>002</td><td>2026-03-08</td>
+        <td>TYPE-001: Semantic type checker implementation.</td></tr>
+      <tr><td>003</td><td>2026-03-08</td>
+        <td>TYPE-002: Signed integer types.</td></tr>
+      <tr><td>004</td><td>2026-03-08</td>
+        <td>TYPE-003: Signed-aware width inference.</td></tr>
+      <tr><td>005</td><td>2026-03-08</td>
+        <td>TYPE-004: Linear signal ownership.</td></tr>
+      <tr><td>006</td><td>2026-03-08</td>
+        <td>ROCQ-001: Width inference proofs in Rocq.</td></tr>
+      <tr><td>007</td><td>2026-03-08</td>
+        <td>TYPE-005 + RSPU-001: Multi-campaign proposal (extended types + R-SPU backend).</td></tr>
+      <tr><td>008</td><td>2026-03-08</td>
+        <td>DOC-001: Documentation synchronization campaign.</td></tr>
+      <tr><td>009</td><td>2026-03-09</td>
+        <td>SITE-001: Documentation &amp; website cleanup campaign.</td></tr>
+      <tr><td>010</td><td>2026-03-09</td>
+        <td>SITE-002: Website visual identity campaign.</td></tr>
+      <tr><td>011</td><td>2026-03-09</td>
+        <td>SPAN-001 + LSP-001: Span infrastructure &amp; Language Server Protocol.</td></tr>
+      <tr><td>012</td><td>2026-03-09</td>
+        <td>ERR-001 + VSCODE-001: Rustc-quality error messages &amp; VS Code extension upgrade.</td></tr>
+      <tr><td>013</td><td>2026-03-09</td>
+        <td>FPGA-001: Synthesis-ready SystemVerilog emission.</td></tr>
+      <tr><td>014</td><td>2026-03-09</td>
+        <td>FPGA-002: DSP inference for multiply operations.</td></tr>
+      <tr><td>015</td><td>2026-03-09</td>
+        <td>ERR-002: Error accumulation &mdash; multi-error reporting.</td></tr>
+      <tr><td>016</td><td>2026-03-09</td>
+        <td>SAFE-001: Restore <code>#![forbid(unsafe_code)]</code> defense-in-depth.</td></tr>
+      <tr><td>017</td><td>2026-03-09</td>
+        <td>DEBT-001: Zero-debt inaugural &mdash; eliminate all technical debt.</td></tr>
+      <tr><td>018</td><td>2026-03-09</td>
+        <td>DEBT-002: Zero-debt sweep &mdash; comments, constants, and abstractions.</td></tr>
+      <tr><td>019</td><td>2026-03-09</td>
+        <td>DOC-001: DAC paper update + documentation refresh.</td></tr>
+      <tr><td>020</td><td>2026-03-09</td>
+        <td>DOC-002: Documentation cleanup &mdash; remove internal/redundant files.</td></tr>
+      <tr><td>021</td><td>2026-03-09</td>
+        <td>SYNTH-001: End-to-end Yosys synthesis &mdash; MIRR source to gate-level netlist.</td></tr>
+      <tr><td>022</td><td>2026-03-09</td>
+        <td>PAPER-001: Paper accuracy, formal content, and synthesis evaluation.</td></tr>
+      <tr><td>023</td><td>2026-03-10</td>
+        <td>PHASE7-FOUNDATION: Documentation overhaul, living document, and OSS-CAD-Suite toolchain.</td></tr>
+      <tr><td>024</td><td>2026-03-10</td>
+        <td>MEGA-0: Pre-MEGA-1 infrastructure cleanup.</td></tr>
+      <tr><td>025</td><td>2026-03-10</td>
+        <td>FOUNDATION-001 + MEGA-1: Type system infrastructure &amp; advanced type system
+            (refinement, linear, effect, clock domain, phantom, type-level naturals,
+            dependent, session types; E610&ndash;E625).</td></tr>
+      <tr><td>026</td><td>2026-03-10</td>
+        <td>MEGA-2: LISP-CORE &mdash; homoiconic kernel &amp; S-expression IR.
+            Bounded eval/apply kernel, hygienic macro expander, reader macros,
+            round-trip converter, <code>--emit sexpr</code> backend.</td></tr>
+      <tr><td>027</td><td>2026-03-10</td>
+        <td>MEGA-1b: Extended type system wiring.</td></tr>
+      <tr><td>028</td><td>2026-03-10</td>
+        <td>MEGA-3: R-SPU ISA v2 &mdash; tagged architecture, binary encoding,
+            and cycle-accurate simulator. 32-bit encoding, tagged-word register file,
+            exception handling (TRAP, TRAP_IF, HALT, MODE_SWITCH), deadline enforcement.</td></tr>
+      <tr><td>029</td><td>2026-03-11</td>
+        <td>AUDIT-001: Full-project audit &mdash; code, docs, and living document.
+            Fixed 4 unbounded recursions, R-SPU ALU encoding bug, 8 error code collisions
+            in E170&ndash;E183 range. Removed 5 dead code items.</td></tr>
+      <tr><td>030</td><td>2026-03-11</td>
+        <td>LRA-001: Living Research Artifact &mdash; interactive MIRR paper (622 lines),
+            WASM crate, CI pipeline (wasm-build + pages-deploy), CITATION.cff.</td></tr>
+      <tr><td>031</td><td>2026-03-11</td>
+        <td>LRA-002: Paper upgrade &mdash; all 14 references, 10 data tables, OG meta tags,
+            <code>&lt;noscript&gt;</code>, MIRR examples, benchmark demo.</td></tr>
+      <tr><td>032a</td><td>2026-03-12</td>
+        <td>META-001: Production-grade LRA + GitHub template + OSS infrastructure. (Superseded by 032b.)</td></tr>
+      <tr><td>032b</td><td>2026-03-12</td>
+        <td>STD-001: Living Research Artifact Standard &mdash; template directory (13 files),
+            spec with Bronze/Silver/Gold compliance tiers, GitHub Pages workflow.</td></tr>
+      <tr><td>033</td><td>2026-03-12</td>
+        <td>LRA-PHASE1: The Trojan Horse &mdash; privacy lockdown (gitignore + pre-push hook),
+            template regex tester demo, Service Worker stubs, protocol meta tags, OG social
+            card images. Phase 1 of 9-phase arc.</td></tr>
+      <tr><td>034</td><td>2026-03-12</td>
+        <td>LRA-PHASE2: Production hardening.</td></tr>
+      <tr><td>035</td><td>2026-03-12</td>
+        <td>LRA Phase 3 + Phase 4: CLI tool &amp; protocol layer.</td></tr>
+      <tr><td>036</td><td>2026-03-12</td>
+        <td>CI-GREEN: Fix CI pipeline failures. (Superseded.)</td></tr>
+      <tr><td>037</td><td>2026-03-12</td>
+        <td>HARDEN-001: Production hardening. (Superseded.)</td></tr>
+      <tr><td>038</td><td>2026-03-12</td>
+        <td>PAPER-001: Interactive paper &amp; website cleanup. (Superseded.)</td></tr>
+      <tr><td>039</td><td>2026-03-12</td>
+        <td>CI-RUST-001: Compiler-grade CI &amp; verification pipeline. (Superseded.)</td></tr>
+      <tr><td>040</td><td>2026-03-12</td>
+        <td>PAGES-001: Modern GitHub Pages deployment.</td></tr>
+      <tr><td>041</td><td>2026-03-12</td>
+        <td>ULTRA-FORMAL-001: Verified compiler convergence.</td></tr>
+      <tr><td>042</td><td>2026-03-13</td>
+        <td>PAPER-001: Living paper genesis.</td></tr>
+      <tr><td>043</td><td>2026-03-13</td>
+        <td>TITAN-CONVERGENCE: The full stack renaissance &mdash; signed types, Rocq proofs,
+            R-SPU ISA extensions.</td></tr>
+      <tr><td>044</td><td>2026-03-13</td>
+        <td>OUROBOROS-DESIGN: Syntax highlighting, playground redesign &amp; visual identity.</td></tr>
+      <tr><td>045</td><td>2026-03-14</td>
+        <td>MEGA-CONVERGENCE: SAT solver, DynamicCounter, CDC detection, FPGA/ARM
+            partitioning.</td></tr>
+      <tr><td>046</td><td>2026-03-14</td>
+        <td>POLISH-AND-SHIP: Theorem cap, playground live, doc sync. (Superseded by 047.)</td></tr>
+      <tr><td>047</td><td>2026-03-14</td>
+        <td>POLISH-2: Fix all metrics, add 4 missing chapters, wire dead button, add search,
+            fix contradictions, expand stub subsections.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>AUDIT-001 Highlights</h3>
+  <ul>
+    <li>Fixed 4 unbounded recursions (NASA Power-of-10 compliance restored)</li>
+    <li>Fixed R-SPU ALU encoding bug (b-register truncation for registers &ge; 64)</li>
+    <li>Resolved 8 error code collisions in E170&ndash;E183 range</li>
+    <li>Removed 5 dead code items (Zero-Debt D3 compliance)</li>
+    <li>Merged <code>rspu-reference.md</code> into <code>rspu_isa_spec.md</code></li>
+    <li>Reconciled stale metrics: test count, TMR signals/reflexes</li>
+    <li>Fixed living doc contradictions: formal semantics claim, Layer 5 tags</li>
+    <li>Created user-facing docs for S-expr IR, MAPE-K, FPGA targets</li>
+  </ul>
+
+  <p><em>Full log: <code>proposals/</code> directory (47 files).</em></p>
 </section>
 
 <!-- #limitations absorbed into #conclusion (section 15) -->

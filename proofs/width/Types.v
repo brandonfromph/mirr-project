@@ -44,7 +44,7 @@ Inductive flat_node : Type :=
   | FNLiteral  (value : nat)
   | FNSignal   (name : nat) (signed : bool)
   | FNUnary    (op : unop) (operand : nat)
-  | FNBinary   (op : binop) (left right : nat)
+  | FNBinary   (op : binop) (lsrc rsrc : nat)
   | FNPrev     (signal : nat) (delay : nat) (signed : bool).
 
 (** ** Width Constraints
@@ -54,12 +54,12 @@ Inductive flat_node : Type :=
 
 Inductive wconstraint : Type :=
   | Fixed          (node : nat) (w : width)
-  | MaxPlusOne     (node left right : nat)
-  | MaxOf          (node left right : nat)
-  | SumOf          (node left right : nat)
-  | LeftPlusConst  (node left : nat) (shift_amount : nat)
-  | LeftPlusMaxShift (node left : nat)
-  | LeftMinusConst (node left : nat) (shift_amount : nat)
+  | MaxPlusOne     (node lsrc rsrc : nat)
+  | MaxOf          (node lsrc rsrc : nat)
+  | SumOf          (node lsrc rsrc : nat)
+  | LeftPlusConst  (node src : nat) (shift_amount : nat)
+  | LeftPlusMaxShift (node src : nat)
+  | LeftMinusConst (node src : nat) (shift_amount : nat)
   | SameAs         (node source : nat)
   | SameAsPlusOne  (node source : nat)
   | Boolean        (node : nat).

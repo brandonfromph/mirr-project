@@ -6,9 +6,11 @@
 //! Compiles high-level MIRR guards into low-level hardware primitives:
 //! shift registers for short delays, counter-comparators for long delays.
 
+pub mod clock_domain;
 pub mod compiler;
 pub mod emit;
 pub mod low_level_ir;
+pub mod retiming;
 
 use crate::ast::program::Module;
 use crate::error::MirrError;

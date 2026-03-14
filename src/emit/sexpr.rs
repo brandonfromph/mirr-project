@@ -42,6 +42,7 @@ mod tests {
         let result = PipelineResult {
             program,
             simplify_stats: None,
+            sat_stats: None,
             width_result: None,
             temporal_netlist: None,
             rspu_program: None,
@@ -49,6 +50,7 @@ mod tests {
             extended_type_map: None,
             sim_result: None,
             mape_k_result: None,
+            retiming_stats: None,
         };
         let output = emit_sexpr(&result);
         assert!(output.contains("module"));

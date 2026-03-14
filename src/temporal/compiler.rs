@@ -210,11 +210,13 @@ impl TemporalCompiler {
                         CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
                         CompiledGuard::Counter(c) => c.output_signal.clone(),
                         CompiledGuard::Complex(cx) => cx.output_signal.clone(),
+                        CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
                     };
                     let right_out = match &right_comp {
                         CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
                         CompiledGuard::Counter(c) => c.output_signal.clone(),
                         CompiledGuard::Complex(cx) => cx.output_signal.clone(),
+                        CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
                     };
 
                     let combo_expr = Expr::Binary {

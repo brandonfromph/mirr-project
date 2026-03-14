@@ -88,6 +88,16 @@ pub fn emit_dot(netlist: &TemporalNetlist) -> Result<String, MirrError> {
                     cx.output_signal
                 ));
             }
+            CompiledGuard::DynamicCounter(dc) => {
+                dot.push_str(&format!(
+                    "  subgraph cluster_{} {{\n    label=\"DynCtr: {}\\nmax {} cycles\";\n",
+                    dc.name, dc.name, dc.max_delay
+                ));
+                dot.push_str(&format!(
+                    "    \"{}\" -> \"{}\";\n  }}\n",
+                    dc.counter_signal, dc.output_signal
+                ));
+            }
         }
     }
 
@@ -146,6 +156,12 @@ pub fn emit_verilog(netlist: &TemporalNetlist) -> Result<String, MirrError> {
             }
             CompiledGuard::Complex(cx) => {
                 v.push_str(&format!("    // Complex guard '{}'\n", cx.name));
+            }
+            CompiledGuard::DynamicCounter(dc) => {
+                v.push_str(&format!(
+                    "    // DynamicCounter guard '{}' max_delay={}\n",
+                    dc.name, dc.max_delay
+                ));
             }
         }
     }

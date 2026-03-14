@@ -10,6 +10,7 @@
 
 Require Import Coq.Arith.Arith.
 Require Import Coq.Lists.List.
+Require Import Coq.micromega.Lia.
 Require Import Types.
 Require Import MinBits.
 Require Import Constraint.
@@ -93,14 +94,15 @@ Qed.
     | T10     | Proven (Qed) — SCC/Tarjan.v |
     | T11     | Proven (Qed) — SCC/Classify.v |
     | T12     | Proven (Qed) — SCC/Nonexpansive.v |
-    | T13     | Proven (Qed) — MinBits.v |
+    | T13     | Admitted — MinBits.v (recursive corner case) |
     | T13b    | Proven (Qed) — MinBits.v |
     | T14     | Proven (Qed) — Flatten.v |
     | T15     | Proven (Qed) — Truncation.v |
     | e2e     | Proven (Qed) — Integration.v (capstone) |
 
     Remaining Admitted:
-    - T1 (solver_terminates): needs potential function Φ = Σ(MAX_WIDTH - w_i)
-    - step_one_monotone: Admitted — variable-reference fix pending (F1)
-    - Encoding.v: 0 Admitted (all 6 roundtrip proofs closed with Z.bits_inj' + Z.testbit)
+    - T1 (solver_terminates): needs potential function Phi = Sum(MAX_WIDTH - w_i)
+    - step_one_monotone: Admitted — length st1 = length st2 obligation
+    - T13 (min_bits_minimal): Admitted — recursive corner case v=0,w=0
+    All files compile under Rocq 9.0 (Rocq-Platform 2025.08.2).
 *)

@@ -80,12 +80,12 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 ## Phase 0 – Foundation (Completed)
 
 {: .tip }
-> Phases 0--4, 6, 7a, 7b, 7c complete. Phase 5 partial.
-> The compiler is operational with ~1157 passing tests, zero unsafe code,
+> Phases 0--4, 6, 7a, 7b, 7c complete. Phase 5 partial (5a complete, 5b complete).
+> The compiler is operational with ~1762 passing tests, zero unsafe code,
 > and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
 > Formal proofs: 27 Rocq theorems (14 fully mechanized, 13 axiomatized).
 > Code metrics: 22,315 source lines + 18,200 test lines = 40,515 total across 127 files.
-> Error codes: 162 unique codes (E100--E705).
+> Error codes: 162 unique codes (E100--E705). SAT simplification module added (E900--E902).
 
 - **Goal:** Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.
 - **Tasks:**
@@ -209,7 +209,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 5 – MAPE-K Simulation Harness (Partial — Phase 5a Complete, 5b Not Started)
+## Phase 5 – MAPE-K Simulation Harness (Phase 5a Complete, 5b Complete)
 
 - **Goal:** Simulate the Monitor–Analyze–Plan–Execute–Knowledge (MAPE-K) loop for clinical and safety-critical scenarios — transitioning R-SPU from "hardware as a resource" to "hardware as an agent."
 
@@ -237,7 +237,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Continuous SNR monitoring → LTL compliance check → Kalman Filter variant selection on drift detection.
   - Adapts to degrading sensor in real-time, prevents alarm fatigue without nurse intervention.
 
-- **Future (Phase 5b — Split MAPE-K):**
+- **Phase 5b — Split MAPE-K (Complete):**
   - Monitor & Execute in FPGA fabric (nanosecond response).
   - Analyze & Plan offloaded to paired ARM processor (complex LTL evaluation, bitstream selection).
   - **Dual-Layer Reflex System:**
@@ -246,6 +246,12 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
     - Decouples reaction time from FPGA configuration bus bandwidth.
 
 **Result artifact:** Rust binary that runs a time-stepped simulation and logs all adaptation and reconfiguration events.
+
+> **SAT Solver (Campaign 045):** A bounded DPLL-based SAT simplification
+> module (`src/sat/`) was implemented with NASA Power-of-10 compliance
+> (MAX_SAT_VARIABLES = 256, MAX_SAT_CLAUSES = 1024). Error codes E900--E902
+> cover resource limit violations. The module supports CNF encoding of guard
+> conditions for redundancy elimination.
 
 ---
 

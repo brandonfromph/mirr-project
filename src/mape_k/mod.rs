@@ -32,6 +32,7 @@ pub mod executor;
 pub mod knowledge;
 pub mod ltl;
 pub mod monitor;
+pub mod partition;
 pub mod planner;
 pub mod sensor;
 

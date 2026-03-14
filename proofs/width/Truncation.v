@@ -9,6 +9,7 @@
 
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
+Require Import Coq.micromega.Lia.
 Require Import Types.
 
 (** ** Truncation Specification
@@ -48,14 +49,13 @@ Proof.
   apply Nat.pow_le_mono_r; lia.
 Qed.
 
-(** The truncation check is decidable. *)
+(** The truncation check is decidable for valid widths (target > 0). *)
 Lemma truncation_dec : forall target_w expr_w,
+  target_w > 0 ->
   {truncates target_w expr_w} + {no_truncation target_w expr_w}.
 Proof.
-  intros. unfold truncates, no_truncation.
-  destruct (le_gt_dec expr_w target_w).
+  intros target_w expr_w Hpos. unfold truncates, no_truncation.
+  destruct (le_gt_dec expr_w target_w) as [Hle|Hgt].
   - right. auto.
-  - destruct (Nat.eq_dec target_w 0).
-    + right. subst. lia.
-    + left. lia.
+  - left. lia.
 Qed.

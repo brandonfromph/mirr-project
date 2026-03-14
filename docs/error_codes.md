@@ -159,6 +159,11 @@ The prefix classifies the error; the full code maps to a single creation site.
 
 ## Temporal Errors (E3xx)
 
+> **Note:** Several temporal error conditions below are emitted without unique
+> error codes (shown as `--`). These use the E300 category fallback. Future
+> campaigns should assign unique codes (E301--E3xx) to each distinct message
+> for structured diagnostic rendering.
+
 | Code | Message pattern | Source |
 |------|----------------|--------|
 | E300 | *(category fallback prefix)* | `src/error.rs` |
@@ -356,3 +361,9 @@ CLI errors are rendered through `render_diagnostic()` in `mirr-compile`. LSP dia
 - [Type System](type-system) — Type rules behind E6xx errors
 - [R-SPU Reference](rspu_isa_spec) — Resource limits behind E7xx errors
 - [Migration Guide](migration-guide) — New error codes added per version
+
+## E9xx — SAT Simplification
+
+| Code | Message | Trigger |
+|------|---------|---------|
+| E900 | SAT error | General SAT simplification error (exceeds MAX_SAT_CHECKS or internal failure) |
