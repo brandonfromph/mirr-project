@@ -295,9 +295,16 @@ code {
   font-family: var(--mono);
   font-size: 0.88em;
   background: var(--bg-code);
-  color: var(--text-bright);
+  color: var(--accent);
   padding: 0.15em 0.35em;
   border-radius: 3px;
+}
+/* Inside code blocks, let syntax highlighting control color */
+pre code {
+  color: var(--text-bright);
+  background: none;
+  padding: 0;
+  font-size: 0.85rem;
 }
 
 pre {
@@ -313,11 +320,6 @@ pre {
 pre::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
 pre::-webkit-scrollbar-thumb { background: rgba(148,163,184,.2); border-radius: 4px; }
 
-pre code {
-  background: none;
-  padding: 0;
-  font-size: 0.85rem;
-}
 
 /* ============================================================
    Tables
@@ -437,7 +439,7 @@ tr:hover td {
 /* Feature cards */
 .mirr-features {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -454,6 +456,9 @@ tr:hover td {
   margin-top: 0;
   font-size: 1rem;
 }
+.mirr-feature-card:nth-child(1) h3 code { color: var(--cyan); }    /* signal — cyan */
+.mirr-feature-card:nth-child(2) h3 code { color: var(--green); }   /* guard — green */
+.mirr-feature-card:nth-child(3) h3 code { color: var(--violet); }  /* reflex — violet */
 
 .mirr-feature-card .icon {
   font-size: 1.5rem;
@@ -483,6 +488,10 @@ tr:hover td {
 
 @media (max-width: 768px) {
   .site {
+    grid-template-columns: 1fr;
+  }
+
+  .mirr-features {
     grid-template-columns: 1fr;
   }
 
@@ -559,6 +568,13 @@ tr:hover td {
   code { color: #0077b6; }
   .page-toc a { color: #333; }
 
+  .hl-kw, .hl-fn { color: #0077b6; }
+  .hl-type { color: #2d6a4f; }
+  .hl-str, .hl-num { color: #b45309; }
+  .hl-cmt { color: #555; }
+  .hl-var { color: #6a0dad; }
+  .hl-op { color: #000; }
+
   td { word-break: break-all; }
 }
 
@@ -578,6 +594,15 @@ tr:hover td {
 .mirr-ann    { color: #c084fc; font-style: italic; }
 .mirr-tag    { color: #f472b6; }
 
+/* ===== Generic syntax highlighting (bash, rust, json, toml, asm, lisp) ===== */
+.hl-kw   { color: #00E5FF; font-weight: 600; }  /* keywords — cyan */
+.hl-type { color: #22C55E; }                      /* types — green */
+.hl-str  { color: #fbbf24; }                      /* strings — amber */
+.hl-num  { color: #f59e0b; }                      /* numbers/booleans — orange */
+.hl-cmt  { color: #6b7280; font-style: italic; }  /* comments — dim */
+.hl-var  { color: #c084fc; }                       /* variables — violet */
+.hl-fn   { color: #34d399; }                       /* functions/commands — mint */
+.hl-op   { color: #94a3b8; }                       /* operators — slate */
 /* ===== Per-page TOC ===== */
 .page-toc {
   font-size: 0.8rem;

@@ -8,7 +8,7 @@
     Campaign: ROCQ-001
 *)
 
-From Stdlib.Arith Require Import Arith.
+From Stdlib.Arith Require Import PeanoNat.
 From Stdlib.Lists Require Import List.
 From Stdlib.micromega Require Import Lia.
 Require Import Types.

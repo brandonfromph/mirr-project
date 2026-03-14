@@ -7,7 +7,7 @@
     Depends on: TYPE-003 (Signed-Aware Width Inference)
 *)
 
-From Stdlib.Arith Require Import Arith.
+From Stdlib.Arith Require Import PeanoNat.
 From Stdlib.Lists Require Import List.
 From Stdlib.Bool Require Import Bool.
 Import ListNotations.

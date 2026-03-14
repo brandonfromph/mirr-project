@@ -282,7 +282,10 @@ fn render_markdown(body: &str) -> String {
     let with_callouts = postprocess_callouts(&html_output);
 
     // Apply MIRR syntax highlighting to ```mirr code blocks
-    postprocess_mirr_highlight(&with_callouts)
+    let with_mirr = postprocess_mirr_highlight(&with_callouts);
+
+    // Apply syntax highlighting to other language code blocks
+    postprocess_lang_highlight(&with_mirr)
 }
 
 /// Convert bare page links like [text](page-name) to [text](page-name.html).
@@ -859,7 +862,791 @@ fn is_mirr_operator(ch: char) -> bool {
     matches!(ch, '+' | '-' | '*' | '=' | '<' | '>' | '!' | '&' | '|' | '^' | '~' | '%')
 }
 
-/// Generate a URL-safe slug from heading text.
+// =========================================================================
+// Multi-language syntax highlighting (bash, rust, json, toml, etc.)
+// =========================================================================
+
+const LANGS: &[&str] = &["bash", "sh", "shell", "rust", "json", "toml", "tcl", "lisp", "asm"];
+
+/// Scan for `<code class="language-X">` blocks for supported languages and
+/// apply token-level highlighting. MIRR is handled separately.
+fn postprocess_lang_highlight(html: &str) -> String {
+    let mut result = String::with_capacity(html.len());
+    let mut cursor = 0;
+
+    const MAX_BLOCKS: usize = 200;
+    let mut block_count = 0;
+
+    while cursor < html.len() {
+        let tag_start = match html[cursor..].find("<code class=\"language-") {
+            Some(pos) => cursor + pos,
+            None => {
+                result.push_str(&html[cursor..]);
+                break;
+            }
+        };
+
+        // Extract the language name
+        let lang_start = tag_start + "<code class=\"language-".len();
+        let lang_end = match html[lang_start..].find('"') {
+            Some(pos) => lang_start + pos,
+            None => {
+                result.push_str(&html[cursor..]);
+                break;
+            }
+        };
+        let lang = &html[lang_start..lang_end];
+
+        // Skip languages we don't highlight (mirr is handled elsewhere)
+        if lang == "mirr" || !LANGS.contains(&lang) {
+            // Pass through the open tag and move past it
+            let skip_to = lang_end + 2; // skip past ">
+            result.push_str(&html[cursor..skip_to]);
+            cursor = skip_to;
+            continue;
+        }
+
+        block_count += 1;
+        if block_count > MAX_BLOCKS {
+            result.push_str(&html[cursor..]);
+            break;
+        }
+
+        let open_end = lang_end + 2; // past the closing ">
+        result.push_str(&html[cursor..open_end]);
+
+        let close_tag = "</code>";
+        let content_end = match html[open_end..].find(close_tag) {
+            Some(pos) => open_end + pos,
+            None => {
+                result.push_str(&html[open_end..]);
+                return result;
+            }
+        };
+
+        let raw_code = &html[open_end..content_end];
+        let code = raw_code
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"");
+
+        let highlighted = match lang {
+            "bash" | "sh" | "shell" => highlight_bash(&code),
+            "rust" => highlight_rust(&code),
+            "json" => highlight_json(&code),
+            "toml" => highlight_toml(&code),
+            "lisp" => highlight_lisp(&code),
+            "asm" => highlight_asm(&code),
+            "tcl" => highlight_bash(&code), // TCL is close enough to shell
+            _ => escape_html(&code),
+        };
+
+        result.push_str(&highlighted);
+        result.push_str(close_tag);
+        cursor = content_end + close_tag.len();
+    }
+
+    result
+}
+
+/// Bash / shell highlighting.
+fn highlight_bash(code: &str) -> String {
+    let mut out = String::with_capacity(code.len() * 2);
+    let mut token_count = 0;
+
+    for line in code.lines() {
+        token_count += 1;
+        if token_count > MAX_HIGHLIGHT_TOKENS {
+            out.push_str(&escape_html(line));
+            out.push('\n');
+            continue;
+        }
+
+        let trimmed = line.trim_start();
+        // Full-line comment
+        if trimmed.starts_with('#') && !trimmed.starts_with("#!") || trimmed.starts_with("#!") {
+            let leading = &line[..line.len() - trimmed.len()];
+            out.push_str(leading);
+            out.push_str("<span class=\"hl-cmt\">");
+            out.push_str(&escape_html(trimmed));
+            out.push_str("</span>\n");
+            continue;
+        }
+
+        let mut chars = line.chars().peekable();
+        while let Some(&ch) = chars.peek() {
+            token_count += 1;
+            if token_count > MAX_HIGHLIGHT_TOKENS {
+                let rest: String = chars.collect();
+                out.push_str(&escape_html(&rest));
+                break;
+            }
+
+            // Comment
+            if ch == '#' {
+                out.push_str("<span class=\"hl-cmt\">");
+                let rest: String = chars.collect();
+                out.push_str(&escape_html(&rest));
+                out.push_str("</span>");
+                break;
+            }
+
+            // String (double-quoted)
+            if ch == '"' {
+                chars.next();
+                let mut s = String::from("\"");
+                let mut escaped = false;
+                for c in chars.by_ref() {
+                    s.push(c);
+                    if escaped {
+                        escaped = false;
+                    } else if c == '\\' {
+                        escaped = true;
+                    } else if c == '"' {
+                        break;
+                    }
+                }
+                out.push_str("<span class=\"hl-str\">");
+                out.push_str(&escape_html(&s));
+                out.push_str("</span>");
+                continue;
+            }
+
+            // String (single-quoted)
+            if ch == '\'' {
+                chars.next();
+                let mut s = String::from("'");
+                for c in chars.by_ref() {
+                    s.push(c);
+                    if c == '\'' {
+                        break;
+                    }
+                }
+                out.push_str("<span class=\"hl-str\">");
+                out.push_str(&escape_html(&s));
+                out.push_str("</span>");
+                continue;
+            }
+
+            // Variable ($VAR, ${VAR})
+            if ch == '$' {
+                chars.next();
+                let mut var = String::from("$");
+                if chars.peek() == Some(&'{') {
+                    for c in chars.by_ref() {
+                        var.push(c);
+                        if c == '}' {
+                            break;
+                        }
+                    }
+                } else {
+                    while let Some(&c) = chars.peek() {
+                        if c.is_alphanumeric() || c == '_' {
+                            var.push(c);
+                            chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                out.push_str("<span class=\"hl-var\">");
+                out.push_str(&escape_html(&var));
+                out.push_str("</span>");
+                continue;
+            }
+
+            // Number
+            if ch.is_ascii_digit() {
+                let mut num = String::new();
+                while let Some(&c) = chars.peek() {
+                    if c.is_ascii_digit() || c == '.' {
+                        num.push(c);
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+                out.push_str("<span class=\"hl-num\">");
+                out.push_str(&escape_html(&num));
+                out.push_str("</span>");
+                continue;
+            }
+
+            // Word / keyword
+            if ch.is_alphabetic() || ch == '_' {
+                let mut word = String::new();
+                while let Some(&c) = chars.peek() {
+                    if c.is_alphanumeric() || c == '_' || c == '-' {
+                        word.push(c);
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+                let class = classify_bash_token(&word);
+                if class.is_empty() {
+                    out.push_str(&escape_html(&word));
+                } else {
+                    out.push_str("<span class=\"");
+                    out.push_str(class);
+                    out.push_str("\">");
+                    out.push_str(&escape_html(&word));
+                    out.push_str("</span>");
+                }
+                continue;
+            }
+
+            // Operators
+            if matches!(ch, '|' | '>' | '<' | '&' | ';') {
+                chars.next();
+                out.push_str("<span class=\"hl-op\">");
+                out.push_str(&escape_html(&ch.to_string()));
+                out.push_str("</span>");
+                continue;
+            }
+
+            chars.next();
+            out.push(ch);
+        }
+        out.push('\n');
+    }
+    if out.ends_with('\n') {
+        out.pop();
+    }
+    out
+}
+
+fn classify_bash_token(token: &str) -> &'static str {
+    match token {
+        "if" | "then" | "else" | "elif" | "fi" | "for" | "while" | "do" | "done" | "case"
+        | "esac" | "in" | "function" | "return" | "exit" | "export" | "local" | "readonly"
+        | "set" | "unset" | "shift" | "source" | "eval" | "exec" | "trap" | "break"
+        | "continue" | "declare" | "typeset" => "hl-kw",
+        "echo" | "printf" | "cd" | "ls" | "grep" | "sed" | "awk" | "cat" | "mkdir" | "rm"
+        | "cp" | "mv" | "test" | "find" | "xargs" | "sort" | "wc" | "head" | "tail" | "cut"
+        | "tr" | "tee" | "curl" | "wget" | "cargo" | "rustup" | "git" | "make" | "npm" | "pip"
+        | "docker" | "sudo" | "wasm-pack" | "coqc" => "hl-fn",
+        "true" | "false" | "null" | "/dev/null" => "hl-num",
+        _ => "",
+    }
+}
+
+/// Rust highlighting.
+fn highlight_rust(code: &str) -> String {
+    let mut out = String::with_capacity(code.len() * 2);
+    let mut token_count = 0;
+
+    for line in code.lines() {
+        token_count += 1;
+        if token_count > MAX_HIGHLIGHT_TOKENS {
+            out.push_str(&escape_html(line));
+            out.push('\n');
+            continue;
+        }
+
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("//") {
+            let leading = &line[..line.len() - trimmed.len()];
+            out.push_str(leading);
+            out.push_str("<span class=\"hl-cmt\">");
+            out.push_str(&escape_html(trimmed));
+            out.push_str("</span>\n");
+            continue;
+        }
+
+        let mut chars = line.chars().peekable();
+        while let Some(&ch) = chars.peek() {
+            token_count += 1;
+            if token_count > MAX_HIGHLIGHT_TOKENS {
+                let rest: String = chars.collect();
+                out.push_str(&escape_html(&rest));
+                break;
+            }
+
+            if ch == '/' {
+                chars.next();
+                if chars.peek() == Some(&'/') {
+                    out.push_str("<span class=\"hl-cmt\">/");
+                    let rest: String = chars.collect();
+                    out.push_str(&escape_html(&rest));
+                    out.push_str("</span>");
+                    break;
+                }
+                out.push_str("<span class=\"hl-op\">/</span>");
+                continue;
+            }
+
+            if ch == '"' {
+                chars.next();
+                let mut s = String::from("\"");
+                let mut escaped = false;
+                for c in chars.by_ref() {
+                    s.push(c);
+                    if escaped {
+                        escaped = false;
+                    } else if c == '\\' {
+                        escaped = true;
+                    } else if c == '"' {
+                        break;
+                    }
+                }
+                out.push_str("<span class=\"hl-str\">");
+                out.push_str(&escape_html(&s));
+                out.push_str("</span>");
+                continue;
+            }
+
+            if ch == '\'' {
+                chars.next();
+                // Could be lifetime or char literal
+                let mut s = String::from("'");
+                if let Some(&next) = chars.peek() {
+                    if next.is_alphabetic() || next == '_' {
+                        // Lifetime like 'a or char like 'x'
+                        s.push(next);
+                        chars.next();
+                        while let Some(&c) = chars.peek() {
+                            if c.is_alphanumeric() || c == '_' {
+                                s.push(c);
+                                chars.next();
+                            } else {
+                                break;
+                            }
+                        }
+                        if chars.peek() == Some(&'\'') {
+                            // char literal 'x'
+                            s.push('\'');
+                            chars.next();
+                            out.push_str("<span class=\"hl-str\">");
+                            out.push_str(&escape_html(&s));
+                            out.push_str("</span>");
+                        } else {
+                            // lifetime 'a
+                            out.push_str("<span class=\"hl-type\">");
+                            out.push_str(&escape_html(&s));
+                            out.push_str("</span>");
+                        }
+                    } else if next == '\\' {
+                        // Escaped char literal like '\n'
+                        for c in chars.by_ref() {
+                            s.push(c);
+                            if c == '\'' && s.len() > 2 {
+                                break;
+                            }
+                        }
+                        out.push_str("<span class=\"hl-str\">");
+                        out.push_str(&escape_html(&s));
+                        out.push_str("</span>");
+                    } else {
+                        out.push('\'');
+                    }
+                } else {
+                    out.push('\'');
+                }
+                continue;
+            }
+
+            // Attribute #[...]
+            if ch == '#' {
+                chars.next();
+                if chars.peek() == Some(&'[') || chars.peek() == Some(&'!') {
+                    let mut attr = String::from("#");
+                    for c in chars.by_ref() {
+                        attr.push(c);
+                        if c == ']' {
+                            break;
+                        }
+                    }
+                    out.push_str("<span class=\"hl-cmt\">");
+                    out.push_str(&escape_html(&attr));
+                    out.push_str("</span>");
+                } else {
+                    out.push('#');
+                }
+                continue;
+            }
+
+            if ch.is_ascii_digit() {
+                let mut num = String::new();
+                while let Some(&c) = chars.peek() {
+                    if c.is_ascii_alphanumeric() || c == '_' || c == '.' {
+                        num.push(c);
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+                out.push_str("<span class=\"hl-num\">");
+                out.push_str(&escape_html(&num));
+                out.push_str("</span>");
+                continue;
+            }
+
+            if ch.is_alphabetic() || ch == '_' {
+                let mut word = String::new();
+                while let Some(&c) = chars.peek() {
+                    if c.is_alphanumeric() || c == '_' {
+                        word.push(c);
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+                // Check for macro invocation (word!)
+                let is_macro = chars.peek() == Some(&'!');
+                let class = classify_rust_token(&word, is_macro);
+                if class.is_empty() {
+                    out.push_str(&escape_html(&word));
+                } else {
+                    out.push_str("<span class=\"");
+                    out.push_str(class);
+                    out.push_str("\">");
+                    out.push_str(&escape_html(&word));
+                    out.push_str("</span>");
+                }
+                continue;
+            }
+
+            if matches!(ch, '+' | '-' | '*' | '=' | '<' | '>' | '!' | '&' | '|' | '^' | '%') {
+                chars.next();
+                out.push_str("<span class=\"hl-op\">");
+                out.push_str(&escape_html(&ch.to_string()));
+                out.push_str("</span>");
+                continue;
+            }
+
+            chars.next();
+            out.push(ch);
+        }
+        out.push('\n');
+    }
+    if out.ends_with('\n') {
+        out.pop();
+    }
+    out
+}
+
+fn classify_rust_token(token: &str, is_macro: bool) -> &'static str {
+    if is_macro {
+        return "hl-fn";
+    }
+    match token {
+        "fn" | "let" | "mut" | "const" | "static" | "if" | "else" | "match" | "for" | "while"
+        | "loop" | "return" | "break" | "continue" | "struct" | "enum" | "impl" | "trait"
+        | "type" | "where" | "pub" | "use" | "mod" | "crate" | "super" | "self" | "Self" | "as"
+        | "in" | "ref" | "move" | "async" | "await" | "dyn" | "unsafe" | "extern" => "hl-kw",
+        "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128"
+        | "isize" | "f32" | "f64" | "bool" | "char" | "str" | "String" | "Vec" | "Option"
+        | "Result" | "Box" | "Rc" | "Arc" | "HashMap" | "HashSet" | "Path" | "PathBuf" | "Ok"
+        | "Err" | "Some" | "None" => "hl-type",
+        "true" | "false" => "hl-num",
+        _ => {
+            // PascalCase → type
+            if token.len() > 1
+                && token.starts_with(|c: char| c.is_uppercase())
+                && token.contains(|c: char| c.is_lowercase())
+            {
+                "hl-type"
+            } else {
+                ""
+            }
+        }
+    }
+}
+
+/// JSON highlighting.
+fn highlight_json(code: &str) -> String {
+    let mut out = String::with_capacity(code.len() * 2);
+    let mut chars = code.chars().peekable();
+    let mut token_count = 0;
+
+    while let Some(&ch) = chars.peek() {
+        token_count += 1;
+        if token_count > MAX_HIGHLIGHT_TOKENS {
+            let rest: String = chars.collect();
+            out.push_str(&escape_html(&rest));
+            break;
+        }
+
+        if ch == '"' {
+            chars.next();
+            let mut s = String::from("\"");
+            let mut escaped = false;
+            for c in chars.by_ref() {
+                s.push(c);
+                if escaped {
+                    escaped = false;
+                } else if c == '\\' {
+                    escaped = true;
+                } else if c == '"' {
+                    break;
+                }
+            }
+            // Key or value? Key is followed by ':'
+            let is_key = {
+                let mut peek = chars.clone();
+                while peek.peek().map_or(false, |c| c.is_whitespace()) {
+                    peek.next();
+                }
+                peek.peek() == Some(&':')
+            };
+            let class = if is_key { "hl-var" } else { "hl-str" };
+            out.push_str("<span class=\"");
+            out.push_str(class);
+            out.push_str("\">");
+            out.push_str(&escape_html(&s));
+            out.push_str("</span>");
+            continue;
+        }
+
+        if ch.is_ascii_digit() || ch == '-' {
+            chars.next();
+            let mut num = String::new();
+            num.push(ch);
+            while let Some(&c) = chars.peek() {
+                if c.is_ascii_digit() || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-' {
+                    num.push(c);
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+            // Only color as number if it actually has digits
+            if num.contains(|c: char| c.is_ascii_digit()) {
+                out.push_str("<span class=\"hl-num\">");
+                out.push_str(&escape_html(&num));
+                out.push_str("</span>");
+            } else {
+                out.push_str(&escape_html(&num));
+            }
+            continue;
+        }
+
+        if ch.is_alphabetic() {
+            let mut word = String::new();
+            while let Some(&c) = chars.peek() {
+                if c.is_alphabetic() {
+                    word.push(c);
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+            let class = match word.as_str() {
+                "true" | "false" | "null" => "hl-num",
+                _ => "",
+            };
+            if class.is_empty() {
+                out.push_str(&escape_html(&word));
+            } else {
+                out.push_str("<span class=\"");
+                out.push_str(class);
+                out.push_str("\">");
+                out.push_str(&escape_html(&word));
+                out.push_str("</span>");
+            }
+            continue;
+        }
+
+        chars.next();
+        out.push(ch);
+    }
+    out
+}
+
+/// TOML highlighting.
+fn highlight_toml(code: &str) -> String {
+    let mut out = String::with_capacity(code.len() * 2);
+    for line in code.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with('#') {
+            let leading = &line[..line.len() - trimmed.len()];
+            out.push_str(leading);
+            out.push_str("<span class=\"hl-cmt\">");
+            out.push_str(&escape_html(trimmed));
+            out.push_str("</span>\n");
+            continue;
+        }
+        if trimmed.starts_with('[') {
+            let leading = &line[..line.len() - trimmed.len()];
+            out.push_str(leading);
+            out.push_str("<span class=\"hl-kw\">");
+            out.push_str(&escape_html(trimmed));
+            out.push_str("</span>\n");
+            continue;
+        }
+        // key = value
+        if let Some(eq_pos) = trimmed.find('=') {
+            let leading = &line[..line.len() - trimmed.len()];
+            let key = &trimmed[..eq_pos].trim_end();
+            let rest = &trimmed[eq_pos..];
+            out.push_str(leading);
+            out.push_str("<span class=\"hl-var\">");
+            out.push_str(&escape_html(key));
+            out.push_str("</span>");
+            out.push_str(&escape_html(rest));
+            out.push('\n');
+            continue;
+        }
+        out.push_str(&escape_html(line));
+        out.push('\n');
+    }
+    if out.ends_with('\n') {
+        out.pop();
+    }
+    out
+}
+
+/// Lisp / S-expression highlighting.
+fn highlight_lisp(code: &str) -> String {
+    let mut out = String::with_capacity(code.len() * 2);
+    let mut chars = code.chars().peekable();
+    let mut token_count = 0;
+
+    while let Some(&ch) = chars.peek() {
+        token_count += 1;
+        if token_count > MAX_HIGHLIGHT_TOKENS {
+            let rest: String = chars.collect();
+            out.push_str(&escape_html(&rest));
+            break;
+        }
+
+        if ch == ';' {
+            out.push_str("<span class=\"hl-cmt\">");
+            let rest: String = chars.by_ref().take_while(|&c| c != '\n').collect();
+            out.push_str(&escape_html(&format!(";{}", rest)));
+            out.push_str("</span>\n");
+            continue;
+        }
+
+        if ch == '"' {
+            chars.next();
+            let mut s = String::from("\"");
+            let mut escaped = false;
+            for c in chars.by_ref() {
+                s.push(c);
+                if escaped {
+                    escaped = false;
+                } else if c == '\\' {
+                    escaped = true;
+                } else if c == '"' {
+                    break;
+                }
+            }
+            out.push_str("<span class=\"hl-str\">");
+            out.push_str(&escape_html(&s));
+            out.push_str("</span>");
+            continue;
+        }
+
+        if ch.is_ascii_digit()
+            || (ch == '-' && chars.clone().nth(1).map_or(false, |c| c.is_ascii_digit()))
+        {
+            let mut num = String::new();
+            while let Some(&c) = chars.peek() {
+                if c.is_ascii_digit() || c == '.' || c == '-' {
+                    num.push(c);
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+            out.push_str("<span class=\"hl-num\">");
+            out.push_str(&escape_html(&num));
+            out.push_str("</span>");
+            continue;
+        }
+
+        if ch.is_alphabetic()
+            || ch == '_'
+            || ch == '-' && chars.clone().nth(1).map_or(false, |c| c.is_alphabetic())
+        {
+            let mut word = String::new();
+            while let Some(&c) = chars.peek() {
+                if c.is_alphanumeric() || c == '_' || c == '-' || c == '!' || c == '?' {
+                    word.push(c);
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+            let class = match word.as_str() {
+                "defun" | "defmacro" | "lambda" | "let" | "if" | "cond" | "define" | "set!"
+                | "begin" | "quote" | "defn" | "def" | "module" | "signal" | "guard" | "reflex"
+                | "when" | "temporal" => "hl-kw",
+                "t" | "nil" => "hl-num",
+                _ => "",
+            };
+            if class.is_empty() {
+                out.push_str(&escape_html(&word));
+            } else {
+                out.push_str("<span class=\"");
+                out.push_str(class);
+                out.push_str("\">");
+                out.push_str(&escape_html(&word));
+                out.push_str("</span>");
+            }
+            continue;
+        }
+
+        chars.next();
+        out.push(ch);
+    }
+    out
+}
+
+/// Assembly highlighting.
+fn highlight_asm(code: &str) -> String {
+    let mut out = String::with_capacity(code.len() * 2);
+    for line in code.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with(';') || trimmed.starts_with('#') {
+            let leading = &line[..line.len() - trimmed.len()];
+            out.push_str(leading);
+            out.push_str("<span class=\"hl-cmt\">");
+            out.push_str(&escape_html(trimmed));
+            out.push_str("</span>\n");
+            continue;
+        }
+        // Label (word followed by :)
+        if let Some(colon) = trimmed.find(':') {
+            if colon > 0 && trimmed[..colon].chars().all(|c| c.is_alphanumeric() || c == '_') {
+                let leading = &line[..line.len() - trimmed.len()];
+                out.push_str(leading);
+                out.push_str("<span class=\"hl-fn\">");
+                out.push_str(&escape_html(&trimmed[..=colon]));
+                out.push_str("</span>");
+                out.push_str(&escape_html(&trimmed[colon + 1..]));
+                out.push('\n');
+                continue;
+            }
+        }
+        // First word = instruction mnemonic
+        let mut words = trimmed.splitn(2, |c: char| c.is_whitespace());
+        if let Some(mnemonic) = words.next() {
+            if !mnemonic.is_empty() {
+                let leading = &line[..line.len() - trimmed.len()];
+                out.push_str(leading);
+                out.push_str("<span class=\"hl-kw\">");
+                out.push_str(&escape_html(mnemonic));
+                out.push_str("</span>");
+                if let Some(rest) = words.next() {
+                    out.push(' ');
+                    out.push_str(&escape_html(rest));
+                }
+                out.push('\n');
+                continue;
+            }
+        }
+        out.push_str(&escape_html(line));
+        out.push('\n');
+    }
+    if out.ends_with('\n') {
+        out.pop();
+    }
+    out
+}
 /// Lowercase, spaces to hyphens, strip non-alphanumeric (except hyphens).
 fn heading_to_slug(text: &str) -> String {
     let mut slug = String::with_capacity(text.len());
