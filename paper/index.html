@@ -51,6 +51,7 @@
 <header id="site-header">
   <div class="header-top">
     <div class="header-title">
+      <a href="../" class="header-home" title="Back to documentation">← Docs</a>
       <a href="#" class="header-brand">MIRR</a>
       <span class="header-subtitle">A Safety-Critical HDL Compiler with Formal Width Inference</span>
     </div>
@@ -908,7 +909,7 @@ endmodule</code></pre>
     <code>#![forbid(unsafe_code)]</code>.
   </p>
 
-  <div class="listing">
+  <div class="listing" id="listing-6">
     <div class="listing-caption">Listing 6: Constraint soundness (T4): addition width bound. The MaxPlusOne constraint allocates max(l, r) + 1 bits, proven via <code>Nat.pow_succ_r</code> and linear arithmetic.</div>
     <pre>Theorem add_sound : forall a b,
   a &lt; Nat.pow 2 (Nat.max a b) -&gt;
@@ -921,7 +922,7 @@ Proof.
 Qed.</pre>
   </div>
 
-  <div class="listing">
+  <div class="listing" id="listing-7">
     <div class="listing-caption">Listing 7: End-to-end solver soundness: the iterative solver reaches a fixpoint at least as large as the initial state. Proof by induction on fuel, applying <code>evaluate_monotone</code> at each step.</div>
     <pre>Theorem e2e_solver_sound :
   forall nodes constraints st,
@@ -955,13 +956,25 @@ Proof.
 Qed.</pre>
   </div>
 
-  <div class="listing">
-    <div class="listing-caption">Listing 8: R-SPU opcode roundtrip: the 6-bit opcode survives encode/decode for any instruction format. Uses <code>Z.bits_inj'</code> and testbit extensionality over non-overlapping bitfields.</div>
-    <pre>assert (Hpay_shift :
-    Z.shiftr payload 26 = 0).
-  { apply Z.shiftr_eq_0; lia. }
-  rewrite Hpay_shift.
-  rewrite Z.lor_0_r.
+  <div class="listing" id="listing-8">
+    <div class="listing-caption">Listing 8: R-SPU opcode roundtrip: the 6-bit opcode survives encode/decode for any instruction format. Uses <code>Z.shiftr_eq_0</code> and modular arithmetic over non-overlapping bitfields.</div>
+    <pre>Theorem opcode_roundtrip : forall op payload,
+  (0 &lt;= op &lt; 64) -&gt;
+  (0 &lt;= payload &lt; 67108864) -&gt;
+  extract_opcode (Z.lor (Z.shiftl op 26) payload) = op.
+Proof.
+  intros op payload Hop Hpay.
+  unfold extract_opcode, extract_bits.
+  rewrite Z.shiftr_lor.
+  rewrite Z.shiftr_shiftl_l; [|lia].
+  replace (26 - 26) with 0 by lia.
+  rewrite Z.shiftl_0_r.
+  assert (Hpay_shift : Z.shiftr payload 26 = 0).
+  { apply Z.shiftr_eq_0; [lia|].
+    destruct (Z.eq_dec payload 0) as [-&gt;|Hne];
+      [simpl; lia|].
+    apply Z.log2_lt_pow2; [lia|lia]. }
+  rewrite Hpay_shift. rewrite Z.lor_0_r.
   replace (31 - 26 + 1) with 6 by lia.
   rewrite Z.land_ones; [|lia].
   rewrite Z.mod_small; lia.
@@ -1479,84 +1492,11 @@ Qed.</pre>
   </p>
 
   <h3>Representative Proof Excerpts</h3>
-  <p>Three listings illustrate the range of proof techniques used across the corpus.</p>
-
-  <figure>
-    <figcaption>Listing 1: Constraint soundness (T4) &mdash; <code>add_sound</code> proves that
-      <code>max(left, right)+1</code> bits suffice for unsigned addition. One rewrite + linear arithmetic.</figcaption>
-    <pre><code>Theorem add_sound : forall a b,
-  a &lt; Nat.pow 2 (Nat.max a b) -&gt;
-  b &lt; Nat.pow 2 (Nat.max a b) -&gt;
-  a + b &lt; Nat.pow 2 (S (Nat.max a b)).
-Proof.
-  intros a b H1 H2.
-  rewrite Nat.pow_succ_r; [| lia].
-  lia.
-Qed.</code></pre>
-  </figure>
-
-  <figure>
-    <figcaption>Listing 2: End-to-end solver soundness &mdash; <code>e2e_solver_sound</code> composes
-      all width-inference modules into a single guarantee: the solver reaches a fixpoint at
-      least as large as the initial state. Proof by induction on fuel.</figcaption>
-    <pre><code>Theorem e2e_solver_sound :
-  forall nodes constraints st,
-  well_formed nodes -&gt;
-  (forall i, lookup st i = 0) -&gt;
-  let result := iterate constraints st
-                  (solver_budget (length st)) in
-  is_fixpoint constraints result /\
-  st &#8849; result.
-Proof.
-  intros nodes constraints st Hwf Hzero.
-  simpl. split.
-  - apply solver_terminates.
-    intros i. rewrite Hzero.
-    unfold MAX_WIDTH. lia.
-  - assert (Hgen : forall fuel s,
-      s &#8849; apply_constraints constraints s -&gt;
-      s &#8849; iterate constraints s fuel).
-    { induction fuel as [|fuel' IHfuel'].
-      - intros. simpl. apply state_le_refl.
-      - intros s Hmono. simpl.
-        destruct (list_eq_dec Nat.eq_dec
-          s (solver_round constraints s)).
-        + apply state_le_refl.
-        + apply state_le_trans with
-            (solver_round constraints s).
-          * exact Hmono.
-          * apply IHfuel'.
-            apply evaluate_monotone. }
-    apply Hgen. apply evaluate_monotone.
-Qed.</code></pre>
-  </figure>
-
-  <figure>
-    <figcaption>Listing 3: R-SPU opcode roundtrip &mdash; the 6-bit opcode survives an encode/decode
-      cycle for any instruction format. Uses Z.bits_inj&rsquo; and testbit extensionality over
-      non-overlapping bitfields.</figcaption>
-    <pre><code>Theorem opcode_roundtrip :
-  forall op payload,
-  (0 &lt;= op &lt; 64) -&gt;
-  (0 &lt;= payload &lt; 67108864) -&gt;
-  extract_opcode
-    (Z.lor (Z.shiftl op 26) payload) = op.
-Proof.
-  intros op payload Hop Hpay.
-  unfold extract_opcode, extract_bits.
-  rewrite Z.shiftr_lor.
-  rewrite Z.shiftr_shiftl_l; [|lia].
-  replace (26 - 26) with 0 by lia.
-  rewrite Z.shiftl_0_r.
-  assert (Hpay_shift :
-    Z.shiftr payload 26 = 0).
-  { apply Z.shiftr_eq_0; lia. }
-  rewrite Hpay_shift. rewrite Z.lor_0_r.
-  replace (31 - 26 + 1) with 6 by lia.
-  rewrite Z.land_ones; [|lia].
-  rewrite Z.mod_small; lia.
-Qed.</code></pre>
-  </figure>
+  <p>Three listings illustrate the range of proof techniques used across the corpus.
+     See <a href="#listing-6">Listing 6</a> (constraint soundness via <code>add_sound</code>),
+     <a href="#listing-7">Listing 7</a> (end-to-end solver soundness via <code>e2e_solver_sound</code>),
+     and <a href="#listing-8">Listing 8</a> (R-SPU opcode roundtrip via <code>opcode_roundtrip</code>)
+     in &sect;4 above.</p>
 
   <h3>Proof Dependency Structure</h3>
   <p>The width-inference files compose into the end-to-end soundness theorem via
@@ -3078,6 +3018,29 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
       }
     }
   }).catch(function() {});
+})();
+</script>
+<script>
+// Line numbers for code listings (progressive enhancement)
+(function() {
+  var pres = document.querySelectorAll('.listing pre');
+  for (var i = 0; i < pres.length; i++) {
+    var pre = pres[i];
+    // Get raw text (strip code wrapper if present)
+    var code = pre.querySelector('code');
+    var text = (code || pre).textContent;
+    var lines = text.split('\n');
+    // Remove trailing empty line
+    if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+    // Build line-wrapped HTML
+    var html = '';
+    for (var j = 0; j < lines.length; j++) {
+      // Escape HTML
+      var line = lines[j].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      html += '<span class="line">' + line + '</span>';
+    }
+    pre.innerHTML = html;
+  }
 })();
 </script>
 </body>

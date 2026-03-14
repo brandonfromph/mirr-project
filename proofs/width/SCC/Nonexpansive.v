@@ -6,9 +6,9 @@
     Campaign: ROCQ-001
 *)
 
-Require Import Stdlib.Arith.Arith.
-Require Import Stdlib.Lists.List.
-Require Import Stdlib.micromega.Lia.
+From Stdlib.Arith Require Import Arith.
+From Stdlib.Lists Require Import List.
+From Stdlib.micromega Require Import Lia.
 Require Import Types.
 Require Import Constraint.
 Import ListNotations.

@@ -125,8 +125,7 @@ pub fn run(input_dir: &str, output_dir: &str, css_path: &str) -> i32 {
             });
         }
 
-        let page_html =
-            assemble_page(&meta.title, &html_name, &nav_html, &body_html, &toc_html, css_path);
+        let page_html = assemble_page(&meta.title, &nav_html, &body_html, &toc_html, css_path);
 
         let out_path = output.join(&html_name);
         if let Err(e) = fs::write(&out_path, &page_html) {
@@ -417,7 +416,8 @@ fn escape_html(s: &str) -> String {
 
 /// Build sidebar navigation HTML from nav entries.
 fn build_nav(entries: &[&NavEntry]) -> String {
-    let mut nav = String::from("<nav class=\"site-nav\" aria-label=\"Documentation\">\n");
+    let mut nav =
+        String::from("<nav id=\"site-nav\" class=\"site-nav\" aria-label=\"Documentation\">\n");
 
     for entry in entries {
         nav.push_str(&format!(
@@ -436,7 +436,6 @@ fn build_nav(entries: &[&NavEntry]) -> String {
 /// Assemble a full HTML page.
 fn assemble_page(
     title: &str,
-    _html_name: &str,
     nav_html: &str,
     body_html: &str,
     toc_html: &str,
@@ -450,7 +449,7 @@ fn assemble_page(
     let content_class =
         if toc_html.is_empty() { "site-content" } else { "site-content content-with-toc" };
     format!(
-        r#"<!DOCTYPE html>
+        r##"<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -463,22 +462,25 @@ fn assemble_page(
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to content</a>
 <div class="site">
   <header class="site-header">
     <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
     <h1>MIRR <span>Documentation</span></h1>
     <div class="search-container">
-      <input type="search" class="search-input" id="doc-search" placeholder="Search docs..." aria-label="Search documentation">
+      <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
       <ul class="search-results" id="search-results" role="listbox"></ul>
     </div>
-    <button class="menu-toggle" onclick="document.querySelector('.site-nav').classList.toggle('open')">Menu</button>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
     <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
   </header>
 
   {nav}
 
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
   <div class="content-wrapper">
-{toc_section}  <main class="{content_class}">
+{toc_section}  <main id="main-content" class="{content_class}">
 {body}
   </main>
   </div>
@@ -502,6 +504,17 @@ fn assemble_page(
   var MAX_RESULTS = 8;
 
   if (searchInput) {{
+    document.addEventListener('keydown', function(e) {{
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {{
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }}
+      if (e.key === 'Escape' && document.activeElement === searchInput) {{
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }}
+    }});
     searchInput.addEventListener('focus', function() {{
       if (!searchData) {{
         fetch('search-index.json')
@@ -524,6 +537,23 @@ fn assemble_page(
           .catch(function() {{ searchData = []; }});
       }}
     }});
+    function renderResult(entry) {{
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {{
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }}
+      li.appendChild(a);
+      return li;
+    }}
     searchInput.addEventListener('input', function() {{
       var q = this.value.trim();
       resultsList.innerHTML = '';
@@ -538,12 +568,7 @@ fn assemble_page(
         for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {{
           var entry = searchMap[results[j].ref];
           if (entry) {{
-            var li = document.createElement('li');
-            var a = document.createElement('a');
-            a.href = entry.url;
-            a.textContent = entry.title;
-            li.appendChild(a);
-            resultsList.appendChild(li);
+            resultsList.appendChild(renderResult(entry));
             count++;
           }}
         }}
@@ -554,15 +579,16 @@ fn assemble_page(
           var entry2 = searchData[j2];
           var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
           if (hay.indexOf(ql) !== -1) {{
-            var li2 = document.createElement('li');
-            var a2 = document.createElement('a');
-            a2.href = entry2.url;
-            a2.textContent = entry2.title;
-            li2.appendChild(a2);
-            resultsList.appendChild(li2);
+            resultsList.appendChild(renderResult(entry2));
             count2++;
           }}
         }}
+      }}
+      if (resultsList.children.length === 0 && q.length > 1) {{
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
       }}
     }});
     document.addEventListener('click', function(e) {{
@@ -570,10 +596,41 @@ fn assemble_page(
     }});
   }}
 }})();
+/* Scroll-spy: highlight active TOC link */
+(function() {{
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {{
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {{
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({{ el: el, link: tocLinks[i] }});
+    }}
+  }}
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {{
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {{
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }}
+    for (var k = 0; k < headings.length; k++) {{
+      headings[k].link.classList.remove('active');
+    }}
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }}
+  window.addEventListener('scroll', function() {{
+    if (!ticking) {{ ticking = true; requestAnimationFrame(updateActive); }}
+  }}, {{ passive: true }});
+  updateActive();
+}})();
 </script>
 </body>
 </html>
-"#,
+"##,
         title = escape_html(title),
         css = escape_html(css_path),
         nav = nav_html,
@@ -717,16 +774,10 @@ fn highlight_mirr(code: &str) -> String {
             }
 
             if ch.is_ascii_digit() {
-                // Number
+                // Number (supports hex 0xFF, binary 0b10, octal 0o7)
                 let mut num = String::new();
                 while let Some(&c) = chars.peek() {
-                    if c.is_ascii_digit()
-                        || c == '_'
-                        || c == 'x'
-                        || c == 'b'
-                        || c == 'o'
-                        || (c.is_ascii_hexdigit() && !c.is_ascii_alphabetic())
-                    {
+                    if c.is_ascii_hexdigit() || c == '_' || c == 'x' || c == 'b' || c == 'o' {
                         num.push(c);
                         chars.next();
                     } else {
@@ -859,9 +910,9 @@ fn extract_toc_entries(body: &str) -> Vec<TocEntry> {
     entries
 }
 
-/// Build a `<nav class="toc">` HTML block from TOC entries.
+/// Build a `<nav class="page-toc">` HTML block from TOC entries.
 fn build_toc_html(entries: &[TocEntry]) -> String {
-    let mut html = String::from("    <nav class=\"toc\" aria-label=\"Table of Contents\">\n");
+    let mut html = String::from("    <nav class=\"page-toc\" aria-label=\"Table of Contents\">\n");
     html.push_str("      <h2 class=\"toc-title\">Contents</h2>\n");
     html.push_str("      <ul>\n");
     for entry in entries {
@@ -938,7 +989,7 @@ fn inject_heading_ids(html: &str) -> String {
 
         // Extract text content (strip any inner HTML tags for slug generation)
         let inner_html = &html[content_start..content_end];
-        let text_content = strip_html_tags(inner_html);
+        let text_content = unescape_entities(&strip_html_tags(inner_html));
         let slug = heading_to_slug(&text_content);
 
         // Write the tag with id attribute
@@ -972,6 +1023,15 @@ fn strip_html_tags(html: &str) -> String {
         }
     }
     result
+}
+
+/// Decode the five standard HTML character entities to plain text.
+fn unescape_entities(s: &str) -> String {
+    s.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#x27;", "'")
 }
 
 /// Extract the first paragraph's text content from rendered HTML.

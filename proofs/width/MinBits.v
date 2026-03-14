@@ -8,10 +8,10 @@
     Campaign: ROCQ-001
 *)
 
-Require Import Stdlib.Arith.Arith.
-Require Import Stdlib.Arith.PeanoNat.
-Require Import Stdlib.micromega.Lia.
-Require Import Stdlib.Arith.Wf_nat.
+From Stdlib.Arith Require Import Arith.
+From Stdlib.Arith Require Import PeanoNat.
+From Stdlib.micromega Require Import Lia.
+From Stdlib.Arith Require Import Wf_nat.
 Require Import Types.
 
 (** ** Specification

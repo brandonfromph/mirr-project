@@ -1,4 +1,4 @@
-Require Import Stdlib.Arith.Arith.
-Require Import Stdlib.Arith.PeanoNat.
-Require Import Stdlib.micromega.Lia.
+From Stdlib.Arith Require Import Arith.
+From Stdlib.Arith Require Import PeanoNat.
+From Stdlib.micromega Require Import Lia.
 Check Nat.div_mod_eq.
