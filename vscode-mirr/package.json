@@ -4,7 +4,6 @@
   "description": "Syntax highlighting, file icon, and color theme for the MIRR safety-critical HDL",
   "version": "0.2.0",
   "publisher": "mirr-project",
-  "icon": "icons/mirr-file.svg",
   "license": "GPL-3.0",
   "repository": {
     "type": "git",
