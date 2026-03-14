@@ -1,6 +1,8 @@
 <div align="center">
 
-# MIRR
+<a href="https://brandonfromph.github.io/mirr-project/paper/">
+  <img src="paper/lra-card.svg" alt="MIRR: A Safety-Critical HDL Compiler" width="100%">
+</a>
 
 **A hardware rule language for safety-critical systems.**
 
