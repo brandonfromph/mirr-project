@@ -92,10 +92,11 @@ Lemma bounded_testbit : forall v n k,
   0 <= v < Z.pow 2 n -> 0 <= n -> n <= k ->
   Z.testbit v k = false.
 Proof.
-  intros. apply Z.bits_above_log2; [lia|].
+  intros v n k Hv Hn Hk.
   destruct (Z.eq_dec v 0) as [->|Hne].
-  - simpl. lia.
-  - apply Z.lt_le_trans with n; [|lia].
+  - apply Z.testbit_0_l.
+  - apply Z.bits_above_log2; [lia|].
+    apply Z.lt_le_trans with n; [|lia].
     apply Z.log2_lt_pow2; lia.
 Qed.
 
