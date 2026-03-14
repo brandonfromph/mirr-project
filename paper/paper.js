@@ -988,3 +988,56 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
         }
     }
 })();
+
+/* ── Active Section Tracking (Jekyll-style nav highlighting) ── */
+(function initScrollSpy() {
+    var MAX_SECTIONS = 50;
+    var navLinks = document.querySelectorAll('#site-header nav[aria-label] a');
+    if (navLinks.length === 0) return;
+
+    var sectionIds = [];
+    for (var i = 0; i < navLinks.length && i < MAX_SECTIONS; i++) {
+        var href = navLinks[i].getAttribute('href');
+        if (href && href.charAt(0) === '#') {
+            sectionIds.push(href.substring(1));
+        }
+    }
+
+    var lastActive = '';
+    var ticking = false;
+
+    function updateActive() {
+        ticking = false;
+        var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        var headerHeight = 80;
+        var current = '';
+
+        for (var i = 0; i < sectionIds.length; i++) {
+            var el = document.getElementById(sectionIds[i]);
+            if (el && el.offsetTop - headerHeight <= scrollTop + 10) {
+                current = sectionIds[i];
+            }
+        }
+
+        if (current !== lastActive) {
+            lastActive = current;
+            for (var j = 0; j < navLinks.length; j++) {
+                var href = navLinks[j].getAttribute('href');
+                if (href === '#' + current) {
+                    navLinks[j].classList.add('nav-active');
+                } else {
+                    navLinks[j].classList.remove('nav-active');
+                }
+            }
+        }
+    }
+
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(updateActive);
+        }
+    }, { passive: true });
+
+    updateActive();
+})();

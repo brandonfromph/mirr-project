@@ -8,10 +8,10 @@
     Campaign: ROCQ-001
 *)
 
-Require Import Coq.Arith.Arith.
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Bool.Bool.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.Arith.Arith.
+Require Import Stdlib.Arith.PeanoNat.
+Require Import Stdlib.Bool.Bool.
+Require Import Stdlib.micromega.Lia.
 Require Import Types.
 
 (** ** Constraint Evaluation

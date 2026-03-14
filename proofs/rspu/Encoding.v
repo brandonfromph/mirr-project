@@ -9,9 +9,10 @@
     Depends on: src/emit/rspu_encoding.rs
 *)
 
-Require Import Coq.ZArith.ZArith.
-Require Import Coq.micromega.Lia.
-Require Import Coq.Lists.List.
+Require Import Stdlib.ZArith.ZArith.
+Require Import Stdlib.Bool.Bool.
+Require Import Stdlib.micromega.Lia.
+Require Import Stdlib.Lists.List.
 Import ListNotations.
 
 Open Scope Z_scope.
@@ -81,11 +82,7 @@ Definition extract_imm10 (w : word32) : Z :=
 Definition extract_imm26 (w : word32) : Z :=
   Z.land w 67108863.
 
-(** ** Shared Helper: bitfield extraction roundtrip via Z.testbit
-
-    For non-overlapping bitfields packed with Z.lor and Z.shiftl,
-    extraction recovers the original value.  These proofs use
-    Z.bits_inj and Z.testbit reasoning. *)
+(** ** Proof Helpers *)
 
 (** Helper: a value in [0, 2^n) has Z.testbit false above bit n-1. *)
 Lemma bounded_testbit : forall v n k,
@@ -98,6 +95,44 @@ Proof.
   - apply Z.bits_above_log2; [lia|].
     apply Z.lt_le_trans with n; [|lia].
     apply Z.log2_lt_pow2; lia.
+Qed.
+
+(** Helper: Z.land with a bitmask of width maskbits, shifted right by
+    at least maskbits, yields zero. Replaces Z.land_le + Z.shiftr_eq_0
+    pattern that broke in Rocq 9. *)
+Lemma shiftr_land_mask_zero : forall a mask maskbits shift,
+  0 <= a ->
+  mask = Z.ones maskbits ->
+  0 < maskbits ->
+  maskbits <= shift ->
+  Z.shiftr (Z.land a mask) shift = 0.
+Proof.
+  intros a mask maskbits shift Ha Hmask Hmb Hle. subst.
+  apply Z.shiftr_eq_0.
+  - apply Z.land_nonneg; left; lia.
+  - rewrite Z.land_ones by lia.
+    assert (Hpb := Z.mod_pos_bound a (2^maskbits)
+      (Z.pow_pos_nonneg 2 maskbits ltac:(lia) ltac:(lia))).
+    destruct (Z.eq_dec (a mod 2 ^ maskbits) 0) as [->|Hne].
+    + simpl. lia.
+    + apply Z.lt_le_trans with maskbits; [|lia].
+      apply Z.log2_lt_pow2; [lia|lia].
+Qed.
+
+(** Helper: shiftl+land shifted right past range is zero. *)
+Lemma shiftr_shiftl_land_mask_zero : forall a mask maskbits lshift rshift,
+  0 <= a ->
+  mask = Z.ones maskbits ->
+  0 < maskbits ->
+  0 <= lshift ->
+  lshift <= rshift ->
+  maskbits <= rshift - lshift ->
+  Z.shiftr (Z.shiftl (Z.land a mask) lshift) rshift = 0.
+Proof.
+  intros a mask maskbits lshift rshift Ha Hmask Hmb Hls0 Hls Hrs.
+  rewrite Z.shiftr_shiftl_r by lia.
+  apply (shiftr_land_mask_zero a mask maskbits (rshift - lshift));
+    [assumption | assumption | assumption | lia].
 Qed.
 
 (** ** Roundtrip Theorems *)
@@ -115,13 +150,14 @@ Proof.
   rewrite H26.
   assert (Hhi : Z.land (Z.shiftl opcode 26) (Z.ones 26) = 0).
   { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
+    rewrite Z.land_spec, Z.shiftl_spec, Z.testbit_ones_nonneg, Z.testbit_0_l; try lia.
     destruct (Z.ltb n 26) eqn:Hlt.
     + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
       apply Z.testbit_neg_r. lia.
     + rewrite andb_false_r. reflexivity. }
   rewrite Hhi. rewrite Z.lor_0_l.
-  rewrite Z.land_ones; [|lia].
+  rewrite !Z.land_ones; try lia.
+  rewrite Zmod_mod.
   rewrite Z.mod_small; lia.
 Qed.
 
@@ -138,18 +174,20 @@ Proof.
   replace (26 - 26) with 0 by lia.
   rewrite Z.shiftl_0_r.
   assert (Hpay_shift : Z.shiftr payload 26 = 0).
-  { apply Z.shiftr_eq_0; lia. }
+  { apply Z.shiftr_eq_0; [lia|].
+    destruct (Z.eq_dec payload 0) as [->|Hne]; [simpl; lia|].
+    apply Z.log2_lt_pow2; [lia|lia]. }
   rewrite Hpay_shift. rewrite Z.lor_0_r.
   replace (31 - 26 + 1) with 6 by lia.
   rewrite Z.land_ones; [|lia].
   rewrite Z.mod_small; lia.
 Qed.
 
-(** The remaining R-type and I-type field roundtrips decompose
-    nested Z.lor and prove non-interference between bit fields.
-    Strategy: unfold, use Z.bits_inj' / Z.testbit extensionality,
-    show each non-target field contributes 0 at the target bit range,
-    then recover the value via Z.land_ones + Z.mod_small. *)
+(** The remaining R-type and I-type field roundtrips use bitwise
+    extensionality (Z.bits_inj') to prove non-interference between
+    bit fields.  Strategy: unfold to Z.testbit form, case-split on
+    whether n is within the target field width, then show every
+    non-target field contributes false at that bit position. *)
 
 (** R-type dst field survives roundtrip. *)
 Theorem r_type_dst_roundtrip : forall opcode dst src1 src2 funct,
@@ -162,51 +200,41 @@ Theorem r_type_dst_roundtrip : forall opcode dst src1 src2 funct,
 Proof.
   intros opcode dst src1 src2 funct Hop Hdst Hsrc1 Hsrc2 Hfun.
   unfold pack_r_type, extract_dst, extract_bits.
-  (* Strategy: rewrite nested Z.lor under Z.shiftr, show that
-     fields below bit 18 vanish and fields above bit 25 vanish,
-     leaving only dst. *)
-  rewrite !Z.shiftr_lor.
-  (* funct field: bits [1:0] shifted right 18 → 0 *)
-  assert (Hfun_shift : Z.shiftr (Z.land funct 3) 18 = 0).
-  { apply Z.shiftr_eq_0. split; [apply Z.land_nonneg; lia|].
-    apply Z.lt_le_trans with 4; [|lia].
-    apply Z.le_lt_trans with funct; [apply Z.land_le; lia|lia]. }
-  (* src2 field: bits [9:2] shifted right 18 → 0 *)
-  assert (Hsrc2_shift : Z.shiftr (Z.shiftl (Z.land src2 255) 2) 18 = 0).
-  { rewrite Z.shiftr_shiftl_l; [|lia].
-    apply Z.shiftr_eq_0. split; [apply Z.land_nonneg; lia|].
-    apply Z.lt_le_trans with 256; [|lia].
-    apply Z.le_lt_trans with src2; [apply Z.land_le; lia|lia]. }
-  (* src1 field: bits [17:10] shifted right 18 → 0 *)
-  assert (Hsrc1_shift : Z.shiftr (Z.shiftl (Z.land src1 255) 10) 18 = 0).
-  { rewrite Z.shiftr_shiftl_l; [|lia].
-    apply Z.shiftr_eq_0. split; [apply Z.land_nonneg; lia|].
-    apply Z.lt_le_trans with 256; [|lia].
-    apply Z.le_lt_trans with src1; [apply Z.land_le; lia|lia]. }
-  (* dst field: bits [25:18] shifted right 18 → dst *)
-  rewrite Hfun_shift. rewrite !Z.lor_0_r.
-  rewrite Hsrc2_shift. rewrite Z.lor_0_r.
-  rewrite Hsrc1_shift. rewrite Z.lor_0_r.
-  rewrite !Z.shiftr_lor.
-  rewrite Z.shiftr_shiftl_l; [|lia].
-  replace (18 - 18) with 0 by lia.
-  rewrite Z.shiftl_0_r.
-  (* opcode field: shifted right 18 gives opcode << 8, lands with ones(8) → 0 *)
-  assert (Hop_mask : Z.land (Z.shiftr (Z.shiftl opcode 26) 18) (Z.ones 8) = 0).
-  { rewrite Z.shiftr_shiftl_l; [|lia].
-    replace (26 - 18) with 8 by lia.
-    apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 8) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  rewrite Z.lor_comm.
-  rewrite Z.land_lor_distr_l.
-  rewrite Hop_mask. rewrite Z.lor_0_r.
   replace (25 - 18 + 1) with 8 by lia.
-  rewrite Z.land_ones; [|lia].
-  rewrite Z.mod_small; lia.
+  apply Z.bits_inj'. intros n Hn.
+  rewrite Z.land_spec.
+  rewrite Z.testbit_ones_nonneg by lia.
+  rewrite Z.shiftr_spec by lia.
+  rewrite !Z.lor_spec.
+  rewrite !Z.shiftl_spec by lia.
+  change 255 with (Z.ones 8). change 3 with (Z.ones 2).
+  replace (n + 18 - 18) with n by lia.
+  destruct (Z.ltb n 8) eqn:Hlt.
+  - apply Z.ltb_lt in Hlt. rewrite andb_true_r.
+    assert (Hop_bit : Z.testbit opcode (n + 18 - 26) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hop_bit, orb_false_l.
+    rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+    replace (n <? 8) with true by (symmetry; apply Z.ltb_lt; lia).
+    rewrite andb_true_r.
+    assert (Hsrc1_bit: Z.testbit (Z.land src1 (Z.ones 8)) (n + 18 - 10) = false).
+    { rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+      replace (n + 18 - 10 <? 8) with false by (symmetry; apply Z.ltb_ge; lia).
+      apply andb_false_r. }
+    rewrite Hsrc1_bit, orb_false_r.
+    assert (Hsrc2_bit: Z.testbit (Z.land src2 (Z.ones 8)) (n + 18 - 2) = false).
+    { rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+      replace (n + 18 - 2 <? 8) with false by (symmetry; apply Z.ltb_ge; lia).
+      apply andb_false_r. }
+    rewrite Hsrc2_bit, orb_false_r.
+    assert (Hfun_bit: Z.testbit (Z.land funct (Z.ones 2)) (n + 18) = false).
+    { rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+      replace (n + 18 <? 2) with false by (symmetry; apply Z.ltb_ge; lia).
+      apply andb_false_r. }
+    rewrite Hfun_bit, orb_false_r.
+    reflexivity.
+  - apply Z.ltb_ge in Hlt. rewrite andb_false_r.
+    symmetry. apply (bounded_testbit dst 8 n); lia.
 Qed.
 
 (** R-type src1 field survives roundtrip. *)
@@ -220,51 +248,39 @@ Theorem r_type_src1_roundtrip : forall opcode dst src1 src2 funct,
 Proof.
   intros opcode dst src1 src2 funct Hop Hdst Hsrc1 Hsrc2 Hfun.
   unfold pack_r_type, extract_src1, extract_bits.
-  rewrite !Z.shiftr_lor.
-  (* funct field: bits [1:0] shifted right 10 → 0 *)
-  assert (Hfun_shift : Z.shiftr (Z.land funct 3) 10 = 0).
-  { apply Z.shiftr_eq_0. split; [apply Z.land_nonneg; lia|].
-    apply Z.lt_le_trans with 4; [|lia].
-    apply Z.le_lt_trans with funct; [apply Z.land_le; lia|lia]. }
-  (* src2 field: bits [9:2] shifted right 10 → 0 *)
-  assert (Hsrc2_shift : Z.shiftr (Z.shiftl (Z.land src2 255) 2) 10 = 0).
-  { rewrite Z.shiftr_shiftl_l; [|lia].
-    apply Z.shiftr_eq_0. split; [apply Z.land_nonneg; lia|].
-    apply Z.lt_le_trans with 256; [|lia].
-    apply Z.le_lt_trans with src2; [apply Z.land_le; lia|lia]. }
-  rewrite Hfun_shift. rewrite !Z.lor_0_r.
-  rewrite Hsrc2_shift. rewrite Z.lor_0_r.
-  rewrite !Z.shiftr_lor.
-  rewrite Z.shiftr_shiftl_l; [|lia].
-  replace (10 - 10) with 0 by lia.
-  rewrite Z.shiftl_0_r.
-  (* dst field: shifted right 10 gives dst << 8. Mask with ones(8) → 0 *)
-  assert (Hdst_mask : Z.land (Z.shiftr (Z.shiftl (Z.land dst 255) 18) 10) (Z.ones 8) = 0).
-  { rewrite Z.shiftr_shiftl_l; [|lia].
-    replace (18 - 10) with 8 by lia.
-    apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 8) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  (* opcode field: shifted right 10 gives opcode << 16. Mask with ones(8) → 0 *)
-  assert (Hop_mask : Z.land (Z.shiftr (Z.shiftl opcode 26) 10) (Z.ones 8) = 0).
-  { rewrite Z.shiftr_shiftl_l; [|lia].
-    replace (26 - 10) with 16 by lia.
-    apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 8) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
   replace (17 - 10 + 1) with 8 by lia.
-  rewrite Z.land_lor_distr_l.
-  rewrite Z.land_lor_distr_l.
-  rewrite Hdst_mask. rewrite Hop_mask.
-  rewrite Z.lor_0_l. rewrite Z.lor_0_r.
-  rewrite Z.land_ones; [|lia].
-  rewrite Z.mod_small; lia.
+  apply Z.bits_inj'. intros n Hn.
+  rewrite Z.land_spec.
+  rewrite Z.testbit_ones_nonneg by lia.
+  rewrite Z.shiftr_spec by lia.
+  rewrite !Z.lor_spec.
+  rewrite !Z.shiftl_spec by lia.
+  change 255 with (Z.ones 8). change 3 with (Z.ones 2).
+  replace (n + 10 - 10) with n by lia.
+  destruct (Z.ltb n 8) eqn:Hlt.
+  - apply Z.ltb_lt in Hlt. rewrite andb_true_r.
+    assert (Hop_bit : Z.testbit opcode (n + 10 - 26) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hop_bit, orb_false_l.
+    assert (Hdst_bit: Z.testbit (Z.land dst (Z.ones 8)) (n + 10 - 18) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hdst_bit, orb_false_l.
+    rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+    replace (n <? 8) with true by (symmetry; apply Z.ltb_lt; lia).
+    rewrite andb_true_r.
+    assert (Hsrc2_bit: Z.testbit (Z.land src2 (Z.ones 8)) (n + 10 - 2) = false).
+    { rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+      replace (n + 10 - 2 <? 8) with false by (symmetry; apply Z.ltb_ge; lia).
+      apply andb_false_r. }
+    rewrite Hsrc2_bit, orb_false_r.
+    assert (Hfun_bit: Z.testbit (Z.land funct (Z.ones 2)) (n + 10) = false).
+    { rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+      replace (n + 10 <? 2) with false by (symmetry; apply Z.ltb_ge; lia).
+      apply andb_false_r. }
+    rewrite Hfun_bit, orb_false_r.
+    reflexivity.
+  - apply Z.ltb_ge in Hlt. rewrite andb_false_r.
+    symmetry. apply (bounded_testbit src1 8 n); lia.
 Qed.
 
 (** R-type funct field survives roundtrip. *)
@@ -280,45 +296,31 @@ Proof.
   unfold pack_r_type, extract_funct, extract_bits.
   replace (1 - 0 + 1) with 2 by lia.
   rewrite Z.shiftr_0_r.
-  (* The packed word is: (opcode<<26) | (dst<<18) | (src1<<10) | (src2<<2) | funct.
-     Masking with ones(2) = 3 extracts only funct. *)
-  rewrite !Z.land_lor_distr_l.
-  (* All higher fields masked with 3 → 0 *)
-  assert (Hop26 : Z.land (Z.shiftl opcode 26) (Z.ones 2) = 0).
-  { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 2) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  assert (Hdst18 : Z.land (Z.shiftl (Z.land dst 255) 18) (Z.ones 2) = 0).
-  { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 2) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  assert (Hsrc110 : Z.land (Z.shiftl (Z.land src1 255) 10) (Z.ones 2) = 0).
-  { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 2) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  assert (Hsrc22 : Z.land (Z.shiftl (Z.land src2 255) 2) (Z.ones 2) = 0).
-  { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 2) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  rewrite Hop26, Hdst18, Hsrc110, Hsrc22.
-  rewrite !Z.lor_0_l.
-  rewrite Z.land_ones; [|lia].
-  assert (Hfun_bounded : Z.land funct 3 = funct).
-  { rewrite Z.land_ones; [|lia]. rewrite Z.mod_small; lia. }
-  rewrite Hfun_bounded.
-  rewrite Z.mod_small; lia.
+  apply Z.bits_inj'. intros n Hn.
+  rewrite Z.land_spec.
+  rewrite Z.testbit_ones_nonneg by lia.
+  rewrite !Z.lor_spec.
+  rewrite !Z.shiftl_spec by lia.
+  change 255 with (Z.ones 8). change 3 with (Z.ones 2).
+  destruct (Z.ltb n 2) eqn:Hlt.
+  - apply Z.ltb_lt in Hlt. rewrite andb_true_r.
+    assert (Hop_bit : Z.testbit opcode (n - 26) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hop_bit, orb_false_l.
+    assert (Hdst_bit: Z.testbit (Z.land dst (Z.ones 8)) (n - 18) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hdst_bit, orb_false_l.
+    assert (Hsrc1_bit: Z.testbit (Z.land src1 (Z.ones 8)) (n - 10) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hsrc1_bit, orb_false_l.
+    assert (Hsrc2_bit: Z.testbit (Z.land src2 (Z.ones 8)) (n - 2) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hsrc2_bit, orb_false_l.
+    rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+    replace (n <? 2) with true by (symmetry; apply Z.ltb_lt; lia).
+    rewrite andb_true_r. reflexivity.
+  - apply Z.ltb_ge in Hlt. rewrite andb_false_r.
+    symmetry. apply (bounded_testbit funct 2 n); lia.
 Qed.
 
 (** I-type immediate survives roundtrip. *)
@@ -333,33 +335,26 @@ Proof.
   unfold pack_i_type, extract_imm10, extract_bits.
   replace (9 - 0 + 1) with 10 by lia.
   rewrite Z.shiftr_0_r.
-  rewrite !Z.land_lor_distr_l.
-  (* opcode field: bits [31:26] masked with ones(10) → 0 *)
-  assert (Hop26 : Z.land (Z.shiftl opcode 26) (Z.ones 10) = 0).
-  { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 10) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  (* dst field: bits [25:18] masked with ones(10) → 0 *)
-  assert (Hdst18 : Z.land (Z.shiftl (Z.land dst 255) 18) (Z.ones 10) = 0).
-  { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 10) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  (* src field: bits [17:10] masked with ones(10) → 0 *)
-  assert (Hsrc10 : Z.land (Z.shiftl (Z.land src 255) 10) (Z.ones 10) = 0).
-  { apply Z.bits_inj'. intros n Hn.
-    rewrite Z.land_spec, Z.shiftl_spec, Z.bits_ones; try lia.
-    destruct (Z.ltb n 10) eqn:Hlt.
-    + apply Z.ltb_lt in Hlt. rewrite andb_true_r.
-      apply Z.testbit_neg_r. lia.
-    + rewrite andb_false_r. reflexivity. }
-  rewrite Hop26, Hdst18, Hsrc10.
-  rewrite !Z.lor_0_l.
-  rewrite Z.land_ones; [|lia].
-  rewrite Z.mod_small; lia.
+  apply Z.bits_inj'. intros n Hn.
+  rewrite Z.land_spec.
+  rewrite Z.testbit_ones_nonneg by lia.
+  rewrite !Z.lor_spec.
+  rewrite !Z.shiftl_spec by lia.
+  change 255 with (Z.ones 8). change 1023 with (Z.ones 10).
+  destruct (Z.ltb n 10) eqn:Hlt.
+  - apply Z.ltb_lt in Hlt. rewrite andb_true_r.
+    assert (Hop_bit : Z.testbit opcode (n - 26) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hop_bit, orb_false_l.
+    assert (Hdst_bit: Z.testbit (Z.land dst (Z.ones 8)) (n - 18) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hdst_bit, orb_false_l.
+    assert (Hsrc_bit: Z.testbit (Z.land src (Z.ones 8)) (n - 10) = false)
+      by (apply Z.testbit_neg_r; lia).
+    rewrite Hsrc_bit, orb_false_l.
+    rewrite Z.land_spec, Z.testbit_ones_nonneg by lia.
+    replace (n <? 10) with true by (symmetry; apply Z.ltb_lt; lia).
+    rewrite andb_true_r. reflexivity.
+  - apply Z.ltb_ge in Hlt. rewrite andb_false_r.
+    symmetry. apply (bounded_testbit imm10 10 n); lia.
 Qed.

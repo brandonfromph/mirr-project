@@ -42,7 +42,51 @@
 </head>
 <body>
 
-<header>
+<header id="site-header">
+  <div class="header-top">
+    <div class="header-title">
+      <a href="#" class="header-brand">MIRR</a>
+      <span class="header-subtitle">A Safety-Critical HDL Compiler with Formal Width Inference</span>
+    </div>
+    <div class="header-search">
+      <label for="site-search" class="sr-only">Search paper</label>
+      <input type="search" id="site-search" placeholder="Search sections…"
+             autocomplete="off" aria-label="Search paper sections">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.45 4.39l4.26 4.26a.75.75 0 11-1.06 1.06l-4.26-4.26A7 7 0 012 9z" clip-rule="evenodd"/>
+      </svg>
+      <div id="search-results" role="listbox" aria-label="Search results" hidden></div>
+    </div>
+  </div>
+  <nav aria-label="Paper sections">
+    <a href="#abstract">Abstract</a>
+    <a href="#claims">Claims</a>
+    <a href="#demo-playground">Demo</a>
+    <a href="#introduction">1</a>
+    <a href="#language">2</a>
+    <a href="#pipeline">3</a>
+    <a href="#width">4</a>
+    <a href="#type-system">5</a>
+    <a href="#semantics">6</a>
+    <a href="#theorems">7</a>
+    <a href="#sexpr">8</a>
+    <a href="#mapek">9</a>
+    <a href="#rspu">10</a>
+    <a href="#evaluation">11</a>
+    <a href="#assurance">12</a>
+    <a href="#case-studies">13</a>
+    <a href="#traced-example">14</a>
+    <a href="#toolchain">15</a>
+    <a href="#related-work">16</a>
+    <a href="#vision">17</a>
+    <a href="#conclusion">18</a>
+    <a href="#ai-disclosure">19</a>
+    <a href="#campaign-log">20</a>
+    <a href="#references">Refs</a>
+  </nav>
+</header>
+
+<div class="paper-title">
   <h1>MIRR: A Safety-Critical HDL Compiler<br>
       with Formal Width Inference</h1>
   <p class="meta">
@@ -53,41 +97,7 @@
     <a href="./CITATION.cff">CITATION.cff</a> &middot;
     <a href="https://github.com/brandonfromph/mirr-project">Source</a>
   </p>
-</header>
-
-<div class="search-container">
-  <label for="site-search" class="sr-only">Search paper</label>
-  <input type="search" id="site-search" placeholder="Search paper…"
-         autocomplete="off" aria-label="Search paper sections">
-  <div id="search-results" role="listbox" aria-label="Search results" hidden></div>
 </div>
-
-<nav aria-label="Paper sections">
-  <a href="#abstract">Abstract</a> &middot;
-  <a href="#claims">Claims</a> &middot;
-  <a href="#demo-playground">Demo</a> &middot;
-  <a href="#introduction">1</a> &middot;
-  <a href="#language">2</a> &middot;
-  <a href="#pipeline">3</a> &middot;
-  <a href="#width">4</a> &middot;
-  <a href="#type-system">5</a> &middot;
-  <a href="#semantics">6</a> &middot;
-  <a href="#theorems">7</a> &middot;
-  <a href="#sexpr">8</a> &middot;
-  <a href="#mapek">9</a> &middot;
-  <a href="#rspu">10</a> &middot;
-  <a href="#evaluation">11</a> &middot;
-  <a href="#assurance">12</a> &middot;
-  <a href="#case-studies">13</a> &middot;
-  <a href="#traced-example">14</a> &middot;
-  <a href="#toolchain">15</a> &middot;
-  <a href="#related-work">16</a> &middot;
-  <a href="#vision">17</a> &middot;
-  <a href="#conclusion">18</a> &middot;
-  <a href="#ai-disclosure">19</a> &middot;
-  <a href="#campaign-log">20</a> &middot;
-  <a href="#references">Refs</a>
-</nav>
 
 <noscript>
   <p>This paper requires JavaScript for interactive demos. The compiler

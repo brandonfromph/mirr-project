@@ -7,8 +7,8 @@
     Campaign: ROCQ-001
 *)
 
-Require Import Coq.Lists.List.
-Require Import Coq.Bool.Bool.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Bool.Bool.
 Require Import Types.
 Import ListNotations.
 

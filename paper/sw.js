@@ -4,7 +4,7 @@
 //
 // GPL-3.0 — see LICENSE for terms.
 
-var CACHE_NAME = 'mirr-v8';
+var CACHE_NAME = 'mirr-v9';
 var ASSETS = [
   'index.html',
   'paper.css',

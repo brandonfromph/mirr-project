@@ -8,10 +8,10 @@
     Campaign: ROCQ-001
 *)
 
-Require Import Coq.Arith.Arith.
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Lists.List.
-Require Import Coq.micromega.Lia.
+Require Import Stdlib.Arith.Arith.
+Require Import Stdlib.Arith.PeanoNat.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.micromega.Lia.
 Require Import Types.
 Require Import Constraint.
 Import ListNotations.

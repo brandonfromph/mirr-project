@@ -10,7 +10,7 @@
     Depends on: src/emit/rspu_tagged.rs
 *)
 
-Require Import Coq.ZArith.ZArith.
+Require Import Stdlib.ZArith.ZArith.
 
 Open Scope Z_scope.
 
@@ -60,11 +60,13 @@ Theorem tags_compatible_sym : forall a b,
   tags_compatible a b = tags_compatible b a.
 Proof.
   intros a b.
-  destruct a, b; simpl; try reflexivity.
-  - apply Z.eqb_sym.
-  - apply Z.eqb_sym.
-  - apply Z.eqb_sym.
-  - apply Z.eqb_sym.
+  destruct a, b; simpl; try reflexivity; try apply Z.eqb_sym.
+  (* Remaining: Bool vs Unsigned/Signed z and vice versa.
+     Coq's pattern compiler generates match trees on z for the
+     Unsigned 1 / Bool special case. Destruct z to resolve. *)
+  all: try (destruct z as [|[?|?|]|?]; reflexivity).
+  all: destruct z as [|[?|?|]|?]; try reflexivity; try apply Z.eqb_sym;
+       destruct z0 as [|[?|?|]|?]; try reflexivity; try apply Z.eqb_sym.
 Qed.
 
 (** ** MOV Preserves Tag

@@ -7,9 +7,9 @@
     Depends on: TYPE-003 (Signed-Aware Width Inference)
 *)
 
-Require Import Coq.Arith.Arith.
-Require Import Coq.Lists.List.
-Require Import Coq.Bool.Bool.
+Require Import Stdlib.Arith.Arith.
+Require Import Stdlib.Lists.List.
+Require Import Stdlib.Bool.Bool.
 Import ListNotations.
 
 (** ** Width
