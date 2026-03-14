@@ -428,11 +428,18 @@ figcaption {
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.inference-rules:hover { scrollbar-width: thin; }
+.inference-rules::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+.inference-rules::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; transition: background 200ms; }
+.inference-rules:hover::-webkit-scrollbar-thumb { background: var(--border-medium); }
 .inference-rule {
   display: inline-flex;
   align-items: flex-end;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 .inference-rule .rule-body {
   display: flex;
@@ -445,11 +452,13 @@ figcaption {
   font-size: 0.78rem;
   color: var(--text-primary);
   white-space: nowrap;
+  min-height: 1.2em;
 }
+.inference-rule .premises:empty { min-height: 0; padding: 0; }
 .inference-rule .rule-line {
   width: 100%;
   height: 1px;
-  background: var(--accent);
+  background: var(--text-secondary);
   min-width: 4rem;
 }
 .inference-rule .conclusion {
@@ -467,13 +476,6 @@ figcaption {
   letter-spacing: 0.03em;
   white-space: nowrap;
   align-self: center;
-}
-@media print {
-  .inference-rules { background: #fff; border-color: #ccc; }
-  .inference-rule .premises,
-  .inference-rule .conclusion { color: #000; }
-  .inference-rule .rule-line { background: #000; }
-  .inference-rule .rule-name { color: #333; }
 }
 
 /* References */
@@ -616,6 +618,10 @@ footer a { color: var(--text-tertiary); }
   .header-search { width: 120px; }
   .header-search #site-search { font-size: 0.7rem; padding-left: 1.6rem; }
   .search-icon { width: 12px; height: 12px; left: 0.4rem; }
+  .inference-rules { gap: 1rem 1.5rem; padding: 0.75rem; font-size: 0.7rem; }
+  .inference-rule .premises,
+  .inference-rule .conclusion { font-size: 0.7rem; }
+  .inference-rule .rule-name { font-size: 0.6rem; }
 }
 @media (min-width: 1400px) {
   body { padding-left: 3rem; padding-right: 3rem; }
@@ -651,6 +657,11 @@ footer a { color: var(--text-tertiary); }
   .proof-bar-admitted { background: #666; color: #fff; }
   .proof-badge.proven { color: #166534; border-color: #166534; }
   .proof-badge.admitted { color: #92400e; border-color: #92400e; }
+  .inference-rules { background: #fff; border-color: #ccc; overflow: visible; }
+  .inference-rule .premises,
+  .inference-rule .conclusion { color: #000; }
+  .inference-rule .rule-line { background: #000; }
+  .inference-rule .rule-name { color: #333; }
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.75em; }
   @page { margin: 2cm; }
 }

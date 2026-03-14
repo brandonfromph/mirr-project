@@ -1066,13 +1066,15 @@ Qed.</pre>
   <h3>Formal Inference Rules</h3>
   <p>The judgment &Gamma; &vdash; e : &tau; reads: &ldquo;under signal environment &Gamma;,
      expression <em>e</em> has type &tau;.&rdquo;  &Gamma; maps signal names to their declared types.
-     All 16 rules are extracted directly from <code>typeck/mod.rs</code>.</p>
+     All 16 rules are extracted directly from <code>typeck/mod.rs</code>.
+     We write u<sub>w</sub> for <code>Unsigned(w)</code>, i<sub>w</sub> for <code>Signed(w)</code>,
+     and sign(&tau;) for the signedness category of &tau;.</p>
 
   <h4>Atoms</h4>
   <div class="inference-rules">
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&nbsp;</div>
+        <div class="premises"></div>
         <div class="rule-line"></div>
         <div class="conclusion">&Gamma; &vdash; true : bool</div>
       </div>
@@ -1080,9 +1082,9 @@ Qed.</pre>
     </div>
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&nbsp;</div>
+        <div class="premises">n &isin; &naturals;</div>
         <div class="rule-line"></div>
-        <div class="conclusion">&Gamma; &vdash; n : u<sub>min_bits(n)</sub></div>
+        <div class="conclusion">&Gamma; &vdash; n : u<sub>&lceil;log<sub>2</sub>(n+1)&rceil;</sub></div>
       </div>
       <div class="rule-name">T-Lit-Int</div>
     </div>
@@ -1124,19 +1126,11 @@ Qed.</pre>
     </div>
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&Gamma; &vdash; a : u<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : u<sub>v</sub> &nbsp;&nbsp; &oplus; &isin; {&laquo;, &raquo;}</div>
+        <div class="premises">&Gamma; &vdash; a : &tau;<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : &tau;<sub>v</sub> &nbsp;&nbsp; sign(a) = sign(b) &nbsp;&nbsp; &oplus; &isin; {&lt;&lt;, &gt;&gt;}</div>
         <div class="rule-line"></div>
-        <div class="conclusion">&Gamma; &vdash; a &oplus; b : u<sub>w</sub></div>
+        <div class="conclusion">&Gamma; &vdash; a &oplus; b : &tau;<sub>w</sub></div>
       </div>
       <div class="rule-name">T-Shift</div>
-    </div>
-    <div class="inference-rule">
-      <div class="rule-body">
-        <div class="premises">&Gamma; &vdash; a : u<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : i<sub>v</sub></div>
-        <div class="rule-line"></div>
-        <div class="conclusion"><em>reject</em> &mdash; E608</div>
-      </div>
-      <div class="rule-name">T-Cross</div>
     </div>
   </div>
 
@@ -1154,7 +1148,7 @@ Qed.</pre>
       <div class="rule-body">
         <div class="premises">&Gamma; &vdash; a : &tau; &nbsp;&nbsp; &Gamma; &vdash; b : &tau;</div>
         <div class="rule-line"></div>
-        <div class="conclusion">&Gamma; &vdash; a &oplus; b : &tau;</div>
+        <div class="conclusion">&Gamma; &vdash; a ^ b : &tau;</div>
       </div>
       <div class="rule-name">T-Xor</div>
     </div>
@@ -1172,7 +1166,7 @@ Qed.</pre>
   <div class="inference-rules">
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&Gamma; &vdash; a : u<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : u<sub>v</sub> &nbsp;&nbsp; &oplus; &isin; {&lt;, &le;, &gt;, &ge;}</div>
+        <div class="premises">&Gamma; &vdash; a : &tau;<sub>w</sub> &nbsp;&nbsp; &Gamma; &vdash; b : &tau;<sub>v</sub> &nbsp;&nbsp; sign(a) = sign(b) &nbsp;&nbsp; &tau; &ne; bool &nbsp;&nbsp; &oplus; &isin; {&lt;, &le;, &gt;, &ge;}</div>
         <div class="rule-line"></div>
         <div class="conclusion">&Gamma; &vdash; a &oplus; b : bool</div>
       </div>
@@ -1180,7 +1174,7 @@ Qed.</pre>
     </div>
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&Gamma; &vdash; a : &tau; &nbsp;&nbsp; &Gamma; &vdash; b : &tau; &nbsp;&nbsp; same_cat(&tau;) &nbsp;&nbsp; &oplus; &isin; {=, &ne;}</div>
+        <div class="premises">&Gamma; &vdash; a : &tau; &nbsp;&nbsp; &Gamma; &vdash; b : &tau;&prime; &nbsp;&nbsp; cat(&tau;) = cat(&tau;&prime;) &nbsp;&nbsp; &oplus; &isin; {=, &ne;}</div>
         <div class="rule-line"></div>
         <div class="conclusion">&Gamma; &vdash; a &oplus; b : bool</div>
       </div>
@@ -1224,6 +1218,13 @@ Qed.</pre>
     </div>
   </div>
 
+  <h4>Cross-Category Rejection (E608)</h4>
+  <p>The cross-category invariant is a <em>side condition</em> on every binary operator &oplus;
+     over numeric types: <code>sign(a) = sign(b)</code> is required.  If violated,
+     <code>E608</code> is emitted.  No implicit signed/unsigned coercion exists in MIRR &mdash;
+     mixing <code>u<sub>w</sub></code> with <code>i<sub>v</sub></code> in any arithmetic,
+     shift, or comparison is a static error.</p>
+
   <h4>Assignment Compatibility (&tau;<sub>2</sub> &le; &tau;<sub>1</sub>)</h4>
   <p>The subtyping relation &tau;<sub>2</sub> &le; &tau;<sub>1</sub> holds when a value of type &tau;<sub>2</sub>
      can be implicitly widened to &tau;<sub>1</sub> without loss. Five rules capture all valid conversions;
@@ -1232,7 +1233,7 @@ Qed.</pre>
   <div class="inference-rules">
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&nbsp;</div>
+        <div class="premises"></div>
         <div class="rule-line"></div>
         <div class="conclusion">&tau; &le; &tau;</div>
       </div>
@@ -1240,7 +1241,7 @@ Qed.</pre>
     </div>
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&nbsp;</div>
+        <div class="premises"></div>
         <div class="rule-line"></div>
         <div class="conclusion">bool &le; u<sub>1</sub></div>
       </div>
@@ -1248,7 +1249,7 @@ Qed.</pre>
     </div>
     <div class="inference-rule">
       <div class="rule-body">
-        <div class="premises">&nbsp;</div>
+        <div class="premises"></div>
         <div class="rule-line"></div>
         <div class="conclusion">u<sub>1</sub> &le; bool</div>
       </div>
