@@ -237,10 +237,8 @@ code {
   border-radius: 4px;
 }
 
-/* Sections — overflow-x for wide tables on narrow screens */
-section { overflow-x: auto; scrollbar-width: thin; }
-section::-webkit-scrollbar { height: 8px; }
-section::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
+/* Sections */
+section { overflow: hidden; }
 
 /* Claims */
 #claims ol { padding-left: 1.25rem; }
@@ -253,6 +251,7 @@ section::-webkit-scrollbar-thumb { background: var(--border-medium); border-radi
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   margin: 2rem 0;
+  overflow: hidden;
   transition: background 150ms;
 }
 .demo:hover { background: var(--surface-3); }
@@ -634,6 +633,7 @@ footer a { color: var(--text-tertiary); }
 .viz-panel {
     margin-top: 1rem;
     min-height: 100px;
+    overflow: hidden;
 }
 
 .viz-error {
