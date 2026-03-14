@@ -1393,7 +1393,7 @@ fn highlight_json(code: &str) -> String {
             // Key or value? Key is followed by ':'
             let is_key = {
                 let mut peek = chars.clone();
-                while peek.peek().map_or(false, |c| c.is_whitespace()) {
+                while peek.peek().is_some_and(|c| c.is_whitespace()) {
                     peek.next();
                 }
                 peek.peek() == Some(&':')
@@ -1548,7 +1548,7 @@ fn highlight_lisp(code: &str) -> String {
         }
 
         if ch.is_ascii_digit()
-            || (ch == '-' && chars.clone().nth(1).map_or(false, |c| c.is_ascii_digit()))
+            || (ch == '-' && chars.clone().nth(1).is_some_and(|c| c.is_ascii_digit()))
         {
             let mut num = String::new();
             while let Some(&c) = chars.peek() {
@@ -1567,7 +1567,7 @@ fn highlight_lisp(code: &str) -> String {
 
         if ch.is_alphabetic()
             || ch == '_'
-            || ch == '-' && chars.clone().nth(1).map_or(false, |c| c.is_alphabetic())
+            || ch == '-' && chars.clone().nth(1).is_some_and(|c| c.is_alphabetic())
         {
             let mut word = String::new();
             while let Some(&c) = chars.peek() {
