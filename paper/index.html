@@ -872,6 +872,29 @@ endmodule</code></pre>
       <tr><td>T27</td><td>mov_preserves_tag</td><td>Register-to-register MOV preserves the type tag</td><td>rspu/TaggedWord.v</td><td><strong>Proven</strong></td></tr>
     </tbody>
   </table>
+  <details>
+    <summary><strong>Table VIII:</strong> Complete theorem inventory (55 named proof items across 12 Rocq files). Click to expand.</summary>
+    <table class="data-table">
+      <caption>Table VIII: 55 theorems — 52 Proven (Qed), 3 Admitted. Bold = fully mechanized.</caption>
+      <thead>
+        <tr><th>File</th><th>Items</th><th>Key Theorems</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>MinBits.v</td><td>6</td><td>T13 min_bits_correct, T13b min_bits_minimal</td><td>5 <strong>Proven</strong>, 1 Admitted</td></tr>
+        <tr><td>Constraint.v</td><td>5</td><td>T4 add_sound, T5 mul_sound, T6 sub_sound, T7 shift_sound, T8 negate_unsigned_sound</td><td>5 <strong>Proven</strong></td></tr>
+        <tr><td>Monotone.v</td><td>7</td><td>T2 monotonicity, T3 evaluate_monotone</td><td>7 <strong>Proven</strong></td></tr>
+        <tr><td>Solver.v</td><td>10</td><td>T1 solver_terminates, T9 fixpoint_least</td><td>8 <strong>Proven</strong>, 2 Admitted</td></tr>
+        <tr><td>Flatten.v</td><td>2</td><td>flatten_postorder, no_self_reference</td><td>2 <strong>Proven</strong></td></tr>
+        <tr><td>Truncation.v</td><td>3</td><td>truncation_correct_positive, truncation_correct_negative</td><td>3 <strong>Proven</strong></td></tr>
+        <tr><td>Integration.v</td><td>1</td><td>e2e_solver_sound</td><td>1 <strong>Proven</strong></td></tr>
+        <tr><td>SCC/Tarjan.v</td><td>1</td><td>T10 tarjan_correct</td><td>1 <strong>Proven</strong></td></tr>
+        <tr><td>SCC/Classify.v</td><td>2</td><td>classify_sound</td><td>2 <strong>Proven</strong></td></tr>
+        <tr><td>SCC/Nonexpansive.v</td><td>4</td><td>nonexpansive_bounded, nonexpansive_convergence</td><td>4 <strong>Proven</strong></td></tr>
+        <tr><td>rspu/TaggedWord.v</td><td>7</td><td>T27 mov_preserves_tag, tags_compatible_sym</td><td>7 <strong>Proven</strong></td></tr>
+        <tr><td>rspu/Encoding.v</td><td>7</td><td>T26 opcode_roundtrip, r/i_type roundtrips</td><td>7 <strong>Proven</strong></td></tr>
+      </tbody>
+    </table>
+  </details>
   <h3>Proof Coverage Map</h3>
   <p>
     <strong>Above the proof boundary</strong> (mechanized or axiomatized): width
@@ -884,6 +907,67 @@ endmodule</code></pre>
     expander&mdash;covered by <span data-metric="totalTests">2,601</span> tests and
     <code>#![forbid(unsafe_code)]</code>.
   </p>
+
+  <div class="listing">
+    <div class="listing-caption">Listing 6: Constraint soundness (T4): addition width bound. The MaxPlusOne constraint allocates max(l, r) + 1 bits, proven via <code>Nat.pow_succ_r</code> and linear arithmetic.</div>
+    <pre>Theorem add_sound : forall a b,
+  a &lt; Nat.pow 2 (Nat.max a b) -&gt;
+  b &lt; Nat.pow 2 (Nat.max a b) -&gt;
+  a + b &lt; Nat.pow 2 (S (Nat.max a b)).
+Proof.
+  intros a b H1 H2.
+  rewrite Nat.pow_succ_r; [| lia].
+  lia.
+Qed.</pre>
+  </div>
+
+  <div class="listing">
+    <div class="listing-caption">Listing 7: End-to-end solver soundness: the iterative solver reaches a fixpoint at least as large as the initial state. Proof by induction on fuel, applying <code>evaluate_monotone</code> at each step.</div>
+    <pre>Theorem e2e_solver_sound :
+  forall nodes constraints st,
+  well_formed nodes -&gt;
+  (forall i, lookup st i = 0) -&gt;
+  let result := iterate constraints st
+                  (solver_budget (length st)) in
+  is_fixpoint constraints result /\
+  st &lt;= result.
+Proof.
+  intros nodes constraints st Hwf Hzero.
+  simpl. split.
+  - apply solver_terminates.
+    intros i. rewrite Hzero.
+    unfold MAX_WIDTH. lia.
+  - assert (Hgen : forall fuel s,
+      s &lt;= apply_constraints constraints s -&gt;
+      s &lt;= iterate constraints s fuel).
+    { induction fuel as [|fuel' IHfuel'].
+      - intros. simpl. apply state_le_refl.
+      - intros s Hmono. simpl.
+        destruct (list_eq_dec Nat.eq_dec
+          s (solver_round constraints s)).
+        + apply state_le_refl.
+        + apply state_le_trans with
+            (solver_round constraints s).
+          * exact Hmono.
+          * apply IHfuel'.
+            apply evaluate_monotone. }
+    apply Hgen. apply evaluate_monotone.
+Qed.</pre>
+  </div>
+
+  <div class="listing">
+    <div class="listing-caption">Listing 8: R-SPU opcode roundtrip: the 6-bit opcode survives encode/decode for any instruction format. Uses <code>Z.bits_inj'</code> and testbit extensionality over non-overlapping bitfields.</div>
+    <pre>assert (Hpay_shift :
+    Z.shiftr payload 26 = 0).
+  { apply Z.shiftr_eq_0; lia. }
+  rewrite Hpay_shift.
+  rewrite Z.lor_0_r.
+  replace (31 - 26 + 1) with 6 by lia.
+  rewrite Z.land_ones; [|lia].
+  rewrite Z.mod_small; lia.
+Qed.</pre>
+  </div>
+
   <h3>Interactive Proof Dashboard</h3>
   <p>
     Query the compiler&rsquo;s built-in proof status table.  Shows all
@@ -917,6 +1001,7 @@ endmodule</code></pre>
   </p>
   <h3>Core Type Rules</h3>
   <table class="data-table">
+    <caption>Table IX: Core type inference rules (E601&ndash;E609).</caption>
     <thead>
       <tr><th>Error</th><th>Rule</th><th>Enforces</th></tr>
     </thead>
@@ -933,6 +1018,22 @@ endmodule</code></pre>
     </tbody>
   </table>
   <h3>Extended Type System (8 Features)</h3>
+  <table class="data-table">
+    <caption>Table X: Extended type system features introduced by MEGA-1. Each is opt-in via <code>PipelineConfig</code>.</caption>
+    <thead>
+      <tr><th>Feature</th><th>Errors</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Refinement types</td><td>E610&ndash;E612</td><td>Value-range bounds checking</td></tr>
+      <tr><td>Linear types</td><td>E613&ndash;E615</td><td>Consume-exactly-once resources</td></tr>
+      <tr><td>Effect types</td><td>E616&ndash;E617</td><td>Pure vs. stateful separation</td></tr>
+      <tr><td>Clock domains</td><td>E618&ndash;E619</td><td>CDC crossing detection</td></tr>
+      <tr><td>Phantom types</td><td>E620&ndash;E621</td><td>Provenance tagging</td></tr>
+      <tr><td>Type-level naturals</td><td>E622&ndash;E623</td><td>Dimension checking</td></tr>
+      <tr><td>Dependent types</td><td>E624</td><td>Value-dependent constraints</td></tr>
+      <tr><td>Session types</td><td>E625</td><td>Protocol conformance</td></tr>
+    </tbody>
+  </table>
   <p>
     The extended type checker adds 8 certification-oriented features
     (E610&ndash;E625), each opt-in via <code>PipelineConfig</code>.
@@ -1219,7 +1320,7 @@ rspu/TaggedWord.v ──┐
   <h3>SExpr Type</h3>
   <p>The core type (<code>sexpr/types.rs</code>, 210 lines) defines 8 variants:</p>
   <table class="data-table">
-    <caption>SExpr variants. Every MIRR AST node maps to one of these 8 forms.</caption>
+    <caption>Table XVI: SExpr variants. Every MIRR AST node maps to one of these 8 forms.</caption>
     <thead>
       <tr><th>Variant</th><th>Content</th></tr>
     </thead>
@@ -1237,7 +1338,7 @@ rspu/TaggedWord.v ──┐
 
   <h3>Submodule Architecture</h3>
   <table class="data-table">
-    <caption>S-expression submodules and their roles.</caption>
+    <caption>Table XVIII: S-expression submodules and their roles.</caption>
     <thead>
       <tr><th>File</th><th>Lines</th><th>Purpose</th></tr>
     </thead>
@@ -1255,7 +1356,7 @@ rspu/TaggedWord.v ──┐
   <h3>Bounded Resource Constants</h3>
   <p>All operations enforce NASA Power-of-10 bounds:</p>
   <table class="data-table">
-    <caption>S-expression resource bounds. Every loop and allocation is bounded by one of these constants.</caption>
+    <caption>Table XVII: S-expression resource bounds. Every loop and allocation is bounded by one of these constants.</caption>
     <thead>
       <tr><th>Constant</th><th>Value</th></tr>
     </thead>
@@ -1292,6 +1393,19 @@ rspu/TaggedWord.v ──┐
      <code>tests/self_hosting_ir_schema_tests.rs</code> and
      <code>tests/self_hosting_parity_tests.rs</code>.</p>
 
+  <div class="listing">
+    <div class="listing-caption">Listing 10: S-expression encoding of the neonatal respiratory monitor.</div>
+    <pre>(module neonatal_respiratory_monitor
+  (signal respirator_enable input bool)
+  (signal airway_pressure input (unsigned 16))
+  (signal clamp_valve output bool)
+  (guard sustained_pressure_drop
+    (sustain (lt airway_pressure 50) 1000))
+  (reflex clamp_on_pressure_drop
+    sustained_pressure_drop
+    (assign clamp_valve true)))</pre>
+  </div>
+
   <h3>Design Rationale</h3>
   <p>The S-expression IR is not the primary compilation target&mdash;SystemVerilog and R-SPU
      assembly serve that role. Instead, the S-expression layer validates the compiler&rsquo;s
@@ -1320,6 +1434,22 @@ rspu/TaggedWord.v ──┐
     knowledge (bounded FIFO), LTL property types, and deterministic
     sensor simulation (LCG PRNG).
   </p>
+  <table class="data-table">
+    <caption>Table XIX: MAPE-K simulator submodules (<code>src/mape_k/</code>).</caption>
+    <thead>
+      <tr><th>File</th><th>Role</th><th>Key Types</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>mod.rs</code></td><td>Orchestrator</td><td>MapeKSimulator, SimConfig, SimResult</td></tr>
+      <tr><td><code>monitor.rs</code></td><td>M-phase</td><td>RingBuffer, sample_sensors, rolling windows</td></tr>
+      <tr><td><code>analyzer.rs</code></td><td>A-phase</td><td>LTL property evaluation over windows</td></tr>
+      <tr><td><code>planner.rs</code></td><td>P-phase</td><td>Priority-based action selection</td></tr>
+      <tr><td><code>executor.rs</code></td><td>E-phase</td><td>Apply adaptations to signal state</td></tr>
+      <tr><td><code>knowledge.rs</code></td><td>K-component</td><td>Bounded FIFO audit log</td></tr>
+      <tr><td><code>ltl.rs</code></td><td>LTL types</td><td>TemporalProperty, SignalPredicate</td></tr>
+      <tr><td><code>sensor.rs</code></td><td>Sensor model</td><td>Deterministic LCG PRNG</td></tr>
+    </tbody>
+  </table>
   <h3>Bounded Temporal Operators</h3>
   <p>
     Three temporal operators evaluate over rolling windows of sensor data:
@@ -1358,6 +1488,22 @@ rspu/TaggedWord.v ──┐
      bridge abstraction decouples the four MAPE-K phases, enabling independent testing and
      future replacement of individual phases without affecting the overall loop structure.</p>
 
+  <h3>Resource Bounds</h3>
+  <table class="data-table">
+    <caption>Table XX: MAPE-K simulator resource bounds.</caption>
+    <thead>
+      <tr><th>Constant</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>MAX_TICKS</code></td><td>10,000,000</td></tr>
+      <tr><td><code>MAX_WINDOW_SIZE</code></td><td>1,024</td></tr>
+      <tr><td><code>MAX_SENSORS</code></td><td>64</td></tr>
+      <tr><td><code>MAX_PROPERTIES</code></td><td>256</td></tr>
+      <tr><td><code>MAX_ACTION_ENTRIES</code></td><td>256</td></tr>
+      <tr><td><code>MAX_LOG_ENTRIES</code></td><td>4,096</td></tr>
+    </tbody>
+  </table>
+
   <h3>Interactive MAPE-K Dashboard</h3>
   <p>
     Run the MAPE-K simulator with the neonatal scenario.  The dashboard
@@ -1382,6 +1528,7 @@ rspu/TaggedWord.v ──┐
   </p>
   <h3>ISA v2: 30 Instructions, 7 Tiers</h3>
   <table id="rspu-isa-table" class="data-table">
+    <caption>Table XI: R-SPU ISA v2: 30 instructions across 7 tiers.</caption>
     <thead>
       <tr><th>Tier</th><th>Instructions</th><th>Count</th></tr>
     </thead>
@@ -1449,7 +1596,7 @@ rspu/TaggedWord.v ──┐
   <h4>Exception Model</h4>
   <p>The exception subsystem (336 lines) defines 7 exception codes with default actions:</p>
   <table class="data-table">
-    <caption>R-SPU exception model. Default actions apply when no handler is registered.</caption>
+    <caption>Table XII: R-SPU exception model. Default actions apply when no handler is registered.</caption>
     <thead>
       <tr><th>Code</th><th>Exception</th><th>Default Action</th></tr>
     </thead>
@@ -1471,23 +1618,74 @@ rspu/TaggedWord.v ──┐
      <code>MODE_SWITCH</code> (operational mode transitions),
      <code>DEADLINE_SET</code> (worst-case execution time per tick).</p>
 
-  <h3>Tier Architecture</h3>
-  <p>The 30-instruction ISA is organized into 7 tiers by complexity. Higher tiers may be
-     excluded for area-constrained targets without affecting lower-tier programs:</p>
+  <h3>TypeTag Wire Encoding</h3>
+  <p>Tags are loaded into registers via <code>TAG_LOAD</code>, which takes an 8-bit immediate.
+     The wire encoding is a compact bijection between <code>u8</code> values and the
+     <code>TypeTag</code> enum.</p>
   <table class="data-table">
-    <caption>R-SPU ISA v2: 30 instructions across 7 tiers.</caption>
+    <caption>Table XIII: Wire encoding of TypeTag values. A single byte suffices for all representable types.</caption>
     <thead>
-      <tr><th>Tier</th><th>Instructions</th><th>Count</th></tr>
+      <tr><th>u8 Range</th><th>TypeTag</th><th>Semantics</th></tr>
     </thead>
     <tbody>
-      <tr><td>Register</td><td>LOAD_INPUT, STORE_OUTPUT, MOV, LOAD_IMM</td><td>4</td></tr>
-      <tr><td>ALU</td><td>ALU (14 ops), ALU_IMM, ALU_UNARY</td><td>3</td></tr>
-      <tr><td>Temporal</td><td>SR_INIT/TICK/QUERY, CTR_INIT/TICK/QUERY, GUARD_AND/OR</td><td>8</td></tr>
-      <tr><td>Reflex</td><td>REFLEX_IF, PREV</td><td>2</td></tr>
-      <tr><td>Safety</td><td>EMERGENCY_STOP, ASSERT_ALWAYS, ASSERT_NEVER</td><td>3</td></tr>
-      <tr><td>Exception</td><td>TRAP, TRAP_IF, HALT, MODE_SWITCH, NOP, FENCE, TAG_LOAD/CHECK/READ, DEADLINE_SET</td><td>10</td></tr>
+      <tr><td>0</td><td>Uninitialized</td><td>Register not yet written</td></tr>
+      <tr><td>1</td><td>Bool</td><td>Single-bit Boolean</td></tr>
+      <tr><td>2&ndash;127</td><td>Unsigned{n}</td><td>Fixed-width unsigned, n = value</td></tr>
+      <tr><td>128&ndash;255</td><td>Signed{n&minus;128}</td><td>Fixed-width signed (two&rsquo;s complement)</td></tr>
     </tbody>
   </table>
+
+  <h3>Register-File Partitioning</h3>
+  <p>The 256-entry register file is partitioned into four contiguous regions of 64 registers each.
+     Partitioning eliminates structural hazards: input and output ports are physically separated
+     from computation registers.</p>
+  <table class="data-table">
+    <caption>Table XIV: Register-file partitioning. Each region is 64 entries.</caption>
+    <thead>
+      <tr><th>Range</th><th>Region</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>R0&ndash;R63</td><td>Input ports</td><td>One register per input signal declared in the MIRR source</td></tr>
+      <tr><td>R64&ndash;R127</td><td>Output ports</td><td>One register per output signal; written by STORE_OUTPUT</td></tr>
+      <tr><td>R128&ndash;R191</td><td>Internal</td><td>Cross-tick state: shift-register/counter guard values, PREV history</td></tr>
+      <tr><td>R192&ndash;R255</td><td>Temporaries</td><td>Expression evaluation scratch space; freed after each tick</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tier Architecture</h3>
+  <p>The 30-instruction ISA is organized into 7 tiers by complexity.  Each tier maps a class
+     of MIRR primitives to one or more R-SPU instructions.  Tiers execute in ascending order
+     within each tick, enforcing the load&ndash;compute&ndash;store discipline.</p>
+  <table class="data-table">
+    <caption>Table XV: R-SPU tier architecture. Tiers execute in ascending order within each tick.</caption>
+    <thead>
+      <tr><th>Tier</th><th>Name</th><th>Instructions</th><th>MIRR Primitive</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Register</td><td>LOAD_INPUT, STORE_OUTPUT, MOV, LOAD_IMM</td><td>signal decl.</td></tr>
+      <tr><td>2</td><td>ALU</td><td>ALU, ALU_IMM, ALU_UNARY</td><td>expression eval.</td></tr>
+      <tr><td>3</td><td>Temporal</td><td>SR_INIT/TICK/QUERY, CTR_INIT/TICK/QUERY, GUARD_AND/OR</td><td>guard decl.</td></tr>
+      <tr><td>4</td><td>Reflex</td><td>REFLEX_IF, PREV</td><td>reflex stmt.</td></tr>
+      <tr><td>5</td><td>Safety</td><td>EMERGENCY_STOP, ASSERT_ALWAYS, ASSERT_NEVER</td><td>MAPE-K props.</td></tr>
+      <tr><td>6</td><td>Exception</td><td>TRAP, TRAP_IF, HALT</td><td>fault handling</td></tr>
+      <tr><td>7</td><td>Control</td><td>MODE_SWITCH, NOP, FENCE, TAG_LOAD/CHECK/READ, DEADLINE_SET</td><td>MEGA-3 ext.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>R-SPU Assembly Output</h3>
+  <p>The compiler emits R-SPU assembly following the tick execution model: load, temporal
+     init/tick/query, reflex, store.  The header reports register and guard allocation.</p>
+  <div class="listing">
+    <div class="listing-caption">Listing 9: R-SPU assembly for the neonatal respiratory monitor. 8 instructions, 4 registers, 1 guard unit.</div>
+    <pre>1  LOAD_INPUT  R0, P0    ; respirator_enable
+2  LOAD_INPUT  R1, P1    ; airway_pressure
+3  CTR_INIT    G0, 1000, R1
+4  CTR_TICK    G0
+5  CTR_QUERY   R1, G0
+6  LOAD_IMM    R192, 1   (w1)
+7  REFLEX_IF   G0, R64, R192
+8  STORE_OUTPUT R64, P0  ; clamp_valve</pre>
+  </div>
 
   <h3>Interactive R-SPU Simulator</h3>
   <p>
@@ -1507,6 +1705,7 @@ rspu/TaggedWord.v ──┐
   <h2>11. Evaluation</h2>
   <h3>Test Suite</h3>
   <table id="test-summary-table" class="data-table">
+    <caption>Table XXI: Test suite and code-quality summary.</caption>
     <thead>
       <tr><th>Metric</th><th>Value</th></tr>
     </thead>
@@ -1522,6 +1721,26 @@ rspu/TaggedWord.v ──┐
       <tr><td>Test lines</td><td>43,431</td></tr>
     </tbody>
   </table>
+  <table class="data-table">
+    <caption>Table XXII: Tests by subsystem.</caption>
+    <thead>
+      <tr><th>Subsystem</th><th>Tests</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Width inference</td><td>125</td></tr>
+      <tr><td>Pattern system</td><td>125</td></tr>
+      <tr><td>Properties</td><td>107</td></tr>
+      <tr><td>Emit backends</td><td>85</td></tr>
+      <tr><td>S-expression IR</td><td>79</td></tr>
+      <tr><td>Type checker</td><td>77</td></tr>
+      <tr><td>Simplifier</td><td>58</td></tr>
+      <tr><td>Pipeline</td><td>38</td></tr>
+      <tr><td>Temporal</td><td>33</td></tr>
+      <tr><td>MAPE-K</td><td>32</td></tr>
+      <tr><td>R-SPU simulator</td><td>25</td></tr>
+      <tr><td>Self-hosting</td><td>25</td></tr>
+    </tbody>
+  </table>
   <h3>Compilation Benchmarks</h3>
   <p>
     Criterion microbenchmarks (100 samples, warm cache).  Pipeline time
@@ -1530,6 +1749,7 @@ rspu/TaggedWord.v ──┐
     <a href="#demo-benchmarks">the benchmark demo above</a>.</strong>
   </p>
   <table id="native-bench-table" class="data-table">
+    <caption>Table XXIII: Compilation benchmarks (Criterion, 100 samples).</caption>
     <thead>
       <tr><th>Benchmark</th><th>Signals</th><th>Guards</th><th>Time (&mu;s)</th></tr>
     </thead>
@@ -1549,16 +1769,42 @@ rspu/TaggedWord.v ──┐
     verification-only.
   </p>
   <table id="synthesis-table" class="data-table">
+    <caption>Table XXIV: Yosys synthesis results (generic gate library).</caption>
     <thead>
-      <tr><th>Module</th><th>Sig.</th><th>Grd.</th><th>Cells</th><th>DFF</th><th>Comb.</th></tr>
+      <tr><th>Module</th><th>Sig.</th><th>Grd.</th><th>Rfx.</th><th>Cells</th><th>DFF</th><th>Comb.</th></tr>
     </thead>
     <tbody>
-      <tr><td>shift_reg_guard</td><td>2</td><td>1</td><td>15</td><td>8</td><td>7</td></tr>
-      <tr><td>neonatal_resp.</td><td>3</td><td>1</td><td>89</td><td>11</td><td>78</td></tr>
-      <tr><td>tmr_sensor</td><td>27</td><td>13</td><td>207</td><td>55</td><td>152</td></tr>
-      <tr><td>flight_ctrl</td><td>8</td><td>4</td><td>212</td><td>27</td><td>185</td></tr>
-      <tr><td>icu_monitor</td><td>9</td><td>4</td><td>287</td><td>34</td><td>253</td></tr>
-      <tr><td>fir_filter</td><td>8</td><td>1</td><td>1,650</td><td>0</td><td>1,650</td></tr>
+      <tr><td>shift_reg_guard</td><td>2</td><td>1</td><td>1</td><td>15</td><td>8</td><td>7</td></tr>
+      <tr><td>safety_property</td><td>2</td><td>1</td><td>1</td><td>30</td><td>3</td><td>27</td></tr>
+      <tr><td>neonatal_resp.</td><td>3</td><td>1</td><td>1</td><td>89</td><td>11</td><td>78</td></tr>
+      <tr><td>pattern_usage</td><td>5</td><td>3</td><td>3</td><td>90</td><td>8</td><td>82</td></tr>
+      <tr><td>multi_guard</td><td>5</td><td>2</td><td>2</td><td>126</td><td>22</td><td>104</td></tr>
+      <tr><td>auto_vehicle</td><td>7</td><td>4</td><td>3</td><td>206</td><td>21</td><td>185</td></tr>
+      <tr><td>tmr_sensor</td><td>27</td><td>13</td><td>12</td><td>207</td><td>55</td><td>152</td></tr>
+      <tr><td>flight_ctrl</td><td>8</td><td>4</td><td>3</td><td>212</td><td>27</td><td>185</td></tr>
+      <tr><td>industrial</td><td>8</td><td>4</td><td>4</td><td>267</td><td>32</td><td>235</td></tr>
+      <tr><td>icu_monitor</td><td>9</td><td>4</td><td>5</td><td>287</td><td>34</td><td>253</td></tr>
+      <tr><td>fir_filter</td><td>8</td><td>1</td><td>2</td><td>1,650</td><td>0</td><td>1,650</td></tr>
+    </tbody>
+  </table>
+  <h3>Codebase Summary</h3>
+  <table class="data-table">
+    <caption>Table XXV: MIRR compiler codebase summary.</caption>
+    <thead>
+      <tr><th>Metric</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Source lines (Rust, <code>src/</code>)</td><td>30,719</td></tr>
+      <tr><td>Test lines (<code>tests/</code>)</td><td>43,432</td></tr>
+      <tr><td>Rocq proof lines (<code>proofs/</code>)</td><td>1,906</td></tr>
+      <tr><td>Source files</td><td>101</td></tr>
+      <tr><td>Public modules</td><td>20</td></tr>
+      <tr><td>Distinct error codes</td><td>175</td></tr>
+      <tr><td>Example programs</td><td>14</td></tr>
+      <tr><td>Emission backends</td><td>9</td></tr>
+      <tr><td>R-SPU instruction variants</td><td>30</td></tr>
+      <tr><td>S-expression submodules</td><td>7</td></tr>
+      <tr><td>MAPE-K submodules</td><td>10</td></tr>
     </tbody>
   </table>
   <h3>Safety Assurance (6 Layers)</h3>
@@ -1589,7 +1835,7 @@ rspu/TaggedWord.v ──┐
 
   <h3>Layered Assurance Case</h3>
   <table class="data-table">
-    <caption>Layered assurance case. Evidence strength decreases from top to bottom;
+    <caption>Table XXVI: Layered assurance case. Evidence strength decreases from top to bottom;
     Layer 6 enumerates known gaps.</caption>
     <thead>
       <tr><th>Layer</th><th>Evidence</th><th>Coverage</th></tr>
@@ -1659,7 +1905,7 @@ rspu/TaggedWord.v ──┐
      every loop and every dynamically sized allocation in MIRR is governed by an explicit
      <code>MAX_*</code> constant:</p>
   <table class="data-table">
-    <caption>Principal <code>MAX_*</code> bounds enforcing NASA Power-of-10 compliance.</caption>
+    <caption>Table XXVII: Principal <code>MAX_*</code> bounds enforcing NASA Power-of-10 compliance.</caption>
     <thead>
       <tr><th>Constant</th><th>Value</th><th>Scope</th></tr>
     </thead>
@@ -1755,6 +2001,7 @@ MAPE-K         --     MAX_*     .     no HW</code></pre>
   </p>
   <h3>Case Study Summary</h3>
   <table class="data-table">
+    <caption>Table XXXI: Case study summary: compilation metrics and synthesis results.</caption>
     <thead>
       <tr>
         <th>Metric</th>
@@ -1969,7 +2216,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
 
   <h3>Trace Summary</h3>
   <table class="data-table">
-    <caption>Pipeline trace summary for the neonatal respirator. Each stage produces a
+    <caption>Table XXXII: Pipeline trace summary for the neonatal respirator. Each stage produces a
     well-typed intermediate result; zero errors are emitted across all nine stages.</caption>
     <thead>
       <tr><th>Stage</th><th>Name</th><th>Key Output</th><th>Errors</th></tr>
@@ -2085,13 +2332,13 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
      specification and runtime adaptation.</p>
 
   <h3>Feature Comparison</h3>
-  <p>Table&nbsp;1 compares MIRR with related systems across seven key capabilities:
+  <p>Table&nbsp;XXVIII compares MIRR with related systems across seven key capabilities:
      temporal guards (TG), LTL/SVA properties (LTL), type system (TS), formal proofs (FP),
      instruction-level backend (ISA), S-expression IR (SE), and MAPE-K simulator (MK).
      MIRR is, to our knowledge, the only open-source system that combines all seven in a
      single deterministic pipeline.</p>
   <table class="data-table">
-    <caption>Table 1: Feature comparison with related systems.</caption>
+    <caption>Table XXVIII: Feature comparison with related systems.</caption>
     <thead>
       <tr><th>System</th><th>TG</th><th>LTL</th><th>TS</th><th>FP</th><th>ISA</th><th>SE</th><th>MK</th></tr>
     </thead>
@@ -2108,10 +2355,10 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
   </table>
 
   <h3>Quantitative Comparison</h3>
-  <p>Table&nbsp;2 compares measurable evidence across the systems, limited to peer-reviewed
+  <p>Table&nbsp;XXIX compares measurable evidence across the systems, limited to peer-reviewed
      publications or public release documentation.</p>
   <table class="data-table">
-    <caption>Table 2: Quantitative comparison of HDL systems. &ldquo;&mdash;&rdquo; indicates
+    <caption>Table XXIX: Quantitative comparison of HDL systems. &ldquo;&mdash;&rdquo; indicates
     the metric is not applicable or not reported.</caption>
     <thead>
       <tr><th>System</th><th>Proofs</th><th>Tests</th><th>ISA</th><th>Backends</th></tr>
@@ -2143,7 +2390,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
      each to its implementation status, updated with MEGA-1/2/3 evidence.</p>
 
   <table class="data-table">
-    <caption>Mapping speculative claims to implementation evidence.</caption>
+    <caption>Table XXX: Mapping speculative claims to implementation evidence.</caption>
     <thead>
       <tr><th>Claim</th><th>Evidence</th></tr>
     </thead>
