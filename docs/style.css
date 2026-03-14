@@ -221,8 +221,16 @@ body {
     top: 80px;
     align-self: start;
     max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    scrollbar-width: none;
     margin-bottom: 0;
   }
+  .page-toc-container:hover {
+    scrollbar-width: thin;
+  }
+  .page-toc-container::-webkit-scrollbar { width: 6px; background: transparent; }
+  .page-toc-container::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+  .page-toc-container:hover::-webkit-scrollbar-thumb { background: rgba(148,163,184,.2); }
 }
 
 /* Main content */
