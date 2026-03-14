@@ -596,6 +596,41 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
   <p>The crossover at <em>N</em>&nbsp;=&nbsp;16 yields a discontinuity: at <em>N</em>&nbsp;=&nbsp;17,
      the counter uses 6 flip-flops versus 17 for a shift register, a 2.8&times; reduction.</p>
 
+  <table id="table-iii" class="data-table">
+    <caption><strong>Table III:</strong> Flip-flop cost comparison between shift register and counter-comparator strategies. Threshold T<sub>sr</sub>&nbsp;=&nbsp;16.</caption>
+    <thead>
+      <tr><th>Delay N</th><th>SR FFs</th><th>CC FFs</th><th>Ratio</th><th>Selected</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>4</td><td>4</td><td>4</td><td>1.0&times;</td><td>SR (simpler)</td></tr>
+      <tr><td>8</td><td>8</td><td>5</td><td>1.6&times;</td><td>SR (simpler)</td></tr>
+      <tr><td>16</td><td>16</td><td>5</td><td>3.2&times;</td><td>SR (threshold)</td></tr>
+      <tr><td>17</td><td>17</td><td>6</td><td>2.8&times;</td><td>CC</td></tr>
+      <tr><td>100</td><td>100</td><td>8</td><td>12.5&times;</td><td>CC</td></tr>
+      <tr><td>1000</td><td>1000</td><td>11</td><td>90.9&times;</td><td>CC</td></tr>
+    </tbody>
+  </table>
+
+  <div class="listing" id="listing-3">
+    <p class="listing-caption"><strong>Listing 3:</strong> Counter-comparator SystemVerilog emission for a guard with N&nbsp;=&nbsp;1000 cycles. The 11-bit counter saturates at the target value.</p>
+    <pre><code>logic sustained_pressure_drop_cond;
+assign sustained_pressure_drop_cond =
+    (airway_pressure &lt; 50);
+
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n)
+    sustained_pressure_drop_counter &lt;= '0;
+  else if (!sustained_pressure_drop_cond)
+    sustained_pressure_drop_counter &lt;= '0;
+  else if (sustained_pressure_drop_counter &lt; 1000)
+    sustained_pressure_drop_counter &lt;=
+      sustained_pressure_drop_counter + 1;
+end
+
+assign sustained_pressure_drop =
+    (sustained_pressure_drop_counter &gt;= 1000);</code></pre>
+  </div>
+
   <h3>Guard Classification</h3>
   <p>Before selecting a hardware strategy, the compiler classifies every guard condition via
      <code>ConditionKind::try_from_expr()</code>, which pattern-matches the guard&rsquo;s Boolean
@@ -623,6 +658,89 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     testbench (simulation harness), and FPGA project scaffold (Yosys/nextpnr).
     <strong>Six of these are executable live in the playground above.</strong>
   </p>
+
+  <table id="table-iv" class="data-table">
+    <caption><strong>Table IV:</strong> MIRR emission backends. Line counts reflect implementation size. All backends are individually selectable via PipelineConfig.</caption>
+    <thead>
+      <tr><th>Backend</th><th>Output</th><th>Lines</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>SystemVerilog</td><td>.sv RTL + SVA assertions</td><td>666</td></tr>
+      <tr><td>FIRRTL</td><td>CHIPS Alliance IR</td><td>369</td></tr>
+      <tr><td>JSON Netlist</td><td>Machine-readable netlist</td><td>191</td></tr>
+      <tr><td>Graphviz DOT</td><td>Visualization graph</td><td>380</td></tr>
+      <tr><td>R-SPU Assembly</td><td>Mnemonic assembly</td><td>476</td></tr>
+      <tr><td>R-SPU Binary</td><td>32-bit encoded words</td><td>758</td></tr>
+      <tr><td>S-expression</td><td>Homoiconic IR</td><td>20</td></tr>
+      <tr><td>Testbench</td><td>SV testbench harness</td><td>162</td></tr>
+      <tr><td>FPGA Scaffold</td><td>iCE40/ECP5 projects</td><td>408</td></tr>
+    </tbody>
+  </table>
+
+  <div class="listing" id="listing-4">
+    <p class="listing-caption"><strong>Listing 4:</strong> Complete SystemVerilog emission for the flight controller (Listing 1). Four temporal guards compile to shift registers (&le;&nbsp;16 cycles); two properties compile to SVA assertions.</p>
+    <pre><code>module flight_controller (
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic [31:0] altitude,
+  input  logic [15:0] airspeed,
+  input  logic [15:0] pitch_angle,
+  input  logic [15:0] roll_angle,
+  output logic        throttle_cut,
+  output logic        stabilise,
+  output logic        terrain_warn
+);
+  // -- Temporal Guards --
+  // Guard: altitude_low (10 cycles, shift register)
+  logic [9:0] altitude_low_sr;
+  logic altitude_low_cond;
+  assign altitude_low_cond = (altitude &lt; 500);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
+      altitude_low_sr &lt;= '0;
+    else
+      altitude_low_sr &lt;= {altitude_low_cond,
+                            altitude_low_sr[9:1]};
+  end
+  assign altitude_low_out = &amp;altitude_low_sr;
+
+  // Guard: overspeed (5 cycles, shift register)
+  logic [4:0] overspeed_sr;
+  logic overspeed_cond;
+  assign overspeed_cond = (airspeed &gt; 340);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) overspeed_sr &lt;= '0;
+    else overspeed_sr &lt;= {overspeed_cond,
+                            overspeed_sr[4:1]};
+  end
+  assign overspeed_out = &amp;overspeed_sr;
+
+  // -- Reflex Assignments --
+  logic altitude_low_out, overspeed_out;
+  logic excessive_pitch_out, excessive_roll_out;
+
+  always_comb begin
+    terrain_warn = '0;
+    if (altitude_low_out) terrain_warn = 1'b1;
+  end
+  always_comb begin
+    throttle_cut = '0;
+    if (overspeed_out) throttle_cut = 1'b1;
+  end
+  always_comb begin
+    stabilise = '0;
+    if (excessive_pitch_out &amp;&amp; excessive_roll_out)
+      stabilise = 1'b1;
+  end
+
+  // -- Safety Properties (SVA) --
+  assert property (@(posedge clk)
+    (airspeed &lt; 400));
+  assert property (@(posedge clk)
+    (altitude &lt; 500) |-&gt; terrain_warn);
+endmodule</code></pre>
+  </div>
+
   <h3>Stage 6b: SAT-Based Simplification</h3>
   <p>When <code>PipelineConfig.sat_simplify</code> is enabled, the pipeline invokes a bounded
      DPLL solver (<code>src/sat/</code>) to prove expression equivalences that algebraic
@@ -660,6 +778,24 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     E7xx (R-SPU), E8xx (S-expression).  Every error carries a source span,
     severity, and structured message.  Negative tests cover all 189 codes.
   </p>
+
+  <table id="table-v" class="data-table">
+    <caption><strong>Table V:</strong> Error code categories. Every error carries a structured MirrError variant with source span, code, and message.</caption>
+    <thead>
+      <tr><th>Range</th><th>Count</th><th>Category</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>E1xx</td><td>76</td><td>Parse / lexical</td></tr>
+      <tr><td>E2xx</td><td>16</td><td>Semantic analysis</td></tr>
+      <tr><td>E3xx</td><td>1</td><td>Temporal compilation</td></tr>
+      <tr><td>E4xx</td><td>26</td><td>Pattern expansion</td></tr>
+      <tr><td>E5xx</td><td>12</td><td>Width inference</td></tr>
+      <tr><td>E6xx</td><td>25</td><td>Type checking</td></tr>
+      <tr><td>E7xx</td><td>10</td><td>R-SPU emission</td></tr>
+      <tr><td>E8xx</td><td>23</td><td>S-expression IR</td></tr>
+      <tr><td colspan="1"><strong>Total</strong></td><td><strong>189</strong></td><td></td></tr>
+    </tbody>
+  </table>
   <h3>Interactive Pipeline Visualization</h3>
   <p>
     Compile the current playground source through all 9 stages and inspect
@@ -686,6 +822,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     of 10 constraint kinds:
   </p>
   <table id="constraint-table" class="data-table">
+    <caption><strong>Table VI:</strong> Width constraint kinds. Each expression node generates exactly one constraint.</caption>
     <thead>
       <tr><th>Constraint</th><th>Rule</th></tr>
     </thead>
@@ -720,7 +857,7 @@ body      ::= "always(" &phi; ")" | "never(" &phi; ")"
     See <a href="#claim-2">claim 2</a>.
   </p>
   <table id="proofs-table" class="data-table">
-    <caption>Key landmark theorems (see <a href="#theorems">Section 7</a> for the complete 55-item inventory).</caption>
+    <caption><strong>Table VII:</strong> Representative Rocq theorems (8 of 55 shown). See <a href="#theorems">Section 7</a> for the complete inventory.</caption>
     <thead>
       <tr><th>ID</th><th>Theorem</th><th>Description</th><th>File</th><th>Status</th></tr>
     </thead>
