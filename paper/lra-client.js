@@ -99,6 +99,40 @@ LRAClient.prototype.runTool = function(params) {
   return this._send('lra.run_tool', params);
 };
 
+LRAClient.prototype.verifyClaim = function(claimId, input) {
+  return this._send('lra.verify_claim', { claim_id: claimId, input: input });
+};
+
+LRAClient.prototype.challenge = function(claimId, details) {
+  return this._send('lra.challenge', {
+    claim_id: claimId,
+    input: details.input,
+    expected: details.expected,
+    actual: details.actual,
+    verifier_hash: details.verifier_hash
+  });
+};
+
+LRAClient.prototype.verificationLog = function() {
+  return this._send('lra.verification_log');
+};
+
+LRAClient.prototype.depVersions = function() {
+  return this._send('lra.dep_versions');
+};
+
+LRAClient.prototype.notify = function(sourceHash, newVersion, oldVersion) {
+  return this._send('lra.notify', {
+    source_hash: sourceHash,
+    new_version: newVersion,
+    old_version: oldVersion
+  });
+};
+
+LRAClient.prototype.notifications = function() {
+  return this._send('lra.notifications');
+};
+
 LRAClient.prototype.close = function() {
   window.removeEventListener('message', this._onMessage);
   if (this._iframe) {

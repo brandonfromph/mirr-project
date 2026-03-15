@@ -2,27 +2,7 @@
 
 use std::path::Path;
 
-/// Maximum file size for read_to_string calls (10 MB, NASA Power-of-10 bound).
-const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
-
-/// Read a file to string only if its size is within MAX_FILE_SIZE.
-/// Returns empty string on any error or if the file exceeds the bound.
-fn bounded_read_to_string(path: &Path) -> String {
-    match std::fs::metadata(path) {
-        Ok(meta) => {
-            if meta.len() as usize > MAX_FILE_SIZE {
-                eprintln!(
-                    "Warning: {} exceeds {} bytes, skipping read",
-                    path.display(),
-                    MAX_FILE_SIZE
-                );
-                return String::new();
-            }
-        }
-        Err(_) => return String::new(),
-    }
-    std::fs::read_to_string(path).unwrap_or_default()
-}
+use crate::util::bounded_read_to_string;
 
 /// Compliance tier result.
 #[derive(Debug, PartialEq, Eq)]

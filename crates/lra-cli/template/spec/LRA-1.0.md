@@ -354,3 +354,292 @@ a WASM tool. Bronze and Silver papers MAY implement `lra.ping` and
 
 The `lra-client.js` library is provided in the template for cross-paper
 queries. Papers SHOULD include it as a static asset.
+
+### 11.4 Headless Operation (Informative — Phase 6)
+
+An LRA Service Worker SHOULD be capable of responding to protocol queries
+without an open browser tab. The following methods SHOULD work headlessly:
+
+- `lra.ping` — REQUIRED headless
+- `lra.meta` — REQUIRED headless
+- `lra.claims` — REQUIRED headless
+- `lra.cite` — REQUIRED headless
+- `lra.depends` — REQUIRED headless
+- `lra.run_tool` — MAY require an open tab (if tool uses WASM or DOM)
+
+#### 11.4.1 Rate Limiting
+
+Headless LRA nodes SHOULD implement rate limiting to prevent abuse:
+- Default: 60 requests per minute per client
+- Rate limit exceeded returns error code `-32000` with message
+  `"Rate limit exceeded"`
+- The rate counter resets every 60 seconds
+
+#### 11.4.2 Enhanced Ping
+
+Headless nodes SHOULD return an enhanced `lra.ping` response:
+
+```json
+{
+  "status": "ok",
+  "version": "1.0",
+  "capability": "tool-name",
+  "uptime_ms": 3600000,
+  "headless_methods": ["lra.ping", "lra.meta", "lra.claims", "lra.cite", "lra.depends"],
+  "tool_requires_tab": true
+}
+```
+
+#### 11.4.3 Graceful Degradation
+
+When `lra.run_tool` is called without an open tab, the SW SHOULD return:
+
+```json
+{
+  "error": {
+    "code": -32000,
+    "message": "Tool requires active browser tab",
+    "data": {
+      "headless": true,
+      "retry": true,
+      "methods_available": ["lra.ping", "lra.meta", "lra.claims", "lra.cite", "lra.depends"]
+    }
+  }
+}
+```
+
+This tells the caller the paper node is alive and can respond to metadata
+queries, but the tool requires a page tab for WASM execution.
+
+### 11.5 Live Peer Review (Informative — Phase 7)
+
+An LRA paper MAY support automated verification of its claims by other
+LRA papers or CLI tools. This section specifies the protocol methods
+that enable machine-to-machine peer review.
+
+#### 11.5.1 `lra.verify_claim`
+
+Sends a test input to a paper's tool to verify a specific claim.
+
+**Parameters:**
+
+```json
+{
+  "claim_id": "claim-1",
+  "input": "module test { signal in s : u8; }"
+}
+```
+
+**Response (claim has executable evidence):**
+
+The request is relayed to the paper's tool (same as `lra.run_tool`).
+The tool result is returned as the response.
+
+**Response (claim has no executable evidence):**
+
+```json
+{
+  "claim_id": "claim-1",
+  "status": "no_executable_evidence",
+  "claim_text": "Width inference is sound: no assignment silently truncates a value."
+}
+```
+
+**Errors:**
+
+- `-32602` if `claim_id` or `input` is missing
+- `-32602` if `claim_id` is not found in `LRA_CLAIMS`
+
+#### 11.5.2 `lra.challenge`
+
+Records a failed verification attempt against a paper's claim.
+
+**Parameters:**
+
+```json
+{
+  "claim_id": "claim-1",
+  "input": "module test { ... }",
+  "expected": "expected output",
+  "actual": "actual output",
+  "verifier_hash": "sha256:abc123..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "status": "challenge_recorded",
+  "claim_id": "claim-1"
+}
+```
+
+The challenge is stored in a bounded in-memory log (max 100 entries).
+
+**Errors:**
+
+- `-32602` if `claim_id` is missing
+
+#### 11.5.3 `lra.verification_log`
+
+Returns the append-only verification log.
+
+**Parameters:** None.
+
+**Response:** An array of verification entries:
+
+```json
+[
+  {
+    "claim_id": "claim-1",
+    "input_hash": "sha256:e3b0c44298fc1c14...",
+    "status": "verified",
+    "timestamp": 1710489600000
+  }
+]
+```
+
+The `input_hash` is computed via Web Crypto `crypto.subtle.digest`
+(SHA-256) to ensure unambiguous matching with CLI-signed receipts. The
+log is bounded to 1000 entries.
+
+#### 11.5.4 Verification Receipt Format
+
+CLI tools (`lra verify`) produce structural verification receipts that
+include:
+
+- Content integrity: SHA-256 hash comparison against registry
+- Claim extraction: list of claims with evidence classification
+- Structural checks: LRA version tag, SW reference, capability tag
+
+Browser-side verification (via `lra.verify_claim`) produces in-memory
+log entries with SHA-256 input fingerprints.
+
+#### 11.5.5 Node Identity
+
+LRA nodes MAY have an Ed25519 keypair for signing verification receipts.
+Key generation is performed by the CLI (`lra keygen`), which produces:
+
+- `lra-identity.pub` — hex-encoded Ed25519 public key (32 bytes)
+- `lra-identity.key` — hex-encoded Ed25519 secret key (64 bytes)
+
+The keypair is stored on disk and managed by the CLI. Service Workers
+do not store or use keypairs directly. Signed receipts are produced
+offline by the CLI using the `ed25519-dalek` library.
+
+### 11.6 Self-Healing Knowledge Graph (Informative — Phase 8)
+
+An LRA network MAY form a self-healing knowledge graph where papers
+track their dependency versions, receive update notifications, and
+produce signed verification receipts. This section specifies the
+protocol methods and CLi commands that enable this behavior.
+
+#### 11.6.1 `lra.dep_versions`
+
+Returns the full dependency list with version annotations.
+
+**Parameters:** None.
+
+**Response:**
+
+```json
+[
+  { "hash": "sha256:abc123...", "min_version": "0.3.0" }
+]
+```
+
+The existing `lra.depends` method continues to return flat hash strings
+for backward compatibility. `lra.dep_versions` returns the full objects.
+
+#### 11.6.2 `lra.notify`
+
+Notifies a paper that one of its dependencies has been updated.
+Fire-and-forget: the target logs the notification but does not
+automatically re-verify.
+
+**Parameters:**
+
+```json
+{
+  "source_hash": "sha256:abc123...",
+  "new_version": "0.4.0",
+  "old_version": "0.3.0"
+}
+```
+
+**Response:**
+
+```json
+{
+  "status": "notification_received",
+  "is_dependency": true
+}
+```
+
+The notification is stored in a bounded in-memory log (max 100 entries).
+The `is_dependency` field indicates whether the source hash matches a
+declared dependency.
+
+#### 11.6.3 `lra.notifications`
+
+Returns the notification log.
+
+**Parameters:** None.
+
+**Response:** An array of notification entries:
+
+```json
+[
+  {
+    "source_hash": "sha256:abc123...",
+    "new_version": "0.4.0",
+    "old_version": "0.3.0",
+    "is_dependency": true,
+    "timestamp": 1710489600000
+  }
+]
+```
+
+#### 11.6.4 Signed Verification Receipts
+
+CLI tools produce JSON verification receipts via `lra verify --receipt`:
+
+```json
+{
+  "target_url": "https://example.github.io/paper/",
+  "target_hash": "sha256:...",
+  "registry_hash": "sha256:...",
+  "integrity": "match",
+  "claims_found": 4,
+  "structural_checks": {
+    "lra_version": true,
+    "sw_reference": true,
+    "claims_markup": true,
+    "capability_tag": true
+  },
+  "timestamp": "2026-03-15T12:00:00Z",
+  "verifier_version": "0.1.0"
+}
+```
+
+Receipts are signed with `lra sign --key lra-identity.key --receipt receipt.json`,
+which adds `signature` (hex-encoded Ed25519) and `signer_pubkey` fields.
+
+#### 11.6.5 Semver Version Comparison
+
+The CLI uses minimal semver parsing (major.minor.patch) for version-aware
+dependency tracking. No range syntax or pre-release tags. Maximum 3 numeric
+components, maximum 64 characters per version string.
+
+#### 11.6.6 Network Health Status
+
+The CLI command `lra status` queries every paper in the registry and reports:
+
+- HTTP reachability
+- Structural marker completeness (lra:version, sw.js, data-lra-claim, lra:capability)
+- Content integrity (live SHA-256 vs registry hash)
+- Version and verification summary
+
+Each paper is fetched exactly once. Both marker checks and SHA-256 computation
+use the same response body.

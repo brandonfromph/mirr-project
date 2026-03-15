@@ -196,7 +196,7 @@ body {
   grid-template-columns: 1fr;
   gap: 0 2rem;
   min-height: calc(100vh - 120px);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 .content-with-toc {
   max-width: none;

@@ -1,6 +1,10 @@
 // sw.js — MIRR Paper Service Worker
 // Phase 1: Offline cache (paper + WASM compiler)
 // Phase 4: JSON-RPC 2.0 protocol (lra.ping, lra.meta, lra.claims, lra.cite, lra.run_tool)
+// Phase 5: Discovery + dependencies (lra.depends)
+// Phase 6: Autonomous node (rate limiting, headless capability, graceful degradation)
+// Phase 7: Live peer review (verify_claim, challenge, verification_log)
+// Phase 8: Self-healing knowledge graph (dep_versions, notify, notifications)
 //
 // GPL-3.0 — see LICENSE for terms.
 
@@ -13,6 +17,38 @@ var ASSETS = [
   'lra-card.svg',
   'metrics.json'
 ];
+
+// Phase 6: Install timestamp for uptime tracking
+var _installTime = Date.now();
+
+// Phase 6: Rate limiting (NASA Power-of-10 — bounded counters)
+var MAX_REQUESTS_PER_MINUTE = 60;
+var _requestCount = 0;
+var _requestWindowStart = Date.now();
+
+// Phase 6: Pending relay cleanup (60s TTL — 2x client timeout)
+var MAX_PENDING_TTL = 60000;
+var MAX_PENDING_ENTRIES = 100;
+
+// Phase 6: Headless capability list (methods that work without an open tab)
+var HEADLESS_METHODS = ['lra.ping', 'lra.meta', 'lra.claims', 'lra.cite', 'lra.depends',
+                        'lra.verification_log', 'lra.dep_versions', 'lra.notify',
+                        'lra.notifications'];
+
+// Phase 7: Verification log (bounded, in-memory, append-only)
+var MAX_VERIFICATION_LOG = 1000;
+var _verificationLog = [];
+
+// Phase 7: Challenge log (bounded, in-memory)
+var MAX_CHALLENGE_LOG = 100;
+var _challenges = [];
+
+// Phase 7: Bounded claim search
+var MAX_CLAIMS = 100;
+
+// Phase 8: Notification log (bounded, in-memory)
+var MAX_NOTIFICATIONS = 100;
+var _notifications = [];
 
 // ── LRA Protocol v1.0 — MIRR metadata ──────────────────────────────
 
@@ -43,6 +79,9 @@ var LRA_CITATION_BIBTEX = '@software{mirr2026,\n  title  = {MIRR: A Safety-Criti
 var LRA_CITATION_APA = 'Brandon. (2026). MIRR: A Safety-Critical HDL Compiler [Computer software]. https://github.com/brandonfromph/mirr-project';
 
 var LRA_CITATION_RIS = 'TY  - COMP\nTI  - MIRR: A Safety-Critical HDL Compiler with Formal Width Inference\nAU  - Brandon\nPY  - 2026\nUR  - https://github.com/brandonfromph/mirr-project\nER  - ';
+
+// Phase 5: Dependency declaration (MIRR has no LRA dependencies — it is the first node)
+var LRA_DEPENDS = [];
 
 // ── Cache lifecycle ─────────────────────────────────────────────────
 
@@ -86,7 +125,24 @@ function handleProtocol(event) {
 
   if (data.jsonrpc !== '2.0') return;
 
-  // W12: Guard reply/error helpers — do not send responses for notifications (no id)
+  // Phase 6: Rate limiting
+  var now = Date.now();
+  if (now - _requestWindowStart > 60000) {
+    _requestCount = 0;
+    _requestWindowStart = now;
+  }
+  _requestCount++;
+  if (_requestCount > MAX_REQUESTS_PER_MINUTE) {
+    if (id !== undefined && id !== null) {
+      event.source.postMessage({
+        jsonrpc: '2.0', id: id,
+        error: { code: -32000, message: 'Rate limit exceeded (max ' + MAX_REQUESTS_PER_MINUTE + '/min)' }
+      });
+    }
+    return;
+  }
+
+  // Guard reply/error helpers — do not send responses for notifications (no id)
   var reply = function(result) {
     if (id === undefined || id === null) return;
     event.source.postMessage({ jsonrpc: '2.0', id: id, result: result });
@@ -98,7 +154,15 @@ function handleProtocol(event) {
 
   switch (method) {
     case 'lra.ping':
-      reply({ status: 'ok', version: '1.0', capability: 'mirr-compiler' });
+      reply({
+        status: 'ok',
+        version: '1.0',
+        capability: LRA_META.capability,
+        uptime_ms: now - _installTime,
+        headless_methods: HEADLESS_METHODS,
+        formats: LRA_META.formats,
+        tool_requires_tab: true
+      });
       break;
     case 'lra.meta':
       reply(LRA_META);
@@ -117,6 +181,96 @@ function handleProtocol(event) {
     case 'lra.run_tool':
       relayToPage(event, id, params);
       break;
+    case 'lra.depends': {
+      // Phase 8: Backward-compat — always return flat hash strings
+      var dep_hashes = [];
+      var dk = 0;
+      while (dk < LRA_DEPENDS.length && dk < MAX_CLAIMS) {
+        if (typeof LRA_DEPENDS[dk] === 'string') dep_hashes.push(LRA_DEPENDS[dk]);
+        else if (LRA_DEPENDS[dk].hash) dep_hashes.push(LRA_DEPENDS[dk].hash);
+        dk++;
+      }
+      reply(dep_hashes);
+      break;
+    }
+    case 'lra.dep_versions':
+      reply(LRA_DEPENDS);
+      break;
+    case 'lra.notify': {
+      var n_source_hash = params && params.source_hash;
+      if (!n_source_hash) {
+        error(-32602, 'notify requires source_hash');
+        break;
+      }
+      var is_dependency = false;
+      var di = 0;
+      while (di < LRA_DEPENDS.length && di < MAX_CLAIMS) {
+        var dep_hash = typeof LRA_DEPENDS[di] === 'string'
+          ? LRA_DEPENDS[di] : (LRA_DEPENDS[di].hash || '');
+        if (dep_hash === n_source_hash) { is_dependency = true; break; }
+        di++;
+      }
+      if (_notifications.length < MAX_NOTIFICATIONS) {
+        _notifications.push({
+          source_hash: n_source_hash,
+          new_version: (params && params.new_version) || null,
+          old_version: (params && params.old_version) || null,
+          is_dependency: is_dependency,
+          timestamp: Date.now()
+        });
+      }
+      reply({ status: 'notification_received', is_dependency: is_dependency });
+      break;
+    }
+    case 'lra.notifications':
+      reply(_notifications);
+      break;
+    case 'lra.verify_claim': {
+      var vc_claim_id = params && params.claim_id;
+      var vc_input = params && params.input;
+      if (!vc_claim_id || !vc_input) {
+        error(-32602, 'verify_claim requires claim_id and input');
+        break;
+      }
+      var vc_claim = null;
+      var ci = 0;
+      while (ci < LRA_CLAIMS.length && ci < MAX_CLAIMS) {
+        if (LRA_CLAIMS[ci].id === vc_claim_id) { vc_claim = LRA_CLAIMS[ci]; break; }
+        ci++;
+      }
+      if (!vc_claim) {
+        error(-32602, 'Unknown claim: ' + vc_claim_id);
+        break;
+      }
+      if (!vc_claim.evidence_href) {
+        reply({ claim_id: vc_claim_id, status: 'no_executable_evidence', claim_text: vc_claim.text });
+        break;
+      }
+      relayToPage(event, id, { input: vc_input, _verify_claim_id: vc_claim_id });
+      break;
+    }
+    case 'lra.challenge': {
+      var ch_claim_id = params && params.claim_id;
+      if (!ch_claim_id) {
+        error(-32602, 'challenge requires claim_id');
+        break;
+      }
+      if (_challenges.length < MAX_CHALLENGE_LOG) {
+        _challenges.push({
+          claim_id: ch_claim_id,
+          input: (params && params.input) || null,
+          expected: (params && params.expected) || null,
+          actual: (params && params.actual) || null,
+          verifier_hash: (params && params.verifier_hash) || null,
+          timestamp: Date.now()
+        });
+      }
+      reply({ status: 'challenge_recorded', claim_id: ch_claim_id });
+      break;
+    }
+    case 'lra.verification_log':
+      reply(_verificationLog);
+      break;
     default:
       if (method && method.indexOf('lra.') === 0)
         error(-32601, 'Method not found: ' + method);
@@ -124,11 +278,17 @@ function handleProtocol(event) {
 }
 
 function relayToPage(event, id, params) {
+  var now = Date.now();
   self.clients.matchAll({ type: 'window' }).then(function(clients) {
     if (clients.length === 0) {
+      // Phase 6: Graceful degradation — tell caller the node is alive but tool needs a tab
       event.source.postMessage({
         jsonrpc: '2.0', id: id,
-        error: { code: -32000, message: 'No active page — WASM compiler not loaded' }
+        error: {
+          code: -32000,
+          message: 'Tool requires active browser tab',
+          data: { headless: true, retry: true, methods_available: HEADLESS_METHODS }
+        }
       });
       return;
     }
@@ -138,7 +298,22 @@ function relayToPage(event, id, params) {
       relay_id: relay_id,
       params: params
     });
-    _pending[relay_id] = { source: event.source, id: id };
+    _pending[relay_id] = {
+      source: event.source, id: id, timestamp: now,
+      verify_claim_id: (params && params._verify_claim_id) || null,
+      verify_input: (params && params.input) || null
+    };
+
+    // Phase 6: Cleanup stale pending entries (bounded iteration)
+    var pendingKeys = Object.keys(_pending);
+    var k = 0;
+    while (k < pendingKeys.length && k < MAX_PENDING_ENTRIES) {
+      var entry = _pending[pendingKeys[k]];
+      if (entry.timestamp && (now - entry.timestamp) > MAX_PENDING_TTL) {
+        delete _pending[pendingKeys[k]];
+      }
+      k++;
+    }
   });
 }
 
@@ -160,6 +335,28 @@ self.addEventListener('message', function(event) {
           jsonrpc: '2.0', id: pending.id,
           result: data.result
         });
+      }
+      // Phase 7: Log verification result if this was a verify_claim relay
+      if (pending.verify_claim_id && _verificationLog.length < MAX_VERIFICATION_LOG) {
+        var vInput = (pending.verify_input || '');
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode(vInput))
+          .then(function(hashBuffer) {
+            var hashArray = new Uint8Array(hashBuffer);
+            var hashHex = '';
+            var hi = 0;
+            while (hi < hashArray.length && hi < 32) {
+              hashHex += ('00' + hashArray[hi].toString(16)).slice(-2);
+              hi++;
+            }
+            if (_verificationLog.length < MAX_VERIFICATION_LOG) {
+              _verificationLog.push({
+                claim_id: pending.verify_claim_id,
+                input_hash: 'sha256:' + hashHex,
+                status: data.error ? 'failed' : 'verified',
+                timestamp: Date.now()
+              });
+            }
+          });
       }
     }
     return;
