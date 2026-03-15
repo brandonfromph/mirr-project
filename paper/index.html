@@ -312,6 +312,8 @@ Compiler loading...</pre>
         92 <code>#![forbid(unsafe_code)]</code> directives and 0 Clippy
         warnings.</li>
   </ol>
+  <p><a href="#fig-1">Figure 1</a> shows the complete system architecture,
+    and <a href="#fig-2">Figure 2</a> presents the core grammar fragment.</p>
 
   <figure id="fig-1">
     <svg viewBox="0 0 900 420" class="architecture-svg" role="img" aria-label="MIRR system architecture diagram">
@@ -981,7 +983,7 @@ Proof.
 Qed.</pre>
   </div>
 
-  <figure>
+  <figure id="fig-3">
     <svg viewBox="0 0 700 320" class="proof-dep-svg" style="max-width:700px;display:block;margin:0 auto;" aria-label="Proof dependency graph">
       <!-- Width inference files (left) -->
       <rect x="20" y="10" width="110" height="28" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
@@ -1041,7 +1043,7 @@ Qed.</pre>
         </marker>
       </defs>
     </svg>
-    <figcaption><strong>Figure 10:</strong> Proof dependency graph. Width-inference files (left, blue) feed into Integration.v via Solver.v. SCC files (purple) feed Integration directly. R-SPU proofs (orange, right) are self-contained.</figcaption>
+    <figcaption><strong>Figure 3:</strong> Proof dependency graph. Width-inference files (left, blue) feed into Integration.v via Solver.v. SCC files (purple) feed Integration directly. R-SPU proofs (orange, right) are self-contained.</figcaption>
   </figure>
 
   <h3>Interactive Proof Dashboard</h3>
@@ -1500,24 +1502,7 @@ Qed.</pre>
 
   <h3>Proof Dependency Structure</h3>
   <p>The width-inference files compose into the end-to-end soundness theorem via
-    <code>Solver.v</code>. R-SPU proofs are self-contained.</p>
-  <figure>
-    <figcaption>Figure: Proof dependency graph. Width-inference files (left) feed into
-      <code>Integration.v</code> via <code>Solver.v</code>. R-SPU proofs are independent.</figcaption>
-    <pre><code>     MinBits.v ──┐
-   Constraint.v ─┤
-     Monotone.v ─┼──► Solver.v ──┐
-                 │               │
-     Flatten.v ──┤               │
-   Truncation.v ─┤   ┌──────────┘
-    SCC/Tarjan.v ┤   │
-  SCC/Classify.v ┤   ▼
-SCC/Nonexpansive ┘  Integration.v
-                    (e2e_solver_sound)
-
-rspu/TaggedWord.v ──┐
-  rspu/Encoding.v ──┘ (independent)</code></pre>
-  </figure>
+    <code>Solver.v</code> (<a href="#fig-3">Figure 3</a>). R-SPU proofs are self-contained.</p>
 
   <div class="proof-bar"><div class="proof-bar-proven" style="width:94.5%">52 Proven</div><div class="proof-bar-admitted" style="width:5.5%">3</div></div>
   <button id="proof-live-btn">Load Live Status</button><div id="proof-live-output" class="sim-output"></div>
@@ -1607,7 +1592,7 @@ rspu/TaggedWord.v ──┐
      <code>tests/self_hosting_ir_schema_tests.rs</code> and
      <code>tests/self_hosting_parity_tests.rs</code>.</p>
 
-  <div class="listing">
+  <div class="listing" id="listing-10">
     <div class="listing-caption">Listing 10: S-expression encoding of the neonatal respiratory monitor.</div>
     <pre>(module neonatal_respiratory_monitor
   (signal respirator_enable input bool)
@@ -1889,7 +1874,7 @@ rspu/TaggedWord.v ──┐
   <h3>R-SPU Assembly Output</h3>
   <p>The compiler emits R-SPU assembly following the tick execution model: load, temporal
      init/tick/query, reflex, store.  The header reports register and guard allocation.</p>
-  <div class="listing">
+  <div class="listing" id="listing-9">
     <div class="listing-caption">Listing 9: R-SPU assembly for the neonatal respiratory monitor. 8 instructions, 4 registers, 1 guard unit.</div>
     <pre>1  LOAD_INPUT  R0, P0    ; respirator_enable
 2  LOAD_INPUT  R1, P1    ; airway_pressure
@@ -2910,8 +2895,6 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
 
   <p><em>Full log: <code>proposals/</code> directory (47 files).</em></p>
 </section>
-
-<!-- #limitations absorbed into #conclusion (section 15) -->
 
 <section id="references">
   <h2>References</h2>
