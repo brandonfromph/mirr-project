@@ -96,10 +96,11 @@ pub fn run(seed: &str, registry_path: &str) -> i32 {
         // Add dependencies to crawl queue (if they look like URLs)
         let mut di = 0;
         while di < depends.len() && di < MAX_CRAWL_NODES {
-            if depends[di].starts_with("http://") || depends[di].starts_with("https://") {
-                if queue.len() < MAX_CRAWL_NODES && !queue.iter().any(|q| q == &depends[di]) {
-                    queue.push(depends[di].clone());
-                }
+            if (depends[di].starts_with("http://") || depends[di].starts_with("https://"))
+                && queue.len() < MAX_CRAWL_NODES
+                && !queue.iter().any(|q| q == &depends[di])
+            {
+                queue.push(depends[di].clone());
             }
             di += 1;
         }
