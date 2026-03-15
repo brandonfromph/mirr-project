@@ -467,6 +467,7 @@ mod tests {
             sim_result: None,
             mape_k_result: None,
             retiming_stats: None,
+            totality_result: None,
         }
     }
 

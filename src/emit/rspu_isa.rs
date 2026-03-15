@@ -223,6 +223,14 @@ pub enum RspuInstruction {
     // -- Temporal extension (MEGA-3) -------------------------------------
     /// Set deadline counter; trap E715 on expiry.
     DeadlineSet { cycles: u32 },
+
+    // -- Totality Engine tier (MEGA-4) -----------------------------------
+    /// Verify a proof certificate against the loaded program (PVU instruction).
+    Verify { cert_offset: u32 },
+    /// Write verification result to register: 1=pass, 0=fail (PVU instruction).
+    Certify { dst: RegId },
+    /// Assert all expected properties verified; trap PropertyFail if not.
+    TotalCheck { expected_properties: u32 },
 }
 
 impl RspuInstruction {
@@ -259,6 +267,9 @@ impl RspuInstruction {
             Self::Nop => "NOP",
             Self::Fence => "FENCE",
             Self::DeadlineSet { .. } => "DEADLINE_SET",
+            Self::Verify { .. } => "VERIFY",
+            Self::Certify { .. } => "CERTIFY",
+            Self::TotalCheck { .. } => "TOTAL_CHECK",
         }
     }
 }
@@ -281,6 +292,9 @@ pub struct RspuProgram {
     pub register_map: Vec<(String, RegId)>,
     /// Human-readable guard map: guard_name -> GuardId.
     pub guard_map: Vec<(String, GuardId)>,
+    /// Proof certificate bytes (MEGA-4 totality engine).
+    /// Populated when the pipeline runs with `--totality`.
+    pub certificate: Option<Vec<u8>>,
 }
 
 impl RspuProgram {
@@ -385,6 +399,11 @@ fn format_instruction(instr: &RspuInstruction) -> String {
         RspuInstruction::TagCheck { src, expected } => format!("TAG_CHECK   R{src}, T{expected}"),
         RspuInstruction::TagRead { dst, src } => format!("TAG_READ    R{dst}, R{src}"),
         RspuInstruction::DeadlineSet { cycles } => format!("DEADLINE_SET {cycles}"),
+        RspuInstruction::Verify { cert_offset } => format!("VERIFY      {cert_offset}"),
+        RspuInstruction::Certify { dst } => format!("CERTIFY     R{dst}"),
+        RspuInstruction::TotalCheck { expected_properties } => {
+            format!("TOTAL_CHECK {expected_properties}")
+        }
     }
 }
 

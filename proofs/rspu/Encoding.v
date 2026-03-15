@@ -21,7 +21,7 @@ Open Scope Z_scope.
 
     R-SPU v2 defines opcodes 0..29.  *)
 
-Definition valid_opcode (op : Z) : Prop := (0 <= op < 30).
+Definition valid_opcode (op : Z) : Prop := (0 <= op < 33).
 
 (** ** 32-bit Word
 
@@ -357,4 +357,81 @@ Proof.
     rewrite andb_true_r. reflexivity.
   - apply Z.ltb_ge in Hlt. rewrite andb_false_r.
     symmetry. apply (bounded_testbit imm10 10 n); lia.
+Qed.
+
+(** ** MEGA-4: Totality Engine Opcodes (30-32) *)
+
+(** VERIFY (opcode 30) is S-type: imm26 = cert_offset.
+    Roundtrip: extract_imm26(pack_s_type 30 cert_offset) = cert_offset. *)
+Theorem verify_s_type_roundtrip : forall cert_offset,
+  (0 <= cert_offset < 67108864) ->
+  extract_imm26 (pack_s_type 30 cert_offset) = cert_offset.
+Proof.
+  intros cert_offset H.
+  apply s_type_imm_roundtrip; lia.
+Qed.
+
+(** VERIFY opcode survives roundtrip. *)
+Theorem verify_opcode_roundtrip : forall cert_offset,
+  (0 <= cert_offset < 67108864) ->
+  extract_opcode (pack_s_type 30 cert_offset) = 30.
+Proof.
+  intros cert_offset H.
+  unfold pack_s_type.
+  apply opcode_roundtrip; lia.
+Qed.
+
+(** CERTIFY (opcode 31) is R-type: dst field carries the destination register.
+    Roundtrip: extract_dst(pack_r_type 31 dst 0 0 0) = dst. *)
+Theorem certify_r_type_dst_roundtrip : forall dst,
+  (0 <= dst < 256) ->
+  extract_dst (pack_r_type 31 dst 0 0 0) = dst.
+Proof.
+  intros dst H.
+  apply r_type_dst_roundtrip; lia.
+Qed.
+
+(** CERTIFY opcode survives roundtrip. *)
+Theorem certify_opcode_roundtrip : forall dst,
+  (0 <= dst < 256) ->
+  extract_opcode (pack_r_type 31 dst 0 0 0) = 31.
+Proof.
+  intros dst H.
+  unfold pack_r_type.
+  replace (Z.land dst 255) with dst
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land 0 255) with 0 by reflexivity.
+  replace (Z.land 0 3) with 0 by reflexivity.
+  rewrite !Z.shiftl_0_l.
+  rewrite !Z.lor_0_r.
+  apply opcode_roundtrip.
+  - lia.
+  - split; [|].
+    + apply Z.shiftl_nonneg; lia.
+    + assert (Hd : Z.shiftl dst 18 < Z.pow 2 26).
+      { rewrite Z.shiftl_mul_pow2 by lia.
+        apply Z.lt_trans with (256 * Z.pow 2 18);
+          [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
+        change (256 * 2 ^ 18) with (2 ^ 26). lia. }
+      lia.
+Qed.
+
+(** TOTAL_CHECK (opcode 32) is S-type: imm26 = expected_properties.
+    Roundtrip: extract_imm26(pack_s_type 32 expected) = expected. *)
+Theorem total_check_s_type_roundtrip : forall expected,
+  (0 <= expected < 67108864) ->
+  extract_imm26 (pack_s_type 32 expected) = expected.
+Proof.
+  intros expected H.
+  apply s_type_imm_roundtrip; lia.
+Qed.
+
+(** TOTAL_CHECK opcode survives roundtrip. *)
+Theorem total_check_opcode_roundtrip : forall expected,
+  (0 <= expected < 67108864) ->
+  extract_opcode (pack_s_type 32 expected) = 32.
+Proof.
+  intros expected H.
+  unfold pack_s_type.
+  apply opcode_roundtrip; lia.
 Qed.

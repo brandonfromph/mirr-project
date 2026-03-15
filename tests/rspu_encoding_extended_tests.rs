@@ -60,6 +60,7 @@ fn make_program(instructions: Vec<RspuInstruction>) -> RspuProgram {
         guards_used: 64,
         register_map: vec![],
         guard_map: vec![],
+        certificate: None,
     }
 }
 
@@ -907,8 +908,9 @@ fn test_e706_deadline_set_boundary() {
 
 #[test]
 fn test_e707_unknown_opcodes_30_through_63() {
-    // Opcodes 30..63 are unassigned. Decoding them should produce E707.
-    for opcode in 30..MAX_OPCODE_SCAN {
+    // Opcodes 30..32 are assigned (MEGA-4: VERIFY, CERTIFY, TOTAL_CHECK).
+    // Opcodes 33..63 are unassigned. Decoding them should produce E707.
+    for opcode in 33..MAX_OPCODE_SCAN {
         let word: u32 = (opcode as u32) << 26;
         let result = decode(word);
         assert!(result.is_err(), "decoding unassigned opcode {} should fail with E707", opcode);

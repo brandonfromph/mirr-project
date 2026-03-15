@@ -32,9 +32,6 @@ const MAX_ALU_OPS: usize = 14;
 /// Maximum guards to check in guard-init tests.
 const MAX_GUARD_TEST: usize = 8;
 
-/// Maximum property violations to inject in saturation tests.
-const MAX_PROP_TEST: usize = 32;
-
 /// Maximum registers to scan in output collection tests.
 const MAX_OUTPUT_SCAN: usize = 16;
 
@@ -54,6 +51,7 @@ fn make_program(instructions: Vec<RspuInstruction>) -> RspuProgram {
         guards_used: 0,
         register_map: Vec::new(),
         guard_map: Vec::new(),
+        certificate: None,
     }
 }
 
@@ -805,24 +803,21 @@ fn test_assert_never_violation() {
 
 #[test]
 fn test_multiple_property_violations() {
+    // MEGA-4: AssertAlways now raises PropertyFail on first violation,
+    // stopping execution. We verify the first violation is recorded.
     let mut sim = RspuSimulator::new();
-    let mut instrs = Vec::new();
-    instrs.push(RspuInstruction::LoadImm { dst: 192, value: 0, width: 2 });
-    instrs.push(RspuInstruction::LoadImm { dst: 193, value: 1, width: 2 });
-    for i in 0..MAX_PROP_TEST {
-        instrs.push(RspuInstruction::AssertAlways { cond: 192, property_id: i as u32 });
-    }
-    for i in 0..MAX_PROP_TEST {
-        instrs.push(RspuInstruction::AssertNever { cond: 193, property_id: (100 + i) as u32 });
-    }
-    instrs.push(RspuInstruction::Halt);
-    let program = make_program(instrs);
-    let result = sim.run(&program, 1000).expect("Multiple violations must succeed");
+    let program = make_program(vec![
+        RspuInstruction::LoadImm { dst: 192, value: 0, width: 2 },
+        RspuInstruction::LoadImm { dst: 193, value: 1, width: 2 },
+        RspuInstruction::AssertAlways { cond: 192, property_id: 0 },
+        RspuInstruction::Halt,
+    ]);
+    let result = sim.run(&program, 1000).expect("Property violation must succeed");
+    assert_eq!(result.property_violations, vec![0], "First violation must be recorded");
     assert_eq!(
-        result.property_violations.len(),
-        MAX_PROP_TEST * 2,
-        "Must have {expected} violations",
-        expected = MAX_PROP_TEST * 2
+        result.exception,
+        Some(ExceptionCode::PropertyFail),
+        "PropertyFail exception must be raised"
     );
 }
 
@@ -1174,6 +1169,8 @@ fn test_sim_result_no_outputs_when_none_written() {
 
 #[test]
 fn test_sim_result_fields() {
+    // MEGA-4: AssertAlways with cond=0 now raises PropertyFail,
+    // stopping execution at cycle 2 (LoadImm + AssertAlways).
     let mut sim = RspuSimulator::new();
     let program = make_program(vec![
         RspuInstruction::LoadImm { dst: 192, value: 0, width: 2 },
@@ -1181,9 +1178,16 @@ fn test_sim_result_fields() {
         RspuInstruction::Halt,
     ]);
     let result = sim.run(&program, 100).expect("SimResult fields test must succeed");
-    assert_eq!(result.cycles, 3, "cycles must be 3 (LoadImm + AssertAlways + Halt)");
-    assert!(result.halted, "halted must be true");
-    assert!(result.exception.is_none(), "exception must be None");
+    assert_eq!(
+        result.cycles, 2,
+        "cycles must be 2 (LoadImm + AssertAlways — exception before Halt)"
+    );
+    assert!(!result.halted, "halted must be false (exception stopped execution)");
+    assert_eq!(
+        result.exception,
+        Some(ExceptionCode::PropertyFail),
+        "exception must be PropertyFail"
+    );
     assert_eq!(result.property_violations, vec![42], "property_violations must contain [42]");
 }
 

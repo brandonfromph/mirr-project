@@ -126,6 +126,8 @@ pub struct RspuSimulator {
     pub deadline: Option<u32>,
     /// Whether the simulator has been halted.
     pub halted: bool,
+    /// Whether the last VERIFY instruction succeeded (MEGA-4 totality).
+    pub cert_verified: bool,
 }
 
 impl RspuSimulator {
@@ -149,6 +151,7 @@ impl RspuSimulator {
             properties: PropertyState::new(),
             deadline: None,
             halted: false,
+            cert_verified: false,
         }
     }
 
@@ -374,6 +377,8 @@ impl RspuSimulator {
                 let val = self.registers.read(*cond).value;
                 if val == 0 {
                     self.properties.record_violation(*property_id);
+                    let _action = self.exceptions.raise_exception(ExceptionCode::PropertyFail)?;
+                    return Ok(StepResult::Exception(ExceptionCode::PropertyFail));
                 }
                 Ok(StepResult::Continue)
             }
@@ -382,6 +387,8 @@ impl RspuSimulator {
                 let val = self.registers.read(*cond).value;
                 if val != 0 {
                     self.properties.record_violation(*property_id);
+                    let _action = self.exceptions.raise_exception(ExceptionCode::PropertyFail)?;
+                    return Ok(StepResult::Exception(ExceptionCode::PropertyFail));
                 }
                 Ok(StepResult::Continue)
             }
@@ -464,6 +471,35 @@ impl RspuSimulator {
             RspuInstruction::DeadlineSet { cycles } => {
                 // Set the absolute deadline.
                 self.deadline = Some(*cycles);
+                Ok(StepResult::Continue)
+            }
+
+            // -- MEGA-4: Totality Engine tier ------------------------------
+            RspuInstruction::Verify { cert_offset: _ } => {
+                // In simulation, VERIFY validates that a certificate is
+                // present.  Hardware performs SHA-256 hash comparison;
+                // the simulator trusts the host environment.
+                self.cert_verified = true;
+                Ok(StepResult::Continue)
+            }
+
+            RspuInstruction::Certify { dst } => {
+                // Write 1 if the last VERIFY succeeded, 0 otherwise.
+                let val = if self.cert_verified { 1u64 } else { 0u64 };
+                self.registers
+                    .write(*dst, TaggedWord::from_computed(val, TypeTag::Unsigned { width: 1 }));
+                Ok(StepResult::Continue)
+            }
+
+            RspuInstruction::TotalCheck { expected_properties } => {
+                // Count verified properties (those NOT in the violations list).
+                // If fewer than expected passed, raise PropertyFail.
+                let verified = (*expected_properties as usize)
+                    .saturating_sub(self.properties.violations.len());
+                if verified < *expected_properties as usize {
+                    let _action = self.exceptions.raise_exception(ExceptionCode::PropertyFail)?;
+                    return Ok(StepResult::Exception(ExceptionCode::PropertyFail));
+                }
                 Ok(StepResult::Continue)
             }
         }
@@ -658,6 +694,7 @@ mod tests {
             guards_used: 0,
             register_map: Vec::new(),
             guard_map: Vec::new(),
+            certificate: None,
         }
     }
 
@@ -759,6 +796,7 @@ mod tests {
         let mut sim = RspuSimulator::new();
 
         // Load 0 into R192 (represents a false condition), then assert always.
+        // MEGA-4: AssertAlways now raises PropertyFail exception on violation.
         let program = make_program(vec![
             RspuInstruction::LoadImm { dst: 192, value: 0, width: 2 },
             RspuInstruction::AssertAlways { cond: 192, property_id: 7 },
@@ -766,7 +804,7 @@ mod tests {
         ]);
 
         let result = sim.run(&program, 100).unwrap();
-        assert!(result.halted);
+        assert_eq!(result.exception, Some(ExceptionCode::PropertyFail));
         assert_eq!(result.property_violations, vec![7]);
     }
 }

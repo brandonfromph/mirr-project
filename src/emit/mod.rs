@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod cert;
 pub mod dot;
 pub mod dsp;
 pub mod firrtl;

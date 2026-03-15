@@ -108,6 +108,7 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
         register_map: regs.entries.clone(),
         guard_map: guard_map_vec,
         instructions: instrs,
+        certificate: None,
     })
 }
 

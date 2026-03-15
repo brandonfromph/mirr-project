@@ -25,6 +25,7 @@ fn make_program(instructions: Vec<RspuInstruction>) -> RspuProgram {
         guards_used: 64,
         register_map: vec![],
         guard_map: vec![],
+        certificate: None,
     }
 }
 
@@ -234,7 +235,8 @@ fn test_sim_assert_always_fail() {
     ]);
     let mut sim = RspuSimulator::new();
     let result = sim.run(&prog, 1000).expect("sim should succeed");
-    assert!(result.halted);
+    // MEGA-4: AssertAlways raises PropertyFail exception on violation.
+    assert_eq!(result.exception, Some(ExceptionCode::PropertyFail));
     assert_eq!(result.property_violations, vec![7], "violation when cond is zero");
 }
 
@@ -260,7 +262,8 @@ fn test_sim_assert_never_fail() {
     ]);
     let mut sim = RspuSimulator::new();
     let result = sim.run(&prog, 1000).expect("sim should succeed");
-    assert!(result.halted);
+    // MEGA-4: AssertNever raises PropertyFail exception on violation.
+    assert_eq!(result.exception, Some(ExceptionCode::PropertyFail));
     assert_eq!(result.property_violations, vec![5], "violation when cond is nonzero");
 }
 

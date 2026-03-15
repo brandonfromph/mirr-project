@@ -27,6 +27,7 @@
 
 pub mod ast;
 pub mod bootstrap_runner;
+pub mod cert;
 pub mod diagnostic;
 pub mod emit;
 pub mod error;
@@ -46,6 +47,7 @@ pub mod span;
 pub mod suggest;
 pub mod temporal;
 pub mod toolchain;
+pub mod totality;
 pub mod typeck;
 pub mod validation;
 pub mod width;
@@ -73,3 +75,7 @@ pub use typeck::extended::typecheck_extended;
 pub use typeck::typecheck_module;
 pub use validation::validate_module;
 pub use width::types::{WidthDiag, WidthExpr, WidthStats};
+
+// MEGA-4: Totality Engine re-exports.
+pub use cert::{ProofCertificate, TerminationStrategy};
+pub use totality::{run_totality_check, TotalityResult};

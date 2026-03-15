@@ -41,6 +41,7 @@ fn main() {
     let mut timing = false;
     let mut eqy = false;
     let mut toolchain_path: Option<String> = None;
+    let mut totality = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -110,6 +111,7 @@ fn main() {
             "--pnr" => pnr = true,
             "--timing" => timing = true,
             "--eqy" => eqy = true,
+            "--totality" => totality = true,
             "--toolchain-path" => {
                 i += 1;
                 if i < args.len() {
@@ -167,8 +169,12 @@ fn main() {
 
     // Run full pipeline — enable R-SPU stage when rspu output is requested.
     let mut config = PipelineConfig::default();
-    if emit_format.as_deref() == Some("rspu") {
+    if emit_format.as_deref() == Some("rspu") || emit_format.as_deref() == Some("cert") || totality
+    {
         config.rspu = true;
+    }
+    if totality || emit_format.as_deref() == Some("cert") {
+        config.totality = true;
     }
     let result = match run_pipeline(&source, &config) {
         Ok(r) => r,
@@ -244,9 +250,39 @@ fn main() {
         "scaffold" => emit::fpga_scaffold::emit_constraints(&result, &fpga_target),
         "build-script" => emit::fpga_scaffold::emit_build_script(&result, &fpga_target),
         "sexpr" | "s-expr" | "sexp" => emit::sexpr::emit_sexpr(&result),
+        "cert" => match &result.rspu_program {
+            Some(prog) => match &prog.certificate {
+                Some(cert_bytes) => {
+                    // Binary certificate — write directly to output path.
+                    if let Some(ref path) = output_path {
+                        if let Err(e) = std::fs::write(path, cert_bytes) {
+                            eprintln!("Error writing certificate '{path}': {e}");
+                            process::exit(1);
+                        }
+                        eprintln!("Certificate written to {path} ({} bytes)", cert_bytes.len());
+                        return;
+                    }
+                    // No output path: hex-encode for stdout.
+                    cert_bytes.iter().fold(String::new(), |mut acc, b| {
+                        use std::fmt::Write;
+                        let _ = write!(acc, "{b:02x}");
+                        acc
+                    })
+                }
+                None => {
+                    eprintln!("Error: totality check did not produce a certificate.");
+                    eprintln!("Hint: use --totality with --emit cert.");
+                    process::exit(1);
+                }
+            },
+            None => {
+                eprintln!("Error: R-SPU program was not generated (required for cert emission).");
+                process::exit(1);
+            }
+        },
         other => {
             eprintln!(
-                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, testbench, scaffold, build-script, or sexpr."
+                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, testbench, scaffold, build-script, sexpr, or cert."
             );
             process::exit(1);
         }
@@ -377,6 +413,18 @@ fn print_summary(result: &nasa_rust_project::pipeline::PipelineResult, show_stat
         eprintln!("  Temporal: {} guards, {} signals", tn.guards.len(), tn.signals.len(),);
     }
 
+    if let Some(tr) = &result.totality_result {
+        let status = if tr.is_total { "TOTAL" } else { "NOT TOTAL" };
+        eprintln!(
+            "  Totality: {} (bounds: {}, completeness: {}, coverage: {}, acyclicity: {})",
+            status,
+            tr.resource_bound.pass,
+            tr.output_completeness.pass,
+            tr.guard_coverage.pass,
+            tr.acyclicity.pass,
+        );
+    }
+
     if show_stats {
         if let Some(wr) = &result.width_result {
             eprintln!(
@@ -399,7 +447,7 @@ fn print_help() {
     println!();
     println!("Emission Options:");
     println!("  --emit FORMAT       Output format: dot, verilog, json, sva, firrtl, rspu,");
-    println!("                      testbench, scaffold, build-script, sexpr (default: dot)");
+    println!("                      testbench, scaffold, build-script, sexpr, cert (default: dot)");
     println!("  --output FILE, -o   Write output to FILE (default: stdout)");
     println!("  --target FAMILY     FPGA target: generic, xilinx-7, xilinx-us, intel-cyclone,");
     println!("                      lattice-ice40, lattice-ecp5, lattice-nexus (default: generic)");
@@ -422,6 +470,7 @@ fn print_help() {
     println!("  --pnr               Run nextpnr place and route (Lattice targets)");
     println!("  --timing            Run icetime static timing analysis (iCE40 only)");
     println!("  --eqy               Run EQY equivalence checking");
+    println!("  --totality          Run MEGA-4 totality check and generate proof certificate");
     println!("  --toolchain-path D  Override oss-cad-suite root directory");
     println!();
     println!("  --help, -h          Show this help");
@@ -434,6 +483,7 @@ fn print_help() {
     println!("  mirr-compile program.mirr --emit json | jq .");
     println!("  mirr-compile program.mirr --emit dot | dot -Tpng -o graph.png");
     println!("  mirr-compile program.mirr --emit rspu");
+    println!("  mirr-compile program.mirr --emit cert --totality -o program.mirrcert");
 }
 
 /// Run toolchain operations (formal, lint, simulate, pnr, timing, eqy).

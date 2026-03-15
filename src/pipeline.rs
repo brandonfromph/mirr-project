@@ -43,6 +43,8 @@ pub struct PipelineConfig {
     pub mape_k_ticks: Option<u32>,
     /// Run register retiming optimization after temporal lowering.
     pub retiming: bool,
+    /// Run MEGA-4 totality check after R-SPU emission.
+    pub totality: bool,
 }
 
 impl Default for PipelineConfig {
@@ -60,6 +62,7 @@ impl Default for PipelineConfig {
             mape_k_partition: None,
             mape_k_ticks: None,
             retiming: false,
+            totality: false,
         }
     }
 }
@@ -88,6 +91,8 @@ pub struct PipelineResult {
     pub mape_k_result: Option<crate::mape_k::MapeKResult>,
     /// Retiming optimization stats (None if stage was skipped).
     pub retiming_stats: Option<crate::temporal::retiming::RetimingStats>,
+    /// MEGA-4 totality check result (None if stage was skipped).
+    pub totality_result: Option<crate::totality::TotalityResult>,
 }
 
 impl PipelineResult {
@@ -192,11 +197,27 @@ pub fn run_pipeline(
         sim_result: None,
         mape_k_result: None,
         retiming_stats,
+        totality_result: None,
     };
 
     // Stage 6: R-SPU emission (optional, requires temporal).
     if config.rspu {
         result.rspu_program = Some(crate::emit::rspu::emit_rspu(&result)?);
+    }
+
+    // Stage 6.5: Totality check (optional, requires rspu program).
+    if config.totality {
+        let totality = crate::totality::run_totality_check(&result.program.module);
+        if let Some(ref mut prog) = result.rspu_program {
+            if let Ok(binary) = crate::emit::rspu_encoding::emit_binary(prog) {
+                let cert =
+                    crate::cert::build_certificate(&totality, &binary, &result.program.module);
+                if let Ok(bytes) = crate::cert::serialize_certificate(&cert) {
+                    prog.certificate = Some(bytes);
+                }
+            }
+        }
+        result.totality_result = Some(totality);
     }
 
     // Stage 7: ISA simulation (optional, requires rspu program).

@@ -24,6 +24,7 @@ fn prog(instrs: Vec<RspuInstruction>, regs: usize, guards: usize) -> RspuProgram
         guards_used: guards,
         register_map: vec![],
         guard_map: vec![],
+        certificate: None,
     }
 }
 

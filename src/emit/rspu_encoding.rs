@@ -61,9 +61,13 @@ pub const OP_TAG_READ: u8 = 26;
 pub const OP_NOP: u8 = 27;
 pub const OP_FENCE: u8 = 28;
 pub const OP_DEADLINE_SET: u8 = 29;
+// MEGA-4: Totality Engine instructions
+pub const OP_VERIFY: u8 = 30;
+pub const OP_CERTIFY: u8 = 31;
+pub const OP_TOTAL_CHECK: u8 = 32;
 
 /// Total number of assigned opcodes (used + reserved).
-pub const TOTAL_OPCODES: usize = 30;
+pub const TOTAL_OPCODES: usize = 33;
 
 /// Maximum value for a 10-bit immediate field.
 const IMM10_MAX: u64 = 0x3FF;
@@ -356,6 +360,29 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
             };
             pack_s_type(OP_DEADLINE_SET, imm)
         }
+        // MEGA-4: Totality Engine instructions
+        RspuInstruction::Verify { cert_offset } => {
+            let imm = if *cert_offset > 0x03FF_FFFF {
+                return Err(rspu_err(
+                    "[E706] VERIFY cert_offset exceeds 26-bit immediate max".to_string(),
+                ));
+            } else {
+                *cert_offset
+            };
+            pack_s_type(OP_VERIFY, imm)
+        }
+        RspuInstruction::Certify { dst } => pack_r_type(OP_CERTIFY, *dst, 0, 0, 0),
+        RspuInstruction::TotalCheck { expected_properties } => {
+            let imm = if *expected_properties > 0x03FF_FFFF {
+                return Err(rspu_err(
+                    "[E706] TOTAL_CHECK expected_properties exceeds 26-bit immediate max"
+                        .to_string(),
+                ));
+            } else {
+                *expected_properties
+            };
+            pack_s_type(OP_TOTAL_CHECK, imm)
+        }
     };
     Ok(EncodedInstruction(word))
 }
@@ -488,6 +515,19 @@ pub fn decode(word: u32) -> Result<RspuInstruction, MirrError> {
         OP_DEADLINE_SET => {
             let imm26 = extract_s_imm26(word);
             Ok(RspuInstruction::DeadlineSet { cycles: imm26 })
+        }
+        // MEGA-4: Totality Engine instructions
+        OP_VERIFY => {
+            let imm26 = extract_s_imm26(word);
+            Ok(RspuInstruction::Verify { cert_offset: imm26 })
+        }
+        OP_CERTIFY => {
+            let (dst, _, _, _) = extract_r_fields(word);
+            Ok(RspuInstruction::Certify { dst })
+        }
+        OP_TOTAL_CHECK => {
+            let imm26 = extract_s_imm26(word);
+            Ok(RspuInstruction::TotalCheck { expected_properties: imm26 })
         }
         _ => Err(rspu_err(format!("[E707] unknown opcode {opcode}"))),
     }
@@ -737,6 +777,22 @@ mod tests {
         roundtrip(&RspuInstruction::DeadlineSet { cycles: 1000 });
     }
 
+    // MEGA-4: Totality Engine roundtrip tests
+    #[test]
+    fn test_v2_roundtrip_verify() {
+        roundtrip(&RspuInstruction::Verify { cert_offset: 4096 });
+    }
+
+    #[test]
+    fn test_v2_roundtrip_certify() {
+        roundtrip(&RspuInstruction::Certify { dst: 192 });
+    }
+
+    #[test]
+    fn test_v2_roundtrip_total_check() {
+        roundtrip(&RspuInstruction::TotalCheck { expected_properties: 5 });
+    }
+
     #[test]
     fn test_alu_b_register_overflow_returns_e706() {
         // Register b=192 exceeds the 6-bit field (max 63).
@@ -771,6 +827,7 @@ mod tests {
             guards_used: 0,
             register_map: vec![],
             guard_map: vec![],
+            certificate: None,
         };
         let words = emit_binary(&program).expect("emit_binary should succeed");
         assert_eq!(words.len(), 3);

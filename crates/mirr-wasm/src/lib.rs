@@ -31,6 +31,7 @@ fn default_config() -> PipelineConfig {
         mape_k_partition: None,
         mape_k_ticks: None,
         retiming: false,
+        totality: false,
     }
 }
 
