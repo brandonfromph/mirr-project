@@ -233,13 +233,13 @@ pub enum RspuInstruction {
     TotalCheck { expected_properties: u32 },
 
     // -- Symbolic Reasoning tier (MEGA-5) ------------------------------------
-    /// Match R[src] against pattern table at given offset.
+    /// Match R\[src\] against pattern table at given offset.
     Match { dst: RegId, src: RegId, table_offset: u16 },
-    /// Write lower bound of R[src]'s shadow interval to R[dst].
+    /// Write lower bound of R\[src\]'s shadow interval to R\[dst\].
     IntervalLo { dst: RegId, src: RegId },
-    /// Write upper bound of R[src]'s shadow interval to R[dst].
+    /// Write upper bound of R\[src\]'s shadow interval to R\[dst\].
     IntervalHi { dst: RegId, src: RegId },
-    /// Trap if R[src] is outside interval bounds stored in R[bounds]'s shadow.
+    /// Trap if R\[src\] is outside interval bounds stored in R\[bounds\]'s shadow.
     IntervalCheck { src: RegId, bounds: RegId },
 }
 
