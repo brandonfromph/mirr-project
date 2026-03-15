@@ -343,14 +343,11 @@ button:focus-visible, select:focus-visible {
 }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Split pane */
+/* Split pane — always stacked (editor on top, output below) */
 .split-pane {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;
-}
-@media (min-width: 900px) {
-  .split-pane { grid-template-columns: 1fr 1fr; }
 }
 .pane label, .pane .pane-label {
   display: block;
@@ -670,7 +667,6 @@ footer a { color: var(--text-tertiary); }
   #site-header nav[aria-label] { padding: 0.25rem 1rem 0.3rem; font-size: 0.65rem; gap: 0.1rem 0.35rem; }
 }
 @media (max-width: 480px) {
-  .split-pane { grid-template-columns: 1fr; }
   .demo-controls { flex-direction: column; }
   .demo { border-radius: 0; margin-left: -1rem; margin-right: -1rem; padding: 1rem; }
   .pipeline-viz { gap: 0.25rem; }
