@@ -1,11 +1,12 @@
 # Makefile for MIRR width proofs.
-# Requires: coqc (Rocq/Coq compiler)
+# Requires: rocq compile (Rocq >= 9.0) or coqc (Coq <= 8.20)
 #
 # Usage:
 #   make        - compile all proofs
 #   make clean  - remove compiled artifacts
 
-COQC := coqc
+# Auto-detect: prefer 'rocq compile' (Rocq 9.0+), fall back to 'coqc'
+COQC := $(shell command -v rocq >/dev/null 2>&1 && echo "rocq compile" || echo "coqc")
 COQFLAGS := -R . MirrWidth
 
 VFILES := \
