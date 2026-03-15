@@ -618,8 +618,8 @@ window.addEventListener('message', function(event) {
   navigator.serviceWorker.addEventListener('message', onReply);
 });
 
-// Register Service Worker for offline support + protocol
-if ('serviceWorker' in navigator) {
+// Register Service Worker for offline support + protocol (HTTPS/localhost only)
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(function() {});
 }
 
