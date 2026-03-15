@@ -12,6 +12,21 @@ bounded compile-time evaluation.
 
 ---
 
+## Table of Contents
+
+1. [What is the S-expression IR?](#what-is-the-s-expression-ir)
+2. [When to use --emit sexpr](#when-to-use---emit-sexpr)
+3. [The 8 SExpr variants](#the-8-sexpr-variants)
+4. [Tagged list conventions](#tagged-list-conventions)
+5. [Round-trip property](#round-trip-property)
+6. [Bounded evaluation model](#bounded-evaluation-model)
+7. [Hygienic macro expansion](#hygienic-macro-expansion)
+8. [Reader macros](#reader-macros)
+9. [Example output](#example-output)
+10. [Error codes (E8xx)](#error-codes-e8xx)
+
+---
+
 ## What is the S-expression IR?
 
 S-expressions (symbolic expressions) are a parenthesized prefix notation
