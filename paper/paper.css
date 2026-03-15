@@ -296,8 +296,8 @@ code {
   border-radius: 4px;
 }
 
-/* Sections */
-section { overflow: hidden; }
+/* Sections — overflow visible so figure min-width SVGs can scroll */
+section { overflow: visible; }
 
 /* Claims */
 #claims ol { padding-left: 1.25rem; }

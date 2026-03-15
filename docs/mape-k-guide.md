@@ -13,21 +13,6 @@ specification and runtime adaptation.
 
 ---
 
-## Table of Contents
-
-1. [What is MAPE-K?](#what-is-mape-k)
-2. [Architecture](#architecture)
-3. [The five components](#the-five-components)
-4. [Bounded LTL properties](#bounded-ltl-properties)
-5. [Signal predicates](#signal-predicates)
-6. [Adaptation actions](#adaptation-actions)
-7. [The neonatal monitoring scenario](#the-neonatal-monitoring-scenario)
-8. [API entry points](#api-entry-points)
-9. [Bounded iteration guarantees](#bounded-iteration-guarantees)
-10. [Knowledge base and audit trail](#knowledge-base-and-audit-trail)
-
----
-
 ## What is MAPE-K?
 
 MAPE-K is the canonical framework for self-adaptive systems, first

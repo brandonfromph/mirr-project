@@ -10,21 +10,6 @@ required. You just need to be able to read code.
 
 ---
 
-## Table of Contents
-
-1. [What is hardware and why it matters](#lesson-1-what-is-hardware-and-why-it-matters)
-2. [The three building blocks](#lesson-2-the-three-building-blocks)
-3. [Your first MIRR program](#lesson-3-your-first-mirr-program)
-4. [Types and expressions](#lesson-4-types-and-expressions)
-5. [Temporal guards](#lesson-5-temporal-guards)
-6. [Properties](#lesson-6-properties)
-7. [Patterns](#lesson-7-patterns)
-8. [Reading compiler output](#lesson-8-reading-compiler-output)
-9. [Common errors](#lesson-9-common-errors)
-10. [What MIRR does NOT do](#lesson-10-what-mirr-does-not-do)
-
----
-
 ## Lesson 1: What is hardware and why it matters
 
 ### Software vs. hardware

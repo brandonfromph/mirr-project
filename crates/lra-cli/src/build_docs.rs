@@ -1695,6 +1695,9 @@ fn extract_toc_entries(body: &str) -> Vec<TocEntry> {
             }
         } else if let Some(text) = trimmed.strip_prefix("## ") {
             let title = text.trim().to_string();
+            if title == "Table of Contents" {
+                continue; // Auto-generated sidebar TOC covers this
+            }
             let id = heading_to_slug(&title);
             if !id.is_empty() {
                 entries.push(TocEntry { level: 2, id, title });

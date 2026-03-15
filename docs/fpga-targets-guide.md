@@ -12,20 +12,6 @@ FPGA development boards.
 
 ---
 
-## Table of Contents
-
-1. [Overview](#overview)
-2. [Supported FPGA families](#supported-fpga-families)
-3. [Constraint file formats](#constraint-file-formats)
-4. [Build script generation](#build-script-generation)
-5. [Yosys and nextpnr integration](#yosys-and-nextpnr-integration)
-6. [Example usage](#example-usage)
-7. [Target-specific details](#target-specific-details)
-8. [DSP mapping](#dsp-mapping)
-9. [Resource bounds](#resource-bounds)
-
----
-
 ## Overview
 
 When you compile a MIRR module, the compiler generates SystemVerilog
