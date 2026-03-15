@@ -214,8 +214,7 @@ jobs:
       - name: Build proofs
         uses: coq-community/docker-coq-action@v1
         with:
-          coq_version: '8.20'
-          ocaml_version: '4.14-flambda'
+          custom_image: 'rocq/rocq-prover:9.0'
           before_install: ''
           install: ''
           after_install: ''
@@ -224,8 +223,8 @@ jobs:
               sudo chown -R 1000:1000 .
             endGroup
           script: |
-            startGroup "Verify Coq version"
-              coqc --version
+            startGroup "Verify Rocq version"
+              rocq --version || coqc --version
             endGroup
             startGroup "Build width proofs"
               make -C proofs/width
