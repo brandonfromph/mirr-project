@@ -66,6 +66,7 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
             crate::emit::rspu_tagged::TypeTag::Bool => 1u8,
             crate::emit::rspu_tagged::TypeTag::Unsigned { width } => width,
             crate::emit::rspu_tagged::TypeTag::Signed { width } => width.saturating_add(128),
+            crate::emit::rspu_tagged::TypeTag::Interval { .. } => 2u8, // Encode as unsigned for tag byte
         };
         instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
     }

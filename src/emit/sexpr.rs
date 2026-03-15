@@ -52,6 +52,7 @@ mod tests {
             mape_k_result: None,
             retiming_stats: None,
             totality_result: None,
+            symbolic_result: None,
         };
         let output = emit_sexpr(&result);
         assert!(output.contains("module"));

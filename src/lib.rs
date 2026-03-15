@@ -45,6 +45,7 @@ pub mod sexpr;
 pub mod simplify;
 pub mod span;
 pub mod suggest;
+pub mod symbolic;
 pub mod temporal;
 pub mod toolchain;
 pub mod totality;

@@ -68,6 +68,8 @@ pub enum ExceptionCode {
     SoftwareTrap = 5,
     /// Invalid execution-mode transition (E714).
     InvalidMode = 6,
+    /// Interval bound violation (MEGA-5 symbolic reasoning).
+    IntervalViolation = 7,
 }
 
 impl fmt::Display for ExceptionCode {
@@ -80,6 +82,7 @@ impl fmt::Display for ExceptionCode {
             Self::RegisterOverflow => write!(f, "RegisterOverflow"),
             Self::SoftwareTrap => write!(f, "SoftwareTrap"),
             Self::InvalidMode => write!(f, "InvalidMode (E714)"),
+            Self::IntervalViolation => write!(f, "IntervalViolation (MEGA-5)"),
         }
     }
 }
@@ -245,6 +248,7 @@ impl ExceptionState {
             ExceptionCode::RegisterOverflow => ExceptionAction::EmergencyStop,
             ExceptionCode::SoftwareTrap => ExceptionAction::TrapToHost,
             ExceptionCode::InvalidMode => ExceptionAction::Halt,
+            ExceptionCode::IntervalViolation => ExceptionAction::Halt,
         }
     }
 }

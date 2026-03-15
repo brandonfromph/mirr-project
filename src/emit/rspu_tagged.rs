@@ -41,6 +41,8 @@ pub enum TypeTag {
     Signed { width: u8 },
     /// Register has not been written yet.
     Uninitialized,
+    /// Interval-tagged value with lower and upper bounds (MEGA-5).
+    Interval { lo: u64, hi: u64 },
 }
 
 impl fmt::Display for TypeTag {
@@ -50,6 +52,7 @@ impl fmt::Display for TypeTag {
             TypeTag::Unsigned { width } => write!(f, "u{width}"),
             TypeTag::Signed { width } => write!(f, "i{width}"),
             TypeTag::Uninitialized => write!(f, "<uninitialized>"),
+            TypeTag::Interval { lo, hi } => write!(f, "interval[{lo}, {hi}]"),
         }
     }
 }
@@ -57,7 +60,7 @@ impl fmt::Display for TypeTag {
 impl TypeTag {
     /// Returns `true` if the tag represents a numeric type (unsigned or signed).
     fn is_numeric(self) -> bool {
-        matches!(self, TypeTag::Unsigned { .. } | TypeTag::Signed { .. })
+        matches!(self, TypeTag::Unsigned { .. } | TypeTag::Signed { .. } | TypeTag::Interval { .. })
     }
 }
 
@@ -198,6 +201,7 @@ pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeT
                 (TypeTag::Bool, TypeTag::Bool)
                     | (TypeTag::Unsigned { .. }, TypeTag::Unsigned { .. })
                     | (TypeTag::Signed { .. }, TypeTag::Signed { .. })
+                    | (TypeTag::Interval { .. }, TypeTag::Interval { .. })
             );
             if !compatible {
                 return Err(rspu_err(format!(
@@ -216,6 +220,9 @@ pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeT
             (TypeTag::Signed { width: wa }, TypeTag::Signed { width: wb }) => {
                 Ok(TypeTag::Signed { width: wa.max(wb) })
             }
+            (TypeTag::Interval { .. }, TypeTag::Interval { .. }) => {
+                Ok(TypeTag::Unsigned { width: 64 })
+            }
             _ => Err(rspu_err(format!(
                 "[E708] tag violation: arithmetic requires matching numeric types, got {} and {}",
                 a.tag, b.tag
@@ -230,6 +237,9 @@ pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeT
             }
             (TypeTag::Signed { width: wa }, TypeTag::Signed { width: wb }) => {
                 Ok(TypeTag::Signed { width: wa.max(wb) })
+            }
+            (TypeTag::Interval { .. }, TypeTag::Interval { .. }) => {
+                Ok(TypeTag::Unsigned { width: 64 })
             }
             _ => Err(rspu_err(format!(
                 "[E708] tag violation: bitwise op requires matching types, got {} and {}",
@@ -356,6 +366,7 @@ mod tests {
         assert_eq!(format!("{}", TypeTag::Unsigned { width: 8 }), "u8");
         assert_eq!(format!("{}", TypeTag::Signed { width: 32 }), "i32");
         assert_eq!(format!("{}", TypeTag::Uninitialized), "<uninitialized>");
+        assert_eq!(format!("{}", TypeTag::Interval { lo: 0, hi: 255 }), "interval[0, 255]");
     }
 
     #[test]

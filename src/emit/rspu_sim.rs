@@ -18,7 +18,7 @@ use crate::emit::rspu::rspu_err;
 use crate::emit::rspu_exceptions::{ExceptionCode, ExceptionState, ExecMode};
 use crate::emit::rspu_isa::{
     AluOp, AluUnaryOp, GuardId, PortId, PropertyId, RegId, RspuInstruction, RspuProgram,
-    MAX_GUARDS, MAX_SIM_CYCLES, REG_OUTPUT_BASE, REG_OUTPUT_MAX,
+    MAX_GUARDS, MAX_REGISTERS, MAX_SIM_CYCLES, REG_OUTPUT_BASE, REG_OUTPUT_MAX,
 };
 use crate::emit::rspu_tagged::{check_alu_tags, RegisterFile, TaggedWord, TypeTag};
 use crate::error::MirrError;
@@ -128,6 +128,9 @@ pub struct RspuSimulator {
     pub halted: bool,
     /// Whether the last VERIFY instruction succeeded (MEGA-4 totality).
     pub cert_verified: bool,
+    /// Shadow interval register file for MEGA-5 symbolic reasoning.
+    /// Each register has (lo, hi) bounds — default = (0, u64::MAX).
+    pub interval_shadow: Vec<(u64, u64)>,
 }
 
 impl RspuSimulator {
@@ -142,6 +145,12 @@ impl RspuSimulator {
         for _i in 0..MAX_GUARDS {
             guards.push(false);
         }
+        // MEGA-5: Initialize interval shadow with full range for every register.
+        // Bounded: exactly MAX_REGISTERS iterations.
+        let mut interval_shadow = Vec::with_capacity(MAX_REGISTERS);
+        for _i in 0..MAX_REGISTERS {
+            interval_shadow.push((0, u64::MAX));
+        }
         Self {
             registers: RegisterFile::new(),
             guards,
@@ -152,6 +161,7 @@ impl RspuSimulator {
             deadline: None,
             halted: false,
             cert_verified: false,
+            interval_shadow,
         }
     }
 
@@ -502,6 +512,58 @@ impl RspuSimulator {
                 }
                 Ok(StepResult::Continue)
             }
+
+            // -- MEGA-5: Symbolic Reasoning tier ---------------------------------
+            RspuInstruction::Match { dst, src, table_offset: _ } => {
+                // In simulation, MATCH performs a simplified stub: write the
+                // source register value as the match result (pattern ID 0).
+                // Full hardware match-unit logic requires a pattern table not
+                // modeled in the sequential simulator.
+                let val = self.registers.read(*src).value;
+                let result_id = if val == 0 { 0u64 } else { 1u64 };
+                self.registers.write(
+                    *dst,
+                    TaggedWord::from_computed(result_id, TypeTag::Unsigned { width: 32 }),
+                );
+                Ok(StepResult::Continue)
+            }
+
+            RspuInstruction::IntervalLo { dst, src } => {
+                let idx = *src as usize;
+                let lo =
+                    if idx < self.interval_shadow.len() { self.interval_shadow[idx].0 } else { 0 };
+                self.registers
+                    .write(*dst, TaggedWord::from_computed(lo, TypeTag::Unsigned { width: 64 }));
+                Ok(StepResult::Continue)
+            }
+
+            RspuInstruction::IntervalHi { dst, src } => {
+                let idx = *src as usize;
+                let hi = if idx < self.interval_shadow.len() {
+                    self.interval_shadow[idx].1
+                } else {
+                    u64::MAX
+                };
+                self.registers
+                    .write(*dst, TaggedWord::from_computed(hi, TypeTag::Unsigned { width: 64 }));
+                Ok(StepResult::Continue)
+            }
+
+            RspuInstruction::IntervalCheck { src, bounds } => {
+                let val = self.registers.read(*src).value;
+                let bounds_idx = *bounds as usize;
+                let (lo, hi) = if bounds_idx < self.interval_shadow.len() {
+                    self.interval_shadow[bounds_idx]
+                } else {
+                    (0, u64::MAX)
+                };
+                if val < lo || val > hi {
+                    let _action =
+                        self.exceptions.raise_exception(ExceptionCode::IntervalViolation)?;
+                    return Ok(StepResult::Exception(ExceptionCode::IntervalViolation));
+                }
+                Ok(StepResult::Continue)
+            }
         }
     }
 
@@ -660,6 +722,7 @@ fn type_tag_to_u8(tag: &TypeTag) -> u8 {
         TypeTag::Bool => 1,
         TypeTag::Unsigned { width } => *width,
         TypeTag::Signed { width } => width.wrapping_add(128),
+        TypeTag::Interval { .. } => 2, // Encode as generic unsigned for tag byte
     }
 }
 

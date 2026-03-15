@@ -124,6 +124,7 @@ fn prev_guard_result() -> PipelineResult {
         sat_stats: None,
         retiming_stats: None,
         totality_result: None,
+        symbolic_result: None,
     }
 }
 

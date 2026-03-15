@@ -142,6 +142,7 @@ fn result_from_module(module: Module) -> PipelineResult {
         sat_stats: None,
         retiming_stats: None,
         totality_result: None,
+        symbolic_result: None,
     }
 }
 
@@ -160,6 +161,7 @@ fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResu
         sat_stats: None,
         retiming_stats: None,
         totality_result: None,
+        symbolic_result: None,
     }
 }
 

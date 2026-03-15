@@ -231,6 +231,16 @@ pub enum RspuInstruction {
     Certify { dst: RegId },
     /// Assert all expected properties verified; trap PropertyFail if not.
     TotalCheck { expected_properties: u32 },
+
+    // -- Symbolic Reasoning tier (MEGA-5) ------------------------------------
+    /// Match R[src] against pattern table at given offset.
+    Match { dst: RegId, src: RegId, table_offset: u16 },
+    /// Write lower bound of R[src]'s shadow interval to R[dst].
+    IntervalLo { dst: RegId, src: RegId },
+    /// Write upper bound of R[src]'s shadow interval to R[dst].
+    IntervalHi { dst: RegId, src: RegId },
+    /// Trap if R[src] is outside interval bounds stored in R[bounds]'s shadow.
+    IntervalCheck { src: RegId, bounds: RegId },
 }
 
 impl RspuInstruction {
@@ -270,6 +280,10 @@ impl RspuInstruction {
             Self::Verify { .. } => "VERIFY",
             Self::Certify { .. } => "CERTIFY",
             Self::TotalCheck { .. } => "TOTAL_CHECK",
+            Self::Match { .. } => "MATCH",
+            Self::IntervalLo { .. } => "INTERVAL_LO",
+            Self::IntervalHi { .. } => "INTERVAL_HI",
+            Self::IntervalCheck { .. } => "INTERVAL_CHECK",
         }
     }
 }
@@ -403,6 +417,18 @@ fn format_instruction(instr: &RspuInstruction) -> String {
         RspuInstruction::Certify { dst } => format!("CERTIFY     R{dst}"),
         RspuInstruction::TotalCheck { expected_properties } => {
             format!("TOTAL_CHECK {expected_properties}")
+        }
+        RspuInstruction::Match { dst, src, table_offset } => {
+            format!("MATCH       R{dst}, R{src}, #{table_offset}")
+        }
+        RspuInstruction::IntervalLo { dst, src } => {
+            format!("INTERVAL_LO R{dst}, R{src}")
+        }
+        RspuInstruction::IntervalHi { dst, src } => {
+            format!("INTERVAL_HI R{dst}, R{src}")
+        }
+        RspuInstruction::IntervalCheck { src, bounds } => {
+            format!("INTERVAL_CHECK R{src}, R{bounds}")
         }
     }
 }

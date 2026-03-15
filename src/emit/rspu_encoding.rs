@@ -3,7 +3,7 @@
 //! Every R-SPU instruction encodes to exactly one 32-bit word:
 //!
 //! ```text
-//! [31:26] opcode (6 bits — 64 slots, 30 used)
+//! [31:26] opcode (6 bits — 64 slots, 37 used)
 //! [25:0]  payload (format-specific)
 //! ```
 //!
@@ -65,9 +65,14 @@ pub const OP_DEADLINE_SET: u8 = 29;
 pub const OP_VERIFY: u8 = 30;
 pub const OP_CERTIFY: u8 = 31;
 pub const OP_TOTAL_CHECK: u8 = 32;
+// MEGA-5: Symbolic Reasoning instructions
+pub const OP_MATCH: u8 = 33;
+pub const OP_INTERVAL_LO: u8 = 34;
+pub const OP_INTERVAL_HI: u8 = 35;
+pub const OP_INTERVAL_CHECK: u8 = 36;
 
 /// Total number of assigned opcodes (used + reserved).
-pub const TOTAL_OPCODES: usize = 33;
+pub const TOTAL_OPCODES: usize = 37;
 
 /// Maximum value for a 10-bit immediate field.
 const IMM10_MAX: u64 = 0x3FF;
@@ -383,6 +388,20 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
             };
             pack_s_type(OP_TOTAL_CHECK, imm)
         }
+        // MEGA-5: Symbolic Reasoning tier
+        RspuInstruction::Match { dst, src, table_offset } => {
+            if *table_offset > 0x03FF {
+                return Err(rspu_err(
+                    "[E706] MATCH table_offset exceeds 10-bit immediate max".to_string(),
+                ));
+            }
+            pack_i_type(OP_MATCH, *dst, *src, *table_offset)
+        }
+        RspuInstruction::IntervalLo { dst, src } => pack_r_type(OP_INTERVAL_LO, *dst, *src, 0, 0),
+        RspuInstruction::IntervalHi { dst, src } => pack_r_type(OP_INTERVAL_HI, *dst, *src, 0, 0),
+        RspuInstruction::IntervalCheck { src, bounds } => {
+            pack_r_type(OP_INTERVAL_CHECK, 0, *src, *bounds, 0)
+        }
     };
     Ok(EncodedInstruction(word))
 }
@@ -528,6 +547,23 @@ pub fn decode(word: u32) -> Result<RspuInstruction, MirrError> {
         OP_TOTAL_CHECK => {
             let imm26 = extract_s_imm26(word);
             Ok(RspuInstruction::TotalCheck { expected_properties: imm26 })
+        }
+        // MEGA-5: Symbolic Reasoning instructions
+        OP_MATCH => {
+            let (dst, src, imm10) = extract_i_fields(word);
+            Ok(RspuInstruction::Match { dst, src, table_offset: imm10 })
+        }
+        OP_INTERVAL_LO => {
+            let (dst, src1, _, _) = extract_r_fields(word);
+            Ok(RspuInstruction::IntervalLo { dst, src: src1 })
+        }
+        OP_INTERVAL_HI => {
+            let (dst, src1, _, _) = extract_r_fields(word);
+            Ok(RspuInstruction::IntervalHi { dst, src: src1 })
+        }
+        OP_INTERVAL_CHECK => {
+            let (_dst, src1, src2, _) = extract_r_fields(word);
+            Ok(RspuInstruction::IntervalCheck { src: src1, bounds: src2 })
         }
         _ => Err(rspu_err(format!("[E707] unknown opcode {opcode}"))),
     }

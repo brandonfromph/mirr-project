@@ -45,6 +45,8 @@ pub struct PipelineConfig {
     pub retiming: bool,
     /// Run MEGA-4 totality check after R-SPU emission.
     pub totality: bool,
+    /// Run MEGA-5 symbolic analysis after type checking.
+    pub symbolic: bool,
 }
 
 impl Default for PipelineConfig {
@@ -63,6 +65,7 @@ impl Default for PipelineConfig {
             mape_k_ticks: None,
             retiming: false,
             totality: false,
+            symbolic: false,
         }
     }
 }
@@ -93,6 +96,8 @@ pub struct PipelineResult {
     pub retiming_stats: Option<crate::temporal::retiming::RetimingStats>,
     /// MEGA-4 totality check result (None if stage was skipped).
     pub totality_result: Option<crate::totality::TotalityResult>,
+    /// MEGA-5 symbolic analysis result (None if stage was skipped).
+    pub symbolic_result: Option<crate::symbolic::SymbolicResult>,
 }
 
 impl PipelineResult {
@@ -151,6 +156,16 @@ pub fn run_pipeline(
         None
     };
 
+    // Stage 2.7: Symbolic analysis (optional, MEGA-5).
+    let symbolic_result = if config.symbolic {
+        match crate::symbolic::analyze_module(&program.module) {
+            Ok(result) => Some(result),
+            Err(_e) => None, // Non-fatal: symbolic analysis failure doesn't block pipeline
+        }
+    } else {
+        None
+    };
+
     // Stage 3: Simplify (optional).
     let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
 
@@ -198,6 +213,7 @@ pub fn run_pipeline(
         mape_k_result: None,
         retiming_stats,
         totality_result: None,
+        symbolic_result,
     };
 
     // Stage 6: R-SPU emission (optional, requires temporal).

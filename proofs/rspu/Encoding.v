@@ -21,7 +21,7 @@ Open Scope Z_scope.
 
     R-SPU v2 defines opcodes 0..29.  *)
 
-Definition valid_opcode (op : Z) : Prop := (0 <= op < 33).
+Definition valid_opcode (op : Z) : Prop := (0 <= op < 37).
 
 (** ** 32-bit Word
 
@@ -434,4 +434,189 @@ Proof.
   intros expected H.
   unfold pack_s_type.
   apply opcode_roundtrip; lia.
+Qed.
+
+(* ======================================================================= *)
+(* MEGA-5: Symbolic Reasoning opcodes (33-36)                              *)
+(* ======================================================================= *)
+
+(** MATCH (opcode 33) is I-type: imm10 = table_offset.
+    Roundtrip: extract_imm10(pack_i_type 33 dst src offset) = offset. *)
+Theorem match_i_type_imm_roundtrip : forall dst src offset,
+  (0 <= dst < 256) ->
+  (0 <= src < 256) ->
+  (0 <= offset < 1024) ->
+  extract_imm10 (pack_i_type 33 dst src offset) = offset.
+Proof.
+  intros dst src offset Hdst Hsrc Hoff.
+  apply i_type_imm_roundtrip; lia.
+Qed.
+
+(** MATCH opcode survives roundtrip. *)
+Theorem match_opcode_roundtrip : forall dst src offset,
+  (0 <= dst < 256) ->
+  (0 <= src < 256) ->
+  (0 <= offset < 1024) ->
+  extract_opcode (pack_i_type 33 dst src offset) = 33.
+Proof.
+  intros dst src offset Hdst Hsrc Hoff.
+  unfold pack_i_type.
+  replace (Z.land dst 255) with dst
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land src 255) with src
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land offset 1023) with offset
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  apply opcode_roundtrip.
+  - lia.
+  - split; [|].
+    + apply Z.lor_nonneg. split.
+      * apply Z.lor_nonneg. split.
+        { apply Z.shiftl_nonneg; lia. }
+        { apply Z.shiftl_nonneg; lia. }
+      * lia.
+    + assert (Hd : Z.shiftl dst 18 < Z.pow 2 26).
+      { rewrite Z.shiftl_mul_pow2 by lia.
+        apply Z.lt_trans with (256 * Z.pow 2 18);
+          [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
+        change (256 * 2 ^ 18) with (2 ^ 26). lia. }
+      assert (Hs : Z.shiftl src 10 < Z.pow 2 18).
+      { rewrite Z.shiftl_mul_pow2 by lia.
+        apply Z.lt_trans with (256 * Z.pow 2 10);
+          [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
+        change (256 * 2 ^ 10) with (2 ^ 18). lia. }
+      apply Z.lt_le_trans with (Z.pow 2 26).
+      * apply Z.lt_le_trans with (Z.shiftl dst 18 + Z.shiftl src 10 + offset + 1).
+        { apply Z.lt_succ_r. apply Z.lor_le. }
+        { lia. }
+      * lia.
+Qed.
+
+(** INTERVAL_LO (opcode 34) is R-type: dst is preserved.
+    Roundtrip: extract_dst(pack_r_type 34 dst src 0 0) = dst. *)
+Theorem interval_lo_r_type_dst_roundtrip : forall dst src,
+  (0 <= dst < 256) ->
+  (0 <= src < 256) ->
+  extract_dst (pack_r_type 34 dst src 0 0) = dst.
+Proof.
+  intros dst src Hdst Hsrc.
+  apply r_type_dst_roundtrip; lia.
+Qed.
+
+(** INTERVAL_LO opcode survives roundtrip. *)
+Theorem interval_lo_opcode_roundtrip : forall dst src,
+  (0 <= dst < 256) ->
+  (0 <= src < 256) ->
+  extract_opcode (pack_r_type 34 dst src 0 0) = 34.
+Proof.
+  intros dst src Hdst Hsrc.
+  unfold pack_r_type.
+  replace (Z.land dst 255) with dst
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land src 255) with src
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land 0 255) with 0 by reflexivity.
+  replace (Z.land 0 3) with 0 by reflexivity.
+  rewrite !Z.shiftl_0_l.
+  rewrite !Z.lor_0_r.
+  apply opcode_roundtrip.
+  - lia.
+  - split; [|].
+    + apply Z.shiftl_nonneg; lia.
+    + assert (Hd : Z.shiftl dst 18 < Z.pow 2 26).
+      { rewrite Z.shiftl_mul_pow2 by lia.
+        apply Z.lt_trans with (256 * Z.pow 2 18);
+          [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
+        change (256 * 2 ^ 18) with (2 ^ 26). lia. }
+      lia.
+Qed.
+
+(** INTERVAL_HI (opcode 35) is R-type: dst is preserved. *)
+Theorem interval_hi_r_type_dst_roundtrip : forall dst src,
+  (0 <= dst < 256) ->
+  (0 <= src < 256) ->
+  extract_dst (pack_r_type 35 dst src 0 0) = dst.
+Proof.
+  intros dst src Hdst Hsrc.
+  apply r_type_dst_roundtrip; lia.
+Qed.
+
+(** INTERVAL_HI opcode survives roundtrip. *)
+Theorem interval_hi_opcode_roundtrip : forall dst src,
+  (0 <= dst < 256) ->
+  (0 <= src < 256) ->
+  extract_opcode (pack_r_type 35 dst src 0 0) = 35.
+Proof.
+  intros dst src Hdst Hsrc.
+  unfold pack_r_type.
+  replace (Z.land dst 255) with dst
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land src 255) with src
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land 0 255) with 0 by reflexivity.
+  replace (Z.land 0 3) with 0 by reflexivity.
+  rewrite !Z.shiftl_0_l.
+  rewrite !Z.lor_0_r.
+  apply opcode_roundtrip.
+  - lia.
+  - split; [|].
+    + apply Z.shiftl_nonneg; lia.
+    + assert (Hd : Z.shiftl dst 18 < Z.pow 2 26).
+      { rewrite Z.shiftl_mul_pow2 by lia.
+        apply Z.lt_trans with (256 * Z.pow 2 18);
+          [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
+        change (256 * 2 ^ 18) with (2 ^ 26). lia. }
+      lia.
+Qed.
+
+(** INTERVAL_CHECK (opcode 36) is R-type: src1 is preserved.
+    Roundtrip: extract_src1(pack_r_type 36 0 src bounds 0) = src. *)
+Theorem interval_check_opcode_roundtrip : forall src bounds,
+  (0 <= src < 256) ->
+  (0 <= bounds < 256) ->
+  extract_opcode (pack_r_type 36 0 src bounds 0) = 36.
+Proof.
+  intros src bounds Hsrc Hbounds.
+  unfold pack_r_type.
+  replace (Z.land 0 255) with 0 by reflexivity.
+  replace (Z.land src 255) with src
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land bounds 255) with bounds
+    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+  replace (Z.land 0 3) with 0 by reflexivity.
+  rewrite Z.shiftl_0_l.
+  rewrite Z.lor_0_l.
+  rewrite Z.shiftl_0_l.
+  rewrite Z.lor_0_r.
+  apply opcode_roundtrip.
+  - lia.
+  - split; [|].
+    + apply Z.lor_nonneg. split.
+      * apply Z.shiftl_nonneg; lia.
+      * apply Z.shiftl_nonneg; lia.
+    + assert (Hs : Z.shiftl src 10 < Z.pow 2 18).
+      { rewrite Z.shiftl_mul_pow2 by lia.
+        apply Z.lt_trans with (256 * Z.pow 2 10);
+          [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
+        change (256 * 2 ^ 10) with (2 ^ 18). lia. }
+      assert (Hb : Z.shiftl bounds 2 < Z.pow 2 10).
+      { rewrite Z.shiftl_mul_pow2 by lia.
+        apply Z.lt_trans with (256 * Z.pow 2 2);
+          [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
+        change (256 * 2 ^ 2) with 1024. change (2 ^ 10) with 1024. lia. }
+      apply Z.lt_le_trans with (Z.pow 2 26).
+      * apply Z.lt_le_trans with (Z.shiftl src 10 + Z.shiftl bounds 2 + 1).
+        { apply Z.lt_succ_r. apply Z.lor_le. }
+        { lia. }
+      * lia.
+Qed.
+
+(** INTERVAL_CHECK src1 field roundtrip. *)
+Theorem interval_check_src1_roundtrip : forall src bounds,
+  (0 <= src < 256) ->
+  (0 <= bounds < 256) ->
+  extract_src1 (pack_r_type 36 0 src bounds 0) = src.
+Proof.
+  intros src bounds Hsrc Hbounds.
+  apply r_type_src1_roundtrip; lia.
 Qed.

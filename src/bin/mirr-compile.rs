@@ -42,6 +42,7 @@ fn main() {
     let mut eqy = false;
     let mut toolchain_path: Option<String> = None;
     let mut totality = false;
+    let mut symbolic = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -112,6 +113,7 @@ fn main() {
             "--timing" => timing = true,
             "--eqy" => eqy = true,
             "--totality" => totality = true,
+            "--symbolic" => symbolic = true,
             "--toolchain-path" => {
                 i += 1;
                 if i < args.len() {
@@ -175,6 +177,9 @@ fn main() {
     }
     if totality || emit_format.as_deref() == Some("cert") {
         config.totality = true;
+    }
+    if symbolic {
+        config.symbolic = true;
     }
     let result = match run_pipeline(&source, &config) {
         Ok(r) => r,
@@ -425,6 +430,16 @@ fn print_summary(result: &nasa_rust_project::pipeline::PipelineResult, show_stat
         );
     }
 
+    if let Some(sr) = &result.symbolic_result {
+        let status = if sr.converged { "converged" } else { "did not converge" };
+        eprintln!(
+            "  Symbolic: {} iterations, {} violations, {}",
+            sr.iterations,
+            sr.violations.len(),
+            status,
+        );
+    }
+
     if show_stats {
         if let Some(wr) = &result.width_result {
             eprintln!(
@@ -471,6 +486,7 @@ fn print_help() {
     println!("  --timing            Run icetime static timing analysis (iCE40 only)");
     println!("  --eqy               Run EQY equivalence checking");
     println!("  --totality          Run MEGA-4 totality check and generate proof certificate");
+    println!("  --symbolic          Run MEGA-5 symbolic interval analysis");
     println!("  --toolchain-path D  Override oss-cad-suite root directory");
     println!();
     println!("  --help, -h          Show this help");
