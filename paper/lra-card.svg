@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 888 280">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
   <title>MIRR: A Safety-Critical HDL Compiler</title>
   <desc>Social card for the MIRR Living Research Artifact</desc>
   <defs>
@@ -8,28 +8,28 @@
       <stop offset="100%" stop-color="#22C55E"/>
     </linearGradient>
   </defs>
-  <rect width="888" height="280" rx="6" fill="#060a14"/>
-  <rect width="888" height="3" rx="1.5" fill="url(#titleGrad)"/>
+  <rect width="1200" height="630" fill="#060a14"/>
+  <rect width="1200" height="4" fill="url(#titleGrad)"/>
   <!-- Title -->
-  <text x="444" y="90" text-anchor="middle" fill="url(#titleGrad)"
-    font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="bold">
+  <text x="600" y="230" text-anchor="middle" fill="url(#titleGrad)"
+    font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="bold">
     MIRR: A Safety-Critical HDL Compiler
   </text>
   <!-- Subtitle -->
-  <text x="444" y="135" text-anchor="middle" fill="#b0bec5"
-    font-family="system-ui, -apple-system, sans-serif" font-size="20">
+  <text x="600" y="300" text-anchor="middle" fill="#b0bec5"
+    font-family="system-ui, -apple-system, sans-serif" font-size="28">
     Living Research Artifact — Compiler runs in your browser
   </text>
   <!-- Divider -->
-  <line x1="294" y1="165" x2="594" y2="165" stroke="#1a2340" stroke-width="1"/>
+  <line x1="400" y1="350" x2="800" y2="350" stroke="#1a2340" stroke-width="1"/>
   <!-- Stats -->
-  <text x="444" y="200" text-anchor="middle" fill="#64748b"
-    font-family="system-ui, -apple-system, sans-serif" font-size="16">
-    GPL-3.0 · 2,601 tests · 55 Rocq theorems · 9 backends
+  <text x="600" y="410" text-anchor="middle" fill="#64748b"
+    font-family="system-ui, -apple-system, sans-serif" font-size="22">
+    GPL-3.0 · 2,491 tests · 55 Rocq theorems · 9 backends
   </text>
   <!-- URL -->
-  <text x="444" y="250" text-anchor="middle" fill="#475569"
-    font-family="monospace" font-size="14">
+  <text x="600" y="560" text-anchor="middle" fill="#475569"
+    font-family="monospace" font-size="18">
     brandonfromph.github.io/mirr-project
   </text>
 </svg>
