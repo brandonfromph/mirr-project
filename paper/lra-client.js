@@ -133,6 +133,18 @@ LRAClient.prototype.notifications = function() {
   return this._send('lra.notifications');
 };
 
+LRAClient.prototype.identity = function() {
+  return this._send('lra.identity');
+};
+
+LRAClient.prototype.reputation = function() {
+  return this._send('lra.reputation');
+};
+
+LRAClient.prototype.peers = function() {
+  return this._send('lra.peers');
+};
+
 LRAClient.prototype.close = function() {
   window.removeEventListener('message', this._onMessage);
   if (this._iframe) {

@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 mod badge;
 mod build;
 mod build_docs;
+mod crawl;
 mod deps;
 mod hash;
 mod health;
@@ -19,6 +20,7 @@ mod status;
 mod util;
 mod validate;
 mod verify;
+mod verify_receipt;
 
 #[derive(Parser)]
 #[command(name = "lra", version, about = "Living Research Artifact CLI")]
@@ -128,6 +130,22 @@ enum Command {
         #[arg(short, long, default_value = "lra-registry.json")]
         registry: String,
     },
+    /// Crawl the LRA network from a seed URL
+    Crawl {
+        /// Seed URL to start crawling from
+        seed: String,
+        /// Path to lra-registry.json (default: ./lra-registry.json)
+        #[arg(short, long, default_value = "lra-registry.json")]
+        registry: String,
+    },
+    /// Verify a signed verification receipt
+    VerifyReceipt {
+        /// Path to the signed receipt JSON file
+        receipt: String,
+        /// Optional: path to a trusted public key file
+        #[arg(short, long)]
+        pubkey: Option<String>,
+    },
 }
 
 fn main() {
@@ -151,6 +169,10 @@ fn main() {
         }
         Command::Sign { receipt, key } => sign::run(&receipt, &key),
         Command::Status { registry } => status::run(&registry),
+        Command::Crawl { seed, registry } => crawl::run(&seed, &registry),
+        Command::VerifyReceipt { receipt, pubkey } => {
+            verify_receipt::run(&receipt, pubkey.as_deref())
+        }
     };
     std::process::exit(code);
 }

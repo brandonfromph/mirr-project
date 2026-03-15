@@ -643,3 +643,85 @@ The CLI command `lra status` queries every paper in the registry and reports:
 
 Each paper is fetched exactly once. Both marker checks and SHA-256 computation
 use the same response body.
+
+### 11.7 Peer-to-Peer Research Protocol (Informative — Phase 9)
+
+Phase 9 adds cryptographic identity, computed reputation, peer discovery,
+network crawling, and receipt verification.
+
+#### 11.7.1 `lra.identity`
+
+Returns the node's public identity, if configured.
+
+**Request:** `{ "jsonrpc": "2.0", "method": "lra.identity", "id": 1 }`
+
+**Response (configured):**
+```json
+{ "pubkey": "ed25519:<hex>", "name": "...", "url": "..." }
+```
+
+**Response (anonymous):**
+```json
+{ "pubkey": null, "status": "anonymous" }
+```
+
+Identity is opt-in. Nodes without a configured Ed25519 key respond as anonymous.
+
+#### 11.7.2 `lra.reputation`
+
+Returns a computed reputation score derived from the in-memory verification log.
+The score is never stored — it is always recomputed on query.
+
+**Request:** `{ "jsonrpc": "2.0", "method": "lra.reputation", "id": 1 }`
+
+**Response:**
+```json
+{
+  "total_verifications": 42,
+  "verified": 40,
+  "failed": 2,
+  "challenges": 1,
+  "score": 95,
+  "uptime_ms": 86400000
+}
+```
+
+- `score` is `round((verified / total) * 100)`, or `null` if no verifications exist.
+- `uptime_ms` is milliseconds since SW install.
+
+#### 11.7.3 `lra.peers`
+
+Returns the node's list of known peer URLs.
+
+**Request:** `{ "jsonrpc": "2.0", "method": "lra.peers", "id": 1 }`
+
+**Response:**
+```json
+["https://example.github.io/paper-a/", "https://example.github.io/paper-b/"]
+```
+
+Peers are configured by the paper author in `sw.js` or discovered via crawl.
+Bounded to `MAX_PEERS` (default: 50).
+
+#### 11.7.4 Network Crawl
+
+The CLI command `lra crawl <seed-url>` discovers the LRA network by:
+
+1. Fetching the seed URL
+2. Extracting `lra:capability`, `lra:version`, `data-lra-claim` markers
+3. Following `lra:depends` links to discover upstream papers
+4. Enriching results from the local registry
+
+Crawl is bounded to `MAX_CRAWL_NODES` (default: 100) to prevent unbounded exploration.
+
+#### 11.7.5 Receipt Verification
+
+The CLI command `lra verify-receipt <path>` verifies a signed verification receipt:
+
+1. Reads the `.signed.json` file
+2. Extracts `signature` and `signer_pubkey` fields
+3. Reconstructs the original unsigned content
+4. Verifies the Ed25519 signature against the public key
+
+If `--pubkey <path>` is provided, the receipt's signer is additionally validated
+against the trusted public key file.

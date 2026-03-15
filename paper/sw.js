@@ -5,6 +5,7 @@
 // Phase 6: Autonomous node (rate limiting, headless capability, graceful degradation)
 // Phase 7: Live peer review (verify_claim, challenge, verification_log)
 // Phase 8: Self-healing knowledge graph (dep_versions, notify, notifications)
+// Phase 9: Peer-to-peer research protocol (identity, reputation, peers)
 //
 // GPL-3.0 — see LICENSE for terms.
 
@@ -33,7 +34,7 @@ var MAX_PENDING_ENTRIES = 100;
 // Phase 6: Headless capability list (methods that work without an open tab)
 var HEADLESS_METHODS = ['lra.ping', 'lra.meta', 'lra.claims', 'lra.cite', 'lra.depends',
                         'lra.verification_log', 'lra.dep_versions', 'lra.notify',
-                        'lra.notifications'];
+                        'lra.notifications', 'lra.identity', 'lra.reputation', 'lra.peers'];
 
 // Phase 7: Verification log (bounded, in-memory, append-only)
 var MAX_VERIFICATION_LOG = 1000;
@@ -49,6 +50,13 @@ var MAX_CLAIMS = 100;
 // Phase 8: Notification log (bounded, in-memory)
 var MAX_NOTIFICATIONS = 100;
 var _notifications = [];
+
+// Phase 9: Node identity (public key, if configured — null = anonymous)
+var LRA_IDENTITY = null;
+
+// Phase 9: Known peers (other LRA papers this node is aware of)
+var MAX_PEERS = 50;
+var LRA_PEERS = [];
 
 // ── LRA Protocol v1.0 — MIRR metadata ──────────────────────────────
 
@@ -270,6 +278,36 @@ function handleProtocol(event) {
     }
     case 'lra.verification_log':
       reply(_verificationLog);
+      break;
+    case 'lra.identity':
+      if (LRA_IDENTITY) {
+        reply(LRA_IDENTITY);
+      } else {
+        reply({ pubkey: null, status: 'anonymous' });
+      }
+      break;
+    case 'lra.reputation': {
+      var total_v = _verificationLog.length;
+      var verified_c = 0;
+      var failed_c = 0;
+      var ri = 0;
+      while (ri < _verificationLog.length && ri < MAX_VERIFICATION_LOG) {
+        if (_verificationLog[ri].status === 'verified') verified_c++;
+        else failed_c++;
+        ri++;
+      }
+      reply({
+        total_verifications: total_v,
+        verified: verified_c,
+        failed: failed_c,
+        challenges: _challenges.length,
+        score: total_v > 0 ? Math.round((verified_c / total_v) * 100) : null,
+        uptime_ms: Date.now() - _installTime
+      });
+      break;
+    }
+    case 'lra.peers':
+      reply(LRA_PEERS);
       break;
     default:
       if (method && method.indexOf('lra.') === 0)

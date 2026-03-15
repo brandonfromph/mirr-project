@@ -31,6 +31,8 @@ pub struct RegistryEntry {
     pub depends: Vec<String>,
     pub registered: String,
     #[serde(default)]
+    pub peers: Vec<String>,
+    #[serde(default)]
     pub verifications: Option<Verifications>,
 }
 

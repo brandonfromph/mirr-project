@@ -12,6 +12,7 @@
       "license": "GPL-3.0",
       "version": "0.3.0",
       "depends": [],
+      "peers": [],
       "registered": "2026-03-15T00:00:00Z",
       "verifications": {
         "last_verified": null,
