@@ -18,6 +18,7 @@
 //! | E8xx   | 800–899   | S-expression errors      |
 //! | E9xx   | 900–999   | SAT solver errors        |
 //! | E10xx  | 1000–1099 | Symbolic analysis errors |
+//! | E11xx  | 1100–1199 | Totality errors          |
 //!
 //! See `docs/error_codes.md` for the full catalogue.
 // ---------------------------------------------------------------------------
@@ -50,6 +51,8 @@ pub enum MirrError {
     SatError { message: String, span: Option<Span> },
     /// Symbolic analysis error (E10xx).
     SymbolicError { message: String, span: Option<Span> },
+    /// Totality error (E11xx).
+    TotalityError { message: String, span: Option<Span> },
 }
 
 impl MirrError {
@@ -72,6 +75,7 @@ impl MirrError {
             Self::SExprError { message, .. } => Self::SExprError { message, span },
             Self::SatError { message, .. } => Self::SatError { message, span },
             Self::SymbolicError { message, .. } => Self::SymbolicError { message, span },
+            Self::TotalityError { message, .. } => Self::TotalityError { message, span },
         }
     }
 
@@ -86,7 +90,8 @@ impl MirrError {
             | Self::RspuError { span, .. }
             | Self::SExprError { span, .. }
             | Self::SatError { span, .. }
-            | Self::SymbolicError { span, .. } => *span,
+            | Self::SymbolicError { span, .. }
+            | Self::TotalityError { span, .. } => *span,
         }
     }
 
@@ -101,7 +106,8 @@ impl MirrError {
             | Self::RspuError { message, .. }
             | Self::SExprError { message, .. }
             | Self::SatError { message, .. }
-            | Self::SymbolicError { message, .. } => message,
+            | Self::SymbolicError { message, .. }
+            | Self::TotalityError { message, .. } => message,
         }
     }
 
@@ -123,6 +129,7 @@ impl MirrError {
             Self::SExprError { .. } => Some("E800".to_string()),
             Self::SatError { .. } => Some("E900".to_string()),
             Self::SymbolicError { .. } => Some("E1000".to_string()),
+            Self::TotalityError { .. } => Some("E1100".to_string()),
             // SemanticError and TypeError embed codes in messages — no fallback.
             Self::SemanticError { .. } | Self::TypeError { .. } => None,
         }
@@ -260,6 +267,13 @@ impl fmt::Display for MirrError {
             }
             MirrError::SymbolicError { message, span } => {
                 write!(f, "[E1000] Symbolic error: {}", message)?;
+                if let Some(s) = span {
+                    write!(f, " (line {})", s.start_line + 1)?;
+                }
+                Ok(())
+            }
+            MirrError::TotalityError { message, span } => {
+                write!(f, "[E1100] Totality error: {}", message)?;
                 if let Some(s) = span {
                     write!(f, " (line {})", s.start_line + 1)?;
                 }

@@ -15,6 +15,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod diff;
 pub mod interval;
 pub mod pattern;
 

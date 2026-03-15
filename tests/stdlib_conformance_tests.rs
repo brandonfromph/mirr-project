@@ -68,6 +68,7 @@ fn error_class(e: &MirrError) -> &'static str {
         MirrError::SExprError { .. } => "sexpr",
         MirrError::SatError { .. } => "sat",
         MirrError::SymbolicError { .. } => "symbolic",
+        MirrError::TotalityError { .. } => "totality",
     }
 }
 
