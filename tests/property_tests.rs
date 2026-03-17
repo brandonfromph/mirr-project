@@ -190,7 +190,7 @@ fn property_duplicate_name_pinned_message() {
         wrap_property("property p1 {\n    always (x);\n}\n\nproperty p1 {\n    never (y);\n}");
     let msg = validate_err(&src);
     assert!(
-        msg.contains("[E210] Duplicate property name: 'p1'."),
+        msg.contains("[E210]") && msg.contains("Duplicate property name: 'p1'."),
         "expected E210 duplicate property error, got: {msg}"
     );
 }
@@ -200,7 +200,8 @@ fn property_undeclared_signal_always_pinned() {
     let src = wrap_property("property p1 {\n    always (ghost);\n}");
     let msg = validate_err(&src);
     assert!(
-        msg.contains("[E211] Property 'p1' references undeclared signal 'ghost'."),
+        msg.contains("[E211]")
+            && msg.contains("Property 'p1' references undeclared signal 'ghost'."),
         "expected E211 undeclared signal error, got: {msg}"
     );
 }
@@ -210,7 +211,8 @@ fn property_undeclared_signal_never_pinned() {
     let src = wrap_property("property p1 {\n    never (phantom);\n}");
     let msg = validate_err(&src);
     assert!(
-        msg.contains("[E211] Property 'p1' references undeclared signal 'phantom'."),
+        msg.contains("[E211]")
+            && msg.contains("Property 'p1' references undeclared signal 'phantom'."),
         "expected E211 undeclared signal error, got: {msg}"
     );
 }
@@ -220,7 +222,8 @@ fn property_undeclared_signal_implies_antecedent_pinned() {
     let src = wrap_property("property p1 {\n    always (ghost -> y);\n}");
     let msg = validate_err(&src);
     assert!(
-        msg.contains("[E211] Property 'p1' references undeclared signal 'ghost'."),
+        msg.contains("[E211]")
+            && msg.contains("Property 'p1' references undeclared signal 'ghost'."),
         "expected E211 undeclared signal error, got: {msg}"
     );
 }
@@ -230,7 +233,8 @@ fn property_undeclared_signal_implies_consequent_pinned() {
     let src = wrap_property("property p1 {\n    always (x -> phantom);\n}");
     let msg = validate_err(&src);
     assert!(
-        msg.contains("[E211] Property 'p1' references undeclared signal 'phantom'."),
+        msg.contains("[E211]")
+            && msg.contains("Property 'p1' references undeclared signal 'phantom'."),
         "expected E211 undeclared signal error, got: {msg}"
     );
 }

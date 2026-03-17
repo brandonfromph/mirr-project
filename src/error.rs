@@ -56,8 +56,8 @@ pub enum MirrError {
 }
 
 impl MirrError {
-    /// Convenience constructor for parse errors (no span).
-    pub fn new(message: impl Into<String>) -> Self {
+    /// Convenience constructor for spanless parse errors.
+    pub fn parse_error(message: impl Into<String>) -> Self {
         Self::ParseError { message: message.into(), span: None }
     }
 
@@ -130,8 +130,9 @@ impl MirrError {
             Self::SatError { .. } => Some("E900".to_string()),
             Self::SymbolicError { .. } => Some("E1000".to_string()),
             Self::TotalityError { .. } => Some("E1100".to_string()),
-            // SemanticError and TypeError embed codes in messages — no fallback.
-            Self::SemanticError { .. } | Self::TypeError { .. } => None,
+            // SemanticError and TypeError fall back to category codes.
+            Self::SemanticError { .. } => Some("E200".to_string()),
+            Self::TypeError { .. } => Some("E600".to_string()),
         }
     }
 
@@ -217,7 +218,11 @@ impl fmt::Display for MirrError {
                 Ok(())
             }
             MirrError::SemanticError { message, span } => {
-                write!(f, "Semantic error: {}", message)?;
+                if let Some(code) = extract_embedded_code(message) {
+                    write!(f, "[{}] Semantic error: {}", code, strip_embedded_code(message))?;
+                } else {
+                    write!(f, "[E200] Semantic error: {}", message)?;
+                }
                 if let Some(s) = span {
                     write!(f, " (line {})", s.start_line + 1)?;
                 }
@@ -238,7 +243,11 @@ impl fmt::Display for MirrError {
                 Ok(())
             }
             MirrError::TypeError { message, span } => {
-                write!(f, "Type error: {}", message)?;
+                if let Some(code) = extract_embedded_code(message) {
+                    write!(f, "[{}] Type error: {}", code, strip_embedded_code(message))?;
+                } else {
+                    write!(f, "[E600] Type error: {}", message)?;
+                }
                 if let Some(s) = span {
                     write!(f, " (line {})", s.start_line + 1)?;
                 }

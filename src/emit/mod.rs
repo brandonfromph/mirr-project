@@ -12,6 +12,7 @@ pub mod firrtl;
 pub mod fpga_scaffold;
 pub mod fpga_target;
 pub mod json_netlist;
+pub mod mape_k_rtl;
 pub mod rspu;
 pub mod rspu_encoding;
 pub mod rspu_exceptions;

@@ -388,7 +388,7 @@ fn e216_pinned_message_format() {
     let msg = validate_err(&module);
     assert_eq!(
         msg,
-        "Semantic error: [E216] Signal 'out' has multiple writers: reflex 'alpha' and reflex 'beta'."
+        "[E216] Semantic error: Signal 'out' has multiple writers: reflex 'alpha' and reflex 'beta'."
     );
 }
 
@@ -406,7 +406,7 @@ fn e216_pinned_message_format_with_origins() {
     let msg = validate_err(&module);
     assert_eq!(
         msg,
-        "Semantic error: [E216] Signal 'out' has multiple writers: \
+        "[E216] Semantic error: Signal 'out' has multiple writers: \
          reflex 'alpha' (from pattern 'pat_a') and reflex 'beta' (from pattern 'pat_b')."
     );
 }

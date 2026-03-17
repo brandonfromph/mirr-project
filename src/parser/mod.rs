@@ -109,10 +109,12 @@ pub(crate) fn tokenize_signal_decl(rest: &str) -> Result<TokenizedSignalDecl, Mi
     let tokens: Vec<&str> = rest.split_whitespace().collect();
 
     if tokens.len() > MAX_SIGNAL_DECL_TOKENS {
-        return Err(MirrError::new("[E183] Signal declaration exceeds maximum token count."));
+        return Err(MirrError::parse_error(
+            "[E183] Signal declaration exceeds maximum token count.",
+        ));
     }
     if tokens.is_empty() {
-        return Err(MirrError::new("[E112] Signal kind (in/out/internal) is missing."));
+        return Err(MirrError::parse_error("[E112] Signal kind (in/out/internal) is missing."));
     }
 
     // 1. Parse kind (required, first token).
@@ -145,7 +147,7 @@ pub(crate) fn parse_type_with_annotations(
     let tokens: Vec<&str> = type_str.split_whitespace().collect();
 
     if tokens.len() > MAX_SIGNAL_DECL_TOKENS {
-        return Err(MirrError::new("[E183] Type annotation exceeds maximum token count."));
+        return Err(MirrError::parse_error("[E183] Type annotation exceeds maximum token count."));
     }
 
     parse_qualified_type(&tokens, 0)
@@ -157,7 +159,7 @@ fn parse_signal_kind(s: &str) -> Result<SignalKind, MirrError> {
         "in" => Ok(SignalKind::Input),
         "out" => Ok(SignalKind::Output),
         "internal" => Ok(SignalKind::Internal),
-        other => Err(MirrError::new(format!(
+        other => Err(MirrError::parse_error(format!(
             "[E115] Unknown signal kind: {other}. Expected 'in', 'out', or 'internal'.",
         ))),
     }
@@ -189,7 +191,7 @@ fn parse_qualified_type(
         match tokens[pos] {
             "linear" => {
                 if annotations.linearity == Linearity::Linear {
-                    return Err(MirrError::new(
+                    return Err(MirrError::parse_error(
                         "[E190] Duplicate 'linear' qualifier in signal declaration.",
                     ));
                 }
@@ -199,7 +201,7 @@ fn parse_qualified_type(
             }
             "stateful" => {
                 if annotations.effect != EffectQualifier::Unspecified {
-                    return Err(MirrError::new(
+                    return Err(MirrError::parse_error(
                         "[E191] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
                     ));
                 }
@@ -209,7 +211,7 @@ fn parse_qualified_type(
             }
             "pure" => {
                 if annotations.effect != EffectQualifier::Unspecified {
-                    return Err(MirrError::new(
+                    return Err(MirrError::parse_error(
                         "[E191] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
                     ));
                 }
@@ -223,14 +225,14 @@ fn parse_qualified_type(
 
     // --- Phase 2: Base type (required) ---
     if pos >= tokens.len() {
-        return Err(MirrError::new(
+        return Err(MirrError::parse_error(
             "[E192] Missing base type after qualifiers. Expected 'bool', 'uN', or 'iN'.",
         ));
     }
 
     let ty_str = tokens[pos];
     let ty = parse_signal_type_str(ty_str).ok_or_else(|| {
-        MirrError::new(format!(
+        MirrError::parse_error(format!(
             "[E118] Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'.",
         ))
     })?;
@@ -245,7 +247,7 @@ fn parse_qualified_type(
         if token == "where" {
             // --- Refinement clause ---
             if annotations.refinement.is_some() {
-                return Err(MirrError::new(
+                return Err(MirrError::parse_error(
                     "[E196] Duplicate 'where' clause in signal declaration.",
                 ));
             }
@@ -261,7 +263,7 @@ fn parse_qualified_type(
             }
 
             if pos == ref_start {
-                return Err(MirrError::new(
+                return Err(MirrError::parse_error(
                     "[E193] Empty refinement clause after 'where'. Expected range 'N..M' or predicate.",
                 ));
             }
@@ -271,17 +273,17 @@ fn parse_qualified_type(
         } else if let Some(domain) = token.strip_prefix('@') {
             // --- Clock domain ---
             if annotations.clock_domain.is_some() {
-                return Err(MirrError::new(
+                return Err(MirrError::parse_error(
                     "[E197] Duplicate clock domain annotation in signal declaration.",
                 ));
             }
             if domain.is_empty() {
-                return Err(MirrError::new(
+                return Err(MirrError::parse_error(
                     "[E195] Empty clock domain: expected identifier after '@'.",
                 ));
             }
             if !is_valid_identifier(domain) {
-                return Err(MirrError::new(format!(
+                return Err(MirrError::parse_error(format!(
                     "[E177] Invalid clock domain name '{domain}': must be alphanumeric/underscore identifier.",
                 )));
             }
@@ -290,29 +292,29 @@ fn parse_qualified_type(
         } else if let Some(tag) = token.strip_prefix('#') {
             // --- Phantom tag ---
             if annotations.phantom_tag.is_some() {
-                return Err(MirrError::new(
+                return Err(MirrError::parse_error(
                     "[E182] Duplicate phantom tag annotation in signal declaration.",
                 ));
             }
             if tag.is_empty() {
-                return Err(MirrError::new(
+                return Err(MirrError::parse_error(
                     "[E178] Empty phantom tag: expected identifier after '#'.",
                 ));
             }
             if !tag.starts_with(|c: char| c.is_ascii_uppercase()) {
-                return Err(MirrError::new(format!(
+                return Err(MirrError::parse_error(format!(
                     "[E179] Invalid phantom tag '{tag}': must start with uppercase letter.",
                 )));
             }
             if !is_valid_identifier(tag) {
-                return Err(MirrError::new(format!(
+                return Err(MirrError::parse_error(format!(
                     "[E179] Invalid phantom tag '{tag}': must be alphanumeric/underscore identifier starting with uppercase.",
                 )));
             }
             annotations.phantom_tag = Some(tag.to_string());
             pos += 1;
         } else {
-            return Err(MirrError::new(format!(
+            return Err(MirrError::parse_error(format!(
                 "[E183] Unexpected token '{token}' after signal type. Expected 'where', '@clock', or '#Tag'.",
             )));
         }
@@ -334,17 +336,17 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
     // Try `lo..=hi` first (explicit inclusive range notation).
     if let Some((lo_str, hi_str)) = trimmed.split_once("..=") {
         let lo = lo_str.trim().parse::<u64>().map_err(|_| {
-            MirrError::new(format!(
+            MirrError::parse_error(format!(
                 "[E193] Malformed range refinement: '{lo_str}' is not a valid integer.",
             ))
         })?;
         let hi = hi_str.trim().parse::<u64>().map_err(|_| {
-            MirrError::new(format!(
+            MirrError::parse_error(format!(
                 "[E193] Malformed range refinement: '{hi_str}' is not a valid integer.",
             ))
         })?;
         if lo > hi {
-            return Err(MirrError::new(format!(
+            return Err(MirrError::parse_error(format!(
                 "[E194] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
             )));
         }
@@ -354,17 +356,17 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
     // Try `lo..hi` (hardware-convention inclusive range).
     if let Some((lo_str, hi_str)) = trimmed.split_once("..") {
         let lo = lo_str.trim().parse::<u64>().map_err(|_| {
-            MirrError::new(format!(
+            MirrError::parse_error(format!(
                 "[E193] Malformed range refinement: '{lo_str}' is not a valid integer.",
             ))
         })?;
         let hi = hi_str.trim().parse::<u64>().map_err(|_| {
-            MirrError::new(format!(
+            MirrError::parse_error(format!(
                 "[E193] Malformed range refinement: '{hi_str}' is not a valid integer.",
             ))
         })?;
         if lo > hi {
-            return Err(MirrError::new(format!(
+            return Err(MirrError::parse_error(format!(
                 "[E194] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
             )));
         }
@@ -373,7 +375,7 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
 
     // Predicate form: store the raw expression string.
     if trimmed.is_empty() {
-        return Err(MirrError::new(
+        return Err(MirrError::parse_error(
             "[E193] Empty refinement clause. Expected range 'N..M' or predicate expression.",
         ));
     }

@@ -267,10 +267,10 @@ module m {
     assert!(msg.contains("[E402]") || msg.contains("Circular"), "expected E402, got: {}", msg);
 }
 
-// ───────── Section 4: E401 — kind mismatch ─────────
+// ───────── Section 4: E426 — kind mismatch ─────────
 
 #[test]
-fn pattern_param_receives_constant_e401() {
+fn pattern_param_receives_constant_e426() {
     let src = r#"
 def needs_pattern(p: pattern, s: signal in bool) {
     reflect {
@@ -300,7 +300,7 @@ module m {
 }
 "#;
     let msg = pipeline_err(src);
-    assert!(msg.contains("[E401]"), "expected E401 for kind mismatch, got: {}", msg);
+    assert!(msg.contains("[E426]"), "expected E426 for kind mismatch, got: {}", msg);
 }
 
 // ───────── Section 5: Undefined pattern ref ─────────

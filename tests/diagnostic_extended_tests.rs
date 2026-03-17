@@ -437,10 +437,10 @@ fn mirr_error_semantic_display_no_code_prefix() {
         display.contains("Semantic error:"),
         "SemanticError Display should include 'Semantic error:': {display}"
     );
-    // SemanticError does NOT prefix with [E2xx] in Display
+    // SemanticError without embedded code falls back to [E200]
     assert!(
-        !display.contains("[E2"),
-        "SemanticError Display should not embed a code prefix directly: {display}"
+        display.contains("[E200]"),
+        "SemanticError without embedded code should use [E200] fallback: {display}"
     );
 }
 
@@ -533,9 +533,10 @@ fn to_diagnostic_semantic_with_embedded_code() {
 fn to_diagnostic_semantic_without_embedded_code() {
     let err = MirrError::SemanticError { message: "unknown issue".to_string(), span: None };
     let diag = err.to_diagnostic();
-    assert!(
-        diag.code.is_none(),
-        "SemanticError without embedded code should have None code (no fallback)"
+    assert_eq!(
+        diag.code.as_deref(),
+        Some("E200"),
+        "SemanticError without embedded code should fall back to E200"
     );
 }
 
@@ -616,13 +617,21 @@ fn error_code_sexpr_fallback() {
 #[test]
 fn error_code_semantic_no_fallback() {
     let err = MirrError::SemanticError { message: "no embedded code".to_string(), span: None };
-    assert!(err.error_code().is_none(), "SemanticError without embedded code should return None");
+    assert_eq!(
+        err.error_code().as_deref(),
+        Some("E200"),
+        "SemanticError without embedded code should fall back to E200"
+    );
 }
 
 #[test]
 fn error_code_type_no_fallback() {
     let err = MirrError::TypeError { message: "no embedded code".to_string(), span: None };
-    assert!(err.error_code().is_none(), "TypeError without embedded code should return None");
+    assert_eq!(
+        err.error_code().as_deref(),
+        Some("E600"),
+        "TypeError without embedded code should fall back to E600"
+    );
 }
 
 // ===========================================================================

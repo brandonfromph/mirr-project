@@ -30,7 +30,7 @@ lto = "fat"
 
 [[bin]]
 name = "mirr-compile"
-path = "src/bin/mirr-compile.rs"
+path = "src/bin/mirr-compile/main.rs"
 
 [[bin]]
 name = "mirr-lsp"

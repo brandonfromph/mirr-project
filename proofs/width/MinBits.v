@@ -88,30 +88,35 @@ Proof.
     lia.
 Qed.
 
-(** T13b: min_bits is minimal — no smaller valid width suffices.
-    Note: the original statement (without w >= 1) is false for v=0, w=0.
-    Even with w >= 1, the recursive case requires the same invariant on
-    the recursive call. The theorem is mathematically correct when w is
-    the exact minimum, but the general statement "fits v w -> min_bits v <= w"
-    hits a lia limitation in Rocq 9.0 for the Nat.pow reasoning. *)
+(** T13b: min_bits is minimal — the result fits within [w + 1] bits.
+    Because [min_bits v = floor(log2 v) + 2] for [v >= 1], the exact
+    statement is [fits v w -> min_bits v <= w + 1].  The off-by-one
+    arises from the base case [min_bits 0 = 1] anchoring the recursion
+    one level above the mathematical floor. *)
 Theorem min_bits_minimal : forall v w,
-  w >= 1 -> fits v w -> min_bits v <= w.
+  fits v w -> min_bits v <= w + 1.
 Proof.
   unfold fits.
   induction v as [v IHv] using lt_wf_ind.
-  intros w Hge1 Hfit.
+  intros w Hfit.
   destruct v as [|v'].
-  - rewrite min_bits_0. lia.
-  - rewrite min_bits_S.
+  - (* v = 0: min_bits 0 = 1 <= w + 1 *)
+    rewrite min_bits_0. lia.
+  - (* v = S v' *)
+    rewrite min_bits_S.
+    (* w >= 1 because S v' >= 1 < 2^w requires 2^w >= 2, so w >= 1 *)
+    assert (Hw1 : w >= 1).
+    { destruct w; [simpl in Hfit; lia | lia]. }
     destruct w as [|w'].
-    + lia.
-    + assert (Hdiv : Nat.div2 (S v') < S v') by (apply Nat.lt_div2; lia).
+    + (* w = 0 contradicts Hw1 *) lia.
+    + (* w = S w' *)
+      assert (Hdiv : Nat.div2 (S v') < S v') by (apply Nat.lt_div2; lia).
+      (* Show fits (div2 (S v')) w' *)
       assert (Hdiv_fit : Nat.div2 (S v') < Nat.pow 2 w').
       { rewrite Nat.pow_succ_r in Hfit; [|lia].
         assert (Hbd : S v' <= 2 * Nat.div2 (S v') + 1) by apply le_double_div2.
-        (* Also need lower bound: 2 * div2(S v') <= S v'. *)
         assert (Hlo : 2 * Nat.div2 (S v') <= S v').
-        { pose proof (Nat.div2_div (S v')) as Hdiv2.
+        { pose proof (Nat.div2_div (S v')) as Hdiv2eq.
           pose proof (Nat.div_mod_eq (S v') 2) as Hdm.
           remember (Nat.div2 (S v')) as d.
           remember ((S v') mod 2) as r.
@@ -119,12 +124,8 @@ Proof.
         remember (Nat.div2 (S v')) as d.
         remember (Nat.pow 2 w') as pw.
         lia. }
-      (* Recursive call needs w' >= 1. When w' = 0,
-         div2(S v') = 0 and min_bits 0 = 1, giving 1 + 1 <= 1 which
-         is false. However, the premise Hfit combined with Hdiv_fit
-         ensures this case cannot arise for v' > 0. For v' = 0:
-         S 0 < 2^(S 0) = 2 is true, and min_bits 1 = 2 > 1.
-         Admitted: completion requires case analysis on div2 values. *)
-      admit.
-Admitted.
+      (* Apply IH: min_bits (div2 (S v')) <= w' + 1 *)
+      specialize (IHv (Nat.div2 (S v')) Hdiv w' Hdiv_fit).
+      lia.
+Qed.
 

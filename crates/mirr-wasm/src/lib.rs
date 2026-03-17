@@ -33,6 +33,7 @@ fn default_config() -> PipelineConfig {
         retiming: false,
         totality: false,
         symbolic: false,
+        emit_mape_k_rtl: false,
     }
 }
 
@@ -183,7 +184,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                     // Numeric inputs: ramp from 0 with wrap at a boundary
                     let max_val: u64 = match &sig.ty.core {
                         nasa_rust_project::ast::types::SignalType::Unsigned(w) => {
-                            1u64.checked_shl(*w as u32).unwrap_or(256).saturating_sub(1)
+                            1u64.checked_shl(*w).unwrap_or(256).saturating_sub(1)
                         }
                         _ => 255,
                     };

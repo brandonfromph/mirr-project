@@ -123,7 +123,7 @@ impl TemporalCompiler {
                                     if work_stack.len() >= MAX_COMPILE_GUARD_DEPTH {
                                         return Err(MirrError::TemporalCompilationError {
                                             message: format!(
-                                                "guard '{}': exceeded maximum compile guard depth ({})",
+                                                "[E301] guard '{}': exceeded maximum compile guard depth ({})",
                                                 g.name, MAX_COMPILE_GUARD_DEPTH
                                             ),
                                             span: g.span,
@@ -161,7 +161,7 @@ impl TemporalCompiler {
                                 } else {
                                     return Err(MirrError::TemporalCompilationError {
                                         message: format!(
-                                            "guard '{}': condition cannot be lowered to hardware — unsupported form",
+                                            "[E302] guard '{}': condition cannot be lowered to hardware — unsupported form",
                                             g.name
                                         ),
                                         span: g.span,
@@ -170,7 +170,7 @@ impl TemporalCompiler {
                             } else {
                                 return Err(MirrError::TemporalCompilationError {
                                     message: format!(
-                                        "guard '{}': condition cannot be lowered to hardware — unsupported form",
+                                        "[E302] guard '{}': condition cannot be lowered to hardware — unsupported form",
                                         g.name
                                     ),
                                     span: g.span,
@@ -186,7 +186,7 @@ impl TemporalCompiler {
                         None => {
                             return Err(MirrError::TemporalCompilationError {
                                 message: format!(
-                                    "guard '{}': internal error — missing right sub-guard result",
+                                    "[E303] guard '{}': internal error — missing right sub-guard result",
                                     name
                                 ),
                                 span: None,
@@ -198,7 +198,7 @@ impl TemporalCompiler {
                         None => {
                             return Err(MirrError::TemporalCompilationError {
                                 message: format!(
-                                    "guard '{}': internal error — missing left sub-guard result",
+                                    "[E303] guard '{}': internal error — missing left sub-guard result",
                                     name
                                 ),
                                 span: None,
@@ -248,7 +248,7 @@ impl TemporalCompiler {
         if !work_stack.is_empty() {
             return Err(MirrError::TemporalCompilationError {
                 message: format!(
-                    "guard '{}': compilation exceeded maximum iteration bound ({})",
+                    "[E304] guard '{}': compilation exceeded maximum iteration bound ({})",
                     guard.name, max_iterations
                 ),
                 span: guard.span,
@@ -257,7 +257,7 @@ impl TemporalCompiler {
 
         result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
             message: format!(
-                "guard '{}': internal error — no compilation result produced",
+                "[E305] guard '{}': internal error — no compilation result produced",
                 guard.name
             ),
             span: guard.span,
@@ -338,7 +338,7 @@ impl TemporalCompiler {
         ConditionKind::try_from_expr(&guard.condition).map_err(|reason| {
             MirrError::TemporalCompilationError {
                 message: format!(
-                    "guard '{}': condition cannot be lowered to hardware — {}",
+                    "[E306] guard '{}': condition cannot be lowered to hardware — {}",
                     guard.name, reason
                 ),
                 span: guard.span,

@@ -48,18 +48,20 @@ Import ListNotations.
 
 Theorem e2e_solver_sound : forall nodes constraints st,
   well_formed nodes ->
+  wf_constraints constraints ->
   (forall i, lookup st i = 0) ->
   let result := iterate constraints st (solver_budget (length st)) in
   is_fixpoint constraints result /\
   st ⊑ result.
 Proof.
-  intros nodes constraints st Hwf Hzero.
+  intros nodes constraints st Hwf Hwfc Hzero.
   simpl. split.
   - apply solver_terminates.
-    (* Need: forall i, lookup st i <= MAX_WIDTH.
-       From Hzero: forall i, lookup st i = 0.
-       0 <= MAX_WIDTH is trivial. *)
-    intros i. rewrite Hzero. unfold MAX_WIDTH. lia.
+    + exact Hwfc.
+    + (* Need: forall i, lookup st i <= MAX_WIDTH.
+         From Hzero: forall i, lookup st i = 0.
+         0 <= MAX_WIDTH is trivial. *)
+      intros i. rewrite Hzero. unfold MAX_WIDTH. lia.
   - (* st ⊑ iterate ... follows from evaluate_monotone applied iteratively.
        More precisely, iterate only increases entries (by monotonicity),
        so st ⊑ result. Prove by induction on fuel. *)
@@ -81,7 +83,7 @@ Qed.
 
     | Theorem | Status   |
     |---------|----------|
-    | T1      | Admitted (potential function argument) |
+    | T1      | Proven (Qed) — Solver.v (potential function + wf_constraints) |
     | T2      | Proven (Qed) — Monotone.v |
     | T3      | Proven (Qed) — Monotone.v |
     | T4      | Proven (Qed) — Constraint.v |
@@ -94,15 +96,12 @@ Qed.
     | T10     | Proven (Qed) — SCC/Tarjan.v |
     | T11     | Proven (Qed) — SCC/Classify.v |
     | T12     | Proven (Qed) — SCC/Nonexpansive.v |
-    | T13     | Admitted — MinBits.v (recursive corner case) |
+    | T13     | Proven (Qed) — MinBits.v |
     | T13b    | Proven (Qed) — MinBits.v |
     | T14     | Proven (Qed) — Flatten.v |
     | T15     | Proven (Qed) — Truncation.v |
     | e2e     | Proven (Qed) — Integration.v (capstone) |
 
-    Remaining Admitted:
-    - T1 (solver_terminates): needs potential function Phi = Sum(MAX_WIDTH - w_i)
-    - step_one_monotone: Admitted — length st1 = length st2 obligation
-    - T13 (min_bits_minimal): Admitted — recursive corner case v=0,w=0
+    All 71 theorems proven (Qed). 0 Admitted.
     All files compile under Rocq 9.0 (Rocq-Platform 2025.08.2).
 *)

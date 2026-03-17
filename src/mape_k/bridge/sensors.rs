@@ -1,0 +1,102 @@
+//! Sensor extraction: convert signal declarations into `SensorConfig` entries.
+
+#![forbid(unsafe_code)]
+
+use crate::ast::types::{SignalKind, SignalType};
+use crate::mape_k::sensor::SensorConfig;
+use crate::pipeline::PipelineResult;
+
+use super::{BridgeError, MAX_BRIDGE_SIGNALS};
+
+/// Default noise amplitude for heuristic sensor generation.
+pub(super) const DEFAULT_NOISE_AMPLITUDE: u64 = 2;
+
+/// Default PRNG seed base (each sensor gets `SEED_BASE + index`).
+const SEED_BASE: u64 = 1000;
+
+/// Walk the program's input signal declarations and produce a `SensorConfig`
+/// for each one. Only `Input` signals become sensors (outputs and internals
+/// are driven by the design, not sampled externally).
+///
+/// Heuristic defaults:
+/// - `Bool`: base_value = 1, noise = 0 (deterministic toggle)
+/// - `Unsigned(w)`: base_value = midpoint of [0, 2^w - 1], noise = 2
+/// - `Signed(w)`: base_value = 0, noise = 2
+pub(super) fn extract_sensors(
+    result: &PipelineResult,
+    errors: &mut Vec<BridgeError>,
+) -> Vec<SensorConfig> {
+    let signals = &result.program.module.signals;
+
+    let input_count = count_input_signals(signals);
+    if input_count > MAX_BRIDGE_SIGNALS {
+        errors.push(BridgeError::TooManySignals { count: input_count });
+        return Vec::new();
+    }
+
+    let mut sensors = Vec::with_capacity(input_count);
+    let mut idx: usize = 0;
+
+    for sig in signals.iter().take(MAX_BRIDGE_SIGNALS) {
+        if sig.kind != SignalKind::Input {
+            continue;
+        }
+
+        let (base_value, noise_amplitude) = heuristic_sensor_defaults(&sig.ty.core);
+
+        sensors.push(SensorConfig {
+            name: sig.name.clone(),
+            base_value,
+            noise_amplitude,
+            fault_at_tick: None,
+            fault_value: 0,
+            fault_end_tick: None,
+            seed: SEED_BASE.wrapping_add(idx as u64),
+        });
+
+        idx = idx.saturating_add(1);
+        if idx >= MAX_BRIDGE_SIGNALS {
+            break;
+        }
+    }
+
+    sensors
+}
+
+/// Count input signals in the declarations list (bounded scan).
+pub(super) fn count_input_signals(signals: &[crate::ast::SignalDecl]) -> usize {
+    let mut count: usize = 0;
+    for sig in signals.iter().take(MAX_BRIDGE_SIGNALS.saturating_add(1)) {
+        if sig.kind == SignalKind::Input {
+            count = count.saturating_add(1);
+        }
+    }
+    count
+}
+
+/// Compute heuristic `(base_value, noise_amplitude)` for a given signal type.
+pub(super) fn heuristic_sensor_defaults(ty: &SignalType) -> (u64, u64) {
+    match ty {
+        SignalType::Bool => (1, 0),
+        SignalType::Unsigned(width) => {
+            let max_val = max_unsigned_value(*width);
+            let midpoint = max_val / 2;
+            (midpoint, DEFAULT_NOISE_AMPLITUDE.min(midpoint))
+        }
+        SignalType::Signed(width) => {
+            let half = max_unsigned_value(width.saturating_sub(1));
+            (0, DEFAULT_NOISE_AMPLITUDE.min(half))
+        }
+    }
+}
+
+/// Maximum unsigned value for a given bit-width, clamped to avoid overflow.
+pub(super) fn max_unsigned_value(width: u32) -> u64 {
+    if width == 0 {
+        return 0;
+    }
+    if width >= 64 {
+        return u64::MAX;
+    }
+    (1u64 << width).wrapping_sub(1)
+}

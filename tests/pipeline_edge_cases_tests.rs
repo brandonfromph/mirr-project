@@ -102,7 +102,7 @@ fn pipeline_semantic_error_for_duplicate_signal() {
     };
     let msg = err.to_string();
     assert!(
-        msg.contains("[E201] Duplicate signal name: 'x'."),
+        msg.contains("[E201]") && msg.contains("Duplicate signal name: 'x'."),
         "expected E201 duplicate signal error, got: {msg}"
     );
 }

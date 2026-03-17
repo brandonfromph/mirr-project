@@ -216,6 +216,30 @@ impl WidthDiag {
         self.help = Some(help.into());
         self
     }
+
+    /// Convert this width diagnostic to a [`crate::diagnostic::Diagnostic`]
+    /// for rendering through the central diagnostic engine.
+    pub fn to_diagnostic(&self) -> crate::diagnostic::Diagnostic {
+        let sev = match self.severity {
+            DiagSeverity::Error => crate::diagnostic::Severity::Error,
+            DiagSeverity::Warning => crate::diagnostic::Severity::Warning,
+            DiagSeverity::Info => crate::diagnostic::Severity::Info,
+        };
+        let mut diag = crate::diagnostic::Diagnostic {
+            severity: sev,
+            message: self.message.clone(),
+            code: self.code.clone(),
+            span: self.span,
+            labels: Vec::new(),
+        };
+        if let Some(ref sig) = self.signal_name {
+            diag = diag.with_note(format!("in signal '{}'", sig));
+        }
+        if let Some(ref help) = self.help {
+            diag = diag.with_help(help.clone());
+        }
+        diag
+    }
 }
 
 impl std::fmt::Display for WidthDiag {

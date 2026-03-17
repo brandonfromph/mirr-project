@@ -81,17 +81,17 @@ impl ExprParser {
     /// Parse a complete expression consuming all tokens.
     fn parse_full(&mut self) -> Result<Expr, MirrError> {
         if self.tokens.is_empty() {
-            return Err(MirrError::new("[E170] Empty expression."));
+            return Err(MirrError::parse_error("[E170] Empty expression."));
         }
 
         // Early validation: check for balanced parentheses
         if !self.has_balanced_parens() {
-            return Err(MirrError::new("[E171] Unbalanced parentheses in expression."));
+            return Err(MirrError::parse_error("[E171] Unbalanced parentheses in expression."));
         }
 
         let expr = self.parse_expr(0, 0)?;
         if !self.at_end() {
-            return Err(MirrError::new(format!(
+            return Err(MirrError::parse_error(format!(
                 "[E176] Unexpected token in expression: {:?}",
                 self.peek()
             )));
@@ -125,7 +125,7 @@ impl ExprParser {
     /// Pratt parser: parse expression with given minimum binding power.
     fn parse_expr(&mut self, min_bp: u8, depth: usize) -> Result<Expr, MirrError> {
         if depth > MAX_EXPR_DEPTH {
-            return Err(MirrError::new(format!(
+            return Err(MirrError::parse_error(format!(
                 "[E172] Expression depth exceeds limit of {}.",
                 MAX_EXPR_DEPTH
             )));
@@ -159,14 +159,15 @@ impl ExprParser {
     /// Parse a prefix expression or atom.
     fn parse_prefix(&mut self, depth: usize) -> Result<Expr, MirrError> {
         if depth > MAX_EXPR_DEPTH {
-            return Err(MirrError::new(format!(
+            return Err(MirrError::parse_error(format!(
                 "[E172] Expression depth exceeds limit of {}.",
                 MAX_EXPR_DEPTH
             )));
         }
 
-        let tok =
-            self.advance().ok_or_else(|| MirrError::new("[E173] Unexpected end of expression."))?;
+        let tok = self
+            .advance()
+            .ok_or_else(|| MirrError::parse_error("[E173] Unexpected end of expression."))?;
 
         match tok {
             Token::True => Ok(Expr::Literal(LiteralValue::Bool(true))),
@@ -187,10 +188,10 @@ impl ExprParser {
                 let inner = self.parse_expr(0, depth + 1)?;
                 match self.advance() {
                     Some(Token::RParen) => Ok(inner),
-                    _ => Err(MirrError::new("[E175] Expected closing ')' in expression.")),
+                    _ => Err(MirrError::parse_error("[E175] Expected closing ')' in expression.")),
                 }
             }
-            other => Err(MirrError::new(format!(
+            other => Err(MirrError::parse_error(format!(
                 "[E174] Unexpected token at start of expression: {:?}",
                 other
             ))),

@@ -6,7 +6,7 @@ nav_order: 2
 # MIRR Error Code Reference
 
 > **Status:** Active
-> **Last updated:** 2026-03-10 (FOUNDATION-001 + MEGA-1 + MEGA-3)
+> **Last updated:** 2026-03-17 (MEGA-7: E190–E197, E217–E221, E301–E306, E426–E428)
 
 All MIRR compiler diagnostics carry a bracketed error code in the format `[Ennn]`.
 The prefix classifies the error; the full code maps to a single creation site.
@@ -110,29 +110,27 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E180 | `Integer literal too large: '{str}'.` | `src/lexer/tokenizer.rs` |
 | E181 | `Unexpected character '{c}' in expression.` | `src/lexer/tokenizer.rs` |
 
-## Parse Errors -- MEGA-1 Type Annotations (E170--E183)
+## Parse Errors -- MEGA-1 Type Annotations (E177–E183, E190–E197)
 
-> **Note:** Parser error codes E170--E183 are shared between the expression
-> parser (`src/parser/expr_parser.rs`) and the MEGA-1 type annotation parser
-> (`src/parser/mod.rs`). The context disambiguates: expression errors occur
-> during expression parsing, annotation errors occur during signal declaration
-> parsing.
+> **Note:** E177-E183 are used by both the expression tokenizer/parser and the
+> MEGA-1 type annotation parser (`src/parser/mod.rs`). E190-E197 are exclusive
+> to the MEGA-1 annotation parser and were assigned during MEGA-7.
 
 | Code | Message pattern | Source |
 |------|----------------|--------|
-| E170 | `Duplicate 'linear' qualifier in signal declaration.` | `src/parser/mod.rs` |
-| E172 | `Conflicting effect qualifier: already have {existing}.` | `src/parser/mod.rs` |
-| E173 | `Missing base type after qualifiers.` | `src/parser/mod.rs` |
-| E174 | `Empty/malformed refinement clause.` | `src/parser/mod.rs` |
-| E175 | `Invalid refinement range: lower bound exceeds upper bound.` | `src/parser/mod.rs` |
-| E176 | `Empty clock domain after '@'.` | `src/parser/mod.rs` |
 | E177 | `Invalid clock domain name.` | `src/parser/mod.rs` |
 | E178 | `Empty phantom tag after '#'.` | `src/parser/mod.rs` |
 | E179 | `Invalid phantom tag (must be uppercase identifier).` | `src/parser/mod.rs` |
-| E180 | `Duplicate 'where' clause in signal declaration.` | `src/parser/mod.rs` |
-| E181 | `Duplicate clock domain annotation.` | `src/parser/mod.rs` |
 | E182 | `Duplicate phantom tag annotation.` | `src/parser/mod.rs` |
 | E183 | `Too many tokens / unexpected token in signal declaration.` | `src/parser/mod.rs` |
+| E190 | `Duplicate 'linear' qualifier in signal declaration.` | `src/parser/mod.rs` |
+| E191 | `Conflicting effect qualifier: already have {existing}.` | `src/parser/mod.rs` |
+| E192 | `Missing base type after qualifiers.` | `src/parser/mod.rs` |
+| E193 | `Empty/malformed refinement clause.` | `src/parser/mod.rs` |
+| E194 | `Invalid refinement range: lower bound exceeds upper bound.` | `src/parser/mod.rs` |
+| E195 | `Empty clock domain after '@'.` | `src/parser/mod.rs` |
+| E196 | `Duplicate 'where' clause in signal declaration.` | `src/parser/mod.rs` |
+| E197 | `Duplicate clock domain annotation.` | `src/parser/mod.rs` |
 
 ## Semantic Errors (E2xx)
 
@@ -154,21 +152,25 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E214 | `signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (cross-expansion target) |
 | E215 | `signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (cross-expansion expression) |
 | E216 | `Signal '{sig}' has multiple writers: reflex '{r1}' and reflex '{r2}'.` | `src/validation/semantic.rs` |
+| E217 | `Duplicate pattern definition: '{name}'.` | `src/validation/semantic.rs` |
+| E218 | `Pattern '{name}' has duplicate parameter name: '{param}'.` | `src/validation/semantic.rs` |
+| E219 | `Pattern '{name}' has {N} parameters (max {M}).` | `src/validation/semantic.rs` |
+| E220 | `Pattern '{name}' has empty reflect body.` | `src/validation/semantic.rs` |
+| E221 | `Pattern '{name}' reflect body exceeds max lines.` | `src/validation/semantic.rs` |
 
 **ERR-001 enhancements:** E204, E205, E207, E208, E211 now include "Did you mean '{closest}'?" when a close match exists. E201, E202, E203, E210, E216 now include "First defined at line N." when a span is available.
 
 ## Temporal Errors (E3xx)
 
-> **Note:** Several temporal error conditions below are emitted without unique
-> error codes (shown as `--`). These use the E300 category fallback. Future
-> campaigns should assign unique codes (E301--E3xx) to each distinct message
-> for structured diagnostic rendering.
-
 | Code | Message pattern | Source |
 |------|----------------|--------|
 | E300 | *(category fallback prefix)* | `src/error.rs` |
-| — | `guard '{name}': condition cannot be lowered to hardware -- unsupported form` | `src/temporal/compiler.rs` |
-| — | `guard '{name}': condition cannot be lowered to hardware -- {reason}` | `src/temporal/compiler.rs` |
+| E301 | `Exceeded maximum compile guard depth ({N}).` | `src/temporal/compiler.rs` |
+| E302 | `Condition cannot be lowered to hardware -- {reason}` | `src/temporal/compiler.rs` |
+| E303 | `Internal error — missing sub-guard result.` | `src/temporal/compiler.rs` |
+| E304 | `Compilation exceeded maximum iteration bound ({N}).` | `src/temporal/compiler.rs` |
+| E305 | `Internal error — no compilation result.` | `src/temporal/compiler.rs` |
+| E306 | `Condition cannot be lowered -- {reason}` | `src/temporal/compiler.rs` |
 | — | `JSON serialization failed: {e}` | `src/temporal/emit.rs` |
 
 ## Pattern Errors (E4xx)
@@ -178,12 +180,8 @@ The prefix classifies the error; the full code maps to a single creation site.
 | Code | Message pattern | Source |
 |------|----------------|--------|
 | E400 | `Too many pattern definitions (max {N}).` | `src/parser/module_parser.rs` |
-| — | `Duplicate pattern definition: '{name}'.` | `src/validation/semantic.rs` |
-| — | `Pattern '{name}' has duplicate parameter name: '{param}'.` | `src/validation/semantic.rs` |
-| — | `Pattern '{name}' has {N} parameters (max {M}).` | `src/validation/semantic.rs` |
-| — | `Pattern '{name}' has empty reflect body.` | `src/validation/semantic.rs` |
-| — | `Pattern call references undefined pattern '{name}'.` | `src/expand/mod.rs` |
-| — | `Pattern '{name}' expects {N} arguments, got {M}.` | `src/expand/mod.rs` |
+
+> Pattern validation errors E217–E221 are in the Semantic Errors table above.
 
 ### Parse-level (E401–E425)
 
@@ -214,6 +212,9 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E423 | `Pattern call '{name}' missing closing ')'.` | `src/parser/pattern_parser.rs` |
 | E424 | `Pattern call '{name}' has too many arguments (max {N}).` | `src/parser/pattern_parser.rs` |
 | E425 | `Pattern call '{name}' has empty argument.` | `src/parser/pattern_parser.rs` |
+| E426 | `Pattern '{name}' parameter '{param}' has kind 'pattern' but argument is not a pattern reference.` | `src/expand/substitution.rs` |
+| E427 | `Pattern '{name}' parameter '{param}' does not accept a pattern reference.` | `src/expand/substitution.rs` |
+| E428 | `Circular pattern reference detected: {cycle}.` | `src/expand/cycles.rs` |
 
 ## Width Inference Errors (E5xx)
 

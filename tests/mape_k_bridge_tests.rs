@@ -61,6 +61,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         retiming_stats: None,
         totality_result: None,
         symbolic_result: None,
+        mape_k_rtl: None,
     }
 }
 
@@ -81,6 +82,7 @@ fn parse_to_pipeline(source: &str) -> PipelineResult {
         retiming_stats: None,
         totality_result: None,
         symbolic_result: None,
+        mape_k_rtl: None,
     }
 }
 

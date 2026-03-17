@@ -177,6 +177,7 @@ fn prev_in_reflex_result() -> PipelineResult {
         retiming_stats: None,
         totality_result: None,
         symbolic_result: None,
+        mape_k_rtl: None,
     }
 }
 

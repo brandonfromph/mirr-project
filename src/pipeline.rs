@@ -47,6 +47,8 @@ pub struct PipelineConfig {
     pub totality: bool,
     /// Run MEGA-5 symbolic analysis after type checking.
     pub symbolic: bool,
+    /// Emit MAPE-K RTL (SystemVerilog) from autonomic simulation results.
+    pub emit_mape_k_rtl: bool,
 }
 
 impl Default for PipelineConfig {
@@ -66,6 +68,7 @@ impl Default for PipelineConfig {
             retiming: false,
             totality: false,
             symbolic: false,
+            emit_mape_k_rtl: false,
         }
     }
 }
@@ -98,6 +101,8 @@ pub struct PipelineResult {
     pub totality_result: Option<crate::totality::TotalityResult>,
     /// MEGA-5 symbolic analysis result (None if stage was skipped).
     pub symbolic_result: Option<crate::symbolic::SymbolicResult>,
+    /// MAPE-K RTL emission output (None if not requested).
+    pub mape_k_rtl: Option<String>,
 }
 
 impl PipelineResult {
@@ -214,6 +219,7 @@ pub fn run_pipeline(
         retiming_stats,
         totality_result: None,
         symbolic_result,
+        mape_k_rtl: None,
     };
 
     // Stage 6: R-SPU emission (optional, requires temporal).
@@ -261,6 +267,14 @@ pub fn run_pipeline(
                 // Errors are not fatal; the pipeline continues.
             }
         }
+    }
+
+    // Stage 9: MAPE-K RTL emission (optional, requires mape_k result).
+    if config.emit_mape_k_rtl {
+        result.mape_k_rtl =
+            Some(crate::emit::mape_k_rtl::emit_mape_k_rtl(&result).map_err(|e| {
+                PipelineErrors { errors: vec![crate::error::MirrError::parse_error(e)] }
+            })?);
     }
 
     Ok(result)

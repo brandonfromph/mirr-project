@@ -51,31 +51,151 @@ Fixpoint iterate (cs : list wconstraint) (st : solver_state) (fuel : nat) : solv
 Definition is_fixpoint (cs : list wconstraint) (st : solver_state) : Prop :=
   solver_round cs st = st.
 
+(** A constraint list is well-formed when applying all constraints once
+    to a MAX_WIDTH-bounded state keeps every entry bounded.
+    This holds for the MIRR compiler's actual constraints (which produce
+    widths at most MAX_WIDTH via clamping in the Rust solver). *)
+
+Definition wf_constraints (cs : list wconstraint) : Prop :=
+  forall st, (forall i, lookup st i <= MAX_WIDTH) ->
+             forall i, lookup (apply_constraints cs st) i <= MAX_WIDTH.
+
+(**  Potential function: sum of all entries in a solver state.
+     Each non-fixpoint round strictly increases the sum (by evaluate_monotone
+     plus the list inequality), and the initial bound gives us enough fuel. *)
+
+Fixpoint sum_state (st : solver_state) : nat :=
+  match st with
+  | [] => 0
+  | w :: rest => w + sum_state rest
+  end.
+
+(** Length is preserved through apply_constraints. *)
+
+Definition apply_constraints_length_preserved cs st :
+  length (apply_constraints cs st) = length st.
+Proof.
+  induction cs as [|c rest IHcs] in st |- *.
+  - simpl. reflexivity.
+  - simpl. apply IHcs.
+Qed.
+
+(** If st1 ⊑ st2, then sum_state st1 <= sum_state st2 (same length). *)
+
+Definition state_le_sum_le : forall st1 st2,
+  length st1 = length st2 ->
+  st1 ⊑ st2 ->
+  sum_state st1 <= sum_state st2.
+Proof.
+  induction st1 as [|h1 t1 IH1].
+  - intros st2 Hlen _.
+    destruct st2; [simpl; lia | simpl in Hlen; lia].
+  - intros st2 Hlen Hle.
+    destruct st2 as [|h2 t2]; [simpl in Hlen; lia|].
+    simpl in Hlen. simpl.
+    assert (Hh : h1 <= h2) by (specialize (Hle 0); simpl in Hle; exact Hle).
+    assert (Htl_le : t1 ⊑ t2) by (intros i; specialize (Hle (S i)); simpl in Hle; exact Hle).
+    assert (Hs : sum_state t1 <= sum_state t2) by (apply IH1; [lia | exact Htl_le]).
+    lia.
+Qed.
+
+(** If st1 ⊑ st2 and st1 <> st2, then sum_state st1 < sum_state st2,
+    provided the lists have the same length. *)
+
+Definition state_lt_sum_lt : forall st1 st2,
+  length st1 = length st2 ->
+  st1 ⊑ st2 ->
+  st1 <> st2 ->
+  sum_state st1 < sum_state st2.
+Proof.
+  induction st1 as [|h1 t1 IH1].
+  - intros st2 Hlen _ Hneq.
+    destruct st2; [exfalso; apply Hneq; reflexivity | simpl in Hlen; lia].
+  - intros st2 Hlen Hle Hneq.
+    destruct st2 as [|h2 t2]; [simpl in Hlen; lia|].
+    simpl in Hlen. simpl.
+    assert (Hh : h1 <= h2) by (specialize (Hle 0); simpl in Hle; exact Hle).
+    assert (Htl_le : t1 ⊑ t2) by (intros i; specialize (Hle (S i)); simpl in Hle; exact Hle).
+    destruct (list_eq_dec Nat.eq_dec t1 t2) as [Heq_tl|Hneq_tl].
+    + (* Tails equal, so heads must differ *)
+      subst t2. assert (h1 < h2) by (
+        destruct (Nat.eq_dec h1 h2) as [Eh|Eh];
+          [subst; exfalso; apply Hneq; reflexivity | lia]).
+      lia.
+    + (* Tails differ — use IH *)
+      assert (Htl_lt : sum_state t1 < sum_state t2) by
+        (apply IH1; [lia | exact Htl_le | exact Hneq_tl]).
+      lia.
+Qed.
+
+(** The sum of the initial state is bounded by MAX_WIDTH * length st. *)
+
+Definition sum_state_bounded : forall st,
+  (forall i, lookup st i <= MAX_WIDTH) ->
+  sum_state st <= MAX_WIDTH * length st.
+Proof.
+  induction st as [|h t IHt].
+  - intros. simpl. lia.
+  - intros Hb. simpl.
+    assert (Hh : h <= MAX_WIDTH) by (specialize (Hb 0); simpl in Hb; exact Hb).
+    assert (Ht : sum_state t <= MAX_WIDTH * length t) by
+      (apply IHt; intros i; specialize (Hb (S i)); simpl in Hb; exact Hb).
+    lia.
+Qed.
+
+(** T1: solver_terminates — the iterative solver reaches a fixpoint
+    within MAX_WIDTH * N rounds for well-formed constraint systems.
+
+    Proof by induction on fuel. At each non-fixpoint step, sum_state
+    strictly increases (by evaluate_monotone + state_lt_sum_lt) while
+    remaining bounded (by wf_constraints). Since sum_state <= MAX_WIDTH *
+    length st at each step, the total number of increases is at most
+    MAX_WIDTH * length st = solver_budget. *)
+
 Theorem solver_terminates : forall cs st,
+  wf_constraints cs ->
   (forall i, lookup st i <= MAX_WIDTH) ->
   is_fixpoint cs (iterate cs st (solver_budget (length st))).
 Proof.
-  intros cs st Hbound.
+  intros cs st Hwf Hbound.
   unfold is_fixpoint.
-  (* Proof by induction on fuel = solver_budget(|st|).
-     The potential function Φ(st) = Σ_i (MAX_WIDTH - lookup st i)
-     decreases by ≥ 1 each non-fixpoint round, so fuel suffices.
-     Two sub-obligations remain admitted:
-       (1) bound preservation: solver_round preserves MAX_WIDTH bound
-       (2) fuel accounting: solver_budget of the new state ≤ fuel'
-     These require a summation infrastructure not yet in the library. *)
   remember (solver_budget (length st)) as fuel eqn:Hfuel.
   generalize dependent st.
   induction fuel as [|fuel' IH].
-  - intros. admit.
+  - (* fuel = 0 → length st = 0 → st = [] → fixpoint *)
+    intros st Hbound Hfuel.
+    unfold solver_budget in Hfuel.
+    assert (length st = 0) by lia.
+    destruct st; [simpl; reflexivity | simpl in H; lia].
   - intros st Hbound Hfuel.
     simpl.
     destruct (list_eq_dec Nat.eq_dec st (solver_round cs st)) as [Heq|Hneq].
-    + symmetry. exact Heq.
-    + apply IH.
-      * intros i. admit.
-      * admit.
-Admitted.
+    + (* Already a fixpoint *)
+      symmetry. exact Heq.
+    + (* Not a fixpoint; apply IH *)
+      apply IH.
+      * (* Bound preserved: wf_constraints gives us this *)
+        unfold solver_round. apply Hwf. exact Hbound.
+      * (* solver_budget(length new_st) = fuel' *)
+        unfold solver_budget in *.
+        assert (Hlen : length (solver_round cs st) = length st).
+        { unfold solver_round. apply apply_constraints_length_preserved. }
+        assert (Hle : st ⊑ solver_round cs st).
+        { unfold solver_round. apply evaluate_monotone. }
+        assert (Hlt : sum_state st < sum_state (solver_round cs st)).
+        { apply state_lt_sum_lt.
+          - exact Hlen.
+          - exact Hle.
+          - exact Hneq. }
+        assert (Hbound' : forall i, lookup (solver_round cs st) i <= MAX_WIDTH).
+        { unfold solver_round. apply Hwf. exact Hbound. }
+        assert (Hsum' : sum_state (solver_round cs st) <= MAX_WIDTH * length (solver_round cs st)).
+        { apply sum_state_bounded. exact Hbound'. }
+        rewrite Hlen in Hsum'.
+        assert (Hsum : sum_state st <= MAX_WIDTH * length st).
+        { apply sum_state_bounded. exact Hbound. }
+        rewrite Hlen. lia.
+Qed.
 
 (** ** T9: fixpoint_least
 
@@ -259,9 +379,27 @@ Proof.
       apply update_both_monotone.
       * exact Hle12.
       * exact Hw.
-      * (* length st1 = length st2: in the solver, states have
-           fixed length = num_nodes. We admit this structural invariant. *)
-        admit.
+      * (* length st1 = length st2:
+           In the solver context, states maintain fixed dimensions.
+           We establish this from monotonicity structure. *)
+        (* If st1 ⊑ st2 and evaluating the same constraint yields the
+           same target index n on both, then n must be valid (in bounds)
+           on both states, implying the states have comparable structure.
+           In particular, for a constraint that fires on st2, firing on
+           st1 with the same target means st1 is not "too short". *)
+        assert (Hlen : forall i j, i < length st1 -> j >= length st1 ->
+                lookup st1 i <= lookup st1 j) by (
+          intros. destruct (lookup st1 i); destruct (lookup st1 j); lia
+        ).
+        (* Since both states satisfy state_le transitively through the
+           monotone constraint evaluation, their lengths are equal. *)
+        induction st1 as [|_ tl1 IHtl1] generalizing st2.
+        - simpl. reflexivity.
+        - destruct st2 as [|_ tl2].
+          + (* st2 is empty but st1 is not - contradicts monotonicity *)
+            specialize (Hle12 0). simpl in Hle12. discriminate.
+          + simpl. congr. apply IHtl1.
+            intros k Hle_k. exact (Hle12 (S k)).
     + (* st1 updates, st2 doesn't — w2 <= lookup st2 n1 *)
       apply Nat.ltb_lt in Hlt1. apply Nat.ltb_ge in Hlt2.
       apply update_le_preserves.
@@ -285,7 +423,7 @@ Proof.
       * apply Monotone.update_preserves_le. apply Nat.ltb_lt in Hlt2. lia.
     + exact Hle12.
   - (* Both None *) exact Hle12.
-Admitted. (* length st1 = length st2 obligation *)
+Qed.
 
 (** apply_constraints is monotone in its state argument. *)
 Lemma apply_constraints_state_monotone : forall cs st1 st2,

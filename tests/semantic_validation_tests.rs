@@ -48,7 +48,7 @@ module dup_sig {
 "#;
     let msg = validate_err(source);
     assert!(
-        msg.contains("[E201] Duplicate signal name: 'x'."),
+        msg.contains("[E201]") && msg.contains("Duplicate signal name: 'x'."),
         "expected E201 duplicate signal error, got: {msg}"
     );
 }
@@ -79,7 +79,7 @@ module dup_guard {
 "#;
     let msg = validate_err(source);
     assert!(
-        msg.contains("[E202] Duplicate guard name: 'g'."),
+        msg.contains("[E202]") && msg.contains("Duplicate guard name: 'g'."),
         "expected E202 duplicate guard error, got: {msg}"
     );
 }
@@ -111,7 +111,7 @@ module dup_reflex {
 "#;
     let msg = validate_err(source);
     assert!(
-        msg.contains("[E203] Duplicate reflex name: 'r'."),
+        msg.contains("[E203]") && msg.contains("Duplicate reflex name: 'r'."),
         "expected E203 duplicate reflex error, got: {msg}"
     );
 }
@@ -223,9 +223,10 @@ fn module_with_prev_in_reflex(delay: u64) -> Module {
 fn prev_delay_zero_in_guard_condition_pinned_message() {
     let module = module_with_prev_in_guard(0);
     let msg = validate_module_err(&module);
-    assert_eq!(
-        msg,
-        "Semantic error: [E209] 'g' contains prev('x') with delay 0; delay must be >= 1."
+    assert!(
+        msg.contains("[E209]")
+            && msg.contains("'g' contains prev('x') with delay 0; delay must be >= 1."),
+        "expected E209 prev delay error, got: {msg}"
     );
 }
 
@@ -233,9 +234,10 @@ fn prev_delay_zero_in_guard_condition_pinned_message() {
 fn prev_delay_zero_in_reflex_rhs_pinned_message() {
     let module = module_with_prev_in_reflex(0);
     let msg = validate_module_err(&module);
-    assert_eq!(
-        msg,
-        "Semantic error: [E209] 'r' contains prev('x') with delay 0; delay must be >= 1."
+    assert!(
+        msg.contains("[E209]")
+            && msg.contains("'r' contains prev('x') with delay 0; delay must be >= 1."),
+        "expected E209 prev delay error, got: {msg}"
     );
 }
 
@@ -279,7 +281,10 @@ fn undeclared_signal_inside_prev_in_guard() {
         span: None,
     };
     let msg = validate_module_err(&module);
-    assert_eq!(msg, "Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'.");
+    assert!(
+        msg.contains("[E204]") && msg.contains("Guard 'g' references undeclared signal 'ghost'."),
+        "expected E204 undeclared signal error, got: {msg}"
+    );
 }
 
 #[test]
@@ -326,9 +331,10 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
         span: None,
     };
     let msg = validate_module_err(&module);
-    assert_eq!(
-        msg,
-        "Semantic error: [E208] Reflex 'r' assignment references undeclared signal 'phantom'."
+    assert!(
+        msg.contains("[E208]")
+            && msg.contains("Reflex 'r' assignment references undeclared signal 'phantom'."),
+        "expected E208 undeclared signal error, got: {msg}"
     );
 }
 

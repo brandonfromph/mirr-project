@@ -489,7 +489,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
         }
         if !names.insert(&pat.name) {
             errors.push(MirrError::PatternError {
-                message: format!("Duplicate pattern definition: '{}'.", pat.name),
+                message: format!("[E217] Duplicate pattern definition: '{}'.", pat.name),
                 span: pat.span,
             });
             continue;
@@ -501,7 +501,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
             if !param_names.insert(&p.name) {
                 errors.push(MirrError::PatternError {
                     message: format!(
-                        "Pattern '{}' has duplicate parameter name: '{}'.",
+                        "[E218] Pattern '{}' has duplicate parameter name: '{}'.",
                         pat.name, p.name
                     ),
                     span: pat.span,
@@ -512,7 +512,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
         if pat.params.len() > MAX_PARAMS {
             errors.push(MirrError::PatternError {
                 message: format!(
-                    "Pattern '{}' has {} parameters (max {MAX_PARAMS}).",
+                    "[E219] Pattern '{}' has {} parameters (max {MAX_PARAMS}).",
                     pat.name,
                     pat.params.len()
                 ),
@@ -522,7 +522,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
 
         if pat.body.raw_lines.is_empty() {
             errors.push(MirrError::PatternError {
-                message: format!("Pattern '{}' has empty reflect body.", pat.name),
+                message: format!("[E220] Pattern '{}' has empty reflect body.", pat.name),
                 span: pat.span,
             });
         }
@@ -530,7 +530,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
         if pat.body.raw_lines.len() > MAX_REFLECT_LINES {
             errors.push(MirrError::PatternError {
                 message: format!(
-                    "Pattern '{}' reflect body has {} lines (max {MAX_REFLECT_LINES}).",
+                    "[E221] Pattern '{}' reflect body has {} lines (max {MAX_REFLECT_LINES}).",
                     pat.name,
                     pat.body.raw_lines.len()
                 ),

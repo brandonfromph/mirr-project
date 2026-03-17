@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn error_without_span_maps_to_zero_range() {
-        let err = MirrError::new("test error");
+        let err = MirrError::parse_error("test error");
         let diags = mirr_error_to_diagnostics(&err);
         assert_eq!(diags.len(), 1);
         let range = &diags[0]["range"];
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn error_code_none_when_absent() {
-        let err = MirrError::new("no code here");
+        let err = MirrError::parse_error("no code here");
         // ParseError falls back to E100 via MirrError::error_code().
         assert_eq!(error_code(&err), Some("E100".to_string()));
     }

@@ -1043,14 +1043,14 @@ fn depth_limit_exceeded_pinned_message() {
 #[test]
 fn internal_signal_scoping_pinned_message_format() {
     let expected = "is internal to pattern";
-    let source_code = include_str!("../src/expand/mod.rs");
+    let source_code = include_str!("../src/expand/scoping.rs");
     assert!(
         source_code.contains(expected),
-        "expand/mod.rs must contain the internal signal scoping message"
+        "expand/scoping.rs must contain the internal signal scoping message"
     );
     assert!(
         source_code.contains("and cannot be referenced externally"),
-        "expand/mod.rs must contain the full scoping message"
+        "expand/scoping.rs must contain the full scoping message"
     );
 }
 
@@ -1099,10 +1099,10 @@ module m {
 
 #[test]
 fn cross_expansion_internal_refs_checked() {
-    let source_code = include_str!("../src/expand/mod.rs");
+    let source_code = include_str!("../src/expand/scoping.rs");
     assert!(
         source_code.contains("check_expr_cross_expansion"),
-        "expand/mod.rs must implement cross-expansion checking"
+        "expand/scoping.rs must implement cross-expansion checking"
     );
 }
 
