@@ -128,12 +128,12 @@ pub(super) fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, Stri
                 stack.push(object);
             }
             Expr::ArrayLiteral(elems) => {
-                for e in elems {
+                for e in elems.iter_mut() {
                     stack.push(e);
                 }
             }
             Expr::StructLiteral { fields, .. } => {
-                for (_, v) in fields {
+                for (_, v) in fields.iter_mut() {
                     stack.push(v);
                 }
             }

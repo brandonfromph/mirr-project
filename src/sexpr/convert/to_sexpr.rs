@@ -123,9 +123,15 @@ fn convert_signal_type(ty: SignalType) -> SExpr {
             SExpr::int(length),
         ]),
         SignalType::Struct { name, fields } => {
-            let mut items = vec![SExpr::sym("struct"), SExpr::sym(&name)];
-            for (fname, ftype) in fields {
-                items.push(SExpr::list(vec![SExpr::sym(&fname), convert_signal_type(ftype)]));
+            let mut items = vec![SExpr::sym("struct"), SExpr::str_val(&name)];
+            let mut i = 0;
+            while i < fields.len() && i < crate::ast::types::MAX_STRUCT_FIELDS {
+                let (ref fname, ref ftype) = fields[i];
+                items.push(SExpr::list(vec![
+                    SExpr::str_val(fname),
+                    convert_signal_type(ftype.clone()),
+                ]));
+                i += 1;
             }
             SExpr::list(items)
         }
@@ -134,7 +140,9 @@ fn convert_signal_type(ty: SignalType) -> SExpr {
             SExpr::int(total_bits as u64),
             SExpr::int(frac_bits as u64),
         ]),
-        SignalType::Bundle(name) => SExpr::list(vec![SExpr::sym("interface"), SExpr::sym(&name)]),
+        SignalType::Bundle(name) => {
+            SExpr::list(vec![SExpr::sym("interface"), SExpr::str_val(&name)])
+        }
     }
 }
 
@@ -268,6 +276,12 @@ enum ConvertWork<'a> {
     BuildUnary(&'static str),
     /// Compose a binary S-expression from two results.
     BuildBinary(&'static str),
+    /// Compose `(field-access <obj> <field>)` — one result + stored field name.
+    BuildFieldAccess(&'a str),
+    /// Compose `(array-literal <e0> <e1> ...)` from `count` results.
+    BuildArrayLiteral(usize),
+    /// Compose `(struct-literal <name> (<f0> <v0>) ...)` from `count` results + stored metadata.
+    BuildStructLiteral { name: &'a str, field_names: &'a [(String, Expr)], count: usize },
 }
 
 fn convert_expr(expr: &Expr) -> SExpr {
@@ -317,30 +331,31 @@ fn convert_expr(expr: &Expr) -> SExpr {
                     work_stack.push(ConvertWork::Process(array));
                 }
                 Expr::FieldAccess { object, field } => {
-                    work_stack.push(ConvertWork::BuildUnary("field-access"));
-                    // We push a synthetic step: first process the object,
-                    // then BuildUnary will wrap it. But we also need to
-                    // include the field name. Use a list construction instead.
-                    let obj_sexpr = convert_expr(object);
-                    result_stack.push(SExpr::list(vec![
-                        SExpr::sym("field-access"),
-                        obj_sexpr,
-                        SExpr::sym(field),
-                    ]));
+                    work_stack.push(ConvertWork::BuildFieldAccess(field));
+                    work_stack.push(ConvertWork::Process(object));
                 }
                 Expr::ArrayLiteral(elems) => {
-                    let mut items = vec![SExpr::sym("array-literal")];
-                    for elem in elems {
-                        items.push(convert_expr(elem));
+                    let count = elems.len().min(MAX_CONVERT_DEPTH);
+                    work_stack.push(ConvertWork::BuildArrayLiteral(count));
+                    // Push in reverse so they are processed left-to-right.
+                    let mut i = count;
+                    while i > 0 {
+                        i -= 1;
+                        work_stack.push(ConvertWork::Process(&elems[i]));
                     }
-                    result_stack.push(SExpr::list(items));
                 }
                 Expr::StructLiteral { name, fields } => {
-                    let mut items = vec![SExpr::sym("struct-literal"), SExpr::sym(name)];
-                    for (fname, fval) in fields {
-                        items.push(SExpr::list(vec![SExpr::sym(fname), convert_expr(fval)]));
+                    let count = fields.len().min(MAX_CONVERT_DEPTH);
+                    work_stack.push(ConvertWork::BuildStructLiteral {
+                        name,
+                        field_names: fields,
+                        count,
+                    });
+                    let mut i = count;
+                    while i > 0 {
+                        i -= 1;
+                        work_stack.push(ConvertWork::Process(&fields[i].1));
                     }
-                    result_stack.push(SExpr::list(items));
                 }
             },
             ConvertWork::BuildUnary(op_sym) => {
@@ -351,6 +366,45 @@ fn convert_expr(expr: &Expr) -> SExpr {
                 let right = result_stack.pop().unwrap_or(SExpr::Bool(false));
                 let left = result_stack.pop().unwrap_or(SExpr::Bool(false));
                 result_stack.push(SExpr::list(vec![SExpr::sym(op_sym), left, right]));
+            }
+            ConvertWork::BuildFieldAccess(field) => {
+                let obj = result_stack.pop().unwrap_or(SExpr::Bool(false));
+                result_stack.push(SExpr::list(vec![
+                    SExpr::sym("field-access"),
+                    obj,
+                    SExpr::str_val(field),
+                ]));
+            }
+            ConvertWork::BuildArrayLiteral(count) => {
+                let mut items = vec![SExpr::sym("array-literal")];
+                let mut i = 0;
+                while i < count {
+                    items.push(result_stack.pop().unwrap_or(SExpr::Bool(false)));
+                    i += 1;
+                }
+                // Results were popped in reverse order; reverse back.
+                items[1..].reverse();
+                result_stack.push(SExpr::list(items));
+            }
+            ConvertWork::BuildStructLiteral { name, field_names, count } => {
+                let mut items = vec![SExpr::sym("struct-literal"), SExpr::str_val(name)];
+                // Collect results (popped in reverse).
+                let mut vals = Vec::with_capacity(count);
+                let mut i = 0;
+                while i < count {
+                    vals.push(result_stack.pop().unwrap_or(SExpr::Bool(false)));
+                    i += 1;
+                }
+                vals.reverse();
+                let mut j = 0;
+                while j < count && j < field_names.len() {
+                    items.push(SExpr::list(vec![
+                        SExpr::str_val(&field_names[j].0),
+                        vals[j].clone(),
+                    ]));
+                    j += 1;
+                }
+                result_stack.push(SExpr::list(items));
             }
         }
     }

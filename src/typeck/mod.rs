@@ -260,7 +260,18 @@ fn infer_expr_type(
                 };
                 match op {
                     // T11/T12: Not works on Bool, Unsigned, and Signed.
-                    UnaryOp::Not => operand_ty.clone(),
+                    UnaryOp::Not => {
+                        if operand_ty.is_composite() {
+                            return Err(MirrError::TypeError {
+                                message: format!(
+                                    "[E226] Operator '!' cannot be applied to composite type '{}'.",
+                                    operand_ty
+                                ),
+                                span: context_span,
+                            });
+                        }
+                        operand_ty.clone()
+                    }
                     // Negate: Unsigned(N) → Signed(N+1), Signed(N) → Signed(N),
                     // Bool → error.
                     UnaryOp::Negate => infer_negate_type(operand_ty, context_span)?,
@@ -358,8 +369,17 @@ fn infer_binary_type(
             Ok(SignalType::Bool)
         }
 
-        // T10: XOR requires matching types.
+        // T10: XOR requires matching types. Reject composites.
         BinaryOp::Xor => {
+            if left.is_composite() || right.is_composite() {
+                return Err(MirrError::TypeError {
+                    message: format!(
+                        "[E226] Operator '^' cannot be applied to composite type '{}' and '{}'.",
+                        left, right
+                    ),
+                    span: context_span,
+                });
+            }
             if left != right {
                 // Allow Bool ↔ Unsigned(1) for xor.
                 if !types_compatible(left, right) {
@@ -377,6 +397,18 @@ fn infer_binary_type(
 
         // T5/T7: Ordering comparisons.
         BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
+            // Reject composites for ordering.
+            if left.is_composite() || right.is_composite() {
+                return Err(MirrError::TypeError {
+                    message: format!(
+                        "[E226] Ordering operator '{}' cannot compare composite types '{}' and '{}'.",
+                        op_symbol(op),
+                        left,
+                        right
+                    ),
+                    span: context_span,
+                });
+            }
             // T7: Ordering on Bool is an error.
             if left == &SignalType::Bool || right == &SignalType::Bool {
                 return Err(MirrError::TypeError {
@@ -406,6 +438,18 @@ fn infer_binary_type(
 
         // T6: Equality comparisons.
         BinaryOp::Eq | BinaryOp::Ne => {
+            // Reject composites for equality.
+            if left.is_composite() || right.is_composite() {
+                return Err(MirrError::TypeError {
+                    message: format!(
+                        "[E226] Equality operator '{}' cannot compare composite types '{}' and '{}'.",
+                        op_symbol(op),
+                        left,
+                        right
+                    ),
+                    span: context_span,
+                });
+            }
             // Same category required (both bool, both unsigned, or both signed).
             let same_category = matches!(
                 (left, right),

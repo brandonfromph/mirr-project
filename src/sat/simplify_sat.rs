@@ -219,6 +219,48 @@ fn exprs_structurally_equal(a: &Expr, b: &Expr) -> bool {
                 stack.push((a_l, b_l));
                 stack.push((a_r, b_r));
             }
+            (
+                Expr::ArrayIndex { array: a_arr, index: a_idx },
+                Expr::ArrayIndex { array: b_arr, index: b_idx },
+            ) => {
+                stack.push((a_arr, b_arr));
+                stack.push((a_idx, b_idx));
+            }
+            (
+                Expr::FieldAccess { object: a_obj, field: a_f },
+                Expr::FieldAccess { object: b_obj, field: b_f },
+            ) => {
+                if a_f != b_f {
+                    return false;
+                }
+                stack.push((a_obj, b_obj));
+            }
+            (Expr::ArrayLiteral(a_elems), Expr::ArrayLiteral(b_elems)) => {
+                if a_elems.len() != b_elems.len() {
+                    return false;
+                }
+                let mut i = 0;
+                while i < a_elems.len() && i < MAX_ITERATIONS {
+                    stack.push((&a_elems[i], &b_elems[i]));
+                    i += 1;
+                }
+            }
+            (
+                Expr::StructLiteral { name: a_name, fields: a_fields },
+                Expr::StructLiteral { name: b_name, fields: b_fields },
+            ) => {
+                if a_name != b_name || a_fields.len() != b_fields.len() {
+                    return false;
+                }
+                let mut i = 0;
+                while i < a_fields.len() && i < MAX_ITERATIONS {
+                    if a_fields[i].0 != b_fields[i].0 {
+                        return false;
+                    }
+                    stack.push((&a_fields[i].1, &b_fields[i].1));
+                    i += 1;
+                }
+            }
             _ => return false,
         }
     }

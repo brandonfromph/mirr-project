@@ -90,7 +90,26 @@ fn expr_contains_mul_bounded(expr: &Expr, count: &mut usize) -> bool {
             expr_contains_mul_bounded(array, count) || expr_contains_mul_bounded(index, count)
         }
         Expr::FieldAccess { object, .. } => expr_contains_mul_bounded(object, count),
-        Expr::ArrayLiteral(_) | Expr::StructLiteral { .. } => false,
+        Expr::ArrayLiteral(elems) => {
+            let mut j = 0;
+            while j < elems.len() && j < MAX_EXPR_NODES {
+                if expr_contains_mul_bounded(&elems[j], count) {
+                    return true;
+                }
+                j += 1;
+            }
+            false
+        }
+        Expr::StructLiteral { fields, .. } => {
+            let mut j = 0;
+            while j < fields.len() && j < MAX_EXPR_NODES {
+                if expr_contains_mul_bounded(&fields[j].1, count) {
+                    return true;
+                }
+                j += 1;
+            }
+            false
+        }
     }
 }
 

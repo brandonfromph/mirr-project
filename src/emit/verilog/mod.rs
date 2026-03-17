@@ -227,7 +227,7 @@ fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
                 .take(MAX_EXPR_NODES)
                 .map(|(f, v)| format!("{}: {}", f, emit_expr_str(v, iterations)))
                 .collect();
-            format!("{} {{ {} }}", name, parts.join(", "))
+            format!("{}'{{{}}}", name, parts.join(", "))
         }
     }
 }

@@ -102,11 +102,14 @@ impl SignalType {
         match self {
             SignalType::Bool => 1,
             SignalType::Unsigned(w) | SignalType::Signed(w) => *w,
-            SignalType::Array { element, length } => element.width().saturating_mul(*length as u32),
+            SignalType::Array { element, length } => {
+                let len32 = u32::try_from(*length).unwrap_or(u32::MAX);
+                element.width().saturating_mul(len32)
+            }
             SignalType::Struct { fields, .. } => {
                 let mut total: u32 = 0;
                 let mut i = 0;
-                while i < fields.len() {
+                while i < fields.len() && i < MAX_STRUCT_FIELDS {
                     total = total.saturating_add(fields[i].1.width());
                     i += 1;
                 }

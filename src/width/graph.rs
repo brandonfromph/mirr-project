@@ -140,7 +140,6 @@ fn collect_refs_with_ops(expr: &Expr) -> Vec<RefWithOps> {
                     stack.push((&fields[i].1, ops.clone()));
                     i += 1;
                 }
-                let _ = ops;
             }
         }
     }

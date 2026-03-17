@@ -65,13 +65,17 @@ fn count_nodes(expr: &Expr) -> usize {
                 stack.push(object);
             }
             Expr::ArrayLiteral(elems) => {
-                for e in elems {
-                    stack.push(e);
+                let mut j = 0;
+                while j < elems.len() && j < MAX_SIMPLIFY_DEPTH {
+                    stack.push(&elems[j]);
+                    j += 1;
                 }
             }
             Expr::StructLiteral { fields, .. } => {
-                for (_, v) in fields {
-                    stack.push(v);
+                let mut j = 0;
+                while j < fields.len() && j < MAX_SIMPLIFY_DEPTH {
+                    stack.push(&fields[j].1);
+                    j += 1;
                 }
             }
         }
@@ -242,6 +246,15 @@ enum WorkItem {
     /// Pop children from result stack, apply rules, push result.
     CombineUnary(UnaryOp),
     CombineBinary(BinaryOp),
+    /// Reassemble composite expressions from simplified children.
+    CombineArrayIndex,
+    CombineFieldAccess(String),
+    CombineArrayLiteral(usize),
+    CombineStructLiteral {
+        name: String,
+        field_names: Vec<String>,
+        count: usize,
+    },
 }
 
 /// One bottom-up simplification pass. Returns `(simplified, rules_fired)`.
@@ -278,13 +291,35 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
                     work.push(WorkItem::Descend(*right));
                     work.push(WorkItem::Descend(*left));
                 }
-                // Composite data variants — no simplification rules yet,
-                // push unchanged to results.
-                Expr::ArrayIndex { .. }
-                | Expr::FieldAccess { .. }
-                | Expr::ArrayLiteral(_)
-                | Expr::StructLiteral { .. } => {
-                    results.push(e);
+                // Composite data variants — descend into sub-expressions.
+                Expr::ArrayIndex { array, index } => {
+                    work.push(WorkItem::CombineArrayIndex);
+                    work.push(WorkItem::Descend(*index));
+                    work.push(WorkItem::Descend(*array));
+                }
+                Expr::FieldAccess { object, field } => {
+                    work.push(WorkItem::CombineFieldAccess(field));
+                    work.push(WorkItem::Descend(*object));
+                }
+                Expr::ArrayLiteral(elems) => {
+                    let count = elems.len().min(MAX_SIMPLIFY_DEPTH);
+                    work.push(WorkItem::CombineArrayLiteral(count));
+                    let mut j = count;
+                    while j > 0 {
+                        j -= 1;
+                        work.push(WorkItem::Descend(elems[j].clone()));
+                    }
+                }
+                Expr::StructLiteral { name, fields } => {
+                    let count = fields.len().min(MAX_SIMPLIFY_DEPTH);
+                    let fnames: Vec<String> =
+                        fields.iter().take(count).map(|(n, _)| n.clone()).collect();
+                    work.push(WorkItem::CombineStructLiteral { name, field_names: fnames, count });
+                    let mut j = count;
+                    while j > 0 {
+                        j -= 1;
+                        work.push(WorkItem::Descend(fields[j].1.clone()));
+                    }
                 }
             },
             WorkItem::CombineUnary(op) => {
@@ -304,6 +339,36 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
                     rules_fired += 1;
                 }
                 results.push(result);
+            }
+            WorkItem::CombineArrayIndex => {
+                let index = results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false)));
+                let array = results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false)));
+                results.push(Expr::ArrayIndex { array: Box::new(array), index: Box::new(index) });
+            }
+            WorkItem::CombineFieldAccess(field) => {
+                let object = results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false)));
+                results.push(Expr::FieldAccess { object: Box::new(object), field });
+            }
+            WorkItem::CombineArrayLiteral(count) => {
+                let mut elems = Vec::with_capacity(count);
+                let mut j = 0;
+                while j < count {
+                    elems.push(results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false))));
+                    j += 1;
+                }
+                elems.reverse();
+                results.push(Expr::ArrayLiteral(elems));
+            }
+            WorkItem::CombineStructLiteral { name, field_names, count } => {
+                let mut vals = Vec::with_capacity(count);
+                let mut j = 0;
+                while j < count {
+                    vals.push(results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false))));
+                    j += 1;
+                }
+                vals.reverse();
+                let fields: Vec<(String, Expr)> = field_names.into_iter().zip(vals).collect();
+                results.push(Expr::StructLiteral { name, fields });
             }
         }
     }

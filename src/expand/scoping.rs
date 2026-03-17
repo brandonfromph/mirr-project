@@ -132,14 +132,18 @@ pub(super) fn check_expr_no_internal_refs(
                 None
             }
             Expr::ArrayLiteral(elems) => {
-                for e in elems {
-                    stack.push(e);
+                let mut j = 0;
+                while j < elems.len() && j < MAX_EXPR_NODES {
+                    stack.push(&elems[j]);
+                    j += 1;
                 }
                 None
             }
             Expr::StructLiteral { fields, .. } => {
-                for (_, v) in fields {
-                    stack.push(v);
+                let mut j = 0;
+                while j < fields.len() && j < MAX_EXPR_NODES {
+                    stack.push(&fields[j].1);
+                    j += 1;
                 }
                 None
             }
@@ -199,14 +203,18 @@ pub(super) fn check_expr_cross_expansion(
                 None
             }
             Expr::ArrayLiteral(elems) => {
-                for e in elems {
-                    stack.push(e);
+                let mut j = 0;
+                while j < elems.len() && j < MAX_EXPR_NODES {
+                    stack.push(&elems[j]);
+                    j += 1;
                 }
                 None
             }
             Expr::StructLiteral { fields, .. } => {
-                for (_, v) in fields {
-                    stack.push(v);
+                let mut j = 0;
+                while j < fields.len() && j < MAX_EXPR_NODES {
+                    stack.push(&fields[j].1);
+                    j += 1;
                 }
                 None
             }
