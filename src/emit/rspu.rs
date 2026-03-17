@@ -388,6 +388,14 @@ fn emit_expr(
                     work.push(ExprWork::Eval(right));
                     work.push(ExprWork::Eval(left));
                 }
+                Expr::ArrayIndex { .. }
+                | Expr::FieldAccess { .. }
+                | Expr::ArrayLiteral(_)
+                | Expr::StructLiteral { .. } => {
+                    return Err(rspu_err(
+                        "[E720] R-SPU does not support composite type expressions.".to_string(),
+                    ));
+                }
             },
             ExprWork::EmitUnary(op) => {
                 let src = result_stack.pop().unwrap_or(0);

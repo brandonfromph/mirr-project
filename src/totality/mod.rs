@@ -234,6 +234,23 @@ fn collect_signal_deps(expr: &crate::ast::Expr) -> Vec<String> {
                 stack.push(right);
             }
             crate::ast::Expr::Prev { .. } | crate::ast::Expr::Literal(_) => {}
+            crate::ast::Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+            }
+            crate::ast::Expr::FieldAccess { object, .. } => {
+                stack.push(object);
+            }
+            crate::ast::Expr::ArrayLiteral(elems) => {
+                for e in elems {
+                    stack.push(e);
+                }
+            }
+            crate::ast::Expr::StructLiteral { fields, .. } => {
+                for (_, v) in fields {
+                    stack.push(v);
+                }
+            }
         }
     }
     deps

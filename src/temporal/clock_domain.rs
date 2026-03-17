@@ -178,6 +178,23 @@ fn collect_signal_refs(expr: &crate::ast::expr::Expr) -> Vec<String> {
                 stack.push(right);
             }
             Expr::Literal(_) => {}
+            Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+            }
+            Expr::FieldAccess { object, .. } => {
+                stack.push(object);
+            }
+            Expr::ArrayLiteral(elems) => {
+                for e in elems {
+                    stack.push(e);
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                for (_, v) in fields {
+                    stack.push(v);
+                }
+            }
         }
     }
     signals

@@ -1,13 +1,30 @@
 // ---------------------------------------------------------------------------
 //! Core type definitions for the MIRR AST.
 //!
-//! Defines signal kinds (input/output/internal), signal types (bool, unsigned),
-//! binary and unary operators, and literal values.
+//! Defines signal kinds (input/output/internal), signal types (bool, unsigned,
+//! signed, array, struct, fixed-point, interface bundle), binary and unary
+//! operators, and literal values.
 // ---------------------------------------------------------------------------
 
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
+
+// =========================================================================
+// MEGA-10 bounded-data constants (NASA Power-of-10: all collections bounded).
+// =========================================================================
+
+/// Maximum number of fields in a struct type.
+pub const MAX_STRUCT_FIELDS: usize = 32;
+
+/// Maximum nesting depth for array dimensions (e.g. `[u8; 4][4]` = depth 2).
+pub const MAX_ARRAY_DIMS: usize = 4;
+
+/// Maximum total bit width for a fixed-point type.
+pub const MAX_FIXED_POINT_BITS: u32 = 64;
+
+/// Maximum number of signals in an interface bundle.
+pub const MAX_INTERFACE_SIGNALS: usize = 64;
 
 /// Kind of signal in a MIRR module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -20,8 +37,9 @@ pub enum SignalKind {
     Internal,
 }
 
-/// Type of a signal (boolean, fixed-width unsigned, or fixed-width signed).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// Type of a signal (boolean, fixed-width unsigned, fixed-width signed,
+/// fixed-size array, struct, fixed-point, or interface bundle).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalType {
     /// Single-bit boolean (true/false).
     Bool,
@@ -29,6 +47,33 @@ pub enum SignalType {
     Unsigned(u32),
     /// Fixed-width signed two's complement integer (`i8`, `i16`, `i32`, `i64`).
     Signed(u32),
+    /// Fixed-size array: `[element; length]`. Compiles to N registers + MUX tree.
+    /// Length must be 1..=MAX_TYPE_NAT. Nesting depth bounded by MAX_ARRAY_DIMS.
+    Array {
+        /// Element type (scalar or nested array/struct).
+        element: Box<SignalType>,
+        /// Number of elements (statically known, >= 1).
+        length: u64,
+    },
+    /// Named struct: `struct Name { field1: Type, ... }`. Compiles to concatenated wires.
+    /// Field count bounded by MAX_STRUCT_FIELDS.
+    Struct {
+        /// Struct type name (must match a declared struct).
+        name: String,
+        /// Ordered fields: `(field_name, field_type)`.
+        fields: Vec<(String, SignalType)>,
+    },
+    /// Fixed-point number: `fixed<total_bits, frac_bits>`. Compiles to integer ALU
+    /// with implicit radix point. `total_bits` includes `frac_bits`.
+    FixedPoint {
+        /// Total bit width (integer + fractional).
+        total_bits: u32,
+        /// Number of fractional bits (must be <= total_bits).
+        frac_bits: u32,
+    },
+    /// Interface bundle reference: `interface Name`. Compiles to a group of ports.
+    /// Resolved during elaboration to the interface's constituent signals.
+    Bundle(String),
 }
 
 impl std::fmt::Display for SignalType {
@@ -37,16 +82,38 @@ impl std::fmt::Display for SignalType {
             SignalType::Bool => write!(f, "bool"),
             SignalType::Unsigned(width) => write!(f, "u{}", width),
             SignalType::Signed(width) => write!(f, "i{}", width),
+            SignalType::Array { element, length } => write!(f, "{}[{}]", element, length),
+            SignalType::Struct { name, .. } => write!(f, "struct {}", name),
+            SignalType::FixedPoint { total_bits, frac_bits } => {
+                write!(f, "fixed<{},{}>", total_bits, frac_bits)
+            }
+            SignalType::Bundle(name) => write!(f, "interface {}", name),
         }
     }
 }
 
 impl SignalType {
     /// Returns the bit width of this signal type.
+    ///
+    /// For composite types: arrays return `element_width * length`,
+    /// structs return the sum of field widths, fixed-point returns `total_bits`,
+    /// bundles return 0 (resolved during elaboration).
     pub fn width(&self) -> u32 {
         match self {
             SignalType::Bool => 1,
             SignalType::Unsigned(w) | SignalType::Signed(w) => *w,
+            SignalType::Array { element, length } => element.width().saturating_mul(*length as u32),
+            SignalType::Struct { fields, .. } => {
+                let mut total: u32 = 0;
+                let mut i = 0;
+                while i < fields.len() {
+                    total = total.saturating_add(fields[i].1.width());
+                    i += 1;
+                }
+                total
+            }
+            SignalType::FixedPoint { total_bits, .. } => *total_bits,
+            SignalType::Bundle(_) => 0,
         }
     }
 
@@ -56,7 +123,21 @@ impl SignalType {
             SignalType::Bool => (1, false),
             SignalType::Unsigned(w) => (*w, false),
             SignalType::Signed(w) => (*w, true),
+            SignalType::Array { .. }
+            | SignalType::Struct { .. }
+            | SignalType::FixedPoint { .. }
+            | SignalType::Bundle(_) => (self.width(), false),
         }
+    }
+
+    /// Returns true if this is a scalar type (Bool, Unsigned, Signed).
+    pub fn is_scalar(&self) -> bool {
+        matches!(self, SignalType::Bool | SignalType::Unsigned(_) | SignalType::Signed(_))
+    }
+
+    /// Returns true if this is a composite type (Array, Struct, FixedPoint, Bundle).
+    pub fn is_composite(&self) -> bool {
+        !self.is_scalar()
     }
 }
 
@@ -248,7 +329,7 @@ impl ExtendedType {
 
     /// Extract the core `SignalType` for emission and width inference.
     pub fn signal_type(&self) -> SignalType {
-        self.core
+        self.core.clone()
     }
 }
 

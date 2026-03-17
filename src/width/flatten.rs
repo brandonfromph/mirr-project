@@ -88,6 +88,14 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                 Expr::Prev { signal, delay } => {
                     work.push(FlatWork::EmitPrev { signal, delay: *delay });
                 }
+                // Composite expressions: emit literal 0 placeholder.
+                // Full structural width inference for composites is deferred.
+                Expr::ArrayIndex { .. }
+                | Expr::FieldAccess { .. }
+                | Expr::ArrayLiteral(_)
+                | Expr::StructLiteral { .. } => {
+                    work.push(FlatWork::EmitLiteral { value: 0 });
+                }
             },
             FlatWork::EmitLiteral { value } => {
                 let idx = nodes.len();

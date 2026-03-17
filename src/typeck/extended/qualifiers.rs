@@ -484,7 +484,7 @@ impl ExtendedSignalDecl {
         let phantom = annotations.phantom_tag.as_ref().map(|t| PhantomTag { tag: t.clone() });
 
         let extended_ty = ExtendedType {
-            base,
+            base: base.clone(),
             refinements,
             qualifiers,
             clock_domain,

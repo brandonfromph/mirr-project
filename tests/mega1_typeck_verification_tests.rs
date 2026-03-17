@@ -220,7 +220,7 @@ fn ext_signal(
     ExtendedSignalDecl {
         name: name.to_string(),
         kind,
-        ty: base,
+        ty: base.clone(),
         extended_ty: CheckerExtType {
             base,
             refinements,

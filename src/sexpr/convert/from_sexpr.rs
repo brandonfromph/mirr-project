@@ -235,16 +235,88 @@ fn parse_signal_kind(sexpr: &SExpr) -> Result<SignalKind, MirrError> {
 fn parse_signal_type(sexpr: &SExpr) -> Result<SignalType, MirrError> {
     match sexpr {
         SExpr::Symbol(s) if s == "bool" => Ok(SignalType::Bool),
-        SExpr::List(items) if items.len() == 2 => {
+        SExpr::List(items) if !items.is_empty() => {
             let head = items[0]
                 .as_symbol()
                 .ok_or_else(|| sexpr_err("[E807] Type head must be a symbol"))?;
-            let width = items[1]
-                .as_integer()
-                .ok_or_else(|| sexpr_err("[E807] Type width must be an integer"))?;
             match head {
-                "unsigned" => Ok(SignalType::Unsigned(width as u32)),
-                "signed" => Ok(SignalType::Signed(width as u32)),
+                "unsigned" => {
+                    if items.len() != 2 {
+                        return Err(sexpr_err("[E807] unsigned requires exactly one width"));
+                    }
+                    let width = items[1]
+                        .as_integer()
+                        .ok_or_else(|| sexpr_err("[E807] Type width must be an integer"))?;
+                    Ok(SignalType::Unsigned(width as u32))
+                }
+                "signed" => {
+                    if items.len() != 2 {
+                        return Err(sexpr_err("[E807] signed requires exactly one width"));
+                    }
+                    let width = items[1]
+                        .as_integer()
+                        .ok_or_else(|| sexpr_err("[E807] Type width must be an integer"))?;
+                    Ok(SignalType::Signed(width as u32))
+                }
+                "array" => {
+                    if items.len() != 3 {
+                        return Err(sexpr_err("[E807] array requires element type and length"));
+                    }
+                    let element = Box::new(parse_signal_type(&items[1])?);
+                    let length = items[2]
+                        .as_integer()
+                        .ok_or_else(|| sexpr_err("[E807] array length must be an integer"))?;
+                    Ok(SignalType::Array { element, length })
+                }
+                "struct" => {
+                    if items.len() < 2 {
+                        return Err(sexpr_err("[E807] struct requires a name"));
+                    }
+                    let name = items[1]
+                        .as_str_val()
+                        .ok_or_else(|| sexpr_err("[E807] struct name must be a string"))?
+                        .to_string();
+                    let mut fields = Vec::new();
+                    for item in items[2..].iter().take(32) {
+                        let field_list = item
+                            .as_list()
+                            .ok_or_else(|| sexpr_err("[E807] struct field must be a list"))?;
+                        if field_list.len() != 2 {
+                            return Err(sexpr_err("[E807] struct field requires name and type"));
+                        }
+                        let field_name = field_list[0]
+                            .as_str_val()
+                            .ok_or_else(|| sexpr_err("[E807] field name must be a string"))?
+                            .to_string();
+                        let field_type = parse_signal_type(&field_list[1])?;
+                        fields.push((field_name, field_type));
+                    }
+                    Ok(SignalType::Struct { name, fields })
+                }
+                "fixed" => {
+                    if items.len() != 3 {
+                        return Err(sexpr_err("[E807] fixed requires total_bits and frac_bits"));
+                    }
+                    let total_bits = items[1]
+                        .as_integer()
+                        .ok_or_else(|| sexpr_err("[E807] total_bits must be an integer"))?
+                        as u32;
+                    let frac_bits = items[2]
+                        .as_integer()
+                        .ok_or_else(|| sexpr_err("[E807] frac_bits must be an integer"))?
+                        as u32;
+                    Ok(SignalType::FixedPoint { total_bits, frac_bits })
+                }
+                "interface" => {
+                    if items.len() != 2 {
+                        return Err(sexpr_err("[E807] interface requires exactly one name"));
+                    }
+                    let name = items[1]
+                        .as_str_val()
+                        .ok_or_else(|| sexpr_err("[E807] interface name must be a string"))?
+                        .to_string();
+                    Ok(SignalType::Bundle(name))
+                }
                 other => Err(sexpr_err(format!("[E807] Unknown type: {other}"))),
             }
         }

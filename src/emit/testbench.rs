@@ -132,6 +132,10 @@ fn emit_tb_stimulus(module: &Module, out: &mut String) {
                 SignalType::Bool => "'1".to_string(),
                 SignalType::Unsigned(w) => format!("{}'hFFFF", w),
                 SignalType::Signed(w) => format!("{}'h7FFF", w),
+                SignalType::Array { .. }
+                | SignalType::Struct { .. }
+                | SignalType::FixedPoint { .. }
+                | SignalType::Bundle(_) => format!("{}'h0", s.ty.signal_type().width()),
             };
             out.push_str(&format!("    tb_{} = {};\n", s.name, max_val));
         }

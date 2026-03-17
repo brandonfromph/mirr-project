@@ -69,6 +69,11 @@ pub(super) fn eval_expr(e: &Expr, env_get: &impl Fn(&str) -> Value) -> Value {
                 }
             }
         }
+        // Composite expressions: not supported in scalar executor; yield 0.
+        E::ArrayIndex { .. }
+        | E::FieldAccess { .. }
+        | E::ArrayLiteral(_)
+        | E::StructLiteral { .. } => Value::Integer(0),
     }
 }
 
@@ -109,6 +114,12 @@ pub(super) fn init_pools_for_program(
             }
             crate::ast::types::SignalType::Unsigned(_)
             | crate::ast::types::SignalType::Signed(_) => {
+                p.persistent_env.insert(s.name.clone(), Value::Integer(0));
+            }
+            crate::ast::types::SignalType::Array { .. }
+            | crate::ast::types::SignalType::Struct { .. }
+            | crate::ast::types::SignalType::FixedPoint { .. }
+            | crate::ast::types::SignalType::Bundle(_) => {
                 p.persistent_env.insert(s.name.clone(), Value::Integer(0));
             }
         }

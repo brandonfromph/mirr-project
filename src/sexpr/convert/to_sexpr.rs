@@ -55,14 +55,14 @@ fn convert_pattern_param(param: &PatternParam) -> SExpr {
         PatternParamKind::Signal { kind, ty, annotations } => {
             items.push(SExpr::sym("signal"));
             items.push(convert_signal_kind(*kind));
-            items.push(convert_signal_type(*ty));
+            items.push(convert_signal_type(ty.clone()));
             if !annotations.is_default() {
                 items.push(convert_annotations(annotations));
             }
         }
         PatternParamKind::Constant { ty, annotations } => {
             items.push(SExpr::sym("constant"));
-            items.push(convert_signal_type(*ty));
+            items.push(convert_signal_type(ty.clone()));
             if !annotations.is_default() {
                 items.push(convert_annotations(annotations));
             }
@@ -94,7 +94,7 @@ fn convert_signals(signals: &[SignalDecl]) -> SExpr {
             SExpr::sym("signal"),
             SExpr::str_val(&s.name),
             convert_signal_kind(s.kind),
-            convert_signal_type(s.ty.core),
+            convert_signal_type(s.ty.core.clone()),
         ];
         if !s.ty.annotations.is_default() {
             sig.push(convert_annotations(&s.ty.annotations));
@@ -117,6 +117,24 @@ fn convert_signal_type(ty: SignalType) -> SExpr {
         SignalType::Bool => SExpr::sym("bool"),
         SignalType::Unsigned(w) => SExpr::list(vec![SExpr::sym("unsigned"), SExpr::int(w as u64)]),
         SignalType::Signed(w) => SExpr::list(vec![SExpr::sym("signed"), SExpr::int(w as u64)]),
+        SignalType::Array { element, length } => SExpr::list(vec![
+            SExpr::sym("array"),
+            convert_signal_type(*element),
+            SExpr::int(length),
+        ]),
+        SignalType::Struct { name, fields } => {
+            let mut items = vec![SExpr::sym("struct"), SExpr::sym(&name)];
+            for (fname, ftype) in fields {
+                items.push(SExpr::list(vec![SExpr::sym(&fname), convert_signal_type(ftype)]));
+            }
+            SExpr::list(items)
+        }
+        SignalType::FixedPoint { total_bits, frac_bits } => SExpr::list(vec![
+            SExpr::sym("fixed"),
+            SExpr::int(total_bits as u64),
+            SExpr::int(frac_bits as u64),
+        ]),
+        SignalType::Bundle(name) => SExpr::list(vec![SExpr::sym("interface"), SExpr::sym(&name)]),
     }
 }
 
@@ -292,6 +310,37 @@ fn convert_expr(expr: &Expr) -> SExpr {
                     work_stack.push(ConvertWork::BuildBinary(op_sym));
                     work_stack.push(ConvertWork::Process(right));
                     work_stack.push(ConvertWork::Process(left));
+                }
+                Expr::ArrayIndex { array, index } => {
+                    work_stack.push(ConvertWork::BuildBinary("aref"));
+                    work_stack.push(ConvertWork::Process(index));
+                    work_stack.push(ConvertWork::Process(array));
+                }
+                Expr::FieldAccess { object, field } => {
+                    work_stack.push(ConvertWork::BuildUnary("field-access"));
+                    // We push a synthetic step: first process the object,
+                    // then BuildUnary will wrap it. But we also need to
+                    // include the field name. Use a list construction instead.
+                    let obj_sexpr = convert_expr(object);
+                    result_stack.push(SExpr::list(vec![
+                        SExpr::sym("field-access"),
+                        obj_sexpr,
+                        SExpr::sym(field),
+                    ]));
+                }
+                Expr::ArrayLiteral(elems) => {
+                    let mut items = vec![SExpr::sym("array-literal")];
+                    for elem in elems {
+                        items.push(convert_expr(elem));
+                    }
+                    result_stack.push(SExpr::list(items));
+                }
+                Expr::StructLiteral { name, fields } => {
+                    let mut items = vec![SExpr::sym("struct-literal"), SExpr::sym(name)];
+                    for (fname, fval) in fields {
+                        items.push(SExpr::list(vec![SExpr::sym(fname), convert_expr(fval)]));
+                    }
+                    result_stack.push(SExpr::list(items));
                 }
             },
             ConvertWork::BuildUnary(op_sym) => {

@@ -126,6 +126,25 @@ fn expr_contains_prev(expr: &crate::ast::expr::Expr) -> bool {
                 stack.push(left);
                 stack.push(right);
             }
+            crate::ast::expr::Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+            }
+            crate::ast::expr::Expr::FieldAccess { object, .. } => stack.push(object),
+            crate::ast::expr::Expr::ArrayLiteral(elems) => {
+                let mut i = 0;
+                while i < elems.len().min(MAX_EXTENDED_TYPE_NODES) {
+                    stack.push(&elems[i]);
+                    i += 1;
+                }
+            }
+            crate::ast::expr::Expr::StructLiteral { fields, .. } => {
+                let mut i = 0;
+                while i < fields.len().min(MAX_EXTENDED_TYPE_NODES) {
+                    stack.push(&fields[i].1);
+                    i += 1;
+                }
+            }
         }
     }
 

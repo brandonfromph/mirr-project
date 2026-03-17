@@ -86,6 +86,11 @@ fn expr_contains_mul_bounded(expr: &Expr, count: &mut usize) -> bool {
         }
         Expr::Unary { operand, .. } => expr_contains_mul_bounded(operand, count),
         Expr::Literal(_) | Expr::Signal(_) | Expr::Prev { .. } => false,
+        Expr::ArrayIndex { array, index } => {
+            expr_contains_mul_bounded(array, count) || expr_contains_mul_bounded(index, count)
+        }
+        Expr::FieldAccess { object, .. } => expr_contains_mul_bounded(object, count),
+        Expr::ArrayLiteral(_) | Expr::StructLiteral { .. } => false,
     }
 }
 

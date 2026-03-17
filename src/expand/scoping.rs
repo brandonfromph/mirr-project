@@ -122,6 +122,27 @@ pub(super) fn check_expr_no_internal_refs(
                 stack.push(right);
                 None
             }
+            Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+                None
+            }
+            Expr::FieldAccess { object, .. } => {
+                stack.push(object);
+                None
+            }
+            Expr::ArrayLiteral(elems) => {
+                for e in elems {
+                    stack.push(e);
+                }
+                None
+            }
+            Expr::StructLiteral { fields, .. } => {
+                for (_, v) in fields {
+                    stack.push(v);
+                }
+                None
+            }
         };
         if let Some(sig_name) = name {
             if let Some((origin, sig_span)) = internal_signals.get(sig_name) {
@@ -166,6 +187,27 @@ pub(super) fn check_expr_cross_expansion(
             Expr::Binary { left, right, .. } => {
                 stack.push(left);
                 stack.push(right);
+                None
+            }
+            Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+                None
+            }
+            Expr::FieldAccess { object, .. } => {
+                stack.push(object);
+                None
+            }
+            Expr::ArrayLiteral(elems) => {
+                for e in elems {
+                    stack.push(e);
+                }
+                None
+            }
+            Expr::StructLiteral { fields, .. } => {
+                for (_, v) in fields {
+                    stack.push(v);
+                }
                 None
             }
         };

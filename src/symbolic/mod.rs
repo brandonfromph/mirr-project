@@ -174,6 +174,13 @@ pub fn sym_eval_expr(expr: &Expr, state: &SymState) -> SymValue {
                     work.push(Work::Eval(right));
                     work.push(Work::Eval(left));
                 }
+                // Composite expressions: opaque to symbolic evaluation.
+                Expr::ArrayIndex { .. }
+                | Expr::FieldAccess { .. }
+                | Expr::ArrayLiteral(_)
+                | Expr::StructLiteral { .. } => {
+                    values.push(SymValue::Top);
+                }
             },
             Work::ApplyUnary(op) => {
                 let val = values.pop().unwrap_or(SymValue::Top);

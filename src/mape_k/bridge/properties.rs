@@ -106,6 +106,13 @@ fn lower_expr_to_predicate(expr: &Expr) -> Result<SignalPredicate, String> {
         }
         Expr::Literal(_) => Err("bare literal cannot be a signal predicate".to_string()),
         Expr::Prev { signal, .. } => Ok(SignalPredicate::IsTrue(signal.clone())),
+        Expr::ArrayIndex { .. }
+        | Expr::FieldAccess { .. }
+        | Expr::ArrayLiteral(_)
+        | Expr::StructLiteral { .. } => {
+            let name = extract_signal_name(expr).unwrap_or_else(|_| "__composite__".to_string());
+            Ok(SignalPredicate::IsTrue(name))
+        }
     }
 }
 
@@ -165,6 +172,18 @@ pub(super) fn extract_signal_name(expr: &Expr) -> Result<String, String> {
                 stack.push(left);
             }
             Expr::Literal(_) => {}
+            Expr::ArrayIndex { array, .. } => stack.push(array),
+            Expr::FieldAccess { object, .. } => stack.push(object),
+            Expr::ArrayLiteral(elems) => {
+                if let Some(first) = elems.first() {
+                    stack.push(first);
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                if let Some((_, first_val)) = fields.first() {
+                    stack.push(first_val);
+                }
+            }
         }
     }
 

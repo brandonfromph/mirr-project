@@ -64,9 +64,13 @@ pub fn refinement_width_hint(extended_ty: &ExtendedType) -> Option<crate::width:
 ///
 /// Returns the declared width if no refinement narrows it.
 pub fn effective_width(extended_ty: &ExtendedType) -> crate::width::types::Width {
-    let declared = match extended_ty.base {
+    let declared = match &extended_ty.base {
         SignalType::Bool => crate::width::types::Width(1),
-        SignalType::Unsigned(w) | SignalType::Signed(w) => crate::width::types::Width(w),
+        SignalType::Unsigned(w) | SignalType::Signed(w) => crate::width::types::Width(*w),
+        SignalType::Array { .. }
+        | SignalType::Struct { .. }
+        | SignalType::FixedPoint { .. }
+        | SignalType::Bundle(_) => crate::width::types::Width(extended_ty.base.width()),
     };
 
     match refinement_width_hint(extended_ty) {
@@ -270,10 +274,16 @@ pub mod hardware_mapping {
     /// This extends the existing `firrtl_type` function in `emit/firrtl.rs`
     /// to handle array dimensions from type-level naturals.
     pub fn extended_firrtl_type(ty: &ExtendedType) -> String {
-        let base = match ty.base {
+        let base = match &ty.base {
             SignalType::Bool => "UInt<1>".to_string(),
             SignalType::Unsigned(w) => format!("UInt<{}>", w),
             SignalType::Signed(w) => format!("SInt<{}>", w),
+            SignalType::Array { element, length } => {
+                format!("UInt<{}>[{}]", element.width(), length)
+            }
+            SignalType::Struct { name, .. } => format!("{{ /* struct {} */ }}", name),
+            SignalType::FixedPoint { total_bits, .. } => format!("UInt<{}>", total_bits),
+            SignalType::Bundle(name) => format!("{{ /* interface {} */ }}", name),
         };
 
         // If there's a type-level natural, wrap in a FIRRTL vector type

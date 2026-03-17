@@ -21,7 +21,10 @@ pub use pattern::{
 };
 pub use program::{Assignment, Guard, MirrAstJson, MirrProgram, Module, Reflex, SignalDecl};
 pub use property::{PropertyDecl, PropertyDirective, PropertyFormula};
-pub use types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
+pub use types::{
+    BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp, MAX_ARRAY_DIMS, MAX_FIXED_POINT_BITS,
+    MAX_INTERFACE_SIGNALS, MAX_STRUCT_FIELDS,
+};
 
 /// Maximum expression nodes to visit during bounded traversal (NASA P10).
 pub(crate) const MAX_EXPR_NODES: usize = 512;

@@ -118,20 +118,36 @@ pub fn emit_verilog(netlist: &TemporalNetlist) -> Result<String, MirrError> {
 
     // Signal declarations
     for signal in &netlist.signals {
-        let decl = match signal.ty {
+        let decl = match &signal.ty {
             SignalType::Bool => format!("    wire {};// Bool\n", signal.name),
             SignalType::Unsigned(w) => {
-                if w == 0 {
+                if *w == 0 {
                     format!("    wire {};// Unsigned(0)\n", signal.name)
                 } else {
                     format!("    wire [{}:0] {};// Unsigned({})\n", w - 1, signal.name, w)
                 }
             }
             SignalType::Signed(w) => {
-                if w == 0 {
+                if *w == 0 {
                     format!("    wire signed {};// Signed(0)\n", signal.name)
                 } else {
                     format!("    wire signed [{}:0] {};// Signed({})\n", w - 1, signal.name, w)
+                }
+            }
+            SignalType::Array { .. }
+            | SignalType::Struct { .. }
+            | SignalType::FixedPoint { .. }
+            | SignalType::Bundle(_) => {
+                let w = signal.ty.width();
+                if w == 0 {
+                    format!("    wire {};// {}\n", signal.name, signal.ty)
+                } else {
+                    format!(
+                        "    wire [{}:0] {};// {}\n",
+                        w.saturating_sub(1),
+                        signal.name,
+                        signal.ty
+                    )
                 }
             }
         };

@@ -162,24 +162,28 @@ impl ExtendedType {
     /// Extract the maximum bit-width capacity of the base type.
     /// Used by refinement checking to ensure bounds fit in the wire.
     pub fn base_max_value(&self) -> Option<u64> {
-        match self.base {
+        match &self.base {
             SignalType::Bool => Some(1),
             SignalType::Unsigned(w) => {
-                if w >= 64 {
+                if *w >= 64 {
                     None // Overflow: u64::MAX would itself be the max
                 } else {
-                    Some((1u64 << w) - 1)
+                    Some((1u64 << *w) - 1)
                 }
             }
             SignalType::Signed(w) => {
-                if w == 0 {
+                if *w == 0 {
                     Some(0)
-                } else if w >= 64 {
+                } else if *w >= 64 {
                     None
                 } else {
-                    Some((1u64 << (w - 1)) - 1)
+                    Some((1u64 << (*w - 1)) - 1)
                 }
             }
+            SignalType::Array { .. }
+            | SignalType::Struct { .. }
+            | SignalType::FixedPoint { .. }
+            | SignalType::Bundle(_) => None,
         }
     }
 }

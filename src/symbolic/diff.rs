@@ -167,6 +167,13 @@ pub fn sym_diff(expr: &Expr, signal_name: &str) -> Expr {
                             results.push(zero());
                         }
                     },
+                    // Composite expressions: not differentiable.
+                    Expr::ArrayIndex { .. }
+                    | Expr::FieldAccess { .. }
+                    | Expr::ArrayLiteral(_)
+                    | Expr::StructLiteral { .. } => {
+                        results.push(zero());
+                    }
                 }
             }
             Work::BuildBinary(op) => {

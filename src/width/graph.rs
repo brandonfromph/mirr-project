@@ -120,6 +120,28 @@ fn collect_refs_with_ops(expr: &Expr) -> Vec<RefWithOps> {
                 stack.push((left, left_ops));
                 stack.push((right, right_ops));
             }
+            Expr::ArrayIndex { array, index } => {
+                stack.push((array, ops.clone()));
+                stack.push((index, ops));
+            }
+            Expr::FieldAccess { object, .. } => {
+                stack.push((object, ops));
+            }
+            Expr::ArrayLiteral(elems) => {
+                let mut i = 0;
+                while i < elems.len().min(MAX_EXPR_NODES) {
+                    stack.push((&elems[i], ops.clone()));
+                    i += 1;
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                let mut i = 0;
+                while i < fields.len().min(MAX_EXPR_NODES) {
+                    stack.push((&fields[i].1, ops.clone()));
+                    i += 1;
+                }
+                let _ = ops;
+            }
         }
     }
 

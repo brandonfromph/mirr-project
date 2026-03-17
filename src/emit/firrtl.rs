@@ -291,6 +291,21 @@ fn firrtl_type(ty: &SignalType) -> String {
         SignalType::Bool => "UInt<1>".to_string(),
         SignalType::Unsigned(w) => format!("UInt<{}>", w),
         SignalType::Signed(w) => format!("SInt<{}>", w),
+        SignalType::Array { element, length } => {
+            format!("{}[{}]", firrtl_type(element), length)
+        }
+        SignalType::Struct { name: _, fields } => {
+            let parts: Vec<String> = fields
+                .iter()
+                .take(crate::ast::types::MAX_STRUCT_FIELDS)
+                .map(|(fname, ftype)| format!("{}: {}", fname, firrtl_type(ftype)))
+                .collect();
+            format!("{{ {} }}", parts.join(", "))
+        }
+        SignalType::FixedPoint { total_bits, frac_bits } => {
+            format!("FixedPoint<{}.{}>", total_bits, frac_bits)
+        }
+        SignalType::Bundle(name) => format!("{{ /* interface {} */ }}", name),
     }
 }
 
@@ -371,6 +386,31 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
                 BinaryOp::Shr => "dshr",
             };
             format!("{}({}, {})", op_fn, l, r)
+        }
+        Expr::ArrayIndex { array, index } => {
+            let a = emit_expr_firrtl_bounded(array, iterations);
+            let i = emit_expr_firrtl_bounded(index, iterations);
+            format!("{}[{}]", a, i)
+        }
+        Expr::FieldAccess { object, field } => {
+            let o = emit_expr_firrtl_bounded(object, iterations);
+            format!("{}.{}", o, field)
+        }
+        Expr::ArrayLiteral(elems) => {
+            let parts: Vec<String> = elems
+                .iter()
+                .take(MAX_EXPR_NODES)
+                .map(|e| emit_expr_firrtl_bounded(e, iterations))
+                .collect();
+            format!("vec({})", parts.join(", "))
+        }
+        Expr::StructLiteral { name, fields } => {
+            let parts: Vec<String> = fields
+                .iter()
+                .take(MAX_EXPR_NODES)
+                .map(|(f, v)| format!("{}: {}", f, emit_expr_firrtl_bounded(v, iterations)))
+                .collect();
+            format!("{} {{ {} }}", name, parts.join(", "))
         }
     }
 }

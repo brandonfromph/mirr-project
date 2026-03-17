@@ -72,6 +72,28 @@ pub(crate) fn expr_text_bounded(expr: &Expr, iters: &mut usize) -> String {
             };
             format!("({l} {op_str} {r})")
         }
+        Expr::ArrayIndex { array, index } => {
+            let a = expr_text_bounded(array, iters);
+            let i = expr_text_bounded(index, iters);
+            format!("{a}[{i}]")
+        }
+        Expr::FieldAccess { object, field } => {
+            let o = expr_text_bounded(object, iters);
+            format!("{o}.{field}")
+        }
+        Expr::ArrayLiteral(elems) => {
+            let parts: Vec<String> =
+                elems.iter().take(MAX_EXPR_NODES).map(|e| expr_text_bounded(e, iters)).collect();
+            format!("'{{{}}}", parts.join(", "))
+        }
+        Expr::StructLiteral { name, fields } => {
+            let parts: Vec<String> = fields
+                .iter()
+                .take(MAX_EXPR_NODES)
+                .map(|(f, v)| format!("{}: {}", f, expr_text_bounded(v, iters)))
+                .collect();
+            format!("{} {{ {} }}", name, parts.join(", "))
+        }
     }
 }
 
@@ -97,5 +119,16 @@ pub(crate) fn sv_type(ty: &SignalType) -> String {
                 format!("logic signed [{:>2}:0]", w - 1)
             }
         }
+        SignalType::Array { element, length } => {
+            let flat = element.width().checked_mul(*length as u32).unwrap_or(1).saturating_sub(1);
+            format!("logic [{:>2}:0]", flat)
+        }
+        SignalType::Struct { .. } => {
+            format!("logic [{:>2}:0]", ty.width().saturating_sub(1))
+        }
+        SignalType::FixedPoint { total_bits, .. } => {
+            format!("logic [{:>2}:0]", total_bits.saturating_sub(1))
+        }
+        SignalType::Bundle(_) => "/* interface */ ".to_string(),
     }
 }

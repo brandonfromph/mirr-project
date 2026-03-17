@@ -19,6 +19,14 @@ enum ParseWork<'a> {
     BuildUnary(UnaryOp),
     /// Compose a binary Expr from two results.
     BuildBinary(BinaryOp),
+    /// Compose an ArrayIndex Expr from two results (array, index).
+    BuildArrayIndex,
+    /// Compose a FieldAccess Expr from one result and a field name.
+    BuildFieldAccess(String),
+    /// Compose an ArrayLiteral from N results on the stack.
+    BuildArrayLiteral(usize),
+    /// Compose a StructLiteral from a name, field names, and N results on the stack.
+    BuildStructLiteral { name: String, field_names: Vec<String> },
 }
 
 pub(super) fn parse_expr(sexpr: &SExpr) -> Result<Expr, MirrError> {
@@ -79,6 +87,78 @@ pub(super) fn parse_expr(sexpr: &SExpr) -> Result<Expr, MirrError> {
                             work_stack.push(ParseWork::BuildUnary(UnaryOp::Negate));
                             work_stack.push(ParseWork::Process(&items[1]));
                         }
+                        "aref" => {
+                            if items.len() != 3 {
+                                return Err(sexpr_err("[E806] aref requires array and index"));
+                            }
+                            work_stack.push(ParseWork::BuildArrayIndex);
+                            work_stack.push(ParseWork::Process(&items[2]));
+                            work_stack.push(ParseWork::Process(&items[1]));
+                        }
+                        "field-access" => {
+                            if items.len() != 3 {
+                                return Err(sexpr_err(
+                                    "[E806] field-access requires object and field",
+                                ));
+                            }
+                            let field = items[2]
+                                .as_str_val()
+                                .ok_or_else(|| {
+                                    sexpr_err("[E806] field-access field must be string")
+                                })?
+                                .to_string();
+                            work_stack.push(ParseWork::BuildFieldAccess(field));
+                            work_stack.push(ParseWork::Process(&items[1]));
+                        }
+                        "array-literal" => {
+                            let count = items.len().saturating_sub(1).min(512);
+                            work_stack.push(ParseWork::BuildArrayLiteral(count));
+                            for item in items[1..].iter().take(512).rev() {
+                                work_stack.push(ParseWork::Process(item));
+                            }
+                        }
+                        "struct-literal" => {
+                            if items.len() < 2 {
+                                return Err(sexpr_err("[E806] struct-literal requires a name"));
+                            }
+                            let name = items[1]
+                                .as_str_val()
+                                .ok_or_else(|| {
+                                    sexpr_err("[E806] struct-literal name must be string")
+                                })?
+                                .to_string();
+                            let mut field_names = Vec::new();
+                            let field_items = &items[2..];
+                            let bounded = field_items.iter().take(32);
+                            for item in bounded {
+                                let pair = item.as_list().ok_or_else(|| {
+                                    sexpr_err("[E806] struct-literal field must be a list")
+                                })?;
+                                if pair.len() != 2 {
+                                    return Err(sexpr_err(
+                                        "[E806] struct-literal field requires name and value",
+                                    ));
+                                }
+                                let fname = pair[0]
+                                    .as_str_val()
+                                    .ok_or_else(|| {
+                                        sexpr_err("[E806] struct-literal field name must be string")
+                                    })?
+                                    .to_string();
+                                field_names.push(fname);
+                            }
+                            let count = field_names.len();
+                            work_stack.push(ParseWork::BuildStructLiteral { name, field_names });
+                            for item in field_items.iter().take(32).rev() {
+                                let pair = item.as_list().ok_or_else(|| {
+                                    sexpr_err("[E806] struct-literal field must be a list")
+                                })?;
+                                if pair.len() == 2 {
+                                    work_stack.push(ParseWork::Process(&pair[1]));
+                                }
+                            }
+                            let _ = count;
+                        }
                         _ => {
                             // Binary operator
                             if items.len() < 3 {
@@ -113,6 +193,46 @@ pub(super) fn parse_expr(sexpr: &SExpr) -> Result<Expr, MirrError> {
                     left: Box::new(left),
                     right: Box::new(right),
                 });
+            }
+            ParseWork::BuildArrayIndex => {
+                let index = result_stack
+                    .pop()
+                    .ok_or_else(|| sexpr_err("[E808] Missing index in expression stack"))?;
+                let array = result_stack
+                    .pop()
+                    .ok_or_else(|| sexpr_err("[E808] Missing array in expression stack"))?;
+                result_stack
+                    .push(Expr::ArrayIndex { array: Box::new(array), index: Box::new(index) });
+            }
+            ParseWork::BuildFieldAccess(field) => {
+                let object = result_stack
+                    .pop()
+                    .ok_or_else(|| sexpr_err("[E808] Missing object in expression stack"))?;
+                result_stack.push(Expr::FieldAccess { object: Box::new(object), field });
+            }
+            ParseWork::BuildArrayLiteral(count) => {
+                let mut elems = Vec::with_capacity(count);
+                for _ in 0..count {
+                    let elem = result_stack
+                        .pop()
+                        .ok_or_else(|| sexpr_err("[E808] Missing element in expression stack"))?;
+                    elems.push(elem);
+                }
+                elems.reverse();
+                result_stack.push(Expr::ArrayLiteral(elems));
+            }
+            ParseWork::BuildStructLiteral { name, field_names } => {
+                let count = field_names.len();
+                let mut values = Vec::with_capacity(count);
+                for _ in 0..count {
+                    let val = result_stack.pop().ok_or_else(|| {
+                        sexpr_err("[E808] Missing struct field value in expression stack")
+                    })?;
+                    values.push(val);
+                }
+                values.reverse();
+                let fields: Vec<(String, Expr)> = field_names.into_iter().zip(values).collect();
+                result_stack.push(Expr::StructLiteral { name, fields });
             }
         }
     }

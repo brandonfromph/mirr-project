@@ -190,6 +190,14 @@ pub fn expr_to_cnf(expr: &Expr) -> Option<CnfFormula> {
                         }
                     }
                 }
+                // Composite expressions: opaque to SAT — create fresh variable.
+                Expr::ArrayIndex { .. }
+                | Expr::FieldAccess { .. }
+                | Expr::ArrayLiteral(_)
+                | Expr::StructLiteral { .. } => {
+                    let v = formula.alloc_var()?;
+                    var_stack.push(v);
+                }
             },
             WorkItem::CombineNot => {
                 let a = var_stack.pop()?;

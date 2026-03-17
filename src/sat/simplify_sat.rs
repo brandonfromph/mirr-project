@@ -160,6 +160,11 @@ fn is_boolean_expr(expr: &Expr) -> bool {
                     _ => return false,
                 }
             }
+            // Composite expressions are not boolean.
+            Expr::ArrayIndex { .. }
+            | Expr::FieldAccess { .. }
+            | Expr::ArrayLiteral(_)
+            | Expr::StructLiteral { .. } => return false,
         }
     }
     true

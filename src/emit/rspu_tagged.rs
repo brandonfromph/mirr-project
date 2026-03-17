@@ -270,6 +270,10 @@ pub fn tag_from_signal_type(ty: &SignalType) -> TypeTag {
         SignalType::Bool => TypeTag::Bool,
         SignalType::Unsigned(w) => TypeTag::Unsigned { width: *w as u8 },
         SignalType::Signed(w) => TypeTag::Signed { width: *w as u8 },
+        SignalType::Array { .. }
+        | SignalType::Struct { .. }
+        | SignalType::FixedPoint { .. }
+        | SignalType::Bundle(_) => TypeTag::Unsigned { width: 0 },
     }
 }
 

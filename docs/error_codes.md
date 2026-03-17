@@ -6,7 +6,7 @@ nav_order: 2
 # MIRR Error Code Reference
 
 > **Status:** Active
-> **Last updated:** 2026-03-17 (MEGA-7: E190–E197, E217–E221, E301–E306, E426–E428)
+> **Last updated:** 2026-03-17 (MEGA-10: E222–E228, E720)
 
 All MIRR compiler diagnostics carry a bracketed error code in the format `[Ennn]`.
 The prefix classifies the error; the full code maps to a single creation site.
@@ -157,6 +157,13 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E219 | `Pattern '{name}' has {N} parameters (max {M}).` | `src/validation/semantic.rs` |
 | E220 | `Pattern '{name}' has empty reflect body.` | `src/validation/semantic.rs` |
 | E221 | `Pattern '{name}' reflect body exceeds max lines.` | `src/validation/semantic.rs` |
+| E222 | *(reserved: MEGA-10 composite type parsing)* | — |
+| E223 | *(reserved: MEGA-10 array type validation)* | — |
+| E224 | *(reserved: MEGA-10 struct field count exceeded)* | — |
+| E225 | *(reserved: MEGA-10 fixed-point bit width exceeded)* | — |
+| E226 | `Operator '{op}' cannot be applied to composite type '{ty}'.` | `src/typeck/mod.rs` |
+| E227 | *(reserved: MEGA-10 bundle elaboration)* | — |
+| E228 | *(reserved: MEGA-10 array index out of bounds)* | — |
 
 **ERR-001 enhancements:** E204, E205, E207, E208, E211 now include "Did you mean '{closest}'?" when a close match exists. E201, E202, E203, E210, E216 now include "First defined at line N." when a span is available.
 
@@ -300,6 +307,7 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E713 | `R-SPU trap handler table overflow: exceeds MAX_TRAP_HANDLERS.` | `src/emit/rspu_exceptions.rs` |
 | E714 | `R-SPU invalid execution mode for ModeSwitch.` | `src/emit/rspu_exceptions.rs` |
 | E715 | `R-SPU deadline expired: DeadlineSet counter reached zero.` | `src/emit/rspu_sim.rs` |
+| E720 | `R-SPU does not support composite type expressions.` | `src/emit/rspu.rs` |
 
 **ERR-001 changes:** E701 was previously overloaded — temporary register exhaustion is now E705. E702 was previously overloaded — expression node count is now E704. E706–E715 were activated by MEGA-3 (R-SPU ISA v2): binary encoding, tagged words, exception model, dual-mode execution, and cycle-accurate simulator.
 

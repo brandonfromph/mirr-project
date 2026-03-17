@@ -109,10 +109,11 @@ fn emit_signal_nodes(module: &Module, out: &mut String) {
             SignalKind::Output => "house",
             SignalKind::Internal => "ellipse",
         };
-        let width_label = match s.ty.signal_type() {
+        let width_label = match &s.ty.signal_type() {
             SignalType::Bool => "bool".to_string(),
             SignalType::Unsigned(w) => format!("u{w}"),
             SignalType::Signed(w) => format!("i{w}"),
+            other => other.to_string(),
         };
         let tooltip = match &s.origin {
             Some(origin) => format!(" tooltip=\"Pattern: {origin}\""),
@@ -283,6 +284,42 @@ fn emit_expr_nodes(expr: &Expr, node_id: &mut usize, out: &mut String) {
                 stack.push((right, right_id));
                 stack.push((left, left_id));
             }
+            Expr::ArrayIndex { array, index } => {
+                out.push_str(&format!("    n{my_id} [label=\"[]\" shape=circle];\n"));
+                let arr_id = *node_id;
+                *node_id += 1;
+                let idx_id = *node_id;
+                *node_id += 1;
+                out.push_str(&format!("    n{my_id} -> n{arr_id};\n"));
+                out.push_str(&format!("    n{my_id} -> n{idx_id};\n"));
+                stack.push((index, idx_id));
+                stack.push((array, arr_id));
+            }
+            Expr::FieldAccess { object, field } => {
+                out.push_str(&format!("    n{my_id} [label=\".{field}\" shape=circle];\n"));
+                let obj_id = *node_id;
+                *node_id += 1;
+                out.push_str(&format!("    n{my_id} -> n{obj_id};\n"));
+                stack.push((object, obj_id));
+            }
+            Expr::ArrayLiteral(elems) => {
+                out.push_str(&format!("    n{my_id} [label=\"[...]\" shape=circle];\n"));
+                for elem in elems.iter().take(MAX_DOT_NODES) {
+                    let elem_id = *node_id;
+                    *node_id += 1;
+                    out.push_str(&format!("    n{my_id} -> n{elem_id};\n"));
+                    stack.push((elem, elem_id));
+                }
+            }
+            Expr::StructLiteral { name: _, fields } => {
+                out.push_str(&format!("    n{my_id} [label=\"{{...}}\" shape=circle];\n"));
+                for (_fname, fval) in fields.iter().take(MAX_DOT_NODES) {
+                    let fval_id = *node_id;
+                    *node_id += 1;
+                    out.push_str(&format!("    n{my_id} -> n{fval_id};\n"));
+                    stack.push((fval, fval_id));
+                }
+            }
         }
     }
 }
@@ -308,6 +345,21 @@ fn collect_signal_refs_bounded(expr: &Expr) -> Vec<String> {
                 stack.push(left);
                 stack.push(right);
             }
+            Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+            }
+            Expr::FieldAccess { object, .. } => stack.push(object),
+            Expr::ArrayLiteral(elems) => {
+                for elem in elems.iter().take(MAX_DOT_NODES) {
+                    stack.push(elem);
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                for (_fname, fval) in fields.iter().take(MAX_DOT_NODES) {
+                    stack.push(fval);
+                }
+            }
         }
     }
     refs
@@ -332,6 +384,25 @@ fn collect_prev_refs_bounded(expr: &Expr) -> Vec<(String, u64)> {
             Expr::Binary { left, right, .. } => {
                 stack.push(left);
                 stack.push(right);
+            }
+            Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+            }
+            Expr::FieldAccess { object, .. } => stack.push(object),
+            Expr::ArrayLiteral(elems) => {
+                let mut i = 0;
+                while i < elems.len().min(MAX_DOT_NODES) {
+                    stack.push(&elems[i]);
+                    i += 1;
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                let mut i = 0;
+                while i < fields.len().min(MAX_DOT_NODES) {
+                    stack.push(&fields[i].1);
+                    i += 1;
+                }
             }
         }
     }

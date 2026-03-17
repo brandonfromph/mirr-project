@@ -87,6 +87,10 @@ pub(super) fn heuristic_sensor_defaults(ty: &SignalType) -> (u64, u64) {
             let half = max_unsigned_value(width.saturating_sub(1));
             (0, DEFAULT_NOISE_AMPLITUDE.min(half))
         }
+        SignalType::Array { .. }
+        | SignalType::Struct { .. }
+        | SignalType::FixedPoint { .. }
+        | SignalType::Bundle(_) => (0, 0),
     }
 }
 

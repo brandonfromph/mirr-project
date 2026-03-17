@@ -113,13 +113,13 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
                 break;
             }
             let target_ty = match signals.get(assignment.target.as_str()) {
-                Some(ty) => *ty,
+                Some(ty) => ty.clone(),
                 None => continue, // Undeclared target — caught by semantic validation.
             };
             match infer_expr_type(&assignment.value, &signals, assignment.span) {
                 Ok((expr_ty, expr_types)) => {
                     all_types.extend(expr_types);
-                    if !types_compatible(target_ty, expr_ty) {
+                    if !types_compatible(&target_ty, &expr_ty) {
                         errors.push(MirrError::TypeError {
                             message: format!(
                                 "[E602] Assignment to '{}' ({}): expression type {} is not compatible.",
@@ -154,7 +154,7 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
 /// - `Signed(N)` → `Signed(M)` when N ≤ M (safe sign-extension).
 /// - No cross-category: Signed ↔ Unsigned is always rejected.
 /// - No `Bool` ↔ `Signed(1)` promotion (1-bit signed = {-1,0}, not {false,true}).
-fn types_compatible(target: SignalType, expr: SignalType) -> bool {
+fn types_compatible(target: &SignalType, expr: &SignalType) -> bool {
     if target == expr {
         return true;
     }
@@ -203,6 +203,27 @@ fn infer_expr_type(
                 work.push(left);
                 work.push(right);
             }
+            Expr::ArrayIndex { array, index } => {
+                work.push(array);
+                work.push(index);
+            }
+            Expr::FieldAccess { object, .. } => {
+                work.push(object);
+            }
+            Expr::ArrayLiteral(elems) => {
+                let mut i = 0;
+                while i < elems.len().min(MAX_EXPR_NODES) {
+                    work.push(&elems[i]);
+                    i += 1;
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                let mut i = 0;
+                while i < fields.len().min(MAX_EXPR_NODES) {
+                    work.push(&fields[i].1);
+                    i += 1;
+                }
+            }
         }
     }
 
@@ -222,24 +243,24 @@ fn infer_expr_type(
             }
             // Signal → declared type.
             Expr::Signal(name) => match signals.get(name.as_str()) {
-                Some(ty) => *ty,
+                Some(ty) => ty.clone(),
                 None => continue, // Undeclared — caught by semantic validation.
             },
             // T13: Prev preserves signal type.
             Expr::Prev { signal, .. } => match signals.get(signal.as_str()) {
-                Some(ty) => *ty,
+                Some(ty) => ty.clone(),
                 None => continue, // Undeclared — caught by semantic validation.
             },
             // Unary operators.
             Expr::Unary { op, operand, .. } => {
                 let operand_ptr = operand.as_ref() as *const Expr;
                 let operand_ty = match types.get(&operand_ptr) {
-                    Some(ty) => *ty,
+                    Some(ty) => ty,
                     None => continue,
                 };
                 match op {
                     // T11/T12: Not works on Bool, Unsigned, and Signed.
-                    UnaryOp::Not => operand_ty,
+                    UnaryOp::Not => operand_ty.clone(),
                     // Negate: Unsigned(N) → Signed(N+1), Signed(N) → Signed(N),
                     // Bool → error.
                     UnaryOp::Negate => infer_negate_type(operand_ty, context_span)?,
@@ -250,15 +271,20 @@ fn infer_expr_type(
                 let left_ptr = left.as_ref() as *const Expr;
                 let right_ptr = right.as_ref() as *const Expr;
                 let left_ty = match types.get(&left_ptr) {
-                    Some(ty) => *ty,
+                    Some(ty) => ty,
                     None => continue,
                 };
                 let right_ty = match types.get(&right_ptr) {
-                    Some(ty) => *ty,
+                    Some(ty) => ty,
                     None => continue,
                 };
                 infer_binary_type(*op, left_ty, right_ty, context_span)?
             }
+            // Composite expressions: placeholder type until full type inference is wired.
+            Expr::ArrayIndex { .. }
+            | Expr::FieldAccess { .. }
+            | Expr::ArrayLiteral(_)
+            | Expr::StructLiteral { .. } => SignalType::Unsigned(32),
         };
         types.insert(ptr, ty);
     }
@@ -266,7 +292,7 @@ fn infer_expr_type(
     // The root expression's type.
     let root_ptr = expr as *const Expr;
     match types.get(&root_ptr) {
-        Some(ty) => Ok((*ty, types)),
+        Some(ty) => Ok((ty.clone(), types)),
         None => Ok((SignalType::Bool, types)), // Degenerate/empty — default to bool.
     }
 }
@@ -274,8 +300,8 @@ fn infer_expr_type(
 /// Infer the result type of a binary operation, or reject with a type error.
 fn infer_binary_type(
     op: BinaryOp,
-    left: SignalType,
-    right: SignalType,
+    left: &SignalType,
+    right: &SignalType,
     context_span: Option<Span>,
 ) -> Result<SignalType, MirrError> {
     match op {
@@ -318,7 +344,7 @@ fn infer_binary_type(
 
         // T8/T9: Logical operators require bool operands.
         BinaryOp::And | BinaryOp::Or => {
-            if left != SignalType::Bool || right != SignalType::Bool {
+            if left != &SignalType::Bool || right != &SignalType::Bool {
                 return Err(MirrError::TypeError {
                     message: format!(
                         "[E604] Operator '{}' requires bool operands, got {} and {}.",
@@ -346,13 +372,13 @@ fn infer_binary_type(
                     });
                 }
             }
-            Ok(left)
+            Ok(left.clone())
         }
 
         // T5/T7: Ordering comparisons.
         BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
             // T7: Ordering on Bool is an error.
-            if left == SignalType::Bool || right == SignalType::Bool {
+            if left == &SignalType::Bool || right == &SignalType::Bool {
                 return Err(MirrError::TypeError {
                     message: format!(
                         "[E605] Ordering operator '{}' cannot compare {} and {}.",
@@ -406,13 +432,13 @@ fn infer_binary_type(
 /// Extract numeric width and signedness, or emit E603 if the operand is Bool.
 fn require_numeric(
     op: BinaryOp,
-    ty: SignalType,
-    other: SignalType,
+    ty: &SignalType,
+    other: &SignalType,
     context_span: Option<Span>,
 ) -> Result<(u32, bool), MirrError> {
     match ty {
-        SignalType::Unsigned(w) => Ok((w, false)),
-        SignalType::Signed(w) => Ok((w, true)),
+        SignalType::Unsigned(w) => Ok((*w, false)),
+        SignalType::Signed(w) => Ok((*w, true)),
         SignalType::Bool => Err(MirrError::TypeError {
             message: format!(
                 "[E603] Operator '{}' requires numeric operands, got {} and {}.",
@@ -422,24 +448,45 @@ fn require_numeric(
             ),
             span: context_span,
         }),
+        SignalType::Array { .. }
+        | SignalType::Struct { .. }
+        | SignalType::FixedPoint { .. }
+        | SignalType::Bundle(_) => Err(MirrError::TypeError {
+            message: format!(
+                "[E226] Operator '{}' cannot be applied to composite type '{}'.",
+                op_symbol(op),
+                ty
+            ),
+            span: context_span,
+        }),
     }
 }
 
 /// Infer the result type of unary negation.
 fn infer_negate_type(
-    operand: SignalType,
+    operand: &SignalType,
     context_span: Option<Span>,
 ) -> Result<SignalType, MirrError> {
     match operand {
         // Negating unsigned N bits needs N+1 signed bits for two's complement.
         SignalType::Unsigned(w) => Ok(SignalType::Signed(w.saturating_add(1).min(64))),
         // Negating signed preserves width.
-        SignalType::Signed(w) => Ok(SignalType::Signed(w)),
+        SignalType::Signed(w) => Ok(SignalType::Signed(*w)),
         // Negating Bool is nonsensical — use `!` instead.
         SignalType::Bool => Err(MirrError::TypeError {
             message:
                 "[E609] Operator '-' (negate) cannot be applied to bool. Use '!' for logical not."
                     .to_string(),
+            span: context_span,
+        }),
+        SignalType::Array { .. }
+        | SignalType::Struct { .. }
+        | SignalType::FixedPoint { .. }
+        | SignalType::Bundle(_) => Err(MirrError::TypeError {
+            message: format!(
+                "[E226] Operator '-' (negate) cannot be applied to composite type '{}'.",
+                operand
+            ),
             span: context_span,
         }),
     }

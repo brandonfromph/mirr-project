@@ -90,7 +90,7 @@ pub fn typecheck_extended(
                 }
                 let ext = match signal_types.values().find(|et| et.base == *base_ty) {
                     Some(full) => (*full).clone(),
-                    None => ExtendedType::from_base(*base_ty),
+                    None => ExtendedType::from_base(base_ty.clone()),
                 };
                 ext_type_map.insert(*ptr, ext);
             }

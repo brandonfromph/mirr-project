@@ -207,5 +207,27 @@ fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
             };
             format!("({l} {op_str} {r})")
         }
+        Expr::ArrayIndex { array, index } => {
+            let a = emit_expr_str(array, iterations);
+            let i = emit_expr_str(index, iterations);
+            format!("{a}[{i}]")
+        }
+        Expr::FieldAccess { object, field } => {
+            let o = emit_expr_str(object, iterations);
+            format!("{o}.{field}")
+        }
+        Expr::ArrayLiteral(elems) => {
+            let parts: Vec<String> =
+                elems.iter().take(MAX_EXPR_NODES).map(|e| emit_expr_str(e, iterations)).collect();
+            format!("'{{{}}}", parts.join(", "))
+        }
+        Expr::StructLiteral { name, fields } => {
+            let parts: Vec<String> = fields
+                .iter()
+                .take(MAX_EXPR_NODES)
+                .map(|(f, v)| format!("{}: {}", f, emit_expr_str(v, iterations)))
+                .collect();
+            format!("{} {{ {} }}", name, parts.join(", "))
+        }
     }
 }

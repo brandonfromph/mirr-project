@@ -120,6 +120,23 @@ pub(super) fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, Stri
                 stack.push(left);
                 stack.push(right);
             }
+            Expr::ArrayIndex { array, index } => {
+                stack.push(array);
+                stack.push(index);
+            }
+            Expr::FieldAccess { object, .. } => {
+                stack.push(object);
+            }
+            Expr::ArrayLiteral(elems) => {
+                for e in elems {
+                    stack.push(e);
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                for (_, v) in fields {
+                    stack.push(v);
+                }
+            }
         }
     }
 }
