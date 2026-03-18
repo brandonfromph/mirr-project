@@ -10,7 +10,7 @@
     Depends on: src/emit/rspu_tagged.rs
 *)
 
-From Stdlib.ZArith Require Import ZArith.
+From Coq Require Import ZArith.
 
 Open Scope Z_scope.
 

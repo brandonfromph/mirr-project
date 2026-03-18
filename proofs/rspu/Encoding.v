@@ -9,10 +9,10 @@
     Depends on: src/emit/rspu_encoding.rs
 *)
 
-From Stdlib.ZArith Require Import ZArith.
-From Stdlib.Bool Require Import Bool.
-From Stdlib.micromega Require Import Lia.
-From Stdlib.Lists Require Import List.
+From Coq Require Import ZArith.
+From Coq Require Import Bool.
+From Coq Require Import Lia.
+From Coq Require Import List.
 Import ListNotations.
 
 Open Scope Z_scope.
