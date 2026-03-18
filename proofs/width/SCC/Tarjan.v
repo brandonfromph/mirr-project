@@ -7,10 +7,10 @@
     Campaign: ROCQ-001
 *)
 
-From Stdlib.Arith Require Import PeanoNat.
-From Stdlib.Lists Require Import List.
-From Stdlib.Bool Require Import Bool.
-Require Import Types.
+From Coq Require Import PeanoNat.
+From Coq Require Import List.
+From Coq Require Import Bool.
+Require Import MirrWidth.Types.
 Import ListNotations.
 
 (** ** Graph Representation

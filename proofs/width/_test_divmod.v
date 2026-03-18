@@ -1,3 +1,3 @@
-From Stdlib.Arith Require Import PeanoNat.
-From Stdlib.micromega Require Import Lia.
+From Coq Require Import PeanoNat.
+From Coq Require Import Lia.
 Check Nat.div_mod_eq.

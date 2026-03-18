@@ -8,10 +8,10 @@
     Campaign: ROCQ-001
 *)
 
-From Stdlib.Arith Require Import PeanoNat.
-From Stdlib.Bool Require Import Bool.
-From Stdlib.micromega Require Import Lia.
-Require Import Types.
+From Coq Require Import PeanoNat.
+From Coq Require Import Bool.
+From Coq Require Import Lia.
+Require Import MirrWidth.Types.
 
 (** ** Constraint Evaluation
 

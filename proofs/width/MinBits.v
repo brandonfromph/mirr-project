@@ -8,10 +8,10 @@
     Campaign: ROCQ-001
 *)
 
-From Stdlib.Arith Require Import PeanoNat.
-From Stdlib.micromega Require Import Lia.
-From Stdlib.Arith Require Import Wf_nat.
-Require Import Types.
+From Coq Require Import PeanoNat.
+From Coq Require Import Lia.
+From Coq Require Import Wf_nat.
+Require Import MirrWidth.Types.
 
 (** ** Specification
 
