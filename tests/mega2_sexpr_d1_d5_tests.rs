@@ -137,7 +137,13 @@ fn d5_empty_program_roundtrip() {
 }
 #[test]
 fn d5_module_with_signal_roundtrip() {
-    roundtrip_src("module m { signal x: in u8; signal y: out bool; }", "signal_roundtrip");
+    roundtrip_src(
+        r#"module m {
+    signal x: in u8;
+    signal y: out bool;
+}"#,
+        "signal_roundtrip",
+    );
 }
 #[test]
 fn d5_module_with_guard_roundtrip() {
@@ -149,8 +155,10 @@ fn d5_module_with_guard_roundtrip() {
         when (x > 10)
         for 1 cycles;
     }
-    reflex r when [gd] {
-        y = true;
+    reflex r {
+        on gd {
+            y = true;
+        }
     }
 }"#,
         "guard_roundtrip",
