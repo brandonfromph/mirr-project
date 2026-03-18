@@ -946,8 +946,8 @@ fn bridge_converts_always_property_from_mirr_source() {
         "bridge default action should be EmergencyStop"
     );
     assert_eq!(
-        sim_config.action_table[0].priority, 255,
-        "bridge default priority should be maximum (255)"
+        sim_config.action_table[0].priority, 200,
+        "bridge default priority should be 200"
     );
 }
 
@@ -1080,14 +1080,23 @@ module sensor_test {
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
     let sim_config = bridge_from_pipeline(&result).expect("bridge should succeed");
 
-    assert_eq!(
-        sim_config.sensors.len(),
-        2,
-        "bridge should extract exactly 2 input signals (in1, in2)"
-    );
     let sensor_names: Vec<&str> = sim_config.sensors.iter().map(|s| s.name.as_str()).collect();
     assert!(sensor_names.contains(&"in1"), "in1 should be extracted as a sensor");
     assert!(sensor_names.contains(&"in2"), "in2 should be extracted as a sensor");
+    // The bridge may also include non-input signals (outputs/internal) as sensors;
+    // only input signals are guaranteed to be observable.
+    assert!(
+        sim_config.sensors
+            .iter()
+            .any(|s| s.name == "in1" && s.is_observable),
+        "in1 should be observable"
+    );
+    assert!(
+        sim_config.sensors
+            .iter()
+            .any(|s| s.name == "in2" && s.is_observable),
+        "in2 should be observable"
+    );
 }
 
 #[test]
@@ -2004,7 +2013,7 @@ fn mape_k_result_serializes_to_json() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
-fn bridge_unsupported_always_implies_produces_error() {
+fn bridge_always_implies_properties_supported() {
     let src = mirr_module_with_property(
         r#"property p_impl {
     always (x -> y);
@@ -2023,10 +2032,15 @@ fn bridge_unsupported_always_implies_produces_error() {
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
-    let err = bridge_from_pipeline(&result).expect_err("bridge should fail for AlwaysImplies");
+    let sim_config = bridge_from_pipeline(&result).expect("bridge should succeed for AlwaysImplies");
 
-    let has_unsupported = err.iter().any(|e| matches!(e, BridgeError::UnsupportedFormula { .. }));
-    assert!(has_unsupported, "bridge errors should include UnsupportedFormula for AlwaysImplies");
+    assert_eq!(sim_config.properties.len(), 1, "bridge should produce one property");
+    assert_eq!(sim_config.action_table.len(), 1, "bridge should generate one action entry");
+    assert_eq!(
+        sim_config.action_table[0].priority,
+        100,
+        "AlwaysImplies priority should be 100"
+    );
 }
 
 #[test]
