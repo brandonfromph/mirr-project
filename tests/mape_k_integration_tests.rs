@@ -945,10 +945,7 @@ fn bridge_converts_always_property_from_mirr_source() {
         AdaptationAction::EmergencyStop,
         "bridge default action should be EmergencyStop"
     );
-    assert_eq!(
-        sim_config.action_table[0].priority, 200,
-        "bridge default priority should be 200"
-    );
+    assert_eq!(sim_config.action_table[0].priority, 200, "bridge default priority should be 200");
 }
 
 #[test]
@@ -1086,15 +1083,11 @@ module sensor_test {
     // The bridge may also include non-input signals (outputs/internal) as sensors;
     // only input signals are guaranteed to be observable.
     assert!(
-        sim_config.sensors
-            .iter()
-            .any(|s| s.name == "in1" && s.is_observable),
+        sim_config.sensors.iter().any(|s| s.name == "in1" && s.is_observable),
         "in1 should be observable"
     );
     assert!(
-        sim_config.sensors
-            .iter()
-            .any(|s| s.name == "in2" && s.is_observable),
+        sim_config.sensors.iter().any(|s| s.name == "in2" && s.is_observable),
         "in2 should be observable"
     );
 }
@@ -2032,15 +2025,12 @@ fn bridge_always_implies_properties_supported() {
     };
 
     let result = run_pipeline(&src, &config).expect("pipeline should succeed");
-    let sim_config = bridge_from_pipeline(&result).expect("bridge should succeed for AlwaysImplies");
+    let sim_config =
+        bridge_from_pipeline(&result).expect("bridge should succeed for AlwaysImplies");
 
     assert_eq!(sim_config.properties.len(), 1, "bridge should produce one property");
     assert_eq!(sim_config.action_table.len(), 1, "bridge should generate one action entry");
-    assert_eq!(
-        sim_config.action_table[0].priority,
-        100,
-        "AlwaysImplies priority should be 100"
-    );
+    assert_eq!(sim_config.action_table[0].priority, 100, "AlwaysImplies priority should be 100");
 }
 
 #[test]
