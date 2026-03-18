@@ -132,8 +132,10 @@ fn c4_extended_pipeline_valid_module_passes() {
         when (x > 100)
         for 1 cycles;
     }
-    reflex r when [g] {
-        y = true;
+    reflex r {
+        on g {
+            y = true;
+        }
     }
 }"#,
     );

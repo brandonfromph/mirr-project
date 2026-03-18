@@ -194,10 +194,7 @@ pub(super) fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, 
     if let Some(pos) = name_part.find("when") {
         let when_part = name_part[pos + "when".len()..].trim();
         // Allow optional surrounding brackets and split on 'and'.
-        let when_body = when_part
-            .trim_start_matches('[')
-            .trim_end_matches(']')
-            .trim();
+        let when_body = when_part.trim_start_matches('[').trim_end_matches(']').trim();
         for part in when_body.split("and") {
             let g = part.trim().trim_start_matches('[').trim_end_matches(']').trim();
             if !g.is_empty() {
@@ -237,10 +234,8 @@ pub(super) fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, 
     }
 
     if guard_names.is_empty() {
-        return Err(MirrError::parse_error(format!(
-            "[E140] Reflex '{name}' missing 'on' clause."
-        ))
-        .with_span(Some(Span::full_line((*index).saturating_sub(1) as u32))));
+        return Err(MirrError::parse_error(format!("[E140] Reflex '{name}' missing 'on' clause."))
+            .with_span(Some(Span::full_line((*index).saturating_sub(1) as u32))));
     }
 
     let mut assignments = Vec::new();

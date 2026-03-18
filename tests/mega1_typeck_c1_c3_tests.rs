@@ -121,11 +121,7 @@ fn c1_pipeline_guard_reflex_succeeds() {
     }
 }"#,
     );
-    assert!(
-        result.is_ok(),
-        "guard+reflex module must pipeline successfully: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "guard+reflex module must pipeline successfully: {:?}", result.err());
 }
 
 #[test]
@@ -161,11 +157,7 @@ fn c1_pipeline_multi_signal_module() {
     }
 }"#,
     );
-    assert!(
-        result.is_ok(),
-        "multi-signal module must compile: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "multi-signal module must compile: {:?}", result.err());
 }
 
 // ===========================================================================
@@ -183,7 +175,11 @@ fn c2_signed_assigned_to_unsigned_fails() {
     let errs = typecheck_module(&m).expect_err("signed to unsigned must fail");
     let any_e60x = errs.errors.iter().take(MAX_ERR_SCAN).any(|e| {
         let s = e.to_string();
-        s.contains("E608") || s.contains("E602") || s.contains("signed") || s.contains("mismatch") || s.contains("not compatible")
+        s.contains("E608")
+            || s.contains("E602")
+            || s.contains("signed")
+            || s.contains("mismatch")
+            || s.contains("not compatible")
     });
     assert!(any_e60x, "must produce E602/E608 or mismatch error, got: {:?}", errs.errors);
 }
