@@ -189,49 +189,59 @@ pub(super) fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, 
             .with_span(Some(Span::full_line(*index as u32))));
     }
 
+    // Parse guard names from the header's 'when' clause (e.g. "reflex r when [g] { ... }").
+    let mut guard_names: Vec<String> = Vec::new();
+    if let Some(pos) = name_part.find("when") {
+        let when_part = name_part[pos + "when".len()..].trim();
+        // Allow optional surrounding brackets and split on 'and'.
+        let when_body = when_part
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .trim();
+        for part in when_body.split("and") {
+            let g = part.trim().trim_start_matches('[').trim_end_matches(']').trim();
+            if !g.is_empty() {
+                guard_names.push(g.to_string());
+            }
+        }
+    }
+
     *index += 1;
     skip_empty_and_comments(lines, index);
 
-    if *index >= lines.len() {
-        return Err(MirrError::parse_error(format!("[E140] Reflex '{name}' missing 'on' clause."))
-            .with_span(Some(Span::full_line((*index).saturating_sub(1) as u32))));
-    }
+    // Optional 'on' clause may override the guard list parsed from the 'when' clause.
+    if *index < lines.len() {
+        let on_line = lines[*index].trim();
+        if on_line.starts_with("on ") {
+            let after_on = on_line.strip_prefix("on ").ok_or_else(|| {
+                MirrError::parse_error("[E142] Malformed 'on' line.")
+                    .with_span(Some(Span::full_line(*index as u32)))
+            })?;
 
-    let on_line = lines[*index].trim();
-    if !on_line.starts_with("on ") {
-        return Err(MirrError::parse_error(format!(
-            "[E141] Reflex '{name}' expected 'on' line, found: {on_line}"
-        ))
-        .with_span(Some(Span::full_line(*index as u32))));
-    }
+            let (guards_part, _) = match after_on.split_once('{') {
+                Some(parts) => parts,
+                None => (after_on, ""),
+            };
 
-    let after_on = on_line.strip_prefix("on ").ok_or_else(|| {
-        MirrError::parse_error("[E142] Malformed 'on' line.")
-            .with_span(Some(Span::full_line(*index as u32)))
-    })?;
+            guard_names.clear();
+            for part in guards_part.split("and") {
+                let g = part.trim();
+                if !g.is_empty() {
+                    guard_names.push(g.to_string());
+                }
+            }
 
-    let (guards_part, _) = match after_on.split_once('{') {
-        Some(parts) => parts,
-        None => (after_on, ""),
-    };
-
-    let mut guard_names = Vec::new();
-    for part in guards_part.split("and") {
-        let g = part.trim();
-        if !g.is_empty() {
-            guard_names.push(g.to_string());
+            *index += 1;
+            skip_empty_and_comments(lines, index);
         }
     }
 
     if guard_names.is_empty() {
         return Err(MirrError::parse_error(format!(
-            "[E143] Reflex '{name}' has no guard names in 'on' clause."
+            "[E140] Reflex '{name}' missing 'on' clause."
         ))
-        .with_span(Some(Span::full_line(*index as u32))));
+        .with_span(Some(Span::full_line((*index).saturating_sub(1) as u32))));
     }
-
-    *index += 1;
-    skip_empty_and_comments(lines, index);
 
     let mut assignments = Vec::new();
 

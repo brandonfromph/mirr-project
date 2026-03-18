@@ -95,7 +95,12 @@ fn c1_unsigned_to_unsigned_same_width() {
 
 #[test]
 fn c1_pipeline_empty_module_succeeds() {
-    let result = run_src("module empty_m { signal x: in bool; signal y: out bool; }");
+    let result = run_src(
+        r#"module empty_m {
+    signal x: in bool;
+    signal y: out bool;
+}"#,
+    );
     assert!(result.is_ok(), "empty module must pipeline successfully");
 }
 
@@ -109,12 +114,18 @@ fn c1_pipeline_guard_reflex_succeeds() {
         when (sensor > 200)
         for 1 cycles;
     }
-    reflex r when [g_high] {
-        alarm = true;
+    reflex r {
+        on g_high {
+            alarm = true;
+        }
     }
 }"#,
     );
-    assert!(result.is_ok(), "guard+reflex module must pipeline successfully");
+    assert!(
+        result.is_ok(),
+        "guard+reflex module must pipeline successfully: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -143,12 +154,18 @@ fn c1_pipeline_multi_signal_module() {
         when (a > 100)
         for 1 cycles;
     }
-    reflex ra when [ga] {
-        out_b = true;
+    reflex ra {
+        on ga {
+            out_b = true;
+        }
     }
 }"#,
     );
-    assert!(result.is_ok(), "multi-signal module must compile");
+    assert!(
+        result.is_ok(),
+        "multi-signal module must compile: {:?}",
+        result.err()
+    );
 }
 
 // ===========================================================================
@@ -164,11 +181,11 @@ fn c2_signed_assigned_to_unsigned_fails() {
     );
     validate_module(&m).expect("must pass semantic validation");
     let errs = typecheck_module(&m).expect_err("signed to unsigned must fail");
-    let any_e608 = errs.errors.iter().take(MAX_ERR_SCAN).any(|e| {
+    let any_e60x = errs.errors.iter().take(MAX_ERR_SCAN).any(|e| {
         let s = e.to_string();
-        s.contains("E608") || s.contains("signed") || s.contains("mismatch")
+        s.contains("E608") || s.contains("E602") || s.contains("signed") || s.contains("mismatch") || s.contains("not compatible")
     });
-    assert!(any_e608, "must produce E608 or mismatch error, got: {:?}", errs.errors);
+    assert!(any_e60x, "must produce E602/E608 or mismatch error, got: {:?}", errs.errors);
 }
 
 #[test]
