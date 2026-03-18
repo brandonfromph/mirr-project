@@ -40,6 +40,7 @@ fn fault_sensor(name: &str, base: u64, fault_tick: u64, fault_val: u64, seed: u6
         fault_value: fault_val,
         fault_end_tick: None,
         seed,
+        is_observable: true,
     }
 }
 
@@ -53,6 +54,7 @@ fn steady_sensor(name: &str, base: u64, seed: u64) -> SensorConfig {
         fault_value: 0,
         fault_end_tick: None,
         seed,
+        is_observable: true,
     }
 }
 

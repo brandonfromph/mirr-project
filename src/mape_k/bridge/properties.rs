@@ -62,10 +62,11 @@ pub(super) fn count_assert_properties(props: &[crate::ast::property::PropertyDec
 ///
 /// Supported lowerings:
 /// - `Always(expr)` -> `TemporalProperty::Always(predicate)`
-/// - `Never(expr)` -> `Always(LessThan(name, 1))`
+/// - `Never(expr)` -> `TemporalProperty::Always(LessThan(name, 1))`
+/// - `AlwaysImplies { antecedent, consequent }` -> `TemporalProperty::AlwaysImplies(pred_a, pred_b)`
+/// - `NeverImplies { antecedent, consequent }` -> `TemporalProperty::NeverImplies(pred_a, pred_b)`
+/// - `AlwaysFollowedBy { trigger, delay_cycles, response }` -> `TemporalProperty::AlwaysFollowedBy(trigger, delay, response)`
 /// - `EventuallyWithin { expr, cycles }` -> `TemporalProperty::EventuallyWithin(predicate, cycles)`
-///
-/// Multi-expression formulas produce `UnsupportedFormula`.
 fn lower_formula(formula: &PropertyFormula) -> Result<TemporalProperty, String> {
     match formula {
         PropertyFormula::Always(expr) => {
@@ -81,16 +82,20 @@ fn lower_formula(formula: &PropertyFormula) -> Result<TemporalProperty, String> 
             let pred = lower_expr_to_predicate(expr)?;
             Ok(TemporalProperty::EventuallyWithin(pred, u64::from(*cycles)))
         }
-        PropertyFormula::AlwaysImplies { .. } => {
-            Err("AlwaysImplies requires two signals; cannot lower to a single predicate"
-                .to_string())
+        PropertyFormula::AlwaysImplies { antecedent, consequent } => {
+            let a = lower_expr_to_predicate(antecedent)?;
+            let b = lower_expr_to_predicate(consequent)?;
+            Ok(TemporalProperty::AlwaysImplies(a, b))
         }
-        PropertyFormula::NeverImplies { .. } => {
-            Err("NeverImplies requires two signals; cannot lower to a single predicate".to_string())
+        PropertyFormula::NeverImplies { antecedent, consequent } => {
+            let a = lower_expr_to_predicate(antecedent)?;
+            let b = lower_expr_to_predicate(consequent)?;
+            Ok(TemporalProperty::NeverImplies(a, b))
         }
-        PropertyFormula::AlwaysFollowedBy { .. } => {
-            Err("AlwaysFollowedBy requires two signals; cannot lower to a single predicate"
-                .to_string())
+        PropertyFormula::AlwaysFollowedBy { trigger, delay_cycles, response } => {
+            let t = lower_expr_to_predicate(trigger)?;
+            let r = lower_expr_to_predicate(response)?;
+            Ok(TemporalProperty::AlwaysFollowedBy(t, u64::from(*delay_cycles), r))
         }
     }
 }

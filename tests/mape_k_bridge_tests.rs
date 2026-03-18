@@ -25,7 +25,6 @@ use nasa_rust_project::pipeline::PipelineResult;
 // ---------------------------------------------------------------------------
 
 const MAX_TEST_SENSORS: usize = 64;
-const MAX_TEST_PROPERTIES: usize = 64;
 const MAX_TEST_ACTION_ENTRIES: usize = 64;
 
 /// PRNG seed base used by the bridge (mirrors bridge.rs constant).
@@ -169,8 +168,8 @@ module m {
     let result = parse_to_pipeline(source);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed for a basic module");
 
-    assert_eq!(config.sensors.len(), 1, "basic module with one input should produce one sensor");
-    assert_eq!(config.sensors[0].name, "pressure", "sensor name should match input signal name");
+    assert_eq!(config.sensors.len(), 2, "basic module with 2 signals should produce 2 sensors");
+    assert_eq!(config.sensors[0].name, "pressure", "sensor name should match first signal name");
     assert_eq!(config.window_size, DEFAULT_WINDOW_SIZE, "window_size should be the default");
     assert_eq!(
         config.knowledge_capacity, DEFAULT_KNOWLEDGE_CAPACITY,
@@ -198,7 +197,7 @@ module m {
     let config =
         bridge_from_pipeline(&result).expect("bridge should succeed for bool input module");
 
-    assert_eq!(config.sensors.len(), 1, "should have exactly one sensor for one bool input");
+    assert_eq!(config.sensors.len(), 2, "should have 2 sensors for 2 signals");
     assert_eq!(config.sensors[0].base_value, 1, "bool sensor base_value should be 1");
     assert_eq!(
         config.sensors[0].noise_amplitude, 0,
@@ -254,12 +253,13 @@ module m {
     let result = parse_to_pipeline(source);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed when outputs present");
 
-    assert_eq!(
-        config.sensors.len(),
-        1,
-        "only input signals should become sensors; outputs excluded"
-    );
-    assert_eq!(config.sensors[0].name, "inp", "the sole sensor should be the input signal");
+    assert_eq!(config.sensors.len(), 3, "all signals should become sensors");
+    assert_eq!(config.sensors[0].name, "inp", "first sensor should be the input signal");
+    assert!(config.sensors[0].is_observable, "input signals should be observable");
+    assert_eq!(config.sensors[1].name, "alarm", "second sensor should be the output signal");
+    assert!(!config.sensors[1].is_observable, "output signals should not be observable");
+    assert_eq!(config.sensors[2].name, "status", "third sensor should be the output signal");
+    assert!(!config.sensors[2].is_observable, "output signals should not be observable");
 }
 
 #[test]
@@ -283,10 +283,11 @@ module m {
     let result = parse_to_pipeline(source);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed for multiple inputs");
 
-    assert_eq!(config.sensors.len(), 3, "three input signals should produce three sensors");
+    assert_eq!(config.sensors.len(), 4, "four signals should produce four sensors");
     assert_eq!(config.sensors[0].name, "alpha", "first sensor should be 'alpha'");
     assert_eq!(config.sensors[1].name, "beta", "second sensor should be 'beta'");
     assert_eq!(config.sensors[2].name, "gamma", "third sensor should be 'gamma'");
+    assert_eq!(config.sensors[3].name, "out_sig", "fourth sensor should be 'out_sig'");
 }
 
 // ---------------------------------------------------------------------------
@@ -304,12 +305,13 @@ fn bridge_internal_signals_excluded_from_sensors() {
     let config =
         bridge_from_pipeline(&result).expect("bridge should succeed when internal signals present");
 
-    assert_eq!(
-        config.sensors.len(),
-        1,
-        "only input signals should become sensors; internals excluded"
-    );
-    assert_eq!(config.sensors[0].name, "inp", "the sole sensor should be the input signal");
+    assert_eq!(config.sensors.len(), 3, "all signals should become sensors");
+    assert_eq!(config.sensors[0].name, "inp", "first sensor should be the input signal");
+    assert!(config.sensors[0].is_observable, "input signals should be observable");
+    assert_eq!(config.sensors[1].name, "out_sig", "second sensor should be the output signal");
+    assert!(!config.sensors[1].is_observable, "output signals should not be observable");
+    assert_eq!(config.sensors[2].name, "state", "third sensor should be the internal signal");
+    assert!(!config.sensors[2].is_observable, "internal signals should not be observable");
 }
 
 #[test]
@@ -967,7 +969,7 @@ fn bridge_action_table_one_entry_per_property() {
             "action entry {} should be EmergencyStop",
             i
         );
-        assert_eq!(entry.priority, 255, "action entry {} priority should be 255 (maximum)", i);
+        assert_eq!(entry.priority, 200, "action entry {} priority should be 200 (Always/Never)", i);
         assert_eq!(
             entry.trigger_on,
             TriggerCondition::OnViolation,
@@ -1050,7 +1052,8 @@ fn bridge_too_many_properties_produces_error() {
 }
 
 #[test]
-fn bridge_unsupported_always_implies_produces_error() {
+fn bridge_always_implies_now_supported() {
+    let signals = vec![input_signal("a", SignalType::Bool), input_signal("b", SignalType::Bool)];
     let props = vec![assert_property(
         "p_impl",
         PropertyFormula::AlwaysImplies {
@@ -1058,23 +1061,18 @@ fn bridge_unsupported_always_implies_produces_error() {
             consequent: Expr::Signal("b".to_string()),
         },
     )];
-    let result = stub_pipeline(Vec::new(), props);
-    let err = bridge_from_pipeline(&result).expect_err("bridge should fail for AlwaysImplies");
+    let result = stub_pipeline(signals, props);
+    let config =
+        bridge_from_pipeline(&result).expect("bridge should succeed for AlwaysImplies (MEGA-14)");
 
-    assert_eq!(err.len(), 1, "should produce exactly one error");
-    match &err[0] {
-        BridgeError::UnsupportedFormula { description } => {
-            assert!(
-                description.contains("AlwaysImplies"),
-                "error description should mention AlwaysImplies, got: {description}"
-            );
-        }
-        other => panic!("expected UnsupportedFormula error, got: {other:?}"),
-    }
+    assert_eq!(config.properties.len(), 1, "should have one property");
+    assert_eq!(config.action_table.len(), 1, "should have one action entry");
+    assert_eq!(config.action_table[0].priority, 100, "AlwaysImplies priority should be 100");
 }
 
 #[test]
-fn bridge_unsupported_never_implies_produces_error() {
+fn bridge_never_implies_now_supported() {
+    let signals = vec![input_signal("a", SignalType::Bool), input_signal("b", SignalType::Bool)];
     let props = vec![assert_property(
         "p_nimpl",
         PropertyFormula::NeverImplies {
@@ -1082,23 +1080,19 @@ fn bridge_unsupported_never_implies_produces_error() {
             consequent: Expr::Signal("b".to_string()),
         },
     )];
-    let result = stub_pipeline(Vec::new(), props);
-    let err = bridge_from_pipeline(&result).expect_err("bridge should fail for NeverImplies");
+    let result = stub_pipeline(signals, props);
+    let config =
+        bridge_from_pipeline(&result).expect("bridge should succeed for NeverImplies (MEGA-14)");
 
-    assert_eq!(err.len(), 1, "should produce exactly one error");
-    match &err[0] {
-        BridgeError::UnsupportedFormula { description } => {
-            assert!(
-                description.contains("NeverImplies"),
-                "error description should mention NeverImplies, got: {description}"
-            );
-        }
-        other => panic!("expected UnsupportedFormula error, got: {other:?}"),
-    }
+    assert_eq!(config.properties.len(), 1, "should have one property");
+    assert_eq!(config.action_table.len(), 1, "should have one action entry");
+    assert_eq!(config.action_table[0].priority, 100, "NeverImplies priority should be 100");
 }
 
 #[test]
-fn bridge_unsupported_always_followed_by_produces_error() {
+fn bridge_always_followed_by_now_supported() {
+    let signals =
+        vec![input_signal("req", SignalType::Bool), input_signal("ack", SignalType::Bool)];
     let props = vec![assert_property(
         "p_afb",
         PropertyFormula::AlwaysFollowedBy {
@@ -1107,23 +1101,25 @@ fn bridge_unsupported_always_followed_by_produces_error() {
             delay_cycles: 5,
         },
     )];
-    let result = stub_pipeline(Vec::new(), props);
-    let err = bridge_from_pipeline(&result).expect_err("bridge should fail for AlwaysFollowedBy");
+    let result = stub_pipeline(signals, props);
+    let config = bridge_from_pipeline(&result)
+        .expect("bridge should succeed for AlwaysFollowedBy (MEGA-14)");
 
-    assert_eq!(err.len(), 1, "should produce exactly one error");
-    match &err[0] {
-        BridgeError::UnsupportedFormula { description } => {
-            assert!(
-                description.contains("AlwaysFollowedBy"),
-                "error description should mention AlwaysFollowedBy, got: {description}"
-            );
-        }
-        other => panic!("expected UnsupportedFormula error, got: {other:?}"),
-    }
+    assert_eq!(config.properties.len(), 1, "should have one property");
+    assert_eq!(config.action_table.len(), 1, "should have one action entry");
+    assert_eq!(config.action_table[0].priority, 64, "AlwaysFollowedBy priority should be 64");
 }
 
 #[test]
-fn bridge_multiple_unsupported_formulas_collect_all_errors() {
+fn bridge_multiple_advanced_formulas_now_supported() {
+    let signals = vec![
+        input_signal("a", SignalType::Bool),
+        input_signal("b", SignalType::Bool),
+        input_signal("c", SignalType::Bool),
+        input_signal("d", SignalType::Bool),
+        input_signal("e", SignalType::Bool),
+        input_signal("f", SignalType::Bool),
+    ];
     let props = vec![
         assert_property(
             "p1",
@@ -1148,18 +1144,16 @@ fn bridge_multiple_unsupported_formulas_collect_all_errors() {
             },
         ),
     ];
-    let result = stub_pipeline(Vec::new(), props);
-    let err = bridge_from_pipeline(&result)
-        .expect_err("bridge should fail for multiple unsupported formulas");
+    let result = stub_pipeline(signals, props);
+    let config = bridge_from_pipeline(&result)
+        .expect("bridge should succeed for multiple advanced formulas (MEGA-14)");
 
-    assert_eq!(err.len(), 3, "should collect all three unsupported formula errors");
-    for i in 0..MAX_TEST_PROPERTIES.min(err.len()) {
-        assert!(
-            matches!(&err[i], BridgeError::UnsupportedFormula { .. }),
-            "error {} should be UnsupportedFormula",
-            i
-        );
-    }
+    assert_eq!(config.properties.len(), 3, "should lower all three properties");
+    assert_eq!(config.action_table.len(), 3, "should have three action entries");
+    // Priorities: AlwaysImplies=100, NeverImplies=100, AlwaysFollowedBy=64
+    assert_eq!(config.action_table[0].priority, 100, "AlwaysImplies priority");
+    assert_eq!(config.action_table[1].priority, 100, "NeverImplies priority");
+    assert_eq!(config.action_table[2].priority, 64, "AlwaysFollowedBy priority");
 }
 
 #[test]
@@ -1244,7 +1238,7 @@ fn bridge_signals_only_no_properties() {
     let result = stub_pipeline(signals, Vec::new());
     let config = bridge_from_pipeline(&result).expect("bridge should succeed for signals only");
 
-    assert_eq!(config.sensors.len(), 2, "two input signals should produce two sensors");
+    assert_eq!(config.sensors.len(), 3, "three signals should produce three sensors");
     assert!(config.properties.is_empty(), "no properties should produce empty properties");
     assert!(config.action_table.is_empty(), "no properties should produce empty action table");
 }
@@ -1267,20 +1261,20 @@ fn bridge_properties_only_no_signals() {
 #[test]
 fn bridge_exactly_max_signals_succeeds() {
     let mut signals: Vec<SignalDecl> = Vec::with_capacity(MAX_BRIDGE_SIGNALS + 1);
-    for i in 0..MAX_BRIDGE_SIGNALS {
+    for i in 0..(MAX_BRIDGE_SIGNALS - 1) {
         signals.push(input_signal(&format!("s{i}"), SignalType::Bool));
     }
-    // Add one output to verify it does not count towards the input limit.
+    // Add one output - now total is exactly MAX_BRIDGE_SIGNALS
     signals.push(output_signal("out_sig", SignalType::Bool));
 
     let result = stub_pipeline(signals, Vec::new());
     let config = bridge_from_pipeline(&result)
-        .expect("bridge should succeed with exactly MAX_BRIDGE_SIGNALS inputs");
+        .expect("bridge should succeed with exactly MAX_BRIDGE_SIGNALS total signals");
 
     assert_eq!(
         config.sensors.len(),
         MAX_BRIDGE_SIGNALS,
-        "exactly MAX_BRIDGE_SIGNALS inputs should produce MAX_BRIDGE_SIGNALS sensors"
+        "exactly MAX_BRIDGE_SIGNALS signals should produce MAX_BRIDGE_SIGNALS sensors"
     );
 }
 
@@ -1342,12 +1336,14 @@ module respirator {
     let config = bridge_from_pipeline(&result)
         .expect("bridge should succeed for neonatal respirator scenario");
 
-    // Sensors: only inputs (airway_pressure, flow_rate).
-    assert_eq!(config.sensors.len(), 2, "respirator should have 2 sensors (one per input)");
+    // Sensors: all signals (airway_pressure, flow_rate, alarm, valve).
+    assert_eq!(config.sensors.len(), 4, "respirator should have 4 sensors (all signals)");
     assert_eq!(config.sensors[0].name, "airway_pressure", "first sensor should be airway_pressure");
     assert_eq!(config.sensors[1].name, "flow_rate", "second sensor should be flow_rate");
+    assert_eq!(config.sensors[2].name, "alarm", "third sensor should be alarm");
+    assert_eq!(config.sensors[3].name, "valve", "fourth sensor should be valve");
 
-    // Both are u8: midpoint = 127, noise = 2.
+    // Inputs are u16: midpoint = 32767, noise = 2.
     for i in 0..2 {
         assert_eq!(
             config.sensors[i].base_value, 127,
@@ -1409,7 +1405,7 @@ module m {
 }
 
 #[test]
-fn bridge_always_implies_from_parsed_source_produces_error() {
+fn bridge_always_implies_from_parsed_source_now_supported() {
     let source = "\
 module m {
     signal a: in bool;
@@ -1429,38 +1425,41 @@ module m {
     }
 }";
     let result = parse_to_pipeline(source);
-    let err = bridge_from_pipeline(&result)
-        .expect_err("bridge should fail for always implies from parsed source");
+    let config = bridge_from_pipeline(&result)
+        .expect("bridge should succeed for always implies from parsed source (MEGA-14)");
 
-    assert!(
-        err.iter().any(|e| matches!(e, BridgeError::UnsupportedFormula { .. })),
-        "should produce UnsupportedFormula error for AlwaysImplies"
-    );
+    assert_eq!(config.properties.len(), 1, "should have one property");
+    assert_eq!(config.action_table.len(), 1, "should have one action entry");
+    assert_eq!(config.action_table[0].priority, 100, "AlwaysImplies priority should be 100");
 }
 
 #[test]
-fn bridge_mixed_valid_and_invalid_properties() {
+fn bridge_mixed_property_types_all_supported() {
+    let signals = vec![
+        input_signal("alive", SignalType::Bool),
+        input_signal("a", SignalType::Bool),
+        input_signal("b", SignalType::Bool),
+    ];
     let props = vec![
-        assert_property("p_ok", PropertyFormula::Always(Expr::Signal("alive".to_string()))),
+        assert_property("p_always", PropertyFormula::Always(Expr::Signal("alive".to_string()))),
         assert_property(
-            "p_bad",
+            "p_implies",
             PropertyFormula::AlwaysImplies {
                 antecedent: Expr::Signal("a".to_string()),
                 consequent: Expr::Signal("b".to_string()),
             },
         ),
     ];
-    let result = stub_pipeline(Vec::new(), props);
-    let err = bridge_from_pipeline(&result)
-        .expect_err("bridge should fail when any property is unsupported");
+    let result = stub_pipeline(signals, props);
+    let config = bridge_from_pipeline(&result)
+        .expect("bridge should succeed for mixed property types (MEGA-14)");
 
-    // Even though p_ok is valid, the bridge still reports errors because
-    // errors are collected and returned if any exist.
-    assert_eq!(err.len(), 1, "should have exactly one error for the unsupported formula");
-    assert!(
-        matches!(&err[0], BridgeError::UnsupportedFormula { .. }),
-        "the error should be UnsupportedFormula"
-    );
+    // Both properties should be lowered successfully
+    assert_eq!(config.properties.len(), 2, "should have two properties");
+    assert_eq!(config.action_table.len(), 2, "should have two action entries");
+    // Always has priority 200, AlwaysImplies has priority 100
+    assert_eq!(config.action_table[0].priority, 200, "Always priority should be 200");
+    assert_eq!(config.action_table[1].priority, 100, "AlwaysImplies priority should be 100");
 }
 
 #[test]
@@ -1564,8 +1563,8 @@ module m {
     let config =
         bridge_from_pipeline(&result).expect("bridge should succeed for consistent config test");
 
-    // Sensors match inputs.
-    assert_eq!(config.sensors.len(), 2, "should have 2 sensors for 2 inputs");
+    // Sensors match all signals.
+    assert_eq!(config.sensors.len(), 3, "should have 3 sensors for all signals");
 
     // Properties match assert count.
     assert_eq!(config.properties.len(), 3, "should have 3 temporal properties");
@@ -1600,7 +1599,7 @@ fn bridge_config_from_module_with_all_signal_types() {
     let result = stub_pipeline(signals, Vec::new());
     let config = bridge_from_pipeline(&result).expect("bridge should succeed for all signal types");
 
-    assert_eq!(config.sensors.len(), 6, "should have 6 sensors (all inputs, no output)");
+    assert_eq!(config.sensors.len(), 7, "should have 7 sensors (all signals)");
 
     // Verify type-specific heuristics.
     // Bool: base=1, noise=0

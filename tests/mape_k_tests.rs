@@ -33,6 +33,7 @@ fn sensor_deterministic_across_runs() {
         fault_value: 0,
         fault_end_tick: None,
         seed: 12345,
+        is_observable: true,
     };
     let mut s1 = SensorModel::new(cfg.clone());
     let mut s2 = SensorModel::new(cfg);
@@ -51,6 +52,7 @@ fn sensor_fault_window_bounded() {
         fault_value: 0,
         fault_end_tick: Some(20),
         seed: 1,
+        is_observable: true,
     };
     let mut s = SensorModel::new(cfg);
     // Ticks 0-9: normal (120).
@@ -75,6 +77,7 @@ fn sensor_permanent_fault() {
         fault_value: 999,
         fault_end_tick: None,
         seed: 1,
+        is_observable: true,
     };
     let mut s = SensorModel::new(cfg);
     for _ in 0..5 {
@@ -373,6 +376,7 @@ fn neonatal_config() -> SimConfig {
             fault_value: 0,
             fault_end_tick: None,
             seed: 42,
+            is_observable: true,
         }],
         properties: vec![TemporalProperty::Always(SignalPredicate::GreaterThan(
             "airway_pressure".into(),
@@ -443,6 +447,7 @@ fn emergency_stop_halts_simulation() {
             fault_value: 0,
             fault_end_tick: None,
             seed: 1,
+            is_observable: true,
         }],
         properties: vec![TemporalProperty::Persists(
             SignalPredicate::LessThan("pressure".into(), 50),
@@ -479,6 +484,7 @@ fn multi_property_multi_action_scenario() {
                 fault_value: 30, // bradycardia
                 fault_end_tick: Some(80),
                 seed: 10,
+                is_observable: true,
             },
             SensorConfig {
                 name: "blood_pressure".into(),
@@ -488,6 +494,7 @@ fn multi_property_multi_action_scenario() {
                 fault_value: 0,
                 fault_end_tick: None,
                 seed: 20,
+                is_observable: true,
             },
         ],
         properties: vec![
@@ -552,6 +559,7 @@ fn empty_action_table_no_panic() {
             fault_value: 0,
             fault_end_tick: None,
             seed: 1,
+            is_observable: true,
         }],
         properties: vec![TemporalProperty::Always(SignalPredicate::IsTrue("s".into()))],
         action_table: vec![], // no actions defined

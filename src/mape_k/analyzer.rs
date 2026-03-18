@@ -77,6 +77,11 @@ impl Analyzer {
                 self.eval_eventually_within(idx, pred, *n, monitor)
             }
             TemporalProperty::Persists(pred, n) => self.eval_persists(idx, pred, *n, monitor),
+            TemporalProperty::AlwaysImplies(a, b) => self.eval_always_implies(idx, a, b, monitor),
+            TemporalProperty::NeverImplies(a, b) => self.eval_never_implies(idx, a, b, monitor),
+            TemporalProperty::AlwaysFollowedBy(trigger, delay, response) => {
+                self.eval_always_followed_by(idx, trigger, *delay, response, monitor)
+            }
         }
     }
 
@@ -214,6 +219,151 @@ impl Analyzer {
             evidence_tick: Some(window.len().saturating_sub(1) as u64),
         }
     }
+
+    fn eval_always_implies(
+        &self,
+        idx: usize,
+        antecedent: &SignalPredicate,
+        consequent: &SignalPredicate,
+        monitor: &Monitor,
+    ) -> PropertyResult {
+        let win_a = match monitor.window(antecedent.signal_name()) {
+            Some(w) => w,
+            None => {
+                return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None }
+            }
+        };
+        let win_b = match monitor.window(consequent.signal_name()) {
+            Some(w) => w,
+            None => {
+                return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None }
+            }
+        };
+
+        let len = win_a.len().min(win_b.len());
+        if len == 0 {
+            return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None };
+        }
+
+        for i in 0..len {
+            if let (Some(a), Some(b)) = (win_a.get(i), win_b.get(i)) {
+                if antecedent.evaluate(a) && !consequent.evaluate(b) {
+                    return PropertyResult {
+                        property_idx: idx,
+                        satisfied: false,
+                        evidence_tick: Some(i as u64),
+                    };
+                }
+            }
+        }
+
+        PropertyResult {
+            property_idx: idx,
+            satisfied: true,
+            evidence_tick: Some(len.saturating_sub(1) as u64),
+        }
+    }
+
+    fn eval_never_implies(
+        &self,
+        idx: usize,
+        antecedent: &SignalPredicate,
+        consequent: &SignalPredicate,
+        monitor: &Monitor,
+    ) -> PropertyResult {
+        let win_a = match monitor.window(antecedent.signal_name()) {
+            Some(w) => w,
+            None => {
+                return PropertyResult { property_idx: idx, satisfied: false, evidence_tick: None }
+            }
+        };
+        let win_b = match monitor.window(consequent.signal_name()) {
+            Some(w) => w,
+            None => {
+                return PropertyResult { property_idx: idx, satisfied: false, evidence_tick: None }
+            }
+        };
+
+        let len = win_a.len().min(win_b.len());
+        if len == 0 {
+            return PropertyResult { property_idx: idx, satisfied: false, evidence_tick: None };
+        }
+
+        for i in 0..len {
+            if let (Some(a), Some(b)) = (win_a.get(i), win_b.get(i)) {
+                if antecedent.evaluate(a) && !consequent.evaluate(b) {
+                    return PropertyResult {
+                        property_idx: idx,
+                        satisfied: true,
+                        evidence_tick: Some(i as u64),
+                    };
+                }
+            }
+        }
+
+        PropertyResult {
+            property_idx: idx,
+            satisfied: false,
+            evidence_tick: Some(len.saturating_sub(1) as u64),
+        }
+    }
+
+    fn eval_always_followed_by(
+        &self,
+        idx: usize,
+        trigger: &SignalPredicate,
+        delay: u64,
+        response: &SignalPredicate,
+        monitor: &Monitor,
+    ) -> PropertyResult {
+        let win_t = match monitor.window(trigger.signal_name()) {
+            Some(w) => w,
+            None => {
+                return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None }
+            }
+        };
+        let win_r = match monitor.window(response.signal_name()) {
+            Some(w) => w,
+            None => {
+                return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None }
+            }
+        };
+
+        let len = win_t.len().min(win_r.len());
+        if len == 0 {
+            return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None };
+        }
+
+        for i in 0..len {
+            if let Some(t) = win_t.get(i) {
+                if trigger.evaluate(t) {
+                    let target = i.saturating_add(delay as usize);
+                    if target >= len {
+                        return PropertyResult {
+                            property_idx: idx,
+                            satisfied: false,
+                            evidence_tick: Some(i as u64),
+                        };
+                    }
+                    if let Some(r) = win_r.get(target) {
+                        if !response.evaluate(r) {
+                            return PropertyResult {
+                                property_idx: idx,
+                                satisfied: false,
+                                evidence_tick: Some(i as u64),
+                            };
+                        }
+                    }
+                }
+            }
+        }
+
+        PropertyResult {
+            property_idx: idx,
+            satisfied: true,
+            evidence_tick: Some(len.saturating_sub(1) as u64),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -336,5 +486,63 @@ mod tests {
         let results = a.evaluate(&mon);
         assert!(results[0].satisfied); // all > 50
         assert!(!results[1].satisfied); // 300 >= 250
+    }
+
+    #[test]
+    fn always_implies_violated_when_antecedent_true_and_consequent_false() {
+        let mut mon = Monitor::new(64, &["a", "b"]);
+        mon.record_sample("a", 1);
+        mon.record_sample("b", 0);
+        mon.advance_tick();
+        mon.record_sample("a", 1);
+        mon.record_sample("b", 1);
+        mon.advance_tick();
+
+        let a = Analyzer::new(vec![TemporalProperty::AlwaysImplies(
+            SignalPredicate::IsTrue("a".to_string()),
+            SignalPredicate::IsTrue("b".to_string()),
+        )]);
+        let results = a.evaluate(&mon);
+        assert!(!results[0].satisfied);
+        assert_eq!(results[0].evidence_tick, Some(0));
+    }
+
+    #[test]
+    fn never_implies_satisfied_when_antecedent_true_and_consequent_false_exists() {
+        let mut mon = Monitor::new(64, &["a", "b"]);
+        mon.record_sample("a", 1);
+        mon.record_sample("b", 0);
+        mon.advance_tick();
+        mon.record_sample("a", 1);
+        mon.record_sample("b", 1);
+        mon.advance_tick();
+
+        let a = Analyzer::new(vec![TemporalProperty::NeverImplies(
+            SignalPredicate::IsTrue("a".to_string()),
+            SignalPredicate::IsTrue("b".to_string()),
+        )]);
+        let results = a.evaluate(&mon);
+        assert!(results[0].satisfied);
+        assert_eq!(results[0].evidence_tick, Some(0));
+    }
+
+    #[test]
+    fn always_followed_by_checks_delay() {
+        let mut mon = Monitor::new(64, &["p", "q"]);
+        mon.record_sample("p", 1);
+        mon.record_sample("q", 0);
+        mon.advance_tick();
+        mon.record_sample("p", 0);
+        mon.record_sample("q", 1);
+        mon.advance_tick();
+
+        // p is true at tick 0, q is true at tick 1 (delay=1), so SATISFIED
+        let a = Analyzer::new(vec![TemporalProperty::AlwaysFollowedBy(
+            SignalPredicate::IsTrue("p".to_string()),
+            1,
+            SignalPredicate::IsTrue("q".to_string()),
+        )]);
+        let results = a.evaluate(&mon);
+        assert!(results[0].satisfied);
     }
 }

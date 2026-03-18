@@ -89,6 +89,40 @@ impl Executor {
                 self.apply_switch_mode(mode_name, signal_env)
             }
             AdaptationAction::EmergencyStop => self.apply_emergency_stop(signal_env),
+            AdaptationAction::Throttle => {
+                let mut pre = Vec::with_capacity(signal_env.len());
+                let mut post = Vec::with_capacity(signal_env.len());
+                for name in &self.valid_signals {
+                    if let Some(&val) = signal_env.get(name) {
+                        pre.push((name.clone(), val));
+                        let halved = val / 2;
+                        signal_env.insert(name.clone(), halved);
+                        post.push((name.clone(), halved));
+                    }
+                }
+                ExecutionRecord {
+                    action: AdaptationAction::Throttle,
+                    pre_state: pre,
+                    post_state: post,
+                    success: true,
+                    error: None,
+                }
+            }
+            AdaptationAction::Reduce | AdaptationAction::LogWarning => {
+                // No-op actions: record current state but do not modify signals.
+                let pre: Vec<(String, u64)> = self
+                    .valid_signals
+                    .iter()
+                    .filter_map(|name| signal_env.get(name).map(|&v| (name.clone(), v)))
+                    .collect();
+                ExecutionRecord {
+                    action: action.clone(),
+                    pre_state: pre.clone(),
+                    post_state: pre,
+                    success: true,
+                    error: None,
+                }
+            }
         }
     }
 

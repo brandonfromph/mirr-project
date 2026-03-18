@@ -152,6 +152,8 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E214 | `signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (cross-expansion target) |
 | E215 | `signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally` | `src/expand/mod.rs` (cross-expansion expression) |
 | E216 | `Signal '{sig}' has multiple writers: reflex '{r1}' and reflex '{r2}'.` | `src/validation/semantic.rs` |
+| E229 | `No field '{field}' on struct signal '{sig}'.` | `src/validation/semantic.rs` |
+| E230 | `Signal '{sig}' is not an array type but is indexed.` | `src/validation/semantic.rs` |
 | E217 | `Duplicate pattern definition: '{name}'.` | `src/validation/semantic.rs` |
 | E218 | `Pattern '{name}' has duplicate parameter name: '{param}'.` | `src/validation/semantic.rs` |
 | E219 | `Pattern '{name}' has {N} parameters (max {M}).` | `src/validation/semantic.rs` |

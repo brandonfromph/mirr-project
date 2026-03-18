@@ -36,6 +36,12 @@ pub enum AdaptationAction {
     /// Immediate safety clamp — halt all outputs to safe defaults.
     /// Maps to the R-SPU "Immediate Layer (Static)" reflex.
     EmergencyStop,
+    /// Reduce output rate or magnitude — used for soft timing violations.
+    Throttle,
+    /// Reduce the aggressiveness of adaptations (low-severity property violation).
+    Reduce,
+    /// Log a warning for visibility (non-actionable low-severity violation).
+    LogWarning,
 }
 
 impl AdaptationAction {
@@ -49,6 +55,9 @@ impl AdaptationAction {
                 format!("SwitchMode({mode_name})")
             }
             AdaptationAction::EmergencyStop => "EmergencyStop".to_string(),
+            AdaptationAction::Throttle => "Throttle".to_string(),
+            AdaptationAction::Reduce => "Reduce".to_string(),
+            AdaptationAction::LogWarning => "LogWarning".to_string(),
         }
     }
 }

@@ -162,6 +162,69 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
                 sv.push_str(&format!("    violation_vec[{pi}] = sample_valid && !ps_ok_{pi};\n"));
                 sv.push_str("  end\n\n");
             }
+            TemporalProperty::AlwaysImplies(a, b) => {
+                let idx_a = sig_idx(a.signal_name());
+                let idx_b = sig_idx(b.signal_name());
+                let cond_a = predicate_to_sv(a, &format!("shadow[{idx_a}]"));
+                let cond_b = predicate_to_sv(b, &format!("shadow[{idx_b}]"));
+                sv.push_str(&format!("  // Property {pi}: AlwaysImplies\n"));
+                sv.push_str("  always_comb begin\n");
+                sv.push_str(&format!(
+                    "    violation_vec[{pi}] = sample_valid && ({cond_a} && !({cond_b}));\n"
+                ));
+                sv.push_str("  end\n\n");
+            }
+            TemporalProperty::NeverImplies(a, b) => {
+                let idx_a = sig_idx(a.signal_name());
+                let idx_b = sig_idx(b.signal_name());
+                let cond_a = predicate_to_sv(a, &format!("shadow[{idx_a}]"));
+                let cond_b = predicate_to_sv(b, &format!("shadow[{idx_b}]"));
+                sv.push_str(&format!("  // Property {pi}: NeverImplies\n"));
+                sv.push_str(&format!("  logic never_implies_seen_{pi};\n"));
+                sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                sv.push_str("    if (!rst_n)\n");
+                sv.push_str(&format!("      never_implies_seen_{pi} <= 1'b0;\n"));
+                sv.push_str(&format!("    else if ({cond_a} && !({cond_b}))\n"));
+                sv.push_str(&format!("      never_implies_seen_{pi} <= 1'b1;\n"));
+                sv.push_str("  end\n");
+                sv.push_str("  always_comb begin\n");
+                sv.push_str(&format!(
+                    "    violation_vec[{pi}] = sample_valid && !never_implies_seen_{pi};\n"
+                ));
+                sv.push_str("  end\n\n");
+            }
+            TemporalProperty::AlwaysFollowedBy(trigger, delay, response) => {
+                let idx_t = sig_idx(trigger.signal_name());
+                let idx_r = sig_idx(response.signal_name());
+                let cond_t = predicate_to_sv(trigger, &format!("shadow[{idx_t}]"));
+                let cond_r = predicate_to_sv(response, &format!("shadow[{idx_r}]"));
+                let delay_w = bit_width(*delay as usize);
+                sv.push_str(&format!("  // Property {pi}: AlwaysFollowedBy({delay})\n"));
+                sv.push_str(&format!("  logic [{delay_w}:0] follow_cnt_{pi};\n"));
+                sv.push_str(&format!("  logic follow_ok_{pi};\n"));
+                sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                sv.push_str("    if (!rst_n) begin\n");
+                sv.push_str(&format!("      follow_cnt_{pi} <= {}'d0;\n", delay_w + 1));
+                sv.push_str(&format!("      follow_ok_{pi}  <= 1'b1;\n"));
+                sv.push_str("    end else begin\n");
+                sv.push_str(&format!("      if ({cond_t}) begin\n"));
+                sv.push_str(&format!("        follow_cnt_{pi} <= {}'d{delay};\n", delay_w + 1));
+                sv.push_str("        follow_ok_{pi} <= 1'b0;\n");
+                sv.push_str("      end else if (follow_cnt_{pi} > 0) begin\n");
+                sv.push_str(&format!("        follow_cnt_{pi} <= follow_cnt_{pi} - 1;\n"));
+                sv.push_str(&format!(
+                    "        if (follow_cnt_{pi} == 1 && !({cond_r})) follow_ok_{pi} <= 1'b0;\n"
+                ));
+                sv.push_str("        else if (follow_cnt_{pi} == 1) follow_ok_{pi} <= 1'b1;\n");
+                sv.push_str("      end\n");
+                sv.push_str("    end\n");
+                sv.push_str("  end\n");
+                sv.push_str("  always_comb begin\n");
+                sv.push_str(&format!(
+                    "    violation_vec[{pi}] = sample_valid && !follow_ok_{pi};\n"
+                ));
+                sv.push_str("  end\n\n");
+            }
         }
     }
 

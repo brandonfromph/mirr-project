@@ -102,6 +102,7 @@ fn test_sensor(name: &str, base: u64, noise: u64, seed: u64) -> SensorConfig {
         fault_value: 0,
         fault_end_tick: None,
         seed,
+        is_observable: true,
     }
 }
 
@@ -122,6 +123,7 @@ fn test_sensor_with_fault(
         fault_value: fault_val,
         fault_end_tick: fault_end,
         seed,
+        is_observable: true,
     }
 }
 
@@ -1287,7 +1289,7 @@ module multi_prop {
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
     let sim_config = bridge_from_pipeline(&result).expect("bridge should succeed");
 
-    assert_eq!(sim_config.sensors.len(), 2, "bridge should extract 2 input sensors (a, b)");
+    assert_eq!(sim_config.sensors.len(), 3, "bridge should extract 3 sensors (all signals)");
     assert_eq!(sim_config.properties.len(), 2, "bridge should produce 2 temporal properties");
     assert_eq!(sim_config.action_table.len(), 2, "bridge should generate 2 action entries");
 

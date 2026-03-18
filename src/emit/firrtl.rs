@@ -437,12 +437,28 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
             format!("{}.{}", o, field)
         }
         Expr::ArrayLiteral(elems) => {
-            // FIRRTL has no array literal syntax; emit a placeholder comment.
-            format!("UInt(0) ; TODO array literal ({} elements)", elems.len())
+            let parts: Vec<String> = elems
+                .iter()
+                .take(MAX_EXPR_NODES)
+                .map(|e| emit_expr_firrtl_bounded(e, iterations))
+                .collect();
+            if parts.is_empty() {
+                "UInt(0)".to_string()
+            } else {
+                format!("cat({})", parts.join(", "))
+            }
         }
-        Expr::StructLiteral { name, fields } => {
-            // FIRRTL has no struct literal syntax; emit a placeholder comment.
-            format!("UInt(0) ; TODO struct literal {} ({} fields)", name, fields.len())
+        Expr::StructLiteral { fields, .. } => {
+            let parts: Vec<String> = fields
+                .iter()
+                .take(crate::ast::types::MAX_STRUCT_FIELDS)
+                .map(|(_, v)| emit_expr_firrtl_bounded(v, iterations))
+                .collect();
+            if parts.is_empty() {
+                "UInt(0)".to_string()
+            } else {
+                format!("cat({})", parts.join(", "))
+            }
         }
     }
 }

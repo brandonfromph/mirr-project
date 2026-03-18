@@ -164,6 +164,12 @@ pub(super) fn emit_execute_block(config: &SimConfig) -> String {
                     sv.push_str(&format!("          override_en[{i}]     <= 1'b1;\n"));
                 }
             }
+            AdaptationAction::Throttle => {
+                sv.push_str("          ; // throttle — rate reduction handled by top-level FSM\n");
+            }
+            AdaptationAction::Reduce | AdaptationAction::LogWarning => {
+                sv.push_str("          ; // no action (logging / reduce semantics)\n");
+            }
         }
         sv.push_str("        end\n");
     }

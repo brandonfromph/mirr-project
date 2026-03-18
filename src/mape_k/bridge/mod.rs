@@ -12,9 +12,9 @@
 //! - **Properties**: Only `PropertyDirective::Assert` formulas are lowered.
 //!   `Cover` and `Assume` are skipped (they are verification-only and do
 //!   not map to runtime safety monitors). Formulas that cannot be lowered
-//!   to a single `SignalPredicate` produce an `UnsupportedFormula` error.
-//! - **Action table**: Each lowered property gets a conservative entry:
-//!   violation triggers `EmergencyStop` at maximum priority.
+//!   to a single `SignalPredicate` are lowered conservatively.
+//! - **Action table**: Graduated by property kind — `Always`/`Persists` →
+//!   `EmergencyStop` (priority 200); `EventuallyWithin` → `Throttle` (128).
 //!
 //! All iteration is bounded by `MAX_BRIDGE_SIGNALS` / `MAX_BRIDGE_PROPERTIES`
 //! constants (NASA Power-of-10 rule #2).
@@ -87,8 +87,8 @@ impl std::fmt::Display for BridgeError {
 /// 1. Extract input signals from the AST module into `SensorConfig` entries
 ///    with heuristic defaults derived from each signal's type.
 /// 2. Lower `Assert` properties to `TemporalProperty` (skip `Cover`/`Assume`).
-/// 3. Generate a conservative action table: every property violation triggers
-///    `EmergencyStop` at maximum priority.
+/// 3. Generate a graduated action table: `Always`/`Persists` → `EmergencyStop`
+///    (priority 200); `EventuallyWithin` → `Throttle` (priority 128).
 /// 4. Apply default `window_size` and `knowledge_capacity`.
 pub fn bridge_from_pipeline(result: &PipelineResult) -> Result<SimConfig, Vec<BridgeError>> {
     let mut errors: Vec<BridgeError> = Vec::new();
@@ -115,16 +115,28 @@ pub fn bridge_from_pipeline(result: &PipelineResult) -> Result<SimConfig, Vec<Br
 // Action table generation
 // ---------------------------------------------------------------------------
 
-/// Generate a conservative action table: every property violation triggers
-/// `EmergencyStop` at maximum priority (255).
+/// Generate a graduated action table: violation severity determines response.
+///
+/// - `Always` / `Persists`: safety invariant → `EmergencyStop` priority 200.
+/// - `EventuallyWithin`: soft timing constraint → `Throttle` priority 128.
 fn generate_action_table(properties: &[TemporalProperty]) -> Vec<ActionEntry> {
     let mut entries = Vec::with_capacity(properties.len());
 
-    for (idx, _prop) in properties.iter().enumerate().take(MAX_BRIDGE_PROPERTIES) {
+    for (idx, prop) in properties.iter().enumerate().take(MAX_BRIDGE_PROPERTIES) {
+        let (action, priority) = match prop {
+            TemporalProperty::Always(_) | TemporalProperty::Persists(_, _) => {
+                (AdaptationAction::EmergencyStop, 200u8)
+            }
+            TemporalProperty::EventuallyWithin(_, _) => (AdaptationAction::Throttle, 128u8),
+            TemporalProperty::AlwaysFollowedBy(_, _, _) => (AdaptationAction::LogWarning, 64u8),
+            TemporalProperty::AlwaysImplies(_, _) | TemporalProperty::NeverImplies(_, _) => {
+                (AdaptationAction::Reduce, 100u8)
+            }
+        };
         entries.push(ActionEntry {
             trigger_property_idx: idx,
-            action: AdaptationAction::EmergencyStop,
-            priority: 255,
+            action,
+            priority,
             trigger_on: TriggerCondition::OnViolation,
         });
     }
@@ -217,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn only_input_signals_become_sensors() {
+    fn all_signals_become_sensors_with_observable_flag() {
         let signals = vec![
             input_signal("pressure", SignalType::Unsigned(8)),
             output_signal("alarm", SignalType::Bool),
@@ -225,9 +237,13 @@ mod tests {
         ];
         let result = stub_pipeline(signals, Vec::new());
         let config = bridge_from_pipeline(&result).expect("should succeed");
-        assert_eq!(config.sensors.len(), 2);
-        assert_eq!(config.sensors[0].name, "pressure");
-        assert_eq!(config.sensors[1].name, "temp");
+        assert_eq!(config.sensors.len(), 3);
+        let pressure = config.sensors.iter().find(|s| s.name == "pressure").unwrap();
+        let alarm = config.sensors.iter().find(|s| s.name == "alarm").unwrap();
+        let temp = config.sensors.iter().find(|s| s.name == "temp").unwrap();
+        assert!(pressure.is_observable);
+        assert!(!alarm.is_observable);
+        assert!(temp.is_observable);
     }
 
     #[test]
@@ -319,7 +335,7 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_formula_produces_error() {
+    fn always_implies_lowers_to_temporal_property() {
         let props = vec![assert_property(
             "p_impl",
             PropertyFormula::AlwaysImplies {
@@ -328,31 +344,54 @@ mod tests {
             },
         )];
         let result = stub_pipeline(Vec::new(), props);
-        let err = bridge_from_pipeline(&result).expect_err("should fail");
-        assert_eq!(err.len(), 1);
-        match &err[0] {
-            BridgeError::UnsupportedFormula { description } => {
-                assert!(description.contains("AlwaysImplies"));
-            }
-            other => panic!("unexpected error: {other:?}"),
-        }
+        let config = bridge_from_pipeline(&result).expect("AlwaysImplies should lower");
+        assert_eq!(config.properties.len(), 1);
+        assert_eq!(
+            config.properties[0],
+            TemporalProperty::AlwaysImplies(
+                SignalPredicate::IsTrue("a".to_string()),
+                SignalPredicate::IsTrue("b".to_string()),
+            )
+        );
     }
 
     #[test]
-    fn action_table_has_one_entry_per_property() {
+    fn action_table_graduated_by_property_kind() {
         let props = vec![
             assert_property("p1", PropertyFormula::Always(Expr::Signal("a".to_string()))),
-            assert_property("p2", PropertyFormula::Always(Expr::Signal("b".to_string()))),
+            assert_property(
+                "p2",
+                PropertyFormula::EventuallyWithin {
+                    expr: Expr::Signal("b".to_string()),
+                    cycles: 5,
+                },
+            ),
         ];
         let result = stub_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.action_table.len(), 2);
-        for (i, entry) in config.action_table.iter().enumerate() {
-            assert_eq!(entry.trigger_property_idx, i);
-            assert_eq!(entry.action, AdaptationAction::EmergencyStop);
-            assert_eq!(entry.priority, 255);
-            assert_eq!(entry.trigger_on, TriggerCondition::OnViolation);
-        }
+        assert_eq!(config.action_table[0].trigger_property_idx, 0);
+        assert_eq!(config.action_table[0].action, AdaptationAction::EmergencyStop);
+        assert_eq!(config.action_table[0].priority, 200);
+        assert_eq!(config.action_table[1].trigger_property_idx, 1);
+        assert_eq!(config.action_table[1].action, AdaptationAction::Throttle);
+        assert_eq!(config.action_table[1].priority, 128);
+    }
+
+    #[test]
+    fn action_table_reduces_on_implies_properties() {
+        let props = vec![assert_property(
+            "p_impl",
+            PropertyFormula::AlwaysImplies {
+                antecedent: Expr::Signal("a".to_string()),
+                consequent: Expr::Signal("b".to_string()),
+            },
+        )];
+        let result = stub_pipeline(Vec::new(), props);
+        let config = bridge_from_pipeline(&result).expect("should succeed");
+        assert_eq!(config.action_table.len(), 1);
+        assert_eq!(config.action_table[0].action, AdaptationAction::Reduce);
+        assert_eq!(config.action_table[0].priority, 100);
     }
 
     #[test]

@@ -73,6 +73,8 @@ pub struct SensorConfig {
     pub fault_end_tick: Option<u64>,
     /// Deterministic PRNG seed for this sensor channel.
     pub seed: u64,
+    /// True for Input signals (externally observable), false for Output/Internal.
+    pub is_observable: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +167,7 @@ mod tests {
             fault_value: 0,
             fault_end_tick: None,
             seed,
+            is_observable: true,
         }
     }
 
@@ -210,6 +213,7 @@ mod tests {
             fault_value: 0,
             fault_end_tick: None,
             seed: 1,
+            is_observable: true,
         };
         let mut s = SensorModel::new(cfg);
         // First 10 ticks: normal (around 100).
@@ -233,6 +237,7 @@ mod tests {
             fault_value: 999,
             fault_end_tick: Some(8),
             seed: 1,
+            is_observable: true,
         };
         let mut s = SensorModel::new(cfg);
         for _ in 0..5 {
@@ -255,6 +260,7 @@ mod tests {
             fault_value: 0,
             fault_end_tick: None,
             seed: 123,
+            is_observable: true,
         };
         let mut s = SensorModel::new(cfg);
         for _ in 0..100 {

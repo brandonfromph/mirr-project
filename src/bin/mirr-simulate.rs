@@ -123,6 +123,7 @@ fn neonatal_respirator_config() -> SimConfig {
             fault_value: 10, // Sensor degrades to dangerously low value.
             fault_end_tick: None,
             seed: 42,
+            is_observable: true,
         }],
         properties: vec![
             // Safety property: airway pressure must always be above 50.

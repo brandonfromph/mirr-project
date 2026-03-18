@@ -163,12 +163,14 @@ fn bridge_generates_sim_config_from_neonatal() {
 
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
 
-    // Only 4 input signals become sensors (outputs are excluded).
-    assert_eq!(config.sensors.len(), 4, "only input signals become sensors");
+    // All 6 signals become sensors (MEGA-14: all signals, not just inputs).
+    assert_eq!(config.sensors.len(), 6, "all signals become sensors");
     assert_eq!(config.sensors[0].name, "pressure");
     assert_eq!(config.sensors[1].name, "flow_rate");
     assert_eq!(config.sensors[2].name, "spo2");
     assert_eq!(config.sensors[3].name, "heartbeat");
+    assert_eq!(config.sensors[4].name, "alarm");
+    assert_eq!(config.sensors[5].name, "valve_pos");
 
     // All 3 assert properties are lowered.
     assert_eq!(config.properties.len(), 3, "all assert properties should be lowered");
@@ -286,8 +288,8 @@ fn bridge_extracts_eventually_property() {
 
 #[test]
 fn bridge_generates_emergency_stop_actions() {
-    // Build 3 properties and verify each gets an EmergencyStop entry at
-    // priority 255 with OnViolation trigger.
+    // Build 3 properties and verify each gets an action entry with graduated
+    // priorities (MEGA-14): Always=200, EventuallyWithin=128.
     let props = vec![
         assert_property("p1", PropertyFormula::Always(Expr::Signal("a".to_string()))),
         assert_property("p2", PropertyFormula::Always(Expr::Signal("b".to_string()))),
@@ -306,14 +308,14 @@ fn bridge_generates_emergency_stop_actions() {
         "action table must have one entry per property"
     );
 
+    // Check graduated priorities: Always=200, EventuallyWithin=128
+    let expected_priorities = [200_u8, 200, 128];
     for (i, entry) in config.action_table.iter().enumerate() {
         assert_eq!(entry.trigger_property_idx, i, "entry {i} should reference property {i}");
         assert_eq!(
-            entry.action,
-            AdaptationAction::EmergencyStop,
-            "entry {i} should be EmergencyStop"
+            entry.priority, expected_priorities[i],
+            "entry {i} should have graduated priority"
         );
-        assert_eq!(entry.priority, 255, "entry {i} should have max priority 255");
         assert_eq!(
             entry.trigger_on,
             TriggerCondition::OnViolation,

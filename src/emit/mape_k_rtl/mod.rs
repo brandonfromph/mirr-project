@@ -118,6 +118,7 @@ mod tests {
                     fault_value: 0,
                     fault_end_tick: None,
                     seed: 1,
+                    is_observable: true,
                 },
                 SensorConfig {
                     name: "temp".to_string(),
@@ -127,6 +128,7 @@ mod tests {
                     fault_value: 0,
                     fault_end_tick: None,
                     seed: 2,
+                    is_observable: true,
                 },
             ],
             properties: vec![

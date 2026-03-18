@@ -41,6 +41,8 @@ pub enum MirrError {
     TemporalCompilationError { message: String, span: Option<Span> },
     /// Pattern expansion error (E4xx).
     PatternError { message: String, span: Option<Span> },
+    /// Width inference error (E5xx).
+    WidthError { message: String, span: Option<Span> },
     /// Type checking error (E6xx).
     TypeError { message: String, span: Option<Span> },
     /// R-SPU emission error (E7xx).
@@ -70,6 +72,7 @@ impl MirrError {
                 Self::TemporalCompilationError { message, span }
             }
             Self::PatternError { message, .. } => Self::PatternError { message, span },
+            Self::WidthError { message, .. } => Self::WidthError { message, span },
             Self::TypeError { message, .. } => Self::TypeError { message, span },
             Self::RspuError { message, .. } => Self::RspuError { message, span },
             Self::SExprError { message, .. } => Self::SExprError { message, span },
@@ -86,6 +89,7 @@ impl MirrError {
             | Self::SemanticError { span, .. }
             | Self::TemporalCompilationError { span, .. }
             | Self::PatternError { span, .. }
+            | Self::WidthError { span, .. }
             | Self::TypeError { span, .. }
             | Self::RspuError { span, .. }
             | Self::SExprError { span, .. }
@@ -102,6 +106,7 @@ impl MirrError {
             | Self::SemanticError { message, .. }
             | Self::TemporalCompilationError { message, .. }
             | Self::PatternError { message, .. }
+            | Self::WidthError { message, .. }
             | Self::TypeError { message, .. }
             | Self::RspuError { message, .. }
             | Self::SExprError { message, .. }
@@ -125,6 +130,7 @@ impl MirrError {
             Self::ParseError { .. } => Some("E100".to_string()),
             Self::TemporalCompilationError { .. } => Some("E300".to_string()),
             Self::PatternError { .. } => Some("E400".to_string()),
+            Self::WidthError { .. } => Some("E500".to_string()),
             Self::RspuError { .. } => Some("E700".to_string()),
             Self::SExprError { .. } => Some("E800".to_string()),
             Self::SatError { .. } => Some("E900".to_string()),
@@ -237,6 +243,17 @@ impl fmt::Display for MirrError {
             }
             MirrError::PatternError { message, span } => {
                 write!(f, "[E400] Pattern error: {}", message)?;
+                if let Some(s) = span {
+                    write!(f, " (line {})", s.start_line + 1)?;
+                }
+                Ok(())
+            }
+            MirrError::WidthError { message, span } => {
+                if let Some(code) = extract_embedded_code(message) {
+                    write!(f, "[{}] Width error: {}", code, strip_embedded_code(message))?;
+                } else {
+                    write!(f, "[E500] Width error: {}", message)?;
+                }
                 if let Some(s) = span {
                     write!(f, " (line {})", s.start_line + 1)?;
                 }

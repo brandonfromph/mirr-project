@@ -76,15 +76,31 @@ pub enum TemporalProperty {
     /// Used for "sustained condition" checks like pressure-drop guards.
     /// Violation: no run of N consecutive true ticks exists in the window.
     Persists(SignalPredicate, u64),
+
+    /// G(P -> Q): whenever P holds, Q must also hold (same cycle).
+    /// Violation: some tick where P is true and Q is false.
+    AlwaysImplies(SignalPredicate, SignalPredicate),
+
+    /// never (P -> Q): there must exist a tick where P is true and Q is false.
+    /// Violation: no such tick exists in the window.
+    NeverImplies(SignalPredicate, SignalPredicate),
+
+    /// always (P followed_by N Q): whenever P holds, Q must hold N cycles later.
+    /// Violation: for some tick where P holds, the response does not hold N cycles after.
+    AlwaysFollowedBy(SignalPredicate, u64, SignalPredicate),
 }
 
 impl TemporalProperty {
-    /// Return the signal name this property references.
+    /// Return a representative signal name this property references.
+    /// For multi-signal properties this returns the antecedent's signal.
     pub fn signal_name(&self) -> &str {
         match self {
             TemporalProperty::Always(p)
             | TemporalProperty::EventuallyWithin(p, _)
-            | TemporalProperty::Persists(p, _) => p.signal_name(),
+            | TemporalProperty::Persists(p, _)
+            | TemporalProperty::AlwaysImplies(p, _)
+            | TemporalProperty::NeverImplies(p, _) => p.signal_name(),
+            TemporalProperty::AlwaysFollowedBy(p, _, _) => p.signal_name(),
         }
     }
 }
@@ -157,5 +173,14 @@ mod tests {
     fn temporal_property_signal_name() {
         let t = TemporalProperty::Always(SignalPredicate::IsTrue("x".to_string()));
         assert_eq!(t.signal_name(), "x");
+    }
+
+    #[test]
+    fn temporal_property_signal_name_for_multi_signal() {
+        let t = TemporalProperty::AlwaysImplies(
+            SignalPredicate::IsTrue("a".to_string()),
+            SignalPredicate::IsTrue("b".to_string()),
+        );
+        assert_eq!(t.signal_name(), "a");
     }
 }

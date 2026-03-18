@@ -21,29 +21,17 @@ use crate::error::PipelineErrors;
 use crate::parser::pattern_parser::{MAX_PARAMS, MAX_REFLECT_LINES};
 use crate::span::Span;
 
-/// Validate a parsed module for semantic correctness:
-///
-/// - No duplicate signal names.
-/// - No duplicate guard names.
-/// - No duplicate reflex names.
-/// - Guard conditions only reference declared signals.
-/// - Reflex `on` clauses only reference declared guards.
-/// - Assignment targets are declared output or internal signals.
-/// - Assignment expressions only reference declared signals.
-///
-/// Errors are accumulated (up to [`crate::error::MAX_ACCUMULATED_ERRORS`])
-/// and returned together in a `PipelineErrors`.
+/// Validate a parsed module for semantic correctness: duplicate names,
+/// undeclared signal/guard references, assignment targets, and composite types.
+/// Errors are accumulated up to [`crate::error::MAX_ACCUMULATED_ERRORS`].
 pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     let mut errors = PipelineErrors::new();
     let mut reported_undeclared: HashSet<String> = HashSet::with_capacity(16);
-
-    // Pre-allocate hash sets with estimated capacity for better performance.
     let signal_capacity = module.signals.len();
     let guard_capacity = module.guards.len();
     let reflex_capacity = module.reflexes.len();
 
     // Collect signal names and check for duplicates.
-    // Uses HashMap to track first-seen span for "first defined here" notes.
     let mut signal_names: HashSet<&str> = HashSet::with_capacity(signal_capacity);
     let mut signal_first_span: HashMap<&str, Option<Span>> =
         HashMap::with_capacity(signal_capacity);
@@ -65,7 +53,6 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     }
 
     // Collect guard names and check for duplicates.
-    // Uses HashMap to track first-seen span for "first defined here" notes.
     let mut guard_names: HashSet<&str> = HashSet::with_capacity(guard_capacity);
     let mut guard_first_span: HashMap<&str, Option<Span>> = HashMap::with_capacity(guard_capacity);
     for guard in &module.guards {
@@ -86,7 +73,6 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     }
 
     // Collect reflex names and check for duplicates.
-    // Uses HashMap to track first-seen span for "first defined here" notes.
     let mut reflex_names: HashSet<&str> = HashSet::with_capacity(reflex_capacity);
     let mut reflex_first_span: HashMap<&str, Option<Span>> =
         HashMap::with_capacity(reflex_capacity);
@@ -245,6 +231,9 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
         }
     }
 
+    // Validate composite expression usage (FieldAccess/ArrayIndex) against signal types.
+    validate_composite_exprs(module, &mut errors);
+
     // Validate single-writer ownership: each writable signal must have
     // at most one reflex that assigns to it.
     let ownership_errors = validate_signal_ownership(module);
@@ -262,15 +251,93 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     }
 }
 
-/// Validate that each writable signal has at most one writer reflex.
-///
-/// Two different reflexes assigning to the same signal creates a hardware
-/// race condition (two drivers on the same wire). This pass builds a
-/// signal->reflex map and rejects any signal with more than one writer.
-///
-/// Intra-reflex multiple assignments are allowed (sequential semantics
-/// within a single reflex block).
-///
+/// Validate composite expression usage: `FieldAccess` must target a struct
+/// signal with the named field, and `ArrayIndex` must target an array signal.
+/// Bounded: iterative expression walk capped by MAX_EXPR_NODES.
+fn validate_composite_exprs(module: &Module, errors: &mut PipelineErrors) {
+    use crate::ast::types::SignalType;
+    let mut sig_types: HashMap<&str, &SignalType> = HashMap::with_capacity(module.signals.len());
+    for sig in &module.signals {
+        sig_types.insert(&sig.name, &sig.ty.core);
+    }
+    let mut exprs: Vec<&Expr> = Vec::with_capacity(64);
+    for guard in &module.guards {
+        exprs.push(&guard.condition);
+    }
+    for reflex in &module.reflexes {
+        for assignment in &reflex.assignments {
+            exprs.push(&assignment.value);
+        }
+    }
+    let mut iterations: usize = 0;
+    let max_total = MAX_EXPR_NODES.saturating_mul(exprs.len().min(256));
+    let mut stack: Vec<&Expr> = Vec::with_capacity(32);
+    for root in &exprs {
+        stack.clear();
+        stack.push(root);
+        while let Some(node) = stack.pop() {
+            iterations = iterations.saturating_add(1);
+            if iterations > max_total {
+                return;
+            }
+            match node {
+                Expr::FieldAccess { object, field } => {
+                    if let Expr::Signal(name) = object.as_ref() {
+                        if let Some(SignalType::Struct { fields, .. }) =
+                            sig_types.get(name.as_str())
+                        {
+                            if !fields.iter().any(|(f, _)| f == field) {
+                                errors.push(MirrError::SemanticError {
+                                    message: format!(
+                                        "[E229] No field '{}' on struct signal '{}'.",
+                                        field, name
+                                    ),
+                                    span: None,
+                                });
+                            }
+                        }
+                    }
+                    stack.push(object);
+                }
+                Expr::ArrayIndex { array, index } => {
+                    if let Expr::Signal(name) = array.as_ref() {
+                        if let Some(ty) = sig_types.get(name.as_str()) {
+                            if !matches!(ty, SignalType::Array { .. }) {
+                                errors.push(MirrError::SemanticError {
+                                    message: format!(
+                                        "[E230] Signal '{}' is not an array type but is indexed.",
+                                        name
+                                    ),
+                                    span: None,
+                                });
+                            }
+                        }
+                    }
+                    stack.push(array);
+                    stack.push(index);
+                }
+                Expr::Unary { operand, .. } => stack.push(operand),
+                Expr::Binary { left, right, .. } => {
+                    stack.push(left);
+                    stack.push(right);
+                }
+                Expr::ArrayLiteral(elems) => {
+                    for e in elems.iter().take(MAX_EXPR_NODES) {
+                        stack.push(e);
+                    }
+                }
+                Expr::StructLiteral { fields, .. } => {
+                    for (_, v) in fields.iter().take(MAX_EXPR_NODES) {
+                        stack.push(v);
+                    }
+                }
+                Expr::Signal(_) | Expr::Prev { .. } | Expr::Literal(_) => {}
+            }
+        }
+    }
+}
+
+/// Validate single-writer: each writable signal has at most one reflex writer.
 /// Bounded: single pass over all reflexes and their assignments.
 fn validate_signal_ownership(module: &Module) -> Vec<MirrError> {
     let mut ownership_errors: Vec<MirrError> = Vec::new();
@@ -354,9 +421,7 @@ fn validate_prev_delays(
                 stack.push(array);
                 stack.push(index);
             }
-            Expr::FieldAccess { object, .. } => {
-                stack.push(object);
-            }
+            Expr::FieldAccess { object, .. } => stack.push(object),
             Expr::ArrayLiteral(elems) => {
                 for e in elems {
                     stack.push(e);
@@ -372,14 +437,9 @@ fn validate_prev_delays(
     Ok(())
 }
 
-/// Collect all signal references from an expression tree.
-/// Uses an explicit stack to avoid recursion.
-/// Bounded: at most MAX_EXPR_NODES iterations.
+/// Collect all signal references from an expression tree (iterative, bounded).
 pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
     let mut iterations = 0usize;
-
-    // Pre-allocate with reasonable capacity estimate.
-    // In practice, expressions rarely have more than 10-20 signal references.
     let mut refs = Vec::with_capacity(16);
     let mut stack: Vec<&Expr> = Vec::with_capacity(32);
     stack.push(expr);
@@ -393,9 +453,7 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
             Expr::Signal(name) => refs.push(name.clone()),
             Expr::Prev { signal, .. } => refs.push(signal.clone()),
             Expr::Literal(_) => {}
-            Expr::Unary { operand, .. } => {
-                stack.push(operand);
-            }
+            Expr::Unary { operand, .. } => stack.push(operand),
             Expr::Binary { left, right, .. } => {
                 stack.push(left);
                 stack.push(right);
@@ -404,9 +462,7 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
                 stack.push(array);
                 stack.push(index);
             }
-            Expr::FieldAccess { object, .. } => {
-                stack.push(object);
-            }
+            Expr::FieldAccess { object, .. } => stack.push(object),
             Expr::ArrayLiteral(elems) => {
                 for e in elems {
                     stack.push(e);
@@ -523,7 +579,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
         }
         if !names.insert(&pat.name) {
             errors.push(MirrError::PatternError {
-                message: format!("[E217] Duplicate pattern definition: '{}'.", pat.name),
+                message: format!("[E417] Duplicate pattern definition: '{}'.", pat.name),
                 span: pat.span,
             });
             continue;
@@ -535,7 +591,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
             if !param_names.insert(&p.name) {
                 errors.push(MirrError::PatternError {
                     message: format!(
-                        "[E218] Pattern '{}' has duplicate parameter name: '{}'.",
+                        "[E418] Pattern '{}' has duplicate parameter name: '{}'.",
                         pat.name, p.name
                     ),
                     span: pat.span,
@@ -546,7 +602,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
         if pat.params.len() > MAX_PARAMS {
             errors.push(MirrError::PatternError {
                 message: format!(
-                    "[E219] Pattern '{}' has {} parameters (max {MAX_PARAMS}).",
+                    "[E419] Pattern '{}' has {} parameters (max {MAX_PARAMS}).",
                     pat.name,
                     pat.params.len()
                 ),
@@ -556,7 +612,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
 
         if pat.body.raw_lines.is_empty() {
             errors.push(MirrError::PatternError {
-                message: format!("[E220] Pattern '{}' has empty reflect body.", pat.name),
+                message: format!("[E420] Pattern '{}' has empty reflect body.", pat.name),
                 span: pat.span,
             });
         }
@@ -564,7 +620,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
         if pat.body.raw_lines.len() > MAX_REFLECT_LINES {
             errors.push(MirrError::PatternError {
                 message: format!(
-                    "[E221] Pattern '{}' reflect body has {} lines (max {MAX_REFLECT_LINES}).",
+                    "[E421] Pattern '{}' reflect body has {} lines (max {MAX_REFLECT_LINES}).",
                     pat.name,
                     pat.body.raw_lines.len()
                 ),

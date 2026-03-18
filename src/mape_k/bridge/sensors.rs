@@ -14,9 +14,9 @@ pub(super) const DEFAULT_NOISE_AMPLITUDE: u64 = 2;
 /// Default PRNG seed base (each sensor gets `SEED_BASE + index`).
 const SEED_BASE: u64 = 1000;
 
-/// Walk the program's input signal declarations and produce a `SensorConfig`
-/// for each one. Only `Input` signals become sensors (outputs and internals
-/// are driven by the design, not sampled externally).
+/// Walk the program's signal declarations and produce a `SensorConfig`
+/// for each one. All signals become sensors; `is_observable` is true
+/// only for Input signals (outputs and internals are design-driven).
 ///
 /// Heuristic defaults:
 /// - `Bool`: base_value = 1, noise = 0 (deterministic toggle)
@@ -28,20 +28,16 @@ pub(super) fn extract_sensors(
 ) -> Vec<SensorConfig> {
     let signals = &result.program.module.signals;
 
-    let input_count = count_input_signals(signals);
-    if input_count > MAX_BRIDGE_SIGNALS {
-        errors.push(BridgeError::TooManySignals { count: input_count });
+    let signal_count = signals.len().min(MAX_BRIDGE_SIGNALS.saturating_add(1));
+    if signal_count > MAX_BRIDGE_SIGNALS {
+        errors.push(BridgeError::TooManySignals { count: signal_count });
         return Vec::new();
     }
 
-    let mut sensors = Vec::with_capacity(input_count);
+    let mut sensors = Vec::with_capacity(signal_count);
     let mut idx: usize = 0;
 
     for sig in signals.iter().take(MAX_BRIDGE_SIGNALS) {
-        if sig.kind != SignalKind::Input {
-            continue;
-        }
-
         let (base_value, noise_amplitude) = heuristic_sensor_defaults(&sig.ty.core);
 
         sensors.push(SensorConfig {
@@ -52,6 +48,7 @@ pub(super) fn extract_sensors(
             fault_value: 0,
             fault_end_tick: None,
             seed: SEED_BASE.wrapping_add(idx as u64),
+            is_observable: sig.kind == SignalKind::Input,
         });
 
         idx = idx.saturating_add(1);
@@ -61,17 +58,6 @@ pub(super) fn extract_sensors(
     }
 
     sensors
-}
-
-/// Count input signals in the declarations list (bounded scan).
-pub(super) fn count_input_signals(signals: &[crate::ast::SignalDecl]) -> usize {
-    let mut count: usize = 0;
-    for sig in signals.iter().take(MAX_BRIDGE_SIGNALS.saturating_add(1)) {
-        if sig.kind == SignalKind::Input {
-            count = count.saturating_add(1);
-        }
-    }
-    count
 }
 
 /// Compute heuristic `(base_value, noise_amplitude)` for a given signal type.
