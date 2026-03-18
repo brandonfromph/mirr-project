@@ -150,8 +150,10 @@ fn c8_u8_width_pipeline() {
         when (x > 100)
         for 1 cycles;
     }
-    reflex r when [g] {
-        y = true;
+    reflex r {
+        on g {
+            y = true;
+        }
     }
 }"#,
     );
@@ -168,8 +170,10 @@ fn c8_u16_width_pipeline() {
         when (pressure > 3000)
         for 2 cycles;
     }
-    reflex r_alarm when [g_high] {
-        alarm = true;
+    reflex r_alarm {
+        on g_high {
+            alarm = true;
+        }
     }
 }"#,
     );
@@ -186,8 +190,10 @@ fn c8_u32_width_pipeline() {
         when (counter > 1000000)
         for 1 cycles;
     }
-    reflex r_overflow when [g_wrap] {
-        overflow = true;
+    reflex r_overflow {
+        on g_wrap {
+            overflow = true;
+        }
     }
 }"#,
     );
@@ -204,8 +210,10 @@ fn c8_bool_width_pipeline() {
         when flag
         for 1 cycles;
     }
-    reflex r_set when [g_set] {
-        out_flag = true;
+    reflex r_set {
+        on g_set {
+            out_flag = true;
+        }
     }
 }"#,
     );
