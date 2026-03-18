@@ -270,10 +270,14 @@ fn max_array_dims_positive() {
 #[test]
 fn pipeline_with_plain_module_still_works() {
     let result = run_pipeline(
-        "module plain { signal x: in u8; signal y: out bool; }",
+        "module plain {\n    signal x: in u8;\n    signal y: out bool;\n}",
         &PipelineConfig::default(),
     );
-    assert!(result.is_ok(), "plain module must compile after MEGA-10 additions");
+    assert!(
+        result.is_ok(),
+        "plain module must compile after MEGA-10 additions: {:?}",
+        result.err()
+    );
 }
 
 #[test]
