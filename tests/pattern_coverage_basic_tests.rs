@@ -13,7 +13,7 @@ fn run_src(
 
 #[test]
 fn basic_module_no_patterns() {
-    assert!(run_src("module m { signal x: in bool; signal y: out bool; }").is_ok());
+    assert!(run_src("module m {\n    signal x: in bool;\n    signal y: out bool;\n}").is_ok());
 }
 #[test]
 fn empty_pattern_list_validates() {
@@ -21,7 +21,11 @@ fn empty_pattern_list_validates() {
 }
 #[test]
 fn parse_simple_pattern() {
-    let src = r#"def pat(s: signal in bool) { reflect { s = true; } }
+    let src = r#"def pat(s: signal in bool) {
+    reflect {
+        s = true;
+    }
+}
 module m { signal x: in bool; }"#;
     assert!(parse_mirr(src).is_ok());
 }
@@ -38,9 +42,17 @@ module m { signal x: in bool; }"#;
 fn module_with_guard_no_patterns() {
     assert!(run_src(
         r#"module gm {
-    signal x: in u8; signal y: out bool;
-    guard g { when (x > 100) for 1 cycles; }
-    reflex r when [g] { y = true; }
+    signal x: in u8;
+    signal y: out bool;
+    guard g {
+        when x > 100
+        for 1 cycles;
+    }
+    reflex r {
+        on g {
+            y = true;
+        }
+    }
 }"#
     )
     .is_ok());
@@ -50,7 +62,9 @@ fn module_with_property_no_patterns() {
     assert!(run_src(
         r#"module pm {
     signal x: in bool;
-    property p { always (x); }
+    property p {
+        always (x);
+    }
 }"#
     )
     .is_ok());

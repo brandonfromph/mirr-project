@@ -90,7 +90,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
         .strip_prefix("module ")
         .ok_or_else(|| MirrError::parse_error("[E104] Malformed module declaration."))?;
 
-    let (name_part, _) = match after_keyword.split_once('{') {
+    let (name_part, inline_body) = match after_keyword.split_once('{') {
         Some(parts) => parts,
         None => (after_keyword, ""),
     };
@@ -113,6 +113,43 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
     };
 
     *index += 1;
+
+    // Handle inline body (single-line module declaration).
+    let inline_body = inline_body.trim();
+    if !inline_body.is_empty() {
+        // Remove trailing '}' if present.
+        let body_content = inline_body.strip_suffix('}').unwrap_or(inline_body).trim();
+        if !body_content.is_empty() {
+            // Split by ';' and process each statement.
+            for stmt in body_content.split(';') {
+                let stmt = stmt.trim();
+                if stmt.is_empty() {
+                    continue;
+                }
+                // Reconstruct the statement with ';' for parsing.
+                let full_stmt = format!("{stmt};");
+                if stmt.starts_with("signal ") {
+                    let signal = parse_signal(&full_stmt, module_start)?;
+                    module.signals.push(signal);
+                } else if is_pattern_call_line(&full_stmt) {
+                    let mut call = parse_pattern_call(&full_stmt)?;
+                    call.span = Some(Span::full_line(module_start as u32));
+                    module.pattern_calls.push(call);
+                } else {
+                    return Err(MirrError::parse_error(format!(
+                        "[E107] Unexpected statement inside module '{}': {}",
+                        module.name, stmt
+                    ))
+                    .with_span(Some(Span::full_line(module_start as u32))));
+                }
+            }
+        }
+        // If the inline body ends with '}', the module is complete.
+        if inline_body.ends_with('}') {
+            module.span = Some(Span::multi_line(module_start as u32, *index as u32));
+            return Ok(module);
+        }
+    }
 
     while *index < lines.len() {
         skip_empty_and_comments(lines, index);

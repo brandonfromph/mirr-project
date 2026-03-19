@@ -328,7 +328,7 @@ module m {
     }
 }
 "#;
-    assert_parse_err(source, "no guard names");
+    assert_parse_err(source, "must contain at least one assignment");
 }
 
 #[test]
