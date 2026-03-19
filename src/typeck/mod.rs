@@ -495,7 +495,8 @@ fn require_numeric(
         SignalType::Array { .. }
         | SignalType::Struct { .. }
         | SignalType::FixedPoint { .. }
-        | SignalType::Bundle(_) => Err(MirrError::TypeError {
+        | SignalType::Bundle(_)
+        | SignalType::Fifo { .. } => Err(MirrError::TypeError {
             message: format!(
                 "[E226] Operator '{}' cannot be applied to composite type '{}'.",
                 op_symbol(op),
@@ -526,7 +527,8 @@ fn infer_negate_type(
         SignalType::Array { .. }
         | SignalType::Struct { .. }
         | SignalType::FixedPoint { .. }
-        | SignalType::Bundle(_) => Err(MirrError::TypeError {
+        | SignalType::Bundle(_)
+        | SignalType::Fifo { .. } => Err(MirrError::TypeError {
             message: format!(
                 "[E226] Operator '-' (negate) cannot be applied to composite type '{}'.",
                 operand

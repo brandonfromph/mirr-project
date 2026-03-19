@@ -137,7 +137,8 @@ pub fn emit_verilog(netlist: &TemporalNetlist) -> Result<String, MirrError> {
             SignalType::Array { .. }
             | SignalType::Struct { .. }
             | SignalType::FixedPoint { .. }
-            | SignalType::Bundle(_) => {
+            | SignalType::Bundle(_)
+            | SignalType::Fifo { .. } => {
                 let w = signal.ty.width();
                 if w == 0 {
                     format!("    wire {};// {}\n", signal.name, signal.ty)

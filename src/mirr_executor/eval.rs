@@ -119,7 +119,8 @@ pub(super) fn init_pools_for_program(
             crate::ast::types::SignalType::Array { .. }
             | crate::ast::types::SignalType::Struct { .. }
             | crate::ast::types::SignalType::FixedPoint { .. }
-            | crate::ast::types::SignalType::Bundle(_) => {
+            | crate::ast::types::SignalType::Bundle(_)
+            | crate::ast::types::SignalType::Fifo { .. } => {
                 p.persistent_env.insert(s.name.clone(), Value::Integer(0));
             }
         }

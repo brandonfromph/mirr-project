@@ -32,6 +32,7 @@ pub mod diagnostic;
 pub mod emit;
 pub mod error;
 pub mod expand;
+pub mod hls;
 pub mod lexer;
 pub mod lsp;
 pub mod mape_k;

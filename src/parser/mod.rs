@@ -27,7 +27,7 @@ pub(crate) fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {
 
 /// Parse a signal type string into a `SignalType`.
 ///
-/// Recognizes `"bool"`, `"u<N>"` (unsigned), and `"i<N>"` (signed).
+/// Recognizes `"bool"`, `"u<N>"` (unsigned), `"i<N>"` (signed), and `"fifo<T,N>"`.
 /// Returns `None` for unrecognized type strings.
 /// Width parsing failures (non-numeric suffix) also return `None`.
 ///
@@ -43,6 +43,23 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
     }
     if let Some(suffix) = ty_str.strip_prefix('i') {
         return suffix.parse::<u32>().ok().map(SignalType::Signed);
+    }
+    // Parse fifo<T,N> where T is element type and N is depth.
+    if let Some(inner) = ty_str.strip_prefix("fifo<") {
+        if let Some(rest) = inner.strip_suffix('>') {
+            let parts: Vec<&str> = rest.splitn(2, ',').collect();
+            if parts.len() == 2 {
+                let elem_str = parts[0].trim();
+                let depth_str = parts[1].trim();
+                let element = Box::new(parse_signal_type_str(elem_str)?);
+                let depth = depth_str.parse::<u64>().ok()?;
+                // Depth must be 1..=256 (MAX_FIFO_DEPTH).
+                if (1..=256).contains(&depth) {
+                    return Some(SignalType::Fifo { element, depth });
+                }
+            }
+        }
+        return None;
     }
     None
 }
@@ -79,6 +96,38 @@ pub(crate) struct TokenizedSignalDecl {
     pub annotations: TypeAnnotations,
 }
 
+/// Rejoin tokens that were split inside generic type parameters (e.g. `fifo<u8, 4>`).
+///
+/// Without this, `split_whitespace()` turns `"fifo<u8, 4>"` into `["fifo<u8,", "4>"]`
+/// and the parser fails with E118.
+fn rejoin_generic_tokens(raw: Vec<&str>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut i = 0_usize;
+    // NASA W2: bounded by input length.
+    while i < raw.len() {
+        let tok = raw[i];
+        if tok.contains('<') && !tok.ends_with('>') {
+            // Start of a generic — accumulate until we see '>'.
+            let mut buf = String::from(tok);
+            i += 1;
+            while i < raw.len() {
+                buf.push(' ');
+                buf.push_str(raw[i]);
+                if raw[i].ends_with('>') {
+                    i += 1;
+                    break;
+                }
+                i += 1;
+            }
+            out.push(buf);
+        } else {
+            out.push(tok.to_string());
+            i += 1;
+        }
+    }
+    out
+}
+
 /// Tokenize and parse the RHS of a signal declaration (after `:`; semicolon already stripped).
 ///
 /// # Grammar
@@ -91,7 +140,7 @@ pub(crate) struct TokenizedSignalDecl {
 /// - `<kind>` is `in`, `out`, or `internal`
 /// - `[linear]` is the optional linearity qualifier
 /// - `[stateful|pure]` is the optional effect annotation
-/// - `<base_type>` is `bool`, `u<N>`, or `i<N>`
+/// - `<base_type>` is `bool`, `u<N>`, `i<N>`, or `fifo<T,N>`
 /// - `[where <refinement>]` is `where lo..hi` or `where <predicate_expr>`
 /// - `[@<clock>]` is `@<identifier>` for clock domain
 /// - `[#<phantom>]` is `#<Identifier>` (uppercase) for phantom tag
@@ -106,7 +155,8 @@ pub(crate) struct TokenizedSignalDecl {
 ///
 /// At most [`MAX_SIGNAL_DECL_TOKENS`] whitespace tokens are examined.
 pub(crate) fn tokenize_signal_decl(rest: &str) -> Result<TokenizedSignalDecl, MirrError> {
-    let tokens: Vec<&str> = rest.split_whitespace().collect();
+    let raw: Vec<&str> = rest.split_whitespace().collect();
+    let tokens = rejoin_generic_tokens(raw);
 
     if tokens.len() > MAX_SIGNAL_DECL_TOKENS {
         return Err(MirrError::parse_error(
@@ -118,7 +168,7 @@ pub(crate) fn tokenize_signal_decl(rest: &str) -> Result<TokenizedSignalDecl, Mi
     }
 
     // 1. Parse kind (required, first token).
-    let kind = parse_signal_kind(tokens[0])?;
+    let kind = parse_signal_kind(&tokens[0])?;
 
     // 2. Parse qualifiers + base type + suffixes from remaining tokens.
     let (ty, annotations) = parse_qualified_type(&tokens, 1)?;
@@ -144,7 +194,8 @@ pub(crate) fn tokenize_signal_decl(rest: &str) -> Result<TokenizedSignalDecl, Mi
 pub(crate) fn parse_type_with_annotations(
     type_str: &str,
 ) -> Result<(crate::ast::types::SignalType, TypeAnnotations), MirrError> {
-    let tokens: Vec<&str> = type_str.split_whitespace().collect();
+    let raw: Vec<&str> = type_str.split_whitespace().collect();
+    let tokens = rejoin_generic_tokens(raw);
 
     if tokens.len() > MAX_SIGNAL_DECL_TOKENS {
         return Err(MirrError::parse_error("[E183] Type annotation exceeds maximum token count."));
@@ -176,7 +227,7 @@ fn parse_signal_kind(s: &str) -> Result<SignalKind, MirrError> {
 /// 2. **Base type** — consume one token; parse via [`parse_signal_type_str`].
 /// 3. **Suffixes** — consume `where <refinement>`, `@<clock>`, `#<phantom>` in any order.
 fn parse_qualified_type(
-    tokens: &[&str],
+    tokens: &[String],
     start: usize,
 ) -> Result<(crate::ast::types::SignalType, TypeAnnotations), MirrError> {
     let mut pos = start;
@@ -188,7 +239,7 @@ fn parse_qualified_type(
     let mut qualifier_count: usize = 0;
 
     while pos < tokens.len() && qualifier_count < MAX_QUALIFIERS {
-        match tokens[pos] {
+        match tokens[pos].as_str() {
             "linear" => {
                 if annotations.linearity == Linearity::Linear {
                     return Err(MirrError::parse_error(
@@ -230,7 +281,7 @@ fn parse_qualified_type(
         ));
     }
 
-    let ty_str = tokens[pos];
+    let ty_str = &tokens[pos];
     let ty = parse_signal_type_str(ty_str).ok_or_else(|| {
         MirrError::parse_error(format!(
             "[E118] Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'.",
@@ -242,7 +293,7 @@ fn parse_qualified_type(
     // Accepted in any order: `where <refinement>`, `@<clock>`, `#<phantom>`.
     // Bounded: each suffix consumed at most once; iteration bounded by token count.
     while pos < tokens.len() {
-        let token = tokens[pos];
+        let token = &tokens[pos];
 
         if token == "where" {
             // --- Refinement clause ---

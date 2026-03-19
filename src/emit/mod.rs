@@ -130,5 +130,9 @@ pub(crate) fn sv_type(ty: &SignalType) -> String {
             format!("logic [{:>2}:0]", total_bits.saturating_sub(1))
         }
         SignalType::Bundle(_) => "/* interface */ ".to_string(),
+        SignalType::Fifo { element, depth } => {
+            let flat = element.width().checked_mul(*depth as u32).unwrap_or(1).saturating_sub(1);
+            format!("logic [{:>2}:0]", flat)
+        }
     }
 }

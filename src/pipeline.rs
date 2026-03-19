@@ -49,6 +49,8 @@ pub struct PipelineConfig {
     pub symbolic: bool,
     /// Emit MAPE-K RTL (SystemVerilog) from autonomic simulation results.
     pub emit_mape_k_rtl: bool,
+    /// Run MEGA-12 HLS pass (scheduling, sharing, binding, FIFO).
+    pub hls: bool,
 }
 
 impl Default for PipelineConfig {
@@ -69,6 +71,7 @@ impl Default for PipelineConfig {
             totality: false,
             symbolic: false,
             emit_mape_k_rtl: false,
+            hls: false,
         }
     }
 }
@@ -103,6 +106,8 @@ pub struct PipelineResult {
     pub symbolic_result: Option<crate::symbolic::SymbolicResult>,
     /// MAPE-K RTL emission output (None if not requested).
     pub mape_k_rtl: Option<String>,
+    /// MEGA-12 HLS pass result (None if stage was skipped).
+    pub hls_result: Option<crate::hls::HlsResult>,
 }
 
 impl PipelineResult {
@@ -220,7 +225,34 @@ pub fn run_pipeline(
         totality_result: None,
         symbolic_result,
         mape_k_rtl: None,
+        hls_result: None,
     };
+
+    // Stage 5c: HLS pass (optional, MEGA-12).
+    if config.hls {
+        let mut dag = crate::hls::OpDag::new();
+
+        // Build DAG from reflex assignments.
+        for reflex in &result.program.module.reflexes {
+            for _assign in &reflex.assignments {
+                let op_kind = crate::hls::ResourceKind::Add;
+                let width = 8;
+                if let Some(_op_id) = dag.add_op(op_kind, width, vec![width, width]) {
+                    // DAG built successfully.
+                }
+            }
+        }
+
+        let hls_config = crate::hls::HlsConfig::default();
+        match crate::hls::run_hls_pass(&dag, &hls_config) {
+            Ok(hls_res) => {
+                result.hls_result = Some(hls_res);
+            }
+            Err(_e) => {
+                // HLS pass failure is non-fatal; pipeline continues.
+            }
+        }
+    }
 
     // Stage 6: R-SPU emission (optional, requires temporal).
     if config.rspu {

@@ -54,6 +54,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         span: None,
     };
     PipelineResult {
+        hls_result: None,
         program: MirrProgram { patterns: Vec::new(), module },
         simplify_stats: None,
         width_result: None,

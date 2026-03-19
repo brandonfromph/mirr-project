@@ -273,7 +273,8 @@ pub fn tag_from_signal_type(ty: &SignalType) -> TypeTag {
         SignalType::Array { .. }
         | SignalType::Struct { .. }
         | SignalType::FixedPoint { .. }
-        | SignalType::Bundle(_) => TypeTag::Unsigned { width: 0 },
+        | SignalType::Bundle(_)
+        | SignalType::Fifo { .. } => TypeTag::Unsigned { width: 0 },
     }
 }
 

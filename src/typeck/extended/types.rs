@@ -183,7 +183,8 @@ impl ExtendedType {
             SignalType::Array { .. }
             | SignalType::Struct { .. }
             | SignalType::FixedPoint { .. }
-            | SignalType::Bundle(_) => None,
+            | SignalType::Bundle(_)
+            | SignalType::Fifo { .. } => None,
         }
     }
 }

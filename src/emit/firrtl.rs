@@ -326,6 +326,10 @@ fn firrtl_type(ty: &SignalType) -> String {
                 SignalType::Bundle(name) => {
                     result.push_str(&format!("{{ /* interface {} */ }}", name));
                 }
+                SignalType::Fifo { element, depth } => {
+                    let elem_ty = firrtl_type_flat(element);
+                    result.push_str(&format!("{}[{}]", elem_ty, depth));
+                }
             },
             Work::SuffixOwned(s) => result.push_str(&s),
         }
@@ -344,6 +348,9 @@ fn firrtl_type_flat(ty: &SignalType) -> String {
         }
         SignalType::Array { element, length } => {
             format!("{}[{}]", firrtl_type_flat(element), length)
+        }
+        SignalType::Fifo { element, depth } => {
+            format!("{}[{}]", firrtl_type_flat(element), depth)
         }
         _ => format!("UInt<{}>", ty.width()),
     }

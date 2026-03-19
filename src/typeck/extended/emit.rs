@@ -70,7 +70,8 @@ pub fn effective_width(extended_ty: &ExtendedType) -> crate::width::types::Width
         SignalType::Array { .. }
         | SignalType::Struct { .. }
         | SignalType::FixedPoint { .. }
-        | SignalType::Bundle(_) => crate::width::types::Width(extended_ty.base.width()),
+        | SignalType::Bundle(_)
+        | SignalType::Fifo { .. } => crate::width::types::Width(extended_ty.base.width()),
     };
 
     match refinement_width_hint(extended_ty) {
@@ -284,6 +285,9 @@ pub mod hardware_mapping {
             SignalType::Struct { name, .. } => format!("{{ /* struct {} */ }}", name),
             SignalType::FixedPoint { total_bits, .. } => format!("UInt<{}>", total_bits),
             SignalType::Bundle(name) => format!("{{ /* interface {} */ }}", name),
+            SignalType::Fifo { element, depth } => {
+                format!("UInt<{}>[{}]", element.width(), depth)
+            }
         };
 
         // If there's a type-level natural, wrap in a FIRRTL vector type

@@ -74,6 +74,14 @@ pub enum SignalType {
     /// Interface bundle reference: `interface Name`. Compiles to a group of ports.
     /// Resolved during elaboration to the interface's constituent signals.
     Bundle(String),
+    /// Bounded FIFO: `fifo<T, N>` where T is element type and N is depth.
+    /// Depth bounded by MAX_FIFO_DEPTH (256). Compiles to circular buffer.
+    Fifo {
+        /// Element type stored in the FIFO.
+        element: Box<SignalType>,
+        /// Number of elements (depth), bounded by MAX_FIFO_DEPTH.
+        depth: u64,
+    },
 }
 
 impl std::fmt::Display for SignalType {
@@ -88,6 +96,7 @@ impl std::fmt::Display for SignalType {
                 write!(f, "fixed<{},{}>", total_bits, frac_bits)
             }
             SignalType::Bundle(name) => write!(f, "interface {}", name),
+            SignalType::Fifo { element, depth } => write!(f, "fifo<{}, {}>", element, depth),
         }
     }
 }
@@ -117,6 +126,10 @@ impl SignalType {
             }
             SignalType::FixedPoint { total_bits, .. } => *total_bits,
             SignalType::Bundle(_) => 0,
+            SignalType::Fifo { element, depth } => {
+                let depth32 = u32::try_from(*depth).unwrap_or(u32::MAX);
+                element.width().saturating_mul(depth32)
+            }
         }
     }
 
@@ -129,7 +142,8 @@ impl SignalType {
             SignalType::Array { .. }
             | SignalType::Struct { .. }
             | SignalType::FixedPoint { .. }
-            | SignalType::Bundle(_) => (self.width(), false),
+            | SignalType::Bundle(_)
+            | SignalType::Fifo { .. } => (self.width(), false),
         }
     }
 

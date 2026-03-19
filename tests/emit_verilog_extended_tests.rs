@@ -130,6 +130,7 @@ fn make_property(
 /// Build a PipelineResult from a programmatic Module (bypasses parser/validation).
 fn result_from_module(module: Module) -> PipelineResult {
     PipelineResult {
+        hls_result: None,
         program: MirrProgram { patterns: Vec::new(), module },
         simplify_stats: None,
         width_result: None,
@@ -150,6 +151,7 @@ fn result_from_module(module: Module) -> PipelineResult {
 /// Build a PipelineResult from a Module with a custom temporal netlist.
 fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResult {
     PipelineResult {
+        hls_result: None,
         program: MirrProgram { patterns: Vec::new(), module },
         simplify_stats: None,
         width_result: None,

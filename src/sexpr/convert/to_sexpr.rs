@@ -143,6 +143,9 @@ fn convert_signal_type(ty: SignalType) -> SExpr {
         SignalType::Bundle(name) => {
             SExpr::list(vec![SExpr::sym("interface"), SExpr::str_val(&name)])
         }
+        SignalType::Fifo { element, depth } => {
+            SExpr::list(vec![SExpr::sym("fifo"), convert_signal_type(*element), SExpr::int(depth)])
+        }
     }
 }
 

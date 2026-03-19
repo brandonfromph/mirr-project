@@ -184,6 +184,7 @@ mod tests {
             totality_result: None,
             symbolic_result: None,
             mape_k_rtl: None,
+            hls_result: None,
         }
     }
 

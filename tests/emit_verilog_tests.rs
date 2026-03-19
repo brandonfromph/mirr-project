@@ -164,6 +164,7 @@ fn prev_in_reflex_result() -> PipelineResult {
     };
 
     PipelineResult {
+        hls_result: None,
         program: MirrProgram { patterns: Vec::new(), module },
         simplify_stats: None,
         width_result: None,

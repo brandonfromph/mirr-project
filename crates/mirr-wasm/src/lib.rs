@@ -19,6 +19,7 @@ fn err_json(value: &str) -> String {
 
 fn default_config() -> PipelineConfig {
     PipelineConfig {
+        hls: false,
         typecheck: true,
         simplify: true,
         sat_simplify: false,

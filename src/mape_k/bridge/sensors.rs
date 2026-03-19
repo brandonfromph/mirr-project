@@ -76,7 +76,8 @@ pub(super) fn heuristic_sensor_defaults(ty: &SignalType) -> (u64, u64) {
         SignalType::Array { .. }
         | SignalType::Struct { .. }
         | SignalType::FixedPoint { .. }
-        | SignalType::Bundle(_) => (0, 0),
+        | SignalType::Bundle(_)
+        | SignalType::Fifo { .. } => (0, 0),
     }
 }
 
