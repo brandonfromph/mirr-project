@@ -249,7 +249,7 @@ pub(super) fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, 
         }
 
         if line == "}" {
-            // End of inner block (assignments).
+            // End of reflex block (assignments).
             *index += 1;
             break;
         }
@@ -263,24 +263,13 @@ pub(super) fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, 
         *index += 1;
     }
 
-    skip_empty_and_comments(lines, index);
-
-    if *index >= lines.len() {
+    // The reflex block must be properly closed by a '}' line.
+    if assignments.is_empty() {
         return Err(MirrError::parse_error(format!(
-            "[E145] Reflex '{name}' not closed with '}}'."
+            "[E145] Reflex '{name}' must contain at least one assignment."
         ))
         .with_span(Some(Span::full_line((*index).saturating_sub(1) as u32))));
     }
-
-    let closing = lines[*index].trim();
-    if closing != "}" {
-        return Err(MirrError::parse_error(format!(
-            "[E146] Reflex '{name}' expected closing '}}', found: {closing}"
-        ))
-        .with_span(Some(Span::full_line(*index as u32))));
-    }
-
-    *index += 1;
 
     Ok(Reflex {
         name: name.to_string(),
