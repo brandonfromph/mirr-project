@@ -1,15 +1,187 @@
 module mirr_semantic {
-    signal s_in: in bool;
-    signal s_out: out bool;
+    // ── AST node inputs ──
+    signal ast_kind:     in u8;
+    signal ast_value:    in u32;
+    signal ast_idx:      in u16;
+    signal ast_count:    in u16;
+    signal ast_read:     in bool;
 
-    guard simple_guard {
-        when s_in
+    // ── Validation state ──
+    signal pass:         internal u8;
+    signal check_idx:    internal u16;
+    signal error_count:  internal u8;
+    signal sym_count:    internal u16;
+
+    // ── Outputs ──
+    signal valid_ok:     out bool;
+    signal error_code:   out u16;
+    signal error_node:   out u16;
+    signal output_json:  out bool;
+
+    // Pass 0: declaration scan
+    // Pass 1: reference check
+    // Pass 2: type check
+    // Pass 3: completeness
+    // Pass 4: done
+
+    // ══════════════════════════════════════════════
+    // PASS 0: DECL — count signal/guard/reflex nodes
+    // ══════════════════════════════════════════════
+
+    guard decl_signal {
+        when pass == 0 && ast_kind == 1
         for 1 cycles;
     }
 
-    reflex simple_reflex {
-        on simple_guard {
-            s_out = true;
+    reflex decl_sig_add {
+        on decl_signal {
+            sym_count = sym_count + 1;
+        }
+    }
+
+    guard decl_guard {
+        when pass == 0 && ast_kind == 2
+        for 1 cycles;
+    }
+
+    reflex decl_grd_add {
+        on decl_guard {
+            sym_count = sym_count + 1;
+        }
+    }
+
+    guard decl_reflex {
+        when pass == 0 && ast_kind == 3
+        for 1 cycles;
+    }
+
+    reflex decl_rfl_add {
+        on decl_reflex {
+            sym_count = sym_count + 1;
+        }
+    }
+
+    guard decl_done {
+        when pass == 0 && check_idx >= ast_count
+        for 1 cycles;
+    }
+
+    reflex decl_to_ref {
+        on decl_done {
+            check_idx = 0;
+            pass = 1;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // PASS 1: REF — check signal references
+    // ══════════════════════════════════════════════
+
+    guard ref_signal_ref {
+        when pass == 1 && ast_kind == 11
+        for 1 cycles;
+    }
+
+    reflex ref_check {
+        on ref_signal_ref {
+            check_idx = check_idx + 1;
+        }
+    }
+
+    guard ref_done {
+        when pass == 1 && check_idx >= ast_count
+        for 1 cycles;
+    }
+
+    reflex ref_to_type {
+        on ref_done {
+            check_idx = 0;
+            pass = 2;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // PASS 2: TYPE — check assignment types
+    // ══════════════════════════════════════════════
+
+    guard type_assignment {
+        when pass == 2 && ast_kind == 4
+        for 1 cycles;
+    }
+
+    reflex type_check {
+        on type_assignment {
+            check_idx = check_idx + 1;
+        }
+    }
+
+    guard type_done {
+        when pass == 2 && check_idx >= ast_count
+        for 1 cycles;
+    }
+
+    reflex type_to_complete {
+        on type_done {
+            check_idx = 0;
+            pass = 3;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // PASS 3: COMPLETE — output signal coverage
+    // ══════════════════════════════════════════════
+
+    guard complete_check {
+        when pass == 3 && check_idx < sym_count
+        for 1 cycles;
+    }
+
+    reflex complete_verify {
+        on complete_check {
+            check_idx = check_idx + 1;
+        }
+    }
+
+    guard complete_done {
+        when pass == 3 && check_idx >= sym_count
+        for 1 cycles;
+    }
+
+    reflex complete_to_done {
+        on complete_done {
+            valid_ok = true;
+            pass = 4;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // PASS 4: DONE
+    // ══════════════════════════════════════════════
+
+    guard done_tick {
+        when pass == 4
+        for 1 cycles;
+    }
+
+    reflex done_output {
+        on done_tick {
+            output_json = true;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // ERROR HANDLING
+    // ══════════════════════════════════════════════
+
+    guard err_overflow {
+        when error_count >= 16
+        for 1 cycles;
+    }
+
+    reflex err_abort {
+        on err_overflow {
+            valid_ok = false;
+            pass = 4;
         }
     }
 }

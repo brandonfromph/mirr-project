@@ -68,6 +68,7 @@ fn write_named_mirr(name: &str, src: &str) -> (tempfile::TempDir, PathBuf) {
 /// Create a runner with all flags disabled.
 fn runner_default() -> BootstrapRunner {
     BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: None,
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -79,6 +80,7 @@ fn runner_default() -> BootstrapRunner {
 /// Create a runner with fail_fast enabled.
 fn runner_fail_fast() -> BootstrapRunner {
     BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: None,
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -90,6 +92,7 @@ fn runner_fail_fast() -> BootstrapRunner {
 /// Create a runner with JSON emission enabled.
 fn runner_emit_json() -> BootstrapRunner {
     BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: None,
         emit_netlist_json: true,
         emit_netlist_verilog: false,
@@ -101,6 +104,7 @@ fn runner_emit_json() -> BootstrapRunner {
 /// Create a runner with Verilog emission enabled.
 fn runner_emit_verilog() -> BootstrapRunner {
     BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: None,
         emit_netlist_json: false,
         emit_netlist_verilog: true,
@@ -112,6 +116,7 @@ fn runner_emit_verilog() -> BootstrapRunner {
 /// Create a runner with both JSON and Verilog emission enabled.
 fn runner_emit_both() -> BootstrapRunner {
     BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: None,
         emit_netlist_json: true,
         emit_netlist_verilog: true,
@@ -416,6 +421,7 @@ fn test_opts_default_run_lexer_driver_false() {
 #[test]
 fn test_opts_clone_preserves_fields() {
     let opts = BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(PathBuf::from("/test/path")),
         emit_netlist_json: true,
         emit_netlist_verilog: true,
@@ -765,6 +771,7 @@ fn test_fixture_parity_with_explicit_fixture_root() {
     // Write with the correct stem for fixture lookup.
     let (_dir, path) = write_named_mirr("neonatal_respirator.mirr", NEONATAL_SRC);
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(fixture_root),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -809,6 +816,7 @@ fn test_fixture_parity_reports_mismatch_with_fake_fixture() {
     let (_src_dir, src_path) = write_named_mirr("minimal.mirr", MINIMAL_SRC);
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(tmp_dir.path().to_path_buf()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -847,6 +855,7 @@ fn test_fixture_parity_mismatch_message_mentions_ir_version() {
     let (_src_dir, src_path) = write_named_mirr("minimal.mirr", MINIMAL_SRC);
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(tmp_dir.path().to_path_buf()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -889,6 +898,7 @@ fn test_fixture_parity_guard_count_mismatch() {
     let (_src_dir, src_path) = write_named_mirr("minimal.mirr", MINIMAL_SRC);
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(tmp_dir.path().to_path_buf()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -909,6 +919,7 @@ fn test_fixture_parity_guard_count_mismatch() {
 #[test]
 fn test_fixture_nonexistent_root_skips_parity() {
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(PathBuf::from("/nonexistent/fixture/root/path")),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -1754,6 +1765,7 @@ fn test_fixture_parity_with_malformed_fixture_json() {
     let (_src_dir, src_path) = write_named_mirr("minimal.mirr", MINIMAL_SRC);
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(tmp_dir.path().to_path_buf()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -1804,6 +1816,7 @@ fn test_fixture_parity_signal_count_mismatch() {
     let (_src_dir, src_path) = write_named_mirr("minimal.mirr", MINIMAL_SRC);
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(tmp_dir.path().to_path_buf()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -1844,6 +1857,7 @@ fn test_fixture_parity_statistics_mismatch() {
     let (_src_dir, src_path) = write_named_mirr("minimal.mirr", MINIMAL_SRC);
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(tmp_dir.path().to_path_buf()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -1954,6 +1968,7 @@ fn test_neonatal_fixture_round_trip() {
 
     let (_dir, path) = write_named_mirr("neonatal_respirator.mirr", NEONATAL_SRC);
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(fixture_root),
         emit_netlist_json: true,
         emit_netlist_verilog: true,

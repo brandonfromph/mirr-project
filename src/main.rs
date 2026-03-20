@@ -72,6 +72,7 @@ fn main() {
     // --selfhost-compile: run the bootstrap runner and exit.
     if selfhost_compile {
         let runner = BootstrapRunner::new(BootstrapOpts {
+            run_mirr_stages: false,
             fixture_root: None,
             emit_netlist_json: selfhost_json,
             emit_netlist_verilog: selfhost_verilog,

@@ -1,15 +1,296 @@
 module mirr_emitter {
-    signal e_in: in bool;
-    signal e_out: out bool;
+    // ── Netlist inputs ──
+    signal net_guard_name:  in u16;
+    signal net_guard_kind:  in u8;
+    signal net_guard_delay: in u16;
+    signal net_guard_input: in u16;
+    signal net_guard_output: in u16;
+    signal net_sig_name:    in u16;
+    signal net_sig_kind:    in u8;
+    signal net_read:        in bool;
 
-    guard e_guard {
-        when e_in
+    // ── Module info ──
+    signal module_name:     in u16;
+    signal input_count:     in u16;
+    signal output_count:    in u16;
+    signal internal_count:  in u16;
+
+    // ── Output buffer ──
+    signal output_byte:     out u8;
+    signal output_pos:      out u16;
+    signal output_write:    out bool;
+
+    // ── State ──
+    signal state:           internal u8;
+    signal emit_idx:        internal u16;
+    signal emit_ok:         out bool;
+    signal output_json:     out bool;
+
+    // State: 0=HEADER, 1=INPUTS, 2=OUTPUTS, 3=INTERNALS, 4=GUARDS, 5=REFLEXES, 6=FOOTER, 7=DONE
+
+    // ══════════════════════════════════════════════
+    // STATE 0: HEADER — emit module declaration
+    // ══════════════════════════════════════════════
+
+    guard header_emit {
+        when state == 0
         for 1 cycles;
     }
 
-    reflex e_reflex {
-        on e_guard {
-            e_out = true;
+    reflex header_byte {
+        on header_emit {
+            output_byte = 109;
+            output_write = true;
+            output_pos = output_pos + 1;
+        }
+    }
+
+    guard header_done {
+        when state == 0 && output_pos > 20
+        for 1 cycles;
+    }
+
+    reflex header_next {
+        on header_done {
+            state = 1;
+            emit_idx = 0;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 1: INPUTS — emit input ports
+    // ══════════════════════════════════════════════
+
+    guard inputs_emit {
+        when state == 1 && emit_idx < input_count
+        for 1 cycles;
+    }
+
+    reflex inputs_byte {
+        on inputs_emit {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard inputs_done {
+        when state == 1 && emit_idx >= input_count
+        for 1 cycles;
+    }
+
+    reflex inputs_next {
+        on inputs_done {
+            state = 2;
+            emit_idx = 0;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 2: OUTPUTS — emit output ports
+    // ══════════════════════════════════════════════
+
+    guard outputs_emit {
+        when state == 2 && emit_idx < output_count
+        for 1 cycles;
+    }
+
+    reflex outputs_byte {
+        on outputs_emit {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard outputs_done {
+        when state == 2 && emit_idx >= output_count
+        for 1 cycles;
+    }
+
+    reflex outputs_next {
+        on outputs_done {
+            state = 3;
+            emit_idx = 0;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 3: INTERNALS — emit wire declarations
+    // ══════════════════════════════════════════════
+
+    guard internals_emit {
+        when state == 3 && emit_idx < internal_count
+        for 1 cycles;
+    }
+
+    reflex internals_byte {
+        on internals_emit {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard internals_done {
+        when state == 3 && emit_idx >= internal_count
+        for 1 cycles;
+    }
+
+    reflex internals_next {
+        on internals_done {
+            state = 4;
+            emit_idx = 0;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 4: GUARDS — emit guard logic
+    // ══════════════════════════════════════════════
+
+    guard guards_passthrough {
+        when state == 4 && net_guard_kind == 0
+        for 1 cycles;
+    }
+
+    reflex guards_pt_byte {
+        on guards_passthrough {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard guards_shift_reg {
+        when state == 4 && net_guard_kind == 1
+        for 1 cycles;
+    }
+
+    reflex guards_sr_byte {
+        on guards_shift_reg {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard guards_comparison {
+        when state == 4 && net_guard_kind >= 2 && net_guard_kind <= 6
+        for 1 cycles;
+    }
+
+    reflex guards_cmp_byte {
+        on guards_comparison {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard guards_and {
+        when state == 4 && net_guard_kind == 7
+        for 1 cycles;
+    }
+
+    reflex guards_and_byte {
+        on guards_and {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard guards_overflow {
+        when state == 4 && emit_idx >= 64
+        for 1 cycles;
+    }
+
+    reflex guards_next {
+        on guards_overflow {
+            state = 5;
+            emit_idx = 0;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 5: REFLEXES — emit reflex assignments
+    // ══════════════════════════════════════════════
+
+    guard reflexes_emit {
+        when state == 5 && emit_idx < net_guard_delay
+        for 1 cycles;
+    }
+
+    reflex reflexes_byte {
+        on reflexes_emit {
+            output_byte = 32;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_idx = emit_idx + 1;
+        }
+    }
+
+    guard reflexes_done {
+        when state == 5 && emit_idx >= net_guard_delay
+        for 1 cycles;
+    }
+
+    reflex reflexes_next {
+        on reflexes_done {
+            state = 6;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 6: FOOTER — emit endmodule
+    // ══════════════════════════════════════════════
+
+    guard footer_emit {
+        when state == 6
+        for 1 cycles;
+    }
+
+    reflex footer_byte {
+        on footer_emit {
+            output_byte = 101;
+            output_write = true;
+            output_pos = output_pos + 1;
+            emit_ok = true;
+            state = 7;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 7: DONE
+    // ══════════════════════════════════════════════
+
+    guard done_tick {
+        when state == 7
+        for 1 cycles;
+    }
+
+    reflex done_output {
+        on done_tick {
+            output_json = true;
+        }
+    }
+
+    guard buffer_overflow {
+        when output_pos >= 65535
+        for 1 cycles;
+    }
+
+    reflex overflow_err {
+        on buffer_overflow {
+            emit_ok = false;
+            state = 7;
         }
     }
 }

@@ -33,6 +33,7 @@ fn neonatal_source() -> PathBuf {
 /// Run the bootstrap pipeline on the given source with fixture parity enabled.
 fn run_pipeline(source: &Path) -> BootstrapResult {
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(fixture_root()),
         emit_netlist_json: true,
         emit_netlist_verilog: false,
@@ -172,6 +173,7 @@ fn selfhost_parse_error_fails_pipeline() {
     std::fs::write(&bad_file, "module bad { THIS IS NOT VALID MIRR }").unwrap();
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(fixture_root()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -190,6 +192,7 @@ fn selfhost_parse_error_fails_pipeline() {
 #[test]
 fn selfhost_missing_file_fails_pipeline() {
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(fixture_root()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -220,6 +223,7 @@ module dup_test {
     .unwrap();
 
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(fixture_root()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,
@@ -255,6 +259,7 @@ fn selfhost_summary_line_ci_format() {
 #[test]
 fn selfhost_failure_summary_says_fail() {
     let runner = BootstrapRunner::new(BootstrapOpts {
+        run_mirr_stages: false,
         fixture_root: Some(fixture_root()),
         emit_netlist_json: false,
         emit_netlist_verilog: false,

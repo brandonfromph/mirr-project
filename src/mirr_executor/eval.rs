@@ -69,11 +69,19 @@ pub(super) fn eval_expr(e: &Expr, env_get: &impl Fn(&str) -> Value) -> Value {
                 }
             }
         }
+        // Array index: look up element by constructing key "array[idx]".
+        E::ArrayIndex { array, index } => {
+            let idx = eval_expr(index, env_get).as_int();
+            // Extract signal name from the array expression.
+            let array_name = match array.as_ref() {
+                E::Signal(name) => name.clone(),
+                _ => return Value::Integer(0),
+            };
+            let key = format!("{array_name}[{idx}]");
+            env_get(&key)
+        }
         // Composite expressions: not supported in scalar executor; yield 0.
-        E::ArrayIndex { .. }
-        | E::FieldAccess { .. }
-        | E::ArrayLiteral(_)
-        | E::StructLiteral { .. } => Value::Integer(0),
+        E::FieldAccess { .. } | E::ArrayLiteral(_) | E::StructLiteral { .. } => Value::Integer(0),
     }
 }
 

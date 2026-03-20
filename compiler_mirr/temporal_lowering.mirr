@@ -1,15 +1,242 @@
 module temporal_lowering {
-    signal t_in: in bool;
-    signal t_out: out bool;
+    // ── AST inputs ──
+    signal ast_kind:     in u8;
+    signal ast_value:    in u32;
+    signal ast_idx:      in u16;
+    signal ast_count:    in u16;
 
-    guard simple_tl_guard {
-        when t_in
+    // ── Guard info outputs ──
+    signal guard_name:   out u16;
+    signal guard_kind:   out u8;
+    signal guard_delay:  out u16;
+    signal guard_input:  out u16;
+    signal guard_output: out u16;
+    signal guard_write:  out bool;
+
+    // ── Signal outputs ──
+    signal sig_name:     out u16;
+    signal sig_kind:     out u8;
+    signal sig_write:    out bool;
+
+    // ── State ──
+    signal state:        internal u8;
+    signal check_idx:    internal u16;
+    signal guard_count:  internal u8;
+    signal sig_count:    internal u16;
+    signal cur_delay:    internal u16;
+    signal cur_name:     internal u16;
+    signal cur_input:    internal u16;
+    signal lowering_ok:  out bool;
+    signal output_json:  out bool;
+
+    // State: 0=SCAN, 1=PROCESS, 2=ALLOC, 3=EMIT, 4=DONE
+
+    // ══════════════════════════════════════════════
+    // STATE 0: SCAN — find guard declarations
+    // ══════════════════════════════════════════════
+
+    guard scan_guard {
+        when state == 0 && ast_kind == 2
         for 1 cycles;
     }
 
-    reflex simple_tl_reflex {
-        on simple_tl_guard {
-            t_out = true;
+    reflex scan_found {
+        on scan_guard {
+            cur_name = ast_value;
+            state = 1;
+        }
+    }
+
+    guard scan_cmp_lt {
+        when state == 0 && ast_kind == 32
+        for 1 cycles;
+    }
+
+    reflex scan_lt {
+        on scan_cmp_lt {
+            guard_kind = 2;
+        }
+    }
+
+    guard scan_cmp_gt {
+        when state == 0 && ast_kind == 34
+        for 1 cycles;
+    }
+
+    reflex scan_gt {
+        on scan_cmp_gt {
+            guard_kind = 3;
+        }
+    }
+
+    guard scan_cmp_le {
+        when state == 0 && ast_kind == 33
+        for 1 cycles;
+    }
+
+    reflex scan_le {
+        on scan_cmp_le {
+            guard_kind = 4;
+        }
+    }
+
+    guard scan_cmp_ge {
+        when state == 0 && ast_kind == 35
+        for 1 cycles;
+    }
+
+    reflex scan_ge {
+        on scan_cmp_ge {
+            guard_kind = 5;
+        }
+    }
+
+    guard scan_and {
+        when state == 0 && ast_kind == 36
+        for 1 cycles;
+    }
+
+    reflex scan_and_r {
+        on scan_and {
+            guard_kind = 7;
+        }
+    }
+
+    guard scan_done {
+        when state == 0 && check_idx >= ast_count
+        for 1 cycles;
+    }
+
+    reflex scan_to_done {
+        on scan_done {
+            lowering_ok = true;
+            state = 4;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 1: PROCESS — extract delay from literal
+    // ══════════════════════════════════════════════
+
+    guard process_literal {
+        when state == 1 && ast_kind == 10
+        for 1 cycles;
+    }
+
+    reflex process_delay {
+        on process_literal {
+            cur_delay = ast_value;
+            state = 2;
+        }
+    }
+
+    guard process_signal {
+        when state == 1 && ast_kind == 11
+        for 1 cycles;
+    }
+
+    reflex process_input {
+        on process_signal {
+            cur_input = ast_value;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 2: ALLOC — emit guard info
+    // ══════════════════════════════════════════════
+
+    guard alloc_passthrough {
+        when state == 2 && cur_delay == 1
+        for 1 cycles;
+    }
+
+    reflex alloc_pt {
+        on alloc_passthrough {
+            guard_kind = 0;
+            guard_name = cur_name;
+            guard_delay = 1;
+            guard_input = cur_input;
+            guard_output = cur_name;
+            guard_write = true;
+            guard_count = guard_count + 1;
+            state = 0;
+            check_idx = check_idx + 1;
+        }
+    }
+
+    guard alloc_shift_reg {
+        when state == 2 && cur_delay > 1
+        for 1 cycles;
+    }
+
+    reflex alloc_sr {
+        on alloc_shift_reg {
+            guard_kind = 1;
+            guard_name = cur_name;
+            guard_delay = cur_delay;
+            guard_input = cur_input;
+            guard_output = cur_name;
+            guard_write = true;
+            guard_count = guard_count + 1;
+            state = 3;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 3: EMIT — generate shift register signals
+    // ══════════════════════════════════════════════
+
+    guard emit_stage {
+        when state == 3 && sig_count < cur_delay
+        for 1 cycles;
+    }
+
+    reflex emit_add {
+        on emit_stage {
+            sig_name = cur_name;
+            sig_kind = 3;
+            sig_write = true;
+            sig_count = sig_count + 1;
+        }
+    }
+
+    guard emit_done {
+        when state == 3 && sig_count >= cur_delay
+        for 1 cycles;
+    }
+
+    reflex emit_back {
+        on emit_done {
+            sig_count = 0;
+            state = 0;
+            check_idx = check_idx + 1;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 4: DONE
+    // ══════════════════════════════════════════════
+
+    guard done_tick {
+        when state == 4
+        for 1 cycles;
+    }
+
+    reflex done_output {
+        on done_tick {
+            output_json = true;
+        }
+    }
+
+    guard guard_overflow {
+        when guard_count >= 64
+        for 1 cycles;
+    }
+
+    reflex overflow_err {
+        on guard_overflow {
+            lowering_ok = false;
+            state = 4;
         }
     }
 }

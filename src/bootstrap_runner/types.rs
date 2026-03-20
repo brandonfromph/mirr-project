@@ -24,6 +24,11 @@ pub struct BootstrapOpts {
     /// If true, run the experimental MIRR lexer driver to collect tokens from
     /// the compiler_mirr lexer module (off by default).
     pub run_lexer_driver: bool,
+
+    /// If true, execute MIRR compiler stages (parser, semantic, temporal, emitter)
+    /// through the MIRR interpreter and compare against Rust compiler output.
+    /// Requires MEGA-10 arrays for bounded data structures.
+    pub run_mirr_stages: bool,
 }
 
 /// Result of one pipeline stage.

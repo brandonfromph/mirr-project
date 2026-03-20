@@ -205,6 +205,92 @@ impl BootstrapRunner {
             };
             stages.push(StageResult { name: "LexerDriver".to_string(), ok, message });
         }
+
+        // -------------------------------------------------------------------
+        // Stage 5b: MIRR compiler stages (optional — requires run_mirr_stages)
+        // -------------------------------------------------------------------
+        if self.opts.run_mirr_stages {
+            // MIRR Parser stage
+            let parser_path = std::path::Path::new("compiler_mirr").join("parser.mirr");
+            if parser_path.exists() {
+                let parser_src = std::fs::read_to_string(&parser_path).unwrap_or_default();
+                let parser_module = parse_mirr(&parser_src);
+                let ok = parser_module.is_ok();
+                let message = if ok {
+                    "MIRR parser module loaded".to_string()
+                } else {
+                    format!("MIRR parser module failed: {}", parser_module.err().unwrap())
+                };
+                stages.push(StageResult { name: "MirrParser".to_string(), ok, message });
+            } else {
+                stages.push(StageResult {
+                    name: "MirrParser".to_string(),
+                    ok: false,
+                    message: "compiler_mirr/parser.mirr not found".to_string(),
+                });
+            }
+
+            // MIRR Semantic stage
+            let semantic_path = std::path::Path::new("compiler_mirr").join("semantic.mirr");
+            if semantic_path.exists() {
+                let semantic_src = std::fs::read_to_string(&semantic_path).unwrap_or_default();
+                let semantic_module = parse_mirr(&semantic_src);
+                let ok = semantic_module.is_ok();
+                let message = if ok {
+                    "MIRR semantic module loaded".to_string()
+                } else {
+                    format!("MIRR semantic module failed: {}", semantic_module.err().unwrap())
+                };
+                stages.push(StageResult { name: "MirrSemantic".to_string(), ok, message });
+            } else {
+                stages.push(StageResult {
+                    name: "MirrSemantic".to_string(),
+                    ok: false,
+                    message: "compiler_mirr/semantic.mirr not found".to_string(),
+                });
+            }
+
+            // MIRR Temporal Lowering stage
+            let temporal_path =
+                std::path::Path::new("compiler_mirr").join("temporal_lowering.mirr");
+            if temporal_path.exists() {
+                let temporal_src = std::fs::read_to_string(&temporal_path).unwrap_or_default();
+                let temporal_module = parse_mirr(&temporal_src);
+                let ok = temporal_module.is_ok();
+                let message = if ok {
+                    "MIRR temporal lowering module loaded".to_string()
+                } else {
+                    format!("MIRR temporal module failed: {}", temporal_module.err().unwrap())
+                };
+                stages.push(StageResult { name: "MirrTemporal".to_string(), ok, message });
+            } else {
+                stages.push(StageResult {
+                    name: "MirrTemporal".to_string(),
+                    ok: false,
+                    message: "compiler_mirr/temporal_lowering.mirr not found".to_string(),
+                });
+            }
+
+            // MIRR Emitter stage
+            let emitter_path = std::path::Path::new("compiler_mirr").join("emitter.mirr");
+            if emitter_path.exists() {
+                let emitter_src = std::fs::read_to_string(&emitter_path).unwrap_or_default();
+                let emitter_module = parse_mirr(&emitter_src);
+                let ok = emitter_module.is_ok();
+                let message = if ok {
+                    "MIRR emitter module loaded".to_string()
+                } else {
+                    format!("MIRR emitter module failed: {}", emitter_module.err().unwrap())
+                };
+                stages.push(StageResult { name: "MirrEmitter".to_string(), ok, message });
+            } else {
+                stages.push(StageResult {
+                    name: "MirrEmitter".to_string(),
+                    ok: false,
+                    message: "compiler_mirr/emitter.mirr not found".to_string(),
+                });
+            }
+        }
         let envelope = TemporalNetlistJson::from_netlist(&netlist);
         let actual_json = match serde_json::to_string_pretty(&envelope) {
             Ok(j) => j,
@@ -425,6 +511,7 @@ module neonatal_respirator {
     fn test_bootstrap_neonatal_passes_all_stages() {
         let f = write_temp_mirr(NEONATAL_SRC);
         let runner = BootstrapRunner::new(BootstrapOpts {
+            run_mirr_stages: false,
             emit_netlist_json: false,
             emit_netlist_verilog: false,
             fail_fast: false,
@@ -456,6 +543,7 @@ module neonatal_respirator {
     fn test_bootstrap_emit_json_flag() {
         let f = write_temp_mirr(NEONATAL_SRC);
         let runner = BootstrapRunner::new(BootstrapOpts {
+            run_mirr_stages: false,
             emit_netlist_json: true,
             emit_netlist_verilog: false,
             fail_fast: false,
@@ -476,6 +564,7 @@ module neonatal_respirator {
     fn test_bootstrap_emit_verilog_flag() {
         let f = write_temp_mirr(NEONATAL_SRC);
         let runner = BootstrapRunner::new(BootstrapOpts {
+            run_mirr_stages: false,
             emit_netlist_json: false,
             emit_netlist_verilog: true,
             fail_fast: false,
@@ -506,6 +595,7 @@ module neonatal_respirator {
         std::fs::write(&named, NEONATAL_SRC).expect("write named");
 
         let runner = BootstrapRunner::new(BootstrapOpts {
+            run_mirr_stages: false,
             emit_netlist_json: false,
             emit_netlist_verilog: false,
             fail_fast: false,

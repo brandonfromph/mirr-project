@@ -1,16 +1,752 @@
 module mirr_parser {
-    signal p_in_a: in bool;
-    signal p_in_b: in u16;
-    signal p_out_x: out bool;
+    // ── Token buffer inputs (from lexer) ──
+    signal tok_kind:    in u8;
+    signal tok_start:   in u16;
+    signal tok_len:     in u16;
+    signal tok_pos:     in u16;
+    signal tok_count:   in u16;
 
-    guard p_guard {
-        when p_in_a
+    // ── Parser state ──
+    signal state:       internal u8;
+    signal node_count:  internal u16;
+    signal parse_error: internal bool;
+    signal error_count: internal u8;
+    signal expr_depth:  internal u8;
+    signal return_state: internal u8;
+
+    // ── AST arena outputs ──
+    signal arena_kind:        out u8;
+    signal arena_parent:      out u16;
+    signal arena_child_start: out u16;
+    signal arena_child_count: out u8;
+    signal arena_value:       out u32;
+    signal arena_write:       out bool;
+
+    // ── Output signals ──
+    signal parse_ok:    out bool;
+    signal output_json: out bool;
+
+    // ══════════════════════════════════════════════
+    // STATE 0: IDLE — wait for 'module' keyword
+    // ══════════════════════════════════════════════
+
+    guard idle_saw_module {
+        when state == 0 && tok_kind == 8
         for 1 cycles;
     }
 
-    reflex p_reflex {
-        on p_guard {
-            p_out_x = true;
+    reflex idle_to_module_name {
+        on idle_saw_module {
+            state = 1;
+        }
+    }
+
+    guard idle_unexpected {
+        when state == 0 && tok_kind != 8 && tok_kind != 58
+        for 1 cycles;
+    }
+
+    reflex idle_error {
+        on idle_unexpected {
+            parse_error = true;
+            error_count = error_count + 1;
+            state = 14;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 1: MODULE_NAME — expect IDENT
+    // ══════════════════════════════════════════════
+
+    guard mod_name_ident {
+        when state == 1 && tok_kind == 1
+        for 1 cycles;
+    }
+
+    reflex mod_name_record {
+        on mod_name_ident {
+            arena_kind = 0;
+            arena_parent = 0;
+            arena_value = tok_pos;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 2;
+        }
+    }
+
+    guard mod_name_not_ident {
+        when state == 1 && tok_kind != 1
+        for 1 cycles;
+    }
+
+    reflex mod_name_err {
+        on mod_name_not_ident {
+            parse_error = true;
+            error_count = error_count + 1;
+            state = 14;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 2: MODULE_BODY — dispatch declarations
+    // ══════════════════════════════════════════════
+
+    guard body_signal {
+        when state == 2 && tok_kind == 9
+        for 1 cycles;
+    }
+
+    reflex body_to_signal {
+        on body_signal {
+            state = 3;
+        }
+    }
+
+    guard body_guard {
+        when state == 2 && tok_kind == 10
+        for 1 cycles;
+    }
+
+    reflex body_to_guard {
+        on body_guard {
+            state = 6;
+        }
+    }
+
+    guard body_reflex {
+        when state == 2 && tok_kind == 11
+        for 1 cycles;
+    }
+
+    reflex body_to_reflex {
+        on body_reflex {
+            state = 9;
+        }
+    }
+
+    guard body_rbrace {
+        when state == 2 && tok_kind == 22
+        for 1 cycles;
+    }
+
+    reflex body_close {
+        on body_rbrace {
+            parse_ok = true;
+            state = 15;
+        }
+    }
+
+    guard body_eof {
+        when state == 2 && tok_kind == 58
+        for 1 cycles;
+    }
+
+    reflex body_eof_err {
+        on body_eof {
+            parse_error = true;
+            state = 14;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 3: SIGNAL_DECL — expect IDENT
+    // ══════════════════════════════════════════════
+
+    guard sig_decl_name {
+        when state == 3 && tok_kind == 1
+        for 1 cycles;
+    }
+
+    reflex sig_decl_record {
+        on sig_decl_name {
+            arena_value = tok_pos;
+            state = 4;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 4: SIGNAL_KIND — in/out/internal
+    // ══════════════════════════════════════════════
+
+    guard sig_kind_in {
+        when state == 4 && tok_kind == 18
+        for 1 cycles;
+    }
+
+    reflex sig_kind_in_r {
+        on sig_kind_in {
+            state = 5;
+        }
+    }
+
+    guard sig_kind_out {
+        when state == 4 && tok_kind == 19
+        for 1 cycles;
+    }
+
+    reflex sig_kind_out_r {
+        on sig_kind_out {
+            state = 5;
+        }
+    }
+
+    guard sig_kind_internal {
+        when state == 4 && tok_kind == 20
+        for 1 cycles;
+    }
+
+    reflex sig_kind_int_r {
+        on sig_kind_internal {
+            state = 5;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 5: SIGNAL_TYPE — bool/u8..s64
+    // ══════════════════════════════════════════════
+
+    guard sig_type_bool {
+        when state == 5 && tok_kind == 15
+        for 1 cycles;
+    }
+
+    reflex sig_type_bool_r {
+        on sig_type_bool {
+            arena_kind = 1;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 2;
+        }
+    }
+
+    guard sig_type_u8 {
+        when state == 5 && tok_kind == 50
+        for 1 cycles;
+    }
+
+    reflex sig_type_u8_r {
+        on sig_type_u8 {
+            arena_kind = 1;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 2;
+        }
+    }
+
+    guard sig_type_u16 {
+        when state == 5 && tok_kind == 51
+        for 1 cycles;
+    }
+
+    reflex sig_type_u16_r {
+        on sig_type_u16 {
+            arena_kind = 1;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 2;
+        }
+    }
+
+    guard sig_type_u32 {
+        when state == 5 && tok_kind == 52
+        for 1 cycles;
+    }
+
+    reflex sig_type_u32_r {
+        on sig_type_u32 {
+            arena_kind = 1;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 2;
+        }
+    }
+
+    guard sig_type_u64 {
+        when state == 5 && tok_kind == 53
+        for 1 cycles;
+    }
+
+    reflex sig_type_u64_r {
+        on sig_type_u64 {
+            arena_kind = 1;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 2;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 6: GUARD_DECL — expect IDENT
+    // ══════════════════════════════════════════════
+
+    guard grd_decl_name {
+        when state == 6 && tok_kind == 1
+        for 1 cycles;
+    }
+
+    reflex grd_decl_record {
+        on grd_decl_name {
+            arena_kind = 2;
+            arena_value = tok_pos;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 7;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 7: GUARD_WHEN — expect 'when'
+    // ══════════════════════════════════════════════
+
+    guard grd_parse_kw {
+        when state == 7 && tok_kind == 12
+        for 1 cycles;
+    }
+
+    reflex grd_parse_expr {
+        on grd_parse_kw {
+            return_state = 8;
+            state = 13;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 8: GUARD_FOR — expect 'for' INTEGER 'cycles'
+    // ══════════════════════════════════════════════
+
+    guard grd_for_kw {
+        when state == 8 && tok_kind == 13
+        for 1 cycles;
+    }
+
+    reflex grd_for_skip {
+        on grd_for_kw {
+            state = 8;
+        }
+    }
+
+    guard grd_for_int {
+        when state == 8 && tok_kind == 0
+        for 1 cycles;
+    }
+
+    reflex grd_for_cycles {
+        on grd_for_int {
+            arena_value = tok_pos;
+            state = 2;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 9: REFLEX_DECL — expect IDENT
+    // ══════════════════════════════════════════════
+
+    guard rfl_decl_name {
+        when state == 9 && tok_kind == 1
+        for 1 cycles;
+    }
+
+    reflex rfl_decl_record {
+        on rfl_decl_name {
+            arena_kind = 3;
+            arena_value = tok_pos;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 10;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 10: REFLEX_ON — expect 'on' IDENT
+    // ══════════════════════════════════════════════
+
+    guard rfl_on_kw {
+        when state == 10 && tok_kind == 12
+        for 1 cycles;
+    }
+
+    reflex rfl_on_skip {
+        on rfl_on_kw {
+            state = 10;
+        }
+    }
+
+    guard rfl_on_name {
+        when state == 10 && tok_kind == 1
+        for 1 cycles;
+    }
+
+    reflex rfl_on_guard {
+        on rfl_on_name {
+            arena_value = tok_pos;
+            state = 11;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 11: REFLEX_BODY — assignments or close
+    // ══════════════════════════════════════════════
+
+    guard rfl_body_ident {
+        when state == 11 && tok_kind == 1
+        for 1 cycles;
+    }
+
+    reflex rfl_body_assign {
+        on rfl_body_ident {
+            arena_kind = 4;
+            arena_value = tok_pos;
+            state = 12;
+        }
+    }
+
+    guard rfl_body_rbrace {
+        when state == 11 && tok_kind == 22
+        for 1 cycles;
+    }
+
+    reflex rfl_body_close {
+        on rfl_body_rbrace {
+            state = 2;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 12: ASSIGNMENT — expect '=' expr ';'
+    // ══════════════════════════════════════════════
+
+    guard assign_eq {
+        when state == 12 && tok_kind == 29
+        for 1 cycles;
+    }
+
+    reflex assign_to_expr {
+        on assign_eq {
+            return_state = 11;
+            state = 13;
+        }
+    }
+
+    guard assign_semi {
+        when state == 12 && tok_kind == 23
+        for 1 cycles;
+    }
+
+    reflex assign_done {
+        on assign_semi {
+            arena_write = true;
+            node_count = node_count + 1;
+            state = 11;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 13: EXPR — parse expression atoms
+    // ══════════════════════════════════════════════
+
+    guard expr_integer {
+        when state == 13 && tok_kind == 0
+        for 1 cycles;
+    }
+
+    reflex expr_int {
+        on expr_integer {
+            arena_kind = 10;
+            arena_value = tok_pos;
+            arena_write = true;
+            node_count = node_count + 1;
+            expr_depth = expr_depth + 1;
+            state = return_state;
+        }
+    }
+
+    guard expr_ident {
+        when state == 13 && tok_kind == 1
+        for 1 cycles;
+    }
+
+    reflex expr_id {
+        on expr_ident {
+            arena_kind = 11;
+            arena_value = tok_pos;
+            arena_write = true;
+            node_count = node_count + 1;
+            expr_depth = expr_depth + 1;
+            state = return_state;
+        }
+    }
+
+    guard expr_true {
+        when state == 13 && tok_kind == 16
+        for 1 cycles;
+    }
+
+    reflex expr_true_r {
+        on expr_true {
+            arena_kind = 12;
+            arena_value = 1;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = return_state;
+        }
+    }
+
+    guard expr_false {
+        when state == 13 && tok_kind == 17
+        for 1 cycles;
+    }
+
+    reflex expr_false_r {
+        on expr_false {
+            arena_kind = 12;
+            arena_value = 0;
+            arena_write = true;
+            node_count = node_count + 1;
+            state = return_state;
+        }
+    }
+
+    guard expr_lparen {
+        when state == 13 && tok_kind == 26
+        for 1 cycles;
+    }
+
+    reflex expr_lparen_r {
+        on expr_lparen {
+            expr_depth = expr_depth + 1;
+        }
+    }
+
+    guard expr_rparen {
+        when state == 13 && tok_kind == 27
+        for 1 cycles;
+    }
+
+    reflex expr_rparen_r {
+        on expr_rparen {
+            expr_depth = expr_depth - 1;
+            state = return_state;
+        }
+    }
+
+    guard expr_plus {
+        when state == 13 && tok_kind == 40
+        for 1 cycles;
+    }
+
+    reflex expr_plus_r {
+        on expr_plus {
+            arena_kind = 20;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_minus {
+        when state == 13 && tok_kind == 41
+        for 1 cycles;
+    }
+
+    reflex expr_minus_r {
+        on expr_minus {
+            arena_kind = 21;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_star {
+        when state == 13 && tok_kind == 42
+        for 1 cycles;
+    }
+
+    reflex expr_star_r {
+        on expr_star {
+            arena_kind = 22;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_eq_eq {
+        when state == 13 && tok_kind == 2
+        for 1 cycles;
+    }
+
+    reflex expr_eq_eq_r {
+        on expr_eq_eq {
+            arena_kind = 30;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_excl_eq {
+        when state == 13 && tok_kind == 3
+        for 1 cycles;
+    }
+
+    reflex expr_excl_eq_r {
+        on expr_excl_eq {
+            arena_kind = 31;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_lt {
+        when state == 13 && tok_kind == 24
+        for 1 cycles;
+    }
+
+    reflex expr_lt_r {
+        on expr_lt {
+            arena_kind = 32;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_le {
+        when state == 13 && tok_kind == 4
+        for 1 cycles;
+    }
+
+    reflex expr_le_r {
+        on expr_le {
+            arena_kind = 33;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_gt {
+        when state == 13 && tok_kind == 25
+        for 1 cycles;
+    }
+
+    reflex expr_gt_r {
+        on expr_gt {
+            arena_kind = 34;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_ge {
+        when state == 13 && tok_kind == 5
+        for 1 cycles;
+    }
+
+    reflex expr_ge_r {
+        on expr_ge {
+            arena_kind = 35;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_amp {
+        when state == 13 && tok_kind == 45
+        for 1 cycles;
+    }
+
+    reflex expr_amp_r {
+        on expr_amp {
+            arena_kind = 36;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_pipe {
+        when state == 13 && tok_kind == 46
+        for 1 cycles;
+    }
+
+    reflex expr_pipe_r {
+        on expr_pipe {
+            arena_kind = 37;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_caret {
+        when state == 13 && tok_kind == 47
+        for 1 cycles;
+    }
+
+    reflex expr_caret_r {
+        on expr_caret {
+            arena_kind = 38;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    guard expr_not {
+        when state == 13 && tok_kind == 49
+        for 1 cycles;
+    }
+
+    reflex expr_not_r {
+        on expr_not {
+            arena_kind = 41;
+            arena_write = true;
+            node_count = node_count + 1;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 14: ERROR — skip to ';' or '}'
+    // ══════════════════════════════════════════════
+
+    guard err_semi {
+        when state == 14 && tok_kind == 23
+        for 1 cycles;
+    }
+
+    reflex err_skip_semi {
+        on err_semi {
+            state = 2;
+        }
+    }
+
+    guard err_rbrace {
+        when state == 14 && tok_kind == 22
+        for 1 cycles;
+    }
+
+    reflex err_skip_rbrace {
+        on err_rbrace {
+            state = 2;
+        }
+    }
+
+    guard err_overflow {
+        when state == 14 && error_count >= 16
+        for 1 cycles;
+    }
+
+    reflex err_abort {
+        on err_overflow {
+            state = 15;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 15: DONE
+    // ══════════════════════════════════════════════
+
+    guard done_tick {
+        when state == 15
+        for 1 cycles;
+    }
+
+    reflex done_output {
+        on done_tick {
+            output_json = true;
         }
     }
 }
