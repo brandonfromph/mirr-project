@@ -335,4 +335,3 @@ module m {
 fn err_unexpected_line_in_module() {
     assert_parse_err("module m {\n    garbage line\n}", "Unexpected");
 }
-

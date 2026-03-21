@@ -332,4 +332,3 @@ fn e1_25_emit_rtl_persists_temporal_property() {
     let sv = emit_mape_k_rtl(&result).expect("emit should succeed");
     assert!(sv.contains("ev_cnt"));
 }
-

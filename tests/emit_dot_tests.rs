@@ -227,4 +227,3 @@ fn dot_signal_node_contains_type_label() {
     assert!(dot.contains("x: u8"), "signal x should be labeled with u8");
     assert!(dot.contains("y: bool"), "signal y should be labeled with bool");
 }
-

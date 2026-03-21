@@ -140,4 +140,3 @@ module m {
 "#;
     assert_validate_err(source, "undeclared signal 'phantom'");
 }
-

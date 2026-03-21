@@ -542,4 +542,3 @@ module m {
     let result = pipeline_ok(src);
     assert!(result.program.module.guards.len() >= 2, "should have guards from both wrappers");
 }
-

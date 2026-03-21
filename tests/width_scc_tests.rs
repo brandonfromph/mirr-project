@@ -79,8 +79,8 @@ fn program(
     reflexes: Vec<Reflex>,
 ) -> MirrProgram {
     MirrProgram {
-        patterns:,
-        imports: Vec::new(), Vec::new(),
+        patterns: Vec::new(),
+        imports: Vec::new(),
         module: Module {
             name: name.to_string(),
             signals,
@@ -767,4 +767,3 @@ fn stats_include_scc_fields() {
     assert!(formatted.contains("expansive=1"));
     assert!(formatted.contains("nonexpansive=0"));
 }
-
