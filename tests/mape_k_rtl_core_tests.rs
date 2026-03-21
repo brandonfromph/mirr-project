@@ -27,7 +27,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
     };
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { patterns: Vec::new(), module },
+        program: MirrProgram { patterns: Vec::new(), imports: Vec::new(), module },
         simplify_stats: None,
         sat_stats: None,
         width_result: None,
