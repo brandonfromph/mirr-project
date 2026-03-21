@@ -34,11 +34,7 @@ pub struct ScheduleOp {
 impl ScheduleOp {
     /// Mobility = latest - earliest. Higher mobility means more sharing opportunities.
     pub fn mobility(&self) -> u32 {
-        if self.latest >= self.earliest {
-            self.latest - self.earliest
-        } else {
-            0
-        }
+        self.latest.saturating_sub(self.earliest)
     }
 
     /// Mid-point scheduling: cycle = (earliest + latest) / 2.

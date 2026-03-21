@@ -1,0 +1,46 @@
+// Majority Gate — N-input majority gate (generalized TMR)
+// Output is true when majority of inputs are true
+
+module majority_gate {
+    signal input_a: in bool;
+    signal input_b: in bool;
+    signal input_c: in bool;
+    signal majority_out: out bool;
+
+    guard a_and_b {
+        when input_a && input_b
+        for 1 cycles;
+    }
+
+    guard a_and_c {
+        when input_a && input_c
+        for 1 cycles;
+    }
+
+    guard b_and_c {
+        when input_b && input_c
+        for 1 cycles;
+    }
+
+    reflex set_majority_ab {
+        on a_and_b {
+            majority_out = true;
+        }
+    }
+
+    reflex set_majority_ac {
+        on a_and_c {
+            majority_out = true;
+        }
+    }
+
+    reflex set_majority_bc {
+        on b_and_c {
+            majority_out = true;
+        }
+    }
+
+    property majority_correct {
+        always ((input_a && input_b) || (input_a && input_c) || (input_b && input_c) -> majority_out);
+    }
+}

@@ -1,0 +1,61 @@
+// Industrial safety PLC — emergency stop and light curtain monitoring.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/industrial_safety_plc.mirr
+
+module industrial_safety_plc {
+    signal e_stop:          in bool;
+    signal light_curtain_1: in bool;
+    signal light_curtain_2: in bool;
+    signal light_curtain_3: in bool;
+    signal door_closed:     in bool;
+    signal motor_enable:    out bool;
+    signal safety_relay:    out bool;
+    signal alarm:           out bool;
+
+    guard e_stop_pressed {
+        when e_stop
+        for 1 cycles;
+    }
+
+    guard curtain_broken {
+        when !light_curtain_1
+        for 2 cycles;
+    }
+
+    guard door_open {
+        when !door_closed
+        for 5 cycles;
+    }
+
+    reflex emergency_stop {
+        on e_stop_pressed {
+            motor_enable = false;
+            safety_relay = false;
+            alarm = true;
+        }
+    }
+
+    reflex curtain_trip {
+        on curtain_broken {
+            motor_enable = false;
+            alarm = true;
+        }
+    }
+
+    reflex door_interlock {
+        on door_open {
+            motor_enable = false;
+        }
+    }
+
+    property e_stop_kills_motor {
+        always (e_stop -> !motor_enable);
+    }
+
+    property curtain_protects {
+        always (!light_curtain_1 -> !motor_enable);
+    }
+
+    property no_spurious_alarm {
+        never (alarm && e_stop == false && light_curtain_1 == true);
+    }
+}

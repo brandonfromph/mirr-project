@@ -1,0 +1,39 @@
+// Sensor Validator — range-checking and rate-of-change limiter
+
+module sensor_validator {
+    signal raw_temp: in u16;
+    signal sensor_ok: in bool;
+    signal valid_temp: out u16;
+    signal temp_fault: out bool;
+
+    guard temp_in_range {
+        when raw_temp >= 200 && raw_temp <= 420
+        for 1 cycles;
+    }
+
+    guard temp_out_of_range {
+        when raw_temp < 200 || raw_temp > 420
+        for 4 cycles;
+    }
+
+    guard sensor_healthy {
+        when sensor_ok
+        for 1 cycles;
+    }
+
+    reflex pass_valid {
+        on temp_in_range {
+            valid_temp = raw_temp;
+        }
+    }
+
+    reflex flag_fault {
+        on temp_out_of_range {
+            temp_fault = true;
+        }
+    }
+
+    property no_invalid_output {
+        always (temp_fault -> (raw_temp < 200 || raw_temp > 420));
+    }
+}

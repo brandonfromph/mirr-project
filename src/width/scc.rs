@@ -21,6 +21,19 @@ pub struct SccResult {
     pub diagnostics: Vec<WidthDiag>,
 }
 
+/// Pop from `tarjan_stack` until `root` is found. Returns SCC members.
+fn pop_until(stack: &mut Vec<usize>, on_stack: &mut [bool], root: usize) -> Vec<usize> {
+    let mut members: Vec<usize> = Vec::new();
+    while let Some(w) = stack.pop() {
+        on_stack[w] = false;
+        members.push(w);
+        if w == root {
+            break;
+        }
+    }
+    members
+}
+
 /// Find all non-trivial SCCs in the width dependency graph.
 ///
 /// Uses iterative Tarjan's algorithm with an explicit call stack.
@@ -99,14 +112,7 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
 
             // All neighbors explored — check if v is SCC root.
             if indices[v] == Some(lowlinks[v]) {
-                let mut scc_members: Vec<usize> = Vec::new();
-                while let Some(w) = tarjan_stack.pop() {
-                    on_stack[w] = false;
-                    scc_members.push(w);
-                    if w == v {
-                        break;
-                    }
-                }
+                let scc_members = pop_until(&mut tarjan_stack, &mut on_stack, v);
                 // Only keep non-trivial SCCs.
                 let is_self_loop =
                     scc_members.len() == 1 && graph.adj[scc_members[0]].contains(&scc_members[0]);

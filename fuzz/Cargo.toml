@@ -25,5 +25,29 @@ path = "fuzz_targets/fuzz_pipeline.rs"
 test = false
 doc = false
 
+[[bin]]
+name = "fuzz_typeck"
+path = "fuzz_targets/fuzz_typeck.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_width"
+path = "fuzz_targets/fuzz_width.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_sexpr_roundtrip"
+path = "fuzz_targets/fuzz_sexpr_roundtrip.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_temporal"
+path = "fuzz_targets/fuzz_temporal.rs"
+test = false
+doc = false
+
 [workspace]
 members = ["."]

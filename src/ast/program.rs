@@ -104,12 +104,27 @@ pub struct Module {
     pub span: Option<Span>,
 }
 
+/// Import declaration for multi-file compilation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImportDecl {
+    /// Path to the imported file (e.g., "stdlib/safety/tmr_voter.mirr").
+    pub path: String,
+    /// Alias for the imported module (e.g., "tmr").
+    pub alias: String,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
+}
+
 /// Root of a parsed MIRR program, with IR version for contract tracking.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MirrProgram {
     /// Top-level pattern definitions (`def` blocks).
     #[serde(default)]
     pub patterns: Vec<PatternDef>,
+    /// Import declarations for multi-file compilation.
+    #[serde(default)]
+    pub imports: Vec<ImportDecl>,
     /// The single module in this compilation unit.
     pub module: Module,
 }

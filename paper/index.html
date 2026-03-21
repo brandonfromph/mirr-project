@@ -184,9 +184,18 @@
   <div class="demo-controls">
     <select id="example-select" aria-label="Load example">
       <option value="">-- load example --</option>
-      <option value="tmr">TMR Sensor Fusion</option>
-      <option value="flight">Flight Controller</option>
-      <option value="respirator">Neonatal Respirator</option>
+      <optgroup label="Safety Patterns">
+        <option value="tmr">TMR Sensor Fusion</option>
+        <option value="watchdog">Watchdog Timer</option>
+        <option value="debouncer">Signal Debouncer</option>
+        <option value="sensor_validator">Sensor Validator</option>
+      </optgroup>
+      <optgroup label="Aerospace">
+        <option value="flight">Flight Controller</option>
+      </optgroup>
+      <optgroup label="Medical">
+        <option value="respirator">Neonatal Respirator</option>
+      </optgroup>
     </select>
     <select id="emit-format" aria-label="Output format">
       <option value="verilog">&#8594; SystemVerilog</option>

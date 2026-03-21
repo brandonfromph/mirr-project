@@ -1,8 +1,13 @@
 module mirr_lexer {
     // Incremental lexer port: two-character operator primitives + digit detect.
+    // MEGA-14: Extended with single-char operators, string literals, comments.
     signal input_tick: in bool;
     signal input_byte_is_whitespace: in bool;
     signal input_byte_is_digit: in bool;
+    signal input_byte_is_alpha: in bool;
+    signal input_byte_is_quote: in bool;
+    signal input_byte_is_slash: in bool;
+    signal input_byte_is_star: in bool;
 
     // Two-char operator inputs (asserted by harness when next byte forms two-char op)
     signal input_two_eq: in bool;
@@ -11,6 +16,37 @@ module mirr_lexer {
     signal input_two_ge: in bool;
     signal input_arrow: in bool;
     signal input_dotdot: in bool;
+
+    // Single-char operator inputs (MEGA-14 extension)
+    signal input_char_plus: in bool;
+    signal input_char_minus: in bool;
+    signal input_char_star: in bool;
+    signal input_char_slash: in bool;
+    signal input_char_lparen: in bool;
+    signal input_char_rparen: in bool;
+    signal input_char_lbrace: in bool;
+    signal input_char_rbrace: in bool;
+    signal input_char_lbracket: in bool;
+    signal input_char_rbracket: in bool;
+    signal input_char_semicolon: in bool;
+    signal input_char_colon: in bool;
+    signal input_char_comma: in bool;
+    signal input_char_dot: in bool;
+    signal input_char_assign: in bool;
+    signal input_char_lt: in bool;
+    signal input_char_gt: in bool;
+    signal input_char_bang: in bool;
+    signal input_char_amp: in bool;
+    signal input_char_pipe: in bool;
+    signal input_char_tilde: in bool;
+    signal input_char_caret: in bool;
+
+    // String/comment inputs (MEGA-14 extension)
+    signal input_string_start: in bool;
+    signal input_string_end: in bool;
+    signal input_comment_line: in bool;
+    signal input_comment_block_start: in bool;
+    signal input_comment_block_end: in bool;
 
     // Identifier length-class inputs (incremental)
     signal input_ident_len5: in bool;
@@ -43,6 +79,59 @@ module mirr_lexer {
     signal emit_digit_token: out bool;
     signal emit_tok_integer: out bool;
     signal emit_tok_ident: out bool;
+
+    // Single-char operator outputs (MEGA-14 extension)
+    signal emit_tok_plus: out bool;
+    signal emit_tok_minus: out bool;
+    signal emit_tok_star: out bool;
+    signal emit_tok_slash: out bool;
+    signal emit_tok_lparen: out bool;
+    signal emit_tok_rparen: out bool;
+    signal emit_tok_lbrace: out bool;
+    signal emit_tok_rbrace: out bool;
+    signal emit_tok_lbracket: out bool;
+    signal emit_tok_rbracket: out bool;
+    signal emit_tok_semicolon: out bool;
+    signal emit_tok_colon: out bool;
+    signal emit_tok_comma: out bool;
+    signal emit_tok_dot: out bool;
+    signal emit_tok_assign: out bool;
+    signal emit_tok_lt: out bool;
+    signal emit_tok_gt: out bool;
+    signal emit_tok_bang: out bool;
+    signal emit_tok_amp: out bool;
+    signal emit_tok_pipe: out bool;
+    signal emit_tok_tilde: out bool;
+    signal emit_tok_caret: out bool;
+
+    // String/comment outputs (MEGA-14 extension)
+    signal emit_tok_string: out bool;
+    signal emit_string_content: out bool;
+    signal skip_comment: out bool;
+
+    // Push wrappers for single-char operators (MEGA-14)
+    signal emit_push_plus: out bool;
+    signal emit_push_minus: out bool;
+    signal emit_push_star: out bool;
+    signal emit_push_slash: out bool;
+    signal emit_push_lparen: out bool;
+    signal emit_push_rparen: out bool;
+    signal emit_push_lbrace: out bool;
+    signal emit_push_rbrace: out bool;
+    signal emit_push_lbracket: out bool;
+    signal emit_push_rbracket: out bool;
+    signal emit_push_semicolon: out bool;
+    signal emit_push_colon: out bool;
+    signal emit_push_comma: out bool;
+    signal emit_push_dot: out bool;
+    signal emit_push_assign: out bool;
+    signal emit_push_lt: out bool;
+    signal emit_push_gt: out bool;
+    signal emit_push_bang: out bool;
+    signal emit_push_amp: out bool;
+    signal emit_push_pipe: out bool;
+    signal emit_push_tilde: out bool;
+    signal emit_push_caret: out bool;
     signal emit_tok_eq_eq: out bool;
     signal emit_tok_excl_eq: out bool;
     signal emit_tok_le: out bool;
@@ -86,6 +175,7 @@ module mirr_lexer {
     signal emit_push_ge: out bool;
     signal emit_push_arrow: out bool;
     signal emit_push_dot_dot: out bool;
+    signal emit_push_string: out bool;
     signal emit_push_kw_when: out bool;
     signal emit_push_kw_bool: out bool;
     signal emit_push_tok_true: out bool;
@@ -118,6 +208,110 @@ module mirr_lexer {
     // Digit guard
     guard digit_guard {
         when input_byte_is_digit
+        for 1 cycles;
+    }
+
+    // Single-char operator guards (MEGA-14)
+    guard char_plus_guard {
+        when input_char_plus
+        for 1 cycles;
+    }
+    guard char_minus_guard {
+        when input_char_minus
+        for 1 cycles;
+    }
+    guard char_star_guard {
+        when input_char_star
+        for 1 cycles;
+    }
+    guard char_slash_guard {
+        when input_char_slash
+        for 1 cycles;
+    }
+    guard char_lparen_guard {
+        when input_char_lparen
+        for 1 cycles;
+    }
+    guard char_rparen_guard {
+        when input_char_rparen
+        for 1 cycles;
+    }
+    guard char_lbrace_guard {
+        when input_char_lbrace
+        for 1 cycles;
+    }
+    guard char_rbrace_guard {
+        when input_char_rbrace
+        for 1 cycles;
+    }
+    guard char_lbracket_guard {
+        when input_char_lbracket
+        for 1 cycles;
+    }
+    guard char_rbracket_guard {
+        when input_char_rbracket
+        for 1 cycles;
+    }
+    guard char_semicolon_guard {
+        when input_char_semicolon
+        for 1 cycles;
+    }
+    guard char_colon_guard {
+        when input_char_colon
+        for 1 cycles;
+    }
+    guard char_comma_guard {
+        when input_char_comma
+        for 1 cycles;
+    }
+    guard char_dot_guard {
+        when input_char_dot
+        for 1 cycles;
+    }
+    guard char_assign_guard {
+        when input_char_assign
+        for 1 cycles;
+    }
+    guard char_lt_guard {
+        when input_char_lt
+        for 1 cycles;
+    }
+    guard char_gt_guard {
+        when input_char_gt
+        for 1 cycles;
+    }
+    guard char_bang_guard {
+        when input_char_bang
+        for 1 cycles;
+    }
+    guard char_amp_guard {
+        when input_char_amp
+        for 1 cycles;
+    }
+    guard char_pipe_guard {
+        when input_char_pipe
+        for 1 cycles;
+    }
+    guard char_tilde_guard {
+        when input_char_tilde
+        for 1 cycles;
+    }
+    guard char_caret_guard {
+        when input_char_caret
+        for 1 cycles;
+    }
+
+    // String/comment guards (MEGA-14)
+    guard string_start_guard {
+        when input_string_start
+        for 1 cycles;
+    }
+    guard comment_line_guard {
+        when input_comment_line
+        for 1 cycles;
+    }
+    guard comment_block_guard {
+        when input_comment_block_start
         for 1 cycles;
     }
 
@@ -204,6 +398,163 @@ module mirr_lexer {
         on digit_guard {
             emit_digit_token = true;
             emit_tok_integer = true;
+        }
+    }
+
+    // Reflexes: single-char operators (MEGA-14)
+    reflex char_plus_reflex {
+        on char_plus_guard {
+            emit_tok_plus = true;
+            emit_push_plus = true;
+        }
+    }
+    reflex char_minus_reflex {
+        on char_minus_guard {
+            emit_tok_minus = true;
+            emit_push_minus = true;
+        }
+    }
+    reflex char_star_reflex {
+        on char_star_guard {
+            emit_tok_star = true;
+            emit_push_star = true;
+        }
+    }
+    reflex char_slash_reflex {
+        on char_slash_guard {
+            emit_tok_slash = true;
+            emit_push_slash = true;
+        }
+    }
+    reflex char_lparen_reflex {
+        on char_lparen_guard {
+            emit_tok_lparen = true;
+            emit_push_lparen = true;
+        }
+    }
+    reflex char_rparen_reflex {
+        on char_rparen_guard {
+            emit_tok_rparen = true;
+            emit_push_rparen = true;
+        }
+    }
+    reflex char_lbrace_reflex {
+        on char_lbrace_guard {
+            emit_tok_lbrace = true;
+            emit_push_lbrace = true;
+        }
+    }
+    reflex char_rbrace_reflex {
+        on char_rbrace_guard {
+            emit_tok_rbrace = true;
+            emit_push_rbrace = true;
+        }
+    }
+    reflex char_lbracket_reflex {
+        on char_lbracket_guard {
+            emit_tok_lbracket = true;
+            emit_push_lbracket = true;
+        }
+    }
+    reflex char_rbracket_reflex {
+        on char_rbracket_guard {
+            emit_tok_rbracket = true;
+            emit_push_rbracket = true;
+        }
+    }
+    reflex char_semicolon_reflex {
+        on char_semicolon_guard {
+            emit_tok_semicolon = true;
+            emit_push_semicolon = true;
+        }
+    }
+    reflex char_colon_reflex {
+        on char_colon_guard {
+            emit_tok_colon = true;
+            emit_push_colon = true;
+        }
+    }
+    reflex char_comma_reflex {
+        on char_comma_guard {
+            emit_tok_comma = true;
+            emit_push_comma = true;
+        }
+    }
+    reflex char_dot_reflex {
+        on char_dot_guard {
+            emit_tok_dot = true;
+            emit_push_dot = true;
+        }
+    }
+    reflex char_assign_reflex {
+        on char_assign_guard {
+            emit_tok_assign = true;
+            emit_push_assign = true;
+        }
+    }
+    reflex char_lt_reflex {
+        on char_lt_guard {
+            emit_tok_lt = true;
+            emit_push_lt = true;
+        }
+    }
+    reflex char_gt_reflex {
+        on char_gt_guard {
+            emit_tok_gt = true;
+            emit_push_gt = true;
+        }
+    }
+    reflex char_bang_reflex {
+        on char_bang_guard {
+            emit_tok_bang = true;
+            emit_push_bang = true;
+        }
+    }
+    reflex char_amp_reflex {
+        on char_amp_guard {
+            emit_tok_amp = true;
+            emit_push_amp = true;
+        }
+    }
+    reflex char_pipe_reflex {
+        on char_pipe_guard {
+            emit_tok_pipe = true;
+            emit_push_pipe = true;
+        }
+    }
+    reflex char_tilde_reflex {
+        on char_tilde_guard {
+            emit_tok_tilde = true;
+            emit_push_tilde = true;
+        }
+    }
+    reflex char_caret_reflex {
+        on char_caret_guard {
+            emit_tok_caret = true;
+            emit_push_caret = true;
+        }
+    }
+
+    // String reflex (MEGA-14: bounded string literal parsing)
+    reflex string_start_reflex {
+        on string_start_guard {
+            emit_tok_string = true;
+            emit_string_content = true;
+            emit_push_string = true;
+        }
+    }
+
+    // Comment reflex (MEGA-14: line and block comment skipping)
+    reflex comment_line_reflex {
+        on comment_line_guard {
+            skip_comment = true;
+            skip_byte = true;
+        }
+    }
+    reflex comment_block_reflex {
+        on comment_block_guard {
+            skip_comment = true;
+            skip_byte = true;
         }
     }
 
@@ -367,6 +718,35 @@ module mirr_lexer {
             emit_tok_arrow = false;
             emit_tok_dot_dot = false;
 
+            // Clear single-char operator outputs (MEGA-14)
+            emit_tok_plus = false;
+            emit_tok_minus = false;
+            emit_tok_star = false;
+            emit_tok_slash = false;
+            emit_tok_lparen = false;
+            emit_tok_rparen = false;
+            emit_tok_lbrace = false;
+            emit_tok_rbrace = false;
+            emit_tok_lbracket = false;
+            emit_tok_rbracket = false;
+            emit_tok_semicolon = false;
+            emit_tok_colon = false;
+            emit_tok_comma = false;
+            emit_tok_dot = false;
+            emit_tok_assign = false;
+            emit_tok_lt = false;
+            emit_tok_gt = false;
+            emit_tok_bang = false;
+            emit_tok_amp = false;
+            emit_tok_pipe = false;
+            emit_tok_tilde = false;
+            emit_tok_caret = false;
+
+            // Clear string/comment outputs (MEGA-14)
+            emit_tok_string = false;
+            emit_string_content = false;
+            skip_comment = false;
+
             // Clear push wrapper signals
             emit_push_integer = false;
             emit_push_ident = false;
@@ -382,6 +762,31 @@ module mirr_lexer {
             emit_push_kw_else = false;
             emit_push_kw_loop = false;
             emit_push_kw_enum = false;
+
+            // Clear single-char push wrappers (MEGA-14)
+            emit_push_plus = false;
+            emit_push_minus = false;
+            emit_push_star = false;
+            emit_push_slash = false;
+            emit_push_lparen = false;
+            emit_push_rparen = false;
+            emit_push_lbrace = false;
+            emit_push_rbrace = false;
+            emit_push_lbracket = false;
+            emit_push_rbracket = false;
+            emit_push_semicolon = false;
+            emit_push_colon = false;
+            emit_push_comma = false;
+            emit_push_dot = false;
+            emit_push_assign = false;
+            emit_push_lt = false;
+            emit_push_gt = false;
+            emit_push_bang = false;
+            emit_push_amp = false;
+            emit_push_pipe = false;
+            emit_push_tilde = false;
+            emit_push_caret = false;
+            emit_push_string = false;
         }
     }
 }

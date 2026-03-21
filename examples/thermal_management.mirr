@@ -1,0 +1,82 @@
+// Thermal management — multi-zone temperature monitoring.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/thermal_management.mirr
+
+module thermal_management {
+    signal temp_zone_1:     in i16;
+    signal temp_zone_2:     in i16;
+    signal temp_zone_3:     in i16;
+    signal temp_zone_4:     in i16;
+    signal fan_speed_1:     out u8;
+    signal fan_speed_2:     out u8;
+    signal fan_speed_3:     out u8;
+    signal fan_speed_4:     out u8;
+    signal thermal_alarm:   out bool;
+    signal thermal_shutdown: out bool;
+
+    guard zone_1_hot {
+        when temp_zone_1 > 85
+        for 30 cycles;
+    }
+
+    guard zone_2_hot {
+        when temp_zone_2 > 85
+        for 30 cycles;
+    }
+
+    guard zone_3_hot {
+        when temp_zone_3 > 85
+        for 30 cycles;
+    }
+
+    guard zone_4_hot {
+        when temp_zone_4 > 85
+        for 30 cycles;
+    }
+
+    guard critical_temp {
+        when temp_zone_1 > 100
+        for 10 cycles;
+    }
+
+    reflex alarm_zone_1 {
+        on zone_1_hot {
+            thermal_alarm = true;
+        }
+    }
+
+    reflex alarm_zone_2 {
+        on zone_2_hot {
+            thermal_alarm = true;
+        }
+    }
+
+    reflex alarm_zone_3 {
+        on zone_3_hot {
+            thermal_alarm = true;
+        }
+    }
+
+    reflex alarm_zone_4 {
+        on zone_4_hot {
+            thermal_alarm = true;
+        }
+    }
+
+    reflex emergency_cooling {
+        on critical_temp {
+            thermal_shutdown = true;
+        }
+    }
+
+    property temp_bounded {
+        always (temp_zone_1 < 120);
+    }
+
+    property alarm_on_hot {
+        always (temp_zone_1 > 85 -> thermal_alarm);
+    }
+
+    property shutdown_on_critical {
+        always (temp_zone_1 > 100 -> thermal_shutdown);
+    }
+}

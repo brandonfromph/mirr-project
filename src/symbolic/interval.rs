@@ -110,10 +110,10 @@ pub fn interval_binary(op: BinaryOp, lhs: SymValue, rhs: SymValue) -> SymValue {
         }
         BinaryOp::Mul => {
             // 4-corner multiplication with saturation on overflow.
-            let c0 = a_lo.checked_mul(b_lo).unwrap_or(u64::MAX);
-            let c1 = a_lo.checked_mul(b_hi).unwrap_or(u64::MAX);
-            let c2 = a_hi.checked_mul(b_lo).unwrap_or(u64::MAX);
-            let c3 = a_hi.checked_mul(b_hi).unwrap_or(u64::MAX);
+            let c0 = a_lo.saturating_mul(b_lo);
+            let c1 = a_lo.saturating_mul(b_hi);
+            let c2 = a_hi.saturating_mul(b_lo);
+            let c3 = a_hi.saturating_mul(b_hi);
             let lo = c0.min(c1).min(c2).min(c3);
             let hi = c0.max(c1).max(c2).max(c3);
             normalize(lo, hi)

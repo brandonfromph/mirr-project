@@ -108,6 +108,35 @@ All proposals live in `proposals/` and follow the campaign workflow.
 | 033 | LRA-PHASE1 | 2026-03-12 | Executed |
 | 034 | LRA-PHASE2 | 2026-03-12 | Executed |
 | 035 | LRA-PHASE3-PHASE4 | 2026-03-12 | Executed |
+| 036 | CIGREEN-001 | 2026-03-12 | Executed |
+| 037 | HARDEN-001 | 2026-03-12 | Executed |
+| 038 | PAPER-001 | 2026-03-12 | Executed |
+| 039 | CIRUST-001 | 2026-03-12 | Executed |
+| 040 | PAGES-001 | 2026-03-12 | Executed |
+| 041 | ULTRA-FORMAL-001 | 2026-03-12 | Executed |
+| 042 | PAPER-001 | 2026-03-13 | Executed |
+| 043 | TITAN-CONVERGENCE | 2026-03-13 | Executed |
+| 044 | OUROBOROS-DESIGN | 2026-03-13 | Executed |
+| 045 | MEGA-CONVERGENCE | 2026-03-14 | Executed |
+| 046 | POLISH-AND-SHIP | 2026-03-14 | Executed |
+| 047 | POLISH-2 | 2026-03-14 | Executed |
+| 048 | LRA-PHASE5 | 2026-03-15 | Executed |
+| 049 | LRA-PHASE6 | 2026-03-15 | Executed |
+| 050 | LRA-PHASE7 | 2026-03-15 | Executed |
+| 051 | LRA-PHASE8 | 2026-03-15 | Executed |
+| 052 | LRA-PHASE9 | 2026-03-15 | Executed |
+| 053 | MEGA4-TOTALITY-ENGINE | 2026-03-15 | Executed |
+| 054 | MEGA5-SYMBOLIC-EVAL | 2026-03-15 | Executed |
+| 055 | MEGA-VERIFY | 2026-03-15 | Executed |
+| 056 | MEGA6-MAPE-K-SILICON | 2026-03-16 | Executed |
+| 057 | MEGA7-RUST-LEVEL-ERRORS | 2026-03-17 | Proposed |
+| 058 | MEGA10-BOUNDED-DATA | 2026-03-17 | Proposed |
+| 059 | MEGA11-14-UNIFIED | 2026-03-17 | Proposed |
+| 060 | MEGA12-BOUNDED-HLS | 2026-03-19 | Proposed |
+| 061 | MEGA12-DATAFLOW-OPT | 2026-03-19 | Proposed |
+| 062 | MEGA13-SELF-HOST | 2026-03-19 | Proposed |
+| 063 | WASM-BUILDER-AUDIT | 2026-03-20 | Executed |
+| 064 | MAJOR-REPO-HARDENING | 2026-03-20 | Proposed |
 
 ---
 

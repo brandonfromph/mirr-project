@@ -23,13 +23,15 @@ pub mod rspu_tagged;
 pub mod sexpr;
 pub mod testbench;
 pub mod verilog;
+pub mod riscv;
+pub mod arm;
 
 use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
 use crate::ast::MAX_EXPR_NODES;
 
 /// Render an expression in MIRR-like text form for property/JSON output.
-pub(crate) fn expr_text(expr: &Expr) -> String {
+pub fn expr_text(expr: &Expr) -> String {
     let mut iters = 0usize;
     expr_text_bounded(expr, &mut iters)
 }

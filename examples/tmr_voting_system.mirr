@@ -1,0 +1,69 @@
+// Triple Modular Redundancy voting system.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/tmr_voting_system.mirr
+
+module tmr_voting_system {
+    signal sensor_a:    in u16;
+    signal sensor_b:    in u16;
+    signal sensor_c:    in u16;
+    signal voted_value: out u16;
+    signal fault_a:     out bool;
+    signal fault_b:     out bool;
+    signal fault_c:     out bool;
+    signal safe_state:  out bool;
+
+    guard sensor_a_failed {
+        when sensor_a < 5
+        for 50 cycles;
+    }
+
+    guard sensor_b_failed {
+        when sensor_b < 5
+        for 50 cycles;
+    }
+
+    guard sensor_c_failed {
+        when sensor_c < 5
+        for 50 cycles;
+    }
+
+    guard triple_fault {
+        when sensor_a < 5
+        for 100 cycles;
+    }
+
+    reflex flag_fault_a {
+        on sensor_a_failed {
+            fault_a = true;
+        }
+    }
+
+    reflex flag_fault_b {
+        on sensor_b_failed {
+            fault_b = true;
+        }
+    }
+
+    reflex flag_fault_c {
+        on sensor_c_failed {
+            fault_c = true;
+        }
+    }
+
+    reflex enter_safe_state {
+        on triple_fault {
+            safe_state = true;
+        }
+    }
+
+    property voted_valid {
+        always (voted_value == sensor_a || voted_value == sensor_b || voted_value == sensor_c);
+    }
+
+    property fault_detected {
+        always (sensor_a < 5 -> fault_a);
+    }
+
+    property no_triple_fault {
+        never (fault_a && fault_b && fault_c);
+    }
+}

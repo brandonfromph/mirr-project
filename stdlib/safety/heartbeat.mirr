@@ -1,0 +1,45 @@
+// Heartbeat Monitor — detects missing periodic signals
+
+module heartbeat_monitor {
+    signal heartbeat: in bool;
+    signal alarm: out bool;
+    signal heartbeat_ok: out bool;
+
+    guard heartbeat_missing {
+        when !heartbeat
+        for 32 cycles;
+    }
+
+    guard heartbeat_received {
+        when heartbeat
+        for 1 cycles;
+    }
+
+    reflex raise_alarm {
+        on heartbeat_missing {
+            alarm = true;
+        }
+    }
+
+    reflex clear_alarm {
+        on heartbeat_received {
+            alarm = false;
+        }
+    }
+
+    reflex set_ok {
+        on heartbeat_received {
+            heartbeat_ok = true;
+        }
+    }
+
+    reflex clear_ok {
+        on heartbeat_missing {
+            heartbeat_ok = false;
+        }
+    }
+
+    property alarm_on_missing {
+        always (!heartbeat for 32 cycles -> alarm);
+    }
+}

@@ -6,11 +6,28 @@ module mirr_semantic {
     signal ast_count:    in u16;
     signal ast_read:     in bool;
 
+    // ── Bounded symbol table (MEGA-10 arrays) ──
+    signal sym_table_name:  internal u32;
+    signal sym_table_kind:  internal u8;
+    signal sym_table_width: internal u8;
+
     // ── Validation state ──
     signal pass:         internal u8;
     signal check_idx:    internal u16;
     signal error_count:  internal u8;
     signal sym_count:    internal u16;
+    signal ref_valid:    internal bool;
+    signal type_match:   internal bool;
+    signal prev_delay_ok: internal bool;
+    signal guard_covered: internal bool;
+    signal duplicate_found: internal bool;
+
+    // ── Error tracking ──
+    signal err_e201: internal u8;
+    signal err_e202: internal u8;
+    signal err_e209: internal u8;
+    signal err_e226: internal u8;
+    signal err_e601: internal u8;
 
     // ── Outputs ──
     signal valid_ok:     out bool;
@@ -25,7 +42,7 @@ module mirr_semantic {
     // Pass 4: done
 
     // ══════════════════════════════════════════════
-    // PASS 0: DECL — count signal/guard/reflex nodes
+    // PASS 0: DECL — count and register signal/guard/reflex nodes
     // ══════════════════════════════════════════════
 
     guard decl_signal {
@@ -36,6 +53,23 @@ module mirr_semantic {
     reflex decl_sig_add {
         on decl_signal {
             sym_count = sym_count + 1;
+            sym_table_name = ast_value;
+            sym_table_kind = 1;
+        }
+    }
+
+    // Check for duplicate declarations (E202)
+    guard decl_duplicate {
+        when pass == 0 && ast_kind == 1 && duplicate_found == true
+        for 1 cycles;
+    }
+
+    reflex decl_dup_error {
+        on decl_duplicate {
+            error_count = error_count + 1;
+            error_code = 202;
+            error_node = ast_idx;
+            err_e202 = err_e202 + 1;
         }
     }
 
@@ -74,7 +108,7 @@ module mirr_semantic {
     }
 
     // ══════════════════════════════════════════════
-    // PASS 1: REF — check signal references
+    // PASS 1: REF — check signal references (E201)
     // ══════════════════════════════════════════════
 
     guard ref_signal_ref {
@@ -85,6 +119,49 @@ module mirr_semantic {
     reflex ref_check {
         on ref_signal_ref {
             check_idx = check_idx + 1;
+            ref_valid = true;
+        }
+    }
+
+    // Undeclared signal reference (E201)
+    guard ref_undeclared {
+        when pass == 1 && ast_kind == 11 && ref_valid == false
+        for 1 cycles;
+    }
+
+    reflex ref_undeclared_error {
+        on ref_undeclared {
+            error_count = error_count + 1;
+            error_code = 201;
+            error_node = ast_idx;
+            err_e201 = err_e201 + 1;
+        }
+    }
+
+    // prev() delay validation (E209)
+    guard ref_prev_check {
+        when pass == 1 && ast_kind == 12
+        for 1 cycles;
+    }
+
+    reflex ref_prev_validate {
+        on ref_prev_check {
+            check_idx = check_idx + 1;
+            prev_delay_ok = true;
+        }
+    }
+
+    guard ref_prev_invalid {
+        when pass == 1 && ast_kind == 12 && prev_delay_ok == false
+        for 1 cycles;
+    }
+
+    reflex ref_prev_error {
+        on ref_prev_invalid {
+            error_count = error_count + 1;
+            error_code = 209;
+            error_node = ast_idx;
+            err_e209 = err_e209 + 1;
         }
     }
 
@@ -101,7 +178,7 @@ module mirr_semantic {
     }
 
     // ══════════════════════════════════════════════
-    // PASS 2: TYPE — check assignment types
+    // PASS 2: TYPE — check assignment types (E601)
     // ══════════════════════════════════════════════
 
     guard type_assignment {
@@ -112,6 +189,22 @@ module mirr_semantic {
     reflex type_check {
         on type_assignment {
             check_idx = check_idx + 1;
+            type_match = true;
+        }
+    }
+
+    // Type mismatch (E601)
+    guard type_mismatch {
+        when pass == 2 && ast_kind == 4 && type_match == false
+        for 1 cycles;
+    }
+
+    reflex type_mismatch_error {
+        on type_mismatch {
+            error_count = error_count + 1;
+            error_code = 601;
+            error_node = ast_idx;
+            err_e601 = err_e601 + 1;
         }
     }
 
@@ -128,7 +221,7 @@ module mirr_semantic {
     }
 
     // ══════════════════════════════════════════════
-    // PASS 3: COMPLETE — output signal coverage
+    // PASS 3: COMPLETE — output signal coverage (E226)
     // ══════════════════════════════════════════════
 
     guard complete_check {
@@ -139,6 +232,22 @@ module mirr_semantic {
     reflex complete_verify {
         on complete_check {
             check_idx = check_idx + 1;
+            guard_covered = true;
+        }
+    }
+
+    // Guard completeness violation (E226)
+    guard complete_uncovered {
+        when pass == 3 && guard_covered == false && sym_table_kind == 1
+        for 1 cycles;
+    }
+
+    reflex complete_error {
+        on complete_uncovered {
+            error_count = error_count + 1;
+            error_code = 226;
+            error_node = check_idx;
+            err_e226 = err_e226 + 1;
         }
     }
 

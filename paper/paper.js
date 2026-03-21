@@ -47,6 +47,116 @@ const EXAMPLES = {
     }
 }`,
 
+  watchdog: `module watchdog_timer {
+    signal heartbeat:    in bool;
+    signal system_reset: out bool;
+    signal watchdog_ok:  out bool;
+
+    guard heartbeat_missing {
+        when !heartbeat
+        for 64 cycles;
+    }
+
+    guard heartbeat_present {
+        when heartbeat
+        for 1 cycles;
+    }
+
+    reflex reset_on_timeout {
+        on heartbeat_missing {
+            system_reset = true;
+        }
+    }
+
+    reflex clear_ok {
+        on heartbeat_missing {
+            watchdog_ok = false;
+        }
+    }
+
+    reflex set_ok {
+        on heartbeat_present {
+            watchdog_ok = true;
+        }
+    }
+
+    property reset_before_65 {
+        always (!heartbeat for 64 cycles -> system_reset);
+    }
+}`,
+
+  debouncer: `module signal_debouncer {
+    signal raw_input:      in bool;
+    signal debounced:      out bool;
+    signal stable:         out bool;
+
+    guard input_high_stable {
+        when raw_input
+        for 10 cycles;
+    }
+
+    guard input_low_stable {
+        when !raw_input
+        for 10 cycles;
+    }
+
+    reflex set_high {
+        on input_high_stable {
+            debounced = true;
+        }
+    }
+
+    reflex set_low {
+        on input_low_stable {
+            debounced = false;
+        }
+    }
+
+    reflex set_stable {
+        on input_high_stable {
+            stable = true;
+        }
+    }
+}`,
+
+  sensor_validator: `module sensor_validator {
+    signal raw_temp:     in u16;
+    signal sensor_ok:    in bool;
+    signal valid_temp:   out u16;
+    signal temp_fault:   out bool;
+
+    guard temp_in_range {
+        when raw_temp >= 200 && raw_temp <= 420
+        for 1 cycles;
+    }
+
+    guard temp_out_of_range {
+        when raw_temp < 200 || raw_temp > 420
+        for 4 cycles;
+    }
+
+    guard sensor_healthy {
+        when sensor_ok
+        for 1 cycles;
+    }
+
+    reflex pass_valid {
+        on temp_in_range {
+            valid_temp = raw_temp;
+        }
+    }
+
+    reflex flag_fault {
+        on temp_out_of_range {
+            temp_fault = true;
+        }
+    }
+
+    property no_invalid_output {
+        always (temp_fault -> (raw_temp < 200 || raw_temp > 420));
+    }
+}`,
+
   flight: `module flight_controller {
     signal altitude:     in u32;
     signal airspeed:     in u16;
@@ -375,9 +485,88 @@ function handleMapekSim(source, ticks) {
   }
 }
 
+// ── Real-time compilation with debounce ──
+
+var compileTimer = null;
+var lastCompileTime = 0;
+
+function debounceCompile() {
+  clearTimeout(compileTimer);
+  compileTimer = setTimeout(compile, 500);
+}
+
+function compileWithTimer() {
+  if (!wasmReady) return;
+
+  var source = getSource();
+  var format = document.getElementById('emit-format').value;
+  var output = document.getElementById('compiler-output');
+  output.setAttribute('aria-busy', 'true');
+  var label = document.getElementById('output-label');
+
+  if (source.length > MAX_SOURCE_BYTES) {
+    output.textContent =
+      'Source too large (' + source.length + ' bytes). Limit is ' + MAX_SOURCE_BYTES + ' bytes.';
+    output.classList.add('error');
+    output.setAttribute('aria-busy', 'false');
+    return;
+  }
+
+  label.textContent = '(' + format + ')';
+
+  var compiler = COMPILERS[format];
+  if (!compiler) {
+    output.setAttribute('aria-busy', 'false');
+    return;
+  }
+
+  var startTime = performance.now();
+
+  try {
+    var result = JSON.parse(compiler(source));
+    var elapsed = (performance.now() - startTime).toFixed(1);
+    lastCompileTime = parseFloat(elapsed);
+
+    if (result.ok !== undefined) {
+      output.textContent = result.ok;
+      output.classList.remove('error');
+    } else if (result.err !== undefined) {
+      output.textContent = result.err;
+      output.classList.add('error');
+    }
+
+    // Show compile time
+    showCompileTime(elapsed);
+  } catch (e) {
+    output.textContent = 'Compilation error: ' + (e.message || e);
+    output.classList.add('error');
+  } finally {
+    output.setAttribute('aria-busy', 'false');
+  }
+}
+
+function showCompileTime(ms) {
+  var btn = document.getElementById('compile-btn');
+  if (!btn) return;
+  var originalText = btn.getAttribute('data-original-text') || 'Compile';
+  if (!btn.getAttribute('data-original-text')) {
+    btn.setAttribute('data-original-text', originalText);
+  }
+  btn.textContent = 'Compile (' + ms + 'ms)';
+  // Reset after 3 seconds
+  setTimeout(function() {
+    btn.textContent = originalText;
+  }, 3000);
+}
+
 // Wire up controls
 document.getElementById('compile-btn')
   .addEventListener('click', compile);
+
+// Hook real-time compilation to CodeMirror
+if (cmEditor) {
+  cmEditor.on('change', debounceCompile);
+}
 
 document.getElementById('example-select')
   .addEventListener('change', function(e) {

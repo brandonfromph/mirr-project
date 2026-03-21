@@ -200,7 +200,7 @@ Distributed under the GPL-3.0 License. See [`LICENSE`](LICENSE) for the full ter
 
 ## Contact & acknowledgments
 
-This project was conceptualized and is maintained by a first-year undergraduate student as an independent research effort. It is offered as a design exploration and an invitation for mentorship and collaboration from researchers in VLSI, formal methods, and safety-critical systems.
+MIRR is a safety-critical HDL compiler targeting medical devices (FDA 21 CFR Part 11), aerospace (DO-178C), and automotive (ISO 26262) applications. It provides cryptographically signed build receipts for regulatory compliance and formal verification of temporal properties.
 
 **Built on the work of:**
 - Xiao et al. (2025) — [Cement2: Temporal Hardware Transactions](https://doi.org/10.48550/arXiv.2511.15073)

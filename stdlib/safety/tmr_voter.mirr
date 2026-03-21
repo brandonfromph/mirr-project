@@ -1,0 +1,47 @@
+// TMR Voter — Triple Modular Redundancy majority voter
+// Three inputs, one output, majority logic
+// Hardware-synthesizable: pure Signal/Guard/Reflex
+
+module tmr_voter {
+    signal input_a: in u16;
+    signal input_b: in u16;
+    signal input_c: in u16;
+    signal output: out u16;
+
+    guard a_agrees_b {
+        when input_a == input_b
+        for 1 cycles;
+    }
+
+    guard a_agrees_c {
+        when input_a == input_c
+        for 1 cycles;
+    }
+
+    guard b_agrees_c {
+        when input_b == input_c
+        for 1 cycles;
+    }
+
+    reflex vote_a_b {
+        on a_agrees_b {
+            output = input_a;
+        }
+    }
+
+    reflex vote_a_c {
+        on a_agrees_c {
+            output = input_a;
+        }
+    }
+
+    reflex vote_b_c {
+        on b_agrees_c {
+            output = input_b;
+        }
+    }
+
+    property no_spurious_output {
+        always ((input_a == input_b || input_a == input_c || input_b == input_c) -> (output == input_a || output == input_b || output == input_c));
+    }
+}

@@ -4,7 +4,6 @@
 //! binding. Each operation is assigned to a physical functional unit (ALU,
 //! multiplier, etc.) based on its resource kind and time slot.
 //!
-//! The resource pool tracks available physical units for each resource kind.
 //! Operations that can share a resource (non-overlapping time slots, same
 //! kind) are bound to the same physical unit.
 //!
@@ -14,48 +13,6 @@
 
 use super::schedule::ScheduleOp;
 
-/// Resource pool tracking available physical units.
-#[derive(Debug, Clone)]
-pub struct ResourcePool {
-    /// Available multipliers.
-    pub multipliers: u32,
-    /// Available adders.
-    pub adders: u32,
-    /// Available logic units (AND/OR/XOR).
-    pub logic_units: u32,
-    /// Available comparators.
-    pub comparators: u32,
-    /// Available shifters.
-    pub shifters: u32,
-    /// Available general-purpose ALUs.
-    pub alus: u32,
-}
-
-impl ResourcePool {
-    /// Create a new resource pool with default counts.
-    pub fn new() -> Self {
-        Self { multipliers: 1, adders: 1, logic_units: 1, comparators: 1, shifters: 1, alus: 1 }
-    }
-
-    /// Create a resource pool with specified counts.
-    pub fn with_counts(
-        multipliers: u32,
-        adders: u32,
-        logic_units: u32,
-        comparators: u32,
-        shifters: u32,
-        alus: u32,
-    ) -> Self {
-        Self { multipliers, adders, logic_units, comparators, shifters, alus }
-    }
-}
-
-impl Default for ResourcePool {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 /// Bind operations to physical resources using greedy left-edge binding.
 ///
 /// Algorithm:
@@ -64,7 +21,7 @@ impl Default for ResourcePool {
 /// 3. If no existing resource is free, allocate a new one.
 ///
 /// Returns a vector of resource IDs (one per operation in the schedule).
-pub fn bind_operations(schedule: &[ScheduleOp], _sharing_groups: &[Vec<usize>]) -> Vec<u32> {
+pub fn bind_operations(schedule: &[ScheduleOp]) -> Vec<u32> {
     let mut bindings: Vec<u32> = vec![0; schedule.len()];
 
     if schedule.is_empty() {
@@ -266,7 +223,7 @@ mod tests {
             resource: super::super::ResourceKind::Add,
         }];
 
-        let bindings = bind_operations(&schedule, &[]);
+        let bindings = bind_operations(&schedule);
         assert_eq!(bindings.len(), 1);
         assert_eq!(bindings[0], 0);
     }
@@ -288,7 +245,7 @@ mod tests {
             },
         ];
 
-        let bindings = bind_operations(&schedule, &[]);
+        let bindings = bind_operations(&schedule);
         assert_eq!(bindings.len(), 2);
         // Non-overlapping ops of same kind should share resource.
         assert_eq!(bindings[0], bindings[1]);
@@ -311,7 +268,7 @@ mod tests {
             },
         ];
 
-        let bindings = bind_operations(&schedule, &[]);
+        let bindings = bind_operations(&schedule);
         assert_eq!(bindings.len(), 2);
         // Overlapping ops need different resources.
         assert_ne!(bindings[0], bindings[1]);
@@ -334,7 +291,7 @@ mod tests {
             },
         ];
 
-        let bindings = bind_operations(&schedule, &[]);
+        let bindings = bind_operations(&schedule);
         assert_eq!(bindings.len(), 2);
         // Different kinds always get different resources.
         assert_ne!(bindings[0], bindings[1]);
@@ -399,10 +356,4 @@ mod tests {
         assert!(debug.contains("Resource 0"));
     }
 
-    #[test]
-    fn test_resource_pool_default() {
-        let pool = ResourcePool::default();
-        assert_eq!(pool.multipliers, 1);
-        assert_eq!(pool.adders, 1);
-    }
 }

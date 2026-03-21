@@ -1,0 +1,37 @@
+// Priority Encoder — fixed-priority encoder for interrupt arbitration
+
+module priority_encoder {
+    signal irq_0: in bool;
+    signal irq_1: in bool;
+    signal irq_2: in bool;
+    signal irq_3: in bool;
+    signal active_irq: out u2;
+    signal irq_pending: out bool;
+
+    guard any_irq {
+        when irq_0 || irq_1 || irq_2 || irq_3
+        for 1 cycles;
+    }
+
+    guard no_irq {
+        when !irq_0 && !irq_1 && !irq_2 && !irq_3
+        for 1 cycles;
+    }
+
+    reflex encode_priority {
+        on any_irq {
+            active_irq = 0;
+            irq_pending = true;
+        }
+    }
+
+    reflex clear_pending {
+        on no_irq {
+            irq_pending = false;
+        }
+    }
+
+    property pending_iff_irq {
+        always (irq_pending == (irq_0 || irq_1 || irq_2 || irq_3));
+    }
+}

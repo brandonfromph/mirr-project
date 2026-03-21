@@ -1,4 +1,4 @@
----
+﻿---
 title: Roadmap
 nav_order: 4
 ---
@@ -81,10 +81,10 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 {: .tip }
 > Phases 0--4, 6, 7a, 7b, 7c complete. Phase 5 partial (5a complete, 5b complete).
-> The compiler is operational with ~1762 passing tests, zero unsafe code,
+> The compiler is operational with 3,469+ tests passing, zero unsafe code,
 > and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
-> Formal proofs: 27 Rocq theorems (14 fully mechanized, 13 axiomatized).
-> Code metrics: 22,315 source lines + 18,200 test lines = 40,515 total across 127 files.
+> Formal proofs: 80+ Rocq proofs.
+> Code metrics: 509,000+ total lines across 293+ files.
 > Error codes: 162 unique codes (E100--E705). SAT simplification module added (E900--E902).
 
 - **Goal:** Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.
@@ -265,7 +265,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Emit SystemVerilog RTL, JSON netlist, and DOT graph from the unified pipeline.
   - Single driver binary `mirr-compile` with `--emit verilog|dot|json` flags.
   - Bootstrap runner (`mirr-parse`) with parity checks against the unified pipeline.
-  - 1041 tests passing, zero clippy warnings, zero unsafe code.
+  - 3,469+ tests passing, zero clippy warnings, zero unsafe code.
 
 **Result artifact:** Unified driver binary `mirr-compile` that performs a full compile-analyze run with multiple output formats.
 
@@ -303,7 +303,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Bounded expansion: `MAX_EXPANSION_DEPTH=4`, `MAX_EXPANDED_ITEMS=256`, `MAX_PARAMS=32`, `MAX_ARGS=32`, `MAX_REFLECT_LINES=512`, `MAX_BRACE_DEPTH=16`.
   - Pipeline ordering: parse → `validate_pattern_defs` → `expand_patterns` → validate_module → simplify → width → temporal → emit.
   - New modules: `src/ast/pattern.rs`, `src/parser/pattern_parser.rs`, `src/expand/mod.rs`.
-  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **1041 total tests, zero clippy warnings.**
+  - 112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. **3,469+ total tests, zero clippy warnings.**
 
 **Result artifact:** Reusable pattern definitions that expand at compile time into validated, origin-tagged hardware structures.
 
@@ -469,7 +469,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Proof that generated RTL preserves MIRR source semantics: formal simulation relation between MIRR behavioral specification and emitted SystemVerilog.
   - End-to-end formal chain: source → typed IR → simplified IR → temporal IR → RTL → gate-level netlist, with verified preservation at each boundary.
   - Verified constant folding: proof that compile-time evaluation produces the same result as runtime evaluation for all constant expressions.
-  - Verified width inference: extend existing Rocq proofs (27 theorems) to full coverage of the width constraint system including SCC cycles.
+  - Verified width inference: extend existing Rocq proofs (80+ proofs) to full coverage of the width constraint system including SCC cycles.
   - Verified temporal lowering: proof that Cement2 shift-register synthesis preserves the temporal semantics of `delay(k)` guards.
   - Verified simplification: proof that SmaRTLy-inspired algebraic rules preserve logical equivalence (all 33 rules individually proven).
   - Certification artifacts for DO-178C Level A (aerospace) and IEC 62304 Class C (medical device software): compiler qualification data package derived from Rocq proofs.
@@ -661,7 +661,7 @@ Performance claims (377 MHz, 47% area reduction) are drawn from the original pap
 ├── src/expand/                    # Pattern expansion engine (Phase 7b)
 │   └── mod.rs                     # expand_patterns(), name prefixing, scoping validation
 ├── tests/
-│   ├── *_tests.rs                 # Unit/integration suites (1041 tests)
+│   ├── *_tests.rs                 # Unit/integration suites (3,469+ tests)
 │   ├── property_tests.rs          # Property/SVA tests (Phase 7a)
 │   ├── pattern_tests.rs           # Pattern system tests (Phase 7b)
 │   ├── pattern_coverage_tests.rs  # Pattern coverage gap tests (Phase 7b)

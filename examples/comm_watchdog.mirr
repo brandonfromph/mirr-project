@@ -1,0 +1,40 @@
+// Communication watchdog — link health monitoring.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/comm_watchdog.mirr
+
+module comm_watchdog {
+    signal heartbeat:       in bool;
+    signal link_quality:    in u8;
+    signal fallback_mode:   out bool;
+    signal link_alarm:      out bool;
+
+    guard heartbeat_lost {
+        when !heartbeat
+        for 500 cycles;
+    }
+
+    guard quality_low {
+        when link_quality < 50
+        for 100 cycles;
+    }
+
+    reflex activate_fallback {
+        on heartbeat_lost {
+            fallback_mode = true;
+            link_alarm = true;
+        }
+    }
+
+    reflex quality_warning {
+        on quality_low {
+            link_alarm = true;
+        }
+    }
+
+    property fallback_on_timeout {
+        always (heartbeat_lost -> fallback_mode);
+    }
+
+    property quality_bounded {
+        always (link_quality <= 100);
+    }
+}

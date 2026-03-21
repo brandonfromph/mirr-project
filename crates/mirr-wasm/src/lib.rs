@@ -4,18 +4,120 @@
 
 use wasm_bindgen::prelude::*;
 
+use nasa_rust_project::diagnostic::LabelKind;
+use nasa_rust_project::error::MirrError;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
 /// Maximum source length accepted by the WASM API.
 const MAX_SOURCE_BYTES: usize = 65_536;
 
-fn ok_json(value: &str) -> String {
-    serde_json::json!({"ok": value}).to_string()
+// ---------------------------------------------------------------------------
+// Structured WASM error types (serde-serializable for JS interop)
+// ---------------------------------------------------------------------------
+
+#[derive(serde::Serialize)]
+struct WasmSpan {
+    start_line: u32,
+    start_col: u32,
+    end_line: u32,
+    end_col: u32,
 }
 
-fn err_json(value: &str) -> String {
-    serde_json::json!({"err": value}).to_string()
+#[derive(serde::Serialize)]
+struct WasmLabel {
+    message: String,
+    span: Option<WasmSpan>,
+    kind: String,
 }
+
+#[derive(serde::Serialize)]
+struct WasmDiagnostic {
+    code: Option<String>,
+    message: String,
+    span: Option<WasmSpan>,
+    labels: Vec<WasmLabel>,
+    help: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(tag = "type")]
+enum WasmResult {
+    Ok { value: serde_json::Value },
+    Err { errors: Vec<WasmDiagnostic> },
+}
+
+impl WasmSpan {
+    fn from_span(span: &nasa_rust_project::span::Span) -> Self {
+        Self {
+            start_line: span.start_line,
+            start_col: span.start_col,
+            end_line: span.end_line,
+            end_col: span.end_col,
+        }
+    }
+}
+
+impl WasmDiagnostic {
+    fn from_error(err: &MirrError) -> Self {
+        let diag = err.to_diagnostic();
+        let mut help = None;
+        let mut labels = Vec::new();
+
+        for label in &diag.labels {
+            match label.kind {
+                LabelKind::Help => {
+                    help = Some(label.message.clone());
+                }
+                LabelKind::Note => {
+                    labels.push(WasmLabel {
+                        message: label.message.clone(),
+                        span: label.span.as_ref().map(WasmSpan::from_span),
+                        kind: "note".to_string(),
+                    });
+                }
+            }
+        }
+
+        Self {
+            code: diag.code,
+            message: diag.message,
+            span: diag.span.as_ref().map(WasmSpan::from_span),
+            labels,
+            help,
+        }
+    }
+}
+
+fn wasm_ok(value: serde_json::Value) -> String {
+    serde_json::to_string(&WasmResult::Ok { value })
+        .unwrap_or_else(|_| r#"{"type":"Ok","value":null}"#.to_string())
+}
+
+fn wasm_err(errors: &nasa_rust_project::error::PipelineErrors) -> String {
+    let diags: Vec<WasmDiagnostic> = errors.errors.iter().map(WasmDiagnostic::from_error).collect();
+    serde_json::to_string(&WasmResult::Err { errors: diags })
+        .unwrap_or_else(|_| r#"{"type":"Err","errors":[]}"#.to_string())
+}
+
+fn wasm_err_single(diag: WasmDiagnostic) -> String {
+    serde_json::to_string(&WasmResult::Err { errors: vec![diag] })
+        .unwrap_or_else(|_| r#"{"type":"Err","errors":[]}"#.to_string())
+}
+
+fn length_error(msg: String) -> String {
+    let diag = WasmDiagnostic {
+        code: Some("E001".to_string()),
+        message: msg,
+        span: None,
+        labels: vec![],
+        help: Some(format!("Maximum source size is {} bytes", MAX_SOURCE_BYTES)),
+    };
+    wasm_err_single(diag)
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline helpers
+// ---------------------------------------------------------------------------
 
 fn default_config() -> PipelineConfig {
     PipelineConfig {
@@ -49,109 +151,195 @@ fn check_length(source: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn format_pipeline_errors(errors: &nasa_rust_project::error::PipelineErrors) -> String {
-    errors.errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n")
-}
+// ---------------------------------------------------------------------------
+// WASM entry point
+// ---------------------------------------------------------------------------
 
 #[wasm_bindgen(start)]
 pub fn wasm_init() {
     console_error_panic_hook::set_once();
 }
 
+// ---------------------------------------------------------------------------
+// Compilation functions
+// ---------------------------------------------------------------------------
+
 #[wasm_bindgen]
 pub fn compile_verilog(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
             let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
-            ok_json(&sv)
+            wasm_ok(serde_json::Value::String(sv))
         }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn compile_firrtl(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
             let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
-            ok_json(&firrtl)
+            wasm_ok(serde_json::Value::String(firrtl))
         }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn compile_sexpr(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
             let sexpr = nasa_rust_project::emit::sexpr::emit_sexpr(&result);
-            ok_json(&sexpr)
+            wasm_ok(serde_json::Value::String(sexpr))
         }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn compile_dot(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
             let dot = nasa_rust_project::emit::dot::emit_module_dot(&result);
-            ok_json(&dot)
+            wasm_ok(serde_json::Value::String(dot))
         }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn compile_rspu(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = PipelineConfig { rspu: true, temporal: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => match nasa_rust_project::emit::rspu::emit_rspu(&result) {
-            Ok(program) => ok_json(&program.emit_asm()),
-            Err(e) => err_json(&e.to_string()),
+            Ok(program) => wasm_ok(serde_json::Value::String(program.emit_asm())),
+            Err(e) => {
+                let diag = WasmDiagnostic::from_error(&e);
+                wasm_err_single(diag)
+            }
         },
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn compile_verilog_sat(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = PipelineConfig { sat_simplify: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => {
             let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
-            ok_json(&sv)
+            wasm_ok(serde_json::Value::String(sv))
         }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
+pub fn compile_graph_data(source: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+    let config = default_config();
+    match run_pipeline(source, &config) {
+        Ok(result) => {
+            let mut nodes = Vec::new();
+            let mut edges = Vec::new();
+
+            let module = &result.program.module;
+            for sig in &module.signals {
+                let node_type = match &sig.kind {
+                    nasa_rust_project::ast::types::SignalKind::Input => "Input",
+                    nasa_rust_project::ast::types::SignalKind::Output => "Output",
+                    nasa_rust_project::ast::types::SignalKind::Internal => "Internal",
+                };
+                nodes.push(serde_json::json!({
+                    "id": sig.name,
+                    "label": sig.name,
+                    "type": node_type,
+                }));
+            }
+
+            for guard in &module.guards {
+                nodes.push(serde_json::json!({
+                    "id": guard.name,
+                    "label": guard.name,
+                    "type": "Guard",
+                }));
+            }
+
+            for reflex in &module.reflexes {
+                for gn in &reflex.guard_names {
+                    for assign in &reflex.assignments {
+                        edges.push(serde_json::json!({
+                            "from": gn,
+                            "to": assign.target,
+                            "label": "triggers",
+                        }));
+                    }
+                }
+            }
+
+            wasm_ok(serde_json::json!({ "nodes": nodes, "edges": edges }))
+        }
+        Err(errors) => wasm_err(&errors),
+    }
+}
+
+#[wasm_bindgen]
+pub fn infer_widths(source: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+    let config = default_config();
+    match run_pipeline(source, &config) {
+        Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
+            Ok(json_str) => wasm_ok(serde_json::Value::String(json_str)),
+            Err(e) => {
+                let diag = WasmDiagnostic {
+                    code: Some("E004".to_string()),
+                    message: format!("JSON netlist serialization failed: {}", e),
+                    span: None,
+                    labels: vec![],
+                    help: None,
+                };
+                wasm_err_single(diag)
+            }
+        },
+        Err(errors) => wasm_err(&errors),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Simulation functions
+// ---------------------------------------------------------------------------
+
+#[wasm_bindgen]
 pub fn simulate_waveform(source: &str, cycles: u32) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let capped_cycles = cycles.min(1024);
     let config = PipelineConfig { temporal: true, ..default_config() };
@@ -162,7 +350,6 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
             let module = &result.program.module;
             let mut signals = Vec::new();
 
-            // 1. Input signals — simulate with a deterministic pattern based on signal index
             for (si, sig) in module.signals.iter().enumerate() {
                 if !matches!(sig.kind, nasa_rust_project::ast::types::SignalKind::Input) {
                     continue;
@@ -170,7 +357,6 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 let is_bool =
                     matches!(sig.ty.core, nasa_rust_project::ast::types::SignalType::Bool);
                 if is_bool {
-                    // Bool inputs: toggle with a period derived from signal index
                     let period = (si as u32 + 2).min(64);
                     let values: Vec<u8> = (0..capped_cycles)
                         .map(|c| if (c / period) % 2 == 0 { 1u8 } else { 0u8 })
@@ -182,7 +368,6 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                         "values": values,
                     }));
                 } else {
-                    // Numeric inputs: ramp from 0 with wrap at a boundary
                     let max_val: u64 = match &sig.ty.core {
                         nasa_rust_project::ast::types::SignalType::Unsigned(w) => {
                             1u64.checked_shl(*w).unwrap_or(256).saturating_sub(1)
@@ -204,7 +389,6 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 }
             }
 
-            // 2. Guard output signals — actual temporal behavior from compiled guards
             if let Some(ref nl) = result.temporal_netlist {
                 for guard in &nl.guards {
                     let (name, delay) = match guard {
@@ -215,9 +399,6 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                             (&dc.output_signal, dc.max_delay.min(64))
                         }
                     };
-                    // Guard activates after `delay` cycles of condition being true,
-                    // then stays active until condition goes false for `delay` cycles.
-                    // Simulate with condition assumed true from cycle 0.
                     let values: Vec<u8> = (0..capped_cycles)
                         .map(|c| if c as u64 >= delay { 1u8 } else { 0u8 })
                         .collect();
@@ -231,12 +412,10 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 }
             }
 
-            // 3. Output signals — driven by reflexes, active when their guard is active
             for sig in &module.signals {
                 if !matches!(sig.kind, nasa_rust_project::ast::types::SignalKind::Output) {
                     continue;
                 }
-                // Find the earliest guard that drives this output via a reflex
                 let mut earliest_delay: Option<u64> = None;
                 for reflex in &module.reflexes {
                     let drives_this = reflex.assignments.iter().any(|a| a.target == sig.name);
@@ -293,87 +472,19 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 }
             }
 
-            let waveform = serde_json::json!({
+            wasm_ok(serde_json::json!({
                 "total_cycles": capped_cycles,
                 "signals": signals,
-            });
-            ok_json(&waveform.to_string())
+            }))
         }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
-    }
-}
-
-#[wasm_bindgen]
-pub fn compile_graph_data(source: &str) -> String {
-    if let Err(msg) = check_length(source) {
-        return err_json(&msg);
-    }
-    let config = default_config();
-    match run_pipeline(source, &config) {
-        Ok(result) => {
-            let mut nodes = Vec::new();
-            let mut edges = Vec::new();
-
-            let module = &result.program.module;
-            for sig in &module.signals {
-                let node_type = match &sig.kind {
-                    nasa_rust_project::ast::types::SignalKind::Input => "Input",
-                    nasa_rust_project::ast::types::SignalKind::Output => "Output",
-                    nasa_rust_project::ast::types::SignalKind::Internal => "Internal",
-                };
-                nodes.push(serde_json::json!({
-                    "id": sig.name,
-                    "label": sig.name,
-                    "type": node_type,
-                }));
-            }
-
-            for guard in &module.guards {
-                nodes.push(serde_json::json!({
-                    "id": guard.name,
-                    "label": guard.name,
-                    "type": "Guard",
-                }));
-            }
-
-            for reflex in &module.reflexes {
-                for gn in &reflex.guard_names {
-                    for assign in &reflex.assignments {
-                        edges.push(serde_json::json!({
-                            "from": gn,
-                            "to": assign.target,
-                            "label": "triggers",
-                        }));
-                    }
-                }
-            }
-
-            let graph = serde_json::json!({ "nodes": nodes, "edges": edges });
-            ok_json(&graph.to_string())
-        }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
-    }
-}
-
-#[wasm_bindgen]
-pub fn infer_widths(source: &str) -> String {
-    if let Err(msg) = check_length(source) {
-        return err_json(&msg);
-    }
-    let config = default_config();
-    match run_pipeline(source, &config) {
-        Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
-            Ok(json_str) => ok_json(&json_str),
-            Err(e) => err_json(&e.to_string()),
-        },
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn simulate_rspu(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = PipelineConfig { rspu: true, temporal: true, simulate: true, ..default_config() };
     match run_pipeline(source, &config) {
@@ -423,18 +534,27 @@ pub fn simulate_rspu(source: &str) -> String {
                     text.push_str(&format!("Exception: {exc:?}\n"));
                 }
 
-                ok_json(&text)
+                wasm_ok(serde_json::Value::String(text))
             }
-            None => err_json("No R-SPU simulation result produced. Ensure source compiles to R-SPU instructions."),
+            None => {
+                let diag = WasmDiagnostic {
+                    code: Some("E700".to_string()),
+                    message: "No R-SPU simulation result produced".to_string(),
+                    span: None,
+                    labels: vec![],
+                    help: Some("Ensure source compiles to R-SPU instructions".to_string()),
+                };
+                wasm_err_single(diag)
+            }
         },
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn simulate_mapek(source: &str, ticks: u32) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = PipelineConfig {
         temporal: true,
@@ -444,120 +564,139 @@ pub fn simulate_mapek(source: &str, ticks: u32) -> String {
     };
     match run_pipeline(source, &config) {
         Ok(result) => match &result.mape_k_result {
-            Some(res) => match serde_json::to_string(res) {
-                Ok(json) => ok_json(&json),
-                Err(e) => err_json(&e.to_string()),
+            Some(res) => match serde_json::to_value(res) {
+                Ok(val) => wasm_ok(val),
+                Err(e) => {
+                    let diag = WasmDiagnostic {
+                        code: Some("E002".to_string()),
+                        message: format!("MAPE-K serialization failed: {}", e),
+                        span: None,
+                        labels: vec![],
+                        help: None,
+                    };
+                    wasm_err_single(diag)
+                }
             },
-            None => err_json("MAPE-K simulation produced no result"),
+            None => {
+                let diag = WasmDiagnostic {
+                    code: Some("E003".to_string()),
+                    message: "MAPE-K simulation produced no result".to_string(),
+                    span: None,
+                    labels: vec![],
+                    help: None,
+                };
+                wasm_err_single(diag)
+            }
         },
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
+// ---------------------------------------------------------------------------
+// Utility functions
+// ---------------------------------------------------------------------------
+
 #[wasm_bindgen]
 pub fn mirr_version() -> String {
-    ok_json(env!("CARGO_PKG_VERSION"))
+    wasm_ok(serde_json::Value::String(env!("CARGO_PKG_VERSION").to_string()))
 }
 
 #[wasm_bindgen]
 pub fn compile_pipeline_stages(source: &str) -> String {
     if let Err(msg) = check_length(source) {
-        return err_json(&msg);
+        return length_error(msg);
     }
     let config = default_config();
     match run_pipeline(source, &config) {
-        Ok(result) => {
-            let stages = serde_json::json!({
-                "parsed": true,
-                "validated": true,
-                "expanded": true,
-                "simplified": result.simplify_stats.is_some(),
-                "typechecked": result.type_map.is_some(),
-                "width_inferred": result.width_result.is_some(),
-                "temporal_lowered": result.temporal_netlist.is_some(),
-                "emitted": true,
-            });
-            stages.to_string()
-        }
-        Err(errors) => err_json(&format_pipeline_errors(&errors)),
+        Ok(result) => wasm_ok(serde_json::json!({
+            "parsed": true,
+            "validated": true,
+            "expanded": true,
+            "simplified": result.simplify_stats.is_some(),
+            "typechecked": result.type_map.is_some(),
+            "width_inferred": result.width_result.is_some(),
+            "temporal_lowered": result.temporal_netlist.is_some(),
+            "emitted": true,
+        })),
+        Err(errors) => wasm_err(&errors),
     }
 }
 
 #[wasm_bindgen]
 pub fn proof_status() -> String {
-    // Build-time snapshot — WASM cannot read .v files at runtime.
-    // Real Coq theorem/lemma/corollary names from proofs/, verified 2026-03-14.
-    // 12 proof files, 55 theorems/lemmas/corollaries, 3 Admitted.
-    serde_json::json!({
-        "ok": [
-            { "name": "add_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "mul_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "sub_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "shift_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "negate_unsigned_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "flatten_postorder", "file": "Flatten.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "no_self_reference", "file": "Flatten.v", "kind": "Corollary", "status": "Proven" },
-            { "name": "e2e_solver_sound", "file": "Integration.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "min_bits_0", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "min_bits_S", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "div2_lt_n", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "le_double_div2", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "min_bits_correct", "file": "MinBits.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "min_bits_minimal", "file": "MinBits.v", "kind": "Theorem", "status": "Admitted" },
-            { "name": "state_le_refl", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "state_le_trans", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "lookup_monotone", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "monotonicity", "file": "Monotone.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "update_preserves_le", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "one_step_monotone", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "evaluate_monotone", "file": "Monotone.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "classify_sound", "file": "SCC/Classify.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "nonexpansive_bounded", "file": "SCC/Classify.v", "kind": "Corollary", "status": "Proven" },
-            { "name": "nonexpansive_convergence", "file": "SCC/Nonexpansive.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "lookup_le_fold_max", "file": "SCC/Nonexpansive.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "exists_pos_implies_max_ge_1", "file": "SCC/Nonexpansive.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "nonexpansive_max_bound", "file": "SCC/Nonexpansive.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "tarjan_correct", "file": "SCC/Tarjan.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "solver_terminates", "file": "Solver.v", "kind": "Theorem", "status": "Admitted" },
-            { "name": "lookup_update_same", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "lookup_update_other", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "update_le_preserves", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "update_both_monotone", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "eval_none_propagates", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "step_one_monotone", "file": "Solver.v", "kind": "Lemma", "status": "Admitted" },
-            { "name": "apply_constraints_state_monotone", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "apply_constraints_monotone_fixpoint", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "fixpoint_least", "file": "Solver.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "truncation_correct_positive", "file": "Truncation.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "truncation_correct_negative", "file": "Truncation.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "truncation_dec", "file": "Truncation.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "bounded_testbit", "file": "rspu/Encoding.v", "kind": "Lemma", "status": "Proven" },
-            { "name": "s_type_imm_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "opcode_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "r_type_dst_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "r_type_src1_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "r_type_funct_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "i_type_imm_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "tags_compatible_sym", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "mov_preserves_tag", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "mov_preserves_value", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "load_imm_tag", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "load_imm_value", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "uninitialized_not_initialized", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
-            { "name": "initialized_after_load", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" }
-        ],
-        "snapshot": "build-time",
-        "note": "Static snapshot compiled into WASM. Cannot verify proofs at runtime.",
-        "total_theorems": 55,
-        "mechanized": 52,
-        "admitted": 3,
-        "mechanization_rate": "94.5%",
-        "proof_files": 12,
-        "admitted_proofs": [
-            "min_bits_minimal (MinBits.v — recursive corner case)",
-            "solver_terminates (Solver.v — potential function argument)",
-            "step_one_monotone (Solver.v — length obligation)"
-        ]
-    })
-    .to_string()
+    serde_json::to_string(&serde_json::json!({
+        "type": "Ok",
+        "value": {
+            "ok": [
+                { "name": "add_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "mul_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "sub_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "shift_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "negate_unsigned_sound", "file": "Constraint.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "flatten_postorder", "file": "Flatten.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "no_self_reference", "file": "Flatten.v", "kind": "Corollary", "status": "Proven" },
+                { "name": "e2e_solver_sound", "file": "Integration.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "min_bits_0", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "min_bits_S", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "div2_lt_n", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "le_double_div2", "file": "MinBits.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "min_bits_correct", "file": "MinBits.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "min_bits_minimal", "file": "MinBits.v", "kind": "Theorem", "status": "Admitted" },
+                { "name": "state_le_refl", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "state_le_trans", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "lookup_monotone", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "monotonicity", "file": "Monotone.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "update_preserves_le", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "one_step_monotone", "file": "Monotone.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "evaluate_monotone", "file": "Monotone.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "classify_sound", "file": "SCC/Classify.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "nonexpansive_bounded", "file": "SCC/Classify.v", "kind": "Corollary", "status": "Proven" },
+                { "name": "nonexpansive_convergence", "file": "SCC/Nonexpansive.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "lookup_le_fold_max", "file": "SCC/Nonexpansive.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "exists_pos_implies_max_ge_1", "file": "SCC/Nonexpansive.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "nonexpansive_max_bound", "file": "SCC/Nonexpansive.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "tarjan_correct", "file": "SCC/Tarjan.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "solver_terminates", "file": "Solver.v", "kind": "Theorem", "status": "Admitted" },
+                { "name": "lookup_update_same", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "lookup_update_other", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "update_le_preserves", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "update_both_monotone", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "eval_none_propagates", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "step_one_monotone", "file": "Solver.v", "kind": "Lemma", "status": "Admitted" },
+                { "name": "apply_constraints_state_monotone", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "apply_constraints_monotone_fixpoint", "file": "Solver.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "fixpoint_least", "file": "Solver.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "truncation_correct_positive", "file": "Truncation.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "truncation_correct_negative", "file": "Truncation.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "truncation_dec", "file": "Truncation.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "bounded_testbit", "file": "rspu/Encoding.v", "kind": "Lemma", "status": "Proven" },
+                { "name": "s_type_imm_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "opcode_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "r_type_dst_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "r_type_src1_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "r_type_funct_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "i_type_imm_roundtrip", "file": "rspu/Encoding.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "tags_compatible_sym", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "mov_preserves_tag", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "mov_preserves_value", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "load_imm_tag", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "load_imm_value", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "uninitialized_not_initialized", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" },
+                { "name": "initialized_after_load", "file": "rspu/TaggedWord.v", "kind": "Theorem", "status": "Proven" }
+            ],
+            "snapshot": "build-time",
+            "note": "Static snapshot compiled into WASM. Cannot verify proofs at runtime.",
+            "total_theorems": 55,
+            "mechanized": 52,
+            "admitted": 3,
+            "mechanization_rate": "94.5%",
+            "proof_files": 12,
+            "admitted_proofs": [
+                "min_bits_minimal (MinBits.v — recursive corner case)",
+                "solver_terminates (Solver.v — potential function argument)",
+                "step_one_monotone (Solver.v — length obligation)"
+            ]
+        }
+    }))
+    .unwrap_or_else(|_| r#"{"type":"Ok","value":{}}"#.to_string())
 }

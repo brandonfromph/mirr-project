@@ -1,0 +1,70 @@
+// Automotive brake controller — ABS and stability control.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/automotive_brake.mirr
+
+module automotive_brake {
+    signal wheel_speed_fl:  in u16;
+    signal wheel_speed_fr:  in u16;
+    signal wheel_speed_rl:  in u16;
+    signal wheel_speed_rr:  in u16;
+    signal brake_pressure:  in u16;
+    signal vehicle_speed:   in u16;
+    signal abs_active:      out bool;
+    signal stability_ctrl:  out bool;
+    signal brake_warning:   out bool;
+
+    guard wheel_lock_fl {
+        when wheel_speed_fl < 10
+        for 3 cycles;
+    }
+
+    guard wheel_lock_fr {
+        when wheel_speed_fr < 10
+        for 3 cycles;
+    }
+
+    guard overspeed {
+        when vehicle_speed > 200
+        for 5 cycles;
+    }
+
+    guard low_pressure {
+        when brake_pressure < 20
+        for 10 cycles;
+    }
+
+    reflex abs_engage {
+        on wheel_lock_fl {
+            abs_active = true;
+        }
+    }
+
+    reflex abs_engage_fr {
+        on wheel_lock_fr {
+            abs_active = true;
+        }
+    }
+
+    reflex speed_warning {
+        on overspeed {
+            brake_warning = true;
+        }
+    }
+
+    reflex stability {
+        on wheel_lock_fl and wheel_lock_fr {
+            stability_ctrl = true;
+        }
+    }
+
+    property speed_limit_enforced {
+        always (vehicle_speed < 250);
+    }
+
+    property no_spurious_abs {
+        never (abs_active && wheel_speed_fl > 50);
+    }
+
+    property brake_responsive {
+        always (brake_pressure > 100 -> abs_active);
+    }
+}

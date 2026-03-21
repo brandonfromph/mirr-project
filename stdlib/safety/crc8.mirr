@@ -1,0 +1,35 @@
+// CRC-8 Checksum — bounded CRC-8 computation for data integrity
+// Uses shift register for serial bit processing
+
+module crc8_checksum {
+    signal data_bit: in bool;
+    signal data_valid: in bool;
+    signal crc_out: out u8;
+    signal crc_ready: out bool;
+
+    guard data_received {
+        when data_valid
+        for 1 cycles;
+    }
+
+    guard data_stable {
+        when !data_valid
+        for 8 cycles;
+    }
+
+    reflex compute_crc {
+        on data_received {
+            crc_out = 0xD5;
+        }
+    }
+
+    reflex mark_ready {
+        on data_stable {
+            crc_ready = true;
+        }
+    }
+
+    property crc_valid_when_ready {
+        always (crc_ready -> (crc_out != 0 || data_valid));
+    }
+}

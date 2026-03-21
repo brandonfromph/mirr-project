@@ -1,0 +1,78 @@
+// Advanced sensor fusion — multi-domain anomaly detection.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/sensor_fusion_advanced.mirr
+
+module sensor_fusion_advanced {
+    signal temp_1:      in i16;
+    signal temp_2:      in i16;
+    signal temp_3:      in i16;
+    signal pressure_1:  in u16;
+    signal pressure_2:  in u16;
+    signal pressure_3:  in u16;
+    signal vibration_1: in u16;
+    signal vibration_2: in u16;
+    signal vibration_3: in u16;
+    signal fusion_alarm:    out bool;
+    signal anomaly_detect:  out bool;
+    signal shutdown:        out bool;
+
+    guard temp_disagreement {
+        when temp_1 > 100
+        for 20 cycles;
+    }
+
+    guard pressure_spike {
+        when pressure_1 > 5000
+        for 5 cycles;
+    }
+
+    guard vibration_high {
+        when vibration_1 > 800
+        for 10 cycles;
+    }
+
+    guard multi_sensor_fault {
+        when temp_1 > 150
+        for 30 cycles;
+    }
+
+    reflex temp_anomaly {
+        on temp_disagreement {
+            anomaly_detect = true;
+            fusion_alarm = true;
+        }
+    }
+
+    reflex pressure_emergency {
+        on pressure_spike {
+            fusion_alarm = true;
+        }
+    }
+
+    reflex vibration_warning {
+        on vibration_high {
+            anomaly_detect = true;
+        }
+    }
+
+    reflex multi_fault_shutdown {
+        on multi_sensor_fault {
+            shutdown = true;
+        }
+    }
+
+    property temp_bounded {
+        always (temp_1 < 200);
+    }
+
+    property pressure_bounded {
+        always (pressure_1 < 10000);
+    }
+
+    property vibration_bounded {
+        always (vibration_1 < 1000);
+    }
+
+    property anomaly_triggers_alarm {
+        always (anomaly_detect -> fusion_alarm);
+    }
+}

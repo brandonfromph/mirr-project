@@ -170,7 +170,7 @@ mod tests {
             span: None,
         };
         PipelineResult {
-            program: MirrProgram { patterns: Vec::new(), module },
+            program: MirrProgram { patterns: Vec::new(), imports: Vec::new(), module },
             simplify_stats: None,
             sat_stats: None,
             width_result: None,

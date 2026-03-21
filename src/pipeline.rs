@@ -168,10 +168,7 @@ pub fn run_pipeline(
 
     // Stage 2.7: Symbolic analysis (optional, MEGA-5).
     let symbolic_result = if config.symbolic {
-        match crate::symbolic::analyze_module(&program.module) {
-            Ok(result) => Some(result),
-            Err(_e) => None, // Non-fatal: symbolic analysis failure doesn't block pipeline
-        }
+        crate::symbolic::analyze_module(&program.module).ok()
     } else {
         None
     };
@@ -244,14 +241,7 @@ pub fn run_pipeline(
         }
 
         let hls_config = crate::hls::HlsConfig::default();
-        match crate::hls::run_hls_pass(&dag, &hls_config) {
-            Ok(hls_res) => {
-                result.hls_result = Some(hls_res);
-            }
-            Err(_e) => {
-                // HLS pass failure is non-fatal; pipeline continues.
-            }
-        }
+        result.hls_result = crate::hls::run_hls_pass(&dag, &hls_config).ok();
     }
 
     // Stage 6: R-SPU emission (optional, requires temporal).

@@ -287,9 +287,8 @@ fn test_pipeline_symbolic_disabled() {
     let config = PipelineConfig { symbolic: false, ..PipelineConfig::default() };
     let source = r#"module test { signal x : unsigned<8>; }"#;
     let result = run_pipeline(source, &config);
-    match result {
-        Ok(r) => assert!(r.symbolic_result.is_none()),
-        Err(_) => {} // parse may fail if minimal module isn't valid — that's OK
+    if let Ok(r) = result {
+        assert!(r.symbolic_result.is_none());
     }
 }
 
@@ -299,9 +298,8 @@ fn test_pipeline_symbolic_enabled() {
     let config = PipelineConfig { symbolic: true, ..PipelineConfig::default() };
     let source = r#"module test { signal x : unsigned<8>; }"#;
     let result = run_pipeline(source, &config);
-    match result {
-        Ok(r) => assert!(r.symbolic_result.is_some()),
-        Err(_) => {} // OK if module syntax doesn't parse
+    if let Ok(r) = result {
+        assert!(r.symbolic_result.is_some());
     }
 }
 

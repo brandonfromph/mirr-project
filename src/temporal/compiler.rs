@@ -33,6 +33,13 @@ const SHIFT_REGISTER_THRESHOLD: u64 = 16;
 /// in `compile_guard` is bounded to `MAX_COMPILE_GUARD_DEPTH * 4` iterations.
 const MAX_COMPILE_GUARD_DEPTH: usize = 64;
 
+/// Work items for the explicit compilation stack.
+/// Either compile a guard or combine two already-compiled sub-guards.
+enum WorkItem {
+    Compile(Guard),
+    Combine { name: String, op: BinaryOp },
+}
+
 /// Temporal Guard Compiler
 ///
 /// Compiles high-level temporal guards into low-level hardware representations
@@ -85,183 +92,139 @@ impl TemporalCompiler {
     /// NASA Power-of-10 "no recursion" rule. The loop is bounded to
     /// `MAX_COMPILE_GUARD_DEPTH * 4` iterations.
     fn compile_guard(&mut self, guard: &Guard) -> Result<CompiledGuard, MirrError> {
-        // Work items for the explicit stack: either compile a guard or combine
-        // two already-compiled sub-guards.
-        enum WorkItem {
-            Compile(Guard),
-            Combine { name: String, op: BinaryOp },
-        }
-
         let mut work_stack: Vec<WorkItem> = Vec::new();
         let mut result_stack: Vec<CompiledGuard> = Vec::new();
-
         work_stack.push(WorkItem::Compile(guard.clone()));
 
         let max_iterations = MAX_COMPILE_GUARD_DEPTH * 4;
-        for _iteration in 0..max_iterations {
+        for _ in 0..max_iterations {
             let item = match work_stack.pop() {
                 Some(item) => item,
                 None => break,
             };
-
             match item {
-                WorkItem::Compile(g) => {
-                    match ConditionKind::try_from_expr(&g.condition) {
-                        Ok(_) => {
-                            // Leaf: compile directly using adaptive strategy
-                            let compiled = if g.cycles <= SHIFT_REGISTER_THRESHOLD {
-                                self.compile_shift_register_guard(&g)?
-                            } else {
-                                self.compile_counter_guard(&g)?
-                            };
-                            result_stack.push(compiled);
-                        }
-                        Err(_) => {
-                            // Attempt complex boolean combination (AND/OR)
-                            if let Expr::Binary { op, left, right } = &g.condition {
-                                if *op == BinaryOp::And || *op == BinaryOp::Or {
-                                    if work_stack.len() >= MAX_COMPILE_GUARD_DEPTH {
-                                        return Err(MirrError::TemporalCompilationError {
-                                            message: format!(
-                                                "[E301] guard '{}': exceeded maximum compile guard depth ({})",
-                                                g.name, MAX_COMPILE_GUARD_DEPTH
-                                            ),
-                                            span: g.span,
-                                        });
-                                    }
-
-                                    let left_name =
-                                        format!("{}_sub{}", g.name, self.signal_counter);
-                                    self.signal_counter += 1;
-                                    let right_name =
-                                        format!("{}_sub{}", g.name, self.signal_counter);
-                                    self.signal_counter += 1;
-
-                                    let left_guard = Guard {
-                                        name: left_name,
-                                        condition: (*left.clone()),
-                                        cycles: g.cycles,
-                                        origin: None,
-                                        span: None,
-                                    };
-                                    let right_guard = Guard {
-                                        name: right_name,
-                                        condition: (*right.clone()),
-                                        cycles: g.cycles,
-                                        origin: None,
-                                        span: None,
-                                    };
-
-                                    // Push combine first (runs after both children)
-                                    work_stack
-                                        .push(WorkItem::Combine { name: g.name.clone(), op: *op });
-                                    // Push right then left so left is processed first
-                                    work_stack.push(WorkItem::Compile(right_guard));
-                                    work_stack.push(WorkItem::Compile(left_guard));
-                                } else {
-                                    return Err(MirrError::TemporalCompilationError {
-                                        message: format!(
-                                            "[E302] guard '{}': condition cannot be lowered to hardware — unsupported form",
-                                            g.name
-                                        ),
-                                        span: g.span,
-                                    });
-                                }
-                            } else {
-                                return Err(MirrError::TemporalCompilationError {
-                                    message: format!(
-                                        "[E302] guard '{}': condition cannot be lowered to hardware — unsupported form",
-                                        g.name
-                                    ),
-                                    span: g.span,
-                                });
-                            }
-                        }
-                    }
-                }
-                WorkItem::Combine { name, op } => {
-                    // Pop two results — right was compiled second so is on top
-                    let right_comp = match result_stack.pop() {
-                        Some(r) => r,
-                        None => {
-                            return Err(MirrError::TemporalCompilationError {
-                                message: format!(
-                                    "[E303] guard '{}': internal error — missing right sub-guard result",
-                                    name
-                                ),
-                                span: None,
-                            });
-                        }
-                    };
-                    let left_comp = match result_stack.pop() {
-                        Some(l) => l,
-                        None => {
-                            return Err(MirrError::TemporalCompilationError {
-                                message: format!(
-                                    "[E303] guard '{}': internal error — missing left sub-guard result",
-                                    name
-                                ),
-                                span: None,
-                            });
-                        }
-                    };
-
-                    let left_out = match &left_comp {
-                        CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
-                        CompiledGuard::Counter(c) => c.output_signal.clone(),
-                        CompiledGuard::Complex(cx) => cx.output_signal.clone(),
-                        CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
-                    };
-                    let right_out = match &right_comp {
-                        CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
-                        CompiledGuard::Counter(c) => c.output_signal.clone(),
-                        CompiledGuard::Complex(cx) => cx.output_signal.clone(),
-                        CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
-                    };
-
-                    let combo_expr = Expr::Binary {
-                        left: Box::new(Expr::Signal(left_out)),
-                        op: if op == BinaryOp::And { BinaryOp::And } else { BinaryOp::Or },
-                        right: Box::new(Expr::Signal(right_out)),
-                    };
-
-                    let complex = crate::temporal::low_level_ir::ComplexGuard::new(
-                        name,
-                        vec![left_comp, right_comp],
-                        combo_expr.clone(),
-                    );
-
-                    // Record output signal as a logic gate for statistics
-                    self.context.signals.push(GeneratedSignal {
-                        name: complex.output_signal.clone(),
-                        ty: SignalType::Bool,
-                        kind: GeneratedSignalKind::LogicGate,
-                        source: Some(combo_expr),
-                    });
-
-                    result_stack.push(CompiledGuard::Complex(complex));
-                }
+                WorkItem::Compile(g) => self.compile_leaf_or_decompound(g, &mut work_stack, &mut result_stack)?,
+                WorkItem::Combine { name, op } => self.combine_guard_results(name, op, &mut result_stack)?,
             }
         }
 
-        // If the work stack is not empty, we hit the iteration bound
         if !work_stack.is_empty() {
             return Err(MirrError::TemporalCompilationError {
-                message: format!(
-                    "[E304] guard '{}': compilation exceeded maximum iteration bound ({})",
-                    guard.name, max_iterations
-                ),
+                message: format!("[E304] guard '{}': compilation exceeded maximum iteration bound ({})", guard.name, max_iterations),
                 span: guard.span,
             });
         }
 
         result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
-            message: format!(
-                "[E305] guard '{}': internal error — no compilation result produced",
-                guard.name
-            ),
+            message: format!("[E305] guard '{}': internal error — no compilation result produced", guard.name),
             span: guard.span,
         })
+    }
+
+    /// Handle a leaf guard (compile directly) or decompose a compound guard (push sub-guards).
+    fn compile_leaf_or_decompound(
+        &mut self,
+        g: Guard,
+        work_stack: &mut Vec<WorkItem>,
+        result_stack: &mut Vec<CompiledGuard>,
+    ) -> Result<(), MirrError> {
+        // WorkItem enum is defined in compile_guard; use fully qualified match
+        match ConditionKind::try_from_expr(&g.condition) {
+            Ok(_) => {
+                let compiled = if g.cycles <= SHIFT_REGISTER_THRESHOLD {
+                    self.compile_shift_register_guard(&g)?
+                } else {
+                    self.compile_counter_guard(&g)?
+                };
+                result_stack.push(compiled);
+                Ok(())
+            }
+            Err(_) => {
+                if let Expr::Binary { op, left, right } = &g.condition {
+                    if *op == BinaryOp::And || *op == BinaryOp::Or {
+                        if work_stack.len() >= MAX_COMPILE_GUARD_DEPTH {
+                            return Err(MirrError::TemporalCompilationError {
+                                message: format!("[E301] guard '{}': exceeded maximum compile guard depth ({})", g.name, MAX_COMPILE_GUARD_DEPTH),
+                                span: g.span,
+                            });
+                        }
+                        let left_name = format!("{}_sub{}", g.name, self.signal_counter);
+                        self.signal_counter += 1;
+                        let right_name = format!("{}_sub{}", g.name, self.signal_counter);
+                        self.signal_counter += 1;
+                        let left_guard = Guard { name: left_name, condition: (*left.clone()), cycles: g.cycles, origin: None, span: None };
+                        let right_guard = Guard { name: right_name, condition: (*right.clone()), cycles: g.cycles, origin: None, span: None };
+                        // Use the WorkItem enum from compile_guard scope
+                        work_stack.push(WorkItem::Combine { name: g.name.clone(), op: *op });
+                        work_stack.push(WorkItem::Compile(right_guard));
+                        work_stack.push(WorkItem::Compile(left_guard));
+                        Ok(())
+                    } else {
+                        Err(MirrError::TemporalCompilationError {
+                            message: format!("[E302] guard '{}': condition cannot be lowered to hardware — unsupported form", g.name),
+                            span: g.span,
+                        })
+                    }
+                } else {
+                    Err(MirrError::TemporalCompilationError {
+                        message: format!("[E302] guard '{}': condition cannot be lowered to hardware — unsupported form", g.name),
+                        span: g.span,
+                    })
+                }
+            }
+        }
+    }
+
+    /// Pop two compiled sub-guards, combine them into a ComplexGuard, push result.
+    fn combine_guard_results(
+        &mut self,
+        name: String,
+        op: BinaryOp,
+        result_stack: &mut Vec<CompiledGuard>,
+    ) -> Result<(), MirrError> {
+        let right_comp = result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
+            message: format!("[E303] guard '{}': internal error — missing right sub-guard result", name),
+            span: None,
+        })?;
+        let left_comp = result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
+            message: format!("[E303] guard '{}': internal error — missing left sub-guard result", name),
+            span: None,
+        })?;
+
+        let left_out = match &left_comp {
+            CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
+            CompiledGuard::Counter(c) => c.output_signal.clone(),
+            CompiledGuard::Complex(cx) => cx.output_signal.clone(),
+            CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
+        };
+        let right_out = match &right_comp {
+            CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
+            CompiledGuard::Counter(c) => c.output_signal.clone(),
+            CompiledGuard::Complex(cx) => cx.output_signal.clone(),
+            CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
+        };
+
+        let combo_expr = Expr::Binary {
+            left: Box::new(Expr::Signal(left_out)),
+            op: if op == BinaryOp::And { BinaryOp::And } else { BinaryOp::Or },
+            right: Box::new(Expr::Signal(right_out)),
+        };
+
+        let complex = crate::temporal::low_level_ir::ComplexGuard::new(
+            name,
+            vec![left_comp, right_comp],
+            combo_expr.clone(),
+        );
+
+        self.context.signals.push(GeneratedSignal {
+            name: complex.output_signal.clone(),
+            ty: SignalType::Bool,
+            kind: GeneratedSignalKind::LogicGate,
+            source: Some(combo_expr),
+        });
+
+        result_stack.push(CompiledGuard::Complex(complex));
+        Ok(())
     }
 
     /// Compile a guard using a shift register pipeline

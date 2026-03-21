@@ -1,0 +1,58 @@
+// Power supply monitor — voltage and current monitoring.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/power_supply_monitor.mirr
+
+module power_supply_monitor {
+    signal voltage:     in u16;
+    signal current:     in u16;
+    signal overvoltage: out bool;
+    signal undervoltage: out bool;
+    signal overcurrent: out bool;
+    signal shutdown:    out bool;
+
+    guard over_v {
+        when voltage > 1400
+        for 10 cycles;
+    }
+
+    guard under_v {
+        when voltage < 900
+        for 50 cycles;
+    }
+
+    guard over_i {
+        when current > 500
+        for 20 cycles;
+    }
+
+    reflex ov_alarm {
+        on over_v {
+            overvoltage = true;
+            shutdown = true;
+        }
+    }
+
+    reflex uv_alarm {
+        on under_v {
+            undervoltage = true;
+        }
+    }
+
+    reflex oc_alarm {
+        on over_i {
+            overcurrent = true;
+            shutdown = true;
+        }
+    }
+
+    property voltage_safe {
+        always (voltage < 1500);
+    }
+
+    property current_safe {
+        always (current < 600);
+    }
+
+    property shutdown_on_overvoltage {
+        always (voltage > 1400 -> shutdown);
+    }
+}

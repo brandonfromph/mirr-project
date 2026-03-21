@@ -1,0 +1,35 @@
+// Signal Debouncer — requires N consecutive stable cycles before accepting change
+
+module signal_debouncer {
+    signal raw_input: in bool;
+    signal debounced: out bool;
+    signal stable: out bool;
+
+    guard input_high_stable {
+        when raw_input
+        for 10 cycles;
+    }
+
+    guard input_low_stable {
+        when !raw_input
+        for 10 cycles;
+    }
+
+    reflex set_high {
+        on input_high_stable {
+            debounced = true;
+        }
+    }
+
+    reflex set_low {
+        on input_low_stable {
+            debounced = false;
+        }
+    }
+
+    reflex set_stable {
+        on input_high_stable {
+            stable = true;
+        }
+    }
+}

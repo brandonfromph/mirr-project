@@ -12,6 +12,20 @@ module temporal_lowering {
     signal guard_input:  out u16;
     signal guard_output: out u16;
     signal guard_write:  out bool;
+    signal guard_priority: out u8;
+
+    // ── Counter outputs (MEGA-14: counter-based guards) ──
+    signal ctr_name:     out u16;
+    signal ctr_target:   out u16;
+    signal ctr_cond:     out u16;
+    signal ctr_write:    out bool;
+
+    // ── Property outputs (MEGA-14: SVA compilation) ──
+    signal prop_name:    out u16;
+    signal prop_kind:    out u8;
+    signal prop_cond:    out u16;
+    signal prop_cycles:  out u16;
+    signal prop_write:   out bool;
 
     // ── Signal outputs ──
     signal sig_name:     out u16;
@@ -26,10 +40,13 @@ module temporal_lowering {
     signal cur_delay:    internal u16;
     signal cur_name:     internal u16;
     signal cur_input:    internal u16;
+    signal cur_priority: internal u8;
+    signal prop_count:   internal u8;
+    signal ctr_count:    internal u8;
     signal lowering_ok:  out bool;
     signal output_json:  out bool;
 
-    // State: 0=SCAN, 1=PROCESS, 2=ALLOC, 3=EMIT, 4=DONE
+    // State: 0=SCAN, 1=PROCESS, 2=ALLOC, 3=EMIT, 4=PROPERTY, 5=COUNTER, 6=DONE
 
     // ══════════════════════════════════════════════
     // STATE 0: SCAN — find guard declarations
@@ -102,6 +119,19 @@ module temporal_lowering {
         }
     }
 
+    // Property declarations (MEGA-14)
+    guard scan_property {
+        when state == 0 && ast_kind == 5
+        for 1 cycles;
+    }
+
+    reflex scan_prop_found {
+        on scan_property {
+            cur_name = ast_value;
+            state = 4;
+        }
+    }
+
     guard scan_done {
         when state == 0 && check_idx >= ast_count
         for 1 cycles;
@@ -110,7 +140,7 @@ module temporal_lowering {
     reflex scan_to_done {
         on scan_done {
             lowering_ok = true;
-            state = 4;
+            state = 6;
         }
     }
 
@@ -164,8 +194,34 @@ module temporal_lowering {
         }
     }
 
+    // Counter-based guard (MEGA-14: delays > 16 use counter)
+    guard alloc_counter {
+        when state == 2 && cur_delay > 16
+        for 1 cycles;
+    }
+
+    reflex alloc_ctr {
+        on alloc_counter {
+            guard_kind = 6;
+            guard_name = cur_name;
+            guard_delay = cur_delay;
+            guard_input = cur_input;
+            guard_output = cur_name;
+            guard_write = true;
+            guard_priority = cur_priority;
+            guard_count = guard_count + 1;
+            ctr_name = cur_name;
+            ctr_target = cur_delay;
+            ctr_cond = cur_input;
+            ctr_write = true;
+            ctr_count = ctr_count + 1;
+            state = 0;
+            check_idx = check_idx + 1;
+        }
+    }
+
     guard alloc_shift_reg {
-        when state == 2 && cur_delay > 1
+        when state == 2 && cur_delay > 1 && cur_delay <= 16
         for 1 cycles;
     }
 
@@ -177,6 +233,7 @@ module temporal_lowering {
             guard_input = cur_input;
             guard_output = cur_name;
             guard_write = true;
+            guard_priority = cur_priority;
             guard_count = guard_count + 1;
             state = 3;
         }
@@ -214,11 +271,85 @@ module temporal_lowering {
     }
 
     // ══════════════════════════════════════════════
-    // STATE 4: DONE
+    // STATE 4: PROPERTY — compile properties to SVA
+    // ══════════════════════════════════════════════
+
+    guard prop_always {
+        when state == 4 && ast_kind == 51
+        for 1 cycles;
+    }
+
+    reflex prop_always_emit {
+        on prop_always {
+            prop_name = cur_name;
+            prop_kind = 0;
+            prop_cond = ast_value;
+            prop_cycles = 0;
+            prop_write = true;
+            prop_count = prop_count + 1;
+            state = 0;
+            check_idx = check_idx + 1;
+        }
+    }
+
+    guard prop_never {
+        when state == 4 && ast_kind == 52
+        for 1 cycles;
+    }
+
+    reflex prop_never_emit {
+        on prop_never {
+            prop_name = cur_name;
+            prop_kind = 1;
+            prop_cond = ast_value;
+            prop_cycles = 0;
+            prop_write = true;
+            prop_count = prop_count + 1;
+            state = 0;
+            check_idx = check_idx + 1;
+        }
+    }
+
+    guard prop_eventually {
+        when state == 4 && ast_kind == 53
+        for 1 cycles;
+    }
+
+    reflex prop_eventually_emit {
+        on prop_eventually {
+            prop_name = cur_name;
+            prop_kind = 2;
+            prop_cond = ast_value;
+            prop_cycles = cur_delay;
+            prop_write = true;
+            prop_count = prop_count + 1;
+            state = 0;
+            check_idx = check_idx + 1;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 5: COUNTER — emit counter guard info
+    // ══════════════════════════════════════════════
+
+    guard ctr_emit {
+        when state == 5
+        for 1 cycles;
+    }
+
+    reflex ctr_done {
+        on ctr_emit {
+            state = 0;
+            check_idx = check_idx + 1;
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    // STATE 6: DONE
     // ══════════════════════════════════════════════
 
     guard done_tick {
-        when state == 4
+        when state == 6
         for 1 cycles;
     }
 
@@ -236,7 +367,33 @@ module temporal_lowering {
     reflex overflow_err {
         on guard_overflow {
             lowering_ok = false;
-            state = 4;
+            state = 6;
+        }
+    }
+
+    // Property overflow (MEGA-14)
+    guard prop_overflow {
+        when prop_count >= 32
+        for 1 cycles;
+    }
+
+    reflex prop_overflow_err {
+        on prop_overflow {
+            lowering_ok = false;
+            state = 6;
+        }
+    }
+
+    // Counter overflow (MEGA-14)
+    guard ctr_overflow {
+        when ctr_count >= 64
+        for 1 cycles;
+    }
+
+    reflex ctr_overflow_err {
+        on ctr_overflow {
+            lowering_ok = false;
+            state = 6;
         }
     }
 }

@@ -28,6 +28,7 @@ mod tests {
     fn test_emit_sexpr_empty_module() {
         let program = MirrProgram {
             patterns: vec![],
+            imports: vec![],
             module: Module {
                 name: "empty".to_string(),
                 signals: vec![],

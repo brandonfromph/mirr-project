@@ -1,0 +1,38 @@
+// Hardware watchdog timer — system heartbeat monitoring.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/watchdog_timer.mirr
+
+module watchdog_timer {
+    signal heartbeat:   in bool;
+    signal watchdog_reset: out bool;
+    signal system_alive:   out bool;
+
+    guard heartbeat_missing {
+        when !heartbeat
+        for 1000 cycles;
+    }
+
+    guard heartbeat_slow {
+        when !heartbeat
+        for 500 cycles;
+    }
+
+    reflex trigger_reset {
+        on heartbeat_missing {
+            watchdog_reset = true;
+        }
+    }
+
+    reflex warning_slow {
+        on heartbeat_slow {
+            system_alive = false;
+        }
+    }
+
+    property reset_on_timeout {
+        always (heartbeat_missing -> watchdog_reset);
+    }
+
+    property no_hang {
+        never (!heartbeat && !watchdog_reset);
+    }
+}

@@ -175,7 +175,11 @@ fn main() {
 
     // Run full pipeline — enable R-SPU stage when rspu output is requested.
     let mut config = PipelineConfig::default();
-    if emit_format.as_deref() == Some("rspu") || emit_format.as_deref() == Some("cert") || totality
+    if emit_format.as_deref() == Some("rspu")
+        || emit_format.as_deref() == Some("cert")
+        || emit_format.as_deref() == Some("riscv")
+        || emit_format.as_deref() == Some("arm")
+        || totality
     {
         config.rspu = true;
     }
@@ -286,6 +290,32 @@ fn main() {
                 process::exit(1);
             }
         },
+        "riscv" => match &result.rspu_program {
+            Some(prog) => emit::riscv::emit_riscv_asm(prog)
+                .unwrap_or_else(|e| {
+                    eprintln!("Error emitting RISC-V assembly: {e:?}");
+                    process::exit(1);
+                }),
+            None => {
+                eprintln!(
+                    "Error: R-SPU program was not generated (required for RISC-V emission)."
+                );
+                process::exit(1);
+            }
+        },
+        "arm" => match &result.rspu_program {
+            Some(prog) => emit::arm::emit_arm_asm(prog)
+                .unwrap_or_else(|e| {
+                    eprintln!("Error emitting ARM assembly: {e:?}");
+                    process::exit(1);
+                }),
+            None => {
+                eprintln!(
+                    "Error: R-SPU program was not generated (required for ARM emission)."
+                );
+                process::exit(1);
+            }
+        },
         "testbench" => emit::testbench::emit_testbench(&result),
         "scaffold" => emit::fpga_scaffold::emit_constraints(&result, &fpga_target),
         "build-script" => emit::fpga_scaffold::emit_build_script(&result, &fpga_target),
@@ -329,7 +359,7 @@ fn main() {
         },
         other => {
             eprintln!(
-                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, testbench, scaffold, build-script, sexpr, mape-k-rtl, or cert."
+                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, riscv, arm, testbench, scaffold, build-script, sexpr, mape-k-rtl, or cert."
             );
             process::exit(1);
         }

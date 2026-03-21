@@ -1,0 +1,40 @@
+// Watchdog Timer — configurable timeout with heartbeat
+// Reset if heartbeat not refreshed within N cycles
+
+module watchdog_timer {
+    signal heartbeat: in bool;
+    signal system_reset: out bool;
+    signal watchdog_ok: out bool;
+
+    guard heartbeat_missing {
+        when !heartbeat
+        for 64 cycles;
+    }
+
+    guard heartbeat_present {
+        when heartbeat
+        for 1 cycles;
+    }
+
+    reflex reset_on_timeout {
+        on heartbeat_missing {
+            system_reset = true;
+        }
+    }
+
+    reflex clear_ok {
+        on heartbeat_missing {
+            watchdog_ok = false;
+        }
+    }
+
+    reflex set_ok {
+        on heartbeat_present {
+            watchdog_ok = true;
+        }
+    }
+
+    property reset_before_65 {
+        always (!heartbeat for 64 cycles -> system_reset);
+    }
+}

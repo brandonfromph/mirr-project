@@ -6,7 +6,7 @@ nav_order: 2
 # MIRR Error Code Reference
 
 > **Status:** Active
-> **Last updated:** 2026-03-17 (MEGA-10: E222–E228, E720)
+> **Last updated:** 2026-03-20 (063: E001–E004 WASM builder)
 
 All MIRR compiler diagnostics carry a bracketed error code in the format `[Ennn]`.
 The prefix classifies the error; the full code maps to a single creation site.
@@ -15,6 +15,7 @@ The prefix classifies the error; the full code maps to a single creation site.
 
 | Prefix | Range   | Category              | Variant                     |
 |--------|---------|-----------------------|-----------------------------|
+| E0xx   | 0–99    | WASM builder / infrastructure | `WasmDiagnostic` (crates/mirr-wasm) |
 | E1xx   | 100–199 | Parse / lexical + MEGA-1 annotations | `MirrError::ParseError`     |
 | E2xx   | 200–299 | Semantic analysis     | `MirrError::SemanticError`  |
 | E3xx   | 300–399 | Temporal compilation  | `MirrError::TemporalCompilationError` |
@@ -23,6 +24,19 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E6xx   | 600–699 | Type checking          | `MirrError::TypeError`      |
 | E7xx   | 700–799 | R-SPU emission          | `MirrError::RspuError`      |
 | E8xx   | 800–899 | S-expression            | `MirrError::SExprError`     |
+| E9xx   | 900–910 | Build certification     | LRA CLI receipt/verify      |
+
+## WASM Builder Errors (E001–E004)
+
+> **Status:** Added 2026-03-20 (proposal 063). Infrastructure-level errors
+> from the WASM builder (`crates/mirr-wasm`).
+
+| Code | Message pattern | Source |
+|------|----------------|--------|
+| E001 | `Source exceeds maximum size: {N} bytes (limit: 65536)` | `crates/mirr-wasm/src/lib.rs` |
+| E002 | `MAPE-K serialization failed: {e}` | `crates/mirr-wasm/src/lib.rs` |
+| E003 | `MAPE-K simulation produced no result` | `crates/mirr-wasm/src/lib.rs` |
+| E004 | `JSON netlist serialization failed: {e}` | `crates/mirr-wasm/src/lib.rs` |
 
 ## Parse Errors — Module (E100–E166)
 
@@ -378,3 +392,37 @@ CLI errors are rendered through `render_diagnostic()` in `mirr-compile`. LSP dia
 | Code | Message | Trigger |
 |------|---------|---------|
 | E900 | SAT error | General SAT simplification error (exceeds MAX_SAT_CHECKS or internal failure) |
+
+## E901–E910 — Build Certification (MEGA-16)
+
+> **Status:** Added 2026-03-21 (proposal 069). LRA CLI receipt generation
+> and verification errors for medical device / aerospace compliance.
+
+| Code | Message | Trigger |
+|------|---------|---------|
+| E901 | `Receipt generation failed: {reason}` | LRA receipt write error (file I/O, serialization) |
+| E902 | `Source hash mismatch: expected {exp}, got {got}` | Receipt verification: source file changed after build |
+| E903 | `Signature verification failed` | Invalid Ed25519 signature on receipt |
+| E904 | `Toolchain hash mismatch` | Compiler binary changed between build and verification |
+| E905 | `Missing required field: {field}` | Receipt JSON schema violation |
+| E906 | `Bootstrap parity failure: {diff}` | Self-hosted vs Rust compiler output differs |
+| E907 | `Explain target not found: {name}` | mirr-explain: unknown signal/guard/reflex name |
+| E908 | `AST diff overflow: design too large` | mirr-diff: >10,000 AST nodes in diff |
+| E909 | `Opcode mismatch: {op} has value {v1} but expected {v2}` | Bootstrap opcode sync check failure |
+| E910 | `Certificate schema version unsupported: {v}` | Future receipt format version |
+
+## E12xx — Testing & Tooling (MEGA-17)
+
+> **Status:** Added 2026-03-21 (proposal 070). Integration testing,
+> documentation, and build tooling errors.
+
+| Code | Message | Trigger |
+|------|---------|---------|
+| E1201 | `RISC-V emission failed: {reason}` | RISC-V backend error |
+| E1202 | `ARM emission failed: {reason}` | ARM backend error |
+| E1203 | `HLS scheduling failed: {reason}` | HLS pass error |
+| E1204 | `Symbolic analysis overflow` | Symbolic engine exceeded bounds |
+| E1205 | `FPGA target unsupported: {target}` | Unknown FPGA target |
+| E1206 | `Nextest config invalid: {reason}` | Configuration parse error |
+| E1207 | `Test fixture missing: {path}` | Required test fixture not found |
+| E1208 | `Example compilation failed: {name}` | Example .mirr file fails to compile |

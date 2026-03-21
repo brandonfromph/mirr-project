@@ -215,7 +215,7 @@ pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, &'stat
 
     // Step 4: Operation binding.
     let bindings = if config.binding {
-        binding::bind_operations(&schedule_ops, &sharing_groups)
+        binding::bind_operations(&schedule_ops)
     } else {
         // Trivial binding: each operation gets its own resource.
         let mut trivial = Vec::with_capacity(schedule_ops.len());

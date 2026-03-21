@@ -12,6 +12,8 @@ mod hash;
 mod health;
 mod init;
 mod keygen;
+mod legacy;
+mod receipt;
 mod registry;
 mod search;
 mod serve;
@@ -103,6 +105,35 @@ enum Command {
         /// URL of the deployed paper (e.g., https://example.github.io/paper/)
         url: String,
     },
+    /// Compile MIRR source to target format
+    Compile {
+        /// Path to MIRR source file
+        #[arg(default_value = "main.mirr")]
+        source: String,
+        /// Target format (verilog, firrtl, rspu, sexpr)
+        #[arg(short, long, default_value = "verilog")]
+        target: String,
+        /// Output file path
+        #[arg(short, long)]
+        output: Option<String>,
+    },
+
+    /// Generate a signed build certification receipt
+    Receipt {
+        /// Path to MIRR source file
+        #[arg(short, long)]
+        source: String,
+        /// Path to compiled output
+        #[arg(short, long)]
+        output: String,
+        /// Path to Ed25519 secret key
+        #[arg(short, long, default_value = "lra-identity.key")]
+        key: String,
+        /// Output receipt path
+        #[arg(long, default_value = "build-receipt.json")]
+        receipt: String,
+    },
+
     /// Generate an Ed25519 keypair for signing verification receipts
     Keygen,
     /// Verify a deployed LRA paper's claims and content integrity
@@ -163,6 +194,67 @@ fn main() {
         Command::Search { query, registry } => search::run(&query, &registry),
         Command::Deps { path, registry } => deps::run(&path, &registry),
         Command::Health { url } => health::run(&url),
+        Command::Compile { source, target, output } => {
+            legacy::warn_deprecated("compile");
+            let _out = output.unwrap_or_else(|| format!("output.{target}"));
+            let status = std::process::Command::new("cargo")
+                .args(["run", "--bin", "mirr-compile", "--", &source, "--emit", &target])
+                .status();
+            match status {
+                Ok(s) if s.success() => 0,
+                _ => 1,
+            }
+        }
+        Command::Receipt { source, output, key, receipt: receipt_path } => {
+            let source_path = std::path::Path::new(&source);
+            let output_path = std::path::Path::new(&output);
+            let key_path = std::path::Path::new(&key);
+
+            let mut r = match receipt::generate_receipt(source_path, output_path, "verilog") {
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("{e}");
+                    std::process::exit(1);
+                }
+            };
+
+            if key_path.exists() {
+                let key_bytes = match std::fs::read(key_path) {
+                    Ok(b) => b,
+                    Err(e) => {
+                        eprintln!("[E901] Receipt generation failed: {e}");
+                        std::process::exit(1);
+                    }
+                };
+                if let Err(e) = receipt::sign_receipt(&mut r, &key_bytes) {
+                    eprintln!("{e}");
+                    std::process::exit(1);
+                }
+
+                // Verify the signed receipt
+                if let Err(e) = receipt::verify_receipt(&r, &key_bytes[32..]) {
+                    eprintln!("[E903] Receipt verification failed: {e}");
+                    std::process::exit(1);
+                }
+                println!("Receipt signature verified");
+            }
+
+            let json = match serde_json::to_string_pretty(&r) {
+                Ok(j) => j,
+                Err(e) => {
+                    eprintln!("[E901] Receipt generation failed: {e}");
+                    std::process::exit(1);
+                }
+            };
+
+            if let Err(e) = std::fs::write(&receipt_path, &json) {
+                eprintln!("[E901] Receipt generation failed: {e}");
+                std::process::exit(1);
+            }
+
+            println!("Receipt written to {receipt_path}");
+            std::process::exit(0);
+        }
         Command::Keygen => keygen::run(),
         Command::Verify { target, registry, receipt } => {
             verify::run(&target, &registry, receipt.as_deref())

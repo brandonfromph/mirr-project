@@ -1,0 +1,162 @@
+// Medical ventilator — neonatal airway pressure monitoring with safety interlocks.
+// Compile: cargo run --bin mirr-compile -- --emit verilog examples/medical_ventilator.mirr
+//
+// Safety-critical features:
+// - Sustained pressure drop detection (shift register debounce)
+// - Over-pressure protection (counter-based timeout)
+// - Oxygen saturation monitoring
+// - Emergency clamp reflex
+// - Multiple safety properties for regulatory compliance
+
+module medical_ventilator {
+    // ======================================================================
+    // INPUTS — sensor readings from ventilator hardware
+    // ======================================================================
+    signal airway_pressure:     in u16;
+    signal oxygen_saturation:   in u16;
+    signal tidal_volume:        in u16;
+    signal respiratory_rate:    in u16;
+    signal system_enabled:      in bool;
+    signal manual_override:     in bool;
+
+    // ======================================================================
+    // OUTPUTS — actuator commands
+    // ======================================================================
+    signal clamp_valve:         out bool;
+    signal alarm_pressure:      out bool;
+    signal alarm_oxygen:        out bool;
+    signal alarm_volume:        out bool;
+    signal safety_shutdown:     out bool;
+    signal status_code:         internal u8;
+
+    // ======================================================================
+    // PRESSURE MONITORING
+    // ======================================================================
+
+    // Sustained low pressure: airway_pressure < 20 for 1000 cycles
+    guard sustained_low_pressure {
+        when airway_pressure < 20
+        for 1000 cycles;
+    }
+
+    reflex emergency_clamp {
+        on sustained_low_pressure {
+            clamp_valve = true;
+            alarm_pressure = true;
+        }
+    }
+
+    // Sustained high pressure: airway_pressure > 800 for 200 cycles
+    guard sustained_high_pressure {
+        when airway_pressure > 800
+        for 200 cycles;
+    }
+
+    reflex pressure_relief {
+        on sustained_high_pressure {
+            alarm_pressure = true;
+            safety_shutdown = true;
+        }
+    }
+
+    // ======================================================================
+    // OXYGEN MONITORING
+    // ======================================================================
+
+    // Low oxygen: SpO2 < 85 for 300 cycles
+    guard low_oxygen {
+        when oxygen_saturation < 85
+        for 300 cycles;
+    }
+
+    reflex oxygen_alarm {
+        on low_oxygen {
+            alarm_oxygen = true;
+        }
+    }
+
+    // Critical oxygen: SpO2 < 70 for 60 cycles
+    guard critical_oxygen {
+        when oxygen_saturation < 70
+        for 60 cycles;
+    }
+
+    reflex oxygen_emergency {
+        on critical_oxygen {
+            alarm_oxygen = true;
+            safety_shutdown = true;
+        }
+    }
+
+    // ======================================================================
+    // VOLUME MONITORING
+    // ======================================================================
+
+    // Over-volume: tidal_volume > 500 for 50 cycles
+    guard over_volume {
+        when tidal_volume > 500
+        for 50 cycles;
+    }
+
+    reflex volume_alarm {
+        on over_volume {
+            alarm_volume = true;
+        }
+    }
+
+    // Under-volume: tidal_volume < 5 for 200 cycles
+    guard under_volume {
+        when tidal_volume < 5
+        for 200 cycles;
+    }
+
+    reflex volume_low_alarm {
+        on under_volume {
+            alarm_volume = true;
+        }
+    }
+
+    // ======================================================================
+    // SAFETY PROPERTIES — FDA 21 CFR Part 11 compliance
+    // ======================================================================
+
+    // P1: Pressure must stay within safe bounds during normal operation
+    property pressure_bounded {
+        always (airway_pressure < 1000);
+    }
+
+    // P2: Oxygen saturation must stay above critical threshold
+    property oxygen_safe {
+        always (oxygen_saturation > 60);
+    }
+
+    // P3: Low pressure triggers alarm
+    property low_pressure_detected {
+        always (airway_pressure < 20 -> alarm_pressure);
+    }
+
+    // P4: High pressure triggers shutdown
+    property high_pressure_shutdown {
+        always (airway_pressure > 800 -> safety_shutdown);
+    }
+
+    // P5: Critical oxygen triggers emergency
+    property critical_oxygen_emergency {
+        always (oxygen_saturation < 70 -> safety_shutdown);
+    }
+
+    // P6: Clamp valve activates on sustained low pressure
+    property clamp_on_low_pressure {
+        always (sustained_low_pressure -> clamp_valve);
+    }
+
+    // P7: Volume must stay within safe range
+    property volume_bounded {
+        always (tidal_volume < 600);
+    }
+
+    // P8: System enabled implies no spurious shutdown
+    property no_spurious_shutdown {
+        never (safety_shutdown && system_enabled && airway_pressure > 20 && airway_pressure < 800);
+    }
+}

@@ -140,7 +140,7 @@ fn test_binding_no_overlap() {
         ScheduleOp { op_id: 1, earliest: 2, latest: 3, resource: ResourceKind::Add },
     ];
 
-    let bindings = bind_operations(&schedule, &[]);
+    let bindings = bind_operations(&schedule);
     assert_eq!(bindings[0], bindings[1]); // Should share resource.
 }
 
@@ -151,7 +151,7 @@ fn test_binding_overlap() {
         ScheduleOp { op_id: 1, earliest: 1, latest: 3, resource: ResourceKind::Add },
     ];
 
-    let bindings = bind_operations(&schedule, &[]);
+    let bindings = bind_operations(&schedule);
     assert_ne!(bindings[0], bindings[1]); // Different resources.
 }
 

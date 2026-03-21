@@ -16,7 +16,7 @@ pub(crate) use super::tokenize_signal_decl;
 
 use super::pattern_parser::{is_pattern_call_line, parse_pattern_call, parse_pattern_def};
 use crate::ast::pattern::PatternDef;
-use crate::ast::program::{MirrProgram, Module, SignalDecl};
+use crate::ast::program::{ImportDecl, MirrProgram, Module, SignalDecl};
 use crate::ast::types::ExtendedType;
 use crate::error::MirrError;
 use crate::span::Span;
@@ -24,12 +24,40 @@ use crate::span::Span;
 /// Maximum number of top-level `def` blocks allowed.
 const MAX_PATTERN_DEFS: usize = 64;
 
+/// Maximum number of import declarations allowed.
+const MAX_IMPORTS: usize = 16;
+
 /// Parse a MIRR source file into an in-memory representation.
 ///
-/// Handles zero or more top-level `def` blocks before the `module` declaration.
+/// Handles zero or more top-level `import` and `def` blocks before the `module` declaration.
 pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
     let lines: Vec<&str> = source.lines().collect();
     let mut index = 0usize;
+
+    // Parse top-level `import` declarations (bounded by MAX_IMPORTS).
+    let mut imports: Vec<ImportDecl> = Vec::new();
+    let mut import_count = 0usize;
+
+    loop {
+        skip_empty_and_comments(&lines, &mut index);
+        if index >= lines.len() {
+            break;
+        }
+        let line = lines[index].trim();
+        if line.starts_with("import ") {
+            if import_count >= MAX_IMPORTS {
+                return Err(MirrError::parse_error(format!(
+                    "[E802] Too many import declarations (max {MAX_IMPORTS})."
+                )));
+            }
+            let import = parse_import(line, index)?;
+            imports.push(import);
+            import_count += 1;
+            index += 1;
+        } else {
+            break;
+        }
+    }
 
     // Parse top-level `def` blocks (bounded by MAX_PATTERN_DEFS).
     let mut patterns: Vec<PatternDef> = Vec::new();
@@ -66,7 +94,69 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
     let module = parse_module(&lines, &mut index)?;
 
-    Ok(MirrProgram { patterns, module })
+    Ok(MirrProgram { patterns, imports, module })
+}
+
+/// Parse an import declaration line.
+///
+/// Grammar: `import "path" as alias;`
+fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> {
+    let span = Some(Span::full_line(line_index as u32));
+    let trimmed = line.trim();
+
+    // Strip trailing semicolon.
+    let without_semicolon = trimmed.strip_suffix(';').ok_or_else(|| {
+        MirrError::parse_error("[E801] Import declaration must end with ';'.")
+            .with_span(span.clone())
+    })?;
+
+    // Parse: import "path" as alias
+    let after_import = without_semicolon.strip_prefix("import ").ok_or_else(|| {
+        MirrError::parse_error("[E801] Malformed import declaration.")
+            .with_span(span.clone())
+    })?;
+
+    let trimmed_after = after_import.trim();
+
+    // Find the quoted path.
+    let (path_part, rest) = if let Some(start) = trimmed_after.find('"') {
+        let after_quote = &trimmed_after[start + 1..];
+        if let Some(end) = after_quote.find('"') {
+            let path = &after_quote[..end];
+            let rest = after_quote[end + 1..].trim();
+            (path.to_string(), rest)
+        } else {
+            return Err(MirrError::parse_error("[E801] Unterminated string in import path.")
+                .with_span(span));
+        }
+    } else {
+        return Err(MirrError::parse_error("[E801] Import path must be a quoted string.")
+            .with_span(span));
+    };
+
+    // Parse: as alias
+    let alias = if rest.starts_with("as ") {
+        let alias_part = rest.strip_prefix("as ").unwrap().trim();
+        if alias_part.is_empty() {
+            return Err(MirrError::parse_error("[E801] Import alias cannot be empty.")
+                .with_span(span));
+        }
+        alias_part.to_string()
+    } else {
+        return Err(MirrError::parse_error("[E801] Import must specify an alias with 'as'.")
+            .with_span(span));
+    };
+
+    if path_part.is_empty() {
+        return Err(MirrError::parse_error("[E803] Import path cannot be empty.")
+            .with_span(span));
+    }
+
+    Ok(ImportDecl {
+        path: path_part,
+        alias,
+        span,
+    })
 }
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {
