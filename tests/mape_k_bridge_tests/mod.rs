@@ -47,7 +47,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         span: None,
     };
     PipelineResult {
-        program: MirrProgram { patterns: Vec::new(), module },
+        program: MirrProgram { patterns: Vec::new(), imports: Vec::new(), module },
         simplify_stats: None,
         width_result: None,
         temporal_netlist: None,
@@ -155,5 +155,6 @@ fn assume_property(name: &str, formula: PropertyFormula) -> PropertyDecl {
 mod part1;
 mod part2;
 mod part3;
+
 
 
