@@ -107,12 +107,12 @@ fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> 
     // Strip trailing semicolon.
     let without_semicolon = trimmed.strip_suffix(';').ok_or_else(|| {
         MirrError::parse_error("[E801] Import declaration must end with ';'.")
-            .with_span(span.clone())
+            .with_span(span)
     })?;
 
     // Parse: import "path" as alias
     let after_import = without_semicolon.strip_prefix("import ").ok_or_else(|| {
-        MirrError::parse_error("[E801] Malformed import declaration.").with_span(span.clone())
+        MirrError::parse_error("[E801] Malformed import declaration.").with_span(span)
     })?;
 
     let trimmed_after = after_import.trim();
