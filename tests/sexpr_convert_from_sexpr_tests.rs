@@ -10,6 +10,7 @@ use nasa_rust_project::sexpr::print_sexpr;
 fn empty_program() -> MirrProgram {
     MirrProgram {
         patterns: Vec::new(),
+        imports: Vec::new(),
         module: Module {
             name: "rt_test".to_string(),
             signals: Vec::new(),
