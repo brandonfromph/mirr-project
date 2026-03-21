@@ -68,7 +68,10 @@ fn main() {
 
     if let Some(guard) = found_guard {
         output.push_str(&format!("=== guard `{}` ===\n\n", guard.name));
-        output.push_str(&format!("Condition: {}\n", nasa_rust_project::emit::expr_text(&guard.condition)));
+        output.push_str(&format!(
+            "Condition: {}\n",
+            nasa_rust_project::emit::expr_text(&guard.condition)
+        ));
         output.push_str(&format!("Cycles: {}\n", guard.cycles));
         if args.verbosity >= 2 {
             output.push_str(&format!("Span: {:?}\n", guard.span));
@@ -124,11 +127,18 @@ fn main() {
             println!("{}", serde_json::to_string_pretty(&json).unwrap());
         }
         "markdown" => {
-            println!("# {} `{}`\n\n{}", 
-                if found_signal.is_some() { "signal" }
-                else if found_guard.is_some() { "guard" }
-                else { "reflex" },
-                args.name, output);
+            println!(
+                "# {} `{}`\n\n{}",
+                if found_signal.is_some() {
+                    "signal"
+                } else if found_guard.is_some() {
+                    "guard"
+                } else {
+                    "reflex"
+                },
+                args.name,
+                output
+            );
         }
         _ => {
             print!("{output}");

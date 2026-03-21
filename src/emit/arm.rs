@@ -100,12 +100,10 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
         RspuInstruction::AluImm { op, dst, a, imm } => {
             emit_arm_alu_imm(out, *op, *dst, *a, *imm);
         }
-        RspuInstruction::AluUnary { op, dst, src } => {
-            match op {
-                AluUnaryOp::Not => out.push_str(&format!("    mvn r{}, r{}\n", dst, src)),
-                AluUnaryOp::Negate => out.push_str(&format!("    neg r{}, r{}\n", dst, src)),
-            }
-        }
+        RspuInstruction::AluUnary { op, dst, src } => match op {
+            AluUnaryOp::Not => out.push_str(&format!("    mvn r{}, r{}\n", dst, src)),
+            AluUnaryOp::Negate => out.push_str(&format!("    neg r{}, r{}\n", dst, src)),
+        },
 
         // Temporal tier — shift register emulation
         RspuInstruction::SrInit { guard, length, cond } => {
@@ -126,7 +124,7 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
             out.push_str(&format!("    ldr r12, =sr_g{}\n", guard));
             out.push_str(&format!("    ldr r11, =guard_g{}\n", guard));
             out.push_str("    ldr r10, [r11]\n"); // new value from guard state
-            // Shift stages 1..N ← 0..N-1 (reverse order to avoid overwrite)
+                                                  // Shift stages 1..N ← 0..N-1 (reverse order to avoid overwrite)
             out.push_str("    mov r9, #256\n"); // max stages
             out.push_str("shift_loop_arm_:\n");
             out.push_str("    sub r9, r9, #1\n");
@@ -286,10 +284,7 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
 
         // Symbolic tier
         RspuInstruction::Match { dst, src, table_offset } => {
-            out.push_str(&format!(
-                "    @ MATCH r{}, r{}, table=#{}\n",
-                dst, src, table_offset
-            ));
+            out.push_str(&format!("    @ MATCH r{}, r{}, table=#{}\n", dst, src, table_offset));
             out.push_str(&format!("    mov r{}, r{}\n", dst, src));
         }
         RspuInstruction::IntervalLo { dst, src } => {
@@ -299,10 +294,7 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
             out.push_str(&format!("    mov r{}, r{}\n", dst, src));
         }
         RspuInstruction::IntervalCheck { src, bounds } => {
-            out.push_str(&format!(
-                "    @ INTERVAL_CHECK r{}, r{}\n",
-                src, bounds
-            ));
+            out.push_str(&format!("    @ INTERVAL_CHECK r{}, r{}\n", src, bounds));
         }
     }
 }

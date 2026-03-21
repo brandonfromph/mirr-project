@@ -86,23 +86,20 @@ fn structural_diff(baseline: &str, candidate: &str, _ignore_names: bool) -> Vec<
 
     // Simple line-based structural comparison.
     // Ignores whitespace differences by comparing trimmed, normalized lines.
-    let base_lines: Vec<&str> = baseline
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .collect();
-    let cand_lines: Vec<&str> = candidate
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .collect();
+    let base_lines: Vec<&str> =
+        baseline.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).collect();
+    let cand_lines: Vec<&str> =
+        candidate.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).collect();
 
     let max_lines = base_lines.len().max(cand_lines.len());
     if max_lines > MAX_AST_NODES {
         diffs.push(AstDiff {
             path: "/".to_string(),
             baseline: format!("{} lines", base_lines.len()),
-            candidate: format!("[E908] AST diff overflow: {} lines > {} limit", max_lines, MAX_AST_NODES),
+            candidate: format!(
+                "[E908] AST diff overflow: {} lines > {} limit",
+                max_lines, MAX_AST_NODES
+            ),
         });
         return diffs;
     }
@@ -126,13 +123,21 @@ fn structural_diff(baseline: &str, candidate: &str, _ignore_names: bool) -> Vec<
         diffs.push(AstDiff {
             path: "/length".to_string(),
             baseline: format!("{} lines", base_lines.len()),
-            candidate: format!("{} lines ({} missing)", cand_lines.len(), base_lines.len() - cand_lines.len()),
+            candidate: format!(
+                "{} lines ({} missing)",
+                cand_lines.len(),
+                base_lines.len() - cand_lines.len()
+            ),
         });
     } else if cand_lines.len() > base_lines.len() {
         diffs.push(AstDiff {
             path: "/length".to_string(),
             baseline: format!("{} lines", base_lines.len()),
-            candidate: format!("{} lines ({} extra)", cand_lines.len(), cand_lines.len() - base_lines.len()),
+            candidate: format!(
+                "{} lines ({} extra)",
+                cand_lines.len(),
+                cand_lines.len() - base_lines.len()
+            ),
         });
     }
 

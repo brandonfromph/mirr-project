@@ -3,33 +3,63 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::symbolic::{
-    sym_eval_binary, sym_eval_expr, sym_eval_unary, sym_widen, sym_check_refinement,
-    SymState, SymValue,
-};
 use nasa_rust_project::ast::expr::Expr;
 use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use nasa_rust_project::symbolic::{
+    sym_check_refinement, sym_eval_binary, sym_eval_expr, sym_eval_unary, sym_widen, SymState,
+    SymValue,
+};
 
 #[test]
 fn sym_concrete_arithmetic() {
-    assert_eq!(sym_eval_binary(BinaryOp::Add, SymValue::Concrete(10), SymValue::Concrete(20)), SymValue::Concrete(30));
-    assert_eq!(sym_eval_binary(BinaryOp::Sub, SymValue::Concrete(50), SymValue::Concrete(20)), SymValue::Concrete(30));
-    assert_eq!(sym_eval_binary(BinaryOp::Mul, SymValue::Concrete(6), SymValue::Concrete(7)), SymValue::Concrete(42));
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Add, SymValue::Concrete(10), SymValue::Concrete(20)),
+        SymValue::Concrete(30)
+    );
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Sub, SymValue::Concrete(50), SymValue::Concrete(20)),
+        SymValue::Concrete(30)
+    );
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Mul, SymValue::Concrete(6), SymValue::Concrete(7)),
+        SymValue::Concrete(42)
+    );
 }
 
 #[test]
 fn sym_concrete_boolean() {
-    assert_eq!(sym_eval_binary(BinaryOp::And, SymValue::Concrete(1), SymValue::Concrete(1)), SymValue::Concrete(1));
-    assert_eq!(sym_eval_binary(BinaryOp::And, SymValue::Concrete(1), SymValue::Concrete(0)), SymValue::Concrete(0));
-    assert_eq!(sym_eval_binary(BinaryOp::Or, SymValue::Concrete(0), SymValue::Concrete(1)), SymValue::Concrete(1));
+    assert_eq!(
+        sym_eval_binary(BinaryOp::And, SymValue::Concrete(1), SymValue::Concrete(1)),
+        SymValue::Concrete(1)
+    );
+    assert_eq!(
+        sym_eval_binary(BinaryOp::And, SymValue::Concrete(1), SymValue::Concrete(0)),
+        SymValue::Concrete(0)
+    );
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Or, SymValue::Concrete(0), SymValue::Concrete(1)),
+        SymValue::Concrete(1)
+    );
 }
 
 #[test]
 fn sym_concrete_comparison() {
-    assert_eq!(sym_eval_binary(BinaryOp::Lt, SymValue::Concrete(5), SymValue::Concrete(10)), SymValue::Concrete(1));
-    assert_eq!(sym_eval_binary(BinaryOp::Lt, SymValue::Concrete(10), SymValue::Concrete(5)), SymValue::Concrete(0));
-    assert_eq!(sym_eval_binary(BinaryOp::Eq, SymValue::Concrete(42), SymValue::Concrete(42)), SymValue::Concrete(1));
-    assert_eq!(sym_eval_binary(BinaryOp::Eq, SymValue::Concrete(42), SymValue::Concrete(99)), SymValue::Concrete(0));
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Lt, SymValue::Concrete(5), SymValue::Concrete(10)),
+        SymValue::Concrete(1)
+    );
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Lt, SymValue::Concrete(10), SymValue::Concrete(5)),
+        SymValue::Concrete(0)
+    );
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Eq, SymValue::Concrete(42), SymValue::Concrete(42)),
+        SymValue::Concrete(1)
+    );
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Eq, SymValue::Concrete(42), SymValue::Concrete(99)),
+        SymValue::Concrete(0)
+    );
 }
 
 #[test]
@@ -40,8 +70,18 @@ fn sym_top_absorbs() {
 
 #[test]
 fn sym_unknown_propagation() {
-    assert_eq!(sym_eval_binary(BinaryOp::Add, SymValue::Unknown { width: 8 }, SymValue::Concrete(1)), SymValue::Unknown { width: 64 });
-    assert_eq!(sym_eval_binary(BinaryOp::Add, SymValue::Unknown { width: 16 }, SymValue::Unknown { width: 32 }), SymValue::Unknown { width: 32 });
+    assert_eq!(
+        sym_eval_binary(BinaryOp::Add, SymValue::Unknown { width: 8 }, SymValue::Concrete(1)),
+        SymValue::Unknown { width: 64 }
+    );
+    assert_eq!(
+        sym_eval_binary(
+            BinaryOp::Add,
+            SymValue::Unknown { width: 16 },
+            SymValue::Unknown { width: 32 }
+        ),
+        SymValue::Unknown { width: 32 }
+    );
 }
 
 #[test]
@@ -84,7 +124,10 @@ fn sym_unary_not() {
 
 #[test]
 fn sym_unary_negate_widens() {
-    assert_eq!(sym_eval_unary(UnaryOp::Negate, SymValue::Concrete(42)), SymValue::Unknown { width: 64 });
+    assert_eq!(
+        sym_eval_unary(UnaryOp::Negate, SymValue::Concrete(42)),
+        SymValue::Unknown { width: 64 }
+    );
 }
 
 #[test]

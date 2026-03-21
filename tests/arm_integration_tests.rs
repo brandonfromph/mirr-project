@@ -3,8 +3,8 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::emit::rspu_isa::*;
 use nasa_rust_project::emit::arm::emit_arm_asm;
+use nasa_rust_project::emit::rspu_isa::*;
 
 fn empty_program() -> RspuProgram {
     RspuProgram {
@@ -119,9 +119,7 @@ fn arm_emit_counter() {
 #[test]
 fn arm_emit_reflex_if() {
     let program = RspuProgram {
-        instructions: vec![
-            RspuInstruction::ReflexIf { guard: 0, dst: 1, src: 0 },
-        ],
+        instructions: vec![RspuInstruction::ReflexIf { guard: 0, dst: 1, src: 0 }],
         registers_used: 2,
         guards_used: 1,
         register_map: vec![("input".into(), 0), ("output".into(), 1)],
@@ -169,9 +167,7 @@ fn arm_thumb2_syntax() {
 #[test]
 fn arm_it_blocks() {
     let program = RspuProgram {
-        instructions: vec![
-            RspuInstruction::Alu { op: AluOp::Eq, dst: 2, a: 0, b: 1 },
-        ],
+        instructions: vec![RspuInstruction::Alu { op: AluOp::Eq, dst: 2, a: 0, b: 1 }],
         registers_used: 3,
         guards_used: 0,
         register_map: vec![],

@@ -291,28 +291,22 @@ fn main() {
             }
         },
         "riscv" => match &result.rspu_program {
-            Some(prog) => emit::riscv::emit_riscv_asm(prog)
-                .unwrap_or_else(|e| {
-                    eprintln!("Error emitting RISC-V assembly: {e:?}");
-                    process::exit(1);
-                }),
+            Some(prog) => emit::riscv::emit_riscv_asm(prog).unwrap_or_else(|e| {
+                eprintln!("Error emitting RISC-V assembly: {e:?}");
+                process::exit(1);
+            }),
             None => {
-                eprintln!(
-                    "Error: R-SPU program was not generated (required for RISC-V emission)."
-                );
+                eprintln!("Error: R-SPU program was not generated (required for RISC-V emission).");
                 process::exit(1);
             }
         },
         "arm" => match &result.rspu_program {
-            Some(prog) => emit::arm::emit_arm_asm(prog)
-                .unwrap_or_else(|e| {
-                    eprintln!("Error emitting ARM assembly: {e:?}");
-                    process::exit(1);
-                }),
+            Some(prog) => emit::arm::emit_arm_asm(prog).unwrap_or_else(|e| {
+                eprintln!("Error emitting ARM assembly: {e:?}");
+                process::exit(1);
+            }),
             None => {
-                eprintln!(
-                    "Error: R-SPU program was not generated (required for ARM emission)."
-                );
+                eprintln!("Error: R-SPU program was not generated (required for ARM emission).");
                 process::exit(1);
             }
         },

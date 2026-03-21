@@ -84,30 +84,21 @@ fn bootstrap_opcode_constants_match() {
 
 #[test]
 fn bootstrap_parity_signals() {
-    let config = nasa_rust_project::pipeline::PipelineConfig {
-        rspu: true,
-        ..Default::default()
-    };
+    let config = nasa_rust_project::pipeline::PipelineConfig { rspu: true, ..Default::default() };
     let result = nasa_rust_project::pipeline::run_pipeline(FIXTURE_SIGNALS, &config);
     assert!(result.is_ok(), "[E906] Bootstrap parity failure: signal declarations");
 }
 
 #[test]
 fn bootstrap_parity_guard_reflex() {
-    let config = nasa_rust_project::pipeline::PipelineConfig {
-        rspu: true,
-        ..Default::default()
-    };
+    let config = nasa_rust_project::pipeline::PipelineConfig { rspu: true, ..Default::default() };
     let result = nasa_rust_project::pipeline::run_pipeline(FIXTURE_GUARD_REFLEX, &config);
     assert!(result.is_ok(), "[E906] Bootstrap parity failure: guard/reflex");
 }
 
 #[test]
 fn bootstrap_parity_counter() {
-    let config = nasa_rust_project::pipeline::PipelineConfig {
-        rspu: true,
-        ..Default::default()
-    };
+    let config = nasa_rust_project::pipeline::PipelineConfig { rspu: true, ..Default::default() };
     let result = nasa_rust_project::pipeline::run_pipeline(FIXTURE_COUNTER, &config);
     assert!(result.is_ok(), "[E906] Bootstrap parity failure: counter guard");
 }
@@ -143,6 +134,11 @@ fn bootstrap_rspu_roundtrip() {
     for instr in &instructions {
         let encoded = encode(instr).expect("encode should succeed");
         let decoded = decode(encoded.0).expect("decode should succeed");
-        assert_eq!(&decoded, instr, "[E909] Opcode mismatch: roundtrip failed for {}", instr.mnemonic());
+        assert_eq!(
+            &decoded,
+            instr,
+            "[E909] Opcode mismatch: roundtrip failed for {}",
+            instr.mnemonic()
+        );
     }
 }

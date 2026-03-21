@@ -96,10 +96,8 @@ pub fn generate_receipt(
     let now = SystemTime::now();
     let timestamp = format_timestamp(&now);
 
-    let modified = source_meta
-        .modified()
-        .map(|t| format_timestamp(&t))
-        .unwrap_or_else(|_| timestamp.clone());
+    let modified =
+        source_meta.modified().map(|t| format_timestamp(&t)).unwrap_or_else(|_| timestamp.clone());
 
     Ok(BuildReceipt {
         schema_version: SCHEMA_VERSION.to_string(),
@@ -134,10 +132,7 @@ pub fn generate_receipt(
 }
 
 /// Sign a receipt with Ed25519 key.
-pub fn sign_receipt(
-    receipt: &mut BuildReceipt,
-    secret_key_bytes: &[u8],
-) -> Result<(), String> {
+pub fn sign_receipt(receipt: &mut BuildReceipt, secret_key_bytes: &[u8]) -> Result<(), String> {
     use ed25519_dalek::{Signer, SigningKey};
 
     // Serialize without signature fields.
@@ -183,8 +178,8 @@ pub fn verify_receipt(receipt: &BuildReceipt, pubkey_bytes: &[u8]) -> Result<(),
         VerifyingKey::from_bytes(&pk_bytes).map_err(|_| "[E903] Signature verification failed")?;
 
     // Serialize the receipt without signature fields for verification.
-    let unsigned_json = serialize_unsigned(receipt)
-        .map_err(|_| "[E903] Signature verification failed")?;
+    let unsigned_json =
+        serialize_unsigned(receipt).map_err(|_| "[E903] Signature verification failed")?;
 
     verifying_key
         .verify(unsigned_json.as_bytes(), &signature)

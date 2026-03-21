@@ -103,20 +103,30 @@ impl TemporalCompiler {
                 None => break,
             };
             match item {
-                WorkItem::Compile(g) => self.compile_leaf_or_decompound(g, &mut work_stack, &mut result_stack)?,
-                WorkItem::Combine { name, op } => self.combine_guard_results(name, op, &mut result_stack)?,
+                WorkItem::Compile(g) => {
+                    self.compile_leaf_or_decompound(g, &mut work_stack, &mut result_stack)?
+                }
+                WorkItem::Combine { name, op } => {
+                    self.combine_guard_results(name, op, &mut result_stack)?
+                }
             }
         }
 
         if !work_stack.is_empty() {
             return Err(MirrError::TemporalCompilationError {
-                message: format!("[E304] guard '{}': compilation exceeded maximum iteration bound ({})", guard.name, max_iterations),
+                message: format!(
+                    "[E304] guard '{}': compilation exceeded maximum iteration bound ({})",
+                    guard.name, max_iterations
+                ),
                 span: guard.span,
             });
         }
 
         result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
-            message: format!("[E305] guard '{}': internal error — no compilation result produced", guard.name),
+            message: format!(
+                "[E305] guard '{}': internal error — no compilation result produced",
+                guard.name
+            ),
             span: guard.span,
         })
     }
@@ -144,7 +154,10 @@ impl TemporalCompiler {
                     if *op == BinaryOp::And || *op == BinaryOp::Or {
                         if work_stack.len() >= MAX_COMPILE_GUARD_DEPTH {
                             return Err(MirrError::TemporalCompilationError {
-                                message: format!("[E301] guard '{}': exceeded maximum compile guard depth ({})", g.name, MAX_COMPILE_GUARD_DEPTH),
+                                message: format!(
+                                    "[E301] guard '{}': exceeded maximum compile guard depth ({})",
+                                    g.name, MAX_COMPILE_GUARD_DEPTH
+                                ),
                                 span: g.span,
                             });
                         }
@@ -152,8 +165,20 @@ impl TemporalCompiler {
                         self.signal_counter += 1;
                         let right_name = format!("{}_sub{}", g.name, self.signal_counter);
                         self.signal_counter += 1;
-                        let left_guard = Guard { name: left_name, condition: (*left.clone()), cycles: g.cycles, origin: None, span: None };
-                        let right_guard = Guard { name: right_name, condition: (*right.clone()), cycles: g.cycles, origin: None, span: None };
+                        let left_guard = Guard {
+                            name: left_name,
+                            condition: (*left.clone()),
+                            cycles: g.cycles,
+                            origin: None,
+                            span: None,
+                        };
+                        let right_guard = Guard {
+                            name: right_name,
+                            condition: (*right.clone()),
+                            cycles: g.cycles,
+                            origin: None,
+                            span: None,
+                        };
                         // Use the WorkItem enum from compile_guard scope
                         work_stack.push(WorkItem::Combine { name: g.name.clone(), op: *op });
                         work_stack.push(WorkItem::Compile(right_guard));
@@ -183,11 +208,17 @@ impl TemporalCompiler {
         result_stack: &mut Vec<CompiledGuard>,
     ) -> Result<(), MirrError> {
         let right_comp = result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
-            message: format!("[E303] guard '{}': internal error — missing right sub-guard result", name),
+            message: format!(
+                "[E303] guard '{}': internal error — missing right sub-guard result",
+                name
+            ),
             span: None,
         })?;
         let left_comp = result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
-            message: format!("[E303] guard '{}': internal error — missing left sub-guard result", name),
+            message: format!(
+                "[E303] guard '{}': internal error — missing left sub-guard result",
+                name
+            ),
             span: None,
         })?;
 

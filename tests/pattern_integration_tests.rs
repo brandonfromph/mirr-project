@@ -3,8 +3,8 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::parser::parse_mirr;
 use nasa_rust_project::expand::expand_patterns;
+use nasa_rust_project::parser::parse_mirr;
 use nasa_rust_project::validation::validate_pattern_defs;
 
 #[test]

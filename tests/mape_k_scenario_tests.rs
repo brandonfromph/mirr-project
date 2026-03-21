@@ -4,8 +4,8 @@
 #![deny(warnings)]
 
 use nasa_rust_project::mape_k::{
-    ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SimConfig,
-    TemporalProperty, SignalPredicate, TriggerCondition,
+    ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
+    TemporalProperty, TriggerCondition,
 };
 
 fn normal_pressure_config() -> SimConfig {

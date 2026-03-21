@@ -112,8 +112,7 @@ fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> 
 
     // Parse: import "path" as alias
     let after_import = without_semicolon.strip_prefix("import ").ok_or_else(|| {
-        MirrError::parse_error("[E801] Malformed import declaration.")
-            .with_span(span.clone())
+        MirrError::parse_error("[E801] Malformed import declaration.").with_span(span.clone())
     })?;
 
     let trimmed_after = after_import.trim();
@@ -130,16 +129,18 @@ fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> 
                 .with_span(span));
         }
     } else {
-        return Err(MirrError::parse_error("[E801] Import path must be a quoted string.")
-            .with_span(span));
+        return Err(
+            MirrError::parse_error("[E801] Import path must be a quoted string.").with_span(span)
+        );
     };
 
     // Parse: as alias
     let alias = if rest.starts_with("as ") {
         let alias_part = rest.strip_prefix("as ").unwrap().trim();
         if alias_part.is_empty() {
-            return Err(MirrError::parse_error("[E801] Import alias cannot be empty.")
-                .with_span(span));
+            return Err(
+                MirrError::parse_error("[E801] Import alias cannot be empty.").with_span(span)
+            );
         }
         alias_part.to_string()
     } else {
@@ -148,15 +149,10 @@ fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> 
     };
 
     if path_part.is_empty() {
-        return Err(MirrError::parse_error("[E803] Import path cannot be empty.")
-            .with_span(span));
+        return Err(MirrError::parse_error("[E803] Import path cannot be empty.").with_span(span));
     }
 
-    Ok(ImportDecl {
-        path: path_part,
-        alias,
-        span,
-    })
+    Ok(ImportDecl { path: path_part, alias, span })
 }
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {

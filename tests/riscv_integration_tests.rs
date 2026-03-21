@@ -3,8 +3,8 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::emit::rspu_isa::*;
 use nasa_rust_project::emit::riscv::emit_riscv_asm;
+use nasa_rust_project::emit::rspu_isa::*;
 
 fn empty_program() -> RspuProgram {
     RspuProgram {
@@ -118,9 +118,7 @@ fn riscv_emit_counter() {
 #[test]
 fn riscv_emit_reflex_if() {
     let program = RspuProgram {
-        instructions: vec![
-            RspuInstruction::ReflexIf { guard: 0, dst: 64, src: 0 },
-        ],
+        instructions: vec![RspuInstruction::ReflexIf { guard: 0, dst: 64, src: 0 }],
         registers_used: 2,
         guards_used: 1,
         register_map: vec![("input".into(), 0), ("output".into(), 64)],
@@ -160,9 +158,7 @@ fn riscv_emit_full_program() {
 #[test]
 fn riscv_register_bounds() {
     let program = RspuProgram {
-        instructions: vec![
-            RspuInstruction::Mov { dst: 255, src: 0 },
-        ],
+        instructions: vec![RspuInstruction::Mov { dst: 255, src: 0 }],
         registers_used: 256,
         guards_used: 0,
         register_map: vec![],

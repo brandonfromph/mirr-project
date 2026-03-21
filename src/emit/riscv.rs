@@ -94,12 +94,10 @@ fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_count
         RspuInstruction::AluImm { op, dst, a, imm } => {
             emit_riscv_alu_imm(out, *op, *dst, *a, *imm);
         }
-        RspuInstruction::AluUnary { op, dst, src } => {
-            match op {
-                AluUnaryOp::Not => out.push_str(&format!("    xori x{}, x{}, -1\n", dst, src)),
-                AluUnaryOp::Negate => out.push_str(&format!("    sub x{}, x0, x{}\n", dst, src)),
-            }
-        }
+        RspuInstruction::AluUnary { op, dst, src } => match op {
+            AluUnaryOp::Not => out.push_str(&format!("    xori x{}, x{}, -1\n", dst, src)),
+            AluUnaryOp::Negate => out.push_str(&format!("    sub x{}, x0, x{}\n", dst, src)),
+        },
 
         // Temporal tier — shift register emulation
         RspuInstruction::SrInit { guard, length, cond } => {
@@ -119,7 +117,7 @@ fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_count
             out.push_str(&format!("    la t0, sr_g{}\n", guard));
             out.push_str(&format!("    la t3, guard_g{}\n", guard));
             out.push_str("    lw t4, 0(t3)\n"); // new value from guard state
-            // Shift stages 1..N ← 0..N-1 (reverse order to avoid overwrite)
+                                                // Shift stages 1..N ← 0..N-1 (reverse order to avoid overwrite)
             out.push_str("    li t5, 256\n"); // max stages
             out.push_str("shift_loop_rv_:\n");
             out.push_str("    addi t5, t5, -1\n");
@@ -286,10 +284,7 @@ fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_count
 
         // Symbolic tier
         RspuInstruction::Match { dst, src, table_offset } => {
-            out.push_str(&format!(
-                "    # MATCH x{}, x{}, table=#{}\n",
-                dst, src, table_offset
-            ));
+            out.push_str(&format!("    # MATCH x{}, x{}, table=#{}\n", dst, src, table_offset));
             out.push_str(&format!("    addi x{}, x{}, 0\n", dst, src));
         }
         RspuInstruction::IntervalLo { dst, src } => {
@@ -299,10 +294,7 @@ fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_count
             out.push_str(&format!("    addi x{}, x{}, 0\n", dst, src));
         }
         RspuInstruction::IntervalCheck { src, bounds } => {
-            out.push_str(&format!(
-                "    # INTERVAL_CHECK x{}, x{}\n",
-                src, bounds
-            ));
+            out.push_str(&format!("    # INTERVAL_CHECK x{}, x{}\n", src, bounds));
         }
     }
 }

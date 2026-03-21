@@ -19,7 +19,9 @@ pub use pattern::{
     PatternArg, PatternCall, PatternDef, PatternOrigin, PatternParam, PatternParamKind,
     ReflectBlock,
 };
-pub use program::{Assignment, Guard, ImportDecl, MirrAstJson, MirrProgram, Module, Reflex, SignalDecl};
+pub use program::{
+    Assignment, Guard, ImportDecl, MirrAstJson, MirrProgram, Module, Reflex, SignalDecl,
+};
 pub use property::{PropertyDecl, PropertyDirective, PropertyFormula};
 pub use types::{
     BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp, MAX_ARRAY_DIMS, MAX_FIXED_POINT_BITS,

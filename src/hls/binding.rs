@@ -355,5 +355,4 @@ mod tests {
         let debug = binding_debug(&schedule, &bindings);
         assert!(debug.contains("Resource 0"));
     }
-
 }

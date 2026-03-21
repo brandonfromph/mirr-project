@@ -167,11 +167,8 @@ pub fn run_pipeline(
     };
 
     // Stage 2.7: Symbolic analysis (optional, MEGA-5).
-    let symbolic_result = if config.symbolic {
-        crate::symbolic::analyze_module(&program.module).ok()
-    } else {
-        None
-    };
+    let symbolic_result =
+        if config.symbolic { crate::symbolic::analyze_module(&program.module).ok() } else { None };
 
     // Stage 3: Simplify (optional).
     let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
