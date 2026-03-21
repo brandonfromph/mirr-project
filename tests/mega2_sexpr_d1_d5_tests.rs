@@ -12,7 +12,8 @@ const MAX_TEST_ITER: usize = 8;
 
 fn empty_program() -> MirrProgram {
     MirrProgram {
-        patterns: Vec::new(),
+        patterns:,
+        imports: Vec::new(), Vec::new(),
         module: Module {
             name: "d_test".to_string(),
             signals: Vec::new(),
@@ -175,3 +176,4 @@ fn d5_stable_after_multiple_iterations() {
         i += 1;
     }
 }
+

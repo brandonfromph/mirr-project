@@ -219,7 +219,8 @@ fn bounded_multiple_guards_roundtrip() {
 #[test]
 fn full_program_roundtrip() {
     let program = MirrProgram {
-        patterns: vec![PatternDef {
+        patterns:,
+        imports: Vec::new(), vec![PatternDef {
             name: "sensor_monitor".to_string(),
             params: vec![
                 PatternParam {
@@ -554,4 +555,5 @@ fn roundtrip_pattern_call_no_args() {
     assert_eq!(restored.module.pattern_calls[0].pattern_name, "no_arg_pat", "name must match");
     assert!(restored.module.pattern_calls[0].arguments.is_empty(), "args must remain empty");
 }
+
 

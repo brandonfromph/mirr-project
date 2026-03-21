@@ -12,7 +12,8 @@ fn test_guard_counter_lifetime() {
     // - a reflex that sets `emit_push_integer = true` while the guard is active
     // - a clear/tick reflex that resets `emit_push_integer = false`
     let prog = MirrProgram {
-        patterns: Vec::new(),
+        patterns:,
+        imports: Vec::new(), Vec::new(),
         module: Module {
             name: "test".to_string(),
             signals: vec![
@@ -85,3 +86,4 @@ fn test_guard_counter_lifetime() {
         "expected at least one push to carry the integer payload 4"
     );
 }
+

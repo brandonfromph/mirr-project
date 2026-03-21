@@ -845,3 +845,4 @@ fn unknown_identifier_no_keyword_push() {
         keyword_pushes.iter().map(|p| p.kind).collect::<Vec<_>>()
     );
 }
+

@@ -14,7 +14,8 @@ const MAX_SCAN: usize = 128;
 
 fn empty_program() -> MirrProgram {
     MirrProgram {
-        patterns: Vec::new(),
+        patterns:,
+        imports: Vec::new(), Vec::new(),
         module: Module {
             name: "test".to_string(),
             signals: Vec::new(),
@@ -190,3 +191,4 @@ fn deterministic_output() {
     let s2 = print_sexpr(&ast_to_sexpr(&prog));
     assert_eq!(s1, s2, "ast_to_sexpr must be deterministic");
 }
+

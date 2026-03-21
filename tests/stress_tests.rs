@@ -138,3 +138,4 @@ fn stress_extreme_large_module() {
     assert_eq!(p.module.guards.len(), count);
     assert_eq!(p.module.reflexes.len(), count);
 }
+

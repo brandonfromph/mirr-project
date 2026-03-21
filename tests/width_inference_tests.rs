@@ -719,7 +719,8 @@ fn program_width_inference_basic() {
     use nasa_rust_project::ast::program::*;
 
     let program = nasa_rust_project::MirrProgram {
-        patterns: Vec::new(),
+        patterns:,
+        imports: Vec::new(), Vec::new(),
         module: Module {
             name: "test_mod".to_string(),
             signals: vec![
@@ -762,7 +763,8 @@ fn program_detects_truncation_in_reflex() {
     use nasa_rust_project::ast::program::*;
 
     let program = nasa_rust_project::MirrProgram {
-        patterns: Vec::new(),
+        patterns:,
+        imports: Vec::new(), Vec::new(),
         module: Module {
             name: "trunc_mod".to_string(),
             signals: vec![
@@ -796,3 +798,4 @@ fn program_detects_truncation_in_reflex() {
         all_diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert!(errors.iter().any(|d| d.message.contains("truncates unsigned 9 bits to 8 bits")));
 }
+

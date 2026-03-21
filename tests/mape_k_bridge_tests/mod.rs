@@ -155,3 +155,4 @@ fn assume_property(name: &str, formula: PropertyFormula) -> PropertyDecl {
 mod part1;
 mod part2;
 mod part3;
+

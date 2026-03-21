@@ -520,3 +520,4 @@ fn sv_dsp_default_emitter_no_attributes() {
         "Default emit_sv() should NOT emit DSP attributes (backward compat)"
     );
 }
+

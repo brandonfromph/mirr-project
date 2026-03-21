@@ -366,3 +366,4 @@ fn bridge_skips_cover_and_assume_properties() {
     assert_eq!(config.action_table[0].trigger_property_idx, 0);
     assert_eq!(config.action_table[0].action, AdaptationAction::EmergencyStop);
 }
+
