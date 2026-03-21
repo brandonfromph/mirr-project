@@ -39,7 +39,7 @@ fn empty_module(name: &str) -> Module {
 }
 
 fn empty_program() -> MirrProgram {
-    MirrProgram { patterns: Vec::new(), module: empty_module("test_module") }
+    MirrProgram { patterns: Vec::new(), imports: Vec::new(), module: empty_module("test_module") }
 }
 
 fn default_annotations() -> TypeAnnotations {
@@ -54,4 +54,5 @@ fn default_annotations() -> TypeAnnotations {
 mod part1;
 mod part2;
 mod part3;
+
 
