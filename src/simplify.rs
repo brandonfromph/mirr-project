@@ -78,6 +78,9 @@ fn count_nodes(expr: &Expr) -> usize {
                     j += 1;
                 }
             }
+            Expr::UnfoldIndex(_) => {
+                // Unresolved meta-stage index is treated as a leaf node for counting.
+            }
         }
     }
     count
@@ -276,6 +279,7 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
             // Depth exceeded — return whatever we have so far.
             break;
         }
+
         match item {
             WorkItem::Descend(e) => match e {
                 Expr::Literal(_) | Expr::Signal(_) | Expr::Prev { .. } => {
@@ -287,11 +291,9 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
                 }
                 Expr::Binary { op, left, right } => {
                     work.push(WorkItem::CombineBinary(op));
-                    // Push right first so left is processed first (stack is LIFO).
                     work.push(WorkItem::Descend(*right));
                     work.push(WorkItem::Descend(*left));
                 }
-                // Composite data variants — descend into sub-expressions.
                 Expr::ArrayIndex { array, index } => {
                     work.push(WorkItem::CombineArrayIndex);
                     work.push(WorkItem::Descend(*index));
@@ -321,6 +323,9 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
                         work.push(WorkItem::Descend(fields[j].1.clone()));
                     }
                 }
+                Expr::UnfoldIndex(name) => {
+                    results.push(Expr::UnfoldIndex(name));
+                }
             },
             WorkItem::CombineUnary(op) => {
                 let operand = results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false)));
@@ -331,7 +336,6 @@ fn simplify_one_pass(expr: Expr) -> (Expr, usize) {
                 results.push(result);
             }
             WorkItem::CombineBinary(op) => {
-                // Results stack has [... left, right] (left pushed first, right on top).
                 let right = results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false)));
                 let left = results.pop().unwrap_or(Expr::Literal(LiteralValue::Bool(false)));
                 let (result, fired) = simplify_binary(op, left, right);

@@ -185,7 +185,7 @@ fn integration_undriven_output_from_parse() {
 
 #[test]
 fn f2_example_neonatal_respirator_cert_generation() {
-    let src = include_str!("../examples/neonatal_respirator.mirr");
+    let src = include_str!("../../examples/neonatal_respirator.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -205,7 +205,7 @@ fn f2_example_neonatal_respirator_cert_generation() {
 
 #[test]
 fn f2_example_multi_guard_monitor_cert_generation() {
-    let src = include_str!("../examples/multi_guard_monitor.mirr");
+    let src = include_str!("../../examples/multi_guard_monitor.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -225,7 +225,7 @@ fn f2_example_multi_guard_monitor_cert_generation() {
 
 #[test]
 fn f2_example_shift_register_guard_cert_generation() {
-    let src = include_str!("../examples/shift_register_guard.mirr");
+    let src = include_str!("../../examples/shift_register_guard.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -245,7 +245,7 @@ fn f2_example_shift_register_guard_cert_generation() {
 
 #[test]
 fn f2_example_flight_controller_cert_generation() {
-    let src = include_str!("../examples/flight_controller.mirr");
+    let src = include_str!("../../examples/flight_controller.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -270,7 +270,7 @@ fn f2_example_flight_controller_cert_generation() {
 
 #[test]
 fn f2_example_autonomous_vehicle_cert_generation() {
-    let src = include_str!("../examples/autonomous_vehicle.mirr");
+    let src = include_str!("../../examples/autonomous_vehicle.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -295,7 +295,7 @@ fn f2_example_autonomous_vehicle_cert_generation() {
 
 #[test]
 fn f2_example_industrial_safety_cert_generation() {
-    let src = include_str!("../examples/industrial_safety.mirr");
+    let src = include_str!("../../examples/industrial_safety.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -320,7 +320,7 @@ fn f2_example_industrial_safety_cert_generation() {
 
 #[test]
 fn f2_example_safety_property_cert_generation() {
-    let src = include_str!("../examples/safety_property.mirr");
+    let src = include_str!("../../examples/safety_property.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -345,7 +345,7 @@ fn f2_example_safety_property_cert_generation() {
 
 #[test]
 fn f2_example_icu_monitor_cert_generation() {
-    let src = include_str!("../examples/icu_monitor.mirr");
+    let src = include_str!("../../examples/icu_monitor.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -370,7 +370,7 @@ fn f2_example_icu_monitor_cert_generation() {
 
 #[test]
 fn f2_example_pattern_usage_cert_generation() {
-    let src = include_str!("../examples/pattern_usage.mirr");
+    let src = include_str!("../../examples/pattern_usage.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -395,7 +395,7 @@ fn f2_example_pattern_usage_cert_generation() {
 
 #[test]
 fn f2_example_flight_controller_signed_cert_generation() {
-    let src = include_str!("../examples/flight_controller_signed.mirr");
+    let src = include_str!("../../examples/flight_controller_signed.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -433,7 +433,7 @@ fn f2_example_flight_controller_signed_cert_generation() {
 
 #[test]
 fn f2_example_fir_filter_cert_generation() {
-    let src = include_str!("../examples/fir_filter.mirr");
+    let src = include_str!("../../examples/fir_filter.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -448,3 +448,5 @@ fn f2_example_fir_filter_cert_generation() {
     let totality = result.totality_result.as_ref().expect("totality result must be present");
     assert!(totality.is_total, "fir_filter must be total");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
+    assert!(!rspu.instructions.is_empty(), "R-SPU program should not be empty");
+}

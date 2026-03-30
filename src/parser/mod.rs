@@ -35,15 +35,74 @@ pub(crate) fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {
 /// error codes (E116-E118 for module signals, E416-E417 for patterns).
 pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::SignalType> {
     use crate::ast::types::SignalType;
+    // Parse array type as: <base_type>[<len>]
+    if let Some(open_bracket_pos) = ty_str.find('[') {
+        if ty_str.ends_with(']') {
+            let element_type = &ty_str[..open_bracket_pos];
+            let len_str = &ty_str[open_bracket_pos + 1..ty_str.len() - 1];
+            let element = Box::new(parse_signal_type_str(element_type)?);
+            let length = len_str.parse::<u64>().ok()?;
+            if (1..=MAX_TYPE_NAT).contains(&length) {
+                return Some(SignalType::Array { element, length });
+            } else {
+                return None;
+            }
+        }
+    }
+
     if ty_str == "bool" {
         return Some(SignalType::Bool);
     }
+
+    if let Some(name) = ty_str.strip_prefix("struct ") {
+        let name = name.trim();
+        if !name.is_empty() {
+            return Some(SignalType::Struct { name: name.to_string(), fields: Vec::new() });
+        }
+    }
+
+    // MEGA-1 generic numeric syntax: unsigned<32>, signed<32>, fixed<total,frac>.
+    if let Some(inner) = ty_str.strip_prefix("unsigned<") {
+        if let Some(rest) = inner.strip_suffix('>') {
+            if let Ok(width) = rest.parse::<u32>() {
+                return Some(SignalType::Unsigned(width));
+            }
+        }
+    }
+    if let Some(inner) = ty_str.strip_prefix("signed<") {
+        if let Some(rest) = inner.strip_suffix('>') {
+            if let Ok(width) = rest.parse::<u32>() {
+                return Some(SignalType::Signed(width));
+            }
+        }
+    }
+
+    // Backward-compatible numeric syntax: u32 / i32.
     if let Some(suffix) = ty_str.strip_prefix('u') {
+        eprintln!("parse_signal_type_str: uN path");
         return suffix.parse::<u32>().ok().map(SignalType::Unsigned);
     }
     if let Some(suffix) = ty_str.strip_prefix('i') {
+        eprintln!("parse_signal_type_str: iN path");
         return suffix.parse::<u32>().ok().map(SignalType::Signed);
     }
+    if let Some(inner) = ty_str.strip_prefix("fixed<") {
+        if let Some(rest) = inner.strip_suffix('>') {
+            let parts: Vec<&str> = rest.split(',').map(|s| s.trim()).collect();
+            if parts.len() == 2 {
+                if let (Ok(total_bits), Ok(frac_bits)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
+                    if total_bits == 0
+                        || total_bits > crate::ast::types::MAX_FIXED_POINT_BITS
+                        || frac_bits > total_bits
+                    {
+                        return None;
+                    }
+                    return Some(SignalType::FixedPoint { total_bits, frac_bits });
+                }
+            }
+        }
+    }
+
     // Parse fifo<T,N> where T is element type and N is depth.
     if let Some(inner) = ty_str.strip_prefix("fifo<") {
         if let Some(rest) = inner.strip_suffix('>') {
@@ -61,6 +120,21 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
         }
         return None;
     }
+
+    // Parse array type as: <base_type>[<len>]
+    if let Some(open_bracket_pos) = ty_str.find('[') {
+        if ty_str.ends_with(']') {
+            let element_type = &ty_str[..open_bracket_pos];
+            let len_str = &ty_str[open_bracket_pos + 1..ty_str.len() - 1];
+            let element = Box::new(parse_signal_type_str(element_type)?);
+            let length = len_str.parse::<u64>().ok()?;
+            // Enforce bounds to [1, MAX_TYPE_NAT] (for safety; defined in typeck) 
+            if (1..=MAX_TYPE_NAT).contains(&length) {
+                return Some(SignalType::Array { element, length });
+            }
+        }
+    }
+
     None
 }
 
@@ -80,6 +154,7 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
 
 use crate::ast::types::{EffectQualifier, Linearity, Refinement, SignalKind, TypeAnnotations};
 use crate::error::MirrError;
+use crate::typeck::extended::MAX_TYPE_NAT;
 
 /// Maximum whitespace tokens examined in a signal type declaration.
 /// NASA Power-of-10 rule: all loops bounded.
@@ -281,13 +356,30 @@ fn parse_qualified_type(
         ));
     }
 
-    let ty_str = &tokens[pos];
-    let ty = parse_signal_type_str(ty_str).ok_or_else(|| {
-        MirrError::parse_error(format!(
-            "[E118] Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'.",
-        ))
-    })?;
-    pos += 1;
+    let ty = if tokens[pos] == "struct" {
+        pos += 1;
+        if pos >= tokens.len() {
+            return Err(MirrError::parse_error("[E118] Missing struct name after 'struct'."));
+        }
+        let struct_name = tokens[pos].trim();
+        if struct_name.is_empty() {
+            return Err(MirrError::parse_error("[E118] Struct name cannot be empty."));
+        }
+        pos += 1;
+        crate::ast::types::SignalType::Struct {
+            name: struct_name.to_string(),
+            fields: Vec::new(),
+        }
+    } else {
+        let ty_str = &tokens[pos];
+        let ty = parse_signal_type_str(ty_str).ok_or_else(|| {
+            MirrError::parse_error(format!(
+                "[E118] Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'.",
+            ))
+        })?;
+        pos += 1;
+        ty
+    };
 
     // --- Phase 3: Optional suffix annotations ---
     // Accepted in any order: `where <refinement>`, `@<clock>`, `#<phantom>`.

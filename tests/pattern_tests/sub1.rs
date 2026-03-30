@@ -609,3 +609,5 @@ module m {
         .iter()
         .find(|g| g.name.contains("active"))
         .expect("Should find expanded guard");
+    assert!(expanded_guard.name.contains("sensor_active"), "Expanded guard name should be sensor_active");
+}

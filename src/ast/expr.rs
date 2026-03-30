@@ -36,4 +36,6 @@ pub enum Expr {
     ArrayLiteral(Vec<Expr>),
     /// Struct literal: `StructName { f1: v1, f2: v2, ... }`.
     StructLiteral { name: String, fields: Vec<(String, Expr)> },
+    /// Meta-stage unfolding index (March 17-22 Dark Age legacy).
+    UnfoldIndex(String),
 }

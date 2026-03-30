@@ -61,6 +61,13 @@ fn make_bool_signal(name: &str) -> SignalDecl {
 }
 
 /// Count error-severity diagnostics in a SolveResult.
+fn signal_map(signals: &[SignalDecl]) -> std::collections::HashMap<String, u32> {
+    signals
+        .iter()
+        .map(|s| (s.name.clone(), s.ty.signal_type().width()))
+        .collect()
+}
+
 fn count_errors(result: &SolveResult) -> usize {
     let mut count = 0usize;
     for d in &result.diagnostics {
@@ -731,7 +738,7 @@ fn constraint_generation_for_literals() {
         FlatNode::Literal { value: 1024 },
     ];
     let signals: Vec<SignalDecl> = vec![];
-    let cset = generate_constraints(&nodes, &signals);
+    let cset = generate_constraints(&nodes, &signal_map(&signals));
     assert_eq!(cset.constraints.len(), 3, "each literal should generate one Fixed constraint");
     // Verify the widths in the generated constraints.
     let widths: Vec<u32> = cset
@@ -751,7 +758,7 @@ fn constraint_generation_for_literals() {
 fn constraint_generation_for_signal_with_declaration() {
     let nodes = vec![FlatNode::Signal { name: "x".to_string(), signed: false }];
     let signals = vec![make_signal("x", 16)];
-    let cset = generate_constraints(&nodes, &signals);
+    let cset = generate_constraints(&nodes, &signal_map(&signals));
     assert_eq!(cset.constraints.len(), 1, "one signal => one constraint");
     match &cset.constraints[0] {
         WidthConstraint::Fixed { node, width } => {
@@ -766,7 +773,7 @@ fn constraint_generation_for_signal_with_declaration() {
 fn constraint_generation_for_undeclared_signal_emits_e501() {
     let nodes = vec![FlatNode::Signal { name: "missing".to_string(), signed: false }];
     let signals: Vec<SignalDecl> = vec![];
-    let cset = generate_constraints(&nodes, &signals);
+    let cset = generate_constraints(&nodes, &signal_map(&signals));
     assert!(has_diag_containing(&cset.diagnostics, "E501"), "undeclared signal should emit E501");
     // Should still produce a fallback constraint (width 1) for solver continuity.
     assert_eq!(
@@ -784,7 +791,7 @@ fn constraint_generation_comparison_produces_boolean() {
         FlatNode::Binary { op: BinaryOp::Lt, left: 0, right: 1 },
     ];
     let signals = vec![make_signal("a", 8), make_signal("b", 8)];
-    let cset = generate_constraints(&nodes, &signals);
+    let cset = generate_constraints(&nodes, &signal_map(&signals));
     // The third constraint (for node 2) should be Boolean.
     let boolean_constraints: Vec<&WidthConstraint> =
         cset.constraints.iter().filter(|c| matches!(c, WidthConstraint::Boolean { .. })).collect();

@@ -1,22 +1,20 @@
 //! Width constraint representation and generation.
 //!
 //! Encodes the relationship between expression node widths as constraints
-//! that the solver propagates to fixpoint. Constraint generation is a single
-//! bounded pass over the flat node array.
+//! that the solver propagates to fixpoint.
 
 #![forbid(unsafe_code)]
 
-use super::types::{FlatNode, Width, WidthDiag, MAX_FLAT_NODES};
-use crate::ast::types::{BinaryOp, UnaryOp};
-use crate::ast::SignalDecl;
+use crate::ast::types::BinaryOp;
+use crate::width::types::{FlatNode, WidthDiag};
 use serde::Serialize;
 
 // ---------------------------------------------------------------------------
-// Constraint enum
+// Constraint types
 // ---------------------------------------------------------------------------
 
-/// A width constraint on a node identified by its flat-array index.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+/// A width constraint relating one or more flat nodes.
+#[derive(Debug, Clone, Serialize)]
 pub enum WidthConstraint {
     /// Node must be exactly `width` bits (literal or declared signal).
     Fixed { node: u32, width: u32 },
@@ -48,6 +46,9 @@ pub enum WidthConstraint {
 
     /// Node width = 1  (for comparison operators and boolean literals).
     Boolean { node: u32 },
+
+    /// Node width = sum of all element widths (for array/struct literals).
+    SumAll { node: u32, elements: Vec<u32> },
 }
 
 // ---------------------------------------------------------------------------
@@ -58,99 +59,149 @@ pub enum WidthConstraint {
 pub struct ConstraintSet {
     /// Generated width constraints for the solver.
     pub constraints: Vec<WidthConstraint>,
-    /// Diagnostics emitted during constraint generation.
+    /// Diagnostics emitted during constraint generation (e.g. undeclared signals).
     pub diagnostics: Vec<WidthDiag>,
 }
 
-/// Generate width constraints from a flat node array.
-///
-/// `signals` is the module's signal declarations, used to look up declared
-/// widths for Signal nodes.
-///
-/// Bounded: iterates once over `nodes` (len <= MAX_FLAT_NODES).
-pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> ConstraintSet {
-    let mut constraints: Vec<WidthConstraint> = Vec::with_capacity(nodes.len());
-    let mut diagnostics: Vec<WidthDiag> = Vec::new();
+/// Generate width constraints for a flattened expression tree.
+pub fn generate_constraints(
+    nodes: &[FlatNode],
+    signals: &std::collections::HashMap<String, u32>,
+) -> ConstraintSet {
+    let mut constraints = Vec::new();
+    let mut diagnostics = Vec::new();
 
     for (i, node) in nodes.iter().enumerate() {
-        if i >= MAX_FLAT_NODES {
-            break;
-        }
-        let id = i as u32;
-
+        let node_id = i as u32;
         match node {
             FlatNode::Literal { value } => {
-                // Bool literals (0 or 1) get width 1; integers use min_bits.
-                let w = Width::min_bits_for(*value);
-                constraints.push(WidthConstraint::Fixed { node: id, width: w.0 });
+                let width = min_bits_for(*value);
+                constraints.push(WidthConstraint::Fixed { node: node_id, width });
             }
             FlatNode::Signal { name, .. } => {
-                let declared = lookup_signal_width(name, signals);
-                match declared {
-                    Some(w) => {
-                        constraints.push(WidthConstraint::Fixed { node: id, width: w });
+                if let Some(&width) = signals.get(name) {
+                    constraints.push(WidthConstraint::Fixed { node: node_id, width });
+                } else {
+                    diagnostics.push(WidthDiag::error(format!(
+                        "[E501] undeclared signal reference: '{}'", name
+                    )).with_code("E501").with_signal(name));
+                    // Fallback to width 1 to allow solver to continue.
+                    constraints.push(WidthConstraint::Fixed { node: node_id, width: 1 });
+                }
+            }
+            FlatNode::Unary { op, operand } => {
+                match op {
+                    crate::ast::types::UnaryOp::Not => {
+                        constraints.push(WidthConstraint::SameAs { node: node_id, source: *operand });
                     }
-                    None => {
-                        diagnostics.push(
-                            WidthDiag::error(format!(
-                                "[E501] signal '{}' has no declared width",
-                                name
-                            ))
-                            .with_code("E501")
-                            .with_signal(name),
-                        );
-                        // Default to 1 to allow solving to continue.
-                        constraints.push(WidthConstraint::Fixed { node: id, width: 1 });
+                    crate::ast::types::UnaryOp::Negate => {
+                        // Check signedness of operand to decide SameAs vs SameAsPlusOne
+                        let is_signed = match nodes.get(*operand as usize) {
+                            Some(FlatNode::Signal { signed, .. }) => *signed,
+                            Some(FlatNode::Prev { signed, .. }) => *signed,
+                            _ => false,
+                        };
+                        if is_signed {
+                            constraints.push(WidthConstraint::SameAs { node: node_id, source: *operand });
+                        } else {
+                            constraints.push(WidthConstraint::SameAsPlusOne { node: node_id, source: *operand });
+                        }
                     }
                 }
             }
-            FlatNode::Unary { op, operand } => match op {
-                UnaryOp::Not => {
-                    // Bitwise NOT preserves width.
-                    constraints.push(WidthConstraint::SameAs { node: id, source: *operand });
-                }
-                UnaryOp::Negate => {
-                    // Negate: unsigned operand needs +1 bit for two's complement,
-                    // signed operand preserves width.
-                    let operand_signed = is_operand_signed(*operand, nodes);
-                    if operand_signed {
-                        constraints.push(WidthConstraint::SameAs { node: id, source: *operand });
-                    } else {
-                        constraints
-                            .push(WidthConstraint::SameAsPlusOne { node: id, source: *operand });
-                    }
-                }
-            },
             FlatNode::Binary { op, left, right } => {
-                generate_binary_constraint(
-                    id,
-                    *op,
-                    *left,
-                    *right,
-                    nodes,
-                    &mut constraints,
-                    &mut diagnostics,
-                );
-            }
-            FlatNode::Prev { signal, signed: _, .. } => {
-                // Prev has the same width as the referenced signal.
-                let declared = lookup_signal_width(signal, signals);
-                match declared {
-                    Some(w) => {
-                        constraints.push(WidthConstraint::Fixed { node: id, width: w });
-                    }
-                    None => {
-                        diagnostics.push(
-                            WidthDiag::error(format!(
-                                "[E502] prev signal '{}' has no declared width",
-                                signal
-                            ))
-                            .with_code("E502")
-                            .with_signal(signal),
-                        );
-                        constraints.push(WidthConstraint::Fixed { node: id, width: 1 });
+                if *op == BinaryOp::Sub {
+                    // Unsigned subtraction may underflow due modular/wrapping semantics.
+                    // Emit info diagnostics when both operands are unsigned or literals.
+                    let left_node = nodes.get(*left as usize);
+                    let right_node = nodes.get(*right as usize);
+                    if let (Some(ln), Some(rn)) = (left_node, right_node) {
+                        if is_unsigned_node(ln) && is_unsigned_node(rn) {
+                            let left_val = literal_value(ln);
+                            let right_val = literal_value(rn);
+                            let should_emit = match (left_val, right_val) {
+                                (Some(l), Some(r)) => l < r,
+                                _ => true,
+                            };
+                            if should_emit {
+                                diagnostics.push(
+                                    WidthDiag::info("unsigned subtraction may underflow (wrapping semantics)")
+                                );
+                            }
+                        }
                     }
                 }
+
+                match op {
+                    BinaryOp::Add => {
+                        constraints.push(WidthConstraint::MaxPlusOne { node: node_id, left: *left, right: *right });
+                    }
+                    BinaryOp::Mul => {
+                        constraints.push(WidthConstraint::SumOf { node: node_id, left: *left, right: *right });
+                    }
+                    BinaryOp::Sub | BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
+                        constraints.push(WidthConstraint::MaxOf { node: node_id, left: *left, right: *right });
+                    }
+                    BinaryOp::Shl => {
+                        // Check if right is a literal for precision
+                        if let Some(FlatNode::Literal { value }) = nodes.get(*right as usize) {
+                            constraints.push(WidthConstraint::LeftPlusConst { 
+                                node: node_id, 
+                                left: *left, 
+                                shift_amount: *value as u32 
+                            });
+                        } else {
+                            constraints.push(WidthConstraint::LeftPlusMaxShift { node: node_id, left: *left });
+                        }
+                    }
+                    BinaryOp::Shr => {
+                        if let Some(FlatNode::Literal { value }) = nodes.get(*right as usize) {
+                            constraints.push(WidthConstraint::LeftMinusConst { 
+                                node: node_id, 
+                                left: *left, 
+                                shift_amount: *value as u32 
+                            });
+                        } else {
+                            constraints.push(WidthConstraint::SameAs { node: node_id, source: *left });
+                        }
+                    }
+                    BinaryOp::Eq | BinaryOp::Ne | BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
+                        constraints.push(WidthConstraint::Boolean { node: node_id });
+                    }
+                }
+            }
+            FlatNode::Prev { signal, .. } => {
+                if let Some(&width) = signals.get(signal) {
+                    constraints.push(WidthConstraint::Fixed { node: node_id, width });
+                } else {
+                    constraints.push(WidthConstraint::Fixed { node: node_id, width: 1 });
+                }
+            }
+            FlatNode::ArrayIndex { array, .. } => {
+                // ArrayIndex inherits width of the array element.
+                constraints.push(WidthConstraint::SameAs { node: node_id, source: *array });
+            }
+            FlatNode::FieldAccess { .. } => {
+                // FieldAccess width is determined during flattening via typeck.
+                // We use Fixed constraint here because flattening already resolved it.
+                if let FlatNode::FieldAccess { width, .. } = node {
+                    constraints.push(WidthConstraint::Fixed { node: node_id, width: *width });
+                }
+            }
+            FlatNode::ArrayLiteral { elements, .. } => {
+                constraints.push(WidthConstraint::SumAll { node: node_id, elements: elements.clone() });
+            }
+            FlatNode::StructLiteral { fields, .. } => {
+                let elements: Vec<u32> = fields.iter().map(|(_, id)| *id).collect();
+                constraints.push(WidthConstraint::SumAll { node: node_id, elements });
+            }
+            FlatNode::UnfoldIndex { name } => {
+                // UnfoldIndex should have been turned into a concrete signal by scope expansion.
+                // If it reaches constraint generation, emit a semantic-width diagnostic.
+                diagnostics.push(WidthDiag::error(format!(
+                    "[E506] unresolved UnfoldIndex '{}' reached width constraints", name
+                )).with_code("E506"));
+                constraints.push(WidthConstraint::Fixed { node: node_id, width: 32 });
             }
         }
     }
@@ -158,113 +209,29 @@ pub fn generate_constraints(nodes: &[FlatNode], signals: &[SignalDecl]) -> Const
     ConstraintSet { constraints, diagnostics }
 }
 
-/// Generate width constraint for a binary operation.
-///
-/// Split out to keep `generate_constraints` under 60 lines.
-fn generate_binary_constraint(
-    id: u32,
-    op: BinaryOp,
-    left: u32,
-    right: u32,
-    nodes: &[FlatNode],
-    constraints: &mut Vec<WidthConstraint>,
-    diagnostics: &mut Vec<WidthDiag>,
-) {
-    match op {
-        BinaryOp::Add => {
-            constraints.push(WidthConstraint::MaxPlusOne { node: id, left, right });
-        }
-        BinaryOp::Sub => {
-            constraints.push(WidthConstraint::MaxOf { node: id, left, right });
-            // Only emit underflow info for unsigned subtraction.
-            // Signed subtraction wraps correctly in two's complement.
-            let either_signed = is_operand_signed(left, nodes) || is_operand_signed(right, nodes);
-            if !either_signed {
-                let left_val = get_literal_value(left, nodes);
-                let right_val = get_literal_value(right, nodes);
-                let provably_safe = matches!((left_val, right_val), (Some(l), Some(r)) if l >= r);
-                if !provably_safe {
-                    diagnostics.push(WidthDiag::info(
-                        "unsigned subtraction may underflow (wrapping semantics)".to_string(),
-                    ));
-                }
-            }
-        }
-        BinaryOp::Mul => {
-            constraints.push(WidthConstraint::SumOf { node: id, left, right });
-        }
-        BinaryOp::Shl => {
-            // If shift amount is a constant literal, use exact width.
-            // Otherwise use worst-case (shift by 63).
-            let shift_const = get_literal_value(right, nodes);
-            match shift_const {
-                Some(amt) => {
-                    let clamped = amt.min(63) as u32;
-                    constraints.push(WidthConstraint::LeftPlusConst {
-                        node: id,
-                        left,
-                        shift_amount: clamped,
-                    });
-                }
-                None => {
-                    constraints.push(WidthConstraint::LeftPlusMaxShift { node: id, left });
-                }
-            }
-        }
-        BinaryOp::Shr => {
-            // If shift amount is a constant, narrow precisely: max(1, w(left) - k).
-            // If variable, use SameAs (conservative: shift of 0 needs full width).
-            let shift_const = get_literal_value(right, nodes);
-            match shift_const {
-                Some(amt) => {
-                    let clamped = amt.min(63) as u32;
-                    constraints.push(WidthConstraint::LeftMinusConst {
-                        node: id,
-                        left,
-                        shift_amount: clamped,
-                    });
-                }
-                None => {
-                    constraints.push(WidthConstraint::SameAs { node: id, source: left });
-                }
-            }
-        }
-        BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
-            constraints.push(WidthConstraint::MaxOf { node: id, left, right });
-        }
-        BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge | BinaryOp::Eq | BinaryOp::Ne => {
-            constraints.push(WidthConstraint::Boolean { node: id });
-        }
+/// Calculate minimum bits required to represent an unsigned integer.
+fn min_bits_for(v: u64) -> u32 {
+    if v == 0 { 1 } else { 64 - v.leading_zeros() }
+}
+
+/// Returns true if the flattened node is unsigned (either literal or unsigned signal/prev).
+fn is_unsigned_node(node: &FlatNode) -> bool {
+    match node {
+        FlatNode::Literal { .. } => true,
+        FlatNode::Signal { signed, .. } => !*signed,
+        FlatNode::Prev { signed, .. } => !*signed,
+        FlatNode::ArrayIndex { signed, .. } => !*signed,
+        FlatNode::FieldAccess { signed, .. } => !*signed,
+        FlatNode::ArrayLiteral { .. } => true,
+        FlatNode::StructLiteral { .. } => true,
+        _ => false,
     }
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/// Look up a signal's declared width from the signal declarations.
-/// Returns `None` if the signal is not found.
-fn lookup_signal_width(name: &str, signals: &[SignalDecl]) -> Option<u32> {
-    for s in signals {
-        if s.name == name {
-            return Some(s.ty.signal_type().width());
-        }
-    }
-    None
-}
-
-/// If the node at `idx` is a Literal, return its value; else None.
-fn get_literal_value(idx: u32, nodes: &[FlatNode]) -> Option<u64> {
-    nodes.get(idx as usize).and_then(|n| match n {
+/// Get literal value if this node is a literal constant.
+fn literal_value(node: &FlatNode) -> Option<u64> {
+    match node {
         FlatNode::Literal { value } => Some(*value),
         _ => None,
-    })
-}
-
-/// Check whether the node at `idx` is a signed signal or prev.
-fn is_operand_signed(idx: u32, nodes: &[FlatNode]) -> bool {
-    matches!(
-        nodes.get(idx as usize),
-        Some(FlatNode::Signal { signed: true, .. }) | Some(FlatNode::Prev { signed: true, .. })
-    )
+    }
 }

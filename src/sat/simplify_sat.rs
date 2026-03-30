@@ -164,7 +164,8 @@ fn is_boolean_expr(expr: &Expr) -> bool {
             Expr::ArrayIndex { .. }
             | Expr::FieldAccess { .. }
             | Expr::ArrayLiteral(_)
-            | Expr::StructLiteral { .. } => return false,
+            | Expr::StructLiteral { .. }
+            | Expr::UnfoldIndex(_) => return false,
         }
     }
     true

@@ -49,6 +49,13 @@ fn sub(left: Expr, right: Expr) -> Expr {
     Expr::Binary { op: BinaryOp::Sub, left: Box::new(left), right: Box::new(right) }
 }
 
+fn signal_map(signals: &[SignalDecl]) -> std::collections::HashMap<String, u32> {
+    signals
+        .iter()
+        .map(|s| (s.name.clone(), s.ty.signal_type().width()))
+        .collect()
+}
+
 fn add(left: Expr, right: Expr) -> Expr {
     Expr::Binary { op: BinaryOp::Add, left: Box::new(left), right: Box::new(right) }
 }
@@ -393,7 +400,7 @@ fn same_as_plus_one_constraint_generated_for_unsigned_negate() {
     let signals = vec![sig("x", SignalType::Unsigned(8))];
     let expr = negate(signal("x"));
     let nodes = width::flatten::flatten_expr(&expr, &signals).unwrap();
-    let cset = width::constraint::generate_constraints(&nodes, &signals);
+    let cset = width::constraint::generate_constraints(&nodes, &signal_map(&signals));
     // Should have a SameAsPlusOne constraint (not SameAs) for the negate node
     let has_plus_one = cset
         .constraints
@@ -407,7 +414,7 @@ fn same_as_constraint_generated_for_signed_negate() {
     let signals = vec![sig("x", SignalType::Signed(8))];
     let expr = negate(signal("x"));
     let nodes = width::flatten::flatten_expr(&expr, &signals).unwrap();
-    let cset = width::constraint::generate_constraints(&nodes, &signals);
+    let cset = width::constraint::generate_constraints(&nodes, &signal_map(&signals));
     // Should have a SameAs constraint (not SameAsPlusOne) for the negate node
     let has_same_as = cset
         .constraints

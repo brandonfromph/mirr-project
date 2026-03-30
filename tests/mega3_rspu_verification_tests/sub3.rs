@@ -40,7 +40,7 @@ fn e10_sim_cert_verified_starts_false() {
 
 #[test]
 fn e6_example_autonomous_vehicle_compiles_to_rspu() {
-    let src = include_str!("../examples/autonomous_vehicle.mirr");
+    let src = include_str!("../../examples/autonomous_vehicle.mirr");
     let result = pipeline_with_rspu(src).expect("autonomous_vehicle must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -48,7 +48,7 @@ fn e6_example_autonomous_vehicle_compiles_to_rspu() {
 
 #[test]
 fn e6_example_fir_filter_compiles_to_rspu() {
-    let src = include_str!("../examples/fir_filter.mirr");
+    let src = include_str!("../../examples/fir_filter.mirr");
     let result = pipeline_with_rspu(src).expect("fir_filter must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -56,7 +56,7 @@ fn e6_example_fir_filter_compiles_to_rspu() {
 
 #[test]
 fn e6_example_flight_controller_compiles_to_rspu() {
-    let src = include_str!("../examples/flight_controller.mirr");
+    let src = include_str!("../../examples/flight_controller.mirr");
     let result = pipeline_with_rspu(src).expect("flight_controller must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -64,7 +64,7 @@ fn e6_example_flight_controller_compiles_to_rspu() {
 
 #[test]
 fn e6_example_flight_controller_signed_compiles_to_rspu() {
-    let src = include_str!("../examples/flight_controller_signed.mirr");
+    let src = include_str!("../../examples/flight_controller_signed.mirr");
     // This example has a guard condition that cannot be lowered to hardware,
     // so the R-SPU backend correctly rejects it with a TemporalCompilationError.
     let result = pipeline_with_rspu(src);
@@ -76,7 +76,7 @@ fn e6_example_flight_controller_signed_compiles_to_rspu() {
 
 #[test]
 fn e6_example_icu_monitor_compiles_to_rspu() {
-    let src = include_str!("../examples/icu_monitor.mirr");
+    let src = include_str!("../../examples/icu_monitor.mirr");
     let result = pipeline_with_rspu(src).expect("icu_monitor must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -84,7 +84,7 @@ fn e6_example_icu_monitor_compiles_to_rspu() {
 
 #[test]
 fn e6_example_industrial_safety_compiles_to_rspu() {
-    let src = include_str!("../examples/industrial_safety.mirr");
+    let src = include_str!("../../examples/industrial_safety.mirr");
     let result = pipeline_with_rspu(src).expect("industrial_safety must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -92,7 +92,7 @@ fn e6_example_industrial_safety_compiles_to_rspu() {
 
 #[test]
 fn e6_example_multi_guard_monitor_compiles_to_rspu() {
-    let src = include_str!("../examples/multi_guard_monitor.mirr");
+    let src = include_str!("../../examples/multi_guard_monitor.mirr");
     let result = pipeline_with_rspu(src).expect("multi_guard_monitor must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -100,7 +100,7 @@ fn e6_example_multi_guard_monitor_compiles_to_rspu() {
 
 #[test]
 fn e6_example_neonatal_respirator_compiles_to_rspu() {
-    let src = include_str!("../examples/neonatal_respirator.mirr");
+    let src = include_str!("../../examples/neonatal_respirator.mirr");
     let result = pipeline_with_rspu(src).expect("neonatal_respirator must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -108,7 +108,7 @@ fn e6_example_neonatal_respirator_compiles_to_rspu() {
 
 #[test]
 fn e6_example_pattern_usage_compiles_to_rspu() {
-    let src = include_str!("../examples/pattern_usage.mirr");
+    let src = include_str!("../../examples/pattern_usage.mirr");
     let result = pipeline_with_rspu(src).expect("pattern_usage must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -116,7 +116,7 @@ fn e6_example_pattern_usage_compiles_to_rspu() {
 
 #[test]
 fn e6_example_safety_property_compiles_to_rspu() {
-    let src = include_str!("../examples/safety_property.mirr");
+    let src = include_str!("../../examples/safety_property.mirr");
     let result = pipeline_with_rspu(src).expect("safety_property must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -124,7 +124,7 @@ fn e6_example_safety_property_compiles_to_rspu() {
 
 #[test]
 fn e6_example_shift_register_guard_compiles_to_rspu() {
-    let src = include_str!("../examples/shift_register_guard.mirr");
+    let src = include_str!("../../examples/shift_register_guard.mirr");
     let result = pipeline_with_rspu(src).expect("shift_register_guard must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");
@@ -132,7 +132,7 @@ fn e6_example_shift_register_guard_compiles_to_rspu() {
 
 #[test]
 fn e6_example_tmr_sensor_fusion_compiles_to_rspu() {
-    let src = include_str!("../examples/tmr_sensor_fusion.mirr");
+    let src = include_str!("../../examples/tmr_sensor_fusion.mirr");
     let result = pipeline_with_rspu(src).expect("tmr_sensor_fusion must compile to R-SPU");
     let rspu = result.rspu_program.as_ref().expect("R-SPU program must be present");
     assert!(!rspu.instructions.is_empty(), "Must have instructions");

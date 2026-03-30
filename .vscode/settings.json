@@ -174,5 +174,15 @@
   "latex-workshop.message.warning.show": false,
   "latex-workshop.message.information.show": false,
   "latex-workshop.message.badbox.show": false,
-  "python-envs.defaultEnvManager": "ms-python.python:system"
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "github.copilot-chat.enable": true,
+  "github.copilot-chat.useLocalTooling": true,
+  "github.copilot-chat.customAgents": [".agent.md"],
+  "github.copilot-chat.agentSelection": "custom",
+  "github.copilot-chat.autoSuggest": true,
+  "github.copilot-chat.enableAnswers": true,
+  "github.copilot-chat.experimentalFeatures": {
+    "kbIntegration": true,
+    "scopedKnowledge": true
+  }
 }

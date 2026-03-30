@@ -134,23 +134,55 @@ impl ExprParser {
         // Parse prefix / atom.
         let mut lhs = self.parse_prefix(depth)?;
 
-        // Parse infix operators with sufficient binding power.
-        while let Some(tok) = self.peek() {
-            let op = token_to_binop(tok);
-            let Some(op) = op else {
-                break; // Not an infix operator; stop.
-            };
+// Parse indexed and field access with higher precedence than binary ops.
+            loop {
+                if let Some(Token::LBracket) = self.peek() {
+                    self.advance();
+                    let index_expr = self.parse_expr(0, depth + 1)?;
+                    match self.advance() {
+                        Some(Token::RBracket) => {
+                            lhs = Expr::ArrayIndex { array: Box::new(lhs), index: Box::new(index_expr) };
+                            continue;
+                        }
+                        _ => {
+                            return Err(MirrError::parse_error("[E178] Expected closing ']' in array index."));
+                        }
+                    }
+                }
 
-            let (left_bp, right_bp) = infix_binding_power(&op);
-            if left_bp < min_bp {
-                break;
+                if let Some(Token::Dot) = self.peek() {
+                    self.advance();
+                    match self.advance() {
+                        Some(Token::Ident(field)) => {
+                            lhs = Expr::FieldAccess { object: Box::new(lhs), field: field.clone() };
+                            continue;
+                        }
+                        _ => {
+                            return Err(MirrError::parse_error("[E179] Expected field name after '.'."));
+                    }
+                }
             }
 
-            // Consume the operator token.
-            self.advance();
+            // Parse infix operators with sufficient binding power.
+            if let Some(tok) = self.peek() {
+                let op = token_to_binop(tok);
+                let Some(op) = op else {
+                    break; // Not an infix operator; stop.
+                };
 
-            let rhs = self.parse_expr(right_bp, depth + 1)?;
-            lhs = Expr::Binary { op, left: Box::new(lhs), right: Box::new(rhs) };
+                let (left_bp, right_bp) = infix_binding_power(&op);
+                if left_bp < min_bp {
+                    break;
+                }
+
+                // Consume the operator token.
+                self.advance();
+
+                let rhs = self.parse_expr(right_bp, depth + 1)?;
+                lhs = Expr::Binary { op, left: Box::new(lhs), right: Box::new(rhs) };
+                continue;
+            }
+            break;
         }
 
         Ok(lhs)
@@ -167,13 +199,80 @@ impl ExprParser {
 
         let tok = self
             .advance()
+            .cloned()
             .ok_or_else(|| MirrError::parse_error("[E173] Unexpected end of expression."))?;
 
         match tok {
             Token::True => Ok(Expr::Literal(LiteralValue::Bool(true))),
             Token::False => Ok(Expr::Literal(LiteralValue::Bool(false))),
-            Token::Integer(n) => Ok(Expr::Literal(LiteralValue::Integer(*n))),
-            Token::Ident(name) => Ok(Expr::Signal(name.to_string())),
+            Token::Integer(n) => Ok(Expr::Literal(LiteralValue::Integer(n))),
+            Token::Ident(name) => {
+                if let Some(Token::LBrace) = self.peek() {
+                    self.advance(); // consume '{'
+                    let mut fields: Vec<(String, Expr)> = Vec::new();
+                    loop {
+                        if let Some(Token::RBrace) = self.peek() {
+                            self.advance();
+                            break;
+                        }
+
+                        let field_name = match self.advance() {
+                            Some(Token::Ident(n)) => n.clone(),
+                            Some(t) => {
+                                return Err(MirrError::parse_error(format!(
+                                    "[E181] Unexpected token in struct literal field name: {t:?}"
+                                )));
+                            }
+                            None => {
+                                return Err(MirrError::parse_error(
+                                    "[E181] Unexpected end of struct literal."));
+                            }
+                        };
+
+                        match self.advance() {
+                            Some(Token::Colon) => {}
+                            Some(t) => {
+                                return Err(MirrError::parse_error(format!(
+                                    "[E181] Expected ':' after field name in struct literal, found: {t:?}"
+                                )));
+                            }
+                            None => {
+                                return Err(MirrError::parse_error(
+                                    "[E181] Unexpected end of struct literal after field name."));
+                            }
+                        }
+
+                        let value = self.parse_expr(0, depth + 1)?;
+                        fields.push((field_name, value));
+
+                        match self.peek() {
+                            Some(Token::Comma) => {
+                                self.advance();
+                                continue;
+                            }
+                            Some(Token::RBrace) => {
+                                self.advance();
+                                break;
+                            }
+                            Some(t) => {
+                                return Err(MirrError::parse_error(format!(
+                                    "[E181] Expected ',' or '}}' in struct literal, found: {t:?}"
+                                )));
+                            }
+                            None => {
+                                return Err(MirrError::parse_error(
+                                    "[E181] Unexpected end of struct literal."));
+                            }
+                        }
+                    }
+                    Ok(Expr::StructLiteral {
+                        name: name.to_string(),
+                        fields,
+                    })
+                } else {
+                    Ok(Expr::Signal(name.to_string()))
+                }
+            }
             Token::Bang => {
                 // Unary not: bind tighter than any binary operator.
                 let operand = self.parse_prefix(depth + 1)?;
@@ -190,6 +289,28 @@ impl ExprParser {
                     Some(Token::RParen) => Ok(inner),
                     _ => Err(MirrError::parse_error("[E175] Expected closing ')' in expression.")),
                 }
+            }
+            Token::LBracket => {
+                // Array literal parser
+                let mut elements = Vec::new();
+                if let Some(Token::RBracket) = self.peek() {
+                    self.advance();
+                    return Ok(Expr::ArrayLiteral(elements));
+                }
+                loop {
+                    let elem = self.parse_expr(0, depth + 1)?;
+                    elements.push(elem);
+                    match self.advance() {
+                        Some(Token::Comma) => continue,
+                        Some(Token::RBracket) => break,
+                        _ => {
+                            return Err(MirrError::parse_error(
+                                "[E177] Expected ',' or ']' in array literal.",
+                            ))
+                        }
+                    }
+                }
+                Ok(Expr::ArrayLiteral(elements))
             }
             other => Err(MirrError::parse_error(format!(
                 "[E174] Unexpected token at start of expression: {:?}",

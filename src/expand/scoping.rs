@@ -112,6 +112,7 @@ pub(super) fn check_expr_no_internal_refs(
         let name = match node {
             Expr::Signal(n) => Some(n.as_str()),
             Expr::Prev { signal, .. } => Some(signal.as_str()),
+            Expr::UnfoldIndex(name) => Some(name.as_str()),
             Expr::Literal(_) => None,
             Expr::Unary { operand, .. } => {
                 stack.push(operand);
@@ -183,6 +184,7 @@ pub(super) fn check_expr_cross_expansion(
         let name = match node {
             Expr::Signal(n) => Some(n.as_str()),
             Expr::Prev { signal, .. } => Some(signal.as_str()),
+            Expr::UnfoldIndex(name) => Some(name.as_str()),
             Expr::Literal(_) => None,
             Expr::Unary { operand, .. } => {
                 stack.push(operand);

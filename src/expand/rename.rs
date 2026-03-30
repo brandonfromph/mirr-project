@@ -137,6 +137,11 @@ pub(super) fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, Stri
                     stack.push(v);
                 }
             }
+            Expr::UnfoldIndex(name) => {
+                if let Some(new_name) = rename.get(name.as_str()) {
+                    *name = new_name.clone();
+                }
+            }
         }
     }
 }

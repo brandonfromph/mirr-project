@@ -433,5 +433,3 @@ fn e5_sim_nop_advances_pc() {
     assert_eq!(sim.pc, 1, "PC must advance after NOP");
     assert_eq!(sim.cycle, 1, "Cycle must advance after NOP");
 }
-
-#[test]

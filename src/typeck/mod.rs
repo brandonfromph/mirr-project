@@ -224,6 +224,9 @@ fn infer_expr_type(
                     i += 1;
                 }
             }
+            Expr::UnfoldIndex(_) => {
+                // Meta-stage artifact is not a typed expression in this pass.
+            }
         }
     }
 
@@ -295,7 +298,8 @@ fn infer_expr_type(
             Expr::ArrayIndex { .. }
             | Expr::FieldAccess { .. }
             | Expr::ArrayLiteral(_)
-            | Expr::StructLiteral { .. } => SignalType::Unsigned(32),
+            | Expr::StructLiteral { .. }
+            | Expr::UnfoldIndex(_) => SignalType::Unsigned(32),
         };
         types.insert(ptr, ty);
     }

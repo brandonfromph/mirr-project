@@ -52,6 +52,20 @@ pub enum Token {
     LParen,
     /// `)` — right parenthesis.
     RParen,
+    /// `{` — left brace.
+    LBrace,
+    /// `}` — right brace.
+    RBrace,
+    /// `[` — left bracket.
+    LBracket,
+    /// `]` — right bracket.
+    RBracket,
+    /// `,` — element separator.
+    Comma,
+    /// `:` — key/value separator in struct literals.
+    Colon,
+    /// `.` — field access separator.
+    Dot,
 }
 
 /// Tokenize an expression string into a sequence of tokens.
@@ -183,6 +197,13 @@ fn match_single_char_operator(b: u8) -> Option<Token> {
         b'>' => Some(Token::Gt),
         b'(' => Some(Token::LParen),
         b')' => Some(Token::RParen),
+        b'{' => Some(Token::LBrace),
+        b'}' => Some(Token::RBrace),
+        b'[' => Some(Token::LBracket),
+        b']' => Some(Token::RBracket),
+        b',' => Some(Token::Comma),
+        b':' => Some(Token::Colon),
+        b'.' => Some(Token::Dot),
         _ => None,
     }
 }

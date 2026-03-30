@@ -360,6 +360,9 @@ fn convert_expr(expr: &Expr) -> SExpr {
                         work_stack.push(ConvertWork::Process(&fields[i].1));
                     }
                 }
+                Expr::UnfoldIndex(name) => {
+                    result_stack.push(SExpr::list(vec![SExpr::sym("unfold-index"), SExpr::str_val(name)]));
+                }
             },
             ConvertWork::BuildUnary(op_sym) => {
                 let operand = result_stack.pop().unwrap_or(SExpr::Bool(false));

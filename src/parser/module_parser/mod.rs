@@ -88,6 +88,16 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
     skip_empty_and_comments(&lines, &mut index);
 
+    while index < lines.len() {
+        let line = lines[index].trim();
+        if line.starts_with("struct ") || line.starts_with("interface ") {
+            skip_top_level_block(&lines, &mut index)?;
+            skip_empty_and_comments(&lines, &mut index);
+            continue;
+        }
+        break;
+    }
+
     if index >= lines.len() {
         return Err(MirrError::parse_error("[E101] MIRR source is empty."));
     }
@@ -154,6 +164,193 @@ fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> 
     Ok(ImportDecl { path: path_part, alias, span })
 }
 
+fn split_top_level_statements(body: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut brace_depth: i32 = 0;
+    let mut current = String::new();
+    let mut chars = body.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '{' => {
+                brace_depth += 1;
+                current.push(c);
+            }
+            '}' => {
+                brace_depth = brace_depth.saturating_sub(1);
+                current.push(c);
+
+                if brace_depth == 0 {
+                    // Flush completed block when top-level block closes.
+                    let stmt = current.trim();
+                    if !stmt.is_empty() {
+                        result.push(stmt.to_string());
+                    }
+                    current.clear();
+
+                    // Skip whitespace before next statement start.
+                    while let Some(next_c) = chars.peek() {
+                        if next_c.is_whitespace() {
+                            chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+
+                    continue;
+                }
+            }
+            ';' if brace_depth == 0 => {
+                let stmt = current.trim();
+                if !stmt.is_empty() {
+                    result.push(stmt.to_string());
+                }
+                current.clear();
+                continue;
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+
+    let stmt = current.trim();
+    if !stmt.is_empty() {
+        result.push(stmt.to_string());
+    }
+
+    result
+}
+
+fn skip_top_level_block(lines: &[&str], index: &mut usize) -> Result<(), MirrError> {
+    let mut depth = 0i32;
+    while *index < lines.len() {
+        let line = lines[*index];
+        for c in line.chars() {
+            if c == '{' {
+                depth += 1;
+            } else if c == '}' {
+                depth -= 1;
+            }
+        }
+        *index += 1;
+        if depth <= 0 {
+            return Ok(());
+        }
+    }
+    Err(MirrError::parse_error("[E106] Unclosed block declaration."))
+}
+
+fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrError> {
+    let trimmed = stmt.trim();
+    let after_guard = trimmed.strip_prefix("guard ").ok_or_else(|| {
+        MirrError::parse_error("[E120] Malformed inline guard declaration.")
+    })?;
+
+    let open = after_guard.find('{').ok_or_else(|| {
+        MirrError::parse_error("[E120] Malformed inline guard declaration: missing '{'.")
+    })?;
+    let close = after_guard.rfind('}').ok_or_else(|| {
+        MirrError::parse_error("[E132] Malformed inline guard declaration: missing '}'.")
+    })?;
+
+    let name = after_guard[..open].trim();
+    if name.is_empty() {
+        return Err(MirrError::parse_error("[E121] Guard name cannot be empty."));
+    }
+
+    let body = after_guard[open + 1..close].trim();
+    let body = body.strip_suffix(';').unwrap_or(body).trim();
+
+    let when_prefix = "when ";
+    let for_keyword = " for ";
+    let cycles_suffix = " cycles";
+
+    if !body.starts_with(when_prefix) || !body.contains(for_keyword) {
+        return Err(MirrError::parse_error("[E123] Invalid inline guard body."));
+    }
+
+    let after_when = &body[when_prefix.len()..];
+    let for_pos = after_when.find(for_keyword).ok_or_else(|| {
+        MirrError::parse_error("[E123] Invalid inline guard body: missing 'for'.")
+    })?;
+
+    let condition = after_when[..for_pos].trim();
+    let after_for = after_when[for_pos + for_keyword.len()..].trim();
+    let cycles_text = after_for.strip_suffix(cycles_suffix).unwrap_or(after_for).trim();
+    let cycles: u64 = cycles_text.parse().map_err(|_| {
+        MirrError::parse_error(format!("[E130] Invalid cycle count in guard '{}': {}", name, cycles_text))
+    })?;
+
+    let lines = vec![
+        format!("guard {name} {{"),
+        format!("when {condition}"),
+        format!("for {cycles} cycles"),
+        "}".to_string(),
+    ];
+    let line_refs: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+    let mut idx = 0;
+    guard_reflex::parse_guard(&line_refs, &mut idx)
+}
+
+fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrError> {
+    let trimmed = stmt.trim();
+    let after_reflex = trimmed.strip_prefix("reflex ").ok_or_else(|| {
+        MirrError::parse_error("[E138] Malformed inline reflex declaration.")
+    })?;
+
+    let open = after_reflex.find('{').ok_or_else(|| {
+        MirrError::parse_error("[E138] Malformed inline reflex declaration: missing '{'.")
+    })?;
+    let close = after_reflex.rfind('}').ok_or_else(|| {
+        MirrError::parse_error("[E145] Malformed inline reflex declaration: missing '}'.")
+    })?;
+
+    let header = after_reflex[..open].trim();
+    let body = after_reflex[open + 1..close].trim();
+
+    let mut lines = vec![format!("reflex {header} {{")];
+
+    for top_stmt in split_top_level_statements(body) {
+        let top_stmt = top_stmt.trim();
+        if top_stmt.is_empty() {
+            continue;
+        }
+
+        if top_stmt.starts_with("on ") {
+            let on_open = top_stmt.find('{').ok_or_else(|| {
+                MirrError::parse_error("[E140] Malformed on clause in inline reflex.")
+            })?;
+            let on_close = top_stmt.rfind('}').ok_or_else(|| {
+                MirrError::parse_error("[E140] Malformed on clause in inline reflex: missing '}'.")
+            })?;
+
+            let on_header = top_stmt[..on_open].trim();
+            let on_body = top_stmt[on_open + 1..on_close].trim();
+
+            lines.push(format!("{on_header} {{"));
+            for assign in split_top_level_statements(on_body) {
+                let assign = assign.trim();
+                if assign.is_empty() {
+                    continue;
+                }
+                lines.push(format!("{assign};"));
+            }
+            lines.push("}".to_string());
+        } else {
+            return Err(MirrError::parse_error(
+                "[E140] Inline reflex must contain an 'on' clause."
+            ));
+        }
+    }
+
+    lines.push("}".to_string());
+
+    let line_refs: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+    let mut idx = 0;
+    guard_reflex::parse_reflex(&line_refs, &mut idx)
+}
+
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {
     if *index >= lines.len() {
         return Err(MirrError::parse_error(
@@ -205,25 +402,30 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
         // Remove trailing '}' if present.
         let body_content = inline_body.strip_suffix('}').unwrap_or(inline_body).trim();
         if !body_content.is_empty() {
-            // Split by ';' and process each statement.
-            for stmt in body_content.split(';') {
-                let stmt = stmt.trim();
-                if stmt.is_empty() {
+            // Split top-level statements while keeping block bodies intact.
+            for stmt in split_top_level_statements(body_content) {
+                let stmt_trimmed = stmt.trim();
+                if stmt_trimmed.is_empty() {
                     continue;
                 }
-                // Reconstruct the statement with ';' for parsing.
-                let full_stmt = format!("{stmt};");
-                if stmt.starts_with("signal ") {
+                if stmt_trimmed.starts_with("signal ") {
+                    let full_stmt = format!("{stmt_trimmed};");
                     let signal = parse_signal(&full_stmt, module_start)?;
                     module.signals.push(signal);
-                } else if is_pattern_call_line(&full_stmt) {
-                    let mut call = parse_pattern_call(&full_stmt)?;
+                } else if stmt_trimmed.starts_with("guard ") {
+                    let guard = parse_inline_guard(stmt_trimmed)?;
+                    module.guards.push(guard);
+                } else if stmt_trimmed.starts_with("reflex ") {
+                    let reflex = parse_inline_reflex(stmt_trimmed)?;
+                    module.reflexes.push(reflex);
+                } else if is_pattern_call_line(stmt_trimmed) {
+                    let mut call = parse_pattern_call(stmt_trimmed)?;
                     call.span = Some(Span::full_line(module_start as u32));
                     module.pattern_calls.push(call);
                 } else {
                     return Err(MirrError::parse_error(format!(
-                        "[E107] Unexpected statement inside module '{}': {}",
-                        module.name, stmt
+                        "[E107] Unexpected statement inside module '{}': {stmt_trimmed}",
+                        module.name
                     ))
                     .with_span(Some(Span::full_line(module_start as u32))));
                 }

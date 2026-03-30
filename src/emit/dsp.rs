@@ -110,6 +110,9 @@ fn expr_contains_mul_bounded(expr: &Expr, count: &mut usize) -> bool {
             }
             false
         }
+        Expr::UnfoldIndex(_) => {
+            unreachable!("UnfoldIndex reached DSP analysis stage")
+        }
     }
 }
 

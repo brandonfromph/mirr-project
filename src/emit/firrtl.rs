@@ -467,6 +467,7 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
                 format!("cat({})", parts.join(", "))
             }
         }
+        Expr::UnfoldIndex(name) => unreachable!("UnfoldIndex '{}' reached FIRRTL emit", name),
     }
 }
 

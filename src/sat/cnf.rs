@@ -198,6 +198,11 @@ pub fn expr_to_cnf(expr: &Expr) -> Option<CnfFormula> {
                     let v = formula.alloc_var()?;
                     var_stack.push(v);
                 }
+                Expr::UnfoldIndex(_) => {
+                    // Unresolved meta-stage index is treated as an opaque variable.
+                    let v = formula.alloc_var()?;
+                    var_stack.push(v);
+                }
             },
             WorkItem::CombineNot => {
                 let a = var_stack.pop()?;

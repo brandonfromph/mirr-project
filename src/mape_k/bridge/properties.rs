@@ -111,6 +111,7 @@ fn lower_expr_to_predicate(expr: &Expr) -> Result<SignalPredicate, String> {
         }
         Expr::Literal(_) => Err("bare literal cannot be a signal predicate".to_string()),
         Expr::Prev { signal, .. } => Ok(SignalPredicate::IsTrue(signal.clone())),
+        Expr::UnfoldIndex(_) => Err("E506: UnfoldIndex reached analysis stage unresolved".to_string()),
         Expr::ArrayIndex { .. }
         | Expr::FieldAccess { .. }
         | Expr::ArrayLiteral(_)
@@ -188,6 +189,9 @@ pub(super) fn extract_signal_name(expr: &Expr) -> Result<String, String> {
                 if let Some((_, first_val)) = fields.first() {
                     stack.push(first_val);
                 }
+            }
+            Expr::UnfoldIndex(_) => {
+                // Meta-stage artifact; not a signal reference.
             }
         }
     }

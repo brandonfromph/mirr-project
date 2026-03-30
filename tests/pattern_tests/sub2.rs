@@ -1,5 +1,29 @@
 use super::*;
 
+#[test]
+fn expanded_guard_cycles_should_be_preserved() {
+    let src = r#"
+def simple(s: signal in bool) {
+    reflect {
+        guard check {
+            when ${s}
+            for 3 cycles;
+        }
+    }
+}
+module m {
+    signal sensor: in bool;
+    simple(sensor);
+}
+"#;
+    let result = pipeline_ok(src);
+    let expanded_guard = result
+        .program
+        .module
+        .guards
+        .iter()
+        .find(|g| g.name.contains("check"))
+        .expect("Should find expanded guard");
     assert_eq!(expanded_guard.cycles, 3);
 }
 
@@ -288,7 +312,7 @@ module m {
 fn depth_limit_exceeded_pinned_message() {
     // Verify the exact pinned message format exists in the expansion code.
     let expected = "expansion depth limit";
-    let source_code = include_str!("../src/expand/mod.rs");
+    let source_code = include_str!("../../src/expand/mod.rs");
     assert!(
         source_code.contains(expected),
         "expand/mod.rs must contain the pinned depth limit message"
@@ -306,7 +330,7 @@ fn depth_limit_exceeded_pinned_message() {
 #[test]
 fn internal_signal_scoping_pinned_message_format() {
     let expected = "is internal to pattern";
-    let source_code = include_str!("../src/expand/scoping.rs");
+    let source_code = include_str!("../../src/expand/scoping.rs");
     assert!(
         source_code.contains(expected),
         "expand/scoping.rs must contain the internal signal scoping message"
@@ -362,7 +386,7 @@ module m {
 
 #[test]
 fn cross_expansion_internal_refs_checked() {
-    let source_code = include_str!("../src/expand/scoping.rs");
+    let source_code = include_str!("../../src/expand/scoping.rs");
     assert!(
         source_code.contains("check_expr_cross_expansion"),
         "expand/scoping.rs must implement cross-expansion checking"

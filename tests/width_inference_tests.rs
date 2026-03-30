@@ -175,7 +175,7 @@ fn signal_bool_has_width_1() {
 #[test]
 fn signal_undeclared_produces_error() {
     let r = infer(&signal("missing"), &[]);
-    assert!(has_error_containing(&r, "signal 'missing' has no declared width"));
+    assert!(has_error_containing(&r, "undeclared signal reference: 'missing'"));
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn signal_undeclared_exact_diagnostic_text() {
     let r = infer(&signal("ghost"), &[]);
     let errs = error_messages(&r);
     assert_eq!(errs.len(), 1);
-    assert_eq!(errs[0], "[E501] signal 'ghost' has no declared width");
+    assert_eq!(errs[0], "[E501] undeclared signal reference: 'ghost'");
 }
 
 // ===========================================================================

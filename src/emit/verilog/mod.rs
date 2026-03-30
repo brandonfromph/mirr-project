@@ -229,5 +229,6 @@ fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
                 .collect();
             format!("{}'{{{}}}", name, parts.join(", "))
         }
+        Expr::UnfoldIndex(name) => unreachable!("UnfoldIndex '{}' reached Verilog emitter", name),
     }
 }

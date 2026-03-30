@@ -178,7 +178,8 @@ pub fn sym_eval_expr(expr: &Expr, state: &SymState) -> SymValue {
                 Expr::ArrayIndex { .. }
                 | Expr::FieldAccess { .. }
                 | Expr::ArrayLiteral(_)
-                | Expr::StructLiteral { .. } => {
+                | Expr::StructLiteral { .. }
+                | Expr::UnfoldIndex(_) => {
                     values.push(SymValue::Top);
                 }
             },

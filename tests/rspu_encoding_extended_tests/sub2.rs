@@ -1,11 +1,5 @@
 use super::*;
 
-                &format!("TrapIf cond=R{}, code={}", cond_vals[i], code_vals[j]),
-            );
-        }
-    }
-}
-
 #[test]
 fn test_mode_switch_parametric() {
     let mode_vals: [u8; 8] = [0, 1, 2, 5, 10, 50, 128, 255];

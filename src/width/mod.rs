@@ -77,7 +77,16 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
     let node_count = flat_nodes.len();
 
     // Step 2: Generate constraints.
-    let cset = constraint::generate_constraints(&flat_nodes, signals);
+    // Convert signal declarations to a name->width map for the constraint generator API.
+    let signal_widths: std::collections::HashMap<String, u32> = signals
+        .iter()
+        .map(|s| {
+            let width = s.ty.signal_type().width();
+            (s.name.clone(), width)
+        })
+        .collect();
+
+    let cset = constraint::generate_constraints(&flat_nodes, &signal_widths);
     let mut all_diags = cset.diagnostics;
 
     // Step 3: Solve. solver::validate_widths already emits hard errors for

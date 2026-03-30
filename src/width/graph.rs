@@ -141,6 +141,9 @@ fn collect_refs_with_ops(expr: &Expr) -> Vec<RefWithOps> {
                     i += 1;
                 }
             }
+            Expr::UnfoldIndex(_) => {
+                // Unresolved meta-stage index has no signal refs.
+            }
         }
     }
 

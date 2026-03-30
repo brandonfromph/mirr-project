@@ -46,6 +46,30 @@ fn default_annotations() -> TypeAnnotations {
     TypeAnnotations::default()
 }
 
+fn make_signal(name: &str, kind: SignalKind, core: SignalType) -> SignalDecl {
+    SignalDecl {
+        name: name.to_string(),
+        kind,
+        ty: ExtendedType::from_core(core),
+        origin: None,
+        span: None,
+    }
+}
+
+fn roundtrip_expr(expr: Expr) -> Expr {
+    let mut program = empty_program();
+    program.module.guards.push(Guard {
+        name: "g_test".to_string(),
+        condition: expr,
+        cycles: 1,
+        origin: None,
+        span: None,
+    });
+    let sexpr = ast_to_sexpr(&program);
+    let restored = sexpr_to_ast(&sexpr).expect("expression round-trip must succeed");
+    restored.module.guards[0].condition.clone()
+}
+
 // =========================================================================
 // 1. AST -> S-Expr: Full program structure
 // =========================================================================

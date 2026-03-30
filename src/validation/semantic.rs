@@ -331,6 +331,9 @@ fn validate_composite_exprs(module: &Module, errors: &mut PipelineErrors) {
                         stack.push(v);
                     }
                 }
+                Expr::UnfoldIndex(_) => {
+                    // Unresolved meta-stage index is not validated here.
+                }
                 Expr::Signal(_) | Expr::Prev { .. } | Expr::Literal(_) => {}
             }
         }
@@ -466,6 +469,9 @@ fn validate_prev_delays(
                     stack.push(v);
                 }
             }
+            Expr::UnfoldIndex(_) => {
+                // Unresolved meta-stage index needs no Prev delay validation.
+            }
         }
     }
     Ok(())
@@ -506,6 +512,9 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
                 for (_, v) in fields {
                     stack.push(v);
                 }
+            }
+            Expr::UnfoldIndex(_) => {
+                // Unresolved meta-stage index does not contribute signal refs.
             }
         }
     }

@@ -1,5 +1,10 @@
 use super::*;
 
+#[test]
+fn property_eventually_within() {
+    let src = wrap_module("property ev {\n    eventually within 10 (y);\n}");
+    let p = assert_parse_ok(&src);
+    match &p.module.properties[0].formula {
         PropertyFormula::EventuallyWithin { expr, cycles } => {
             assert_eq!(*expr, sig("y"), "eventually within expr should be y");
             assert_eq!(*cycles, 10, "eventually within cycles should be 10");

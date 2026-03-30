@@ -112,6 +112,10 @@ pub fn sym_diff(expr: &Expr, signal_name: &str) -> Expr {
                             work.push(Work::Diff(operand, depth + 1));
                         }
                     },
+                    Expr::UnfoldIndex(_) => {
+                        // Unresolved meta-stage index is treated as constant for symbolic diff.
+                        results.push(zero());
+                    }
                     Expr::Binary { op, left, right } => match op {
                         BinaryOp::Add => {
                             // d(a + b)/dx = da/dx + db/dx

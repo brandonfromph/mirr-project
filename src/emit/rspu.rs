@@ -396,6 +396,11 @@ fn emit_expr(
                         "[E720] R-SPU does not support composite type expressions.".to_string(),
                     ));
                 }
+                Expr::UnfoldIndex(name) => {
+                    return Err(rspu_err(format!(
+                        "[E721] UnfoldIndex '{}' reached R-SPU emitter", name
+                    )));
+                }
             },
             ExprWork::EmitUnary(op) => {
                 let src = result_stack.pop().unwrap_or(0);

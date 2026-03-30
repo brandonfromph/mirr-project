@@ -195,6 +195,9 @@ fn collect_signal_refs(expr: &crate::ast::expr::Expr) -> Vec<String> {
                     stack.push(v);
                 }
             }
+            Expr::UnfoldIndex(_) => {
+                // Unresolved meta-stage index does not have a clock domain.
+            }
         }
     }
     signals

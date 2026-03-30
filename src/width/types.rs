@@ -107,6 +107,16 @@ pub enum FlatNode {
     Binary { op: BinaryOp, left: u32, right: u32 },
     /// Previous-tick reference with signedness flag.
     Prev { signal: String, delay: u64, signed: bool },
+    /// Array indexing referencing array and index nodes.
+    ArrayIndex { array: u32, index: u32, width: u32, signed: bool },
+    /// Struct field access referencing object node.
+    FieldAccess { object: u32, field: String, width: u32, signed: bool },
+    /// Array literal with element node indices. Width = element_width * length.
+    ArrayLiteral { elements: Vec<u32>, width: u32 },
+    /// Struct literal with field node indices. Width = sum of field widths.
+    StructLiteral { name: String, fields: Vec<(String, u32)>, width: u32 },
+    /// Meta-stage unfolding index.
+    UnfoldIndex { name: String },
 }
 
 // ---------------------------------------------------------------------------

@@ -145,6 +145,9 @@ fn expr_contains_prev(expr: &crate::ast::expr::Expr) -> bool {
                     i += 1;
                 }
             }
+            crate::ast::expr::Expr::UnfoldIndex(_) => {
+                // UnfoldIndex is treated as non-Prev expression for this check.
+            }
         }
     }
 

@@ -115,6 +115,13 @@ fn evaluate_constraint(c: &WidthConstraint, widths: &[u32]) -> Option<(usize, u3
             let w = lw.saturating_add(rw);
             Some((*node as usize, w))
         }
+        WidthConstraint::SumAll { node, elements } => {
+            let mut total = 0u32;
+            for elem in elements {
+                total = total.saturating_add(get_w(widths, *elem));
+            }
+            Some((*node as usize, total))
+        }
         WidthConstraint::LeftPlusConst { node, left, shift_amount } => {
             let lw = get_w(widths, *left);
             let w = lw.saturating_add(*shift_amount);
@@ -184,7 +191,8 @@ fn node_description(idx: usize, nodes: &[FlatNode]) -> String {
         Some(FlatNode::Unary { op, .. }) => format!("{:?}", op),
         Some(FlatNode::Binary { op, .. }) => format!("{:?}", op),
         Some(FlatNode::Prev { signal, delay, .. }) => format!("prev('{}', {})", signal, delay),
-        None => "unknown".to_string(),
+        Some(FlatNode::UnfoldIndex { name }) => format!("unfold-index '{}'", name),
+        _ => "unknown".to_string(),
     }
 }
 

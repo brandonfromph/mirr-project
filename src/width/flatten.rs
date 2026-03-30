@@ -37,6 +37,9 @@ enum FlatWork<'a> {
         signal: &'a str,
         delay: u64,
     },
+    EmitUnfoldIndex {
+        name: &'a str,
+    },
 }
 
 /// Flatten an `Expr` tree into a `Vec<FlatNode>` in post-order.
@@ -96,6 +99,9 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                 | Expr::StructLiteral { .. } => {
                     work.push(FlatWork::EmitLiteral { value: 0 });
                 }
+                Expr::UnfoldIndex(name) => {
+                    work.push(FlatWork::EmitUnfoldIndex { name });
+                }
             },
             FlatWork::EmitLiteral { value } => {
                 let idx = nodes.len();
@@ -149,6 +155,14 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                     delay,
                     signed: is_signed(signal, signals),
                 });
+                idx_stack.push(idx as u32);
+            }
+            FlatWork::EmitUnfoldIndex { name } => {
+                let idx = nodes.len();
+                if idx >= MAX_FLAT_NODES {
+                    return None;
+                }
+                nodes.push(FlatNode::UnfoldIndex { name: name.to_string() });
                 idx_stack.push(idx as u32);
             }
         }
@@ -206,6 +220,14 @@ pub fn reconstruct_width_expr(nodes: &[FlatNode], widths: &[Width]) -> Option<Wi
             }
             FlatNode::Prev { signal, delay, .. } => {
                 WidthExpr::Prev { signal: signal.clone(), delay: *delay, width: w }
+            }
+            FlatNode::ArrayIndex { .. }
+            | FlatNode::FieldAccess { .. }
+            | FlatNode::ArrayLiteral { .. }
+            | FlatNode::StructLiteral { .. }
+            | FlatNode::UnfoldIndex { .. } => {
+                // Non-atomic/wide composite values are represented as a placeholder.
+                WidthExpr::Literal { value: 0, width: w }
             }
         };
         built.push(Some(we));

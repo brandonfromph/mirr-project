@@ -503,3 +503,8 @@ fn test_trap_if_parametric() {
             let instr = RspuInstruction::TrapIf { cond: cond_vals[i], code: code_vals[j] };
             roundtrip_check(
                 &instr,
+                &format!("TrapIf cond=R{}, code={}", cond_vals[i], code_vals[j]),
+            );
+        }
+    }
+}

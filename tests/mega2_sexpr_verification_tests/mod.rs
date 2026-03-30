@@ -38,6 +38,12 @@ fn roundtrip_mirr(src: &str, label: &str) {
     assert_eq!(s1, s2, "{label}: roundtrip mismatch");
 }
 
+fn eval_ok(input: &str) -> SExpr {
+    let sexpr = parse_sexpr(input).unwrap_or_else(|e| panic!("parse failed: {e}"));
+    let mut st = EvalState::new();
+    eval(&sexpr, &mut st).unwrap_or_else(|e| panic!("eval failed for `{input}`: {e}"))
+}
+
 fn flight_controller_src() -> &'static str {
     r#"module flight_controller {
     signal altitude: in u32;

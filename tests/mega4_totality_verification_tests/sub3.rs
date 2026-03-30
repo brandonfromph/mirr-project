@@ -1,16 +1,8 @@
 use super::*;
 
-    // Certificate generation depends on emit_binary support for all instructions.
-    // If cert is present, verify it deserializes correctly.
-    if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = nasa_rust_project::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
-    }
-}
-
 #[test]
 fn f2_example_tmr_sensor_fusion_cert_generation() {
-    let src = include_str!("../examples/tmr_sensor_fusion.mirr");
+    let src = include_str!("../../examples/tmr_sensor_fusion.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -289,7 +281,7 @@ fn f12_full_chain_cert_generate_verify_accept() {
     use nasa_rust_project::emit::rspu_sim::RspuSimulator;
 
     // Step 1: Compile a .mirr source to R-SPU with totality=true.
-    let src = include_str!("../examples/neonatal_respirator.mirr");
+    let src = include_str!("../../examples/neonatal_respirator.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,
@@ -395,7 +387,7 @@ fn f12_full_chain_verify_certify_total_check_sequence() {
 
     // Full MEGA-4 instruction sequence: VERIFY -> CERTIFY -> TOTAL_CHECK -> HALT.
     // Compile a real .mirr to get a genuine certificate, then inject all 3 instructions.
-    let src = include_str!("../examples/flight_controller.mirr");
+    let src = include_str!("../../examples/flight_controller.mirr");
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,

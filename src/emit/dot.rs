@@ -320,6 +320,10 @@ fn emit_expr_nodes(expr: &Expr, node_id: &mut usize, out: &mut String) {
                     stack.push((fval, fval_id));
                 }
             }
+            Expr::UnfoldIndex(name) => {
+                // Should not reach emitter stage; upstream should resolve.
+                unreachable!("UnfoldIndex '{}' reached dot emit", name);
+            }
         }
     }
 }
@@ -359,6 +363,9 @@ fn collect_signal_refs_bounded(expr: &Expr) -> Vec<String> {
                 for (_fname, fval) in fields.iter().take(MAX_DOT_NODES) {
                     stack.push(fval);
                 }
+            }
+            Expr::UnfoldIndex(_) => {
+                unreachable!("UnfoldIndex reached dot dependency analysis");
             }
         }
     }
@@ -403,6 +410,9 @@ fn collect_prev_refs_bounded(expr: &Expr) -> Vec<(String, u64)> {
                     stack.push(&fields[i].1);
                     i += 1;
                 }
+            }
+            Expr::UnfoldIndex(_) => {
+                unreachable!("UnfoldIndex reached dot prev-ref analysis");
             }
         }
     }

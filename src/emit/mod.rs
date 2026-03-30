@@ -96,6 +96,7 @@ pub(crate) fn expr_text_bounded(expr: &Expr, iters: &mut usize) -> String {
                 .collect();
             format!("{} {{ {} }}", name, parts.join(", "))
         }
+        Expr::UnfoldIndex(name) => unreachable!("UnfoldIndex '{}' reached generic emit_text", name),
     }
 }
 

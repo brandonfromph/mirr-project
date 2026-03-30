@@ -47,11 +47,11 @@ module test {
     signal x: out u8;
     signal y: out u8;
     guard g1 {
-        when a
+        when a != 0
         for 1 cycles;
     }
     guard g2 {
-        when b
+        when b != 0
         for 1 cycles;
     }
     reflex r1 {
@@ -68,6 +68,9 @@ module test {
 "#;
     let config = PipelineConfig { width: true, ..Default::default() };
     let result = run_pipeline(source, &config);
+    if let Err(ref e) = result {
+        eprintln!("ERROR: {:#?}", e);
+    }
     assert!(result.is_ok(), "independent signals should pass");
 }
 
@@ -79,11 +82,11 @@ module test {
     signal b: in u8;
     signal x: out u8;
     guard g1 {
-        when a
+        when a != 0
         for 1 cycles;
     }
     guard g2 {
-        when b
+        when b != 0
         for 1 cycles;
     }
     reflex r1 {
@@ -95,5 +98,8 @@ module test {
 "#;
     let config = PipelineConfig { width: true, ..Default::default() };
     let result = run_pipeline(source, &config);
+    if let Err(ref e) = result {
+        eprintln!("ERROR: {:#?}", e);
+    }
     assert!(result.is_ok(), "multiple guards should pass");
 }

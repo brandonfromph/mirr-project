@@ -290,7 +290,7 @@ fn test_d9_convert_prev() {
         pattern_origins: vec![],
         span: None,
     };
-    let prog = nasa_rust_project::MirrProgram { module: m, patterns: vec![] };
+    let prog = nasa_rust_project::MirrProgram { module: m, imports: vec![], patterns: vec![] };
     let sexpr = ast_to_sexpr(&prog);
     let s = print_sexpr(&sexpr);
     assert!(s.contains("prev"), "Should contain prev reference");

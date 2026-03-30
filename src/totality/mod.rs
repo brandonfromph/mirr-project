@@ -251,6 +251,9 @@ fn collect_signal_deps(expr: &crate::ast::Expr) -> Vec<String> {
                     stack.push(v);
                 }
             }
+            crate::ast::Expr::UnfoldIndex(_) => {
+                // Unresolved meta-stage index is not a signal dependency.
+            }
         }
     }
     deps
