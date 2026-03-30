@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # ci-local.sh — Run the same checks as GitHub Actions CI, locally.
 # Usage: bash scripts/ci-local.sh
 # Run this before every push to catch failures early.
-set -uo pipefail
+set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -11,11 +11,6 @@ NC='\033[0m'
 RESULT=0
 pass() { echo -e "${GREEN}PASS${NC}: $1"; }
 fail() { echo -e "${RED}FAIL${NC}: $1"; RESULT=1; }
-
-if [ "${PRE_PUSH_SKIP:-0}" = "1" ]; then
-  echo "WARNING: PRE_PUSH_SKIP=1 set, skipping ci-local checks."
-  exit 0
-fi
 
 echo "===== 1/11  cargo fmt --check ====="
 cargo fmt --all -- --check || fail "cargo fmt --check"
@@ -110,27 +105,12 @@ else
 fi
 
 echo "\n===== 10/11  WASM build (non-blocking) ====="
-wasm_ok=0
-if command -v wasm-pack >/dev/null 2>&1; then
-  if wasm-pack build crates/mirr-wasm --target web --out-dir demos --release; then
-    wasm_ok=1
-    pass "WASM build (wasm-pack)"
-  else
-    echo "WARN: wasm-pack build failed, continuing as non-blocking check"
+if [ "$(uname -s)" = "Linux" ]; then
+  if ! cargo build --manifest-path crates/mirr-wasm/Cargo.toml --target wasm32-unknown-unknown; then
+    echo "WARNING: WASM build failed, but allowing push."
   fi
 else
-  echo "WARN: wasm-pack not installed; trying rustc/cargo wasm target fallback"
-  rustup target add wasm32-unknown-unknown >/dev/null 2>&1 || true
-  if cargo build --manifest-path crates/mirr-wasm/Cargo.toml --release --target wasm32-unknown-unknown; then
-    wasm_ok=1
-    pass "WASM build (cargo/wasm32-unknown-unknown)"
-  else
-    echo "WARN: cargo wasm build failed, continuing as non-blocking check"
-  fi
-fi
-
-if [ "$wasm_ok" -ne 1 ]; then
-  echo "WARN: WASM build could not be verified (non-blocking)"
+  echo "Skipping WASM build on non-Linux runner."
 fi
 
 echo "\n===== 11/11  Coq proofs and admitted check (non-blocking) ====="
