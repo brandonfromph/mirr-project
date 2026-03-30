@@ -113,4 +113,3 @@ fn test_d5_macro_expand_counter_increments() {
     // Each expansion gets a different hygiene ID, so results differ.
     assert_ne!(r1, r2, "Each expansion must use a unique hygiene ID");
 }
-

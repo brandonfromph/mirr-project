@@ -71,4 +71,3 @@ fn test_d6_reader_delay_zero() {
     let result = reg.expand("delay", "0");
     assert!(result.is_ok(), "delay 0 should be recognized");
 }
-

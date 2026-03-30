@@ -587,4 +587,3 @@ fn bridge_binary_lt_expression_lowers_to_less_than() {
         "signal < 100 should lower to LessThan(signal, 100)"
     );
 }
-

@@ -217,7 +217,6 @@ fn bounded_multiple_guards_roundtrip() {
 // =========================================================================
 
 #[test]
-#[test]
 fn full_program_roundtrip() {
     let mut program = empty_program();
     program.module.name = "roundtrip_sanity".to_string();
@@ -447,6 +446,3 @@ fn roundtrip_pattern_call_no_args() {
     assert_eq!(restored.module.pattern_calls[0].pattern_name, "no_arg_pat", "name must match");
     assert!(restored.module.pattern_calls[0].arguments.is_empty(), "args must remain empty");
 }
-
-
-

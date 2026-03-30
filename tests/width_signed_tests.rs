@@ -50,10 +50,7 @@ fn sub(left: Expr, right: Expr) -> Expr {
 }
 
 fn signal_map(signals: &[SignalDecl]) -> std::collections::HashMap<String, u32> {
-    signals
-        .iter()
-        .map(|s| (s.name.clone(), s.ty.signal_type().width()))
-        .collect()
+    signals.iter().map(|s| (s.name.clone(), s.ty.signal_type().width())).collect()
 }
 
 fn add(left: Expr, right: Expr) -> Expr {

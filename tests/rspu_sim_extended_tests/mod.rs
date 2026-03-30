@@ -67,7 +67,6 @@ fn sim_with_input(port: u16, value: u64, tag: TypeTag) -> RspuSimulator {
 // 1. Simulator initialization
 // ---------------------------------------------------------------------------
 
-
 mod part1;
 mod part2;
 mod part3;

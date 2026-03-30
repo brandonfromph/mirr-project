@@ -692,8 +692,6 @@ fn minimal_bool_src() -> &'static str {
 }"#
 }
 
-
-
 mod d10_tests;
 mod d1_tests;
 mod d2_tests;

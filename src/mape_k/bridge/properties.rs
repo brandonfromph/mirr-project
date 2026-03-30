@@ -111,7 +111,9 @@ fn lower_expr_to_predicate(expr: &Expr) -> Result<SignalPredicate, String> {
         }
         Expr::Literal(_) => Err("bare literal cannot be a signal predicate".to_string()),
         Expr::Prev { signal, .. } => Ok(SignalPredicate::IsTrue(signal.clone())),
-        Expr::UnfoldIndex(_) => Err("E506: UnfoldIndex reached analysis stage unresolved".to_string()),
+        Expr::UnfoldIndex(_) => {
+            Err("E506: UnfoldIndex reached analysis stage unresolved".to_string())
+        }
         Expr::ArrayIndex { .. }
         | Expr::FieldAccess { .. }
         | Expr::ArrayLiteral(_)

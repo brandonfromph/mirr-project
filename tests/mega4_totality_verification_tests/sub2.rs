@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[test]
 fn f9_primitive_recursive_strategy() {
     let s = TerminationStrategy::PrimitiveRecursive;

@@ -142,4 +142,3 @@ fn test_d2_nested_car_cdr() {
     let r = eval_ok("(car (cdr '(1 2 3)))");
     assert_eq!(r, SExpr::Integer(2));
 }
-

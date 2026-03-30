@@ -721,4 +721,3 @@ fn roundtrip_expr_signal_ref() {
     let result = roundtrip_expr(Expr::Signal("sensor_value".to_string()));
     assert_eq!(result, Expr::Signal("sensor_value".to_string()), "signal ref must round-trip");
 }
-

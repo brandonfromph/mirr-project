@@ -545,4 +545,3 @@ fn test_signed_arithmetic() {
         "Result tag must be Signed(8)"
     );
 }
-

@@ -82,9 +82,11 @@ pub fn generate_constraints(
                 if let Some(&width) = signals.get(name) {
                     constraints.push(WidthConstraint::Fixed { node: node_id, width });
                 } else {
-                    diagnostics.push(WidthDiag::error(format!(
-                        "[E501] undeclared signal reference: '{}'", name
-                    )).with_code("E501").with_signal(name));
+                    diagnostics.push(
+                        WidthDiag::error(format!("[E501] undeclared signal reference: '{}'", name))
+                            .with_code("E501")
+                            .with_signal(name),
+                    );
                     // Fallback to width 1 to allow solver to continue.
                     constraints.push(WidthConstraint::Fixed { node: node_id, width: 1 });
                 }
@@ -92,7 +94,8 @@ pub fn generate_constraints(
             FlatNode::Unary { op, operand } => {
                 match op {
                     crate::ast::types::UnaryOp::Not => {
-                        constraints.push(WidthConstraint::SameAs { node: node_id, source: *operand });
+                        constraints
+                            .push(WidthConstraint::SameAs { node: node_id, source: *operand });
                     }
                     crate::ast::types::UnaryOp::Negate => {
                         // Check signedness of operand to decide SameAs vs SameAsPlusOne
@@ -102,9 +105,13 @@ pub fn generate_constraints(
                             _ => false,
                         };
                         if is_signed {
-                            constraints.push(WidthConstraint::SameAs { node: node_id, source: *operand });
+                            constraints
+                                .push(WidthConstraint::SameAs { node: node_id, source: *operand });
                         } else {
-                            constraints.push(WidthConstraint::SameAsPlusOne { node: node_id, source: *operand });
+                            constraints.push(WidthConstraint::SameAsPlusOne {
+                                node: node_id,
+                                source: *operand,
+                            });
                         }
                     }
                 }
@@ -124,9 +131,9 @@ pub fn generate_constraints(
                                 _ => true,
                             };
                             if should_emit {
-                                diagnostics.push(
-                                    WidthDiag::info("unsigned subtraction may underflow (wrapping semantics)")
-                                );
+                                diagnostics.push(WidthDiag::info(
+                                    "unsigned subtraction may underflow (wrapping semantics)",
+                                ));
                             }
                         }
                     }
@@ -134,38 +141,59 @@ pub fn generate_constraints(
 
                 match op {
                     BinaryOp::Add => {
-                        constraints.push(WidthConstraint::MaxPlusOne { node: node_id, left: *left, right: *right });
+                        constraints.push(WidthConstraint::MaxPlusOne {
+                            node: node_id,
+                            left: *left,
+                            right: *right,
+                        });
                     }
                     BinaryOp::Mul => {
-                        constraints.push(WidthConstraint::SumOf { node: node_id, left: *left, right: *right });
+                        constraints.push(WidthConstraint::SumOf {
+                            node: node_id,
+                            left: *left,
+                            right: *right,
+                        });
                     }
                     BinaryOp::Sub | BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
-                        constraints.push(WidthConstraint::MaxOf { node: node_id, left: *left, right: *right });
+                        constraints.push(WidthConstraint::MaxOf {
+                            node: node_id,
+                            left: *left,
+                            right: *right,
+                        });
                     }
                     BinaryOp::Shl => {
                         // Check if right is a literal for precision
                         if let Some(FlatNode::Literal { value }) = nodes.get(*right as usize) {
-                            constraints.push(WidthConstraint::LeftPlusConst { 
-                                node: node_id, 
-                                left: *left, 
-                                shift_amount: *value as u32 
+                            constraints.push(WidthConstraint::LeftPlusConst {
+                                node: node_id,
+                                left: *left,
+                                shift_amount: *value as u32,
                             });
                         } else {
-                            constraints.push(WidthConstraint::LeftPlusMaxShift { node: node_id, left: *left });
+                            constraints.push(WidthConstraint::LeftPlusMaxShift {
+                                node: node_id,
+                                left: *left,
+                            });
                         }
                     }
                     BinaryOp::Shr => {
                         if let Some(FlatNode::Literal { value }) = nodes.get(*right as usize) {
-                            constraints.push(WidthConstraint::LeftMinusConst { 
-                                node: node_id, 
-                                left: *left, 
-                                shift_amount: *value as u32 
+                            constraints.push(WidthConstraint::LeftMinusConst {
+                                node: node_id,
+                                left: *left,
+                                shift_amount: *value as u32,
                             });
                         } else {
-                            constraints.push(WidthConstraint::SameAs { node: node_id, source: *left });
+                            constraints
+                                .push(WidthConstraint::SameAs { node: node_id, source: *left });
                         }
                     }
-                    BinaryOp::Eq | BinaryOp::Ne | BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
+                    BinaryOp::Eq
+                    | BinaryOp::Ne
+                    | BinaryOp::Lt
+                    | BinaryOp::Le
+                    | BinaryOp::Gt
+                    | BinaryOp::Ge => {
                         constraints.push(WidthConstraint::Boolean { node: node_id });
                     }
                 }
@@ -189,7 +217,8 @@ pub fn generate_constraints(
                 }
             }
             FlatNode::ArrayLiteral { elements, .. } => {
-                constraints.push(WidthConstraint::SumAll { node: node_id, elements: elements.clone() });
+                constraints
+                    .push(WidthConstraint::SumAll { node: node_id, elements: elements.clone() });
             }
             FlatNode::StructLiteral { fields, .. } => {
                 let elements: Vec<u32> = fields.iter().map(|(_, id)| *id).collect();
@@ -198,9 +227,13 @@ pub fn generate_constraints(
             FlatNode::UnfoldIndex { name } => {
                 // UnfoldIndex should have been turned into a concrete signal by scope expansion.
                 // If it reaches constraint generation, emit a semantic-width diagnostic.
-                diagnostics.push(WidthDiag::error(format!(
-                    "[E506] unresolved UnfoldIndex '{}' reached width constraints", name
-                )).with_code("E506"));
+                diagnostics.push(
+                    WidthDiag::error(format!(
+                        "[E506] unresolved UnfoldIndex '{}' reached width constraints",
+                        name
+                    ))
+                    .with_code("E506"),
+                );
                 constraints.push(WidthConstraint::Fixed { node: node_id, width: 32 });
             }
         }
@@ -211,7 +244,11 @@ pub fn generate_constraints(
 
 /// Calculate minimum bits required to represent an unsigned integer.
 fn min_bits_for(v: u64) -> u32 {
-    if v == 0 { 1 } else { 64 - v.leading_zeros() }
+    if v == 0 {
+        1
+    } else {
+        64 - v.leading_zeros()
+    }
 }
 
 /// Returns true if the flattened node is unsigned (either literal or unsigned signal/prev).

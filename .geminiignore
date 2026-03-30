@@ -1,0 +1,28 @@
+# Skip massive build artifacts
+target/
+mcp_server/node_modules/
+mcp_server/dist/
+
+# Skip local data and temporary files
+.kb-data/
+.kb-state/
+node_modules/
+path/
+temp_arsenal/
+temp_remediation/
+
+# Skip system artifacts
+*.pdb
+*.exe
+*.dll
+*.so
+*.dylib
+*.log
+*.bak
+*.tmp
+
+# Skip environment and secrets
+.env
+
+# Skip Git internal files
+.git/

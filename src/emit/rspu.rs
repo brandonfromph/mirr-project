@@ -398,7 +398,8 @@ fn emit_expr(
                 }
                 Expr::UnfoldIndex(name) => {
                     return Err(rspu_err(format!(
-                        "[E721] UnfoldIndex '{}' reached R-SPU emitter", name
+                        "[E721] UnfoldIndex '{}' reached R-SPU emitter",
+                        name
                     )));
                 }
             },

@@ -1,0 +1,23 @@
+module test_unfold_fsm {
+    signal x: in u8;
+    signal y: out u8;
+
+    unfold i in 0..7 {
+        guard g: x == i for 1;
+        reflex r on g: y = i;
+    }
+
+    fsm state_machine {
+        state idle {
+            when x > 0 -> active;
+        }
+        state active {
+            when x == 0 -> idle;
+        }
+    }
+
+    #[compile_time] {
+        // Some compile time logic here
+        generate_property();
+    }
+}

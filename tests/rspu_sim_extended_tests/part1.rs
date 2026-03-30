@@ -447,4 +447,3 @@ fn test_alu_unary_negate() {
         "Negate(42) must produce two's complement negation"
     );
 }
-

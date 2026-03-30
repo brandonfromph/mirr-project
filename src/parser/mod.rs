@@ -90,7 +90,9 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
         if let Some(rest) = inner.strip_suffix('>') {
             let parts: Vec<&str> = rest.split(',').map(|s| s.trim()).collect();
             if parts.len() == 2 {
-                if let (Ok(total_bits), Ok(frac_bits)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
+                if let (Ok(total_bits), Ok(frac_bits)) =
+                    (parts[0].parse::<u32>(), parts[1].parse::<u32>())
+                {
                     if total_bits == 0
                         || total_bits > crate::ast::types::MAX_FIXED_POINT_BITS
                         || frac_bits > total_bits
@@ -128,7 +130,7 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
             let len_str = &ty_str[open_bracket_pos + 1..ty_str.len() - 1];
             let element = Box::new(parse_signal_type_str(element_type)?);
             let length = len_str.parse::<u64>().ok()?;
-            // Enforce bounds to [1, MAX_TYPE_NAT] (for safety; defined in typeck) 
+            // Enforce bounds to [1, MAX_TYPE_NAT] (for safety; defined in typeck)
             if (1..=MAX_TYPE_NAT).contains(&length) {
                 return Some(SignalType::Array { element, length });
             }
@@ -366,10 +368,7 @@ fn parse_qualified_type(
             return Err(MirrError::parse_error("[E118] Struct name cannot be empty."));
         }
         pos += 1;
-        crate::ast::types::SignalType::Struct {
-            name: struct_name.to_string(),
-            fields: Vec::new(),
-        }
+        crate::ast::types::SignalType::Struct { name: struct_name.to_string(), fields: Vec::new() }
     } else {
         let ty_str = &tokens[pos];
         let ty = parse_signal_type_str(ty_str).ok_or_else(|| {

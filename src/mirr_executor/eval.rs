@@ -36,7 +36,9 @@ pub(super) fn eval_expr(e: &Expr, env_get: &impl Fn(&str) -> Value) -> Value {
         E::Literal(LiteralValue::Integer(i)) => Value::Integer(*i),
         E::Signal(name) => env_get(name),
         E::Prev { signal, .. } => env_get(signal),
-        E::UnfoldIndex(name) => panic!("E506: UnfoldIndex reached analysis stage unresolved: {}", name),
+        E::UnfoldIndex(name) => {
+            panic!("E506: UnfoldIndex reached analysis stage unresolved: {}", name)
+        }
         E::Unary { op, operand } => {
             let v = eval_expr(operand, env_get);
             match op {

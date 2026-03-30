@@ -105,5 +105,3 @@ module test_mod {{
 
 mod sub1;
 mod sub2;
-
-

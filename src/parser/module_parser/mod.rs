@@ -243,9 +243,9 @@ fn skip_top_level_block(lines: &[&str], index: &mut usize) -> Result<(), MirrErr
 
 fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrError> {
     let trimmed = stmt.trim();
-    let after_guard = trimmed.strip_prefix("guard ").ok_or_else(|| {
-        MirrError::parse_error("[E120] Malformed inline guard declaration.")
-    })?;
+    let after_guard = trimmed
+        .strip_prefix("guard ")
+        .ok_or_else(|| MirrError::parse_error("[E120] Malformed inline guard declaration."))?;
 
     let open = after_guard.find('{').ok_or_else(|| {
         MirrError::parse_error("[E120] Malformed inline guard declaration: missing '{'.")
@@ -279,10 +279,13 @@ fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrErro
     let after_for = after_when[for_pos + for_keyword.len()..].trim();
     let cycles_text = after_for.strip_suffix(cycles_suffix).unwrap_or(after_for).trim();
     let cycles: u64 = cycles_text.parse().map_err(|_| {
-        MirrError::parse_error(format!("[E130] Invalid cycle count in guard '{}': {}", name, cycles_text))
+        MirrError::parse_error(format!(
+            "[E130] Invalid cycle count in guard '{}': {}",
+            name, cycles_text
+        ))
     })?;
 
-    let lines = vec![
+    let lines = [
         format!("guard {name} {{"),
         format!("when {condition}"),
         format!("for {cycles} cycles"),
@@ -295,9 +298,9 @@ fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrErro
 
 fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrError> {
     let trimmed = stmt.trim();
-    let after_reflex = trimmed.strip_prefix("reflex ").ok_or_else(|| {
-        MirrError::parse_error("[E138] Malformed inline reflex declaration.")
-    })?;
+    let after_reflex = trimmed
+        .strip_prefix("reflex ")
+        .ok_or_else(|| MirrError::parse_error("[E138] Malformed inline reflex declaration."))?;
 
     let open = after_reflex.find('{').ok_or_else(|| {
         MirrError::parse_error("[E138] Malformed inline reflex declaration: missing '{'.")
@@ -339,7 +342,7 @@ fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrEr
             lines.push("}".to_string());
         } else {
             return Err(MirrError::parse_error(
-                "[E140] Inline reflex must contain an 'on' clause."
+                "[E140] Inline reflex must contain an 'on' clause.",
             ));
         }
     }

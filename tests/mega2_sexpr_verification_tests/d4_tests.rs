@@ -75,4 +75,3 @@ fn test_d4_quasiquote_string_unquote() {
     let r = eval_ok(r#"`(label ,(car '("sensor" "motor")))"#);
     assert_eq!(r, SExpr::list(vec![SExpr::sym("label"), SExpr::Str("sensor".to_string())]));
 }
-

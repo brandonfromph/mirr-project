@@ -519,4 +519,3 @@ module m {
 
     assert!(result.mape_k_result.is_none(), "MAPE-K result should be None when mape_k=false");
 }
-

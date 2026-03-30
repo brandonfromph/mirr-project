@@ -523,6 +523,3 @@ fn test_d9_convert_signed_type() {
     let s = print_sexpr(&sexpr);
     assert!(s.contains("i16") || s.contains("signed"), "Should contain signed type: {s}");
 }
-
-
-

@@ -1,5 +1,6 @@
 use super::*;
 
+#[test]
 fn e5_sim_halt_stops_execution() {
     let mut sim = RspuSimulator::new();
     let prog = make_program(vec![RspuInstruction::Halt]);

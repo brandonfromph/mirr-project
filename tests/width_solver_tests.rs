@@ -62,10 +62,7 @@ fn make_bool_signal(name: &str) -> SignalDecl {
 
 /// Count error-severity diagnostics in a SolveResult.
 fn signal_map(signals: &[SignalDecl]) -> std::collections::HashMap<String, u32> {
-    signals
-        .iter()
-        .map(|s| (s.name.clone(), s.ty.signal_type().width()))
-        .collect()
+    signals.iter().map(|s| (s.name.clone(), s.ty.signal_type().width())).collect()
 }
 
 fn count_errors(result: &SolveResult) -> usize {

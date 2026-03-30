@@ -151,10 +151,6 @@ fn assume_property(name: &str, formula: PropertyFormula) -> PropertyDecl {
 // 1. Sensor extraction — through parser
 // ---------------------------------------------------------------------------
 
-
 mod part1;
 mod part2;
 mod part3;
-
-
-

@@ -361,7 +361,8 @@ fn convert_expr(expr: &Expr) -> SExpr {
                     }
                 }
                 Expr::UnfoldIndex(name) => {
-                    result_stack.push(SExpr::list(vec![SExpr::sym("unfold-index"), SExpr::str_val(name)]));
+                    result_stack
+                        .push(SExpr::list(vec![SExpr::sym("unfold-index"), SExpr::str_val(name)]));
                 }
             },
             ConvertWork::BuildUnary(op_sym) => {

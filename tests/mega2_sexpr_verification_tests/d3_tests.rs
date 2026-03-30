@@ -118,4 +118,3 @@ fn test_d3_match_type_empty_list() {
     let r = eval_ok("(match-type '() (() 1))");
     assert_eq!(r, SExpr::Integer(1));
 }
-

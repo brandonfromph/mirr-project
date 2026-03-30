@@ -63,4 +63,3 @@ fn test_d1_roundtrip_signed() {
 fn test_d1_roundtrip_minimal_bool() {
     roundtrip_mirr(minimal_bool_src(), "minimal_bool");
 }
-

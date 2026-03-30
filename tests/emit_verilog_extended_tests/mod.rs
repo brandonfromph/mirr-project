@@ -336,14 +336,6 @@ module signed_types {
 // ===========================================================================
 
 mod part1;
-mod part2;
-mod part3;
-mod part4;
-mod part5;
-mod part6;
-mod part7;
-mod part8;
-mod part9;
 mod part10;
 mod part11;
 mod part12;
@@ -354,6 +346,7 @@ mod part16;
 mod part17;
 mod part18;
 mod part19;
+mod part2;
 mod part20;
 mod part21;
 mod part22;
@@ -362,6 +355,10 @@ mod part24;
 mod part25;
 mod part26;
 mod part27;
-
-
-
+mod part3;
+mod part4;
+mod part5;
+mod part6;
+mod part7;
+mod part8;
+mod part9;

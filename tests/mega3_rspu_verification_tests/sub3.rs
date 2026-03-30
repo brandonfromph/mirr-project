@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[test]
 fn e10_interval_check_mnemonic() {
     let i = RspuInstruction::IntervalCheck { src: 0, bounds: 1 };

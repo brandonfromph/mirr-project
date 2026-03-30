@@ -134,31 +134,36 @@ impl ExprParser {
         // Parse prefix / atom.
         let mut lhs = self.parse_prefix(depth)?;
 
-// Parse indexed and field access with higher precedence than binary ops.
-            loop {
-                if let Some(Token::LBracket) = self.peek() {
-                    self.advance();
-                    let index_expr = self.parse_expr(0, depth + 1)?;
-                    match self.advance() {
-                        Some(Token::RBracket) => {
-                            lhs = Expr::ArrayIndex { array: Box::new(lhs), index: Box::new(index_expr) };
-                            continue;
-                        }
-                        _ => {
-                            return Err(MirrError::parse_error("[E178] Expected closing ']' in array index."));
-                        }
+        // Parse indexed and field access with higher precedence than binary ops.
+        loop {
+            if let Some(Token::LBracket) = self.peek() {
+                self.advance();
+                let index_expr = self.parse_expr(0, depth + 1)?;
+                match self.advance() {
+                    Some(Token::RBracket) => {
+                        lhs =
+                            Expr::ArrayIndex { array: Box::new(lhs), index: Box::new(index_expr) };
+                        continue;
+                    }
+                    _ => {
+                        return Err(MirrError::parse_error(
+                            "[E178] Expected closing ']' in array index.",
+                        ));
                     }
                 }
+            }
 
-                if let Some(Token::Dot) = self.peek() {
-                    self.advance();
-                    match self.advance() {
-                        Some(Token::Ident(field)) => {
-                            lhs = Expr::FieldAccess { object: Box::new(lhs), field: field.clone() };
-                            continue;
-                        }
-                        _ => {
-                            return Err(MirrError::parse_error("[E179] Expected field name after '.'."));
+            if let Some(Token::Dot) = self.peek() {
+                self.advance();
+                match self.advance() {
+                    Some(Token::Ident(field)) => {
+                        lhs = Expr::FieldAccess { object: Box::new(lhs), field: field.clone() };
+                        continue;
+                    }
+                    _ => {
+                        return Err(MirrError::parse_error(
+                            "[E179] Expected field name after '.'.",
+                        ));
                     }
                 }
             }
@@ -225,7 +230,8 @@ impl ExprParser {
                             }
                             None => {
                                 return Err(MirrError::parse_error(
-                                    "[E181] Unexpected end of struct literal."));
+                                    "[E181] Unexpected end of struct literal.",
+                                ));
                             }
                         };
 
@@ -238,7 +244,8 @@ impl ExprParser {
                             }
                             None => {
                                 return Err(MirrError::parse_error(
-                                    "[E181] Unexpected end of struct literal after field name."));
+                                    "[E181] Unexpected end of struct literal after field name.",
+                                ));
                             }
                         }
 
@@ -261,14 +268,12 @@ impl ExprParser {
                             }
                             None => {
                                 return Err(MirrError::parse_error(
-                                    "[E181] Unexpected end of struct literal."));
+                                    "[E181] Unexpected end of struct literal.",
+                                ));
                             }
                         }
                     }
-                    Ok(Expr::StructLiteral {
-                        name: name.to_string(),
-                        fields,
-                    })
+                    Ok(Expr::StructLiteral { name: name.to_string(), fields })
                 } else {
                     Ok(Expr::Signal(name.to_string()))
                 }

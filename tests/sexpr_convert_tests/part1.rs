@@ -28,7 +28,8 @@ fn ast_to_sexpr_empty_patterns_section() {
 
 #[test]
 fn ast_to_sexpr_module_name_preserved() {
-    let program = MirrProgram { patterns: Vec::new(), imports: Vec::new(), module: empty_module("my_mod") };
+    let program =
+        MirrProgram { patterns: Vec::new(), imports: Vec::new(), module: empty_module("my_mod") };
     let sexpr = ast_to_sexpr(&program);
     let items = sexpr.as_list().unwrap();
     let module_list = items[2].as_list().expect("module must be a list");
@@ -481,6 +482,3 @@ fn ast_to_sexpr_nested_binary_expression() {
 // =========================================================================
 // 5. Reflex conversion
 // =========================================================================
-
-
-
