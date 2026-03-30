@@ -25,12 +25,9 @@ echo "\n===== 2/11  cargo check ====="
 cargo check --all-targets --all-features || fail "cargo check"
 pass "cargo check"
 
-echo "\n===== 3/11  cargo clippy (non-blocking) ====="
-if cargo clippy --all-targets --all-features -- -D warnings; then
-  pass "cargo clippy"
-else
-  echo "WARN: cargo clippy failed, but continuing as non-blocking check"
-fi
+echo "\n===== 3/11  cargo clippy ====="
+cargo clippy --all-targets --all-features -- -D warnings || fail "cargo clippy"
+pass "cargo clippy"
 
 echo "\n===== 4/11  test file size limit ====="
 failed=0
@@ -50,15 +47,13 @@ else
   pass "test file size limit"
 fi
 
-echo "\n===== 5/11  nextest run (non-blocking) ====="
+echo "\n===== 5/11  nextest run ====="
 if command -v cargo-nextest >/dev/null 2>&1 || command -v cargo nextest >/dev/null 2>&1; then
-  cargo nextest run --workspace --no-fail-fast --test-threads 4 2>&1 | tee test.log || {
-    echo "WARN: cargo nextest run failed, continuing as non-blocking check"
-  }
+  cargo nextest run --workspace --no-fail-fast --test-threads 4 2>&1 | tee test.log || fail "cargo nextest run"
   pass "cargo nextest run"
 else
   echo "WARN: cargo nextest not installed, falling back to cargo test"
-  cargo test --all -- --test-threads 4 2>&1 | tee test.log || echo "WARN: cargo test failed, continuing as non-blocking check"
+  cargo test --all -- --test-threads 4 2>&1 | tee test.log || fail "cargo test"
   pass "cargo test"
 fi
 
