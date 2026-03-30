@@ -81,7 +81,7 @@ mcp_server/
 artifacts/
 
 # Internal scripts (CI helpers, research, stress generators)
-scripts/
+# scripts/  # tracked for CI workflow
 
 # Self-hosting / bootstrap scripts — reference internal binary names
 build_selfhost.sh
