@@ -1,0 +1,67 @@
+﻿diff --git a/tests/temporal_lowering_tests.rs b/tests/temporal_lowering_tests.rs
+index a91f67d..9846ad0 100644
+--- a/tests/temporal_lowering_tests.rs
++++ b/tests/temporal_lowering_tests.rs
+@@ -723,3 +723,62 @@ module neonatal_respirator {
+         "total_signals mismatch"
+     );
+ }
++
++fn load_wave6_netlist_fixture(name: &str) -> serde_json::Value {
++    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
++        .join("tests")
++        .join("fixtures")
++        .join("netlist")
++        .join(name);
++    let text = std::fs::read_to_string(&path)
++        .unwrap_or_else(|_| panic!("fixture must be readable: {}", path.display()));
++    serde_json::from_str(&text)
++        .unwrap_or_else(|_| panic!("fixture must be valid JSON: {}", path.display()))
++}
++
++#[test]
++fn test_wave6_fixture_struct_packet_schema_valid() {
++    let val = load_wave6_netlist_fixture("struct_packet.json");
++    assert_eq!(val["ir_version"], "2.0");
++    assert!(val["signals"].is_array());
++    assert!(val["statistics"].is_object());
++}
++
++#[test]
++fn test_wave6_fixture_array_register_file_schema_valid() {
++    let val = load_wave6_netlist_fixture("array_register_file.json");
++    assert_eq!(val["ir_version"], "2.0");
++    assert!(val["guards"].is_array());
++    assert!(val["signals"].is_array());
++}
++
++#[test]
++fn test_wave6_fixture_tmr_sensor_fusion_schema_valid() {
++    let val = load_wave6_netlist_fixture("tmr_sensor_fusion.json");
++    assert_eq!(val["ir_version"], "2.0");
++    assert!(val["statistics"]["logic_gates_used"].is_number());
++}
++
++#[test]
++fn test_wave6_fixture_watchdog_timer_counter_contract() {
++    let val = load_wave6_netlist_fixture("watchdog_timer.json");
++    let guards = val["guards"].as_array().expect("guards must be array");
++    assert_eq!(guards.len(), 1);
++    assert!(guards[0].get("Counter").is_some(), "watchdog timer must encode Counter guard");
++}
++
++#[test]
++fn test_wave6_fixture_fixed_point_control_statistics_contract() {
++    let val = load_wave6_netlist_fixture("fixed_point_control.json");
++    let stats = &val["statistics"];
++    assert!(stats["total_signals"].is_number());
++    assert!(stats["max_delay_cycles"].is_number());
++}
++
++#[test]
++fn test_wave6_fixture_interface_bundle_monitor_schema_valid() {
++    let val = load_wave6_netlist_fixture("interface_bundle_monitor.json");
++    assert_eq!(val["ir_version"], "2.0");
++    assert!(val["signals"].is_array());
++    assert!(!val["signals"].as_array().expect("signals array").is_empty());
++}

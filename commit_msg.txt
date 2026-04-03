@@ -1,0 +1,16 @@
+feat: Execute Proposal 096 - Repo-wide foundational integration
+
+Proposal 096 establishes permanent contracts and concrete implementation anchors
+across first-class consumers (WASM, LRA, MRT/MCP, VS Code, demos, proofs, fuzz, scripts).
+
+Wave 0 execution includes:
+- Repo topology contract and first-class consumer definitions
+- KB-lite stack grounding in existing .kb-data substrate
+- Consumer contract documentation (repo-topology.md, consumer-contracts.md, kb-lite-design.md)
+- Backward compatibility baseline captured (3350 tests)
+- Governance contracts and wave-locked transitions defined
+
+All verification gates pass: cargo fmt, cargo check, cargo clippy
+Baseline evidence: proposals/evidence/096/
+
+See proposals/096-REPO-WIDE-FOUNDATIONAL-INTEGRATION-2026-04-02.md for full details.

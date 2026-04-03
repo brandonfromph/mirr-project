@@ -1,0 +1,9 @@
+scripts/ci-local-fast.sh
+scripts/ci-local.sh
+scripts/git-push.sh
+scripts/repo_metrics.py
+scripts/review_coverage_gate.py
+scripts/run_upgraded_096_review.ps1
+scripts/validate_proposals.py
+scripts/research/__pycache__/run_experiments.cpython-314.pyc
+scripts/__pycache__/validate_proposals.cpython-314.pyc

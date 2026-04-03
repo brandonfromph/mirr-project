@@ -1,0 +1,7 @@
+vscode-mirr/language-configuration.json
+vscode-mirr/package.json
+vscode-mirr/README.md
+vscode-mirr/icons/mirr-file.svg
+vscode-mirr/icons/mirr-icon-theme.json
+vscode-mirr/syntaxes/mirr.tmLanguage.json
+vscode-mirr/themes/mirr-ouroboros-dark.json

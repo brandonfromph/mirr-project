@@ -1,0 +1,13 @@
+﻿6:fn eda_script() -> String {
+13:let script = eda_script();
+19:let script = eda_script();
+20:assert!(script.contains("MAX_TESTS=200"));
+21:assert!(script.contains("if [ \"$TOTAL\" -gt \"$MAX_TESTS\" ]"));
+26:let script = eda_script();
+27:assert!(script.contains("PASS=0; FAIL=0; SKIP=0; TOTAL=0"));
+28:assert!(script.contains("PASS:"));
+29:assert!(script.contains("FAIL:"));
+30:assert!(script.contains("SKIP:"));
+35:let script = eda_script();
+36:assert!(script.contains("for tool in yosys iverilog vvp sby"));
+37:assert!(script.contains("command -v \"$tool\""));

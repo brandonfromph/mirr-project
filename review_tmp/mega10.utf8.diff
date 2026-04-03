@@ -1,0 +1,59 @@
+﻿diff --git a/tests/mega10_composite_integration_tests.rs b/tests/mega10_composite_integration_tests.rs
+index b97cfc4..8cab39e 100644
+--- a/tests/mega10_composite_integration_tests.rs
++++ b/tests/mega10_composite_integration_tests.rs
+@@ -304,3 +304,54 @@ fn composite_signal_in_ast_module_no_crash() {
+     assert_eq!(m.signals.len(), 2);
+     assert!(m.signals[0].ty.core.is_composite());
+ }
++
++#[test]
++fn array_width_is_element_width_times_length() {
++    let ty = SignalType::Array { element: Box::new(SignalType::Unsigned(8)), length: 4 };
++    assert_eq!(ty.width(), 32);
++}
++
++#[test]
++fn nested_array_width_multiplies_dimensions() {
++    let ty = SignalType::Array {
++        element: Box::new(SignalType::Array {
++            element: Box::new(SignalType::Unsigned(4)),
++            length: 2,
++        }),
++        length: 3,
++    };
++    assert_eq!(ty.width(), 24);
++}
++
++#[test]
++fn struct_width_is_sum_of_field_widths() {
++    let ty = SignalType::Struct {
++        name: "Telemetry".to_string(),
++        fields: vec![
++            ("status".to_string(), SignalType::Bool),
++            ("temp".to_string(), SignalType::Unsigned(10)),
++            ("pressure".to_string(), SignalType::Unsigned(12)),
++        ],
++    };
++    assert_eq!(ty.width(), 23);
++}
++
++#[test]
++fn bundle_width_is_zero_before_elaboration() {
++    let ty = SignalType::Bundle("SensorBus".to_string());
++    assert_eq!(ty.width(), 0);
++}
++
++#[test]
++fn fifo_width_is_depth_times_element_width() {
++    let ty = SignalType::Fifo { element: Box::new(SignalType::Unsigned(16)), depth: 8 };
++    assert_eq!(ty.width(), 128);
++}
++
++#[test]
++fn fixed_point_width_and_signed_contract() {
++    let ty = SignalType::FixedPoint { total_bits: 24, frac_bits: 10 };
++    let (width, signed) = ty.width_and_signed();
++    assert_eq!(width, 24);
++    assert!(!signed, "fixed-point width modeling remains unsigned in width pass");
++}

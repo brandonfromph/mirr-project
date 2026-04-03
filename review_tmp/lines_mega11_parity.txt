@@ -1,0 +1,8 @@
+﻿9:fn read_text(path: &str) -> String {
+17:let ast_expr = read_text("src/ast/expr.rs");
+18:assert!(ast_expr.contains("UnfoldIndex(String)"));
+30:.any(|d| d.message.contains("[E506]") && d.message.contains("UnfoldIndex")),
+42:let lowering_tests = read_text("tests/temporal_lowering_tests.rs");
+43:assert!(lowering_tests.contains("test_netlist_fixture_parity_neonatal_respirator"));
+48:let compiler_tests = read_text("tests/temporal_compiler_tests.rs");
+49:assert!(compiler_tests.contains("test_comparison_operators_all_six"));

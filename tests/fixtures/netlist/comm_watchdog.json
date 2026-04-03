@@ -1,0 +1,35 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "comm_timeout",
+        "input_signal": "rx_seen",
+        "output_signal": "comm_timeout_out",
+        "counter_signal": "comm_timeout_counter",
+        "comparator_signal": "comm_timeout_cmp",
+        "target_count": 64,
+        "condition_kind": {
+          "SimpleSignal": "rx_seen"
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "comm_timeout_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter"
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 0,
+    "counters_used": 1,
+    "logic_gates_used": 1,
+    "max_delay_cycles": 64,
+    "total_signals": 1,
+    "compilation_time_us": 0
+  }
+}

@@ -1,0 +1,6 @@
+﻿2:# MIRR EDA Test Suite â€” 105 tests using oss-cad-suite
+6:# Does NOT require cargo â€” fully standalone
+35:# â”€â”€ Tool availability â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+59:#  Category 1: Yosys Parse (20 tests)
+62:echo "â”€â”€ Category 1: Yosys Parse (20 tests) â”€â”€"
+1813:echo "  MIRR EDA Test Suite Results"

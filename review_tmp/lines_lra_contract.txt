@@ -1,0 +1,8 @@
+﻿6:fn lra_source() -> String {
+14:assert!(src.contains("run_pipeline"));
+15:assert!(src.contains("PipelineConfig"));
+21:assert!(src.contains("\"verilog\""));
+22:assert!(src.contains("\"firrtl\""));
+23:assert!(src.contains("\"rspu\""));
+24:assert!(src.contains("\"sexpr\""));
+30:assert!(src.contains("Unknown compile target"));

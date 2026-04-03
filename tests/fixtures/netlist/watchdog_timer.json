@@ -1,0 +1,35 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "watchdog_timeout",
+        "input_signal": "kick",
+        "output_signal": "watchdog_timeout_out",
+        "counter_signal": "watchdog_timeout_counter",
+        "comparator_signal": "watchdog_timeout_cmp",
+        "target_count": 32,
+        "condition_kind": {
+          "SimpleSignal": "kick"
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "watchdog_timeout_counter",
+      "ty": {
+        "Unsigned": 6
+      },
+      "kind": "Counter"
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 0,
+    "counters_used": 1,
+    "logic_gates_used": 1,
+    "max_delay_cycles": 32,
+    "total_signals": 1,
+    "compilation_time_us": 0
+  }
+}
