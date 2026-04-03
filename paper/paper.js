@@ -309,17 +309,111 @@ function setSource(text) {
 
 var compile_pipeline_stages, proof_status, simulate_rspu, simulate_mapek, mirr_version, simulate_waveform, compile_graph_data;
 
+function hasExport(mod, name) {
+  return typeof mod[name] === 'function';
+}
+
+function toDisplayText(value) {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (_) {
+    return String(value);
+  }
+}
+
+function formatWasmErrors(errors) {
+  if (!Array.isArray(errors) || errors.length === 0) {
+    return 'Unknown compiler error';
+  }
+
+  var lines = [];
+  for (var i = 0; i < errors.length && i < 64; i++) {
+    var err = errors[i];
+    if (typeof err === 'string') {
+      lines.push(err);
+      continue;
+    }
+    if (!err || typeof err !== 'object') {
+      lines.push(String(err));
+      continue;
+    }
+
+    var prefix = err.code ? '[' + err.code + '] ' : '';
+    lines.push(prefix + (err.message || 'Unknown compiler error'));
+    if (typeof err.help === 'string' && err.help.length > 0) {
+      lines.push('help: ' + err.help);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function normalizeCompilerResult(parsed) {
+  if (!parsed || typeof parsed !== 'object') {
+    return { err: 'Compiler returned invalid payload' };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(parsed, 'ok') ||
+      Object.prototype.hasOwnProperty.call(parsed, 'err')) {
+    return parsed;
+  }
+
+  if (parsed.type === 'Ok') {
+    return { ok: parsed.value };
+  }
+
+  if (parsed.type === 'Err') {
+    return { err: formatWasmErrors(parsed.errors) };
+  }
+
+  return parsed;
+}
+
+function parseCompilerResult(raw) {
+  try {
+    var parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return normalizeCompilerResult(parsed);
+  } catch (e) {
+    return { err: 'Invalid compiler JSON: ' + (e.message || e) };
+  }
+}
+
 async function initWasm() {
   try {
     var wasm = await import('./demos/mirr_wasm.js');
     await wasm.default();
+
+    var hasTargetApi = hasExport(wasm, 'compile_target');
+    var hasLegacyApi = hasExport(wasm, 'compile_verilog') &&
+      hasExport(wasm, 'compile_firrtl') &&
+      hasExport(wasm, 'compile_rspu') &&
+      hasExport(wasm, 'compile_sexpr') &&
+      hasExport(wasm, 'infer_widths') &&
+      hasExport(wasm, 'compile_dot');
+
+    if (!hasTargetApi && !hasLegacyApi) {
+      throw new Error('No supported compile API exports found');
+    }
+
+    var compileViaTarget = function(target) {
+      return function(source) {
+        return wasm.compile_target(source, target);
+      };
+    };
+
     COMPILERS = {
-      verilog: wasm.compile_verilog,
-      firrtl:  wasm.compile_firrtl,
-      rspu:    wasm.compile_rspu,
-      sexpr:   wasm.compile_sexpr,
-      json:    wasm.infer_widths,
-      dot:     wasm.compile_dot
+      verilog: hasTargetApi ? compileViaTarget('verilog') : wasm.compile_verilog,
+      firrtl: hasTargetApi ? compileViaTarget('firrtl') : wasm.compile_firrtl,
+      rspu: hasTargetApi ? compileViaTarget('rspu') : wasm.compile_rspu,
+      sexpr: hasTargetApi ? compileViaTarget('sexpr') : wasm.compile_sexpr,
+      json: hasExport(wasm, 'compile_json_netlist')
+        ? wasm.compile_json_netlist
+        : (hasTargetApi ? compileViaTarget('json') : wasm.infer_widths),
+      dot: hasExport(wasm, 'compile_dot_with_detail')
+        ? function(source) { return wasm.compile_dot_with_detail(source, false); }
+        : (hasTargetApi ? compileViaTarget('dot') : wasm.compile_dot)
     };
     compile_pipeline_stages = wasm.compile_pipeline_stages;
     proof_status = wasm.proof_status;
@@ -331,10 +425,11 @@ async function initWasm() {
     wasmReady = true;
     document.getElementById('compiler-output').textContent =
       '// Compiler ready. Type MIRR source or load an example.';
-    var vResult = JSON.parse(mirr_version());
-    if (vResult.ok) {
+    var vResult = parseCompilerResult(mirr_version());
+    if (vResult.ok !== undefined) {
+      var versionText = toDisplayText(vResult.ok).trim();
       document.querySelectorAll('.mirr-version')
-        .forEach(function(el) { el.textContent = vResult.ok; });
+        .forEach(function(el) { el.textContent = versionText; });
     }
   } catch (err) {
     document.getElementById('compiler-output').textContent =
@@ -368,14 +463,17 @@ function compile() {
   }
 
   try {
-    var result = JSON.parse(compiler(source));
+    var result = parseCompilerResult(compiler(source));
 
     if (result.ok !== undefined) {
-      output.textContent = result.ok;
+      output.textContent = toDisplayText(result.ok);
       output.classList.remove('error');
     } else if (result.err !== undefined) {
-      output.textContent = result.err;
+      output.textContent = toDisplayText(result.err);
       output.classList.add('error');
+    } else {
+      output.textContent = toDisplayText(result);
+      output.classList.remove('error');
     }
   } catch (e) {
     output.textContent = 'Compilation error: ' + (e.message || e);
@@ -405,8 +503,9 @@ async function runBenchmarks() {
       var start = performance.now();
       var raw = compiler(source);
       elapsed = (performance.now() - start).toFixed(2);
-      var result = JSON.parse(raw);
-      lines = result.ok ? result.ok.split('\n').length : 0;
+      var result = parseCompilerResult(raw);
+      var rendered = result.ok !== undefined ? toDisplayText(result.ok) : '';
+      lines = rendered ? rendered.split('\n').length : 0;
       isError = !!result.err;
     } catch (err) {
       elapsed = 'ERROR';
@@ -442,7 +541,7 @@ function handlePipelineViz(source) {
   var STAGE_KEYS = ['parsed', 'validated', 'expanded', 'typechecked', 'simplified', 'width_inferred', 'temporal_lowered', 'emitted'];
   try {
     var result = compile_pipeline_stages(source);
-    var raw = JSON.parse(result);
+    var raw = parseCompilerResult(result);
     if (raw.ok !== undefined) {
       var boolMap = raw.ok;
       var stages = [];
@@ -451,6 +550,9 @@ function handlePipelineViz(source) {
         stages.push({ name: STAGE_NAMES[i], output: passed ? 'passed' : 'failed' });
       }
       return { ok: stages };
+    }
+    if (raw.err !== undefined) {
+      return { error: raw.err };
     }
     return raw;
   } catch (e) {
@@ -461,7 +563,19 @@ function handlePipelineViz(source) {
 function handleProofStatus() {
   try {
     var result = proof_status();
-    return JSON.parse(result);
+    var parsed = parseCompilerResult(result);
+    if (Array.isArray(parsed.ok)) {
+      return parsed;
+    }
+    if (parsed.ok && Array.isArray(parsed.ok.ok)) {
+      return {
+        ok: parsed.ok.ok,
+        proof_files: parsed.ok.proof_files,
+        mechanized: parsed.ok.mechanized,
+        admitted: parsed.ok.admitted
+      };
+    }
+    return parsed;
   } catch (e) {
     return { error: e.message };
   }
@@ -470,7 +584,7 @@ function handleProofStatus() {
 function handleRspuSim(source) {
   try {
     var result = simulate_rspu(source);
-    return JSON.parse(result);
+    return parseCompilerResult(result);
   } catch (e) {
     return { error: e.message };
   }
@@ -479,7 +593,7 @@ function handleRspuSim(source) {
 function handleMapekSim(source, ticks) {
   try {
     var result = simulate_mapek(source, ticks);
-    return JSON.parse(result);
+    return parseCompilerResult(result);
   } catch (e) {
     return { error: e.message };
   }
@@ -523,16 +637,19 @@ function compileWithTimer() {
   var startTime = performance.now();
 
   try {
-    var result = JSON.parse(compiler(source));
+    var result = parseCompilerResult(compiler(source));
     var elapsed = (performance.now() - startTime).toFixed(1);
     lastCompileTime = parseFloat(elapsed);
 
     if (result.ok !== undefined) {
-      output.textContent = result.ok;
+      output.textContent = toDisplayText(result.ok);
       output.classList.remove('error');
     } else if (result.err !== undefined) {
-      output.textContent = result.err;
+      output.textContent = toDisplayText(result.err);
       output.classList.add('error');
+    } else {
+      output.textContent = toDisplayText(result);
+      output.classList.remove('error');
     }
 
     // Show compile time
@@ -771,7 +888,7 @@ if ('serviceWorker' in navigator) {
     }
     try {
       var raw = fn(input);
-      var result = JSON.parse(raw);
+      var result = parseCompilerResult(raw);
       sw.postMessage({
         type: 'lra.run_tool.response',
         relay_id: data.relay_id,
@@ -1063,11 +1180,11 @@ document.getElementById('btn-simulate-waveform')?.addEventListener('click', asyn
 
     try {
         if (typeof simulate_waveform === 'function') {
-            var result = JSON.parse(simulate_waveform(source, Math.min(cycles, 1024)));
+        var result = parseCompilerResult(simulate_waveform(source, Math.min(cycles, 1024)));
             if (result.ok) {
                 renderWaveform('waveform-container', result.ok);
             } else {
-                container.innerHTML = '<pre class="viz-error">' + escapeHtml(result.err) + '</pre>';
+          container.innerHTML = '<pre class="viz-error">' + escapeHtml(toDisplayText(result.err)) + '</pre>';
             }
         } else {
             container.innerHTML = '<pre class="viz-error">Waveform simulation not available (WASM not loaded)</pre>';
@@ -1084,11 +1201,11 @@ document.getElementById('btn-view-circuit')?.addEventListener('click', async fun
 
     try {
         if (typeof compile_graph_data === 'function') {
-            var result = JSON.parse(compile_graph_data(source));
+        var result = parseCompilerResult(compile_graph_data(source));
             if (result.ok) {
                 renderCircuitGraph('graph-container', result.ok);
             } else {
-                container.innerHTML = '<pre class="viz-error">' + escapeHtml(result.err) + '</pre>';
+          container.innerHTML = '<pre class="viz-error">' + escapeHtml(toDisplayText(result.err)) + '</pre>';
             }
         } else {
             container.innerHTML = '<pre class="viz-error">Graph visualization not available (WASM not loaded)</pre>';
