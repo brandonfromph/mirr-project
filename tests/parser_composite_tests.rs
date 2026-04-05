@@ -13,6 +13,7 @@ use nasa_rust_project::ast::expr::Expr;
 
 use nasa_rust_project::ast::types::{LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::parser::{parse_expression, parse_mirr};
+use nasa_rust_project::validate_module;
 
 /// Test 1: Parse array type signal declarations.
 /// Tests parsing of `signal x: internal u8[16];` syntax.
@@ -153,7 +154,7 @@ module TestMod {
     match &pos_signal.ty.core {
         SignalType::Struct { name, fields } => {
             assert_eq!(name, "Point");
-            assert_eq!(fields.len(), 0); // Fields resolved during validation
+            assert_eq!(fields.len(), 2); // Hydrated from top-level struct declaration
         }
         other => panic!("Expected Struct type, got: {:?}", other),
     }
@@ -393,6 +394,66 @@ module TestMod {
     assert_eq!(program.module.guards.len(), 0);
     assert_eq!(program.module.reflexes.len(), 0);
     // Interface declarations are not part of the returned MirrProgram in this schema.
+}
+
+#[test]
+fn top_level_struct_declaration_retained_for_semantic_field_resolution() {
+    let source = r#"
+struct Point {
+    x: u16;
+    y: u16;
+}
+
+module TestMod {
+    signal pos: internal struct Point;
+    signal out_x: out u16;
+
+    guard g {
+        when pos.x > 0
+        for 1 cycles;
+    }
+
+    reflex r {
+        on g {
+            out_x = pos.y;
+        }
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("Should parse struct-backed field accesses");
+    validate_module(&program.module)
+        .expect("Struct field accesses should resolve through top-level declarations");
+}
+
+#[test]
+fn top_level_interface_declaration_retained_for_semantic_bundle_resolution() {
+    let source = r#"
+interface SensorBus {
+    ready: in bool;
+    value: in u16;
+}
+
+module TestMod {
+    signal bus: internal interface SensorBus;
+    signal alarm: out bool;
+
+    guard g {
+        when bus.ready
+        for 1 cycles;
+    }
+
+    reflex r {
+        on g {
+            alarm = bus.ready;
+        }
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("Should parse interface-backed bundle accesses");
+    validate_module(&program.module)
+        .expect("Bundle field accesses should resolve through top-level declarations");
 }
 
 /// Test 10: Parse nested array indexing expressions.

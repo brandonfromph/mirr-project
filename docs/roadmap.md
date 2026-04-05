@@ -80,7 +80,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 ## Phase 0 – Foundation (Completed)
 
 {: .tip }
-> Phases 0--4, 6, 7a, 7b, 7c complete. Phase 5 partial (5a complete, 5b complete).
+> Phases 0--5, 6, 7a, 7b, 7c complete. Phase 5 is complete (5a complete, 5b complete).
 > The compiler is operational with 3,469+ tests passing, zero unsafe code,
 > and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
 > Formal proofs: 80+ Rocq proofs.
@@ -348,7 +348,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 7d — Metaprogramming & Code Generation (Complete)
+## Metaprogramming & Code Generation (Phase 7d extension, Complete)
 
 - **Goal:** Provide structured compile-time program transformation capabilities, extending Phase 7b's `def`/`reflect` pattern system into a full metaprogramming framework for parametric hardware generation.
 

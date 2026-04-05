@@ -294,12 +294,74 @@ fn infer_expr_type(
                 };
                 infer_binary_type(*op, left_ty, right_ty, context_span)?
             }
-            // Composite expressions: placeholder type until full type inference is wired.
-            Expr::ArrayIndex { .. }
-            | Expr::FieldAccess { .. }
-            | Expr::ArrayLiteral(_)
-            | Expr::StructLiteral { .. }
-            | Expr::UnfoldIndex(_) => SignalType::Unsigned(32),
+            Expr::ArrayIndex { array, index } => {
+                let array_ptr = array.as_ref() as *const Expr;
+                let index_ptr = index.as_ref() as *const Expr;
+                let array_ty = match types.get(&array_ptr) {
+                    Some(ty) => ty,
+                    None => continue,
+                };
+                let index_ty = match types.get(&index_ptr) {
+                    Some(ty) => ty,
+                    None => continue,
+                };
+                infer_array_index_type(array_ty, index_ty, context_span)?
+            }
+            Expr::FieldAccess { object, field } => {
+                let object_ptr = object.as_ref() as *const Expr;
+                let object_ty = match types.get(&object_ptr) {
+                    Some(ty) => ty,
+                    None => continue,
+                };
+                infer_field_access_type(object_ty, field, context_span)?
+            }
+            Expr::ArrayLiteral(elems) => {
+                if elems.is_empty() {
+                    SignalType::Array { element: Box::new(SignalType::Unsigned(1)), length: 0 }
+                } else {
+                    let first_ptr = &elems[0] as *const Expr;
+                    let mut element_ty = match types.get(&first_ptr) {
+                        Some(ty) => ty.clone(),
+                        None => continue,
+                    };
+
+                    let mut i = 1usize;
+                    while i < elems.len().min(MAX_EXPR_NODES) {
+                        let elem_ptr = &elems[i] as *const Expr;
+                        let elem_ty = match types.get(&elem_ptr) {
+                            Some(ty) => ty,
+                            None => {
+                                i += 1;
+                                continue;
+                            }
+                        };
+                        element_ty = merge_array_element_types(&element_ty, elem_ty, context_span)?;
+                        i += 1;
+                    }
+
+                    SignalType::Array { element: Box::new(element_ty), length: elems.len() as u64 }
+                }
+            }
+            Expr::StructLiteral { name, fields } => {
+                let mut typed_fields: Vec<(String, SignalType)> =
+                    Vec::with_capacity(fields.len().min(MAX_EXPR_NODES));
+                let mut i = 0usize;
+                while i < fields.len().min(MAX_EXPR_NODES) {
+                    let (field_name, field_expr) = &fields[i];
+                    let field_ptr = field_expr as *const Expr;
+                    let field_ty = match types.get(&field_ptr) {
+                        Some(ty) => ty.clone(),
+                        None => {
+                            i += 1;
+                            continue;
+                        }
+                    };
+                    typed_fields.push((field_name.clone(), field_ty));
+                    i += 1;
+                }
+                SignalType::Struct { name: name.clone(), fields: typed_fields }
+            }
+            Expr::UnfoldIndex(_) => SignalType::Unsigned(32),
         };
         types.insert(ptr, ty);
     }
@@ -536,6 +598,81 @@ fn infer_negate_type(
             message: format!(
                 "[E226] Operator '-' (negate) cannot be applied to composite type '{}'.",
                 operand
+            ),
+            span: context_span,
+        }),
+    }
+}
+
+fn infer_array_index_type(
+    array_ty: &SignalType,
+    index_ty: &SignalType,
+    context_span: Option<Span>,
+) -> Result<SignalType, MirrError> {
+    match index_ty {
+        SignalType::Unsigned(_) | SignalType::Signed(_) => {}
+        _ => {
+            return Err(MirrError::TypeError {
+                message: format!("[E603] Array index must be numeric, got {}.", index_ty),
+                span: context_span,
+            });
+        }
+    }
+
+    match array_ty {
+        SignalType::Array { element, .. } => Ok(element.as_ref().clone()),
+        _ => Err(MirrError::TypeError {
+            message: format!("[E607] Indexing requires an array operand, got {}.", array_ty),
+            span: context_span,
+        }),
+    }
+}
+
+fn infer_field_access_type(
+    object_ty: &SignalType,
+    field_name: &str,
+    context_span: Option<Span>,
+) -> Result<SignalType, MirrError> {
+    match object_ty {
+        SignalType::Struct { fields, .. } => {
+            match fields.iter().find(|(name, _)| name == field_name) {
+                Some((_, ty)) => Ok(ty.clone()),
+                None => Err(MirrError::TypeError {
+                    message: format!(
+                        "[E607] Struct field '{}' does not exist on type {}.",
+                        field_name, object_ty
+                    ),
+                    span: context_span,
+                }),
+            }
+        }
+        _ => Err(MirrError::TypeError {
+            message: format!("[E607] Field access requires a struct operand, got {}.", object_ty),
+            span: context_span,
+        }),
+    }
+}
+
+fn merge_array_element_types(
+    current: &SignalType,
+    next: &SignalType,
+    context_span: Option<Span>,
+) -> Result<SignalType, MirrError> {
+    if current == next {
+        return Ok(current.clone());
+    }
+
+    match (current, next) {
+        (SignalType::Unsigned(a), SignalType::Unsigned(b)) => {
+            Ok(SignalType::Unsigned((*a).max(*b)))
+        }
+        (SignalType::Signed(a), SignalType::Signed(b)) => Ok(SignalType::Signed((*a).max(*b))),
+        (SignalType::Bool, SignalType::Unsigned(w))
+        | (SignalType::Unsigned(w), SignalType::Bool) => Ok(SignalType::Unsigned((*w).max(1))),
+        _ => Err(MirrError::TypeError {
+            message: format!(
+                "[E607] Array literal elements must have compatible types, got {} and {}.",
+                current, next
             ),
             span: context_span,
         }),

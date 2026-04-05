@@ -17,6 +17,8 @@ Syntax highlighting and LSP integration for `.mirr` files — the MIRR hardware-
 
 The extension includes a Language Server Protocol (LSP) client that connects to the `mirr-lsp` binary. When installed and available on your `PATH`, the language server provides diagnostics and other editor features.
 
+This package does not bundle `mirr-lsp`; it only launches an external binary when one is available.
+
 ### Requirements
 
 - The `mirr-lsp` binary must be installed and accessible. Build it from the MIRR compiler workspace:

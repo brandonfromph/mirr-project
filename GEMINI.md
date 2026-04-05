@@ -11,9 +11,9 @@ The **MIRR Runtime Tooling (MRT)** is the official command center for this repos
 ## 🛡️ The Context Amnesia Fix (Mandatory)
 
 **MANDATE**: Every new Gemini session **MUST** begin with the following command before touching a single file:
-*   `kb scope-map <task_description>`
+*   `mrt_audit --scope-map <task_description>`
 
-This forces the KB (Persistent Memory) to feed Gemini (Surgical Executor) a precise **Reading Plan**. This prevents "Dark Age" confabulation by grounding the session in indexed ground truth.
+This forces MRT to feed Gemini (Surgical Executor) a precise **Reading Plan**. The legacy KB command surface is retired/unavailable here; use MRT and LRA for live repository work.
 
 ### Mandatory Workflow: CDD Lifecycle
 Audit → Propose (`file:line`) → Sign/Veto → Execute (Wave) → CI Gate → Close out

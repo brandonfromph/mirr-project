@@ -61,6 +61,13 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
         }
     }
 
+    if let Some(name) = ty_str.strip_prefix("interface ") {
+        let name = name.trim();
+        if !name.is_empty() {
+            return Some(SignalType::Bundle(name.to_string()));
+        }
+    }
+
     // MEGA-1 generic numeric syntax: unsigned<32>, signed<32>, fixed<total,frac>.
     if let Some(inner) = ty_str.strip_prefix("unsigned<") {
         if let Some(rest) = inner.strip_suffix('>') {
@@ -79,11 +86,9 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
 
     // Backward-compatible numeric syntax: u32 / i32.
     if let Some(suffix) = ty_str.strip_prefix('u') {
-        eprintln!("parse_signal_type_str: uN path");
         return suffix.parse::<u32>().ok().map(SignalType::Unsigned);
     }
     if let Some(suffix) = ty_str.strip_prefix('i') {
-        eprintln!("parse_signal_type_str: iN path");
         return suffix.parse::<u32>().ok().map(SignalType::Signed);
     }
     if let Some(inner) = ty_str.strip_prefix("fixed<") {
@@ -121,20 +126,6 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
             }
         }
         return None;
-    }
-
-    // Parse array type as: <base_type>[<len>]
-    if let Some(open_bracket_pos) = ty_str.find('[') {
-        if ty_str.ends_with(']') {
-            let element_type = &ty_str[..open_bracket_pos];
-            let len_str = &ty_str[open_bracket_pos + 1..ty_str.len() - 1];
-            let element = Box::new(parse_signal_type_str(element_type)?);
-            let length = len_str.parse::<u64>().ok()?;
-            // Enforce bounds to [1, MAX_TYPE_NAT] (for safety; defined in typeck)
-            if (1..=MAX_TYPE_NAT).contains(&length) {
-                return Some(SignalType::Array { element, length });
-            }
-        }
     }
 
     None
@@ -369,6 +360,17 @@ fn parse_qualified_type(
         }
         pos += 1;
         crate::ast::types::SignalType::Struct { name: struct_name.to_string(), fields: Vec::new() }
+    } else if tokens[pos] == "interface" {
+        pos += 1;
+        if pos >= tokens.len() {
+            return Err(MirrError::parse_error("[E118] Missing interface name after 'interface'."));
+        }
+        let interface_name = tokens[pos].trim();
+        if interface_name.is_empty() {
+            return Err(MirrError::parse_error("[E118] Interface name cannot be empty."));
+        }
+        pos += 1;
+        crate::ast::types::SignalType::Bundle(interface_name.to_string())
     } else {
         let ty_str = &tokens[pos];
         let ty = parse_signal_type_str(ty_str).ok_or_else(|| {

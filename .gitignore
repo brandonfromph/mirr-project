@@ -74,9 +74,6 @@ CLAUDE.md
 # Copilot instructions — internal workflow
 .github/copilot-instructions.md
 
-# Internal tooling — MCP server (full directory)
-mcp_server/
-
 # Research artifacts and experiment data
 artifacts/
 

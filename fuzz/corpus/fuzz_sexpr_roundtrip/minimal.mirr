@@ -1,0 +1,15 @@
+module fuzz_seed {
+    signal in_sig: in bool;
+    signal out_sig: out bool;
+
+    guard g {
+        when in_sig
+        for 1 cycles;
+    }
+
+    reflex r {
+        on g {
+            out_sig = in_sig;
+        }
+    }
+}

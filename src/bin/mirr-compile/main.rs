@@ -19,7 +19,7 @@ use nasa_rust_project::emit;
 use nasa_rust_project::emit::fpga_target::FpgaTarget;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
-fn main() {
+pub fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     let mut input_path: Option<String> = None;

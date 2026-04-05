@@ -8,6 +8,13 @@ fn tool_available(name: &str) -> bool {
     let flag = if name == "yosys" || name == "icetime" { "-V" } else { "--version" };
     std::process::Command::new(name).arg(flag).output().map(|o| o.status.success()).unwrap_or(false)
 }
+fn require_tool_or_skip(name: &str) -> bool {
+    if tool_available(name) {
+        return true;
+    }
+    eprintln!("Tool capability missing: {}. Test skipped with explicit accounting.", name);
+    false
+}
 
 fn generate_mape_k_rtl() -> String {
     const MIRR_SRC: &str = "module safety_hw {\n    signal pressure: in u8;\n    signal temp: in u8;\n    signal alarm: out bool;\n\n    property p_pressure {\n        always (pressure > 0);\n    }\n\n    property p_temp {\n        always (temp > 0);\n    }\n}";
@@ -31,10 +38,10 @@ fn run_yosys_script(script: &str) -> std::process::Output {
     std::process::Command::new("yosys").arg(&path).output().expect("yosys run")
 }
 
-// E2.1 — read full RTL file without errors
+// E2.1 - read full RTL file without errors
 #[test]
 fn yosys_reads_full_rtl_without_errors() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -48,10 +55,10 @@ fn yosys_reads_full_rtl_without_errors() {
     );
 }
 
-// E2.2 — parse and hierarchy-check mirr_monitor
+// E2.2 - parse and hierarchy-check mirr_monitor
 #[test]
 fn yosys_parses_monitor_module() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -66,10 +73,10 @@ fn yosys_parses_monitor_module() {
     );
 }
 
-// E2.3 — parse and hierarchy-check mirr_analyze
+// E2.3 - parse and hierarchy-check mirr_analyze
 #[test]
 fn yosys_parses_analyze_module() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -84,10 +91,10 @@ fn yosys_parses_analyze_module() {
     );
 }
 
-// E2.4 — parse and hierarchy-check mirr_plan
+// E2.4 - parse and hierarchy-check mirr_plan
 #[test]
 fn yosys_parses_plan_module() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -102,10 +109,10 @@ fn yosys_parses_plan_module() {
     );
 }
 
-// E2.5 — parse and hierarchy-check mirr_execute
+// E2.5 - parse and hierarchy-check mirr_execute
 #[test]
 fn yosys_parses_execute_module() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -120,10 +127,10 @@ fn yosys_parses_execute_module() {
     );
 }
 
-// E2.6 — parse and hierarchy-check mirr_knowledge
+// E2.6 - parse and hierarchy-check mirr_knowledge
 #[test]
 fn yosys_parses_knowledge_module() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -138,10 +145,10 @@ fn yosys_parses_knowledge_module() {
     );
 }
 
-// E2.7 — parse and hierarchy-check mirr_mape_k_top
+// E2.7 - parse and hierarchy-check mirr_mape_k_top
 #[test]
 fn yosys_parses_top_module() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -156,10 +163,10 @@ fn yosys_parses_top_module() {
     );
 }
 
-// E2.8 — synth_ice40 on mirr_monitor
+// E2.8 - synth_ice40 on mirr_monitor
 #[test]
 fn yosys_synth_ice40_monitor() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -173,10 +180,10 @@ fn yosys_synth_ice40_monitor() {
     );
 }
 
-// E2.9 — synth_ice40 on mirr_execute
+// E2.9 - synth_ice40 on mirr_execute
 #[test]
 fn yosys_synth_ice40_execute() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -190,10 +197,10 @@ fn yosys_synth_ice40_execute() {
     );
 }
 
-// E2.10 — synth_ice40 on mirr_knowledge
+// E2.10 - synth_ice40 on mirr_knowledge
 #[test]
 fn yosys_synth_ice40_knowledge() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -208,10 +215,10 @@ fn yosys_synth_ice40_knowledge() {
     );
 }
 
-// E2.11 — synth + check -assert (no latches)
+// E2.11 - synth + check -assert (no latches)
 #[test]
 fn yosys_check_no_latches() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -225,10 +232,10 @@ fn yosys_check_no_latches() {
     );
 }
 
-// E2.12 — synth_ice40 top + stat reports cells
+// E2.12 - synth_ice40 top + stat reports cells
 #[test]
 fn yosys_stat_reports_cells() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -244,10 +251,10 @@ fn yosys_stat_reports_cells() {
     );
 }
 
-// E2.13 — no ERROR: string in any yosys output
+// E2.13 - no ERROR: string in any yosys output
 #[test]
 fn yosys_no_error_in_output() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -264,10 +271,10 @@ fn yosys_no_error_in_output() {
     );
 }
 
-// E2.14 — full hierarchy -check succeeds
+// E2.14 - full hierarchy -check succeeds
 #[test]
 fn yosys_monitor_hierarchy_ok() {
-    if !tool_available("yosys") {
+    if !require_tool_or_skip("yosys") {
         return;
     }
     let rtl = generate_mape_k_rtl();
@@ -281,7 +288,7 @@ fn yosys_monitor_hierarchy_ok() {
     );
 }
 
-// E2.15 — RTL must not contain $display (Rust-level check, no tool required)
+// E2.15 - RTL must not contain $display (Rust-level check, no tool required)
 #[test]
 fn yosys_rtl_no_display_statements() {
     let rtl = generate_mape_k_rtl();

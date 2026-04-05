@@ -28,6 +28,7 @@
 pub mod ast;
 pub mod bootstrap_runner;
 pub mod cert;
+pub mod cross_surface_stress;
 pub mod diagnostic;
 pub mod emit;
 pub mod error;
@@ -35,10 +36,17 @@ pub mod expand;
 pub mod hls;
 pub mod lexer;
 pub mod lsp;
+pub mod lsp_bridge;
+pub mod lsp_incremental;
 pub mod mape_k;
+pub mod mirr_daemon;
+pub mod mirr_daemon_security;
 pub mod mirr_driver;
 pub mod mirr_executor;
 pub mod mirr_runtime;
+pub mod mrt_auth;
+pub mod mrt_host;
+pub mod mrt_schema;
 pub mod parser;
 pub mod pipeline;
 pub mod sat;
@@ -53,6 +61,7 @@ pub mod totality;
 pub mod typeck;
 pub mod validation;
 pub mod width;
+pub mod zero_debt_closeout;
 
 // Top-level re-exports for ergonomic access.
 pub use ast::pattern::{PatternDef, PatternOrigin};

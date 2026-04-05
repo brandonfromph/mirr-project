@@ -2,9 +2,10 @@
 
 **Proposal #:** 096
 **Campaign ID:** REPO-WIDE-FOUNDATIONAL-INTEGRATION
-**Status:** EXECUTED
+**Status:** INCOMPLETE
 **Scope Class:** ARCHITECTURE (10+ files, multi-subsystem, multi-consumer)
 **Date:** 2026-04-02
+**Execution State:** FAILING READINESS GATES (see `proposals/evidence/096/CURRENT-BLOCKERS-2026-04-03.md`)
 
 ## Executive Summary
 
@@ -133,11 +134,11 @@ Proposal 096 signoff owner roster (accountable approvers):
 
 | Contract | Owner | Verifier | Failure mode |
 |---|---|---|---|
-| 0.A Repo Topology Authority | Compiler/API owner + docs/contracts owner | Proposal reviewers | Conflicting topology narratives |
-| 0.B First-Class Consumer Matrix | Named owner per consumer surface | Parity gate suite | Drift across consumer behaviors |
-| 0.C KB-Lite | Docs/contracts owner | Proposal reviewers | Contract must remain aligned with KB-lite scope and evidence commands |
-| 0.D No-Surprise Compatibility | Named release/consumer owner | Consumer acceptance bundle | Silent behavior drift |
-| 0.E No-Deletion Default | Compiler/API owner + docs/contracts owner | Proposal review | Cleanup-driven breakage |
+| 0.A Repo Topology Authority | elvie (primary), Code-Reviewer-Alpha (secondary) | Proposal reviewers | Conflicting topology narratives |
+| 0.B First-Class Consumer Matrix | elvie (primary), consumer surface reviewers (secondary) | Parity gate suite | Drift across consumer behaviors |
+| 0.C KB-Lite | elvie (primary), Documenter reviewer role (secondary) | Proposal reviewers | Contract must remain aligned with KB-lite scope and evidence commands |
+| 0.D No-Surprise Compatibility | elvie (primary), consumer reviewers (secondary) | Consumer acceptance bundle | Silent behavior drift |
+| 0.E No-Deletion Default | elvie (primary), docs/contracts owner (secondary) | Proposal review | Cleanup-driven breakage |
 
 #### Contract Verification Rules
 

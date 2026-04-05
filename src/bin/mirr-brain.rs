@@ -27,14 +27,26 @@
 
 use clap::{Parser, Subcommand};
 
-use serde::{Deserialize, Serialize};
+use rusqlite::{params, Connection};
+use serde::Serialize;
 use std::fs;
+use std::path::{Path, PathBuf};
+
+const MAX_RESULTS: usize = 16;
+const MAX_ENTRY_SIZE: usize = 4096;
+const DEFAULT_KB_ROOT: &str = ".kb-data";
+const BACKEND_NAME: &str = "kb-data";
+const ENTRY_SOURCE: &str = "mirr-brain";
 
 #[derive(Parser, Debug)]
 #[command(name = "mirr-brain", version, about = "MIRR Knowledge Core")]
 struct Args {
     #[command(subcommand)]
     command: Commands,
+
+    /// Root directory for KB-lite assets.
+    #[arg(long, default_value = DEFAULT_KB_ROOT)]
+    kb_root: String,
 
     /// Output format (text or json)
     #[arg(short, long, default_value = "text")]
@@ -59,81 +71,142 @@ enum Commands {
     Laws,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
-struct BrainData {
-    pub insights: std::collections::HashMap<String, String>,
-    /// Phase 1: Longitudinal telemetry data
-    #[serde(default)]
-    pub telemetry: std::collections::HashMap<String, Vec<String>>,
-    /// Phase 1: Technical debt baselines
-    #[serde(default)]
-    pub debt: std::collections::HashMap<String, String>,
-    /// Phase 1: Cryptographic build receipts
-    #[serde(default)]
-    pub receipts: std::collections::HashMap<String, String>,
-}
-
 #[derive(Serialize, Debug)]
 struct BrainResponse {
     pub status: String,
     pub message: String,
+    pub backend: String,
+    pub kb_root: String,
+    pub graph_db_present: bool,
+    pub knowledge_lance_present: bool,
+    pub result_limit: usize,
+    pub entry_size_limit: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub laws: Option<Vec<String>>,
+}
+
+fn clip_to_max(input: &str) -> String {
+    if input.len() <= MAX_ENTRY_SIZE {
+        return input.to_string();
+    }
+
+    let mut end = MAX_ENTRY_SIZE;
+    while end > 0 && !input.is_char_boundary(end) {
+        end -= 1;
+    }
+    input[..end].to_string()
+}
+
+fn ensure_schema(conn: &Connection) -> anyhow::Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS kb_entries (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            source TEXT NOT NULL
+        )",
+        [],
+    )?;
+    Ok(())
+}
+
+fn open_kb(kb_root: &Path) -> anyhow::Result<(Connection, PathBuf)> {
+    fs::create_dir_all(kb_root)?;
+    let graph_db_path = kb_root.join("graph.db");
+    let conn = Connection::open(&graph_db_path)?;
+    ensure_schema(&conn)?;
+    Ok((conn, graph_db_path))
 }
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    let brain_path = ".mirr_brain.json";
+    let kb_root_path = PathBuf::from(&args.kb_root);
+    let (conn, graph_db_path) = open_kb(&kb_root_path)?;
+    let knowledge_lance_path = kb_root_path.join("knowledge.lance");
 
-    let mut data: BrainData = if fs::metadata(brain_path).is_ok() {
-        let content = fs::read_to_string(brain_path)?;
-        serde_json::from_str(&content)?
-    } else {
-        BrainData::default()
+    let mut response = BrainResponse {
+        status: "OK".to_string(),
+        message: String::new(),
+        backend: BACKEND_NAME.to_string(),
+        kb_root: kb_root_path.to_string_lossy().into_owned(),
+        graph_db_present: graph_db_path.exists(),
+        knowledge_lance_present: knowledge_lance_path.exists(),
+        result_limit: MAX_RESULTS,
+        entry_size_limit: MAX_ENTRY_SIZE,
+        value: None,
+        laws: None,
     };
-
-    let mut response =
-        BrainResponse { status: "OK".to_string(), message: String::new(), value: None };
 
     match args.command {
         Commands::Store { key, value } => {
-            data.insights.insert(key.clone(), value);
-            let json = serde_json::to_string_pretty(&data)?;
-            fs::write(brain_path, json)?;
+            let clipped_value = clip_to_max(&value);
+            conn.execute(
+                "INSERT INTO kb_entries (key, value, source)
+                 VALUES (?1, ?2, ?3)
+                 ON CONFLICT(key) DO UPDATE SET
+                     value = excluded.value,
+                     source = excluded.source",
+                params![key, clipped_value, ENTRY_SOURCE],
+            )?;
             response.message = format!("Insight '{}' stored successfully.", key);
         }
         Commands::Get { key } => {
-            if let Some(val) = data.insights.get(&key) {
-                response.value = Some(val.clone());
-                response.message = format!("Retrieved insight for key: {}", key);
-            } else {
-                response.status = "ERROR".to_string();
-                response.message = format!("Unknown key: {}", key);
+            match conn.query_row(
+                "SELECT value FROM kb_entries WHERE key = ?1",
+                params![key],
+                |row| row.get::<_, String>(0),
+            ) {
+                Ok(val) => {
+                    response.value = Some(clip_to_max(&val));
+                    response.message = format!("Retrieved insight for key: {}", key);
+                }
+                Err(rusqlite::Error::QueryReturnedNoRows) => {
+                    response.status = "ERROR".to_string();
+                    response.message = format!("Unknown key: {}", key);
+                }
+                Err(err) => return Err(err.into()),
             }
         }
         Commands::Laws => {
-            let laws = [
-                "E1xx-E7xx: Reserved Error Codes",
-                "R-SPU Instructions: 4096",
-                "R-SPU Registers: 256",
-                "Max Path Depth: 32",
-            ];
+            let mut stmt = conn.prepare(
+                "SELECT key, value
+                 FROM kb_entries
+                 ORDER BY key ASC
+                 LIMIT ?1",
+            )?;
+            let rows = stmt.query_map(params![MAX_RESULTS as i64], |row| {
+                let key: String = row.get(0)?;
+                let value: String = row.get(1)?;
+                Ok(format!("{}: {}", key, clip_to_max(&value)))
+            })?;
+
+            let mut laws = Vec::new();
+            for row in rows {
+                laws.push(row?);
+            }
+
             response.message = "Global Laws retrieved.".to_string();
-            response.value = Some(laws.join("; "));
+            response.laws = Some(laws);
         }
     }
+
+    response.graph_db_present = graph_db_path.exists();
+    response.knowledge_lance_present = knowledge_lance_path.exists();
 
     if args.format == "json" {
         println!("{}", serde_json::to_string_pretty(&response)?);
     } else {
         if response.status == "ERROR" {
             eprintln!("[BRAIN ERROR] {}", response.message);
-        } else {
-            if let Some(ref v) = response.value {
-                println!("{}", v);
-            } else {
-                println!("[BRAIN] {}", response.message);
+        } else if let Some(v) = response.value {
+            println!("{}", v);
+        } else if let Some(laws) = response.laws {
+            for law in laws {
+                println!("{}", law);
             }
+        } else {
+            println!("[BRAIN] {}", response.message);
         }
     }
 

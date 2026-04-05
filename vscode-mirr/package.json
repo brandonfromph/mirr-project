@@ -1,7 +1,7 @@
 {
   "name": "mirr-lang",
   "displayName": "MIRR Language Support",
-  "description": "Syntax highlighting, file icon, and color theme for the MIRR safety-critical HDL",
+  "description": "Syntax highlighting, icon, and theme for MIRR (no LSP or compiler service in this package).",
   "version": "0.2.0",
   "publisher": "mirr-project",
   "license": "GPL-3.0",
@@ -12,6 +12,10 @@
   },
   "engines": {
     "vscode": "^1.75.0"
+  },
+  "scripts": {
+    "rwfi2:compat": "node -e \"const fs=require('fs');const p='vscode-mirr/package.json';const d=JSON.parse(fs.readFileSync(p,'utf8'));if(!d.contributes||!Array.isArray(d.contributes.languages)){throw new Error('missing contributes.languages');}if(!d.contributes.languages.some(l=>l.id==='mirr')){throw new Error('missing mirr language contribution');}\"",
+    "test": "npm run rwfi2:compat"
   },
   "categories": [
     "Programming Languages",

@@ -333,6 +333,245 @@ pub fn infer_widths(source: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// Parity-closing WASM functions (Wave 1 scope)
+// ---------------------------------------------------------------------------
+
+#[wasm_bindgen]
+pub fn compile_verilog_with_options(
+    source: &str,
+    target: &str,
+    dsp_threshold: u32,
+    strip_sva: bool,
+) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+    let config = default_config();
+    match run_pipeline(source, &config) {
+        Ok(result) => {
+            let fpga_target =
+                nasa_rust_project::emit::fpga_target::FpgaTarget::from_str_name(target);
+            let t = if let Some(fpga_t) = fpga_target {
+                if fpga_t == nasa_rust_project::emit::fpga_target::FpgaTarget::Generic {
+                    None
+                } else {
+                    Some(fpga_t)
+                }
+            } else {
+                None
+            };
+            let sv = if strip_sva {
+                nasa_rust_project::emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
+            } else {
+                nasa_rust_project::emit::verilog::emit_sv_with_options(&result, t, dsp_threshold)
+            };
+            wasm_ok(serde_json::Value::String(sv))
+        }
+        Err(errors) => wasm_err(&errors),
+    }
+}
+
+#[wasm_bindgen]
+pub fn compile_dot_with_detail(source: &str, detail_expr: bool) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+    let config = default_config();
+    match run_pipeline(source, &config) {
+        Ok(result) => {
+            let dot = if detail_expr {
+                nasa_rust_project::emit::dot::emit_expr_dot(&result)
+            } else {
+                nasa_rust_project::emit::dot::emit_module_dot(&result)
+            };
+            wasm_ok(serde_json::Value::String(dot))
+        }
+        Err(errors) => wasm_err(&errors),
+    }
+}
+
+#[wasm_bindgen]
+pub fn compile_json_netlist(source: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+    let config = default_config();
+    match run_pipeline(source, &config) {
+        Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
+            Ok(json_str) => wasm_ok(serde_json::Value::String(json_str)),
+            Err(e) => {
+                let diag = WasmDiagnostic {
+                    code: Some("E004".to_string()),
+                    message: format!("JSON netlist serialization failed: {}", e),
+                    span: None,
+                    labels: vec![],
+                    help: None,
+                };
+                wasm_err_single(diag)
+            }
+        },
+        Err(errors) => wasm_err(&errors),
+    }
+}
+
+#[wasm_bindgen]
+pub fn compile_target(source: &str, target: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+
+    let output = match target {
+        "verilog" | "sv" => {
+            let config = default_config();
+            match run_pipeline(source, &config) {
+                Ok(result) => nasa_rust_project::emit::verilog::emit_sv(&result),
+                Err(errors) => return wasm_err(&errors),
+            }
+        }
+        "firrtl" => {
+            let config = default_config();
+            match run_pipeline(source, &config) {
+                Ok(result) => nasa_rust_project::emit::firrtl::emit_firrtl(&result),
+                Err(errors) => return wasm_err(&errors),
+            }
+        }
+        "rspu" => {
+            let config = PipelineConfig { rspu: true, temporal: true, ..default_config() };
+            match run_pipeline(source, &config) {
+                Ok(result) => match nasa_rust_project::emit::rspu::emit_rspu(&result) {
+                    Ok(program) => program.emit_asm(),
+                    Err(e) => {
+                        let diag = WasmDiagnostic::from_error(&e);
+                        return wasm_err_single(diag);
+                    }
+                },
+                Err(errors) => return wasm_err(&errors),
+            }
+        }
+        "json" => {
+            let config = default_config();
+            match run_pipeline(source, &config) {
+                Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
+                    Ok(json_str) => json_str,
+                    Err(e) => {
+                        let diag = WasmDiagnostic {
+                            code: Some("E004".to_string()),
+                            message: format!("JSON netlist serialization failed: {}", e),
+                            span: None,
+                            labels: vec![],
+                            help: None,
+                        };
+                        return wasm_err_single(diag);
+                    }
+                },
+                Err(errors) => return wasm_err(&errors),
+            }
+        }
+        "sexpr" => {
+            let config = default_config();
+            match run_pipeline(source, &config) {
+                Ok(result) => nasa_rust_project::emit::sexpr::emit_sexpr(&result),
+                Err(errors) => return wasm_err(&errors),
+            }
+        }
+        "dot" => {
+            let config = default_config();
+            match run_pipeline(source, &config) {
+                Ok(result) => nasa_rust_project::emit::dot::emit_module_dot(&result),
+                Err(errors) => return wasm_err(&errors),
+            }
+        }
+        _ => {
+            let diag = WasmDiagnostic {
+                code: Some("E001".to_string()),
+                message: format!(
+                    "Unknown compile target: {}. Allowed targets: verilog, firrtl, rspu, json, sexpr, dot.",
+                    target
+                ),
+                span: None,
+                labels: vec![],
+                help: Some(
+                    "Valid targets: verilog, firrtl, rspu, json, sexpr, dot".to_string(),
+                ),
+            };
+            return wasm_err_single(diag);
+        }
+    };
+    wasm_ok(serde_json::Value::String(output))
+}
+
+#[wasm_bindgen]
+pub fn compile_mapek_rtl(source: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+    let config =
+        PipelineConfig { mape_k: true, emit_mape_k_rtl: true, temporal: true, ..default_config() };
+    match run_pipeline(source, &config) {
+        Ok(result) => match &result.mape_k_result {
+            Some(res) => match serde_json::to_value(res) {
+                Ok(val) => wasm_ok(val),
+                Err(e) => {
+                    let diag = WasmDiagnostic {
+                        code: Some("E002".to_string()),
+                        message: format!("MAPE-K RTL serialization failed: {}", e),
+                        span: None,
+                        labels: vec![],
+                        help: None,
+                    };
+                    wasm_err_single(diag)
+                }
+            },
+            None => {
+                let diag = WasmDiagnostic {
+                    code: Some("E003".to_string()),
+                    message: "MAPE-K compilation produced no result".to_string(),
+                    span: None,
+                    labels: vec![],
+                    help: None,
+                };
+                wasm_err_single(diag)
+            }
+        },
+        Err(errors) => wasm_err(&errors),
+    }
+}
+
+#[wasm_bindgen]
+pub fn compile_cert(source: &str) -> String {
+    if let Err(msg) = check_length(source) {
+        return length_error(msg);
+    }
+    let config = PipelineConfig { rspu: true, temporal: true, totality: true, ..default_config() };
+    match run_pipeline(source, &config) {
+        Ok(result) => match nasa_rust_project::emit::cert::emit_certificate(&result) {
+            Ok(cert_bytes) => {
+                let hex_cert = cert_bytes.iter().fold(String::new(), |mut acc, byte| {
+                    acc.push_str(&format!("{:02x}", byte));
+                    acc
+                });
+                wasm_ok(serde_json::json!({
+                    "certificate": hex_cert,
+                    "size_bytes": cert_bytes.len(),
+                    "valid": true,
+                }))
+            }
+            Err(e) => {
+                let diag = WasmDiagnostic {
+                    code: Some("E008".to_string()),
+                    message: format!("Certificate generation failed: {}", e),
+                    span: None,
+                    labels: vec![],
+                    help: Some("Ensure source compiles to a total R-SPU program".to_string()),
+                };
+                wasm_err_single(diag)
+            }
+        },
+        Err(errors) => wasm_err(&errors),
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Simulation functions
 // ---------------------------------------------------------------------------
 

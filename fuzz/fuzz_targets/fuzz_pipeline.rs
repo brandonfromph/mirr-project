@@ -12,6 +12,7 @@ fuzz_target!(|data: &[u8]| {
             rspu: false,
             extended_typecheck: false,
             simulate: false,
+            ..PipelineConfig::default()
         };
         let _ = run_pipeline(s, &config);
     }

@@ -14,6 +14,9 @@ The `compiler_mirr/` directory contains the MIRR-in-MIRR implementation for self
 The project uses an incremental porting strategy, preserving original implementations
 as `.bak` files while building minimal, parseable primitives to unblock the bootstrap process.
 
+This page tracks the current porting work for the hosted MIRR-in-MIRR compiler path.
+For the achieved stage-1 milestone, see [docs/self_hosting_milestone.md](self_hosting_milestone.md).
+
 ## Module Status
 
 | Module | Status | Porting % | Notes |

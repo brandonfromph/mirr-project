@@ -27,6 +27,7 @@ use crate::temporal::low_level_ir::{CompiledGuard, ConditionKind, TemporalNetlis
 
 use super::rspu_isa::*;
 use super::rspu_regalloc::{allocate_registers, RegAllocResult};
+use crate::emit::rspu_opt::peephole_optimize;
 use crate::emit::rspu_tagged::tag_from_signal_type;
 
 /// Emit an R-SPU program from pipeline results.
@@ -93,6 +94,9 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
             out_port_idx += 1;
         }
     }
+
+    // Apply a bounded peephole pass to reduce trivial temporary instructions.
+    let instrs = peephole_optimize(&instrs);
 
     // Bounds check.
     if instrs.len() > MAX_INSTRUCTIONS {
@@ -416,13 +420,15 @@ fn emit_expr(
                 result_stack.push(tmp);
             }
             ExprWork::EmitBinary(op) => {
-                let a = result_stack.pop().unwrap_or(0);
-                let b = result_stack.pop().unwrap_or(0);
+                // Preserve source-level operand order: lhs op rhs.
+                // With left evaluated before right, the stack top is rhs.
+                let rhs = result_stack.pop().unwrap_or(0);
+                let lhs = result_stack.pop().unwrap_or(0);
                 let tmp = regs
                     .alloc_temp()
                     .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
                 let alu_op = binary_to_alu(op);
-                instrs.push(RspuInstruction::Alu { op: alu_op, dst: tmp, a, b });
+                instrs.push(RspuInstruction::Alu { op: alu_op, dst: tmp, a: lhs, b: rhs });
                 result_stack.push(tmp);
             }
         }

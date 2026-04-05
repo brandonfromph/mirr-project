@@ -3,13 +3,22 @@ const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
 
-// helper to send a single JSON‑RPC request over stdio
-function sendRequest(proc, req) {
+// helper to send a single JSON-RPC request over stdio
+function sendRequest(proc, req, timeoutMs = 0) {
   // allow passing apiKey property separately or inside req.apiKey
   req.id = req.id || Math.floor(Math.random() * 1e6);
   const expectedId = req.id;
   return new Promise((resolve) => {
     let buf = '';
+    let timeoutHandle = null;
+
+    const cleanup = () => {
+      proc.stdout.off('data', onData);
+      if (timeoutHandle !== null) {
+        clearTimeout(timeoutHandle);
+      }
+    };
+
     const onData = d => {
       buf += d.toString();
       let idx;
@@ -22,7 +31,7 @@ function sendRequest(proc, req) {
           if (msg.id !== expectedId) {
             continue;
           }
-          proc.stdout.off('data', onData);
+          cleanup();
           resolve(msg);
         } catch (e) {
           // ignore parse failures
@@ -30,8 +39,60 @@ function sendRequest(proc, req) {
       }
     };
     proc.stdout.on('data', onData);
+    if (timeoutMs > 0) {
+      timeoutHandle = setTimeout(() => {
+        cleanup();
+        resolve(null);
+      }, timeoutMs);
+    }
     proc.stdin.write(JSON.stringify(req) + '\n');
   });
+}
+
+const READY_MAX_ATTEMPTS = 20;
+const READY_DELAY_MS = 50;
+const READY_REQUEST_TIMEOUT_MS = 200;
+
+function sleepMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function waitForServerReady(proc, requiredHandler = null) {
+  for (let attempt = 0; attempt < READY_MAX_ATTEMPTS; attempt++) {
+    const handlers = await sendRequest(
+      proc,
+      { method: 'list_handlers', params: {} },
+      READY_REQUEST_TIMEOUT_MS
+    );
+    if (
+      handlers &&
+      handlers.result &&
+      Array.isArray(handlers.result.handlers) &&
+      (!requiredHandler || handlers.result.handlers.includes(requiredHandler))
+    ) {
+      return handlers;
+    }
+
+    const schema = await sendRequest(
+      proc,
+      { method: 'mcp_schema', params: {} },
+      READY_REQUEST_TIMEOUT_MS
+    );
+    if (
+      schema &&
+      schema.jsonrpc === '2.0' &&
+      (schema.result || schema.error) &&
+      !requiredHandler
+    ) {
+      return schema;
+    }
+
+    if (attempt + 1 < READY_MAX_ATTEMPTS) {
+      await sleepMs(READY_DELAY_MS);
+    }
+  }
+
+  throw new Error('server readiness check exceeded bounded attempts');
 }
 
 async function startServer(args = [], extraEnv = {}) {
@@ -47,7 +108,6 @@ async function startServer(args = [], extraEnv = {}) {
   proc.on('error', err => {
     console.log('wrapper spawn error', err);
   });
-  await new Promise(r => setTimeout(r, 200));
   return { proc };
 }
 
@@ -59,6 +119,7 @@ async function stopServer(proc) {
 async function testConnReset() {
   console.log('testing simulated ECONNRESET');
   const { proc } = await startServer([], { MCP_TEST_FORCE_RESET: '1' });
+  await waitForServerReady(proc);
   const resp = await sendRequest(proc, { method: 'mcp_schema', params: {} });
   assert.strictEqual(resp.error?.code, -32000, 'expected -32000 error');
   assert.ok(resp.error.message.includes('ECONNRESET'), 'message should mention ECONNRESET');
@@ -70,34 +131,40 @@ async function runTests() {
 
   // ensure an initial admin key exists in config so we can manage keys
   const cfgPath = path.join(__dirname, '..', 'config.json');
-  try {
-    fs.writeFileSync(cfgPath, JSON.stringify({
-      api_keys: [{ id: 'admin', role: 'admin', token: 'ADMIN' }]
-    }, null, 2));
-  } catch (e) {}
+  const cfgBackup = fs.existsSync(cfgPath) ? fs.readFileSync(cfgPath, 'utf8') : null;
 
-  console.log('running stdio-direct tests');
-  const { proc } = await startServer();
+  try {
+    try {
+      fs.writeFileSync(cfgPath, JSON.stringify({
+        api_keys: [{ id: 'admin', role: 'admin', token: 'ADMIN' }]
+      }, null, 2));
+    } catch (e) {}
+
+    console.log('running stdio-direct tests');
+    const { proc } = await startServer();
+    const handlersList = await waitForServerReady(proc, 'generate_api_key');
 
   const schema = await sendRequest(proc, { method: 'mcp_schema', params: {} });
   assert.strictEqual(schema.jsonrpc, '2.0');
   assert.ok(schema.result && schema.result.methods);
+  assert.ok(schema.result.methods.mrt_wave_dry_run, 'schema must advertise mrt_wave_dry_run');
+  assert.ok(schema.result.methods.mrt_wave_apply, 'schema must advertise mrt_wave_apply');
+  assert.ok(schema.result.methods.mrt_lsp_diagnostics, 'schema must advertise mrt_lsp_diagnostics');
+  assert.ok(schema.result.methods.mrt_general_ci_compile, 'schema must advertise mrt_general_ci_compile');
+  assert.ok(schema.result.methods.mrt_general_ci_fast, 'schema must advertise mrt_general_ci_fast');
 
   const health = await sendRequest(proc, { method: 'health', params: {} });
   assert.strictEqual(health.jsonrpc, '2.0');
   assert.strictEqual(health.result.ok, true);
 
-  // introspect registered handlers in stdio mode; retry until admin endpoints appear
-  let handlersList;
-  for (let i = 0; i < 10; i++) {
-    handlersList = await sendRequest(proc, { method: 'list_handlers', params: {} });
-    if (handlersList.result && Array.isArray(handlersList.result.handlers) && handlersList.result.handlers.includes('generate_api_key')) {
-      break;
-    }
-    console.log('waiting for admin handlers, current:', handlersList);
-    await new Promise(r => setTimeout(r, 100));
-  }
   console.log('registered handlers', handlersList);
+  assert.ok(handlersList.result && Array.isArray(handlersList.result.handlers));
+  assert.ok(handlersList.result.handlers.includes('generate_api_key'));
+  assert.ok(handlersList.result.handlers.includes('mrt_wave_dry_run'));
+  assert.ok(handlersList.result.handlers.includes('mrt_wave_apply'));
+  assert.ok(handlersList.result.handlers.includes('mrt_lsp_diagnostics'));
+  assert.ok(handlersList.result.handlers.includes('mrt_general_ci_compile'));
+  assert.ok(handlersList.result.handlers.includes('mrt_general_ci_fast'));
 
   const resp = await sendRequest(proc, { method: 'no_such_method', params: {} });
 
@@ -141,13 +208,16 @@ async function runTests() {
   const outside = await sendRequest(proc, { method: 'write_file', params: { path: '../outside.txt', content: 'bad' }, apiKey: committerToken });
   assert.ok(outside.error && outside.error.code === 403);
 
-  // we now treat unknown methods as harmless null results for compatibility
-  assert.strictEqual(resp.result, null);
-  // server should have logged the missing method (check stderr if needed)
+  // strict mode is default: unknown methods must fail closed.
+  assert.strictEqual(resp.error?.code, 404, 'unknown methods must return 404 in strict default mode');
+  assert.ok(
+    resp.error.message.includes('MCP unknown method rejected'),
+    'unknown-method response must mention explicit rejection'
+  );
 
-  // simulate a CLINE probe such as ctx.sample – should also return null
+  // simulate a CLINE probe such as ctx.sample - strict mode should reject it.
   const probe = await sendRequest(proc, { method: 'ctx.sample', params: {} });
-  assert.strictEqual(probe.result, null);
+  assert.strictEqual(probe.error?.code, 404, 'ctx.sample must be rejected in strict default mode');
 
   // another common probe: resources/templates/list
   const tpl = await sendRequest(proc, { method: 'resources/templates/list', params: {} });
@@ -174,13 +244,79 @@ async function runTests() {
   const adminOnly = await sendRequest(proc, { method: 'mrt_brain_get', params: { key: 'proposal-096' }, apiKey: builderToken });
   assert.strictEqual(adminOnly.error?.code, 403, 'builder must not call mrt_brain_get');
 
+  const builderWaveApply = await sendRequest(proc, {
+    method: 'mrt_wave_apply',
+    params: {},
+    apiKey: builderToken
+  });
+  assert.strictEqual(builderWaveApply.error?.code, 403, 'builder must not call mrt_wave_apply');
+
+  const adminLspMissingSource = await sendRequest(proc, {
+    method: 'mrt_lsp_diagnostics',
+    params: {},
+    apiKey: 'ADMIN'
+  });
+  assert.strictEqual(adminLspMissingSource.error?.code, 400, 'admin mrt_lsp_diagnostics without source must return 400');
+  assert.ok(adminLspMissingSource.error.message.includes('missing_source'));
+
+  const committerWaveDryRun = await sendRequest(proc, {
+    method: 'mrt_wave_dry_run',
+    params: {},
+    apiKey: committerToken
+  });
+  assert.notStrictEqual(committerWaveDryRun.error?.code, 401, 'committer mrt_wave_dry_run must pass auth layer');
+  assert.notStrictEqual(committerWaveDryRun.error?.code, 403, 'committer mrt_wave_dry_run must pass auth layer');
+
+  const committerGeneralCiCompile = await sendRequest(proc, {
+    method: 'mrt_general_ci_compile',
+    params: {},
+    apiKey: committerToken
+  });
+  assert.strictEqual(committerGeneralCiCompile.error?.code, 403, 'committer must not call mrt_general_ci_compile');
+
+  const builderGeneralCiCompile = await sendRequest(proc, {
+    method: 'mrt_general_ci_compile',
+    params: {},
+    apiKey: builderToken
+  });
+  assert.notStrictEqual(builderGeneralCiCompile.error?.code, 401, 'builder mrt_general_ci_compile must pass auth layer');
+  assert.notStrictEqual(builderGeneralCiCompile.error?.code, 403, 'builder mrt_general_ci_compile must pass role gate');
+
+  const builderGeneralCiFast = await sendRequest(proc, {
+    method: 'mrt_general_ci_fast',
+    params: {},
+    apiKey: builderToken
+  });
+  assert.notStrictEqual(builderGeneralCiFast.error?.code, 401, 'builder mrt_general_ci_fast must pass auth layer');
+  assert.notStrictEqual(builderGeneralCiFast.error?.code, 403, 'builder mrt_general_ci_fast must pass role gate');
+
+  const adminBrainGet = await sendRequest(proc, {
+    method: 'mrt_brain_get',
+    params: { key: 'proposal-096' },
+    apiKey: 'ADMIN'
+  });
+  assert.ok(adminBrainGet.result, 'admin mrt_brain_get should succeed with result');
+  assert.strictEqual(adminBrainGet.result.exitCode, 0);
+  assert.strictEqual(adminBrainGet.result.tool, 'mrt_brain_get');
+  assert.strictEqual(adminBrainGet.result.output_limit_bytes, 65536);
+  assert.ok(Object.prototype.hasOwnProperty.call(adminBrainGet.result, 'stdout_truncated'));
+  assert.strictEqual(typeof adminBrainGet.result.stdout_truncated, 'boolean');
+  assert.ok(Object.prototype.hasOwnProperty.call(adminBrainGet.result, 'stderr_truncated'));
+  assert.strictEqual(typeof adminBrainGet.result.stderr_truncated, 'boolean');
+  const adminBrainPayload = JSON.parse(adminBrainGet.result.stdout);
+  assert.strictEqual(adminBrainPayload.backend, 'kb-data');
+  assert.strictEqual(adminBrainPayload.result_limit, 16);
+  assert.strictEqual(adminBrainPayload.entry_size_limit, 4096);
+  assert.ok(Object.prototype.hasOwnProperty.call(adminBrainPayload, 'graph_db_present'));
+  assert.strictEqual(typeof adminBrainPayload.graph_db_present, 'boolean');
+
   const unknownTool = await sendRequest(proc, {
     method: 'mrt_execute',
     params: { tool: 'mrt_unknown_tool', args: [] },
     apiKey: 'ADMIN'
   });
-  assert.strictEqual(unknownTool.error?.code, 400, 'unknown mrt_execute tool must return 400');
-  assert.ok(unknownTool.error.message.includes('unknown_tool'));
+  assert.strictEqual(unknownTool.error?.code, 410, 'mrt_execute compatibility wrapper must be disabled by default');
+  assert.ok(unknownTool.error.message.includes('mrt_execute_compat_disabled'));
 
   // Wave 2 strict MRT contract checks (source-level canaries).
   const mrtPath = path.join(__dirname, '..', 'src', 'mrt.ts');
@@ -217,15 +353,38 @@ async function runTests() {
     throw new Error('unexpected port/pipe file created');
   }
 
+  const compat = await startServer([], { MRT_COMPAT_UNKNOWN_METHODS: '1' });
+  await waitForServerReady(compat.proc);
+  const compatUnknown = await sendRequest(compat.proc, {
+    method: 'no_such_method_compat',
+    params: {}
+  });
+  assert.strictEqual(compatUnknown.result, null, 'compat mode unknown method must return null result');
+  await stopServer(compat.proc);
+
   // garbage input shouldn't crash
   const p = await startServer();
+  await waitForServerReady(p.proc);
   p.proc.stdin.write('notjson\n');
   await new Promise(r => setTimeout(r, 100));
   await stopServer(p.proc);
 
-  await testConnReset();
+    await testConnReset();
 
-  console.log('all tests passed');
+    console.log('all tests passed');
+  } finally {
+    try {
+      if (cfgBackup === null) {
+        if (fs.existsSync(cfgPath)) {
+          fs.unlinkSync(cfgPath);
+        }
+      } else {
+        fs.writeFileSync(cfgPath, cfgBackup);
+      }
+    } catch (e) {
+      console.error('failed to restore config.json after tests', e);
+    }
+  }
 }
 
 runTests().catch(err => {

@@ -212,7 +212,66 @@ impl ExprParser {
             Token::False => Ok(Expr::Literal(LiteralValue::Bool(false))),
             Token::Integer(n) => Ok(Expr::Literal(LiteralValue::Integer(n))),
             Token::Ident(name) => {
-                if let Some(Token::LBrace) = self.peek() {
+                if let Some(Token::LParen) = self.peek() {
+                    self.advance(); // consume '('
+                    let mut args: Vec<Expr> = Vec::with_capacity(2);
+
+                    if let Some(Token::RParen) = self.peek() {
+                        self.advance();
+                    } else {
+                        loop {
+                            args.push(self.parse_expr(0, depth + 1)?);
+                            match self.peek() {
+                                Some(Token::Comma) => {
+                                    self.advance();
+                                }
+                                Some(Token::RParen) => {
+                                    self.advance();
+                                    break;
+                                }
+                                _ => {
+                                    return Err(MirrError::parse_error(
+                                        "[E182] Expected ',' or ')' in function argument list.",
+                                    ));
+                                }
+                            }
+                        }
+                    }
+
+                    match name.as_str() {
+                        "prev" => {
+                            if args.len() != 2 {
+                                return Err(MirrError::parse_error(
+                                    "[E183] prev() expects exactly 2 arguments.",
+                                ));
+                            }
+
+                            let signal = match &args[0] {
+                                Expr::Signal(s) => s.clone(),
+                                _ => {
+                                    return Err(MirrError::parse_error(
+                                        "[E184] prev() first argument must be a signal identifier.",
+                                    ));
+                                }
+                            };
+
+                            let delay = match &args[1] {
+                                Expr::Literal(LiteralValue::Integer(v)) => *v,
+                                _ => {
+                                    return Err(MirrError::parse_error(
+                                        "[E185] prev() delay must be an integer literal.",
+                                    ));
+                                }
+                            };
+
+                            Ok(Expr::Prev { signal, delay })
+                        }
+                        _ => Err(MirrError::parse_error(format!(
+                            "[E186] Unknown function call '{}'.",
+                            name
+                        ))),
+                    }
+                } else if let Some(Token::LBrace) = self.peek() {
                     self.advance(); // consume '{'
                     let mut fields: Vec<(String, Expr)> = Vec::new();
                     loop {

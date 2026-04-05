@@ -3,8 +3,20 @@ import bodyParser from "body-parser";
 import { promises as fs } from "fs";
 import path from "path";
 import { promisify } from "util";
-import { execFile } from "child_process";
+import { execFile, spawnSync } from "child_process";
 import glob from "glob";
+import {
+  MAX_OUTPUT_BYTES,
+  MAX_WAVE_LINES,
+  type MrtDispatchTool,
+  brainGetArgs,
+  clipOutput,
+  generalCiCompileArgs,
+  generalCiFastArgs,
+  lspDiagnosticsInvocation,
+  waveApplyArgs,
+  waveDryRunArgs,
+} from "./mrt_kb_lite.js";
 
 const execFileAsync = promisify(execFile);
 const globAsync = promisify(glob);
@@ -34,15 +46,18 @@ function requireMrtDispatchRole(req: express.Request, toolName: string) {
     mrt_audit: ["builder", "committer", "admin"],
     mrt_brain_get: ["committer", "admin"],
     mrt_general_ci: ["builder", "admin"],
+    mrt_general_ci_compile: ["builder", "admin"],
+    mrt_general_ci_fast: ["builder", "admin"],
+    mrt_wave_dry_run: ["builder", "committer", "admin"],
+    mrt_wave_apply: ["admin"],
+    mrt_lsp_diagnostics: ["builder", "committer", "admin"],
   };
   const allowed = toolRoleAllowlist[toolName];
   if (!allowed) {
-    return { ok: false, reason: "unknown_tool" };
+    return { ok: false, reason: `MCP unknown method rejected: ${toolName}.` };
   }
   return requireRole(req, allowed);
 }
-
-type MrtDispatchTool = "mrt_audit" | "mrt_brain_get" | "mrt_general_ci";
 
 function getBodyString(body: unknown, key: string, fallback = ""): string {
   if (!body || typeof body !== "object") {
@@ -52,71 +67,224 @@ function getBodyString(body: unknown, key: string, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-function resolveMrtInvocation(toolName: MrtDispatchTool, body: unknown): { bin: string; args: string[] } {
-  if (toolName === "mrt_audit") {
-    const mode = getBodyString(body, "mode", "workspace");
-    const globExpr = getBodyString(body, "glob", "src/**/*.rs");
+function getBodyNumber(body: unknown, key: string, fallback: number): number {
+  if (!body || typeof body !== "object") {
+    return fallback;
+  }
+  const value = (body as Record<string, unknown>)[key];
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function isMrtDispatchTool(toolName: string): toolName is MrtDispatchTool {
+  return (
+    toolName === "mrt_audit" ||
+    toolName === "mrt_brain_get" ||
+    toolName === "mrt_general_ci" ||
+    toolName === "mrt_general_ci_compile" ||
+    toolName === "mrt_general_ci_fast" ||
+    toolName === "mrt_wave_dry_run" ||
+    toolName === "mrt_wave_apply" ||
+    toolName === "mrt_lsp_diagnostics"
+  );
+}
+
+type MrtInvocation = {
+  bin: string;
+  args: string[];
+  stdinData?: string;
+};
+
+function resolveMrtInvocation(toolName: MrtDispatchTool, body: unknown): MrtInvocation {
+  switch (toolName) {
+    case "mrt_audit": {
+      const mode = getBodyString(body, "mode", "workspace");
+      const globExpr = getBodyString(body, "glob", "src/**/*.rs");
+      return {
+        bin: "mirr-audit",
+        args: ["--mode", mode, "--glob", globExpr, "--format", "json"],
+      };
+    }
+    case "mrt_brain_get": {
+      return {
+        bin: "mirr-brain",
+        args: brainGetArgs(getBodyString(body, "key")),
+      };
+    }
+    case "mrt_general_ci": {
+      return {
+        bin: "mirr-general",
+        args: ["ci", "--format", "json"],
+      };
+    }
+    case "mrt_general_ci_compile": {
+      return {
+        bin: "mirr-general",
+        args: generalCiCompileArgs(),
+      };
+    }
+    case "mrt_general_ci_fast": {
+      return {
+        bin: "mirr-general",
+        args: generalCiFastArgs(),
+      };
+    }
+    case "mrt_wave_dry_run": {
+      const proposalId = getBodyString(body, "proposal_id", getBodyString(body, "proposalId"));
+      const proposalFile = getBodyString(body, "proposal_file", getBodyString(body, "proposalFile"));
+      const maxLines = getBodyNumber(body, "max_lines", getBodyNumber(body, "maxLines", MAX_WAVE_LINES));
+      return {
+        bin: "mirr-wave",
+        args: waveDryRunArgs(proposalId, proposalFile, maxLines),
+      };
+    }
+    case "mrt_wave_apply": {
+      const proposalId = getBodyString(body, "proposal_id", getBodyString(body, "proposalId"));
+      const proposalFile = getBodyString(body, "proposal_file", getBodyString(body, "proposalFile"));
+      const maxLines = getBodyNumber(body, "max_lines", getBodyNumber(body, "maxLines", MAX_WAVE_LINES));
+      return {
+        bin: "mirr-wave",
+        args: waveApplyArgs(proposalId, proposalFile, maxLines),
+      };
+    }
+    case "mrt_lsp_diagnostics": {
+      const source = getBodyString(body, "source");
+      const invocation = lspDiagnosticsInvocation(source);
+      return {
+        bin: "mirr-lsp",
+        args: invocation.args,
+        stdinData: invocation.stdinData,
+      };
+    }
+    default: {
+      throw new Error(`MCP unknown method rejected: ${String(toolName)}.`);
+    }
+  }
+}
+
+async function executeMrtInvocation(invocation: MrtInvocation): Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}> {
+  const commandArgs = ["run", "--bin", invocation.bin, "--", ...invocation.args];
+
+  if (typeof invocation.stdinData === "string") {
+    const result = spawnSync("cargo", commandArgs, {
+      cwd: WORKSPACE_ROOT,
+      timeout: DEFAULT_TIMEOUT,
+      maxBuffer: MAX_OUTPUT_BYTES,
+      input: invocation.stdinData,
+      encoding: "utf8",
+    });
+
+    if (result.error) {
+      const syncError = result.error as any;
+      syncError.stdout = result.stdout;
+      syncError.stderr = result.stderr;
+      syncError.status = result.status;
+      throw syncError;
+    }
+
+    const exitCode = typeof result.status === "number" ? result.status : 1;
+    if (exitCode !== 0) {
+      const execError = new Error(`mrt_exec_failed_exit_${exitCode}`) as any;
+      execError.code = exitCode;
+      execError.stdout = result.stdout;
+      execError.stderr = result.stderr;
+      throw execError;
+    }
+
     return {
-      bin: "mirr-audit",
-      args: ["--mode", mode, "--glob", globExpr, "--format", "json"],
+      stdout: typeof result.stdout === "string" ? result.stdout : "",
+      stderr: typeof result.stderr === "string" ? result.stderr : "",
+      exitCode,
     };
   }
 
-  if (toolName === "mrt_brain_get") {
-    const key = getBodyString(body, "key");
-    if (key.length === 0) {
-      throw new Error("missing_key");
-    }
-    return {
-      bin: "mirr-brain",
-      args: ["get", "--key", key, "--format", "json"],
-    };
-  }
+  const result = await execFileAsync("cargo", commandArgs, {
+    cwd: WORKSPACE_ROOT,
+    maxBuffer: MAX_OUTPUT_BYTES,
+    timeout: DEFAULT_TIMEOUT,
+  });
 
   return {
-    bin: "mirr-general",
-    args: ["ci", "--format", "json"],
+    stdout: typeof (result as any).stdout === "string" ? (result as any).stdout : "",
+    stderr: typeof (result as any).stderr === "string" ? (result as any).stderr : "",
+    exitCode: 0,
   };
 }
 
 async function handleMrtDispatch(toolName: MrtDispatchTool, req: express.Request, res: express.Response) {
   const rr = requireMrtDispatchRole(req, toolName);
   if (!rr.ok) {
-    const code = rr.reason === "missing_api_key" ? 401 : rr.reason === "unknown_tool" ? 400 : 403;
+    const code = rr.reason === "missing_api_key" ? 401 : rr.reason?.startsWith("MCP unknown method rejected:") ? 400 : 403;
     return res.status(code).json({ error: rr.reason, role: (rr as any).role ?? null });
   }
 
   try {
     const invocation = resolveMrtInvocation(toolName, req.body || {});
     const execResult = await withConcurrencyLimit(req, async () => {
-      return await execFileAsync(
-        "cargo",
-        ["run", "--bin", invocation.bin, "--", ...invocation.args],
-        {
-          cwd: WORKSPACE_ROOT,
-          maxBuffer: 20 * 1024 * 1024,
-          timeout: DEFAULT_TIMEOUT,
-        }
-      );
+      return await executeMrtInvocation(invocation);
     });
 
-    const stdout = typeof (execResult as any).stdout === "string" ? (execResult as any).stdout.trim() : "";
-    const stderr = typeof (execResult as any).stderr === "string" ? (execResult as any).stderr.trim() : "";
+    const stdoutRaw = typeof execResult.stdout === "string" ? execResult.stdout.trim() : "";
+    const stderrRaw = typeof execResult.stderr === "string" ? execResult.stderr.trim() : "";
+    const stdoutClipped = clipOutput(stdoutRaw);
+    const stderrClipped = clipOutput(stderrRaw);
     return res.json({
       schema_version: "1",
       tool: toolName,
       args: invocation.args,
-      exitCode: 0,
-      stdout,
-      stderr,
+      exitCode: execResult.exitCode,
+      stdout: stdoutClipped.text,
+      stderr: stderrClipped.text,
+      stdout_truncated: stdoutClipped.truncated,
+      stderr_truncated: stderrClipped.truncated,
+      output_limit_bytes: MAX_OUTPUT_BYTES,
     });
   } catch (err: any) {
     if (err && err.message === "concurrency_limit_exceeded") {
       return res.status(429).json({ error: err.message });
     }
-    if (err && err.message === "missing_key") {
-      return res.status(400).json({ error: "missing_key" });
+
+    const errorMessage = typeof err?.message === "string" ? err.message : "";
+    if (
+      errorMessage === "missing_key" ||
+      errorMessage === "kb_key_too_long" ||
+      errorMessage === "missing_proposal_id" ||
+      errorMessage === "invalid_proposal_id" ||
+      errorMessage === "missing_proposal_file" ||
+      errorMessage === "invalid_proposal_file" ||
+      errorMessage === "invalid_max_lines" ||
+      errorMessage === "missing_source" ||
+      errorMessage === "lsp_source_too_large"
+    ) {
+      return res.status(400).json({ error: errorMessage });
     }
+
+    const errorCode = typeof err?.code === "string" ? err.code : "";
+    const errorErrno = typeof err?.errno === "string" ? err.errno : "";
+    if (
+      errorCode === "ENOBUFS" ||
+      errorErrno === "ENOBUFS" ||
+      errorCode === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" ||
+      errorMessage.toLowerCase().includes("maxbuffer")
+    ) {
+      return res.status(400).json({
+        error: "output_too_large",
+        limit_bytes: MAX_OUTPUT_BYTES,
+      });
+    }
+
     const stderr = err?.stderr?.toString?.() ?? "";
     const stdout = err?.stdout?.toString?.() ?? "";
     const details = stderr || stdout || String(err?.message || err);
@@ -393,6 +561,45 @@ app.post("/mcp_schema", (_req, res) => {
         description: "Run mirr-general ci with MRT role allowlist enforcement.",
         parameters: [],
       },
+      mrt_general_ci_compile: {
+        autoApprove: false,
+        description: "Run mirr-general ci compile gate with MRT role allowlist enforcement.",
+        parameters: [],
+      },
+      mrt_general_ci_fast: {
+        autoApprove: false,
+        description: "Run mirr-general ci fast gate with MRT role allowlist enforcement.",
+        parameters: [],
+      },
+      mrt_wave_dry_run: {
+        autoApprove: false,
+        description: "Run mirr-wave in dry-run mode with bounded proposal inputs.",
+        parameters: [
+          { name: "proposal_id", required: false, type: "string" },
+          { name: "proposalId", required: false, type: "string" },
+          { name: "proposal_file", required: false, type: "string" },
+          { name: "proposalFile", required: false, type: "string" },
+          { name: "max_lines", required: false, type: "number" },
+          { name: "maxLines", required: false, type: "number" },
+        ],
+      },
+      mrt_wave_apply: {
+        autoApprove: false,
+        description: "Run mirr-wave apply mode with bounded proposal inputs.",
+        parameters: [
+          { name: "proposal_id", required: false, type: "string" },
+          { name: "proposalId", required: false, type: "string" },
+          { name: "proposal_file", required: false, type: "string" },
+          { name: "proposalFile", required: false, type: "string" },
+          { name: "max_lines", required: false, type: "number" },
+          { name: "maxLines", required: false, type: "number" },
+        ],
+      },
+      mrt_lsp_diagnostics: {
+        autoApprove: false,
+        description: "Run mirr-lsp diagnostics on a bounded source string through stdin.",
+        parameters: [{ name: "source", required: true, type: "string" }],
+      },
     },
   };
   res.json(schema);
@@ -464,6 +671,10 @@ function verifyApiKey(token: string) {
 const CONCURRENCY: Record<string, number> = {};
 const MAX_CONCURRENT_PER_KEY = Number(CONFIG.max_concurrent_per_key ?? 2);
 const DEFAULT_TIMEOUT = Number(CONFIG.timeouts?.default_ms ?? 120000);
+const MRT_COMPAT_UNKNOWN_METHODS = process.env.MRT_COMPAT_UNKNOWN_METHODS === "1";
+// Strict/fail-closed is default; null-result fallback is compatibility mode only.
+const MRT_STRICT_MODE = !MRT_COMPAT_UNKNOWN_METHODS;
+const MRT_ENABLE_EXECUTE_COMPAT = process.env.MRT_ENABLE_EXECUTE_COMPAT === "1";
 
 // helper used by the server in stdio‑direct mode.  It reads line‑delimited
 // JSONRPC requests from stdin and dispatches to the same handlers that back
@@ -525,8 +736,7 @@ const DEFAULT_TIMEOUT = Number(CONFIG.timeouts?.default_ms ?? 120000);
     let methodName: string | undefined = msg.method;
     if (!methodName) {
       console.error('stdio: missing method in message', msg);
-      sendRpc({ ...base, result: null });
-      return;
+      methodName = "missing_method";
     }
 
     // If exact match exists, use it.
@@ -554,9 +764,22 @@ const DEFAULT_TIMEOUT = Number(CONFIG.timeouts?.default_ms ?? 120000);
     }
 
     if (!methodName || !(methodName in handlers)) {
-      // keep the previous compatibility behavior: return null result instead of JSON-RPC error
-      console.error('stdio: unknown method', msg.method, '->', methodName, '- returning null result for compatibility');
-      sendRpc({ ...base, result: null });
+      const unknownMethod = String(msg.method ?? methodName ?? "unknown");
+      const unknownMessage = `MCP unknown method rejected: ${unknownMethod}.`;
+      console.error(unknownMessage);
+      if (MRT_STRICT_MODE) {
+        sendRpc({
+          ...base,
+          error: {
+            code: 404,
+            message: unknownMessage,
+          },
+        });
+      } else {
+        // Compatibility mode keeps legacy null-result behavior for older clients.
+        console.error(`MCP compatibility mode fallback active for unknown method: ${unknownMethod}.`);
+        sendRpc({ ...base, result: null });
+      }
       return;
     }
 
@@ -656,9 +879,10 @@ app.post("/generate_api_key", (req, res) => {
   }
   const crypto = require("crypto");
   const token = crypto.randomBytes(16).toString("hex");
+  const tokenHash = sha256hex(token);
   CONFIG.api_keys = CONFIG.api_keys || [];
-  CONFIG.api_keys.push({ id, role, token });
-  RAW_API_KEYS[token] = { id, role };
+  CONFIG.api_keys.push({ id, role, token: tokenHash, hashed: true });
+  HASHED_API_KEYS[tokenHash] = { id, role };
   writeConfig();
   res.json({ token });
 });
@@ -686,13 +910,31 @@ app.post("/revoke_api_key", (req, res) => {
     res.status(400).json({ error: "missing_token_or_id" });
     return;
   }
+  const tokenHash = token ? sha256hex(token) : null;
+  const removed: any[] = [];
   CONFIG.api_keys = (CONFIG.api_keys || []).filter((k: any) => {
-    if (token && k.token === token) return false;
-    if (id && k.id === id) return false;
-    return true;
+    if (!k) return true;
+    let shouldRemove = false;
+    if (id && k.id === id) shouldRemove = true;
+    // Legacy raw-token config entries.
+    if (!shouldRemove && token && k.token === token) shouldRemove = true;
+    // Hashed entries are matched by SHA-256(token).
+    if (!shouldRemove && tokenHash && k.hashed && k.token === tokenHash) shouldRemove = true;
+    if (shouldRemove) removed.push(k);
+    return !shouldRemove;
   });
-  if (token) delete RAW_API_KEYS[token];
-  // if hashed there would be additional removal logic
+  for (const k of removed) {
+    if (!k || !k.token) continue;
+    if (k.hashed) {
+      delete HASHED_API_KEYS[k.token];
+    } else {
+      delete RAW_API_KEYS[k.token];
+    }
+  }
+  if (token) {
+    delete RAW_API_KEYS[token];
+    if (tokenHash) delete HASHED_API_KEYS[tokenHash];
+  }
   writeConfig();
   res.json({ ok: true });
 });
@@ -731,10 +973,38 @@ app.post("/mrt_general_ci", async (req, res) => {
   await handleMrtDispatch("mrt_general_ci", req, res);
 });
 
+app.post("/mrt_general_ci_compile", async (req, res) => {
+  await handleMrtDispatch("mrt_general_ci_compile", req, res);
+});
+
+app.post("/mrt_general_ci_fast", async (req, res) => {
+  await handleMrtDispatch("mrt_general_ci_fast", req, res);
+});
+
+app.post("/mrt_wave_dry_run", async (req, res) => {
+  await handleMrtDispatch("mrt_wave_dry_run", req, res);
+});
+
+app.post("/mrt_wave_apply", async (req, res) => {
+  await handleMrtDispatch("mrt_wave_apply", req, res);
+});
+
+app.post("/mrt_lsp_diagnostics", async (req, res) => {
+  await handleMrtDispatch("mrt_lsp_diagnostics", req, res);
+});
+
 app.post("/mrt_execute", async (req, res) => {
-  const tool = getBodyString(req.body, "tool") as MrtDispatchTool;
-  if (tool !== "mrt_audit" && tool !== "mrt_brain_get" && tool !== "mrt_general_ci") {
-    return res.status(400).json({ error: "unknown_tool" });
+  // Wave 8 closeout: keep compatibility route opt-in only.
+  if (!MRT_ENABLE_EXECUTE_COMPAT) {
+    return res.status(410).json({
+      error: "mrt_execute_compat_disabled",
+      message: "Use explicit mrt_* routes; set MRT_ENABLE_EXECUTE_COMPAT=1 for temporary fallback.",
+    });
+  }
+
+  const tool = getBodyString(req.body, "tool");
+  if (!isMrtDispatchTool(tool)) {
+    return res.status(400).json({ error: `MCP unknown method rejected: ${tool}.` });
   }
   return handleMrtDispatch(tool, req, res);
 });

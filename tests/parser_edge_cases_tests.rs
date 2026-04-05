@@ -67,6 +67,84 @@ fn double_nested_parens_parse_correctly() {
     }
 }
 
+#[test]
+fn canonical_prev_parses_to_prev_expr() {
+    let expr = parse_expression("prev(sensor, 3)").expect("should parse");
+    assert_eq!(expr, nasa_rust_project::ast::Expr::Prev { signal: "sensor".to_string(), delay: 3 });
+}
+
+#[test]
+fn canonical_prev_zero_delay_parses_for_semantic_validation() {
+    let expr = parse_expression("prev(sensor, 0)").expect("should parse");
+    assert_eq!(expr, nasa_rust_project::ast::Expr::Prev { signal: "sensor".to_string(), delay: 0 });
+}
+
+#[test]
+fn canonical_prev_in_binary_expression_parses() {
+    let expr = parse_expression("prev(x, 2) > 5").expect("should parse");
+    match expr {
+        nasa_rust_project::ast::Expr::Binary { op, left, right } => {
+            assert_eq!(op, nasa_rust_project::ast::types::BinaryOp::Gt);
+            assert_eq!(
+                *left,
+                nasa_rust_project::ast::Expr::Prev { signal: "x".to_string(), delay: 2 }
+            );
+            assert_eq!(
+                *right,
+                nasa_rust_project::ast::Expr::Literal(
+                    nasa_rust_project::ast::types::LiteralValue::Integer(5)
+                )
+            );
+        }
+        other => panic!("Expected Binary expression, got: {other:?}"),
+    }
+}
+
+#[test]
+fn prev_missing_args_rejected_with_strict_arity_message() {
+    let msg = expr_err("prev()");
+    assert!(
+        msg.contains("prev() expects exactly 2 arguments"),
+        "expected strict arity error, got: {msg}"
+    );
+}
+
+#[test]
+fn prev_one_arg_rejected_with_strict_arity_message() {
+    let msg = expr_err("prev(x)");
+    assert!(
+        msg.contains("prev() expects exactly 2 arguments"),
+        "expected strict arity error, got: {msg}"
+    );
+}
+
+#[test]
+fn prev_extra_arg_rejected_with_strict_arity_message() {
+    let msg = expr_err("prev(x, 1, 2)");
+    assert!(
+        msg.contains("prev() expects exactly 2 arguments"),
+        "expected strict arity error, got: {msg}"
+    );
+}
+
+#[test]
+fn prev_non_signal_first_arg_rejected() {
+    let msg = expr_err("prev(1, 2)");
+    assert!(
+        msg.contains("first argument must be a signal identifier"),
+        "expected signal-identifier error, got: {msg}"
+    );
+}
+
+#[test]
+fn prev_non_integer_delay_rejected() {
+    let msg = expr_err("prev(x, y)");
+    assert!(
+        msg.contains("delay must be an integer literal"),
+        "expected integer-delay error, got: {msg}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Module parser edge cases
 // ---------------------------------------------------------------------------

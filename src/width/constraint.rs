@@ -205,9 +205,9 @@ pub fn generate_constraints(
                     constraints.push(WidthConstraint::Fixed { node: node_id, width: 1 });
                 }
             }
-            FlatNode::ArrayIndex { array, .. } => {
-                // ArrayIndex inherits width of the array element.
-                constraints.push(WidthConstraint::SameAs { node: node_id, source: *array });
+            FlatNode::ArrayIndex { width, .. } => {
+                // ArrayIndex width is resolved by flattening from the array element type.
+                constraints.push(WidthConstraint::Fixed { node: node_id, width: *width });
             }
             FlatNode::FieldAccess { .. } => {
                 // FieldAccess width is determined during flattening via typeck.

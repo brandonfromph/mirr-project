@@ -17,6 +17,11 @@ fn validate_err(source: &str) -> String {
     errs.errors[0].to_string()
 }
 
+fn parse_only_err(source: &str) -> String {
+    let err = parse_mirr(source).expect_err("should fail parse");
+    err.to_string()
+}
+
 /// Helper: validate a hand-built module, return the error message.
 fn validate_module_err(module: &Module) -> String {
     let errs = validate_module(module).expect_err("should fail validation");
@@ -117,8 +122,7 @@ module dup_reflex {
 }
 
 // ---------------------------------------------------------------------------
-// Prev delay=0 validation (ASTs constructed programmatically
-// because the parser does not support prev() syntax)
+// Prev delay=0 validation
 // ---------------------------------------------------------------------------
 
 /// Build a minimal module with a guard whose condition contains a Prev node.
@@ -241,6 +245,112 @@ fn prev_delay_zero_in_reflex_rhs_pinned_message() {
     );
 }
 
+#[test]
+fn prev_delay_zero_in_guard_condition_from_source_pinned_message() {
+    let source = r#"
+module prev_guard_zero {
+    signal x: in u8;
+    signal y: out bool;
+
+    guard g {
+        when prev(x, 0) > 5
+        for 3 cycles;
+    }
+
+    reflex r {
+        on g {
+            y = true;
+        }
+    }
+}
+"#;
+    let msg = validate_err(source);
+    assert!(
+        msg.contains("[E209]")
+            && msg.contains("'g' contains prev('x') with delay 0; delay must be >= 1."),
+        "expected E209 prev delay error from parsed source, got: {msg}"
+    );
+}
+
+#[test]
+fn prev_delay_zero_in_reflex_rhs_from_source_pinned_message() {
+    let source = r#"
+module prev_reflex_zero {
+    signal x: in u8;
+    signal y: out u8;
+
+    guard g {
+        when x > 5
+        for 3 cycles;
+    }
+
+    reflex r {
+        on g {
+            y = prev(x, 0);
+        }
+    }
+}
+"#;
+    let msg = validate_err(source);
+    assert!(
+        msg.contains("[E209]")
+            && msg.contains("'r' contains prev('x') with delay 0; delay must be >= 1."),
+        "expected E209 prev delay error from parsed source, got: {msg}"
+    );
+}
+
+#[test]
+fn malformed_prev_in_guard_reports_parse_error() {
+    let source = r#"
+module bad_prev_guard {
+    signal x: in u8;
+    signal y: out bool;
+
+    guard g {
+        when prev(x)
+        for 2 cycles;
+    }
+
+    reflex r {
+        on g {
+            y = true;
+        }
+    }
+}
+"#;
+    let msg = parse_only_err(source);
+    assert!(
+        msg.contains("prev() expects exactly 2 arguments"),
+        "expected strict prev arity parse error, got: {msg}"
+    );
+}
+
+#[test]
+fn malformed_prev_in_reflex_reports_parse_error() {
+    let source = r#"
+module bad_prev_reflex {
+    signal x: in u8;
+    signal y: out u8;
+
+    guard g {
+        when x > 1
+        for 2 cycles;
+    }
+
+    reflex r {
+        on g {
+            y = prev(x, y);
+        }
+    }
+}
+"#;
+    let msg = parse_only_err(source);
+    assert!(
+        msg.contains("delay must be an integer literal"),
+        "expected prev delay literal parse error, got: {msg}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Undeclared signal inside Prev
 // ---------------------------------------------------------------------------
@@ -346,4 +456,27 @@ fn undeclared_signal_inside_prev_in_reflex_rhs() {
 fn prev_delay_one_is_valid() {
     let module = module_with_prev_in_guard(1);
     validate_module(&module).expect("should pass validation");
+}
+
+#[test]
+fn prev_delay_one_from_source_is_valid() {
+    let source = r#"
+module prev_ok {
+    signal x: in u8;
+    signal y: out bool;
+
+    guard g {
+        when prev(x, 1) > 5
+        for 2 cycles;
+    }
+
+    reflex r {
+        on g {
+            y = true;
+        }
+    }
+}
+"#;
+    let program = parse_mirr(source).expect("should parse");
+    validate_module(&program.module).expect("prev delay 1 should pass validation");
 }

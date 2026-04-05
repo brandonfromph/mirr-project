@@ -37,6 +37,22 @@ enum FlatWork<'a> {
         signal: &'a str,
         delay: u64,
     },
+    EmitArrayIndex {
+        width: u32,
+        signed: bool,
+    },
+    EmitFieldAccess {
+        field: String,
+        width: u32,
+        signed: bool,
+    },
+    EmitArrayLiteral {
+        len: usize,
+    },
+    EmitStructLiteral {
+        name: String,
+        field_names: Vec<String>,
+    },
     EmitUnfoldIndex {
         name: &'a str,
     },
@@ -91,13 +107,31 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                 Expr::Prev { signal, delay } => {
                     work.push(FlatWork::EmitPrev { signal, delay: *delay });
                 }
-                // Composite expressions: emit literal 0 placeholder.
-                // Full structural width inference for composites is deferred.
-                Expr::ArrayIndex { .. }
-                | Expr::FieldAccess { .. }
-                | Expr::ArrayLiteral(_)
-                | Expr::StructLiteral { .. } => {
-                    work.push(FlatWork::EmitLiteral { value: 0 });
+                Expr::ArrayIndex { array, index } => {
+                    let (width, signed) = infer_array_index_shape(array, signals);
+                    work.push(FlatWork::EmitArrayIndex { width, signed });
+                    // Visit array first, then index (LIFO).
+                    work.push(FlatWork::Visit(index));
+                    work.push(FlatWork::Visit(array));
+                }
+                Expr::FieldAccess { object, field } => {
+                    let (width, signed) = infer_field_access_shape(object, field, signals);
+                    work.push(FlatWork::EmitFieldAccess { field: field.clone(), width, signed });
+                    work.push(FlatWork::Visit(object));
+                }
+                Expr::ArrayLiteral(elements) => {
+                    work.push(FlatWork::EmitArrayLiteral { len: elements.len() });
+                    for elem in elements.iter().rev() {
+                        work.push(FlatWork::Visit(elem));
+                    }
+                }
+                Expr::StructLiteral { name, fields } => {
+                    let field_names: Vec<String> =
+                        fields.iter().map(|(field_name, _)| field_name.clone()).collect();
+                    work.push(FlatWork::EmitStructLiteral { name: name.clone(), field_names });
+                    for (_, value) in fields.iter().rev() {
+                        work.push(FlatWork::Visit(value));
+                    }
                 }
                 Expr::UnfoldIndex(name) => {
                     work.push(FlatWork::EmitUnfoldIndex { name });
@@ -157,6 +191,65 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                 });
                 idx_stack.push(idx as u32);
             }
+            FlatWork::EmitArrayIndex { width, signed } => {
+                // Array was visited before index; index is on top.
+                let index_idx = idx_stack.pop()?;
+                let array_idx = idx_stack.pop()?;
+                let idx = nodes.len();
+                if idx >= MAX_FLAT_NODES {
+                    return None;
+                }
+                nodes.push(FlatNode::ArrayIndex {
+                    array: array_idx,
+                    index: index_idx,
+                    width,
+                    signed,
+                });
+                idx_stack.push(idx as u32);
+            }
+            FlatWork::EmitFieldAccess { field, width, signed } => {
+                let object_idx = idx_stack.pop()?;
+                let idx = nodes.len();
+                if idx >= MAX_FLAT_NODES {
+                    return None;
+                }
+                nodes.push(FlatNode::FieldAccess { object: object_idx, field, width, signed });
+                idx_stack.push(idx as u32);
+            }
+            FlatWork::EmitArrayLiteral { len } => {
+                let mut elements_rev: Vec<u32> = Vec::with_capacity(len);
+                for _ in 0..len {
+                    elements_rev.push(idx_stack.pop()?);
+                }
+                elements_rev.reverse();
+
+                let idx = nodes.len();
+                if idx >= MAX_FLAT_NODES {
+                    return None;
+                }
+                nodes.push(FlatNode::ArrayLiteral { elements: elements_rev, width: 0 });
+                idx_stack.push(idx as u32);
+            }
+            FlatWork::EmitStructLiteral { name, field_names } => {
+                let mut field_ids_rev: Vec<u32> = Vec::with_capacity(field_names.len());
+                for _ in 0..field_names.len() {
+                    field_ids_rev.push(idx_stack.pop()?);
+                }
+                field_ids_rev.reverse();
+
+                let mut flat_fields: Vec<(String, u32)> = Vec::with_capacity(field_names.len());
+                for (field_name, field_id) in field_names.into_iter().zip(field_ids_rev.into_iter())
+                {
+                    flat_fields.push((field_name, field_id));
+                }
+
+                let idx = nodes.len();
+                if idx >= MAX_FLAT_NODES {
+                    return None;
+                }
+                nodes.push(FlatNode::StructLiteral { name, fields: flat_fields, width: 0 });
+                idx_stack.push(idx as u32);
+            }
             FlatWork::EmitUnfoldIndex { name } => {
                 let idx = nodes.len();
                 if idx >= MAX_FLAT_NODES {
@@ -174,6 +267,63 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
 /// Check whether a signal is declared as signed.
 fn is_signed(name: &str, signals: &[crate::ast::SignalDecl]) -> bool {
     signals.iter().any(|s| s.name == name && matches!(s.ty.signal_type(), SignalType::Signed(_)))
+}
+
+fn infer_array_index_shape(array_expr: &Expr, signals: &[crate::ast::SignalDecl]) -> (u32, bool) {
+    match array_expr {
+        Expr::Signal(name) => {
+            if let Some(sig) = signals.iter().find(|s| s.name == *name) {
+                if let SignalType::Array { element, .. } = sig.ty.signal_type() {
+                    return (element.width(), matches!(element.as_ref(), SignalType::Signed(_)));
+                }
+            }
+            (32, false)
+        }
+        _ => (32, false),
+    }
+}
+
+fn infer_field_access_shape(
+    object_expr: &Expr,
+    field_name: &str,
+    signals: &[crate::ast::SignalDecl],
+) -> (u32, bool) {
+    match object_expr {
+        Expr::Signal(name) => {
+            if let Some(sig) = signals.iter().find(|s| s.name == *name) {
+                if let SignalType::Struct { fields, .. } = sig.ty.signal_type() {
+                    if let Some((_, field_ty)) =
+                        fields.iter().find(|(fname, _)| fname == field_name)
+                    {
+                        return (field_ty.width(), matches!(field_ty, SignalType::Signed(_)));
+                    }
+                }
+            }
+            (32, false)
+        }
+        Expr::StructLiteral { fields, .. } => {
+            if let Some((_, field_expr)) = fields.iter().find(|(fname, _)| fname == field_name) {
+                return infer_expr_shape(field_expr, signals);
+            }
+            (32, false)
+        }
+        _ => (32, false),
+    }
+}
+
+fn infer_expr_shape(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> (u32, bool) {
+    match expr {
+        Expr::Literal(LiteralValue::Bool(_)) => (1, false),
+        Expr::Literal(LiteralValue::Integer(v)) => (super::types::Width::min_bits_for(*v).0, false),
+        Expr::Signal(name) | Expr::Prev { signal: name, .. } => {
+            if let Some(sig) = signals.iter().find(|s| s.name == *name) {
+                let ty = sig.ty.signal_type();
+                return (ty.width(), matches!(ty, SignalType::Signed(_)));
+            }
+            (32, false)
+        }
+        _ => (32, false),
+    }
 }
 
 // ---------------------------------------------------------------------------

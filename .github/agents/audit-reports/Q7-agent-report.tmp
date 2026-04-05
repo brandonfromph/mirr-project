@@ -1,0 +1,44 @@
+﻿# Q7-Agent Report: MRT CLI Polish Audit
+Date: 2026-04-05
+Scope: src/bin/mirr-audit.rs, src/bin/mirr-brain.rs, src/bin/mirr-wave.rs, src/bin/mirr-general.rs, src/bin/mirr-lsp.rs
+
+Primary question: Is MRT polished across the five MRT CLI binaries?
+
+## 1) Explicit Verdict
+NO.
+
+MRT is not yet polished as a unified CLI suite. There is partial maturity in individual binaries (especially mirr-brain and mirr-general), but cross-binary polish is inconsistent for JSON format controls, error-code discipline, help/version parity, bounded output policy, and NASA P10 compliance.
+
+## 2) Required Commands Executed (Sequentially)
+1. `rg -n "format.*json|--format|error_code|MAX_|forbid.*unsafe|version" src/bin/`
+- Confirmed key hits for all five target binaries, including JSON handling in `mirr-audit`, `mirr-brain`, `mirr-general`; `version` metadata in clap-based binaries; and `MAX_*` bounds in `mirr-brain` and `mirr-general`.
+2. `cargo.exe run --bin mirr-brain -- --help 2>&1`
+- Initial terminal capture returned exit code 1 with no visible text. Re-run with output capture showed complete help text including `-h/--help` and `-V/--version`, confirming the flags are exposed at runtime.
+
+## 3) Polish Table (Per Binary)
+| Binary | --format json output | Consistent error codes | Bounded output | --help text | --version flag | NASA P10 compliance |
+|---|---|---|---|---|---|---|
+| mirr-audit | YES (`--format` plus JSON branch) at src/bin/mirr-audit.rs:42, src/bin/mirr-audit.rs:262 | NO (mixed taxonomies `E801`, `SEC-01`, `D1-D7`, `D2`) at src/bin/mirr-audit.rs:133, src/bin/mirr-audit.rs:166, src/bin/mirr-audit.rs:183, src/bin/mirr-audit.rs:207 | NO (unbounded scan and emit loops) at src/bin/mirr-audit.rs:95, src/bin/mirr-audit.rs:114, src/bin/mirr-audit.rs:192, src/bin/mirr-audit.rs:270 | YES (clap command) at src/bin/mirr-audit.rs:35, src/bin/mirr-audit.rs:36 | YES (clap version metadata) at src/bin/mirr-audit.rs:36 | NO (missing file-level forbid unsafe marker plus unbounded loops) at src/bin/mirr-audit.rs:1, src/bin/mirr-audit.rs:26, src/bin/mirr-audit.rs:95 |
+| mirr-brain | YES (`--format` and JSON branch) at src/bin/mirr-brain.rs:52, src/bin/mirr-brain.rs:197 | NO (string status and errors, no E-code scheme) at src/bin/mirr-brain.rs:165, src/bin/mirr-brain.rs:201 | YES (`MAX_RESULTS` and `MAX_ENTRY_SIZE` enforced) at src/bin/mirr-brain.rs:35, src/bin/mirr-brain.rs:36, src/bin/mirr-brain.rs:90, src/bin/mirr-brain.rs:178 | YES (clap help surface; runtime confirmed) at src/bin/mirr-brain.rs:42 | YES (clap version; runtime help shows `-V`) at src/bin/mirr-brain.rs:42 | YES (`#![forbid(unsafe_code)]` plus explicit bounds) at src/bin/mirr-brain.rs:10, src/bin/mirr-brain.rs:35, src/bin/mirr-brain.rs:178 |
+| mirr-wave | PARTIAL (always emits JSON log, no `--format` selector) at src/bin/mirr-wave.rs:270, src/bin/mirr-wave.rs:277 | NO (plain text failures, no stable E-codes) at src/bin/mirr-wave.rs:75, src/bin/mirr-wave.rs:87, src/bin/mirr-wave.rs:130, src/bin/mirr-wave.rs:144 | PARTIAL (`max_lines` bound per edit, but unbounded proposal traversal count) at src/bin/mirr-wave.rs:35, src/bin/mirr-wave.rs:179, src/bin/mirr-wave.rs:102, src/bin/mirr-wave.rs:141 | YES (clap command) at src/bin/mirr-wave.rs:20, src/bin/mirr-wave.rs:21 | YES (clap version) at src/bin/mirr-wave.rs:21 | NO (missing file-level forbid unsafe marker and unbounded loops) at src/bin/mirr-wave.rs:1, src/bin/mirr-wave.rs:13, src/bin/mirr-wave.rs:102 |
+| mirr-general | YES (`--json`, `--format=json`, `--format json` and JSON payload output) at src/bin/mirr-general.rs:450, src/bin/mirr-general.rs:454, src/bin/mirr-general.rs:457, src/bin/mirr-general.rs:1041, src/bin/mirr-general.rs:1104 | NO (errors are plain free-text) at src/bin/mirr-general.rs:474, src/bin/mirr-general.rs:489, src/bin/mirr-general.rs:498, src/bin/mirr-general.rs:615 | YES (`MAX_*` bounds across flags, inspect, and fingerprint scans) at src/bin/mirr-general.rs:527, src/bin/mirr-general.rs:645, src/bin/mirr-general.rs:674, src/bin/mirr-general.rs:796, src/bin/mirr-general.rs:833, src/bin/mirr-general.rs:862 | YES (custom help route and usage text) at src/bin/mirr-general.rs:520, src/bin/mirr-general.rs:554 | NO (no CLI version route; existing version use is external probe only) at src/bin/mirr-general.rs:399, src/bin/mirr-general.rs:554, src/bin/mirr-general.rs:615 | PARTIAL (`#![forbid(unsafe_code)]` and many bounds present, but no uniform MRT contract gate) at src/bin/mirr-general.rs:1, src/bin/mirr-general.rs:527, src/bin/mirr-general.rs:645 |
+| mirr-lsp | NO (no format selector path in this binary) at src/bin/mirr-lsp.rs:15, src/bin/mirr-lsp.rs:21 | NO (plain stderr text, no error codes) at src/bin/mirr-lsp.rs:22 | NO (no local output cap path; delegates to server run loop) at src/bin/mirr-lsp.rs:21 | NO (no CLI parser or help route) at src/bin/mirr-lsp.rs:15 | NO (no version handler) at src/bin/mirr-lsp.rs:15 | PARTIAL (`#![forbid(unsafe_code)]` present, but boundedness and CLI policy are not enforced here) at src/bin/mirr-lsp.rs:11, src/bin/mirr-lsp.rs:21 |
+
+## 4) Gap List
+1. No shared CLI baseline across all five binaries for `--format`, `--help`, and `--version`.
+2. Error-code behavior is inconsistent and not a single MRT taxonomy.
+3. Bounded output policy is uneven: strong in mirr-brain and mirr-general, weak or absent in mirr-audit, mirr-wave, and mirr-lsp.
+4. File-level NASA P10 markers are inconsistent: mirr-audit and mirr-wave lack explicit `#![forbid(unsafe_code)]`.
+5. mirr-general lacks first-class `--version`, and mirr-lsp is effectively non-CLI while still under src/bin checks.
+
+## 5) Hardening Plan
+1. Add a shared MRT CLI contract module to standardize `--help`, `--version`, and `--format <text|json>` across all five binaries.
+2. Define one MRT error namespace (for example E8xx operational codes) and require all failures to include stable codes in both text and JSON outputs.
+3. Add explicit bounded-output constants for mirr-audit and mirr-wave (`MAX_FILES_SCANNED`, `MAX_FINDINGS`, `MAX_EDITS`, `MAX_LOG_ERRORS`) with truncation metadata.
+4. Add `#![forbid(unsafe_code)]` to mirr-audit and mirr-wave, then enforce with clippy warning gates in CI.
+5. Implement true `--version` handling in mirr-general and either add minimal help/version handling to mirr-lsp or formally reclassify mirr-lsp as non-CLI for polish audits.
+6. Add tests per binary for help, version, json mode, and overflow behavior under bounds.
+
+## 6) Final Answer to Campaign Question
+Is MRT polished? NO.
+

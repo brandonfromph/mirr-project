@@ -8,4 +8,5 @@ cd "$script_dir"
 
 cargo_target_dir="$script_dir/target/proposal-096-run"
 export CARGO_TARGET_DIR="$cargo_target_dir"
+export CI=1
 cargo run --bin mirr-general -- ci --format json

@@ -9,8 +9,11 @@
 mod formula_parser;
 mod guard_reflex;
 
+use std::collections::HashMap;
+
 // Re-export parser utilities for submodule access.
 pub(crate) use super::expr_parser::parse_expression;
+pub(crate) use super::parse_signal_type_str;
 pub(crate) use super::skip_empty_and_comments;
 pub(crate) use super::tokenize_signal_decl;
 
@@ -18,6 +21,7 @@ use super::pattern_parser::{is_pattern_call_line, parse_pattern_call, parse_patt
 use crate::ast::pattern::PatternDef;
 use crate::ast::program::{ImportDecl, MirrProgram, Module, SignalDecl};
 use crate::ast::types::ExtendedType;
+use crate::ast::types::{SignalType, MAX_STRUCT_FIELDS};
 use crate::error::MirrError;
 use crate::span::Span;
 
@@ -26,6 +30,9 @@ const MAX_PATTERN_DEFS: usize = 64;
 
 /// Maximum number of import declarations allowed.
 const MAX_IMPORTS: usize = 16;
+
+/// Maximum number of top-level struct declarations retained during parse.
+const MAX_STRUCT_DEFS: usize = 64;
 
 /// Parse a MIRR source file into an in-memory representation.
 ///
@@ -88,9 +95,23 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
     skip_empty_and_comments(&lines, &mut index);
 
+    let mut struct_defs: HashMap<String, Vec<(String, SignalType)>> = HashMap::new();
     while index < lines.len() {
         let line = lines[index].trim();
-        if line.starts_with("struct ") || line.starts_with("interface ") {
+
+        if line.starts_with("struct ") {
+            if struct_defs.len() >= MAX_STRUCT_DEFS {
+                return Err(MirrError::parse_error(format!(
+                    "[E804] Too many top-level struct declarations (max {MAX_STRUCT_DEFS})."
+                )));
+            }
+            let (name, fields) = parse_top_level_struct(&lines, &mut index)?;
+            struct_defs.insert(name, fields);
+            skip_empty_and_comments(&lines, &mut index);
+            continue;
+        }
+
+        if line.starts_with("interface ") {
             skip_top_level_block(&lines, &mut index)?;
             skip_empty_and_comments(&lines, &mut index);
             continue;
@@ -102,9 +123,126 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
         return Err(MirrError::parse_error("[E101] MIRR source is empty."));
     }
 
-    let module = parse_module(&lines, &mut index)?;
+    let mut module = parse_module(&lines, &mut index)?;
+    hydrate_struct_signal_fields(&mut module, &struct_defs);
 
     Ok(MirrProgram { patterns, imports, module })
+}
+
+fn parse_top_level_struct(
+    lines: &[&str],
+    index: &mut usize,
+) -> Result<(String, Vec<(String, SignalType)>), MirrError> {
+    if *index >= lines.len() {
+        return Err(MirrError::parse_error("[E805] Expected struct declaration header."));
+    }
+
+    let header = lines[*index].trim();
+    let after_struct = header
+        .strip_prefix("struct ")
+        .ok_or_else(|| MirrError::parse_error("[E805] Malformed struct declaration."))?;
+
+    let (name_raw, has_open_brace) = if let Some((name_part, _)) = after_struct.split_once('{') {
+        (name_part.trim(), true)
+    } else {
+        (after_struct.trim(), false)
+    };
+
+    if name_raw.is_empty() {
+        return Err(MirrError::parse_error("[E806] Struct name cannot be empty."));
+    }
+    *index += 1;
+    if !has_open_brace {
+        while *index < lines.len() {
+            let line = lines[*index].trim();
+            if line.is_empty() || line.starts_with("//") {
+                *index += 1;
+                continue;
+            }
+            if line == "{" {
+                *index += 1;
+                break;
+            }
+            return Err(MirrError::parse_error(format!(
+                "[E807] Struct '{}' declaration must include '{{' before field declarations.",
+                name_raw
+            )));
+        }
+    }
+
+    let mut fields: Vec<(String, SignalType)> = Vec::new();
+
+    while *index < lines.len() {
+        let line = lines[*index].trim();
+        if line.is_empty() || line.starts_with("//") {
+            *index += 1;
+            continue;
+        }
+
+        if line == "}" {
+            *index += 1;
+            return Ok((name_raw.to_string(), fields));
+        }
+
+        if fields.len() >= MAX_STRUCT_FIELDS {
+            return Err(MirrError::parse_error(format!(
+                "[E808] Struct '{}' exceeds maximum field count ({}).",
+                name_raw, MAX_STRUCT_FIELDS
+            )));
+        }
+
+        let without_semicolon = line.strip_suffix(';').ok_or_else(|| {
+            MirrError::parse_error(format!(
+                "[E809] Struct '{}' field declaration must end with ';'.",
+                name_raw
+            ))
+        })?;
+
+        let (field_name_raw, field_ty_raw) =
+            without_semicolon.split_once(':').ok_or_else(|| {
+                MirrError::parse_error(format!(
+                    "[E810] Struct '{}' field declaration must contain ':'.",
+                    name_raw
+                ))
+            })?;
+
+        let field_name = field_name_raw.trim();
+        let field_ty_text = field_ty_raw.trim();
+
+        if field_name.is_empty() {
+            return Err(MirrError::parse_error(format!(
+                "[E811] Struct '{}' field name cannot be empty.",
+                name_raw
+            )));
+        }
+
+        let field_ty = parse_signal_type_str(field_ty_text).ok_or_else(|| {
+            MirrError::parse_error(format!(
+                "[E812] Unknown struct field type '{}' in struct '{}'.",
+                field_ty_text, name_raw
+            ))
+        })?;
+
+        fields.push((field_name.to_string(), field_ty));
+        *index += 1;
+    }
+
+    Err(MirrError::parse_error(format!("[E813] Struct '{}' was not closed with '}}'.", name_raw)))
+}
+
+fn hydrate_struct_signal_fields(
+    module: &mut Module,
+    struct_defs: &HashMap<String, Vec<(String, SignalType)>>,
+) {
+    for sig in &mut module.signals {
+        if let SignalType::Struct { name, fields } = &mut sig.ty.core {
+            if fields.is_empty() {
+                if let Some(def_fields) = struct_defs.get(name) {
+                    *fields = def_fields.clone();
+                }
+            }
+        }
+    }
 }
 
 /// Parse an import declaration line.

@@ -1,0 +1,190 @@
+{
+  "tools": [
+    {
+      "name": "read_text_file",
+      "description": "Read the complete contents of a file from the file system as text. Handles various encodings and provides detailed errors. Use head/tail parameters.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "head": { "type": "number" },
+          "tail": { "type": "number" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "write_file",
+      "description": "Create or overwrite a file with new content. Operates within allowed dirs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "content": { "type": "string" }
+        },
+        "required": ["path", "content"]
+      }
+    },
+    {
+      "name": "edit_file",
+      "description": "Perform line-based edits to a text file and return a git-style diff.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "edits": { "type": "array" },
+          "dryRun": { "type": "boolean" }
+        },
+        "required": ["path", "edits"]
+      }
+    },
+    {
+      "name": "create_directory",
+      "description": "Ensure a directory exists, creating parent directories as needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "list_directory",
+      "description": "List files and directories at a path, marking types.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "list_directory_with_sizes",
+      "description": "Like list_directory but include sizes, with optional sorting.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "sortBy": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "directory_tree",
+      "description": "Return JSON tree of directories/files recursively.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "excludePatterns": { "type": "array" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "move_file",
+      "description": "Move or rename a file or directory within allowed paths.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": { "type": "string" },
+          "destination": { "type": "string" }
+        },
+        "required": ["source", "destination"]
+      }
+    },
+    {
+      "name": "search_files",
+      "description": "Recursively search using glob patterns starting at path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "pattern": { "type": "string" },
+          "excludePatterns": { "type": "array" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "get_file_info",
+      "description": "Retrieve metadata about a file or directory.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "run_cargo",
+      "description": "Run an allowed cargo subcommand (build, test, check) in the workspace root.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "subcommand": { "type": "string", "enum": ["build", "test", "check"] },
+          "args": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["subcommand"]
+      }
+    },
+    {
+      "name": "read_netlist",
+      "description": "Read and parse a JSON netlist or IR file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "run_simulator",
+      "description": "Run a local simulator binary inside the workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "executable": { "type": "string" },
+          "args": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["executable"]
+      }
+    },
+    {
+      "name": "estimate_resources",
+      "description": "Estimate hardware resources (LUTs, Regs) from a JSON netlist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "parity_check",
+      "description": "Compare two files (expected vs actual) and return detailed diff if different.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expected": { "type": "string" },
+          "actual": { "type": "string" }
+        },
+        "required": ["expected", "actual"]
+      }
+    },
+    {
+      "name": "list_allowed_directories",
+      "description": "Return directories the server may access according to config.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

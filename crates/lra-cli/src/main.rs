@@ -2,6 +2,8 @@
 #![deny(warnings)]
 
 use clap::{Parser, Subcommand};
+use nasa_rust_project::emit;
+use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
 mod badge;
 mod build;
@@ -12,7 +14,6 @@ mod hash;
 mod health;
 mod init;
 mod keygen;
-mod legacy;
 mod receipt;
 mod registry;
 mod search;
@@ -110,7 +111,7 @@ enum Command {
         /// Path to MIRR source file
         #[arg(default_value = "main.mirr")]
         source: String,
-        /// Target format (verilog, firrtl, rspu, sexpr)
+        /// Target format (verilog, firrtl, rspu, json, sexpr, dot)
         #[arg(short, long, default_value = "verilog")]
         target: String,
         /// Output file path
@@ -195,15 +196,7 @@ fn main() {
         Command::Deps { path, registry } => deps::run(&path, &registry),
         Command::Health { url } => health::run(&url),
         Command::Compile { source, target, output } => {
-            legacy::warn_deprecated("compile");
-            let _out = output.unwrap_or_else(|| format!("output.{target}"));
-            let status = std::process::Command::new("cargo")
-                .args(["run", "--bin", "mirr-compile", "--", &source, "--emit", &target])
-                .status();
-            match status {
-                Ok(s) if s.success() => 0,
-                _ => 1,
-            }
+            compile_via_library(&source, &target, output.as_deref())
         }
         Command::Receipt { source, output, key, receipt: receipt_path } => {
             let source_path = std::path::Path::new(&source);
@@ -267,4 +260,77 @@ fn main() {
         }
     };
     std::process::exit(code);
+}
+
+fn compile_via_library(source: &str, target: &str, output: Option<&str>) -> i32 {
+    let source_text = match std::fs::read_to_string(source) {
+        Ok(text) => text,
+        Err(e) => {
+            eprintln!("Error: cannot read '{source}': {e}");
+            return 1;
+        }
+    };
+
+    let mut config = PipelineConfig::default();
+    if target == "rspu" {
+        config.rspu = true;
+    }
+
+    let result = match run_pipeline(&source_text, &config) {
+        Ok(result) => result,
+        Err(errors) => {
+            for err in &errors.errors {
+                let diagnostic = err.to_diagnostic();
+                let rendered = nasa_rust_project::diagnostic::render_diagnostic(
+                    &diagnostic,
+                    &source_text,
+                    source,
+                );
+                eprint!("{rendered}");
+            }
+            return 1;
+        }
+    };
+
+    let compiled = match target {
+        "verilog" | "sv" => emit::verilog::emit_sv(&result),
+        "firrtl" => emit::firrtl::emit_firrtl(&result),
+        "rspu" => match &result.rspu_program {
+            Some(program) => program.emit_asm(),
+            None => {
+                eprintln!(
+                    "Error: R-SPU program was not generated (pipeline may have been skipped)."
+                );
+                return 1;
+            }
+        },
+        "json" => match emit::json_netlist::emit_json(&result) {
+            Ok(json) => json,
+            Err(e) => {
+                eprintln!("Error: JSON netlist serialization failed: {e}");
+                return 1;
+            }
+        },
+        "sexpr" | "s-expr" | "sexp" => emit::sexpr::emit_sexpr(&result),
+        "dot" => emit::dot::emit_module_dot(&result),
+        other => {
+            eprintln!(
+                "Unknown compile target: {}. Allowed targets: verilog, firrtl, rspu, json, sexpr, dot.",
+                other
+            );
+            return 1;
+        }
+    };
+
+    if let Some(path) = output {
+        if let Err(e) = std::fs::write(path, &compiled) {
+            eprintln!("Error writing '{path}': {e}");
+            return 1;
+        }
+        println!("Output written to {path}");
+    } else {
+        print!("{compiled}");
+    }
+
+    0
 }

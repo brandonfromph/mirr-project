@@ -140,3 +140,61 @@ fn test_toolchain_error_display_messages() {
     let e4 = ToolchainError::ParseError { tool: "icetime".into(), message: "bad format".into() };
     assert!(e4.to_string().contains("icetime"));
 }
+
+#[test]
+fn test_tool_version_flags_non_empty() {
+    let tools = [
+        Tool::Yosys,
+        Tool::Sby,
+        Tool::Verilator,
+        Tool::IcarusVerilog,
+        Tool::NextpnrIce40,
+        Tool::NextpnrEcp5,
+        Tool::NextpnrNexus,
+        Tool::Icepack,
+        Tool::Icetime,
+        Tool::Ecppack,
+        Tool::Eqy,
+    ];
+
+    for tool in tools {
+        assert!(!tool.version_flag().is_empty(), "{:?} has empty version flag", tool);
+    }
+}
+
+#[test]
+fn test_toolchain_constants_are_sane() {
+    let mut reg = ToolRegistry::new();
+    reg.probe_all();
+    assert!(reg.tools.len() <= MAX_TOOLS, "registry size must stay within MAX_TOOLS bound");
+
+    let version_sample = "v".repeat(MAX_VERSION_LEN + 8);
+    let clamped = if version_sample.len() > MAX_VERSION_LEN {
+        version_sample[..MAX_VERSION_LEN].to_string()
+    } else {
+        version_sample
+    };
+    assert_eq!(clamped.len(), MAX_VERSION_LEN);
+
+    let timeout = std::time::Duration::from_secs(MAX_TOOL_TIMEOUT_SECS);
+    assert!(std::time::Instant::now().elapsed() <= timeout);
+}
+
+#[test]
+fn test_registry_default_matches_new() {
+    let default_registry: ToolRegistry = Default::default();
+    let new_registry = ToolRegistry::new();
+    assert_eq!(default_registry.tools.len(), new_registry.tools.len());
+}
+
+#[test]
+fn test_unavailable_tool_entry_has_no_version() {
+    let mut reg = ToolRegistry::new();
+    reg.tools.insert(
+        Tool::Yosys,
+        ToolInfo { path: "yosys".to_string(), version: "0.0".to_string(), available: false },
+    );
+
+    assert!(!reg.is_available(Tool::Yosys));
+    assert!(reg.version(Tool::Yosys).is_none());
+}

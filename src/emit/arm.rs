@@ -121,21 +121,23 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
         RspuInstruction::SrTick { guard } => {
             // Shift register chain: stage[i+1] = stage[i], stage[0] = guard state.
             // Shift all stages down by one position (bounded by 256 stages).
+            *label_counter += 1;
+            let shift_label = *label_counter;
             out.push_str(&format!("    ldr r12, =sr_g{}\n", guard));
             out.push_str(&format!("    ldr r11, =guard_g{}\n", guard));
             out.push_str("    ldr r10, [r11]\n"); // new value from guard state
                                                   // Shift stages 1..N ← 0..N-1 (reverse order to avoid overwrite)
             out.push_str("    mov r9, #256\n"); // max stages
-            out.push_str("shift_loop_arm_:\n");
+            out.push_str(&format!("shift_loop_arm_{}:\n", shift_label));
             out.push_str("    sub r9, r9, #1\n");
             out.push_str("    cmp r9, #0\n");
-            out.push_str("    beq shift_done_arm_\n");
+            out.push_str(&format!("    beq shift_done_arm_{}\n", shift_label));
             out.push_str("    lsl r8, r9, #2\n"); // offset = i * 4
             out.push_str("    sub r7, r8, #4\n"); // prev offset = (i-1) * 4
             out.push_str("    ldr r6, [r12, r7]\n");
             out.push_str("    str r6, [r12, r8]\n");
-            out.push_str("    b shift_loop_arm_\n");
-            out.push_str("shift_done_arm_:\n");
+            out.push_str(&format!("    b shift_loop_arm_{}\n", shift_label));
+            out.push_str(&format!("shift_done_arm_{}:\n", shift_label));
             // Store new value at stage 0
             out.push_str("    str r10, [r12]\n");
         }
@@ -161,6 +163,7 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
             out.push_str(&format!("    ldr r12, =guard_g{}\n", guard));
             out.push_str(&format!("    ldr r{}, [r12]\n", dst));
             out.push_str(&format!("    cmp r{}, #0\n", dst));
+            out.push_str(&format!("    mov r{}, #0\n", dst));
             out.push_str("    it lt\n");
             out.push_str(&format!("    movlt r{}, #1\n", dst));
         }
@@ -312,31 +315,37 @@ fn emit_arm_alu(out: &mut String, op: AluOp, dst: u8, a: u8, b: u8) {
         AluOp::Shr => out.push_str(&format!("    lsr r{}, r{}, r{}\n", dst, a, b)),
         AluOp::Eq => {
             out.push_str(&format!("    cmp r{}, r{}\n", a, b));
+            out.push_str(&format!("    mov r{}, #0\n", dst));
             out.push_str("    it eq\n");
             out.push_str(&format!("    moveq r{}, #1\n", dst));
         }
         AluOp::Ne => {
             out.push_str(&format!("    cmp r{}, r{}\n", a, b));
+            out.push_str(&format!("    mov r{}, #0\n", dst));
             out.push_str("    it ne\n");
             out.push_str(&format!("    movne r{}, #1\n", dst));
         }
         AluOp::Lt => {
             out.push_str(&format!("    cmp r{}, r{}\n", a, b));
+            out.push_str(&format!("    mov r{}, #0\n", dst));
             out.push_str("    it lt\n");
             out.push_str(&format!("    movlt r{}, #1\n", dst));
         }
         AluOp::Gt => {
             out.push_str(&format!("    cmp r{}, r{}\n", a, b));
+            out.push_str(&format!("    mov r{}, #0\n", dst));
             out.push_str("    it gt\n");
             out.push_str(&format!("    movgt r{}, #1\n", dst));
         }
         AluOp::Le => {
             out.push_str(&format!("    cmp r{}, r{}\n", a, b));
+            out.push_str(&format!("    mov r{}, #0\n", dst));
             out.push_str("    it le\n");
             out.push_str(&format!("    movle r{}, #1\n", dst));
         }
         AluOp::Ge => {
             out.push_str(&format!("    cmp r{}, r{}\n", a, b));
+            out.push_str(&format!("    mov r{}, #0\n", dst));
             out.push_str("    it ge\n");
             out.push_str(&format!("    movge r{}, #1\n", dst));
         }

@@ -1,7 +1,7 @@
 {
   "proposal_096_execution_summary": {
     "execution_date": "2026-04-02",
-    "status": "READY_FOR_PROPOSAL_EXECUTION",
+    "status": "INCOMPLETE_REVALIDATION_REQUIRED",
     "phases": {
       "phase_1_baseline_capture": {
         "status": "COMPLETED",
@@ -47,8 +47,8 @@
         ]
       },
       "phase_3_lra_adapter": {
-        "status": "COMPLETED_PRAGMATIC",
-        "description": "LRA adapter verified - uses working shell-out to mirr-compile",
+        "status": "DEFERRED_BLOCKING",
+        "description": "LRA adapter closeout remains blocked pending deterministic direct-library validation and policy signoff",
         "blocker": "API mismatch: pipeline::run_pipeline() expects (source: &str, config) not (file_path, emit_format, output_file)",
         "decision": "Pragmatic approach: shell-out is working, direct library call deferred to future refactoring when API stabilizes",
         "tests_run": [
@@ -68,8 +68,8 @@
         ]
       },
       "phase_4_ci_command": {
-        "status": "COMPLETED_WITH_CAVEAT",
-        "description": "mirr-general ci subcommand exists and all component steps verified",
+        "status": "PARTIAL_REVALIDATION_REQUIRED",
+        "description": "mirr-general ci path exists, but canonical wrapper execution requires revalidation",
         "caveat": "Windows file-lock issue: recursive binary rebuild blocks ci gate when run via mirr-general",
         "workaround": "Each step individually verified - can be run separately or in non-recursive context",
         "ci_steps_verified": [
@@ -98,8 +98,8 @@
         ]
       },
       "phase_5_cross_platform_acceptance": {
-        "status": "COMPLETED",
-        "description": "All cross-platform command bundles validated",
+        "status": "PARTIAL_NOT_UNIVERSAL",
+        "description": "Cross-platform command bundles exist but require portable wrapper and blocking-gate revalidation",
         "platform_notes": "Windows 10 with Git Bash make, Node.js",
         "checks_performed": [
           {
@@ -166,8 +166,13 @@
       }
     },
     "summary": {
-      "all_phases_completed": true,
-      "blocking_issues": [],
+      "all_phases_completed": false,
+      "blocking_issues": [
+        "Status contradictions across Proposal 096 documents",
+        "Absolute machine-path dependence in wrapper scripts",
+        "Deferred LRA adapter closeout validation",
+        "Cross-platform acceptance remains conditional"
+      ],
       "deferred_actions": [
         {
           "phase": 3,
@@ -191,9 +196,9 @@
       "files_modified": [
         "src/bin/mirr-general.rs"
       ],
-      "verdict": "READY FOR PROPOSAL 096 EXECUTION",
-      "gate_status": "GREEN",
-      "notes": "All critical blockers resolved. Pragmatic decisions made for architectural mismatches. LRA and mirr-general issues deferred to post-execution work with proper tracking."
+      "verdict": "INCOMPLETE",
+      "gate_status": "RED",
+      "notes": "Evidence is retained for traceability, but closeout claims are suspended until blockers in CURRENT-BLOCKERS-2026-04-03.md are resolved and rerun evidence is captured."
     }
   }
 }

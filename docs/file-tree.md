@@ -2,6 +2,8 @@
 
 > Auto-generated 2026-03-17. 509K total lines, 293 Rust files, 3,469 tests passing.
 
+> Snapshot note: this file is a dated module-tree snapshot, not the canonical topology source. For the current repository map, use [REPO_UNDERSTANDING.md](../REPO_UNDERSTANDING.md).
+
 ## Repository Statistics
 
 | Category | Files | Lines |

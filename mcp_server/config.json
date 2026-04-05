@@ -1,0 +1,21 @@
+{
+  "api_keys": [
+    {
+      "id": "admin",
+      "role": "admin",
+      "token": "ADMIN"
+    },
+    {
+      "id": "charlie",
+      "role": "builder",
+      "token": "99468ee09d0c7954d15c9082c3e087b86b6f64e196f4c6b36cca4c58218e7479",
+      "hashed": true
+    },
+    {
+      "id": "dave",
+      "role": "committer",
+      "token": "6b3a4b3d3d1783cf92c90dca20821776085bf447c1004a5a187aa157bbd0dc71",
+      "hashed": true
+    }
+  ]
+}
