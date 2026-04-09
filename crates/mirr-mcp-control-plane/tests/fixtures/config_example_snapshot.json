@@ -1,0 +1,22 @@
+{
+  "api_keys": [
+    {
+      "id": "alice",
+      "role": "admin",
+      "token": "YOUR_HASHED_TOKEN_HERE",
+      "hashed": true
+    },
+    {
+      "id": "builder-role",
+      "role": "builder",
+      "token": "YOUR_BUILDER_TOKEN_HERE",
+      "hashed": true
+    },
+    {
+      "id": "committer-role",
+      "role": "committer",
+      "token": "YOUR_COMMITTER_TOKEN_HERE",
+      "hashed": true
+    }
+  ]
+}

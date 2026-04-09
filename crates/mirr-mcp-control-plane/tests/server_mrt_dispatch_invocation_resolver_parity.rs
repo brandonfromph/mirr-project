@@ -1,0 +1,181 @@
+use mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
+use mirror::server_rewrite::mrt_dispatch_invocation_resolver::resolve_mrt_dispatch_invocation_by_name;
+
+#[test]
+fn resolve_defaults_match_ts_dispatch_contract() {
+    let body = InvocationInputBody::default();
+
+    let audit = resolve_mrt_dispatch_invocation_by_name("mrt_audit", &body)
+        .expect("mrt_audit should resolve with defaults");
+    assert_eq!(
+        audit.args,
+        vec![
+            "run",
+            "--bin",
+            "mirr-audit",
+            "--",
+            "--mode",
+            "workspace",
+            "--glob",
+            "src/**/*.rs",
+            "--format",
+            "json",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<String>>()
+    );
+    assert_eq!(audit.stdin_data, None);
+
+    let general_ci = resolve_mrt_dispatch_invocation_by_name("mrt_general_ci", &body)
+        .expect("mrt_general_ci should resolve");
+    assert_eq!(
+        general_ci.args,
+        vec!["run", "--bin", "mirr-general", "--", "ci", "--format", "json"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<String>>()
+    );
+
+    let lra_validate = resolve_mrt_dispatch_invocation_by_name("lra_validate", &body)
+        .expect("lra_validate should resolve with default path");
+    assert_eq!(
+        lra_validate.args,
+        vec!["run", "-p", "lra-cli", "--", "validate", "index.html"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<String>>()
+    );
+}
+
+#[test]
+fn resolve_alias_heavy_invocations_match_ts_contract() {
+    let mut body = InvocationInputBody::default();
+    body.set_string("proposalId", "107");
+    body.set_string("proposalFile", "proposals/107-test.md");
+    body.set_string("maxLines", "7");
+
+    let wave = resolve_mrt_dispatch_invocation_by_name("mrt_wave_dry_run", &body)
+        .expect("mrt_wave_dry_run should resolve with alias keys");
+    assert_eq!(
+        wave.args,
+        vec![
+            "run",
+            "--bin",
+            "mirr-wave",
+            "--",
+            "--proposal-id",
+            "107",
+            "--proposal-file",
+            "proposals/107-test.md",
+            "--max-lines",
+            "7",
+            "--dry-run",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<String>>()
+    );
+
+    let mut lsp_body = InvocationInputBody::default();
+    lsp_body.set_string("sourceText", "module sensor {};");
+    let lsp = resolve_mrt_dispatch_invocation_by_name("mrt_lsp_diagnostics", &lsp_body)
+        .expect("mrt_lsp_diagnostics should resolve sourceText alias");
+    assert_eq!(
+        lsp.args,
+        vec!["run", "--bin", "mirr-lsp", "--"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<String>>()
+    );
+    let stdin = lsp.stdin_data.expect("lsp invocation should include stdin payload");
+    assert!(stdin.contains("textDocument/didOpen"));
+    assert!(stdin.contains("module sensor {}"));
+
+    let mut rspu_body = InvocationInputBody::default();
+    rspu_body.set_string("source", "examples/demo.mirr");
+    rspu_body.set_string("proofMethods", "alpha,beta,alpha");
+    let rspu = resolve_mrt_dispatch_invocation_by_name("mrt_rspu_proofs", &rspu_body)
+        .expect("mrt_rspu_proofs should resolve methods from CSV alias");
+    assert!(rupu_args_contains(&rspu.args, "--methods"));
+    assert!(rupu_args_contains(&rspu.args, "alpha,beta"));
+}
+
+#[test]
+fn resolve_wave_inputs_match_ts_fail_closed_contract() {
+    let mut missing_id = InvocationInputBody::default();
+    missing_id.set_string("proposalFile", "proposals/107-test.md");
+    let err = resolve_mrt_dispatch_invocation_by_name("mrt_wave_dry_run", &missing_id)
+        .expect_err("missing proposal id must be rejected");
+    assert_eq!(err, "missing_proposal_id");
+
+    let mut invalid_id = InvocationInputBody::default();
+    invalid_id.set_string("proposalId", "12");
+    invalid_id.set_string("proposalFile", "proposals/107-test.md");
+    let err = resolve_mrt_dispatch_invocation_by_name("mrt_wave_dry_run", &invalid_id)
+        .expect_err("proposal id must be at least three digits");
+    assert_eq!(err, "invalid_proposal_id");
+
+    let mut missing_file = InvocationInputBody::default();
+    missing_file.set_string("proposalId", "107");
+    let err = resolve_mrt_dispatch_invocation_by_name("mrt_wave_dry_run", &missing_file)
+        .expect_err("missing proposal file must be rejected");
+    assert_eq!(err, "missing_proposal_file");
+
+    let mut invalid_file = InvocationInputBody::default();
+    invalid_file.set_string("proposalId", "107");
+    invalid_file.set_string("proposalFile", "../proposals/107-test.md");
+    let err = resolve_mrt_dispatch_invocation_by_name("mrt_wave_dry_run", &invalid_file)
+        .expect_err("path traversal-style proposal file must be rejected");
+    assert_eq!(err, "invalid_proposal_file");
+
+    let mut normalized = InvocationInputBody::default();
+    normalized.set_string("proposalId", "107");
+    normalized.set_string("proposalFile", ".\\proposals\\\\107-test.md");
+    normalized.set_string("maxLines", "not-a-number");
+    let wave_apply = resolve_mrt_dispatch_invocation_by_name("mrt_wave_apply", &normalized)
+        .expect("normalized proposal file and fallback max lines should resolve");
+
+    assert!(rupu_args_contains(&wave_apply.args, "proposals/107-test.md"));
+    assert!(rupu_args_contains(&wave_apply.args, "128"));
+    assert!(!rupu_args_contains(&wave_apply.args, "--dry-run"));
+}
+
+#[test]
+fn resolve_lra_init_rejects_unsafe_project_names() {
+    let mut valid_body = InvocationInputBody::default();
+    valid_body.set_string("projectName", "paper_2026");
+    let valid = resolve_mrt_dispatch_invocation_by_name("lra_init", &valid_body)
+        .expect("safe project name should resolve");
+    assert!(rupu_args_contains(&valid.args, "paper_2026"));
+
+    let mut traversal_body = InvocationInputBody::default();
+    traversal_body.set_string("projectName", "../outside");
+    let traversal_err = resolve_mrt_dispatch_invocation_by_name("lra_init", &traversal_body)
+        .expect_err("path traversal style project names must be rejected");
+    assert_eq!(traversal_err, "invalid_project_name");
+
+    let mut separator_body = InvocationInputBody::default();
+    separator_body.set_string("projectName", "nested/project");
+    let separator_err = resolve_mrt_dispatch_invocation_by_name("lra_init", &separator_body)
+        .expect_err("path separator project names must be rejected");
+    assert_eq!(separator_err, "invalid_project_name");
+
+    let mut symbol_body = InvocationInputBody::default();
+    symbol_body.set_string("projectName", "paper name");
+    let symbol_err = resolve_mrt_dispatch_invocation_by_name("lra_init", &symbol_body)
+        .expect_err("unsafe symbol project names must be rejected");
+    assert_eq!(symbol_err, "invalid_project_name");
+}
+
+#[test]
+fn resolve_unknown_tool_is_fail_closed() {
+    let body = InvocationInputBody::default();
+    let err = resolve_mrt_dispatch_invocation_by_name("mrt_unknown", &body)
+        .expect_err("unknown tools must be rejected");
+    assert!(err.contains("MCP unknown method rejected: mrt_unknown."));
+}
+
+fn rupu_args_contains(args: &[String], expected: &str) -> bool {
+    args.iter().any(|value| value == expected)
+}

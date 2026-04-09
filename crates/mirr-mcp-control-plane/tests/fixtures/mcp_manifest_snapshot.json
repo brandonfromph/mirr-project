@@ -1,0 +1,528 @@
+{
+    "schema_version":  "1",
+    "catalog":  {
+                    "id":  "mrt-arsenal",
+                    "display_name":  "MRT (MIRR Runtime Tooling)",
+                    "aliases":  [
+                                    "mirr-mcp-server",
+                                    "local_custom"
+                                ]
+                },
+    "discovery":  {
+                      "protocol_version":  "2024-11-05",
+                      "initialize_server_info":  {
+                                                     "name":  "mirr-mcp-server",
+                                                     "version":  "1.0.0"
+                                                 },
+                      "schema_name":  "local_custom",
+                      "list_tools_source":  "tools"
+                  },
+    "tools":  [
+                  {
+                      "name":  "read_text_file",
+                      "description":  "Read the complete contents of a file from the file system as text. Handles various encodings and provides detailed errors. Use head/tail parameters.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "head":  {
+                                                                          "type":  "number"
+                                                                      },
+                                                             "tail":  {
+                                                                          "type":  "number"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "write_file",
+                      "description":  "Create or overwrite a file with new content. Operates within allowed dirs.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "content":  {
+                                                                             "type":  "string"
+                                                                         }
+                                                         },
+                                          "required":  [
+                                                           "path",
+                                                           "content"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "edit_file",
+                      "description":  "Perform line-based edits to a text file and return a git-style diff.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "edits":  {
+                                                                           "type":  "array"
+                                                                       },
+                                                             "dryRun":  {
+                                                                            "type":  "boolean"
+                                                                        }
+                                                         },
+                                          "required":  [
+                                                           "path",
+                                                           "edits"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "create_directory",
+                      "description":  "Ensure a directory exists, creating parent directories as needed.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "list_directory",
+                      "description":  "List files and directories at a path, marking types.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "list_directory_with_sizes",
+                      "description":  "Like list_directory but include sizes, with optional sorting.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "sortBy":  {
+                                                                            "type":  "string"
+                                                                        }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "directory_tree",
+                      "description":  "Return JSON tree of directories/files recursively.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "excludePatterns":  {
+                                                                                     "type":  "array"
+                                                                                 }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "move_file",
+                      "description":  "Move or rename a file or directory within allowed paths.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "source":  {
+                                                                            "type":  "string"
+                                                                        },
+                                                             "destination":  {
+                                                                                 "type":  "string"
+                                                                             }
+                                                         },
+                                          "required":  [
+                                                           "source",
+                                                           "destination"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "search_files",
+                      "description":  "Recursively search using glob patterns starting at path.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "pattern":  {
+                                                                             "type":  "string"
+                                                                         },
+                                                             "excludePatterns":  {
+                                                                                     "type":  "array"
+                                                                                 }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "get_file_info",
+                      "description":  "Retrieve metadata about a file or directory.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "list_allowed_directories",
+                      "description":  "Return directories the server may access according to config.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_audit",
+                      "description":  "Run mirr-audit with MRT role allowlist enforcement.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "mode":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "glob":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_brain_get",
+                      "description":  "Run mirr-brain get with MRT role allowlist enforcement.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "key":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "key"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_general_ci",
+                      "description":  "Run mirr-general ci with MRT role allowlist enforcement.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_general_ci_compile",
+                      "description":  "Run mirr-general ci compile gate with MRT role allowlist enforcement.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_general_ci_fast",
+                      "description":  "Run mirr-general ci fast gate with MRT role allowlist enforcement.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_wave_dry_run",
+                      "description":  "Run mirr-wave in dry-run mode with bounded proposal inputs.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "proposal_id":  {
+                                                                                  "type":  "string"
+                                                                              },
+                                                             "proposalId":  {
+                                                                                 "type":  "string"
+                                                                             },
+                                                             "proposal_file":  {
+                                                                                    "type":  "string"
+                                                                                },
+                                                             "proposalFile":  {
+                                                                                   "type":  "string"
+                                                                               },
+                                                             "max_lines":  {
+                                                                             "type":  "number"
+                                                                         },
+                                                             "maxLines":  {
+                                                                            "type":  "number"
+                                                                        }
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_wave_apply",
+                      "description":  "Run mirr-wave apply mode with bounded proposal inputs.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "proposal_id":  {
+                                                                                  "type":  "string"
+                                                                              },
+                                                             "proposalId":  {
+                                                                                 "type":  "string"
+                                                                             },
+                                                             "proposal_file":  {
+                                                                                    "type":  "string"
+                                                                                },
+                                                             "proposalFile":  {
+                                                                                   "type":  "string"
+                                                                               },
+                                                             "max_lines":  {
+                                                                             "type":  "number"
+                                                                         },
+                                                             "maxLines":  {
+                                                                            "type":  "number"
+                                                                        }
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_lsp_diagnostics",
+                      "description":  "Run mirr-lsp diagnostics on a bounded source string through stdin.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "source":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "source"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_compile",
+                      "description":  "Invoke compiler pipeline for MIRR source with bounded options (target, size limit).",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "source_file":  {
+                                                                             "type":  "string"
+                                                                         },
+                                                             "sourceFile":  {
+                                                                             "type":  "string"
+                                                                         },
+                                                             "target":  {
+                                                                          "type":  "string",
+                                                                          "enum":  [
+                                                                                             "verilog",
+                                                                                             "firrtl",
+                                                                                             "json",
+                                                                                             "dot",
+                                                                                             "rspu_asm"
+                                                                                         ]
+                                                                      },
+                                                             "max_size":  {
+                                                                             "type":  "number"
+                                                                         },
+                                                             "maxSize":  {
+                                                                           "type":  "number"
+                                                                       }
+                                                         },
+                                          "required":  [
+                                                           "source_file"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_rspu_validate",
+                      "description":  "Validate R-SPU (Rust SPU) proofs with strict or permissive mode.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "proof_path":  {
+                                                                            "type":  "string"
+                                                                        },
+                                                             "proofPath":  {
+                                                                           "type":  "string"
+                                                                       },
+                                                             "mode":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "proof_path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_rspu_proofs",
+                      "description":  "Execute proof synthesis with optional method restrictions.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "source_file":  {
+                                                                             "type":  "string"
+                                                                         },
+                                                             "sourceFile":  {
+                                                                             "type":  "string"
+                                                                         },
+                                                             "methods":  {
+                                                                           "type":  "array"
+                                                                       }
+                                                         },
+                                          "required":  [
+                                                           "source_file"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "lra_init",
+                      "description":  "Initialize a new LRA (Living Research Artifact) project with scaffold.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "project_name":  {
+                                                                              "type":  "string"
+                                                                          },
+                                                             "projectName":  {
+                                                                              "type":  "string"
+                                                                          }
+                                                         },
+                                          "required":  [
+                                                           "project_name"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "lra_validate",
+                      "description":  "Validate LRA compliance (Bronze/Silver/Gold) for an HTML paper.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "target_path":  {
+                                                                                   "type":  "string"
+                                                                               }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "lra_serve",
+                      "description":  "Start a local LRA dev server with live reload.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "port":  {
+                                                                        "type":  "number"
+                                                                    }
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "lra_check",
+                      "description":  "Check LRA compliance (alias for validate).",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "target_path":  {
+                                                                                   "type":  "string"
+                                                                               }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "lra_sign",
+                      "description":  "Sign a verification receipt with an Ed25519 keypair.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "receipt":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "receipt_path":  {
+                                                                              "type":  "string"
+                                                                          },
+                                                             "key":  {
+                                                                      "type":  "string"
+                                                                  },
+                                                             "key_path":  {
+                                                                           "type":  "string"
+                                                                       }
+                                                         },
+                                          "required":  [
+                                                           "receipt"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "lra_verify",
+                      "description":  "Verify a deployed LRA paper and validate content integrity.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "target":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "path"
+                                                       ]
+                                      }
+                  }
+              ]
+}

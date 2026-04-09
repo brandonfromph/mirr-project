@@ -1,0 +1,56 @@
+[
+  {
+    "name": "canonical_success_builder_auth",
+    "request": {
+      "id": "1",
+      "method": "mrt_audit",
+      "params": {}
+    },
+    "headers": {
+      "x-mcp-api-key": "builder-token"
+    },
+    "expect": {
+      "status": 200,
+      "result_tool": "mrt_audit"
+    }
+  },
+  {
+    "name": "canonical_auth_missing",
+    "request": {
+      "id": "2",
+      "method": "mrt_audit",
+      "params": {}
+    },
+    "expect": {
+      "status": 401,
+      "error_code": "auth_missing_api_key"
+    }
+  },
+  {
+    "name": "canonical_schema_reject",
+    "request": {
+      "id": "3",
+      "method": "mrt_brain_get",
+      "params": {}
+    },
+    "headers": {
+      "x-mcp-api-key": "committer-token"
+    },
+    "expect": {
+      "status": 400,
+      "error_code": "validation_schema"
+    }
+  },
+  {
+    "name": "fallback_alias_list_tools",
+    "request": {
+      "id": "4",
+      "method": "ListTools",
+      "params": {}
+    },
+    "expect": {
+      "status": 200,
+      "result_contains": "schema_ok"
+    }
+  }
+]
