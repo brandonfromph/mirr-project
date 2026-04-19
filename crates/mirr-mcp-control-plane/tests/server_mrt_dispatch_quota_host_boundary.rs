@@ -119,9 +119,7 @@ fn quota_host_boundary_hydrates_from_sink_before_enforcement() {
         },
     );
 
-    boundary
-        .hydrate_from_sink(32)
-        .expect("quota hydration should succeed");
+    boundary.hydrate_from_sink(32).expect("quota hydration should succeed");
 
     let decision = boundary
         .enforce_for_token("builder-token", 900)
@@ -184,9 +182,7 @@ fn quota_host_boundary_fails_closed_on_sink_hydration_error() {
         sink,
     );
 
-    let error = boundary
-        .hydrate_from_sink(8)
-        .expect_err("quota hydration errors must fail closed");
+    let error = boundary.hydrate_from_sink(8).expect_err("quota hydration errors must fail closed");
     assert_eq!(error, MrtRuntimeAdmissionError::InvalidRuntimeLimits);
 }
 

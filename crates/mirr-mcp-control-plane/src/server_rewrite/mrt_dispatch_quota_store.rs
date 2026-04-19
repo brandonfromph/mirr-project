@@ -359,8 +359,7 @@ mod tests {
         let sink = SqliteMrtDispatchQuotaEventSink::in_memory()
             .expect("in-memory quota sink should initialize");
 
-        sink
-            .persist_token_quota("committer-token", 200, 3)
+        sink.persist_token_quota("committer-token", 200, 3)
             .expect("quota sink persistence should succeed");
 
         let row = sink

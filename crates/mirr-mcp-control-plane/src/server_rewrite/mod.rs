@@ -3,6 +3,7 @@
 pub mod axum_route_host;
 pub mod http_route_registry;
 pub mod mrt_dispatch_audit_store;
+pub mod mrt_dispatch_dual_run_telemetry;
 pub mod mrt_dispatch_invocation_executor;
 pub mod mrt_dispatch_invocation_input;
 pub mod mrt_dispatch_invocation_plan;

@@ -28,8 +28,6 @@ fn gate_contract_includes_consumer_checks() {
     let src = read_text("src/bin/mirr-general.rs");
 
     for command in [
-        "npm --prefix mcp_server test",
-        "node mcp_server/tests/stdio_proxy_test.js",
         "npm --prefix paper/demos pack --dry-run",
         "npm --prefix vscode-mirr pack --dry-run",
         "bash tests/eda/run_eda_tests.sh",

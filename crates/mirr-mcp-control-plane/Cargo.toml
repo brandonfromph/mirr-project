@@ -10,6 +10,7 @@ publish = false
 axum = { version = "0.6", features = ["http1", "json"] }
 rusqlite = { version = "0.39.0", features = ["bundled"] }
 serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 hyper = { version = "0.14", features = ["http1", "server"] }

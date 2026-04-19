@@ -1,0 +1,25 @@
+[package]
+name = "mirr-kb-native"
+version = "0.1.0"
+edition = "2021"
+description = "MIRR native Rust RAG core with semantic and lexical retrieval"
+license = "GPL-3.0"
+publish = false
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+rusqlite = { version = "0.39.0", features = ["bundled"] }
+async-trait = "0.1"
+tokio = { version = "1", features = ["time", "sync", "rt", "macros"] }
+sha2 = "0.10"
+
+# Optional: vector store adapters (feature-gated for future use)
+# qdrant-client = { version = "1.0", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }
+
+# [[feature]]
+# qdrant = ["qdrant-client"]

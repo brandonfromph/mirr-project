@@ -1,0 +1,30 @@
+#![forbid(unsafe_code)]
+//! Line-ending parity tests (LF vs CRLF).
+
+use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+
+const LF_SRC: &str = "module eol_parity {\n    signal a: in bool;\n    signal b: out bool;\n\n    guard g {\n        when a\n        for 1 cycles;\n    }\n\n    reflex r {\n        on g {\n            b = a;\n        }\n    }\n}\n";
+
+const CRLF_SRC: &str = "module eol_parity {\r\n    signal a: in bool;\r\n    signal b: out bool;\r\n\r\n    guard g {\r\n        when a\r\n        for 1 cycles;\r\n    }\r\n\r\n    reflex r {\r\n        on g {\r\n            b = a;\r\n        }\r\n    }\r\n}\r\n";
+
+#[test]
+fn parse_and_pipeline_match_for_lf_and_crlf() {
+    let cfg = PipelineConfig::default();
+    let lf = run_pipeline(LF_SRC, &cfg).expect("LF pipeline should succeed");
+    let crlf = run_pipeline(CRLF_SRC, &cfg).expect("CRLF pipeline should succeed");
+
+    assert_eq!(lf.program.module.name, crlf.program.module.name);
+    assert_eq!(lf.program.module.guards.len(), crlf.program.module.guards.len());
+    assert_eq!(lf.program.module.reflexes.len(), crlf.program.module.reflexes.len());
+}
+
+#[test]
+fn emitted_verilog_is_equivalent_for_lf_and_crlf_sources() {
+    let cfg = PipelineConfig::default();
+    let lf = run_pipeline(LF_SRC, &cfg).expect("LF pipeline should succeed");
+    let crlf = run_pipeline(CRLF_SRC, &cfg).expect("CRLF pipeline should succeed");
+
+    let sv_lf = nasa_rust_project::emit::verilog::emit_sv(&lf);
+    let sv_crlf = nasa_rust_project::emit::verilog::emit_sv(&crlf);
+    assert_eq!(sv_lf, sv_crlf, "Verilog output should be line-ending invariant");
+}

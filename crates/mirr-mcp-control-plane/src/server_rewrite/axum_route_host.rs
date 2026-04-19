@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::body::Bytes;
@@ -15,19 +16,24 @@ use axum::{Json, Router};
 use serde_json::{json, Value};
 
 use super::mrt_dispatch_audit_store::{MrtDispatchAuditEventSink, NoopMrtDispatchAuditEventSink};
+use super::mrt_dispatch_dual_run_telemetry::{
+    DriftCategory, DualRunTelemetry, ParityMetrics, PathExecutionEvent,
+};
 use super::mrt_dispatch_invocation_executor::{
     execute_mrt_dispatch_invocation, MrtDispatchExecutionConfig, MrtDispatchExecutionError,
     MrtDispatchExecutionResult, MrtRuntimeAdmissionConfig, MrtRuntimeAdmissionError,
     MrtRuntimeAdmissionState,
 };
-use super::mrt_dispatch_invocation_input::{InvocationInputBody, InvocationInputValue};
+use super::mrt_dispatch_invocation_input::{
+    get_body_string, InvocationInputBody, InvocationInputValue,
+};
 use super::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
 use super::mrt_dispatch_invocation_resolver::resolve_mrt_dispatch_invocation_by_name;
 use super::mrt_dispatch_quota_host_boundary::MrtDispatchQuotaHostBoundary;
 use super::mrt_dispatch_quota_store::{MrtDispatchQuotaEventSink, NoopMrtDispatchQuotaEventSink};
 use super::mrt_dispatch_route_handler::{
-    handle_mrt_dispatch_route, MrtDispatchPipelineError, MrtDispatchRouteResponse,
-    PayloadValidationError,
+    handle_mrt_dispatch_route, MrtDispatchAuditEvent, MrtDispatchPipelineError,
+    MrtDispatchRouteResponse, PayloadValidationError,
 };
 use super::rpc_api_key_extraction::{
     api_key_from_rpc_envelope, parse_api_key_value, RpcEnvelopeApiKeyInput, RpcParamsApiKeyInput,
@@ -420,6 +426,19 @@ fn dispatch_canonical_route(
     tool_name: &str,
     api_key: Option<String>,
 ) -> (u16, StdioRpcResponse) {
+    if state.execution_config.dual_run_enabled && tool_name == "mrt_kb_query" {
+        return dispatch_dual_run_route(state, dispatch_input, tool_name, api_key);
+    }
+
+    dispatch_single_route(state, dispatch_input, tool_name, api_key)
+}
+
+fn dispatch_single_route(
+    state: &AxumMcpHostState,
+    dispatch_input: &StdioRpcDispatchInput,
+    tool_name: &str,
+    api_key: Option<String>,
+) -> (u16, StdioRpcResponse) {
     let token_map = state.role_tokens.clone();
     let admission_state = Arc::clone(&state.admission_state);
     let admission_config = state.admission_config.clone();
@@ -455,6 +474,198 @@ fn dispatch_canonical_route(
     );
 
     route_response_to_stdio(dispatch_input.id.clone(), route_response)
+}
+
+fn dispatch_dual_run_route(
+    state: &AxumMcpHostState,
+    dispatch_input: &StdioRpcDispatchInput,
+    tool_name: &str,
+    api_key: Option<String>,
+) -> (u16, StdioRpcResponse) {
+    let legacy_dispatch_input = synthesize_legacy_dispatch_input(dispatch_input);
+    let legacy_state = state.clone();
+    let new_state = state.clone();
+    let legacy_api_key = api_key.clone();
+    let new_api_key = api_key;
+    let legacy_tool_name = String::from("mrt_brain_get");
+    let new_tool_name = tool_name.to_owned();
+
+    let legacy_handle = thread::spawn(move || {
+        dispatch_single_route(
+            &legacy_state,
+            &legacy_dispatch_input,
+            &legacy_tool_name,
+            legacy_api_key,
+        )
+    });
+    let new_dispatch_input = dispatch_input.clone();
+    let new_handle = thread::spawn(move || {
+        dispatch_single_route(&new_state, &new_dispatch_input, &new_tool_name, new_api_key)
+    });
+
+    let legacy_result = legacy_handle.join().ok();
+    let new_result = new_handle.join().ok();
+
+    let legacy_result = legacy_result.unwrap_or_else(|| {
+        (
+            500,
+            StdioRpcResponse {
+                jsonrpc: JSON_RPC_VERSION,
+                id: dispatch_input.id.clone(),
+                result: None,
+                error: Some(StdioRpcError {
+                    code: 500,
+                    message: "Legacy dual-run path failed.".to_owned(),
+                }),
+            },
+        )
+    });
+    let new_result = new_result.unwrap_or_else(|| {
+        (
+            500,
+            StdioRpcResponse {
+                jsonrpc: JSON_RPC_VERSION,
+                id: dispatch_input.id.clone(),
+                result: None,
+                error: Some(StdioRpcError {
+                    code: 500,
+                    message: "New dual-run path failed.".to_owned(),
+                }),
+            },
+        )
+    });
+
+    let legacy_response = &legacy_result.1;
+    let new_response = &new_result.1;
+
+    let legacy_event = build_path_event("legacy", legacy_response);
+    let new_event = build_path_event("new", new_response);
+    let parity_metrics = build_parity_metrics(legacy_response, new_response);
+    let primary_path_returned = if new_response.result.is_some() {
+        String::from("new")
+    } else if legacy_response.result.is_some() {
+        String::from("legacy")
+    } else {
+        String::from("fallback")
+    };
+
+    let telemetry = DualRunTelemetry::new(
+        dispatch_input.id.as_ref().map(ToString::to_string).unwrap_or_default(),
+        tool_name.to_owned(),
+        extract_query_snippet(&dispatch_input.params),
+        legacy_event,
+        new_event,
+        parity_metrics,
+        primary_path_returned,
+        current_unix_millis(),
+    );
+
+    state.audit_event_sink.append(&MrtDispatchAuditEvent {
+        kind: "mrt_dual_run",
+        subject: tool_name.to_owned(),
+        message: Some(telemetry.summary()),
+    });
+
+    let selected = if new_response.result.is_some() { new_result } else { legacy_result };
+    let selected_status = selected.0;
+    let selected_response = selected.1;
+
+    (selected_status, selected_response)
+}
+
+fn synthesize_legacy_dispatch_input(
+    dispatch_input: &StdioRpcDispatchInput,
+) -> StdioRpcDispatchInput {
+    let mut legacy_params = InvocationInputBody::default();
+    let key = get_body_string(&dispatch_input.params, "key", "");
+    if !key.is_empty() {
+        legacy_params.set_string("key", key);
+    } else {
+        let query = get_body_string(&dispatch_input.params, "query", "");
+        if !query.is_empty() {
+            legacy_params.set_string("key", query);
+        }
+    }
+
+    let mut legacy_input = dispatch_input.clone();
+    legacy_input.params = legacy_params;
+    legacy_input.call_tool_name = Some("mrt_brain_get".to_owned());
+    legacy_input
+}
+
+fn build_path_event(path_name: &str, response: &StdioRpcResponse) -> PathExecutionEvent {
+    let success = response.result.is_some();
+    let result_count = response.result.as_deref().map(count_json_items).unwrap_or(0);
+    PathExecutionEvent {
+        path_name: path_name.to_owned(),
+        success,
+        latency_ms: 0,
+        result_count,
+        truncated: false,
+        error: response.error.as_ref().map(|error| error.message.clone()),
+    }
+}
+
+fn build_parity_metrics(
+    legacy_response: &StdioRpcResponse,
+    new_response: &StdioRpcResponse,
+) -> ParityMetrics {
+    let legacy_count = legacy_response.result.as_deref().map(count_json_items).unwrap_or(0);
+    let new_count = new_response.result.as_deref().map(count_json_items).unwrap_or(0);
+    let count_match = legacy_count == new_count;
+    let overlap_percent = if legacy_count == 0 && new_count == 0 {
+        100
+    } else {
+        let smaller = legacy_count.min(new_count) as u32;
+        let larger = legacy_count.max(new_count) as u32;
+        if larger == 0 {
+            0
+        } else {
+            (smaller.saturating_mul(100)) / larger
+        }
+    };
+
+    ParityMetrics {
+        paths_match: legacy_response.result == new_response.result,
+        result_count_match: count_match,
+        result_count_diff: new_count as i32 - legacy_count as i32,
+        truncation_match: true,
+        drift_category: if legacy_response.result == new_response.result {
+            DriftCategory::NoDrift
+        } else if count_match {
+            DriftCategory::MinorReordering
+        } else {
+            DriftCategory::ResultCountMismatch
+        },
+        top_k_reordered: legacy_response.result != new_response.result && count_match,
+        result_overlap_percent: overlap_percent,
+    }
+}
+
+fn count_json_items(value: &str) -> usize {
+    match serde_json::from_str::<serde_json::Value>(value) {
+        Ok(serde_json::Value::Array(items)) => items.len(),
+        Ok(serde_json::Value::Object(map)) => map.len(),
+        Ok(_) => 1,
+        Err(_) => 1,
+    }
+}
+
+fn extract_query_snippet(body: &InvocationInputBody) -> String {
+    let query = get_body_string(body, "query", "");
+    if !query.is_empty() {
+        return query.chars().take(128).collect();
+    }
+
+    let key = get_body_string(body, "key", "");
+    key.chars().take(128).collect()
+}
+
+fn current_unix_millis() -> u64 {
+    match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(duration) => u64::try_from(duration.as_millis()).unwrap_or(u64::MAX),
+        Err(_) => 0,
+    }
 }
 
 pub fn dispatch_host_rpc_message(

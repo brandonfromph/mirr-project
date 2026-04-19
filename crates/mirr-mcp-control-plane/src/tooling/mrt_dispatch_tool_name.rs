@@ -15,16 +15,20 @@ pub enum MrtDispatchTool {
     MrtCompile,
     MrtRspuValidate,
     MrtRspuProofs,
+    MrtDaemonCoreContract,
+    MrtDaemonSecurityContract,
     LraInit,
     LraValidate,
     LraServe,
     LraCheck,
     LraSign,
     LraVerify,
+    MrtKbQuery,
+    MrtKbIndexStatus,
 }
 
 impl MrtDispatchTool {
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 21] = [
         Self::MrtAudit,
         Self::MrtBrainGet,
         Self::MrtGeneralCi,
@@ -36,12 +40,16 @@ impl MrtDispatchTool {
         Self::MrtCompile,
         Self::MrtRspuValidate,
         Self::MrtRspuProofs,
+        Self::MrtDaemonCoreContract,
+        Self::MrtDaemonSecurityContract,
         Self::LraInit,
         Self::LraValidate,
         Self::LraServe,
         Self::LraCheck,
         Self::LraSign,
         Self::LraVerify,
+        Self::MrtKbQuery,
+        Self::MrtKbIndexStatus,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -57,12 +65,16 @@ impl MrtDispatchTool {
             Self::MrtCompile => "mrt_compile",
             Self::MrtRspuValidate => "mrt_rspu_validate",
             Self::MrtRspuProofs => "mrt_rspu_proofs",
+            Self::MrtDaemonCoreContract => "mrt_daemon_core_contract",
+            Self::MrtDaemonSecurityContract => "mrt_daemon_security_contract",
             Self::LraInit => "lra_init",
             Self::LraValidate => "lra_validate",
             Self::LraServe => "lra_serve",
             Self::LraCheck => "lra_check",
             Self::LraSign => "lra_sign",
             Self::LraVerify => "lra_verify",
+            Self::MrtKbQuery => "mrt_kb_query",
+            Self::MrtKbIndexStatus => "mrt_kb_index_status",
         }
     }
 
@@ -79,12 +91,16 @@ impl MrtDispatchTool {
             "mrt_compile" => Some(Self::MrtCompile),
             "mrt_rspu_validate" => Some(Self::MrtRspuValidate),
             "mrt_rspu_proofs" => Some(Self::MrtRspuProofs),
+            "mrt_daemon_core_contract" => Some(Self::MrtDaemonCoreContract),
+            "mrt_daemon_security_contract" => Some(Self::MrtDaemonSecurityContract),
             "lra_init" => Some(Self::LraInit),
             "lra_validate" => Some(Self::LraValidate),
             "lra_serve" => Some(Self::LraServe),
             "lra_check" => Some(Self::LraCheck),
             "lra_sign" => Some(Self::LraSign),
             "lra_verify" => Some(Self::LraVerify),
+            "mrt_kb_query" => Some(Self::MrtKbQuery),
+            "mrt_kb_index_status" => Some(Self::MrtKbIndexStatus),
             _ => None,
         }
     }

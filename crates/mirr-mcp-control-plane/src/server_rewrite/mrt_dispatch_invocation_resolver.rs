@@ -88,8 +88,8 @@ fn lsp_diagnostics_stdin(source: &str) -> Result<String, String> {
         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"processId\":null,\"rootUri\":null,\"capabilities\":{},\"workspaceFolders\":null}}",
     );
 
-    let source_json =
-        serde_json::to_string(source).map_err(|error| format!("invalid_lsp_source_json: {}", error))?;
+    let source_json = serde_json::to_string(source)
+        .map_err(|error| format!("invalid_lsp_source_json: {}", error))?;
 
     let did_open_payload = format!(
         "{{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/didOpen\",\"params\":{{\"textDocument\":{{\"uri\":\"file:///mrt-input.mirr\",\"languageId\":\"mirr\",\"version\":1,\"text\":{}}}}}}}",
@@ -407,6 +407,19 @@ fn mrt_rspu_proofs_args(
     Ok(args)
 }
 
+fn daemon_contract_args(test_target: &str, test_filter: &str) -> Vec<String> {
+    let mut args = vec!["test".to_owned(), "--test".to_owned(), test_target.to_owned()];
+
+    if !test_filter.is_empty() {
+        args.push(test_filter.to_owned());
+    }
+
+    args.push("--".to_owned());
+    args.push("--nocapture".to_owned());
+
+    args
+}
+
 pub fn resolve_mrt_dispatch_invocation(
     tool: MrtDispatchTool,
     body: &InvocationInputBody,
@@ -519,6 +532,22 @@ pub fn resolve_mrt_dispatch_invocation(
                 first_string_array_or_csv(body, &["methods", "proof_methods", "proofMethods"]);
             Ok(MrtDispatchInvocationPlan::new(mrt_rspu_proofs_args(&source_file, methods)?))
         }
+        MrtDispatchTool::MrtDaemonCoreContract => {
+            let test_filter =
+                first_string(body, &["test_filter", "testFilter", "filter", "grep"], "");
+            Ok(MrtDispatchInvocationPlan::new(daemon_contract_args(
+                "wave5_daemon_core_architecture_tests",
+                &test_filter,
+            )))
+        }
+        MrtDispatchTool::MrtDaemonSecurityContract => {
+            let test_filter =
+                first_string(body, &["test_filter", "testFilter", "filter", "grep"], "");
+            Ok(MrtDispatchInvocationPlan::new(daemon_contract_args(
+                "wave6_daemon_security_runtime_policy_tests",
+                &test_filter,
+            )))
+        }
         MrtDispatchTool::LraInit => {
             let project_name = first_string(body, &["project_name", "projectName", "name"], "");
             let lra_args = lra_init_args(&project_name)?;
@@ -567,6 +596,65 @@ pub fn resolve_mrt_dispatch_invocation(
             args.extend(lra_verify_args(&target)?);
             Ok(MrtDispatchInvocationPlan::new(args))
         }
+        MrtDispatchTool::MrtKbQuery => {
+            let query = get_body_string(body, "query", "");
+            if query.is_empty() {
+                return Err("query parameter is required".to_owned());
+            }
+            let mode = first_string(body, &["mode"], "hybrid");
+            if !matches!(mode.as_str(), "lexical" | "semantic" | "hybrid" | "graph" | "temporal") {
+                return Err("mode must be one of lexical|semantic|hybrid|graph|temporal".to_owned());
+            }
+            let limit = first_number(body, &["limit"], 16.0) as i64;
+            if limit < 1 || limit > 1000 {
+                return Err("limit must be between 1 and 1000".to_owned());
+            }
+            let filter = first_string(body, &["filter"], "");
+            let expand_mode = first_string(body, &["expand_mode", "expandMode"], "none");
+            if !matches!(expand_mode.as_str(), "none" | "synonym" | "hyde") {
+                return Err("expand_mode must be one of none|synonym|hyde".to_owned());
+            }
+            let retry_count = first_number(body, &["retry_count", "retryCount"], 1.0) as i64;
+            if !(0..=5).contains(&retry_count) {
+                return Err("retry_count must be between 0 and 5".to_owned());
+            }
+            let timeout_ms = first_number(body, &["timeout_ms", "timeoutMs"], 30_000.0) as i64;
+            if !(1_000..=60_000).contains(&timeout_ms) {
+                return Err("timeout_ms must be between 1000 and 60000".to_owned());
+            }
+
+            let mut args = vec![
+                "run".to_owned(),
+                "-p".to_owned(),
+                "mirr-kb-native".to_owned(),
+                "--".to_owned(),
+                "query".to_owned(),
+                "--text".to_owned(),
+                query,
+                "--mode".to_owned(),
+                mode,
+                "--limit".to_owned(),
+                limit.to_string(),
+                "--expand-mode".to_owned(),
+                expand_mode,
+                "--retry-count".to_owned(),
+                retry_count.to_string(),
+                "--timeout-ms".to_owned(),
+                timeout_ms.to_string(),
+            ];
+            if !filter.is_empty() {
+                args.push("--filter".to_owned());
+                args.push(filter);
+            }
+            Ok(MrtDispatchInvocationPlan::new(args))
+        }
+        MrtDispatchTool::MrtKbIndexStatus => Ok(MrtDispatchInvocationPlan::new(vec![
+            "run".to_owned(),
+            "-p".to_owned(),
+            "mirr-kb-native".to_owned(),
+            "--".to_owned(),
+            "status".to_owned(),
+        ])),
     }
 }
 

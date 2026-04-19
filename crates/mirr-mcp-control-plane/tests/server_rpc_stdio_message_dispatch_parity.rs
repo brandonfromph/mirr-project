@@ -134,6 +134,46 @@ fn stdio_chunk_framing_parses_messages_and_skips_invalid_json_lines() {
 }
 
 #[test]
+fn stdio_tools_call_uses_arguments_payload_as_params() {
+    let line = r#"{"jsonrpc":"2.0","id":42,"method":"tools/call","params":{"name":"mrt_kb_query","arguments":{"query":"alpha","mode":"hybrid","limit":4},"apiKey":"Bearer abc"}}"#;
+
+    let parsed = parse_stdio_rpc_line(line).expect("tools/call payload should parse");
+    assert_eq!(parsed.id, Some(Value::from(42)));
+    assert_eq!(parsed.method, Some("tools/call".to_owned()));
+    assert_eq!(parsed.call_tool_name, Some("mrt_kb_query".to_owned()));
+    assert_eq!(parsed.params_api_key, Some("Bearer abc".to_owned()));
+
+    assert_eq!(
+        mirror::server_rewrite::mrt_dispatch_invocation_input::get_body_string(
+            &parsed.params,
+            "query",
+            ""
+        ),
+        "alpha"
+    );
+    assert_eq!(
+        mirror::server_rewrite::mrt_dispatch_invocation_input::get_body_string(
+            &parsed.params,
+            "mode",
+            ""
+        ),
+        "hybrid"
+    );
+    assert_eq!(
+        mirror::server_rewrite::mrt_dispatch_invocation_input::get_body_number(
+            &parsed.params,
+            "limit",
+            0.0
+        ),
+        4.0
+    );
+    assert!(
+        !parsed.params.contains_key("name"),
+        "MCP wrapper field 'name' must not leak into tool params"
+    );
+}
+
+#[test]
 fn stdio_chunk_framing_fail_closed_on_buffer_and_line_limits() {
     let huge_chunk = "x".repeat(MAX_STDIO_BUFFER_BYTES + 1);
     let (buffer, messages) = consume_stdio_input_chunk("", &huge_chunk);

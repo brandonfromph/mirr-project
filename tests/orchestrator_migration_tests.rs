@@ -4,6 +4,7 @@
 mod migration;
 
 use migration::{build_script_inventory, migrate_script, LegacyScriptSpec};
+use std::collections::BTreeSet;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -118,4 +119,24 @@ fn build_script_inventory_returns_non_empty_with_sp001_id() {
     let inventory = build_script_inventory(&repo_root);
     assert!(!inventory.is_empty());
     assert_eq!(inventory[0].id, "SP001");
+}
+
+#[test]
+fn build_script_inventory_replacements_stay_on_routable_surface() {
+    let repo_root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let inventory = build_script_inventory(&repo_root);
+
+    let allowed: BTreeSet<&str> =
+        ["run ci", "run ci --profile compile", "run ci --profile fast", "run inspect"]
+            .into_iter()
+            .collect();
+
+    for spec in inventory {
+        assert!(
+            allowed.contains(spec.replacement_subcommand.as_str()),
+            "{} advertises unroutable replacement '{}'",
+            spec.id,
+            spec.replacement_subcommand
+        );
+    }
 }

@@ -378,7 +378,10 @@ Theorem verify_opcode_roundtrip : forall cert_offset,
 Proof.
   intros cert_offset H.
   unfold pack_s_type.
-  apply opcode_roundtrip; lia.
+  replace (Z.land cert_offset 67108863) with cert_offset.
+  - apply opcode_roundtrip; lia.
+  - change 67108863 with (Z.ones 26).
+    rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia].
 Qed.
 
 (** CERTIFY (opcode 31) is R-type: dst field carries the destination register.
@@ -399,7 +402,8 @@ Proof.
   intros dst H.
   unfold pack_r_type.
   replace (Z.land dst 255) with dst
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land 0 255) with 0 by reflexivity.
   replace (Z.land 0 3) with 0 by reflexivity.
   rewrite !Z.shiftl_0_l.
@@ -410,9 +414,12 @@ Proof.
     + apply Z.shiftl_nonneg; lia.
     + assert (Hd : Z.shiftl dst 18 < Z.pow 2 26).
       { rewrite Z.shiftl_mul_pow2 by lia.
-        apply Z.lt_trans with (256 * Z.pow 2 18);
+          apply Z.lt_le_trans with (256 * Z.pow 2 18);
           [apply Z.mul_lt_mono_pos_r; [apply Z.pow_pos_nonneg; lia | lia] |].
-        change (256 * 2 ^ 18) with (2 ^ 26). lia. }
+          replace 256 with (Z.pow 2 8) by reflexivity.
+          rewrite <- Z.pow_add_r by lia.
+          replace (8 + 18) with 26 by lia.
+          lia. }
       lia.
 Qed.
 
@@ -433,7 +440,10 @@ Theorem total_check_opcode_roundtrip : forall expected,
 Proof.
   intros expected H.
   unfold pack_s_type.
-  apply opcode_roundtrip; lia.
+    replace (Z.land expected 67108863) with expected.
+    - apply opcode_roundtrip; lia.
+    - change 67108863 with (Z.ones 26).
+      rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia].
 Qed.
 
 (* ======================================================================= *)
@@ -462,11 +472,14 @@ Proof.
   intros dst src offset Hdst Hsrc Hoff.
   unfold pack_i_type.
   replace (Z.land dst 255) with dst
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land src 255) with src
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land offset 1023) with offset
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 1023 with (Z.ones 10);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   apply opcode_roundtrip.
   - lia.
   - split; [|].
@@ -512,9 +525,11 @@ Proof.
   intros dst src Hdst Hsrc.
   unfold pack_r_type.
   replace (Z.land dst 255) with dst
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land src 255) with src
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land 0 255) with 0 by reflexivity.
   replace (Z.land 0 3) with 0 by reflexivity.
   rewrite !Z.shiftl_0_l.
@@ -550,9 +565,11 @@ Proof.
   intros dst src Hdst Hsrc.
   unfold pack_r_type.
   replace (Z.land dst 255) with dst
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land src 255) with src
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land 0 255) with 0 by reflexivity.
   replace (Z.land 0 3) with 0 by reflexivity.
   rewrite !Z.shiftl_0_l.
@@ -580,9 +597,11 @@ Proof.
   unfold pack_r_type.
   replace (Z.land 0 255) with 0 by reflexivity.
   replace (Z.land src 255) with src
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land bounds 255) with bounds
-    by (rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
+      by (change 255 with (Z.ones 8);
+          rewrite Z.land_ones; [rewrite Z.mod_small; lia | lia]).
   replace (Z.land 0 3) with 0 by reflexivity.
   rewrite Z.shiftl_0_l.
   rewrite Z.lor_0_l.

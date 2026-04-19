@@ -61,10 +61,17 @@ fn json_string_map(value: Option<&Value>) -> BTreeMap<String, String> {
     out
 }
 
-fn invocation_body_from_json_params(params: &Map<String, Value>) -> InvocationInputBody {
+fn invocation_body_from_json_params_filtered(
+    params: &Map<String, Value>,
+    skip_keys: &[&str],
+) -> InvocationInputBody {
     let mut body = InvocationInputBody::default();
 
     for (key, value) in params {
+        if skip_keys.contains(&key.as_str()) {
+            continue;
+        }
+
         match value {
             Value::String(text) => body.set_string(key, text.clone()),
             Value::Number(number) => {
@@ -97,6 +104,10 @@ fn invocation_body_from_json_params(params: &Map<String, Value>) -> InvocationIn
     body
 }
 
+fn invocation_body_from_json_params(params: &Map<String, Value>) -> InvocationInputBody {
+    invocation_body_from_json_params_filtered(params, &[])
+}
+
 fn parse_jsonrpc_id(value: Option<&Value>) -> Option<Value> {
     let Some(raw) = value else {
         return None;
@@ -116,21 +127,34 @@ pub fn parse_stdio_rpc_line(line: &str) -> Option<StdioRpcDispatchInput> {
     let parsed: Value = serde_json::from_str(line).ok()?;
     let object = parsed.as_object()?;
 
+    let method = json_string_field(object, "method");
     let mut params = InvocationInputBody::default();
     let mut call_tool_name = None::<String>;
     let mut params_api_key = None::<String>;
     let mut params_meta = BTreeMap::<String, String>::new();
 
     if let Some(Value::Object(params_map)) = object.get("params") {
-        params = invocation_body_from_json_params(params_map);
         call_tool_name = json_string_field(params_map, "name");
         params_api_key = json_string_field(params_map, "apiKey");
         params_meta = json_string_map(params_map.get("meta"));
+
+        if matches!(method.as_deref(), Some("tools/call" | "CallTool" | "callTool")) {
+            if let Some(Value::Object(arguments)) = params_map.get("arguments") {
+                params = invocation_body_from_json_params(arguments);
+            } else {
+                params = invocation_body_from_json_params_filtered(
+                    params_map,
+                    &["name", "arguments", "apiKey", "meta"],
+                );
+            }
+        } else {
+            params = invocation_body_from_json_params(params_map);
+        }
     }
 
     Some(StdioRpcDispatchInput {
         id: parse_jsonrpc_id(object.get("id")),
-        method: json_string_field(object, "method"),
+        method,
         params,
         call_tool_name,
         api_key: json_string_field(object, "apiKey"),

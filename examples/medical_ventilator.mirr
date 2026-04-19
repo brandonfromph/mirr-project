@@ -147,7 +147,7 @@ module medical_ventilator {
 
     // P6: Clamp valve activates on sustained low pressure
     property clamp_on_low_pressure {
-        always (sustained_low_pressure -> clamp_valve);
+        always (airway_pressure < 20 -> clamp_valve);
     }
 
     // P7: Volume must stay within safe range

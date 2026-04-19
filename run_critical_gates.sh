@@ -6,7 +6,8 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$script_dir"
 
-cargo_target_dir="$script_dir/target/proposal-096-run"
+cargo_target_dir="$script_dir/target/ci-wave"
 export CARGO_TARGET_DIR="$cargo_target_dir"
 export CI=1
+"$script_dir/scripts/preflight-gate.sh" "$script_dir" "$cargo_target_dir"
 cargo run --bin mirr-general -- ci --format json

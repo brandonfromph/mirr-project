@@ -2,9 +2,9 @@
 // Compile: cargo run --bin mirr-compile -- --emit verilog examples/sensor_fusion_advanced.mirr
 
 module sensor_fusion_advanced {
-    signal temp_1:      in i16;
-    signal temp_2:      in i16;
-    signal temp_3:      in i16;
+    signal temp_1:      in u16;
+    signal temp_2:      in u16;
+    signal temp_3:      in u16;
     signal pressure_1:  in u16;
     signal pressure_2:  in u16;
     signal pressure_3:  in u16;

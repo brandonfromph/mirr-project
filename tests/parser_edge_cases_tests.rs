@@ -263,3 +263,97 @@ module inline_cmt {
     assert_eq!(assignments.len(), 1);
     assert_eq!(assignments[0].target, "b");
 }
+
+#[test]
+fn reflex_name_containing_when_substring_parses() {
+    let source = r#"
+module reflex_name_when_substring {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    reflex whenever_alarm {
+        on g {
+            b = true;
+        }
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("should parse");
+    assert_eq!(program.module.reflexes.len(), 1);
+    assert_eq!(program.module.reflexes[0].name, "whenever_alarm");
+    assert_eq!(program.module.reflexes[0].guard_names, vec!["g"]);
+}
+
+#[test]
+fn on_clause_guard_name_containing_and_substring_not_split() {
+    let source = r#"
+module on_and_substring {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard gandalf {
+        when a
+        for 1 cycles;
+    }
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    guard alf {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r {
+        on gandalf {
+            b = true;
+        }
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("should parse");
+    assert_eq!(program.module.reflexes.len(), 1);
+    assert_eq!(program.module.reflexes[0].guard_names, vec!["gandalf"]);
+}
+
+#[test]
+fn inline_when_guard_name_containing_and_substring_not_split() {
+    let source = r#"
+module inline_when_and_substring {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard gandalf {
+        when a
+        for 1 cycles;
+    }
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    guard alf {
+        when a
+        for 1 cycles;
+    }
+
+    reflex alarm when [gandalf] {
+        b = true;
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("should parse");
+    assert_eq!(program.module.reflexes.len(), 1);
+    assert_eq!(program.module.reflexes[0].guard_names, vec!["gandalf"]);
+}

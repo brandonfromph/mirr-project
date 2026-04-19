@@ -480,3 +480,101 @@ module prev_ok {
     let program = parse_mirr(source).expect("should parse");
     validate_module(&program.module).expect("prev delay 1 should pass validation");
 }
+
+// ---------------------------------------------------------------------------
+// Composite validation traversal budget handling
+// ---------------------------------------------------------------------------
+
+fn deep_binary_expr(depth: usize) -> Expr {
+    let mut expr = Expr::Literal(LiteralValue::Integer(0));
+    for _ in 0..depth {
+        expr = Expr::Binary {
+            op: BinaryOp::Add,
+            left: Box::new(expr),
+            right: Box::new(Expr::Literal(LiteralValue::Integer(1))),
+        };
+    }
+    expr
+}
+
+fn module_with_composite_budget_exhaustion() -> Module {
+    let invalid_array_index = Expr::ArrayIndex {
+        array: Box::new(Expr::Signal("flag".to_string())),
+        index: Box::new(Expr::Literal(LiteralValue::Integer(0))),
+    };
+    let huge_rhs = deep_binary_expr(700);
+
+    Module {
+        name: "composite_budget".to_string(),
+        signals: vec![
+            SignalDecl {
+                name: "flag".to_string(),
+                kind: SignalKind::Input,
+                ty: ExtendedType::from_core(SignalType::Bool),
+                origin: None,
+                span: None,
+            },
+            SignalDecl {
+                name: "out".to_string(),
+                kind: SignalKind::Output,
+                ty: ExtendedType::from_core(SignalType::Bool),
+                origin: None,
+                span: None,
+            },
+        ],
+        guards: vec![Guard {
+            name: "g".to_string(),
+            condition: Expr::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(invalid_array_index),
+                right: Box::new(huge_rhs),
+            },
+            cycles: 2,
+            origin: None,
+            span: None,
+        }],
+        reflexes: vec![Reflex {
+            name: "r".to_string(),
+            guard_names: vec!["g".to_string()],
+            assignments: vec![Assignment {
+                target: "out".to_string(),
+                value: Expr::Literal(LiteralValue::Bool(true)),
+                span: None,
+            }],
+            origin: None,
+            span: None,
+        }],
+        properties: Vec::new(),
+        pattern_calls: Vec::new(),
+        pattern_origins: Vec::new(),
+        span: None,
+    }
+}
+
+fn composite_budget_error_message(module: &Module) -> String {
+    let errs = validate_module(module).expect_err("expected traversal-budget semantic error");
+    errs.errors
+        .iter()
+        .map(ToString::to_string)
+        .find(|m| m.contains("[E231]"))
+        .expect("expected [E231] traversal-budget diagnostic")
+}
+
+#[test]
+fn composite_validation_budget_exhaustion_reports_explicit_error() {
+    let module = module_with_composite_budget_exhaustion();
+    let msg = composite_budget_error_message(&module);
+    assert!(
+        msg.contains("[E231]")
+            && msg.contains("Composite semantic validation traversal budget exhausted"),
+        "expected deterministic traversal-budget diagnostic, got: {msg}"
+    );
+}
+
+#[test]
+fn composite_validation_budget_exhaustion_error_is_deterministic() {
+    let module = module_with_composite_budget_exhaustion();
+    let first = composite_budget_error_message(&module);
+    let second = composite_budget_error_message(&module);
+    assert_eq!(first, second, "traversal-budget diagnostic must be deterministic");
+}

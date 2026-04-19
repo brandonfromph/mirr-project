@@ -1934,19 +1934,13 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
             Err(_) => 0,
         };
         if depth > MAX_DEPTH {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "directory nesting too deep",
-            ));
+            return Err(std::io::Error::other("directory nesting too deep"));
         }
 
         for entry in fs::read_dir(&src_dir)? {
             total += 1;
             if total > MAX_TOTAL_ENTRIES {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "too many directory entries",
-                ));
+                return Err(std::io::Error::other("too many directory entries"));
             }
 
             let entry = entry?;

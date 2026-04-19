@@ -269,15 +269,23 @@ fn validate_composite_exprs(module: &Module, errors: &mut PipelineErrors) {
             exprs.push(&assignment.value);
         }
     }
-    let mut iterations: usize = 0;
-    let max_total = MAX_EXPR_NODES.saturating_mul(exprs.len().min(256));
-    let mut stack: Vec<&Expr> = Vec::with_capacity(32);
     for root in &exprs {
-        stack.clear();
+        if !expr_contains_composite(root) {
+            continue;
+        }
+
+        let mut iterations: usize = 0;
+        let mut stack: Vec<&Expr> = Vec::with_capacity(32);
         stack.push(root);
         while let Some(node) = stack.pop() {
             iterations = iterations.saturating_add(1);
-            if iterations > max_total {
+            if iterations > MAX_EXPR_NODES {
+                errors.push(MirrError::SemanticError {
+                    message: format!(
+                        "[E231] Composite semantic validation traversal budget exhausted (limit: {MAX_EXPR_NODES} nodes)."
+                    ),
+                    span: None,
+                });
                 return;
             }
             match node {
@@ -322,12 +330,12 @@ fn validate_composite_exprs(module: &Module, errors: &mut PipelineErrors) {
                     stack.push(right);
                 }
                 Expr::ArrayLiteral(elems) => {
-                    for e in elems.iter().take(MAX_EXPR_NODES) {
+                    for e in elems {
                         stack.push(e);
                     }
                 }
                 Expr::StructLiteral { fields, .. } => {
-                    for (_, v) in fields.iter().take(MAX_EXPR_NODES) {
+                    for (_, v) in fields {
                         stack.push(v);
                     }
                 }
@@ -338,6 +346,42 @@ fn validate_composite_exprs(module: &Module, errors: &mut PipelineErrors) {
             }
         }
     }
+}
+
+fn expr_contains_composite(expr: &Expr) -> bool {
+    const DETECTION_LIMIT: usize = MAX_EXPR_NODES.saturating_mul(8);
+
+    let mut iterations = 0usize;
+    let mut stack: Vec<&Expr> = Vec::with_capacity(32);
+    stack.push(expr);
+
+    while let Some(node) = stack.pop() {
+        iterations = iterations.saturating_add(1);
+        if iterations > DETECTION_LIMIT {
+            break;
+        }
+        match node {
+            Expr::FieldAccess { .. } | Expr::ArrayIndex { .. } => return true,
+            Expr::Unary { operand, .. } => stack.push(operand),
+            Expr::Binary { left, right, .. } => {
+                stack.push(left);
+                stack.push(right);
+            }
+            Expr::ArrayLiteral(elems) => {
+                for e in elems {
+                    stack.push(e);
+                }
+            }
+            Expr::StructLiteral { fields, .. } => {
+                for (_, v) in fields {
+                    stack.push(v);
+                }
+            }
+            Expr::Signal(_) | Expr::Prev { .. } | Expr::Literal(_) | Expr::UnfoldIndex(_) => {}
+        }
+    }
+
+    false
 }
 
 /// Validate single-writer: each writable signal has at most one reflex writer.

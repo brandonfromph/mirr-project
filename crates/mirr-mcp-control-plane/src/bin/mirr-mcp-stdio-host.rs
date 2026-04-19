@@ -38,10 +38,14 @@ fn build_input_schema(parameters: &[DiscoveryParameter]) -> Value {
     let mut required = Vec::<String>::new();
 
     for parameter in parameters.iter().take(MAX_SCHEMA_PARAMETERS) {
-        properties.insert(
-            parameter.name.to_owned(),
-            json!({ "type": json_type_from_parameter_type(parameter.ty) }),
-        );
+        let property_schema = if parameter.ty == "array" {
+            // Emit a valid JSON schema for arrays even when item types are tool-defined.
+            json!({ "type": "array", "items": {} })
+        } else {
+            json!({ "type": json_type_from_parameter_type(parameter.ty) })
+        };
+
+        properties.insert(parameter.name.to_owned(), property_schema);
 
         if parameter.required {
             required.push(parameter.name.to_owned());
@@ -110,11 +114,20 @@ fn build_schema_result() -> String {
                         .iter()
                         .take(MAX_SCHEMA_PARAMETERS)
                         .map(|parameter| {
-                            json!({
-                                "name": parameter.name,
-                                "required": parameter.required,
-                                "type": json_type_from_parameter_type(parameter.ty),
-                            })
+                            if parameter.ty == "array" {
+                                json!({
+                                    "name": parameter.name,
+                                    "required": parameter.required,
+                                    "type": "array",
+                                    "items": {},
+                                })
+                            } else {
+                                json!({
+                                    "name": parameter.name,
+                                    "required": parameter.required,
+                                    "type": json_type_from_parameter_type(parameter.ty),
+                                })
+                            }
                         })
                         .collect::<Vec<Value>>(),
                 }),
@@ -169,6 +182,11 @@ fn handler_factory() -> RpcHandlerMap<String> {
         Box::new(|_req| RpcHandlerResponse { status: 200, body: build_ping_result() }),
     );
 
+    handlers.insert(
+        "logging/setLevel".to_owned(),
+        Box::new(|_req| RpcHandlerResponse { status: 200, body: json!({}).to_string() }),
+    );
+
     handlers
 }
 
@@ -182,10 +200,7 @@ fn insert_env_role_token(tokens: &mut RoleTokenMap, key: &str, role: Role) {
         return;
     }
 
-    let principal = VerifiedPrincipal {
-        id: format!("env_{}", key.to_ascii_lowercase()),
-        role,
-    };
+    let principal = VerifiedPrincipal { id: format!("env_{}", key.to_ascii_lowercase()), role };
 
     tokens
         .entry(token.to_owned())
@@ -364,10 +379,7 @@ fn run_stdio_host() -> Result<(), String> {
 
         let mut payload_bytes = vec![0_u8; content_length];
         reader.read_exact(&mut payload_bytes).map_err(|error| {
-            format!(
-                "failed_to_read_framed_stdio_payload_{}_bytes: {}",
-                content_length, error
-            )
+            format!("failed_to_read_framed_stdio_payload_{}_bytes: {}", content_length, error)
         })?;
 
         let payload = std::str::from_utf8(&payload_bytes)
@@ -383,5 +395,54 @@ fn main() {
     if let Err(error) = run_stdio_host() {
         eprintln!("{}", error);
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{build_schema_result, dispatch_host_stdio_line, handler_factory, role_tokens_from_env, AxumMcpHostState};
+    use serde_json::Value;
+
+    #[test]
+    fn mcp_schema_array_parameters_include_items() {
+        let payload: Value =
+            serde_json::from_str(&build_schema_result()).expect("mcp_schema payload must be JSON");
+
+        let methods = payload
+            .get("methods")
+            .and_then(Value::as_object)
+            .expect("mcp_schema methods must be an object");
+
+        let rspu_proofs = methods
+            .get("mrt_rspu_proofs")
+            .and_then(Value::as_object)
+            .expect("mrt_rspu_proofs method entry must exist");
+
+        let parameters = rspu_proofs
+            .get("parameters")
+            .and_then(Value::as_array)
+            .expect("mrt_rspu_proofs parameters must be an array");
+
+        let methods_parameter = parameters
+            .iter()
+            .find(|parameter| parameter.get("name") == Some(&Value::String("methods".to_owned())))
+            .and_then(Value::as_object)
+            .expect("methods parameter descriptor must exist");
+
+        assert_eq!(methods_parameter.get("type"), Some(&Value::String("array".to_owned())));
+        assert!(methods_parameter.contains_key("items"));
+    }
+
+    #[test]
+    fn logging_set_level_is_accepted() {
+        let state = AxumMcpHostState::with_role_tokens(handler_factory, role_tokens_from_env());
+        let payload = r#"{"jsonrpc":"2.0","id":1,"method":"logging/setLevel","params":{"level":"info"}}"#;
+
+        let (status, response) = dispatch_host_stdio_line(&state, payload)
+            .expect("logging/setLevel request should dispatch");
+
+        assert_eq!(status, 200);
+        assert!(response.error.is_none(), "logging/setLevel should not fail");
+        assert!(response.result.is_some(), "logging/setLevel should return a result payload");
     }
 }

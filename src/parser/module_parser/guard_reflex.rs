@@ -274,30 +274,15 @@ fn reflex_parse_header(
         None => after_keyword,
     };
 
-    // Extract inline `when [guard and guard]` if present.
-    let (raw_name, guard_names) = if let Some(pos) = name_part.find("when") {
-        let pure_name = name_part[..pos].trim().to_string();
-        let when_part = name_part[pos + "when".len()..].trim();
-        let when_body = when_part.trim_start_matches('[').trim_end_matches(']').trim();
-
-        // NASA W2: bounded by MAX_GUARD_NAMES.
-        let mut names: Vec<String> = Vec::new();
-        for (i, part) in when_body.split("and").enumerate() {
-            if i >= MAX_GUARD_NAMES {
-                return Err(MirrError::parse_error(format!(
-                    "[E141] Reflex '{pure_name}' exceeds MAX_GUARD_NAMES ({MAX_GUARD_NAMES})."
-                ))
-                .with_span(Some(Span::full_line(*index as u32))));
-            }
-            let g = part.trim().trim_start_matches('[').trim_end_matches(']').trim();
-            if !g.is_empty() {
-                names.push(g.to_string());
-            }
-        }
-        (pure_name, names)
-    } else {
-        (name_part.trim().to_string(), Vec::new())
-    };
+    // Extract inline `when [guard and guard]` only when `when` is a standalone keyword.
+    let trimmed_name_part = name_part.trim();
+    let (raw_name, guard_names) =
+        if let Some((pure_name, when_part)) = split_reflex_inline_when(trimmed_name_part) {
+            let names = parse_guard_name_list(pure_name, when_part, *index, true)?;
+            (pure_name.to_string(), names)
+        } else {
+            (trimmed_name_part.to_string(), Vec::new())
+        };
 
     if raw_name.is_empty() {
         return Err(MirrError::parse_error("[E139] Reflex name cannot be empty.")
@@ -305,6 +290,59 @@ fn reflex_parse_header(
     }
 
     Ok((raw_name, guard_names))
+}
+
+fn split_reflex_inline_when(name_part: &str) -> Option<(&str, &str)> {
+    let first_ws = name_part.find(char::is_whitespace)?;
+    let candidate_name = name_part[..first_ws].trim();
+    let trailing = name_part[first_ws..].trim_start();
+    let after_when = strip_keyword_prefix(trailing, "when")?;
+    Some((candidate_name, after_when.trim_start()))
+}
+
+fn strip_keyword_prefix<'a>(text: &'a str, keyword: &str) -> Option<&'a str> {
+    let rest = text.strip_prefix(keyword)?;
+    match rest.chars().next() {
+        None => Some(rest),
+        Some(ch) if ch.is_whitespace() || ch == '[' => Some(rest),
+        Some(_) => None,
+    }
+}
+
+fn parse_guard_name_list(
+    reflex_name: &str,
+    raw_guard_list: &str,
+    line_index: usize,
+    require_nonempty: bool,
+) -> Result<Vec<String>, MirrError> {
+    // NASA W2: bounded by MAX_GUARD_NAMES.
+    let mut names: Vec<String> = Vec::new();
+    for token in raw_guard_list.split_whitespace() {
+        if token == "and" {
+            continue;
+        }
+
+        if names.len() >= MAX_GUARD_NAMES {
+            return Err(MirrError::parse_error(format!(
+                "[E141] Reflex '{reflex_name}' exceeds MAX_GUARD_NAMES ({MAX_GUARD_NAMES})."
+            ))
+            .with_span(Some(Span::full_line(line_index as u32))));
+        }
+
+        let guard_name = token.trim().trim_start_matches('[').trim_end_matches(']').trim();
+        if !guard_name.is_empty() {
+            names.push(guard_name.to_string());
+        }
+    }
+
+    if require_nonempty && names.is_empty() {
+        return Err(MirrError::parse_error(format!(
+            "[E143] Reflex '{reflex_name}' has no guard names in 'on' clause."
+        ))
+        .with_span(Some(Span::full_line(line_index as u32))));
+    }
+
+    Ok(names)
 }
 
 /// Consume the reflex body using the `ReflexState` machine.
@@ -358,6 +396,7 @@ fn reflex_parse_body(
                     name,
                     line,
                     index,
+                    guard_names,
                     &mut assignments,
                     &mut brace_depth,
                     &mut state,
@@ -426,18 +465,7 @@ fn reflex_consume_on_clause(
     };
 
     guard_names.clear();
-    for (i, part) in guards_part.split("and").enumerate() {
-        if i >= MAX_GUARD_NAMES {
-            return Err(MirrError::parse_error(format!(
-                "[E141] Reflex '{name}' exceeds MAX_GUARD_NAMES ({MAX_GUARD_NAMES})."
-            ))
-            .with_span(Some(Span::full_line(*index as u32))));
-        }
-        let g = part.trim();
-        if !g.is_empty() {
-            guard_names.push(g.to_string());
-        }
-    }
+    guard_names.extend(parse_guard_name_list(name, guards_part, *index, false)?);
 
     // Account for the `{` that opens the on-block in the current line, plus any
     // additional braces occurring later on the same line.
@@ -457,6 +485,7 @@ fn reflex_consume_assignment_or_close(
     name: &str,
     line: &str,
     index: &mut usize,
+    guard_names: &[String],
     assignments: &mut Vec<Assignment>,
     brace_depth: &mut i32,
     state: &mut ReflexState,
@@ -468,6 +497,13 @@ fn reflex_consume_assignment_or_close(
             *state = ReflexState::Done;
         }
         return Ok(());
+    }
+
+    if guard_names.is_empty() {
+        return Err(MirrError::parse_error(format!(
+            "[E143] Reflex '{name}' has no guard names in 'on' clause."
+        ))
+        .with_span(Some(Span::full_line(*index as u32))));
     }
 
     // NASA W2: hard ceiling on assignment count.
@@ -558,6 +594,22 @@ mod tests {
         let mut idx = 0;
         let err = parse_reflex(&src, &mut idx).unwrap_err();
         assert!(err.to_string().contains("E140"), "expected E140, got: {err}");
+    }
+
+    #[test]
+    fn reflex_rejects_empty_inline_guard_list() {
+        let src = ["reflex bad when [] {", "    alarm = true;", "}"];
+        let mut idx = 0;
+        let err = parse_reflex(&src, &mut idx).unwrap_err();
+        assert!(err.to_string().contains("E143"), "expected E143, got: {err}");
+    }
+
+    #[test]
+    fn reflex_rejects_empty_on_clause_guard_list() {
+        let src = ["reflex bad {", "    on {", "        alarm = true;", "    }", "}"];
+        let mut idx = 0;
+        let err = parse_reflex(&src, &mut idx).unwrap_err();
+        assert!(err.to_string().contains("E143"), "expected E143, got: {err}");
     }
 
     #[test]

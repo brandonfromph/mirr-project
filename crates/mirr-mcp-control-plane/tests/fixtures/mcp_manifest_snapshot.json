@@ -68,7 +68,10 @@
                                                                           "type":  "string"
                                                                       },
                                                              "edits":  {
-                                                                           "type":  "array"
+                                                                           "type":  "array",
+                                                                           "items":  {
+
+                                                                                     }
                                                                        },
                                                              "dryRun":  {
                                                                             "type":  "boolean"
@@ -138,7 +141,10 @@
                                                                           "type":  "string"
                                                                       },
                                                              "excludePatterns":  {
-                                                                                     "type":  "array"
+                                                                                     "type":  "array",
+                                                                                     "items":  {
+
+                                                                                               }
                                                                                  }
                                                          },
                                           "required":  [
@@ -178,7 +184,10 @@
                                                                              "type":  "string"
                                                                          },
                                                              "excludePatterns":  {
-                                                                                     "type":  "array"
+                                                                                     "type":  "array",
+                                                                                     "items":  {
+
+                                                                                               }
                                                                                  }
                                                          },
                                           "required":  [
@@ -408,12 +417,39 @@
                                                                              "type":  "string"
                                                                          },
                                                              "methods":  {
-                                                                           "type":  "array"
+                                                                           "type":  "array",
+                                                                           "items":  {
+
+                                                                                     }
                                                                        }
                                                          },
                                           "required":  [
                                                            "source_file"
                                                        ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_daemon_core_contract",
+                      "description":  "Run daemon core architecture contract tests (wave5) with optional test filter.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "test_filter":  {
+                                                                                 "type":  "string"
+                                                                             }
+                                                         }
+                                      }
+                  },
+                  {
+                      "name":  "mrt_daemon_security_contract",
+                      "description":  "Run daemon security/runtime policy contract tests (wave6) with optional test filter.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "test_filter":  {
+                                                                                 "type":  "string"
+                                                                             }
+                                                         }
                                       }
                   },
                   {
@@ -522,6 +558,49 @@
                                           "required":  [
                                                            "path"
                                                        ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_kb_query",
+                      "description":  "Query KB using lexical, semantic, or hybrid retrieval with deterministic fallback.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "query":  {
+                                                                           "type":  "string"
+                                                                       },
+                                                             "mode":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "limit":  {
+                                                                           "type":  "number"
+                                                                       },
+                                                             "filter":  {
+                                                                            "type":  "string"
+                                                                        },
+                                                             "expand_mode":  {
+                                                                                   "type":  "string"
+                                                                               },
+                                                             "retry_count":  {
+                                                                                   "type":  "number"
+                                                                               },
+                                                             "timeout_ms":  {
+                                                                                "type":  "number"
+                                                                        }
+                                                         },
+                                          "required":  [
+                                                           "query"
+                                                       ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_kb_index_status",
+                      "description":  "Get KB index freshness, size, and last refresh timestamp.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+
+                                                         }
                                       }
                   }
               ]

@@ -25,7 +25,12 @@ impl TokenHasher {
     pub fn hash(&self, token: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(token.as_bytes());
-        format!("{:x}", hasher.finalize())
+        let digest = hasher.finalize();
+        let mut encoded = String::with_capacity(digest.len() * 2);
+        for byte in digest {
+            encoded.push_str(&format!("{byte:02x}"));
+        }
+        encoded
     }
 
     fn version(&self) -> &'static str {

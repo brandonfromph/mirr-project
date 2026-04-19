@@ -54,6 +54,26 @@ fn op_symbol(op: BinaryOp) -> &'static str {
     }
 }
 
+fn expr_node_budget_error(context_span: Option<Span>) -> MirrError {
+    MirrError::TypeError {
+        message: format!(
+            "[E607] Expression type inference exceeded maximum expression node count (MAX_EXPR_NODES={}).",
+            MAX_EXPR_NODES
+        ),
+        span: context_span,
+    }
+}
+
+fn expr_inference_incomplete_error(context_span: Option<Span>) -> MirrError {
+    MirrError::TypeError {
+        message: format!(
+            "[E607] Expression type inference did not produce a root type within MAX_EXPR_NODES={}.",
+            MAX_EXPR_NODES
+        ),
+        span: context_span,
+    }
+}
+
 /// Type-check all expressions in a parsed module.
 ///
 /// Verifies:
@@ -191,7 +211,7 @@ fn infer_expr_type(
     while let Some(node) = work.pop() {
         visited += 1;
         if visited > MAX_EXPR_NODES {
-            break;
+            return Err(expr_node_budget_error(context_span));
         }
         order.push(node);
         match node {
@@ -211,15 +231,21 @@ fn infer_expr_type(
                 work.push(object);
             }
             Expr::ArrayLiteral(elems) => {
+                if elems.len() > MAX_EXPR_NODES {
+                    return Err(expr_node_budget_error(context_span));
+                }
                 let mut i = 0;
-                while i < elems.len().min(MAX_EXPR_NODES) {
+                while i < elems.len() {
                     work.push(&elems[i]);
                     i += 1;
                 }
             }
             Expr::StructLiteral { fields, .. } => {
+                if fields.len() > MAX_EXPR_NODES {
+                    return Err(expr_node_budget_error(context_span));
+                }
                 let mut i = 0;
-                while i < fields.len().min(MAX_EXPR_NODES) {
+                while i < fields.len() {
                     work.push(&fields[i].1);
                     i += 1;
                 }
@@ -370,7 +396,7 @@ fn infer_expr_type(
     let root_ptr = expr as *const Expr;
     match types.get(&root_ptr) {
         Some(ty) => Ok((ty.clone(), types)),
-        None => Ok((SignalType::Bool, types)), // Degenerate/empty — default to bool.
+        None => Err(expr_inference_incomplete_error(context_span)),
     }
 }
 

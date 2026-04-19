@@ -7,6 +7,16 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
+fn to_hex_lower(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut encoded = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        encoded.push(HEX[(byte >> 4) as usize] as char);
+        encoded.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    encoded
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PackageSpec {
     pub name: String,
@@ -37,7 +47,8 @@ pub fn hash_file(path: &Path) -> io::Result<String> {
         hasher.update(&buffer[..bytes_read]);
     }
 
-    Ok(format!("{:x}", hasher.finalize()))
+    let digest = hasher.finalize();
+    Ok(to_hex_lower(digest.as_ref()))
 }
 
 pub fn compute_package_fingerprint(
@@ -66,7 +77,8 @@ pub fn compute_package_fingerprint(
     hasher.update([0]);
     hasher.update(rustc_version.as_bytes());
 
-    Ok(format!("{:x}", hasher.finalize()))
+    let digest = hasher.finalize();
+    Ok(to_hex_lower(digest.as_ref()))
 }
 
 pub fn load_manifest(path: &Path) -> io::Result<CacheManifest> {

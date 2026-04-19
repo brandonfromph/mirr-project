@@ -317,6 +317,37 @@ fn parse_signal_type(sexpr: &SExpr) -> Result<SignalType, MirrError> {
                         .to_string();
                     Ok(SignalType::Bundle(name))
                 }
+                "fifo" => {
+                    if items.len() != 3 {
+                        return Err(sexpr_err("[E807] fifo requires element type and depth"));
+                    }
+                    let fifo_fields = match (items[1].as_list(), items[2].as_list()) {
+                        (Some(element_items), Some(depth_items))
+                            if element_items.len() == 2
+                                && element_items[0].as_symbol() == Some("element")
+                                && depth_items.len() == 2
+                                && depth_items[0].as_symbol() == Some("depth") =>
+                        {
+                            let element = Box::new(parse_signal_type(&element_items[1])?);
+                            let depth = depth_items[1]
+                                .as_integer()
+                                .ok_or_else(|| sexpr_err("[E807] fifo depth must be an integer"))?;
+                            Some((element, depth))
+                        }
+                        _ => None,
+                    };
+                    let (element, depth) = match fifo_fields {
+                        Some(fields) => fields,
+                        None => {
+                            let element = Box::new(parse_signal_type(&items[1])?);
+                            let depth = items[2]
+                                .as_integer()
+                                .ok_or_else(|| sexpr_err("[E807] fifo depth must be an integer"))?;
+                            (element, depth)
+                        }
+                    };
+                    Ok(SignalType::Fifo { element, depth })
+                }
                 other => Err(sexpr_err(format!("[E807] Unknown type: {other}"))),
             }
         }

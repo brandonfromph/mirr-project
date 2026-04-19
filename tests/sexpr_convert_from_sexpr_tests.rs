@@ -6,6 +6,7 @@
 use nasa_rust_project::ast::program::{MirrProgram, Module};
 use nasa_rust_project::sexpr::convert::{ast_to_sexpr, sexpr_to_ast};
 use nasa_rust_project::sexpr::print_sexpr;
+use nasa_rust_project::sexpr::types::SExpr;
 
 fn empty_program() -> MirrProgram {
     MirrProgram {
@@ -27,6 +28,31 @@ fn empty_program() -> MirrProgram {
 fn roundtrip(prog: &MirrProgram) -> MirrProgram {
     let sexpr = ast_to_sexpr(prog);
     sexpr_to_ast(&sexpr).expect("sexpr_to_ast must succeed for valid AST")
+}
+
+fn single_signal_program_sexpr(signal_ty: SExpr) -> SExpr {
+    SExpr::list(vec![
+        SExpr::sym("program"),
+        SExpr::list(vec![SExpr::sym("patterns")]),
+        SExpr::list(vec![
+            SExpr::sym("module"),
+            SExpr::str_val("fifo_shape_test"),
+            SExpr::list(vec![
+                SExpr::sym("signals"),
+                SExpr::list(vec![
+                    SExpr::sym("signal"),
+                    SExpr::str_val("q"),
+                    SExpr::sym("internal"),
+                    signal_ty,
+                ]),
+            ]),
+            SExpr::list(vec![SExpr::sym("guards")]),
+            SExpr::list(vec![SExpr::sym("reflexes")]),
+            SExpr::list(vec![SExpr::sym("properties")]),
+            SExpr::list(vec![SExpr::sym("pattern-calls")]),
+            SExpr::list(vec![SExpr::sym("pattern-origins")]),
+        ]),
+    ])
 }
 
 #[test]
@@ -167,4 +193,103 @@ fn roundtrip_empty_reflexes() {
     let prog = empty_program();
     let rt = roundtrip(&prog);
     assert!(rt.module.reflexes.is_empty(), "empty reflexes must survive roundtrip");
+}
+
+#[test]
+fn roundtrip_preserves_fifo_signal_type() {
+    use nasa_rust_project::ast::program::SignalDecl;
+    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+
+    let mut prog = empty_program();
+    prog.module.signals.push(SignalDecl {
+        name: "sample_fifo".to_string(),
+        kind: SignalKind::Internal,
+        ty: ExtendedType::from_core(SignalType::Fifo {
+            element: Box::new(SignalType::Unsigned(8)),
+            depth: 4,
+        }),
+        origin: None,
+        span: None,
+    });
+
+    let rt = roundtrip(&prog);
+    assert_eq!(
+        rt.module.signals[0].ty.core,
+        SignalType::Fifo { element: Box::new(SignalType::Unsigned(8)), depth: 4 },
+        "fifo type must survive roundtrip",
+    );
+}
+
+#[test]
+fn roundtrip_preserves_nested_fifo_element_type() {
+    use nasa_rust_project::ast::program::SignalDecl;
+    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+
+    let mut prog = empty_program();
+    prog.module.signals.push(SignalDecl {
+        name: "nested_fifo".to_string(),
+        kind: SignalKind::Internal,
+        ty: ExtendedType::from_core(SignalType::Fifo {
+            element: Box::new(SignalType::Array { element: Box::new(SignalType::Bool), length: 2 }),
+            depth: 3,
+        }),
+        origin: None,
+        span: None,
+    });
+
+    let rt = roundtrip(&prog);
+    assert_eq!(
+        rt.module.signals[0].ty.core,
+        SignalType::Fifo {
+            element: Box::new(SignalType::Array { element: Box::new(SignalType::Bool), length: 2 }),
+            depth: 3,
+        },
+        "nested fifo element type must survive roundtrip",
+    );
+}
+
+#[test]
+fn sexpr_to_ast_parses_fifo_type_canonical_shape() {
+    use nasa_rust_project::ast::types::SignalType;
+
+    let sexpr = single_signal_program_sexpr(SExpr::list(vec![
+        SExpr::sym("fifo"),
+        SExpr::list(vec![SExpr::sym("unsigned"), SExpr::int(8)]),
+        SExpr::int(4),
+    ]));
+
+    let parsed = sexpr_to_ast(&sexpr).expect("canonical fifo type shape must parse");
+    assert_eq!(
+        parsed.module.signals[0].ty.core,
+        SignalType::Fifo { element: Box::new(SignalType::Unsigned(8)), depth: 4 },
+    );
+}
+
+#[test]
+fn sexpr_to_ast_accepts_fifo_labeled_shape_and_roundtrips_to_canonical() {
+    use nasa_rust_project::ast::types::SignalType;
+
+    let sexpr = single_signal_program_sexpr(SExpr::list(vec![
+        SExpr::sym("fifo"),
+        SExpr::list(vec![
+            SExpr::sym("element"),
+            SExpr::list(vec![SExpr::sym("array"), SExpr::sym("bool"), SExpr::int(2)]),
+        ]),
+        SExpr::list(vec![SExpr::sym("depth"), SExpr::int(3)]),
+    ]));
+
+    let parsed = sexpr_to_ast(&sexpr).expect("labeled fifo type shape must parse");
+    assert_eq!(
+        parsed.module.signals[0].ty.core,
+        SignalType::Fifo {
+            element: Box::new(SignalType::Array { element: Box::new(SignalType::Bool), length: 2 }),
+            depth: 3,
+        },
+    );
+
+    let re_emitted = print_sexpr(&ast_to_sexpr(&parsed));
+    assert!(
+        re_emitted.contains("(fifo (array bool 2) 3)"),
+        "accepted fifo shape must roundtrip to canonical fifo sexpr"
+    );
 }

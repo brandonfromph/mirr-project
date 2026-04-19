@@ -31,7 +31,7 @@ module comm_watchdog {
     }
 
     property fallback_on_timeout {
-        always (heartbeat_lost -> fallback_mode);
+        always (!heartbeat -> fallback_mode);
     }
 
     property quality_bounded {

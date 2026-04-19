@@ -7,7 +7,7 @@ Write-Host "Starting cargo test --all at $(Get-Date -Format 'u')"
 # Run the test directly without profile interference
 $exit_code = 0
 try {
-    & "C:\Users\elvie\.cargo\bin\cargo.exe" test --all 2>&1 | Out-File -FilePath $logFile -Encoding UTF8
+    & cargo.exe test --all 2>&1 | Out-File -FilePath $logFile -Encoding UTF8
     $exit_code = $LASTEXITCODE
 } catch {
     $exit_code = -1
@@ -15,7 +15,7 @@ try {
 }
 
 $timestamp = Get-Date -Format 'o'
-$rustc_version = & "C:\Users\elvie\.cargo\bin\rustc.exe" --version 2>&1
+$rustc_version = & rustc.exe --version 2>&1
 
 $exitCodeLine = "Exit code: $exit_code"
 "" | Out-File -FilePath $logFile -Encoding UTF8 -Append

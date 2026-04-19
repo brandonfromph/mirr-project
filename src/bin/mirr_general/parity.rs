@@ -10,7 +10,6 @@ use serde_json::Value;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum ParitySubsystem {
     CliVsWasm,
-    CompilerVsMcp,
     CompilerVsVscode,
 }
 
@@ -107,21 +106,6 @@ pub fn verify_cli_wasm_parity(source_path: &Path) -> io::Result<ParityRecord> {
     };
 
     Ok(ParityRecord { subsystem: ParitySubsystem::CliVsWasm, success, detail })
-}
-
-pub fn verify_mcp_contract() -> io::Result<ParityRecord> {
-    let mut command = npm_command();
-    command.args(["--prefix", "mcp_server", "test"]);
-    let output = command.output()?;
-    let success = output.status.success();
-    let detail = if success {
-        "npm --prefix mcp_server test passed".to_string()
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        format!("npm --prefix mcp_server test failed: {}", stderr)
-    };
-
-    Ok(ParityRecord { subsystem: ParitySubsystem::CompilerVsMcp, success, detail })
 }
 
 pub fn verify_vscode_contract() -> io::Result<ParityRecord> {

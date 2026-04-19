@@ -22,7 +22,7 @@ The project's "Long-Term Memory." It stores and retrieves:
 The central command node that manages the lifecycle of a change:
 *   **Audit**: Consults the Brain and runs the Auditor to verify workspace health.
 *   **Wave Execution**: Coordinates `mirr-wave` to apply atomic, verified changes.
-*   **CI Enforcement**: Runs the full NASA-grade testing suite (`cargo nextest`).
+*   **CI Enforcement**: Runs the full NASA-grade gate sequence (`cargo fmt`, `cargo check`, `cargo clippy`, `cargo test`), with `nextest` profiles when configured.
 
 ### 4. `mirr-wave` (The Executive)
 The mechanical arm of the Arsenal. It parses execution plans from signed proposals and applies surgical text replacements. It is designed to be **Sub-Turing**: it makes zero choices and aborts if any ambiguity is detected.
@@ -34,8 +34,9 @@ The Arsenal enforces a strict, linear workflow for every modification:
 1.  **Audit**: Scan the repo for debt and refinement gaps.
 2.  **Propose**: Create a formal `.md` proposal with a detailed breakage map.
 3.  **Sign**: The "President" (human or lead agent) signs the proposal, hashing it into the Brain.
-4.  **Execute**: `mirr-general` executes the wave atomically.
-5.  **Verify**: A full CI gate validates the new state against 3,400+ safety tests.
+4.  **Connect MCP**: Confirm `.vscode/mcp.json` maps `mirr-local` to `node mcp_server/start.js --stdio-direct --workspace-root .`, then run `npm.cmd --prefix mcp_server run mcp:health` to verify the stdio bridge health probe.
+5.  **Execute**: `mirr-general` executes the wave atomically.
+6.  **Verify**: A full CI gate validates the new state against the workspace safety test suite.
 
 ## 🛠️ Usage
 
@@ -44,6 +45,10 @@ Ensure you have the Arsenal loaded in your environment:
 ```powershell
 # Load the PowerShell Module
 . scripts/MirrArsenal.ps1
+
+# Verify MCP bridge build + health probe
+npm.cmd --prefix mcp_server run build
+npm.cmd --prefix mcp_server run mcp:health
 
 # Run a full workspace audit
 Invoke-MirrAudit

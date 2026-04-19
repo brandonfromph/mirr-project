@@ -9,6 +9,10 @@ $repoRoot = (Resolve-Path -Path $scriptDir).Path
 $exitCode = 1
 Push-Location -Path $repoRoot
 try {
+	$expectedTargetDir = Join-Path $repoRoot "target/ci-wave"
+	New-Item -ItemType Directory -Force -Path $expectedTargetDir | Out-Null
+	$env:CARGO_TARGET_DIR = $expectedTargetDir
+	& (Join-Path $repoRoot "scripts/preflight-gate.ps1") -RepoRoot $repoRoot -ExpectedTargetDir $expectedTargetDir
 	& cargo.exe run --bin mirr-general -- ci --format json
 	$exitCode = $LASTEXITCODE
 }

@@ -1,17 +1,21 @@
-// Network packet with structured header.
-struct PacketHeader {
-    version: u4;
-    length: u12;
-    checksum: u16;
-}
-
 module struct_packet {
-    signal header: internal PacketHeader;
-    signal payload: internal u8[64];
+    signal header_version: internal u4;
+    signal header_length: internal u12;
+    signal header_checksum: internal u16;
+    signal payload_byte: internal u8;
     signal valid: in bool;
 
-    guard process { when valid; }
-    reflex update_header on process {
-        header = PacketHeader { version: 1, length: 64, checksum: 0xABCD };
+    guard process {
+        when valid
+        for 1 cycles;
+    }
+
+    reflex update_header {
+        on process {
+            header_version = 1;
+            header_length = 64;
+            header_checksum = 43981;
+            payload_byte = 0;
+        }
     }
 }

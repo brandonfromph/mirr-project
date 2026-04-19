@@ -20,6 +20,7 @@ pub struct MrtDispatchExecutionConfig {
     pub workspace_root: String,
     pub timeout_ms: u64,
     pub max_output_bytes: usize,
+    pub dual_run_enabled: bool,
 }
 
 impl Default for MrtDispatchExecutionConfig {
@@ -29,6 +30,7 @@ impl Default for MrtDispatchExecutionConfig {
             workspace_root: ".".to_owned(),
             timeout_ms: DEFAULT_EXEC_TIMEOUT_MS,
             max_output_bytes: DEFAULT_EXEC_MAX_OUTPUT_BYTES,
+            dual_run_enabled: false,
         }
     }
 }

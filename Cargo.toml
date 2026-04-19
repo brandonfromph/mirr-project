@@ -13,21 +13,21 @@ rust-version = "1.70"
 
 [dependencies]
 anyhow = "1.0.102"
-clap = { version = "4.4.0", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive"] }
 ed25519-dalek = { version = "2.1.1", features = ["rand_core"] }
 glob = "0.3.3"
-rand = "0.8"
+rand = "0.10.0"
 regex = "1.12.3"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.39.0", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.10"
+sha2 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
 num_cpus = "1.16"
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-tempfile = "3"
+criterion = { version = "0.8.2", features = ["html_reports"] }
+tempfile = "3.27.0"
 
 [profile.dev]
 incremental = true
@@ -74,7 +74,7 @@ name = "emit_analysis_bench"
 harness = false
 
 [workspace]
-members = [".", "crates/mirr-wasm", "crates/lra-cli", "crates/mirr-arsenal-wasm"]
+members = [".", "crates/mirr-wasm", "crates/lra-cli", "crates/mirr-arsenal-wasm", "crates/mirr-mcp-control-plane", "crates/mirr-kb-native"]
 
 [workspace.metadata.mirr.fuzz]
 targets = [
@@ -89,4 +89,5 @@ required_seed_files_per_target = 1
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
+getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
 

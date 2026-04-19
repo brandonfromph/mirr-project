@@ -421,15 +421,32 @@ fn collect_prev_refs_bounded(expr: &Expr) -> Vec<(String, u64)> {
 
 /// Sanitize a name for use as a DOT identifier.
 fn sanitize_id(name: &str) -> String {
-    let mut out = String::with_capacity(name.len());
+    let mut out = String::with_capacity(name.len() + 18);
+    let mut needs_disambiguator = false;
     for c in name.chars() {
         if c.is_ascii_alphanumeric() || c == '_' {
             out.push(c);
         } else {
             out.push('_');
+            needs_disambiguator = true;
         }
     }
+
+    if needs_disambiguator {
+        out.push('_');
+        out.push_str(&stable_name_hash(name));
+    }
+
     out
+}
+
+fn stable_name_hash(name: &str) -> String {
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in name.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{hash:016x}")
 }
 
 fn guard_node_id(name: &str) -> String {

@@ -29,7 +29,7 @@ module watchdog_timer {
     }
 
     property reset_on_timeout {
-        always (heartbeat_missing -> watchdog_reset);
+        always (!heartbeat -> watchdog_reset);
     }
 
     property no_hang {

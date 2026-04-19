@@ -3,9 +3,9 @@
 
 module aerospace_flight_ctrl {
     signal altitude:        in u32;
-    signal roll_angle:      in i16;
-    signal pitch_angle:     in i16;
-    signal yaw_rate:        in i16;
+    signal roll_angle:      in u16;
+    signal pitch_angle:     in u16;
+    signal yaw_rate:        in u16;
     signal battery_level:   in u16;
     signal motor_1:         out u8;
     signal motor_2:         out u8;

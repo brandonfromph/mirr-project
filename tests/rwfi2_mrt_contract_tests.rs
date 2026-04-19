@@ -3,19 +3,9 @@
 use std::fs;
 use std::path::Path;
 
-fn mrt_source() -> String {
-    let path = Path::new("mcp_server/src/mrt.ts");
-    fs::read_to_string(path).expect("mrt.ts must be readable")
-}
-
-fn server_source() -> String {
-    let path = Path::new("mcp_server/src/server.ts");
-    fs::read_to_string(path).expect("server.ts must be readable")
-}
-
-fn kb_lite_source() -> String {
-    let path = Path::new("mcp_server/src/mrt_kb_lite.ts");
-    fs::read_to_string(path).expect("mrt_kb_lite.ts must be readable")
+fn rust_control_plane_source(relative_path: &str) -> String {
+    let path = Path::new("crates/mirr-mcp-control-plane/src").join(relative_path);
+    fs::read_to_string(path).expect("control-plane Rust source must be readable")
 }
 
 fn mirr_brain_source() -> String {
@@ -24,117 +14,69 @@ fn mirr_brain_source() -> String {
 }
 
 #[test]
-fn rwfi2_mrt_has_typed_allowlist() {
-    let src = mrt_source();
-    assert!(src.contains("type MrtToolName"));
-    assert!(src.contains("\"mirr-audit\""));
-    assert!(src.contains("\"mirr-brain\""));
-    assert!(src.contains("\"mirr-general\""));
-    assert!(src.contains("\"mirr-wave\""));
-    assert!(src.contains("\"mirr-lsp\""));
+fn rwfi2_mcp_stdio_host_registers_handshake_and_discovery_handlers() {
+    let src = rust_control_plane_source("bin/mirr-mcp-stdio-host.rs");
+
+    assert!(src.contains("mcp_initialize"));
+    assert!(src.contains("mcp_schema"));
+    assert!(src.contains("tools/list"));
+    assert!(src.contains("resources/templates/list"));
+    assert!(src.contains("ping"));
 }
 
 #[test]
-fn rwfi2_mrt_has_schema_v1_request_and_error_shape() {
-    let src = mrt_source();
-    assert!(src.contains("schema_version: \"1\""));
-    assert!(src.contains("code: \"MRT_EXEC_ERROR\""));
-    assert!(src.contains("message"));
+fn rwfi2_mcp_protocol_and_catalog_constants_are_declared() {
+    let src = rust_control_plane_source("../src/catalog.rs");
+
+    assert!(src.contains("MCP_PROTOCOL_VERSION"));
+    assert!(src.contains("MCP_SERVER_NAME"));
+    assert!(src.contains("MCP_SERVER_VERSION"));
+    assert!(src.contains("CANONICAL_CATALOG_ID"));
 }
 
 #[test]
-fn rwfi2_mrt_rejects_unknown_tools() {
-    let src = mrt_source();
-    assert!(src.contains("MRT_EXEC_ERROR: unknown tool"));
+fn rwfi2_rpc_aliases_cover_initialize_and_tools_call() {
+    let src = rust_control_plane_source("server_rewrite/rpc_method_aliases.rs");
+
+    assert!(src.contains("INITIALIZE_ALIAS"));
+    assert!(src.contains("TOOLS_CALL_METHOD"));
+    assert!(src.contains("resolve_method_alias"));
+    assert!(src.contains("mcp_initialize"));
 }
 
 #[test]
-fn rwfi2_mrt_routes_required_handlers() {
-    let src = mrt_source();
-    assert!(src.contains("case \"mrt_audit\""));
-    assert!(src.contains("case \"mrt_brain_get\""));
-    assert!(src.contains("case \"mrt_general_ci\""));
-    assert!(src.contains("case \"mrt_general_ci_compile\""));
-    assert!(src.contains("case \"mrt_general_ci_fast\""));
-    assert!(src.contains("case \"mrt_wave_dry_run\""));
-    assert!(src.contains("case \"mrt_wave_apply\""));
-    assert!(src.contains("case \"mrt_lsp_diagnostics\""));
-    assert!(src.contains("callMrtInterface"));
+fn rwfi2_stdio_dispatch_limits_and_unknown_method_contract_are_bounded() {
+    let src = rust_control_plane_source("server_rewrite/rpc_stdio_message_dispatch.rs");
+
+    assert!(src.contains("MAX_STDIO_BUFFER_BYTES"));
+    assert!(src.contains("MAX_STDIO_LINE_BYTES"));
+    assert!(src.contains("MCP unknown method rejected"));
 }
 
 #[test]
-fn rwfi2_mrt_runtime_dispatch_routes_exist() {
-    let src = server_source();
-    assert!(src.contains("app.post(\"/mrt_audit\""));
-    assert!(src.contains("app.post(\"/mrt_brain_get\""));
-    assert!(src.contains("app.post(\"/mrt_general_ci\""));
-    assert!(src.contains("app.post(\"/mrt_general_ci_compile\""));
-    assert!(src.contains("app.post(\"/mrt_general_ci_fast\""));
-    assert!(src.contains("app.post(\"/mrt_wave_dry_run\""));
-    assert!(src.contains("app.post(\"/mrt_wave_apply\""));
-    assert!(src.contains("app.post(\"/mrt_lsp_diagnostics\""));
-    assert!(src.contains("app.post(\"/mrt_execute\""));
+fn rwfi2_transport_bootstrap_supports_stdio_and_stream_startup() {
+    let src = rust_control_plane_source("server_rewrite/transport_bootstrap.rs");
+
+    assert!(src.contains("TransportStartupAction"));
+    assert!(src.contains("StartStdio"));
+    assert!(src.contains("StartStream"));
 }
 
 #[test]
-fn rwfi2_mrt_runtime_enforces_role_gate() {
-    let src = server_source();
-    assert!(src.contains("requireMrtDispatchRole(req, toolName)"));
-    assert!(src.contains("missing_api_key"));
-    assert!(src.contains("role: (rr as any).role ?? null"));
-}
+fn rwfi2_canonical_tool_catalog_includes_required_mrt_methods() {
+    let src = rust_control_plane_source("tooling/canonical_discovery_method_metadata.rs");
 
-#[test]
-fn rwfi2_mrt_runtime_includes_bounded_output_metadata_markers() {
-    let src = server_source();
-    assert!(src.contains("output_limit_bytes"));
-    assert!(src.contains("stdout_truncated"));
-    assert!(src.contains("stderr_truncated"));
-    assert!(src.contains("MRT_STRICT_MODE"));
-    assert!(src.contains("if (MRT_STRICT_MODE)"));
-    assert!(src.contains("MCP unknown method rejected:"));
-    assert!(src.contains("MRT_COMPAT_UNKNOWN_METHODS"));
-    assert!(src.contains("MRT_ENABLE_EXECUTE_COMPAT"));
-    assert!(src.contains("mrt_execute_compat_disabled"));
-}
-
-#[test]
-fn rwfi2_mrt_runtime_has_single_route_registration_per_tool() {
-    let src = server_source();
-
-    assert_eq!(src.matches("app.post(\"/search_files\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/directory_tree\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_audit\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_brain_get\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_general_ci\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_general_ci_compile\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_general_ci_fast\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_wave_dry_run\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_wave_apply\"").count(), 1);
-    assert_eq!(src.matches("app.post(\"/mrt_lsp_diagnostics\"").count(), 1);
-}
-
-#[test]
-fn rwfi2_kb_lite_contract_is_bounded_and_kb_rooted() {
-    let src = kb_lite_source();
-    assert!(src.contains("KB_ROOT"));
-    assert!(src.contains(".kb-data"));
-    assert!(src.contains("MAX_KB_KEY_SIZE"));
-    assert!(src.contains("MAX_OUTPUT_BYTES"));
-    assert!(src.contains("--kb-root"));
-}
-
-#[test]
-fn rwfi2_mrt_brain_dispatch_uses_brain_get_args() {
-    let mrt_src = mrt_source();
-    let server_src = server_source();
-
-    assert!(mrt_src.contains("case \"mrt_brain_get\""));
-    assert!(mrt_src.contains("brainGetArgs(getStringArg(args, [\"key\"]))"));
-    assert!(mrt_src.contains("callMrtInterface(\"mirr-brain\""));
-
-    assert!(server_src.contains("case \"mrt_brain_get\""));
-    assert!(server_src.contains("args: brainGetArgs(getBodyString(body, \"key\"))"));
+    assert!(src.contains("mrt_audit"));
+    assert!(src.contains("mrt_brain_get"));
+    assert!(src.contains("mrt_general_ci"));
+    assert!(src.contains("mrt_general_ci_compile"));
+    assert!(src.contains("mrt_general_ci_fast"));
+    assert!(src.contains("mrt_wave_dry_run"));
+    assert!(src.contains("mrt_wave_apply"));
+    assert!(src.contains("mrt_lsp_diagnostics"));
+    assert!(src.contains("mrt_compile"));
+    assert!(src.contains("mrt_rspu_validate"));
+    assert!(src.contains("mrt_rspu_proofs"));
 }
 
 #[test]

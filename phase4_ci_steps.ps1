@@ -1,6 +1,16 @@
 # CI Gate Individual Steps Test
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $repoRoot
+$expectedTargetDir = Join-Path $repoRoot "target/ci-wave"
+New-Item -ItemType Directory -Force -Path $expectedTargetDir | Out-Null
+$env:CARGO_TARGET_DIR = $expectedTargetDir
+& (Join-Path $repoRoot "scripts/preflight-gate.ps1") -RepoRoot $repoRoot -ExpectedTargetDir $expectedTargetDir
+
 $steps = @(
-    @{ name = "fmt check"; cmd = "cargo fmt --check" },
+    @{ name = "fmt check"; cmd = "cargo fmt --all -- --check" },
     @{ name = "clippy"; cmd = "cargo clippy --all-targets -- -D warnings" },
     @{ name = "test all"; cmd = "cargo test --all 2>&1 | Out-Null" },
     @{ name = "test self_hosting"; cmd = "cargo test --test self_hosting_parity_tests 2>&1 | Out-Null" },

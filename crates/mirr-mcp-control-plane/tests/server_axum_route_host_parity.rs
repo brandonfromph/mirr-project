@@ -442,9 +442,7 @@ fn host_state_hydrates_token_quota_from_sqlite_sink() {
     let mut state = host_state_with_tokens();
     state.quota_event_sink = Arc::new(sqlite_sink);
 
-    state
-        .hydrate_token_quota_state_from_sink(16)
-        .expect("quota hydration should succeed");
+    state.hydrate_token_quota_state_from_sink(16).expect("quota hydration should succeed");
 
     let guard = state.admission_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let quota = guard
@@ -475,9 +473,7 @@ async fn canonical_route_enforces_hydrated_quota_before_first_request() {
         token_quota_window_ms: 60_000,
     };
     state.quota_event_sink = Arc::new(sqlite_sink);
-    state
-        .hydrate_token_quota_state_from_sink(16)
-        .expect("quota hydration should succeed");
+    state.hydrate_token_quota_state_from_sink(16).expect("quota hydration should succeed");
 
     let app = build_axum_mcp_router(state, AxumHostConfig::default());
 

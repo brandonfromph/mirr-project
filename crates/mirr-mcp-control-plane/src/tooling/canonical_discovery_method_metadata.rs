@@ -118,6 +118,9 @@ const MRT_RSPU_PROOFS_PARAMETERS: &[DiscoveryParameter] = &[
     DiscoveryParameter::new("methods", false, "array"),
 ];
 
+const MRT_DAEMON_CONTRACT_PARAMETERS: &[DiscoveryParameter] =
+    &[DiscoveryParameter::new("test_filter", false, "string")];
+
 const LRA_INIT_PARAMETERS: &[DiscoveryParameter] = &[
     DiscoveryParameter::new("project_name", true, "string"),
     DiscoveryParameter::new("projectName", false, "string"),
@@ -148,6 +151,17 @@ const LRA_VERIFY_PARAMETERS: &[DiscoveryParameter] = &[
     DiscoveryParameter::new("target", false, "string"),
 ];
 
+const MRT_KB_QUERY_PARAMETERS: &[DiscoveryParameter] = &[
+    DiscoveryParameter::new("query", true, "string"),
+    DiscoveryParameter::new("mode", false, "string"),
+    DiscoveryParameter::new("limit", false, "number"),
+    DiscoveryParameter::new("filter", false, "string"),
+    DiscoveryParameter::new("expand_mode", false, "string"),
+    DiscoveryParameter::new("retry_count", false, "number"),
+    DiscoveryParameter::new("timeout_ms", false, "number"),
+];
+
+const MRT_KB_INDEX_STATUS_PARAMETERS: &[DiscoveryParameter] = &[];
 pub const CANONICAL_DISCOVERY_METHOD_METADATA: &[DiscoveryMethodMetadata] = &[
     DiscoveryMethodMetadata::new(
         "read_text_file",
@@ -282,6 +296,18 @@ pub const CANONICAL_DISCOVERY_METHOD_METADATA: &[DiscoveryMethodMetadata] = &[
         MRT_RSPU_PROOFS_PARAMETERS,
     ),
     DiscoveryMethodMetadata::new(
+        "mrt_daemon_core_contract",
+        false,
+        "Run daemon core architecture contract tests (wave5) with optional test filter.",
+        MRT_DAEMON_CONTRACT_PARAMETERS,
+    ),
+    DiscoveryMethodMetadata::new(
+        "mrt_daemon_security_contract",
+        false,
+        "Run daemon security/runtime policy contract tests (wave6) with optional test filter.",
+        MRT_DAEMON_CONTRACT_PARAMETERS,
+    ),
+    DiscoveryMethodMetadata::new(
         "lra_init",
         false,
         "Initialize a new LRA (Living Research Artifact) project with scaffold.",
@@ -316,6 +342,18 @@ pub const CANONICAL_DISCOVERY_METHOD_METADATA: &[DiscoveryMethodMetadata] = &[
         false,
         "Verify a deployed LRA paper and validate content integrity.",
         LRA_VERIFY_PARAMETERS,
+    ),
+    DiscoveryMethodMetadata::new(
+        "mrt_kb_query",
+        false,
+        "Query KB using lexical, semantic, or hybrid retrieval with deterministic fallback.",
+        MRT_KB_QUERY_PARAMETERS,
+    ),
+    DiscoveryMethodMetadata::new(
+        "mrt_kb_index_status",
+        false,
+        "Get KB index freshness, size, and last refresh timestamp.",
+        MRT_KB_INDEX_STATUS_PARAMETERS,
     ),
 ];
 

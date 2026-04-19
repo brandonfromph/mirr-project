@@ -279,8 +279,14 @@ fn stash_log(log: &WaveLog, stash: bool) -> anyhow::Result<()> {
 }
 
 fn sha256_hash(data: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut hasher = Sha256::new();
     hasher.update(data);
     let result = hasher.finalize();
-    format!("sha256:{:x}", result)
+    let mut digest_hex = String::with_capacity(result.len() * 2);
+    for byte in result {
+        digest_hex.push(HEX[(byte >> 4) as usize] as char);
+        digest_hex.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    format!("sha256:{digest_hex}")
 }

@@ -23,12 +23,16 @@ impl MrtDispatchTool {
             Self::MrtCompile => ROLE_BUILDER_ADMIN,
             Self::MrtRspuValidate => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::MrtRspuProofs => ROLE_BUILDER_ADMIN,
+            Self::MrtDaemonCoreContract => ROLE_BUILDER_COMMITTER_ADMIN,
+            Self::MrtDaemonSecurityContract => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::LraInit => ROLE_COMMITTER_ADMIN,
             Self::LraValidate => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::LraServe => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::LraCheck => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::LraSign => ROLE_COMMITTER_ADMIN,
             Self::LraVerify => ROLE_BUILDER_COMMITTER_ADMIN,
+            Self::MrtKbQuery => ROLE_BUILDER_COMMITTER_ADMIN,
+            Self::MrtKbIndexStatus => ROLE_BUILDER_COMMITTER_ADMIN,
         }
     }
 }

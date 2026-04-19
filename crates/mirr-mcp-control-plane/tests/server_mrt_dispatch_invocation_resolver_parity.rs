@@ -99,6 +99,37 @@ fn resolve_alias_heavy_invocations_match_ts_contract() {
         .expect("mrt_rspu_proofs should resolve methods from CSV alias");
     assert!(rupu_args_contains(&rspu.args, "--methods"));
     assert!(rupu_args_contains(&rspu.args, "alpha,beta"));
+
+    let mut daemon_core_body = InvocationInputBody::default();
+    daemon_core_body.set_string("testFilter", "daemon_core_starts_in_stopped_state");
+    let daemon_core =
+        resolve_mrt_dispatch_invocation_by_name("mrt_daemon_core_contract", &daemon_core_body)
+            .expect("mrt_daemon_core_contract should resolve with test filter aliases");
+    assert_eq!(
+        daemon_core.args,
+        vec![
+            "test",
+            "--test",
+            "wave5_daemon_core_architecture_tests",
+            "daemon_core_starts_in_stopped_state",
+            "--",
+            "--nocapture",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<String>>()
+    );
+
+    let daemon_security =
+        resolve_mrt_dispatch_invocation_by_name("mrt_daemon_security_contract", &body)
+            .expect("mrt_daemon_security_contract should resolve without optional filter");
+    assert_eq!(
+        daemon_security.args,
+        vec!["test", "--test", "wave6_daemon_security_runtime_policy_tests", "--", "--nocapture",]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<String>>()
+    );
 }
 
 #[test]
@@ -174,6 +205,52 @@ fn resolve_unknown_tool_is_fail_closed() {
     let err = resolve_mrt_dispatch_invocation_by_name("mrt_unknown", &body)
         .expect_err("unknown tools must be rejected");
     assert!(err.contains("MCP unknown method rejected: mrt_unknown."));
+}
+
+#[test]
+fn resolve_kb_query_supports_phase4_parameters() {
+    let mut body = InvocationInputBody::default();
+    body.set_string("query", "find module alpha dependencies");
+    body.set_string("mode", "graph");
+    body.set_number("limit", 7.0);
+    body.set_string("filter", "module:alpha chunk_type:Module");
+    body.set_string("expand_mode", "synonym");
+    body.set_number("retry_count", 2.0);
+    body.set_number("timeout_ms", 5000.0);
+
+    let resolved = resolve_mrt_dispatch_invocation_by_name("mrt_kb_query", &body)
+        .expect("kb query should resolve with phase4 params");
+
+    assert!(rupu_args_contains(&resolved.args, "--expand-mode"));
+    assert!(rupu_args_contains(&resolved.args, "synonym"));
+    assert!(rupu_args_contains(&resolved.args, "--retry-count"));
+    assert!(rupu_args_contains(&resolved.args, "2"));
+    assert!(rupu_args_contains(&resolved.args, "--timeout-ms"));
+    assert!(rupu_args_contains(&resolved.args, "5000"));
+}
+
+#[test]
+fn resolve_kb_query_rejects_invalid_phase4_parameters() {
+    let mut invalid_expand = InvocationInputBody::default();
+    invalid_expand.set_string("query", "x");
+    invalid_expand.set_string("expand_mode", "wide");
+    let expand_err = resolve_mrt_dispatch_invocation_by_name("mrt_kb_query", &invalid_expand)
+        .expect_err("invalid expand_mode must fail closed");
+    assert_eq!(expand_err, "expand_mode must be one of none|synonym|hyde");
+
+    let mut invalid_retry = InvocationInputBody::default();
+    invalid_retry.set_string("query", "x");
+    invalid_retry.set_number("retry_count", 9.0);
+    let retry_err = resolve_mrt_dispatch_invocation_by_name("mrt_kb_query", &invalid_retry)
+        .expect_err("invalid retry_count must fail closed");
+    assert_eq!(retry_err, "retry_count must be between 0 and 5");
+
+    let mut invalid_timeout = InvocationInputBody::default();
+    invalid_timeout.set_string("query", "x");
+    invalid_timeout.set_number("timeout_ms", 10.0);
+    let timeout_err = resolve_mrt_dispatch_invocation_by_name("mrt_kb_query", &invalid_timeout)
+        .expect_err("invalid timeout must fail closed");
+    assert_eq!(timeout_err, "timeout_ms must be between 1000 and 60000");
 }
 
 fn rupu_args_contains(args: &[String], expected: &str) -> bool {
