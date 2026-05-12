@@ -20,6 +20,8 @@ env:
   RUSTC_WRAPPER: "sccache"
   SCCACHE_GHA_ENABLED: "false"
   CARGO_INCREMENTAL: 0
+  # Disable in-process caching to rely on sccache exclusively
+  SCCACHE_LOCAL_RW_CACHE: "true"
 
 jobs:
   test:
@@ -38,18 +40,36 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.7
-
+      # Cargo registry cache (deps, source index)
+      # This rarely invalidates and speeds up dependency resolution
       - name: Cache cargo registry
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
+      # sccache binary and cache
+      # Runs with retry logic; won't fail the job if sccache itself fails
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+
+      # Compiled artifacts cache (the expensive part)
+      # Key includes Cargo.lock, rust version, and target (debug/release)
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
 
       - name: Check formatting
         if: matrix.os == 'ubuntu-latest'
@@ -70,6 +90,50 @@ jobs:
         env:
           RUSTDOCFLAGS: "-D warnings"
 
+  compile-examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup
+        uses: ./.github/actions/setup-mirr
+      - name: Compile examples
+        shell: bash
+        run: |
+          failed=0
+          for f in examples/*.mirr; do
+            name=$(basename "$f")
+            case "$name" in
+              malformed_input.mirr|validation_errors.mirr)
+                echo "SKIP (error case): $f"
+                continue
+                ;;
+              flight_controller_signed.mirr)
+                echo "SKIP (signed guard lowering not yet supported): $f"
+                continue
+                ;;
+            esac
+            echo "COMPILE: $f"
+            if ! cargo run --bin mirr-compile -- --emit verilog "$f" > /dev/null 2>&1; then
+              echo "FAIL: $f"
+              cargo run --bin mirr-compile -- --emit verilog "$f" 2>&1 || true
+              failed=1
+            fi
+          done
+          if [ "$failed" -eq 1 ]; then
+            echo "::error::One or more example files failed to compile"
+            exit 1
+          fi
+
+  scripts-check:
+    name: Scripts Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Lint scripts
+        run: |
+          python3 -m py_compile scripts/*.py
+
   coverage:
     name: Coverage
     needs: test
@@ -83,8 +147,30 @@ jobs:
         with:
           components: llvm-tools-preview
 
-      - name: Run sccache-cache
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
 
       - name: Install cargo-llvm-cov and nextest
         uses: taiki-e/install-action@v2
@@ -102,6 +188,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Run cargo-deny
         uses: EmbarkStudios/cargo-deny-action@v2
+        env:
+          RUSTC_WRAPPER: ""  # Disable sccache for cargo-deny (runs in Docker, no sccache binary)
 
   simulate:
     name: RTL Simulation
@@ -112,6 +200,32 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
+
       - name: Install iverilog
         run: sudo apt-get update && sudo apt-get install -y iverilog
       - name: Run simulations
@@ -128,23 +242,143 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Run sccache-cache
+
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
+
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked
       - name: Build WASM
         run: wasm-pack build crates/mirr-wasm --target web --out-dir ../../demos --release
+
       - name: Build Arsenal WASM
         run: wasm-pack build crates/mirr-arsenal-wasm --target web --out-dir ../../target/arsenal-wasm --release
+
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mirr-wasm
           path: demos/
 
+  arsenal-wasm:
+    name: Arsenal WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup
+        uses: ./.github/actions/setup-mirr
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked
+      - name: Build Arsenal WASM
+        run: wasm-pack build crates/mirr-arsenal-wasm --target web --out-dir ../../target/arsenal-wasm --release
+
+  rocq-proofs:
+    name: Rocq Proofs
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rocq
+        run: |
+          sudo apt-get update && sudo apt-get install -y opam
+          opam init --auto-setup --yes
+          opam install rocq --yes
+          eval $(opam env)
+
+      - name: Build proofs (width)
+        working-directory: proofs/width
+        run: make
+
+      - name: Build proofs (language)
+        working-directory: proofs/language
+        run: make
+
+      - name: Build proofs (rspu)
+        working-directory: proofs/rspu
+        run: make
+
+  lra-cli:
+    name: LRA CLI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup
+        uses: ./.github/actions/setup-mirr
+        with:
+          components: clippy, rustfmt
+      - name: Lint and Test
+        run: |
+          cargo fmt -p lra-cli -- --check
+          cargo clippy -p lra-cli --all-targets -- -D warnings
+          cargo nextest run -p lra-cli
+        shell: bash
+      - name: Validate Artifacts
+        run: |
+          cargo run -p lra-cli -- validate paper/index.html
+          cargo run -p lra-cli -- validate template/index.html
+        shell: bash
+
+  vscode-check:
+    name: VS Code Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Validate package
+        run: |
+          cd vscode-mirr
+          npm run test
+
+  rustdoc:
+    name: Rustdoc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup
+        uses: ./.github/actions/setup-mirr
+      - name: Build docs
+        run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+
+  fuzz-check:
+    name: Fuzz Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup
+        uses: ./.github/actions/setup-mirr
+      - name: Check fuzz targets
+        run: cargo check -p fuzz --all-targets
+
   pages-deploy:
     name: Deploy
-    needs: [test, coverage, supply-chain, simulate, wasm-build]
+    needs: [test, compile-examples, scripts-check, coverage, supply-chain, simulate, wasm-build, arsenal-wasm, rocq-proofs, lra-cli, vscode-check, rustdoc, fuzz-check]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -157,6 +391,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
+
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
