@@ -50,7 +50,7 @@ pub fn require_mrt_dispatch_role(
     tool_name: &str,
     token_map: &RoleTokenMap,
 ) -> Result<VerifiedPrincipal, RoleCheckFailure> {
-    let Some(tool) = MrtDispatchTool::from_str(tool_name) else {
+    let Ok(tool) = tool_name.parse::<MrtDispatchTool>() else {
         return Err(RoleCheckFailure::ValidationUnknownMethod);
     };
 

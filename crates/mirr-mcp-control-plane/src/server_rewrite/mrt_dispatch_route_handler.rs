@@ -123,6 +123,7 @@ fn execution_error_details(err: &MrtDispatchExecutionError) -> String {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn handle_mrt_dispatch_route<
     FValidate,
     FRequireRole,

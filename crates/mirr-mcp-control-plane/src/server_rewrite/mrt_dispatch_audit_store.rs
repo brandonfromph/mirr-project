@@ -41,13 +41,10 @@ pub struct SqliteMrtDispatchAuditEventSink {
 }
 
 fn now_unix_millis() -> u64 {
-    match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => match u64::try_from(duration.as_millis()) {
-            Ok(value) => value,
-            Err(_) => u64::MAX,
-        },
-        Err(_) => 0,
-    }
+    SystemTime::now().duration_since(UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_millis()).ok())
+        .unwrap_or(0)
 }
 
 fn sanitize_required_text(
@@ -85,10 +82,7 @@ fn sanitize_optional_text(
 }
 
 fn timestamp_to_i64(timestamp_ms: u64) -> i64 {
-    match i64::try_from(timestamp_ms) {
-        Ok(value) => value,
-        Err(_) => i64::MAX,
-    }
+    i64::try_from(timestamp_ms).unwrap_or(i64::MAX)
 }
 
 impl SqliteMrtDispatchAuditStore {
@@ -133,10 +127,7 @@ impl SqliteMrtDispatchAuditStore {
 
     pub fn recent_rows(&self, limit: usize) -> Result<Vec<MrtDispatchAuditRow>, String> {
         let bounded_limit = limit.clamp(1, MAX_AUDIT_QUERY_ROWS);
-        let limit_i64 = match i64::try_from(bounded_limit) {
-            Ok(value) => value,
-            Err(_) => i64::MAX,
-        };
+        let limit_i64 = i64::try_from(bounded_limit).unwrap_or(i64::MAX);
 
         let guard = self.connection.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
 

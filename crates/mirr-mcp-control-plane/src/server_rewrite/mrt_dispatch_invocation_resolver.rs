@@ -168,13 +168,7 @@ fn normalize_max_lines(value: f64) -> Result<i64, String> {
         return Err("invalid_max_lines".to_owned());
     }
 
-    let mut lines = value.trunc() as i64;
-    if lines < 1 {
-        lines = 1;
-    }
-    if lines > MAX_WAVE_LINES {
-        lines = MAX_WAVE_LINES;
-    }
+    let lines = (value.trunc() as i64).clamp(1, MAX_WAVE_LINES);
 
     Ok(lines)
 }
@@ -650,7 +644,7 @@ pub fn resolve_mrt_dispatch_invocation(
                 return Err("mode must be one of lexical|semantic|hybrid|graph|temporal".to_owned());
             }
             let limit = first_number(body, &["limit"], 16.0) as i64;
-            if limit < 1 || limit > 1000 {
+            if !(1..=1000).contains(&limit) {
                 return Err("limit must be between 1 and 1000".to_owned());
             }
             let filter = first_string(body, &["filter"], "");
@@ -736,7 +730,7 @@ pub fn resolve_mrt_dispatch_invocation_by_name(
     tool_name: &str,
     body: &InvocationInputBody,
 ) -> Result<MrtDispatchInvocationPlan, String> {
-    let Some(tool) = MrtDispatchTool::from_str(tool_name) else {
+    let Ok(tool) = tool_name.parse::<MrtDispatchTool>() else {
         return Err(format!("MCP unknown method rejected: {}.", tool_name));
     };
 

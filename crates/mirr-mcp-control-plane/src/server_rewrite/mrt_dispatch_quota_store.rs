@@ -76,13 +76,10 @@ pub struct SqliteMrtDispatchQuotaEventSink {
 }
 
 fn now_unix_millis() -> u64 {
-    match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => match u64::try_from(duration.as_millis()) {
-            Ok(value) => value,
-            Err(_) => u64::MAX,
-        },
-        Err(_) => 0,
-    }
+    SystemTime::now().duration_since(UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_millis()).ok())
+        .unwrap_or(0)
 }
 
 fn sanitize_token(token: &str) -> Result<String, String> {
@@ -97,10 +94,7 @@ fn sanitize_token(token: &str) -> Result<String, String> {
 }
 
 fn to_i64_u64(value: u64) -> i64 {
-    match i64::try_from(value) {
-        Ok(value) => value,
-        Err(_) => i64::MAX,
-    }
+    i64::try_from(value).unwrap_or(i64::MAX)
 }
 
 fn to_i64_u32(value: u32) -> i64 {
@@ -215,10 +209,7 @@ impl SqliteMrtDispatchQuotaStore {
 
     pub fn recent_rows(&self, limit: usize) -> Result<Vec<PersistedTokenQuotaState>, String> {
         let bounded_limit = limit.clamp(1, MAX_QUOTA_QUERY_ROWS);
-        let limit_i64 = match i64::try_from(bounded_limit) {
-            Ok(value) => value,
-            Err(_) => i64::MAX,
-        };
+        let limit_i64 = i64::try_from(bounded_limit).unwrap_or(i64::MAX);
 
         let guard = self.connection.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
 

@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+use std::str::FromStr;
+
 use super::mrt_dispatch_tool_alias::canonical_dispatch_tool_name;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -83,33 +85,37 @@ impl MrtDispatchTool {
             Self::MrtKbBrief => "mrt_kb_brief",
         }
     }
+}
 
-    pub fn from_str(value: &str) -> Option<Self> {
+impl FromStr for MrtDispatchTool {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         match canonical_dispatch_tool_name(value) {
-            "mrt_audit" => Some(Self::MrtAudit),
-            "mrt_brain_get" => Some(Self::MrtBrainGet),
-            "mrt_general_ci" => Some(Self::MrtGeneralCi),
-            "mrt_general_ci_compile" => Some(Self::MrtGeneralCiCompile),
-            "mrt_general_ci_fast" => Some(Self::MrtGeneralCiFast),
-            "mrt_wave_dry_run" => Some(Self::MrtWaveDryRun),
-            "mrt_wave_apply" => Some(Self::MrtWaveApply),
-            "mrt_lsp_diagnostics" => Some(Self::MrtLspDiagnostics),
-            "mrt_compile" => Some(Self::MrtCompile),
-            "mrt_rspu_validate" => Some(Self::MrtRspuValidate),
-            "mrt_rspu_proofs" => Some(Self::MrtRspuProofs),
-            "mrt_daemon_core_contract" => Some(Self::MrtDaemonCoreContract),
-            "mrt_daemon_security_contract" => Some(Self::MrtDaemonSecurityContract),
-            "lra_init" => Some(Self::LraInit),
-            "lra_validate" => Some(Self::LraValidate),
-            "lra_serve" => Some(Self::LraServe),
-            "lra_check" => Some(Self::LraCheck),
-            "lra_sign" => Some(Self::LraSign),
-            "lra_verify" => Some(Self::LraVerify),
-            "mrt_kb_query" => Some(Self::MrtKbQuery),
-            "mrt_kb_index" => Some(Self::MrtKbIndex),
-            "mrt_kb_index_status" => Some(Self::MrtKbIndexStatus),
-            "mrt_kb_brief" => Some(Self::MrtKbBrief),
-            _ => None,
+            "mrt_audit" => Ok(Self::MrtAudit),
+            "mrt_brain_get" => Ok(Self::MrtBrainGet),
+            "mrt_general_ci" => Ok(Self::MrtGeneralCi),
+            "mrt_general_ci_compile" => Ok(Self::MrtGeneralCiCompile),
+            "mrt_general_ci_fast" => Ok(Self::MrtGeneralCiFast),
+            "mrt_wave_dry_run" => Ok(Self::MrtWaveDryRun),
+            "mrt_wave_apply" => Ok(Self::MrtWaveApply),
+            "mrt_lsp_diagnostics" => Ok(Self::MrtLspDiagnostics),
+            "mrt_compile" => Ok(Self::MrtCompile),
+            "mrt_rspu_validate" => Ok(Self::MrtRspuValidate),
+            "mrt_rspu_proofs" => Ok(Self::MrtRspuProofs),
+            "mrt_daemon_core_contract" => Ok(Self::MrtDaemonCoreContract),
+            "mrt_daemon_security_contract" => Ok(Self::MrtDaemonSecurityContract),
+            "lra_init" => Ok(Self::LraInit),
+            "lra_validate" => Ok(Self::LraValidate),
+            "lra_serve" => Ok(Self::LraServe),
+            "lra_check" => Ok(Self::LraCheck),
+            "lra_sign" => Ok(Self::LraSign),
+            "lra_verify" => Ok(Self::LraVerify),
+            "mrt_kb_query" => Ok(Self::MrtKbQuery),
+            "mrt_kb_index" => Ok(Self::MrtKbIndex),
+            "mrt_kb_index_status" => Ok(Self::MrtKbIndexStatus),
+            "mrt_kb_brief" => Ok(Self::MrtKbBrief),
+            _ => Err(format!("invalid tool: {}", value)),
         }
     }
 }
@@ -121,25 +127,25 @@ mod tests {
     #[test]
     fn all_tools_roundtrip() {
         for tool in MrtDispatchTool::ALL {
-            assert_eq!(MrtDispatchTool::from_str(tool.as_str()), Some(tool));
+            assert_eq!(tool.as_str().parse::<MrtDispatchTool>(), Ok(tool));
         }
     }
 
     #[test]
     fn unknown_tool_is_none() {
-        assert_eq!(MrtDispatchTool::from_str("mrt_unknown"), None);
+        assert!("mrt_unknown".parse::<MrtDispatchTool>().is_err());
     }
 
     #[test]
     fn prefixed_lra_route_names_resolve_to_canonical_tools() {
-        assert_eq!(MrtDispatchTool::from_str("mrt_lra_init"), Some(MrtDispatchTool::LraInit));
+        assert_eq!("mrt_lra_init".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraInit));
         assert_eq!(
-            MrtDispatchTool::from_str("mrt_lra_validate"),
-            Some(MrtDispatchTool::LraValidate)
+            "mrt_lra_validate".parse::<MrtDispatchTool>(),
+            Ok(MrtDispatchTool::LraValidate)
         );
-        assert_eq!(MrtDispatchTool::from_str("mrt_lra_serve"), Some(MrtDispatchTool::LraServe));
-        assert_eq!(MrtDispatchTool::from_str("mrt_lra_check"), Some(MrtDispatchTool::LraCheck));
-        assert_eq!(MrtDispatchTool::from_str("mrt_lra_sign"), Some(MrtDispatchTool::LraSign));
-        assert_eq!(MrtDispatchTool::from_str("mrt_lra_verify"), Some(MrtDispatchTool::LraVerify));
+        assert_eq!("mrt_lra_serve".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraServe));
+        assert_eq!("mrt_lra_check".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraCheck));
+        assert_eq!("mrt_lra_sign".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraSign));
+        assert_eq!("mrt_lra_verify".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraVerify));
     }
 }

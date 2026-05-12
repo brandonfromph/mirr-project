@@ -17,7 +17,7 @@ use serde_json::{json, Value};
 
 use super::mrt_dispatch_audit_store::{MrtDispatchAuditEventSink, NoopMrtDispatchAuditEventSink};
 use super::mrt_dispatch_dual_run_telemetry::{
-    DriftCategory, DualRunTelemetry, ParityMetrics, PathExecutionEvent,
+    DriftCategory, DualRunTelemetry, DualRunTelemetryBuilder, ParityMetrics, PathExecutionEvent,
 };
 use super::mrt_dispatch_invocation_executor::{
     execute_mrt_dispatch_invocation, MrtDispatchExecutionConfig, MrtDispatchExecutionError,
@@ -210,12 +210,7 @@ fn stream_input_from_dispatch(
 }
 
 fn invocation_value_matches(expected_type: &str, value: &InvocationInputValue) -> bool {
-    match (expected_type, value) {
-        ("string", InvocationInputValue::String(_)) => true,
-        ("number", InvocationInputValue::Number(_)) => true,
-        ("array", InvocationInputValue::StringArray(_)) => true,
-        _ => false,
-    }
+    matches!((expected_type, value), ("string", InvocationInputValue::String(_)) | ("number", InvocationInputValue::Number(_)) | ("array", InvocationInputValue::StringArray(_)))
 }
 
 fn validate_canonical_payload(
@@ -267,13 +262,10 @@ fn validate_canonical_payload(
 }
 
 fn now_unix_millis() -> u64 {
-    match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => match u64::try_from(duration.as_millis()) {
-            Ok(value) => value,
-            Err(_) => u64::MAX,
-        },
-        Err(_) => 0,
-    }
+    SystemTime::now().duration_since(UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_millis()).ok())
+        .unwrap_or(0)
 }
 
 fn map_runtime_admission_error(error: MrtRuntimeAdmissionError) -> MrtDispatchPipelineError {
@@ -468,7 +460,7 @@ fn dispatch_single_route(
                 operation,
             )
         },
-        |resolved_tool_name, body| resolve_invocation(resolved_tool_name, body),
+        resolve_invocation,
         |plan| execute_invocation(plan, &execution_config),
         move |event| audit_event_sink.append(&event),
     );
@@ -549,16 +541,16 @@ fn dispatch_dual_run_route(
         String::from("fallback")
     };
 
-    let telemetry = DualRunTelemetry::new(
-        dispatch_input.id.as_ref().map(ToString::to_string).unwrap_or_default(),
-        tool_name.to_owned(),
-        extract_query_snippet(&dispatch_input.params),
-        legacy_event,
-        new_event,
+    let telemetry = DualRunTelemetry::from_builder(DualRunTelemetryBuilder {
+        request_id: dispatch_input.id.as_ref().map(ToString::to_string).unwrap_or_default(),
+        tool_name: tool_name.to_owned(),
+        query_snippet: extract_query_snippet(&dispatch_input.params),
+        legacy_path: legacy_event,
+        new_path: new_event,
         parity_metrics,
         primary_path_returned,
-        current_unix_millis(),
-    );
+        timestamp_ms: current_unix_millis(),
+    });
 
     state.audit_event_sink.append(&MrtDispatchAuditEvent {
         kind: "mrt_dual_run",
@@ -618,11 +610,7 @@ fn build_parity_metrics(
     } else {
         let smaller = legacy_count.min(new_count) as u32;
         let larger = legacy_count.max(new_count) as u32;
-        if larger == 0 {
-            0
-        } else {
-            (smaller.saturating_mul(100)) / larger
-        }
+        (smaller.saturating_mul(100)) / larger.max(1)
     };
 
     ParityMetrics {
@@ -684,7 +672,7 @@ pub fn dispatch_host_rpc_message(
         );
     }
 
-    if MrtDispatchTool::from_str(&normalized_method_name).is_some() {
+    if normalized_method_name.parse::<MrtDispatchTool>().is_ok() {
         let header_api_key = api_key_from_headers(headers);
         let api_key = api_key_from_dispatch_input(&dispatch_input, header_api_key);
         return dispatch_canonical_route(state, &dispatch_input, &normalized_method_name, api_key);

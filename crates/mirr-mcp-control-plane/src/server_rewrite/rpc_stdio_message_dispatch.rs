@@ -109,9 +109,7 @@ fn invocation_body_from_json_params(params: &Map<String, Value>) -> InvocationIn
 }
 
 fn parse_jsonrpc_id(value: Option<&Value>) -> Option<Value> {
-    let Some(raw) = value else {
-        return None;
-    };
+    let raw = value?;
 
     match raw {
         Value::String(_) | Value::Number(_) => Some(raw.clone()),
@@ -177,11 +175,7 @@ pub fn consume_stdio_input_chunk(
     }
 
     let mut messages = Vec::<StdioRpcDispatchInput>::new();
-    loop {
-        let Some(idx) = buffer.find('\n') else {
-            break;
-        };
-
+    while let Some(idx) = buffer.find('\n') {
         let line = buffer[..idx].trim().to_owned();
         buffer = buffer[idx + 1..].to_owned();
 

@@ -67,6 +67,18 @@ pub struct ParityMetrics {
 
 /// Complete dual-run telemetry capture.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Builder/configuration struct for creating DualRunTelemetry.
+pub struct DualRunTelemetryBuilder {
+    pub request_id: String,
+    pub tool_name: String,
+    pub query_snippet: String,
+    pub legacy_path: PathExecutionEvent,
+    pub new_path: PathExecutionEvent,
+    pub parity_metrics: ParityMetrics,
+    pub primary_path_returned: String,
+    pub timestamp_ms: u64,
+}
+
 pub struct DualRunTelemetry {
     /// Unique request identifier.
     pub request_id: String,
@@ -94,26 +106,17 @@ pub struct DualRunTelemetry {
 }
 
 impl DualRunTelemetry {
-    /// Create a new dual-run telemetry record.
-    pub fn new(
-        request_id: String,
-        tool_name: String,
-        query_snippet: String,
-        legacy_path: PathExecutionEvent,
-        new_path: PathExecutionEvent,
-        parity_metrics: ParityMetrics,
-        primary_path_returned: String,
-        timestamp_ms: u64,
-    ) -> Self {
+    /// Create a new dual-run telemetry record from builder.
+    pub fn from_builder(builder: DualRunTelemetryBuilder) -> Self {
         Self {
-            request_id,
-            tool_name,
-            query_snippet,
-            legacy_path,
-            new_path,
-            parity_metrics,
-            primary_path_returned,
-            timestamp_ms,
+            request_id: builder.request_id,
+            tool_name: builder.tool_name,
+            query_snippet: builder.query_snippet,
+            legacy_path: builder.legacy_path,
+            new_path: builder.new_path,
+            parity_metrics: builder.parity_metrics,
+            primary_path_returned: builder.primary_path_returned,
+            timestamp_ms: builder.timestamp_ms,
         }
     }
 
@@ -196,16 +199,16 @@ mod tests {
             result_overlap_percent: 100,
         };
 
-        let telemetry = DualRunTelemetry::new(
-            "req123".to_string(),
-            "mrt_kb_query".to_string(),
-            "test query".to_string(),
-            legacy,
-            new,
-            parity,
-            "new".to_string(),
-            1234567890,
-        );
+        let telemetry = DualRunTelemetry::from_builder(DualRunTelemetryBuilder {
+            request_id: "req123".to_string(),
+            tool_name: "mrt_kb_query".to_string(),
+            query_snippet: "test query".to_string(),
+            legacy_path: legacy,
+            new_path: new,
+            parity_metrics: parity,
+            primary_path_returned: "new".to_string(),
+            timestamp_ms: 1234567890,
+        });
 
         let summary = telemetry.summary();
         assert!(summary.contains("mrt_kb_query"));

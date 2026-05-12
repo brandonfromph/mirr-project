@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+use std::str::FromStr;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Role {
     Reader,
@@ -17,14 +19,18 @@ impl Role {
             Self::Admin => "admin",
         }
     }
+}
 
-    pub fn from_str(value: &str) -> Option<Self> {
+impl FromStr for Role {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
-            "reader" => Some(Self::Reader),
-            "builder" => Some(Self::Builder),
-            "committer" => Some(Self::Committer),
-            "admin" => Some(Self::Admin),
-            _ => None,
+            "reader" => Ok(Self::Reader),
+            "builder" => Ok(Self::Builder),
+            "committer" => Ok(Self::Committer),
+            "admin" => Ok(Self::Admin),
+            _ => Err(format!("invalid role: {}", value)),
         }
     }
 }
