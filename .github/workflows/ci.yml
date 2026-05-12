@@ -378,6 +378,8 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
           restore-keys: |
             ${{ runner.os }}-cargo-build-stable-
+      - name: Install nextest
+        run: cargo install cargo-nextest --locked
       - name: Lint and Test
         run: |
           cargo fmt -p lra-cli -- --check
