@@ -207,6 +207,47 @@ jobs:
         env:
           RUSTDOCFLAGS: "-D warnings"
 
+  vscode-check:
+    name: VS Code Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Validate package
+        run: |
+          cd vscode-mirr
+          npm run test
+
+  arsenal-wasm:
+    name: Arsenal WASM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        uses: ./.github/actions/setup-mirr
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked
+      - name: Build Arsenal WASM
+        run: wasm-pack build crates/mirr-arsenal-wasm --target web --out-dir ../../target/arsenal-wasm --release
+
+  fuzz-check:
+    name: Fuzz Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        uses: ./.github/actions/setup-mirr
+      - name: Check fuzz targets
+        run: cargo check -p fuzz --all-targets
+
+  scripts-check:
+    name: Scripts Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Lint scripts
+        run: |
+          python3 -m py_compile scripts/*.py
+
   pages-deploy:
     name: Deploy
     needs:
@@ -220,8 +261,12 @@ jobs:
         supply-chain,
         simulate,
         wasm-build,
+        arsenal-wasm,
         proofs,
         lra-cli,
+        vscode-check,
+        fuzz-check,
+        scripts-check,
       ]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
