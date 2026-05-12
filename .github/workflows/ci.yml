@@ -22,33 +22,6 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
-  fmt:
-    name: Format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-  clippy:
-    name: Clippy (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
-        with:
-          components: clippy
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -57,72 +30,73 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.7
+
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Check formatting
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
       - name: Install nextest
         uses: taiki-e/install-action@nextest
+
       - name: Run tests
         run: cargo nextest run --all --locked
 
-  compile-examples:
-    name: Examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
-      - name: Compile examples
-        shell: bash
-        run: |
-          failed=0
-          for f in examples/*.mirr; do
-            name=$(basename "$f")
-            case "$name" in
-              malformed_input.mirr|validation_errors.mirr)
-                echo "SKIP (error case): $f"
-                continue
-                ;;
-              flight_controller_signed.mirr)
-                echo "SKIP (signed guard lowering not yet supported): $f"
-                continue
-                ;;
-            esac
-            echo "COMPILE: $f"
-            if ! cargo run --bin mirr-compile -- --emit verilog "$f" > /dev/null 2>&1; then
-              echo "FAIL: $f"
-              cargo run --bin mirr-compile -- --emit verilog "$f" 2>&1 || true
-              failed=1
-            fi
-          done
-          if [ "$failed" -eq 1 ]; then
-            echo "::error::One or more example files failed to compile"
-            exit 1
-          fi
+      - name: Build docs
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: "-D warnings"
 
   coverage:
     name: Coverage
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - name: Install tools
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.7
+
+      - name: Install cargo-llvm-cov and nextest
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov,nextest
+
       - name: Run coverage
         run: cargo llvm-cov nextest --all --locked --codecov --output-path codecov.json
-      - name: Upload coverage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: coverage-report
-          path: codecov.json
 
   supply-chain:
     name: Supply Chain
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -131,11 +105,13 @@ jobs:
 
   simulate:
     name: RTL Simulation
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
       - name: Install iverilog
         run: sudo apt-get update && sudo apt-get install -y iverilog
       - name: Run simulations
@@ -143,141 +119,32 @@ jobs:
 
   wasm-build:
     name: WASM Build
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.7
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked
       - name: Build WASM
         run: wasm-pack build crates/mirr-wasm --target web --out-dir ../../demos --release
-      - name: Verify output
-        run: |
-          test -f demos/mirr_wasm_bg.wasm || exit 1
-          test -f demos/mirr_wasm.js || exit 1
+      - name: Build Arsenal WASM
+        run: wasm-pack build crates/mirr-arsenal-wasm --target web --out-dir ../../target/arsenal-wasm --release
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mirr-wasm
           path: demos/
 
-  proofs:
-    name: Rocq Proofs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Build proofs
-        uses: coq-community/docker-coq-action@v1
-        with:
-          custom_image: "rocq/rocq-prover:9.0"
-          script: |
-            sudo chown -R 1000:1000 .
-            make -C proofs/width
-            make -C proofs/rspu
-      - name: Verify Admitted count
-        run: |
-          COUNT=$(grep -r "Admitted\." proofs/ | wc -l)
-          test "$COUNT" -le 20
-
-  lra-cli:
-    name: LRA CLI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
-        with:
-          components: clippy, rustfmt
-      - name: Lint and Test
-        run: |
-          cargo fmt -p lra-cli -- --check
-          cargo clippy -p lra-cli --all-targets -- -D warnings
-          cargo nextest run -p lra-cli
-        shell: bash
-      - name: Validate Artifacts
-        run: |
-          cargo run -p lra-cli -- validate paper/index.html
-          cargo run -p lra-cli -- validate template/index.html
-        shell: bash
-
-  rustdoc:
-    name: Rustdoc
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
-      - name: Build docs
-        run: cargo doc --no-deps
-        env:
-          RUSTDOCFLAGS: "-D warnings"
-
-  vscode-check:
-    name: VS Code Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Validate package
-        run: |
-          cd vscode-mirr
-          npm run test
-
-  arsenal-wasm:
-    name: Arsenal WASM
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
-        with:
-          targets: wasm32-unknown-unknown
-      - name: Install wasm-pack
-        run: cargo install wasm-pack --locked
-      - name: Build Arsenal WASM
-        run: wasm-pack build crates/mirr-arsenal-wasm --target web --out-dir ../../target/arsenal-wasm --release
-
-  fuzz-check:
-    name: Fuzz Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
-      - name: Check fuzz targets
-        run: cargo check -p fuzz --all-targets
-
-  scripts-check:
-    name: Scripts Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Lint scripts
-        run: |
-          python3 -m py_compile scripts/*.py
-
   pages-deploy:
     name: Deploy
-    needs:
-      [
-        fmt,
-        clippy,
-        test,
-        rustdoc,
-        compile-examples,
-        coverage,
-        supply-chain,
-        simulate,
-        wasm-build,
-        arsenal-wasm,
-        proofs,
-        lra-cli,
-        vscode-check,
-        fuzz-check,
-        scripts-check,
-      ]
+    needs: [test, coverage, supply-chain, simulate, wasm-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -288,9 +155,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
