@@ -76,7 +76,8 @@ pub struct SqliteMrtDispatchQuotaEventSink {
 }
 
 fn now_unix_millis() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
         .ok()
         .and_then(|duration| u64::try_from(duration.as_millis()).ok())
         .unwrap_or(0)

@@ -352,7 +352,9 @@ pub fn compile_verilog_with_options(
         Ok(result) => {
             let fpga_target =
                 nasa_rust_project::emit::fpga_target::FpgaTarget::from_str_name(target);
-            let t = fpga_target.filter(|&fpga_t| fpga_t != nasa_rust_project::emit::fpga_target::FpgaTarget::Generic);
+            let t = fpga_target.filter(|&fpga_t| {
+                fpga_t != nasa_rust_project::emit::fpga_target::FpgaTarget::Generic
+            });
             let sv = if strip_sva {
                 nasa_rust_project::emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
             } else {

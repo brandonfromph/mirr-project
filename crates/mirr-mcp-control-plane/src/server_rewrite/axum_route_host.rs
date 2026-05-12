@@ -210,7 +210,12 @@ fn stream_input_from_dispatch(
 }
 
 fn invocation_value_matches(expected_type: &str, value: &InvocationInputValue) -> bool {
-    matches!((expected_type, value), ("string", InvocationInputValue::String(_)) | ("number", InvocationInputValue::Number(_)) | ("array", InvocationInputValue::StringArray(_)))
+    matches!(
+        (expected_type, value),
+        ("string", InvocationInputValue::String(_))
+            | ("number", InvocationInputValue::Number(_))
+            | ("array", InvocationInputValue::StringArray(_))
+    )
 }
 
 fn validate_canonical_payload(
@@ -262,7 +267,8 @@ fn validate_canonical_payload(
 }
 
 fn now_unix_millis() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
         .ok()
         .and_then(|duration| u64::try_from(duration.as_millis()).ok())
         .unwrap_or(0)

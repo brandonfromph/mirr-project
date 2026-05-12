@@ -139,10 +139,7 @@ mod tests {
     #[test]
     fn prefixed_lra_route_names_resolve_to_canonical_tools() {
         assert_eq!("mrt_lra_init".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraInit));
-        assert_eq!(
-            "mrt_lra_validate".parse::<MrtDispatchTool>(),
-            Ok(MrtDispatchTool::LraValidate)
-        );
+        assert_eq!("mrt_lra_validate".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraValidate));
         assert_eq!("mrt_lra_serve".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraServe));
         assert_eq!("mrt_lra_check".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraCheck));
         assert_eq!("mrt_lra_sign".parse::<MrtDispatchTool>(), Ok(MrtDispatchTool::LraSign));
