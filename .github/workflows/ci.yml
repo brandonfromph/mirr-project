@@ -334,7 +334,9 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
           restore-keys: |
             ${{ runner.os }}-cargo-build-stable-
-      with:
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
           targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked
