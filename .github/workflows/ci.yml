@@ -57,7 +57,6 @@ jobs:
       # Runs with retry logic; won't fail the job if sccache itself fails
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
 
       # Compiled artifacts cache (the expensive part)
       # Key includes Cargo.lock, rust version, and target (debug/release)
@@ -108,7 +107,6 @@ jobs:
             ${{ runner.os }}-cargo-registry-
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -180,7 +178,6 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -233,7 +230,6 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -274,7 +270,6 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -305,8 +300,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo registry
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -319,7 +312,6 @@ jobs:
             ${{ runner.os }}-cargo-registry-
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -378,7 +370,6 @@ jobs:
             ${{ runner.os }}-cargo-registry-
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -434,7 +425,6 @@ jobs:
             ${{ runner.os }}-cargo-registry-
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -467,7 +457,6 @@ jobs:
             ${{ runner.os }}-cargo-registry-
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -512,7 +501,6 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
-        with:
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
