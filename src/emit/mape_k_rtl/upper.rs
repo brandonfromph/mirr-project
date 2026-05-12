@@ -29,16 +29,13 @@ pub(super) fn emit_plan_block(config: &SimConfig) -> String {
         "  input  logic [{}:0] violation_vec,\n",
         n_prop.max(1).saturating_sub(1)
     ));
-    sv.push_str(&format!(
-        "  output logic [{}:0] selected_action_idx,\n",
-        act_w.saturating_sub(1).max(0)
-    ));
+    sv.push_str(&format!("  output logic [{}:0] selected_action_idx,\n", act_w.saturating_sub(1)));
     sv.push_str("  output logic        action_valid\n");
     sv.push_str(");\n\n");
 
     // Encode action table as constants: trigger_idx, priority, trigger_on.
     sv.push_str("  logic [7:0] best_priority;\n");
-    sv.push_str(&format!("  logic [{}:0] best_idx;\n", act_w.saturating_sub(1).max(0)));
+    sv.push_str(&format!("  logic [{}:0] best_idx;\n", act_w.saturating_sub(1)));
     sv.push_str("  logic        found;\n\n");
 
     sv.push_str("  always_comb begin\n");
@@ -97,10 +94,7 @@ pub(super) fn emit_execute_block(config: &SimConfig) -> String {
     sv.push_str(") (\n");
     sv.push_str("  input  logic clk,\n");
     sv.push_str("  input  logic rst_n,\n");
-    sv.push_str(&format!(
-        "  input  logic [{}:0] selected_action_idx,\n",
-        act_w.saturating_sub(1).max(0)
-    ));
+    sv.push_str(&format!("  input  logic [{}:0] selected_action_idx,\n", act_w.saturating_sub(1)));
     sv.push_str("  input  logic        action_valid,\n");
     sv.push_str("  output logic [N_SIGNALS-1:0][31:0] signal_override,\n");
     sv.push_str("  output logic [N_SIGNALS-1:0]       override_en,\n");
@@ -201,7 +195,7 @@ pub(super) fn emit_knowledge_block(config: &SimConfig) -> String {
     sv.push_str("  input  logic clk,\n");
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str("  input  logic        wr_en,\n");
-    sv.push_str(&format!("  input  logic [{}:0] wr_action_idx,\n", act_w.saturating_sub(1).max(0)));
+    sv.push_str(&format!("  input  logic [{}:0] wr_action_idx,\n", act_w.saturating_sub(1)));
     sv.push_str("  input  logic [31:0] wr_tick,\n");
     sv.push_str(&format!("  output logic [{}:0] count,\n", addr_w));
     sv.push_str("  output logic        full\n");
@@ -267,10 +261,10 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
 
     sv.push_str("  // Analyze -> Plan\n");
     sv.push_str(&format!("  logic [{}:0] violation_vec;\n", n_prop.max(1).saturating_sub(1)));
-    sv.push_str(&format!("  logic [{}:0] top_violation_idx;\n\n", prop_w.saturating_sub(1).max(0)));
+    sv.push_str(&format!("  logic [{}:0] top_violation_idx;\n\n", prop_w.saturating_sub(1)));
 
     sv.push_str("  // Plan -> Execute\n");
-    sv.push_str(&format!("  logic [{}:0] selected_action_idx;\n", act_w.saturating_sub(1).max(0)));
+    sv.push_str(&format!("  logic [{}:0] selected_action_idx;\n", act_w.saturating_sub(1)));
     sv.push_str("  logic        action_valid;\n\n");
 
     sv.push_str("  // Knowledge write channel\n");

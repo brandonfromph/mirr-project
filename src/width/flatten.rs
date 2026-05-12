@@ -238,8 +238,7 @@ pub fn flatten_expr(expr: &Expr, signals: &[crate::ast::SignalDecl]) -> Option<V
                 field_ids_rev.reverse();
 
                 let mut flat_fields: Vec<(String, u32)> = Vec::with_capacity(field_names.len());
-                for (field_name, field_id) in field_names.into_iter().zip(field_ids_rev.into_iter())
-                {
+                for (field_name, field_id) in field_names.into_iter().zip(field_ids_rev) {
                     flat_fields.push((field_name, field_id));
                 }
 

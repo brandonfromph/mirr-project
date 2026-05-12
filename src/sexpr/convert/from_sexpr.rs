@@ -365,50 +365,38 @@ fn parse_annotations(sexpr: &SExpr) -> Result<TypeAnnotations, MirrError> {
             continue;
         }
         match inner[0].as_symbol() {
-            Some("linearity") => {
-                if inner.len() > 1 && inner[1].as_symbol() == Some("linear") {
-                    ann.linearity = Linearity::Linear;
-                }
+            Some("linearity") if inner.len() > 1 && inner[1].as_symbol() == Some("linear") => {
+                ann.linearity = Linearity::Linear;
             }
-            Some("effect") => {
-                if inner.len() > 1 {
-                    match inner[1].as_symbol() {
-                        Some("stateful") => ann.effect = EffectQualifier::Stateful,
-                        Some("pure") => ann.effect = EffectQualifier::Pure,
+            Some("effect") if inner.len() > 1 => match inner[1].as_symbol() {
+                Some("stateful") => ann.effect = EffectQualifier::Stateful,
+                Some("pure") => ann.effect = EffectQualifier::Pure,
+                _ => {}
+            },
+            Some("refinement") if inner.len() > 1 => {
+                let ref_list = inner[1]
+                    .as_list()
+                    .ok_or_else(|| sexpr_err("[E806] Refinement value must be a list"))?;
+                if !ref_list.is_empty() {
+                    match ref_list[0].as_symbol() {
+                        Some("range") if ref_list.len() >= 3 => {
+                            let lo = ref_list[1].as_integer().unwrap_or(0);
+                            let hi = ref_list[2].as_integer().unwrap_or(0);
+                            ann.refinement = Some(Refinement::Range { lo, hi });
+                        }
+                        Some("predicate") if ref_list.len() >= 2 => {
+                            let expr = ref_list[1].as_str_val().unwrap_or("").to_string();
+                            ann.refinement = Some(Refinement::Predicate(expr));
+                        }
                         _ => {}
                     }
                 }
             }
-            Some("refinement") => {
-                if inner.len() > 1 {
-                    let ref_list = inner[1]
-                        .as_list()
-                        .ok_or_else(|| sexpr_err("[E806] Refinement value must be a list"))?;
-                    if !ref_list.is_empty() {
-                        match ref_list[0].as_symbol() {
-                            Some("range") if ref_list.len() >= 3 => {
-                                let lo = ref_list[1].as_integer().unwrap_or(0);
-                                let hi = ref_list[2].as_integer().unwrap_or(0);
-                                ann.refinement = Some(Refinement::Range { lo, hi });
-                            }
-                            Some("predicate") if ref_list.len() >= 2 => {
-                                let expr = ref_list[1].as_str_val().unwrap_or("").to_string();
-                                ann.refinement = Some(Refinement::Predicate(expr));
-                            }
-                            _ => {}
-                        }
-                    }
-                }
+            Some("clock-domain") if inner.len() > 1 => {
+                ann.clock_domain = inner[1].as_str_val().map(|s| s.to_string());
             }
-            Some("clock-domain") => {
-                if inner.len() > 1 {
-                    ann.clock_domain = inner[1].as_str_val().map(|s| s.to_string());
-                }
-            }
-            Some("phantom-tag") => {
-                if inner.len() > 1 {
-                    ann.phantom_tag = inner[1].as_str_val().map(|s| s.to_string());
-                }
+            Some("phantom-tag") if inner.len() > 1 => {
+                ann.phantom_tag = inner[1].as_str_val().map(|s| s.to_string());
             }
             _ => {}
         }

@@ -3,7 +3,7 @@
 
 use std::ffi::OsStr;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use nasa_rust_project::emit;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
@@ -44,7 +44,7 @@ module temp_iso_b {
 }
 "#;
 
-fn write_artifact(base: &PathBuf, name: &str, content: &str) -> Result<PathBuf, String> {
+fn write_artifact(base: &Path, name: &str, content: &str) -> Result<PathBuf, String> {
     if name.is_empty()
         || name == "."
         || name == ".."

@@ -330,21 +330,23 @@ pub(super) fn check_phantom_tags(
                 let source_tag = signal_tag.get(sig_ref.as_str());
 
                 match (target_tag, source_tag) {
-                    (Some(tt), Some(st)) => {
-                        if tt != st {
-                            if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
-                                return;
-                            }
-                            errors.push(crate::error::MirrError::TypeError {
-                                message: format!(
-                                    "[{}] Phantom tag mismatch: cannot assign #{}-tagged signal '{}' \
-                                     to #{}-tagged target '{}' in reflex '{}'.",
-                                    error_codes::E620_PHT_MISMATCH,
-                                    st, sig_ref, tt, assignment.target, reflex.name
-                                ),
-                                span: assignment.span,
-                            });
+                    (Some(tt), Some(st)) if tt != st => {
+                        if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                            return;
                         }
+                        errors.push(crate::error::MirrError::TypeError {
+                            message: format!(
+                                "[{}] Phantom tag mismatch: cannot assign #{}-tagged signal '{}' \
+                                 to #{}-tagged target '{}' in reflex '{}'.",
+                                error_codes::E620_PHT_MISMATCH,
+                                st,
+                                sig_ref,
+                                tt,
+                                assignment.target,
+                                reflex.name
+                            ),
+                            span: assignment.span,
+                        });
                     }
                     (Some(tt), None) => {
                         // Target is tagged but source is untagged — error

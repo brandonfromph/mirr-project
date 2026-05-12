@@ -219,7 +219,7 @@ impl SqliteHybridStorage {
         }
 
         if hits.is_empty() {
-            return Ok(self.fallback_lexical_scan(query, limit as usize, filter)?);
+            return self.fallback_lexical_scan(query, limit as usize, filter);
         }
 
         Ok(hits)
@@ -470,8 +470,7 @@ fn normalize_terms(input: &str) -> String {
     {
         terms.insert(term.to_lowercase());
     }
-    let joined = terms.into_iter().collect::<Vec<_>>().join(" AND ");
-    joined
+    terms.into_iter().collect::<Vec<_>>().join(" AND ")
 }
 
 fn matches_filter(

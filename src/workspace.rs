@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::rc::Rc;
 
 use sha2::{Digest, Sha256};
 
@@ -154,7 +154,7 @@ pub struct WorkspaceSnapshot {
     pub source_hash: String,
     pub workspace_hash: String,
     pub imports: Option<WorkspaceImports>,
-    pub pipeline: Arc<PipelineResult>,
+    pub pipeline: Rc<PipelineResult>,
     pub imported_paths: Vec<PathBuf>,
     pub artifact_summary: WorkspaceArtifactSummary,
 }
@@ -208,6 +208,13 @@ pub struct Workspace {
     config: WorkspaceConfig,
     files: HashMap<PathBuf, FileState>,
     snapshots: HashMap<PathBuf, WorkspaceSnapshot>,
+}
+
+struct ImportLoadState<'a> {
+    files: &'a mut HashMap<PathBuf, WorkspaceImportFile>,
+    graph: &'a mut WorkspaceDependencyGraph,
+    processing: &'a mut HashSet<PathBuf>,
+    stats: &'a mut WorkspaceImportStats,
 }
 
 impl Workspace {
@@ -281,7 +288,7 @@ impl Workspace {
         }
 
         let pipeline =
-            Arc::new(run_pipeline(&root_source, config).map_err(WorkspaceError::Pipeline)?);
+            Rc::new(run_pipeline(&root_source, config).map_err(WorkspaceError::Pipeline)?);
 
         let mut imported_paths = imports
             .as_ref()
@@ -346,27 +353,26 @@ impl Workspace {
         let mut graph = WorkspaceDependencyGraph::new();
         let mut processing = HashSet::new();
         let mut stats = WorkspaceImportStats { files_loaded: 0, max_depth: 0, cycle_checks: 0 };
+        let compilation_order = {
+            let mut load_state = ImportLoadState {
+                files: &mut files,
+                graph: &mut graph,
+                processing: &mut processing,
+                stats: &mut stats,
+            };
 
-        for import in imports {
-            self.load_import_decl(
-                root_path,
-                import,
-                &mut files,
-                &mut graph,
-                &mut processing,
-                1,
-                &mut stats,
-            )?;
-        }
+            for import in imports {
+                self.load_import_decl(root_path, import, 1, &mut load_state)?;
+            }
 
-        stats.files_loaded = files.len();
-        stats.cycle_checks = stats.cycle_checks.saturating_add(1);
+            load_state.stats.files_loaded = load_state.files.len();
+            load_state.stats.cycle_checks = load_state.stats.cycle_checks.saturating_add(1);
 
-        let compilation_order =
-            graph.topological_sort().map_err(|cycle| WorkspaceError::Import {
+            load_state.graph.topological_sort().map_err(|cycle| WorkspaceError::Import {
                 path: root_path.to_path_buf(),
                 message: format!("circular dependency detected: {:?}", cycle.cycle),
-            })?;
+            })?
+        };
 
         Ok(WorkspaceImports { files, dependency_graph: graph, compilation_order, stats })
     }
@@ -375,11 +381,8 @@ impl Workspace {
         &mut self,
         current_file: &Path,
         import: &ImportDecl,
-        files: &mut HashMap<PathBuf, WorkspaceImportFile>,
-        graph: &mut WorkspaceDependencyGraph,
-        processing: &mut HashSet<PathBuf>,
         depth: usize,
-        stats: &mut WorkspaceImportStats,
+        state: &mut ImportLoadState<'_>,
     ) -> Result<(), WorkspaceError> {
         if depth > MAX_IMPORT_DEPTH {
             return Err(WorkspaceError::Import {
@@ -388,18 +391,18 @@ impl Workspace {
             });
         }
 
-        if files.len() >= MAX_TOTAL_IMPORTS {
+        if state.files.len() >= MAX_TOTAL_IMPORTS {
             return Err(WorkspaceError::Import {
                 path: current_file.to_path_buf(),
-                message: format!("total import limit exceeded: {}", files.len()),
+                message: format!("total import limit exceeded: {}", state.files.len()),
             });
         }
 
         let file_path = self.resolve_import_path(current_file, &import.path)?;
-        if files.contains_key(&file_path) {
+        if state.files.contains_key(&file_path) {
             return Ok(());
         }
-        if !processing.insert(file_path.clone()) {
+        if !state.processing.insert(file_path.clone()) {
             return Err(WorkspaceError::Import {
                 path: file_path.clone(),
                 message: "circular dependency detected".to_string(),
@@ -423,24 +426,16 @@ impl Workspace {
 
             for child in &resolved.imports {
                 let dep_path = self.resolve_import_path(&file_path, &child.path)?;
-                graph.add_dependency(file_path.clone(), dep_path);
-                self.load_import_decl(
-                    &file_path,
-                    child,
-                    files,
-                    graph,
-                    processing,
-                    depth + 1,
-                    stats,
-                )?;
+                state.graph.add_dependency(file_path.clone(), dep_path);
+                self.load_import_decl(&file_path, child, depth + 1, state)?;
             }
 
-            stats.max_depth = stats.max_depth.max(depth);
-            files.insert(file_path.clone(), resolved);
+            state.stats.max_depth = state.stats.max_depth.max(depth);
+            state.files.insert(file_path.clone(), resolved);
             Ok(())
         })();
 
-        processing.remove(&file_path);
+        state.processing.remove(&file_path);
         result
     }
 
@@ -462,7 +457,7 @@ impl Workspace {
             });
         }
 
-        let current_dir = current_file.parent().unwrap_or_else(|| self.config.root_dir.as_path());
+        let current_dir = current_file.parent().unwrap_or(self.config.root_dir.as_path());
         let mut candidates = Vec::new();
         let raw = Path::new(import_path);
 

@@ -88,7 +88,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
     ));
     sv.push_str(&format!(
         "  output logic [{}:0] top_violation_idx\n",
-        bit_width(n_prop).saturating_sub(1).max(0)
+        bit_width(n_prop).saturating_sub(1)
     ));
     sv.push_str(");\n\n");
 

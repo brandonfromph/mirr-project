@@ -93,7 +93,7 @@ where
 
     // Step 2: Generate constraints.
     // Convert signal declarations to a name->width map for the constraint generator API.
-    let cset = constraint::generate_constraints_with_index(&flat_nodes, &signal_widths);
+    let cset = constraint::generate_constraints_with_index(&flat_nodes, signal_widths);
     let mut all_diags = cset.diagnostics;
 
     // Step 3: Solve. solver::validate_widths already emits hard errors for
@@ -390,7 +390,7 @@ fn signal_width_map(signals: &[SignalDecl]) -> HashMap<String, u32> {
     signals.iter().map(|signal| (signal.name.clone(), signal.ty.signal_type().width())).collect()
 }
 
-fn signal_info_map<'a>(signals: &'a [SignalDecl]) -> HashMap<&'a str, (u32, bool)> {
+fn signal_info_map(signals: &[SignalDecl]) -> HashMap<&str, (u32, bool)> {
     signals
         .iter()
         .map(|signal| {
