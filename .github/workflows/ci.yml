@@ -95,8 +95,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
       - name: Compile examples
         shell: bash
         run: |
@@ -287,9 +309,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
+      with:
           targets: wasm32-unknown-unknown
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked
@@ -328,9 +372,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
+      with:
           components: clippy, rustfmt
       - name: Lint and Test
         run: |
@@ -359,8 +425,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
       - name: Build docs
         run: cargo doc --no-deps
         env:
@@ -371,8 +459,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Setup
-        uses: ./.github/actions/setup-mirr
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.7
+        with:
+          shared-key: sccache-${{ runner.os }}-stable
+      - name: Cache cargo build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}-stable
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-stable-
       - name: Check fuzz targets
         run: cargo check -p fuzz --all-targets
 
