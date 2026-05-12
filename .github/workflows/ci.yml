@@ -58,7 +58,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
 
       # Compiled artifacts cache (the expensive part)
       # Key includes Cargo.lock, rust version, and target (debug/release)
@@ -110,7 +109,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -183,7 +181,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -237,7 +234,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -279,7 +275,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -325,7 +320,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -385,7 +379,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -415,6 +408,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install dependencies
+        working-directory: vscode-mirr
+        run: npm install
       - name: Validate package
         working-directory: vscode-mirr
         run: npm run test
@@ -439,7 +435,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -473,7 +468,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -519,7 +513,6 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
         with:
-          shared-key: sccache-${{ runner.os }}-stable
 
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
