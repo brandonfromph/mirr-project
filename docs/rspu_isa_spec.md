@@ -6,8 +6,8 @@ nav_order: 7
 # R-SPU ISA v2 — Formal Specification
 
 > **Status:** Active (MEGA-3 delivered)
-> **ISA Version:** 2.0
-> **Last updated:** 2026-03-10
+> **ISA Version:** 2.1 (Added `TAG_BRANCH`)
+> **Last updated:** 2026-05-11
 
 ---
 
@@ -47,8 +47,8 @@ Key design principles:
 
 The R-SPU ISA v2 extends the original v1 instruction set with exception handling
 (TRAP, TRAP_IF, HALT), mode switching (MODE_SWITCH), tagged memory operations
-(TAG_LOAD, TAG_CHECK, TAG_READ), pipeline control (NOP, FENCE), and temporal
-deadlines (DEADLINE_SET).
+(TAG_LOAD, TAG_CHECK, TAG_READ, TAG_BRANCH), pipeline control (NOP, FENCE), and
+temporal deadlines (DEADLINE_SET).
 
 ---
 
@@ -130,7 +130,7 @@ The ISA defines four instruction formats:
    6 bits    8 bits     8 bits     8 bits   2 bits
 ```
 
-Used by: `MOV`, `ALU`, `ALU_UNARY`.
+Used by: `MOV`, `ALU`, `ALU_UNARY`, `TAG_LOAD`, `TAG_CHECK`, `TAG_READ`.
 
 **I-type (register-immediate):**
 
@@ -142,7 +142,7 @@ Used by: `MOV`, `ALU`, `ALU_UNARY`.
    6 bits    8 bits     8 bits      10 bits
 ```
 
-Used by: `LOAD_INPUT`, `STORE_OUTPUT`, `LOAD_IMM`, `ALU_IMM`.
+Used by: `LOAD_INPUT`, `STORE_OUTPUT`, `LOAD_IMM`, `ALU_IMM`, `TAG_BRANCH`.
 
 **G-type (guard operations):**
 
@@ -168,13 +168,13 @@ Used by: `SR_INIT`, `SR_TICK`, `SR_QUERY`, `CTR_INIT`, `CTR_TICK`, `CTR_QUERY`,
 ```
 
 Used by: `EMERGENCY_STOP`, `ASSERT_ALWAYS`, `ASSERT_NEVER`, `TRAP`, `HALT`,
-`NOP`, `FENCE`, `DEADLINE_SET`.
+`NOP`, `FENCE`, `DEADLINE_SET`, `TAG_BRANCH` (Target PC branch version if needed, currently I-type branch).
 
 ---
 
 ## 4. Instruction Set
 
-The R-SPU v2 ISA contains **30 instructions** organized into seven tiers. Each
+The R-SPU v2 ISA contains **31 instructions** organized into seven tiers. Each
 instruction executes in exactly one cycle. Opcode numbers are decimal.
 
 ### 4.1 Register Tier (opcodes 0–3)
@@ -257,7 +257,7 @@ in the R-SPU datapath; they are consumed by formal verification tools.
 Structured exception handling with bounded trap depth.
 
 | Opcode | Mnemonic  | Format | Fields                    | Description                                          |
-|-------:|-----------|--------|---------------------------|------------------------------------------------------|
+|-----:|-----------|--------|---------------------------|------------------------------------------------------|
 |     20 | `TRAP`    | S-type | `exception_code`          | Raise an unconditional exception with the given code. |
 |     21 | `TRAP_IF` | S-type | `cond`, `exception_code`  | Raise an exception if condition register is true.     |
 |     22 | `HALT`    | S-type | `exit_code`               | Graceful program termination with exit code.          |
@@ -276,7 +276,7 @@ Mode switching and pipeline control.
 |     27 | `NOP`         | S-type | *(none)*           | No operation. Consumes one cycle. Used for alignment.      |
 |     28 | `FENCE`       | S-type | *(none)*           | Memory/pipeline fence. Ensures all prior writes are visible before subsequent reads. |
 
-### 4.7 Tagged Tier (opcodes 24–26) — NEW in v2
+### 4.7 Tagged Tier (opcodes 24–26, 30) — NEW in v2
 
 Runtime type tag inspection and manipulation for dynamic safety checks.
 
@@ -285,10 +285,9 @@ Runtime type tag inspection and manipulation for dynamic safety checks.
 |     24 | `TAG_LOAD`  | R-type | `dst`, `tag_value`         | Load an explicit type tag into the tag field of register `dst`. |
 |     25 | `TAG_CHECK` | R-type | `src`, `expected_tag`      | Trap if `src` register's tag does not match `expected_tag`. |
 |     26 | `TAG_READ`  | R-type | `dst`, `src`               | Copy the tag field of `src` into the value field of `dst`. |
+|     30 | `TAG_BRANCH`| I-type | `tag_value`, `target_pc`   | Jump to `target_pc` if active tag matches `tag_value`.  |
 
-Tag operations enable runtime verification of type safety. `TAG_CHECK` raises
-an exception (ExceptionCode::TagMismatch) if the actual tag does not match the
-expected tag, providing a hardware-level defense against type confusion.
+`TAG_BRANCH` enables low-latency branching based on the runtime type system state.
 
 ### 4.8 Temporal Extension (opcode 29) — NEW in v2
 
@@ -304,9 +303,9 @@ enforcement mechanism.
 
 ---
 
-## 5. Execution Model
+## 7. Execution Model
 
-### 5.1 Pipeline
+### 7.1 Pipeline
 
 The R-SPU uses a **fetch-decode-execute** pipeline with single-issue, in-order
 execution. There is no branch prediction, no speculative execution, and no
@@ -318,9 +317,10 @@ out-of-order retirement.
 
 The program counter starts at address 0 and increments by 1 each cycle (there
 are no branch or jump instructions; control flow is implicit via guards and
-reflexes).
+reflexes). `TAG_BRANCH` is an exception to the implicit increment rule: it
+sets the PC to `target_pc` if the condition is met.
 
-### 5.2 Cycle Semantics
+### 7.2 Cycle Semantics
 
 Each clock cycle corresponds to one "tick" of the MIRR temporal model. Within
 a single tick, the R-SPU executes the following deterministic sequence:
@@ -332,13 +332,14 @@ a single tick, the R-SPU executes the following deterministic sequence:
    and query their activation state.
 3. **Reflex execution:** `REFLEX_IF` instructions conditionally move values
    gated by guard activation. Expression preambles (`ALU`, `ALU_IMM`,
-   `ALU_UNARY`, `LOAD_IMM`, `PREV`) compute intermediate values.
+   `ALU_UNARY`, `LOAD_IMM`, `PREV`, `TAG_BRANCH`) compute intermediate values
+   and control flow updates.
 4. **Property assertion:** `ASSERT_ALWAYS` and `ASSERT_NEVER` check verification
    conditions (simulation/formal verification only).
 5. **Output commit:** `STORE_OUTPUT` instructions write the output register
    partition (R64–R127) to hardware ports.
 
-### 5.3 Program Termination
+### 7.3 Program Termination
 
 A program terminates when one of the following occurs:
 
@@ -348,7 +349,7 @@ A program terminates when one of the following occurs:
   to prevent runaway execution.
 - **Unhandled exception in reflex mode:** Triggers `EMERGENCY_STOP` automatically.
 
-### 5.4 Expression Evaluation
+### 7.4 Expression Evaluation
 
 Expressions are compiled using an explicit work-stack (no recursion, per NASA P10).
 Each sub-expression is evaluated bottom-up, storing intermediate results in
@@ -363,11 +364,11 @@ Bounded by `MAX_EXPR_NODES` (512 nodes per expression).
 
 ---
 
-## 6. Exception Model
+## 8. Exception Model
 
-### 6.1 Exception Codes
+### 8.1 Exception Codes
 
-The R-SPU defines a fixed set of exception codes:
+The R-SPU subsystem defines a fixed set of exception codes:
 
 | Code | Name                  | Description                                          |
 |-----:|-----------------------|------------------------------------------------------|
@@ -379,7 +380,7 @@ The R-SPU defines a fixed set of exception codes:
 |    5 | `AssertionViolation`  | `ASSERT_ALWAYS` or `ASSERT_NEVER` condition failed.  |
 |    6 | `UserTrap`            | Software-initiated trap via `TRAP` or `TRAP_IF`.     |
 
-### 6.2 Exception Handler Table
+### 8.2 Exception Handler Table
 
 Exception handlers are registered in a bounded handler table:
 
@@ -391,7 +392,7 @@ When an exception occurs, the R-SPU searches the handler table for a matching
 entry. If found, control transfers to the handler address. If not found, the
 default action depends on the current execution mode.
 
-### 6.3 Exception Depth
+### 8.3 Exception Depth
 
 Exception nesting is bounded to prevent unbounded stack growth:
 
@@ -399,7 +400,7 @@ Exception nesting is bounded to prevent unbounded stack growth:
 - If an exception occurs while already at maximum depth, the R-SPU executes
   an immediate `EMERGENCY_STOP` regardless of mode.
 
-### 6.4 Exception Actions
+### 8.4 Exception Actions
 
 Each exception handler may specify one of four actions:
 
@@ -410,7 +411,7 @@ Each exception handler may specify one of four actions:
 | `IgnoreAndContinue`  | Suppress the exception and resume execution at PC+1.       |
 | `TrapToHost`         | Transfer control to the host processor (exit reflex mode). |
 
-### 6.5 Mode-Dependent Default Behavior
+### 8.5 Mode-Dependent Default Behavior
 
 - **Reflex mode:** An unhandled exception triggers `EMERGENCY_STOP`. Safety
   is the overriding concern; the R-SPU must never continue in an undefined
@@ -421,12 +422,12 @@ Each exception handler may specify one of four actions:
 
 ---
 
-## 7. Dual-Mode Execution
+## 9. Dual-Mode Execution
 
 The R-SPU supports two execution modes to bridge the gap between deterministic
 hardware control and flexible software supervision.
 
-### 7.1 Reflex Mode
+### 9.1 Reflex Mode
 
 - **Deterministic, cycle-accurate execution.** Every instruction takes exactly
   one cycle. No interrupts, no preemption.
@@ -437,7 +438,7 @@ hardware control and flexible software supervision.
 
 This is the primary execution mode for safety-critical autonomic control.
 
-### 7.2 Host Mode
+### 9.2 Host Mode
 
 - **Interrupt-driven, variable latency.** The host processor can interrupt
   the R-SPU between instructions.
@@ -446,7 +447,7 @@ This is the primary execution mode for safety-critical autonomic control.
 - **Used for diagnostics, configuration, and non-critical tasks.**
 - **Exceptions trap to the host** for software-level handling.
 
-### 7.3 Mode Transitions
+### 9.3 Mode Transitions
 
 The `MODE_SWITCH` instruction transitions between modes:
 
@@ -459,7 +460,7 @@ The `MODE_SWITCH` instruction transitions between modes:
 
 ---
 
-## 8. Resource Limits
+## 10. Resource Limits
 
 All resource limits are compile-time constants enforced by the MIRR compiler
 and the R-SPU hardware. These bounds ensure NASA Power-of-10 compliance:
@@ -484,7 +485,7 @@ expression or temporary register limits are reached.
 
 ---
 
-## 9. Error Codes
+## 11. Error Codes
 
 The R-SPU subsystem uses error codes in the E7xx range. All errors are emitted
 by the MIRR compiler during R-SPU code generation; the R-SPU hardware itself
@@ -516,7 +517,7 @@ encoding (E706–E707), tagged words (E708–E709), guard bounds (E710), excepti
 
 ---
 
-## 10. Pipeline Integration
+## 12. Pipeline Integration
 
 Enable R-SPU emission via `PipelineConfig`:
 
@@ -535,7 +536,7 @@ The R-SPU backend requires temporal compilation to have run first
 
 ---
 
-## 11. Assembly Output Format
+## 13. Assembly Output Format
 
 `RspuProgram::emit_asm()` produces human-readable assembly:
 
@@ -558,13 +559,14 @@ The R-SPU backend requires temporal compilation to have run first
    2:  SR_INIT     G0, 3, R0
    3:  SR_TICK     G0
    4:  SR_QUERY    R0, G0
-   5:  REFLEX_IF   G0, R64, R192
-   6:  STORE_OUTPUT R64, P0
+   5:  TAG_BRANCH  0x1, 0xA      ; Branch on 'Verified' tag
+   6:  REFLEX_IF   G0, R64, R192
+   7:  STORE_OUTPUT R64, P0
 ```
 
 ---
 
-## 12. See Also
+## 14. See Also
 
 - [Error Codes](error_codes.md) — Complete MIRR error code reference (E1xx–E8xx).
 - [Tutorial](tutorial.md) — Hands-on introduction to the MIRR compiler.

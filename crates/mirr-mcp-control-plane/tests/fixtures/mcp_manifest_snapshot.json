@@ -590,7 +590,19 @@
                                                          },
                                           "required":  [
                                                            "query"
-                                                       ]
+                                                        ]
+                                      }
+                  },
+                  {
+                      "name":  "mrt_kb_index",
+                      "description":  "Build or refresh the KB index from files under a target path.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "path":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         }
                                       }
                   },
                   {
@@ -600,8 +612,35 @@
                                           "type":  "object",
                                           "properties":  {
 
-                                                         }
+                                                          }
                                       }
-                  }
-              ]
+                  },
+                  {
+                      "name":  "mrt_kb_brief",
+                      "description":  "Produce a grounded KB briefing with cited evidence, gaps, and follow-up queries.",
+                      "inputSchema":  {
+                                          "type":  "object",
+                                          "properties":  {
+                                                             "query":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                             "mode":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                             "limit":  {
+                                                                         "type":  "number"
+                                                                     },
+                                                             "scope":  {
+                                                                         "type":  "string"
+                                                                     },
+                                                             "format":  {
+                                                                          "type":  "string"
+                                                                      }
+                                                         },
+                                          "required":  [
+                                                           "query"
+                                                       ]
+                                      }
+                   }
+               ]
 }

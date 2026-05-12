@@ -69,6 +69,7 @@ pub fn emit_riscv_asm(program: &RspuProgram) -> Result<String, MirrError> {
 /// Emit a single RISC-V instruction.
 fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_counter: &mut u32) {
     match instr {
+        RspuInstruction::TagBranch { .. } => todo!(),
         // Register tier
         RspuInstruction::LoadInput { dst, port } => {
             let addr = MMIO_BASE + (*port as u32) * 4;

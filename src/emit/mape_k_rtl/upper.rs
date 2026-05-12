@@ -102,8 +102,8 @@ pub(super) fn emit_execute_block(config: &SimConfig) -> String {
         act_w.saturating_sub(1).max(0)
     ));
     sv.push_str("  input  logic        action_valid,\n");
-    sv.push_str("  output logic [31:0] signal_override [0:N_SIGNALS-1],\n");
-    sv.push_str("  output logic        override_en     [0:N_SIGNALS-1],\n");
+    sv.push_str("  output logic [N_SIGNALS-1:0][31:0] signal_override,\n");
+    sv.push_str("  output logic [N_SIGNALS-1:0]       override_en,\n");
     sv.push_str("  output logic        emergency_active\n");
     sv.push_str(");\n\n");
 
@@ -209,19 +209,19 @@ pub(super) fn emit_knowledge_block(config: &SimConfig) -> String {
 
     let record_w = 32 + act_w.max(1);
     sv.push_str(&format!("  logic [{}:0] fifo [0:DEPTH-1];\n", record_w.saturating_sub(1)));
-    sv.push_str(&format!("  logic [{addr_w}:0] wr_ptr;\n\n"));
+    sv.push_str(&format!("  logic [{}:0] wr_ptr;\n\n", addr_w.saturating_sub(1)));
 
     sv.push_str("  assign full = (count == DEPTH);\n\n");
 
     sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
     sv.push_str("    if (!rst_n) begin\n");
-    sv.push_str(&format!("      wr_ptr <= {}'d0;\n", addr_w + 1));
+    sv.push_str(&format!("      wr_ptr <= {}'d0;\n", addr_w));
     sv.push_str(&format!("      count  <= {}'d0;\n", addr_w + 1));
     sv.push_str("    end else if (wr_en && !full) begin\n");
     sv.push_str("      fifo[wr_ptr] <= {wr_tick, wr_action_idx};\n");
     sv.push_str(&format!(
-        "      wr_ptr <= (wr_ptr == DEPTH-1) ? {}'d0 : wr_ptr + 1;\n",
-        addr_w + 1
+        "      wr_ptr <= (32'(wr_ptr) == DEPTH-1) ? {}'d0 : wr_ptr + 1;\n",
+        addr_w
     ));
     sv.push_str("      count  <= count + 1;\n");
     sv.push_str("    end\n");
@@ -240,6 +240,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     let n_prop = config.properties.len();
     let n_act = config.action_table.len();
     let depth = config.knowledge_capacity.min(MAX_RTL_KNOWLEDGE_DEPTH);
+    let trace_depth = config.window_size.min(MAX_RTL_KNOWLEDGE_DEPTH);
     let act_w = bit_width(n_act);
     let prop_w = bit_width(n_prop);
     let addr_w = bit_width(depth);
@@ -254,14 +255,14 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str(") (\n");
     sv.push_str("  input  logic clk,\n");
     sv.push_str("  input  logic rst_n,\n");
-    sv.push_str("  input  logic [31:0] sensor_in [0:N_SIGNALS-1],\n");
+    sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] sensor_in,\n");
     sv.push_str("  output logic        emergency_active,\n");
-    sv.push_str("  output logic [31:0] signal_override [0:N_SIGNALS-1],\n");
-    sv.push_str("  output logic        override_en     [0:N_SIGNALS-1]\n");
+    sv.push_str("  output logic [N_SIGNALS-1:0][31:0] signal_override,\n");
+    sv.push_str("  output logic [N_SIGNALS-1:0]       override_en\n");
     sv.push_str(");\n\n");
 
     sv.push_str("  // Monitor -> Analyze\n");
-    sv.push_str("  logic [31:0] shadow [0:N_SIGNALS-1];\n");
+    sv.push_str("  logic [N_SIGNALS-1:0][31:0] shadow;\n");
     sv.push_str("  logic        sample_valid;\n\n");
 
     sv.push_str("  // Analyze -> Plan\n");
@@ -286,7 +287,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
 
     sv.push_str("  mirr_monitor #(\n");
     sv.push_str("    .N_SIGNALS   (N_SIGNALS),\n");
-    sv.push_str(&format!("    .TRACE_DEPTH ({depth})\n"));
+    sv.push_str(&format!("    .TRACE_DEPTH ({trace_depth})\n"));
     sv.push_str("  ) u_monitor (\n");
     sv.push_str("    .clk          (clk),\n");
     sv.push_str("    .rst_n        (rst_n),\n");

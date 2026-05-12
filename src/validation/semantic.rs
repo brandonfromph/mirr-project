@@ -391,22 +391,12 @@ fn expr_contains_composite(expr: &Expr) -> bool {
 fn validate_signal_ownership(module: &Module) -> Vec<MirrError> {
     let mut ownership_errors: Vec<MirrError> = Vec::new();
 
-    // Build map: signal_name -> set of reflex names that write to it.
-    // Also track which guards trigger each reflex.
-    let mut signal_writers: HashMap<&str, Vec<(&str, Vec<&str>)>> = HashMap::new();
+    // Build reflex origin lookup and guard sets once.
     // reflex_name -> guard_names
     let mut reflex_guards: HashMap<&str, Vec<&str>> = HashMap::new();
     for reflex in &module.reflexes {
         reflex_guards
             .insert(reflex.name.as_str(), reflex.guard_names.iter().map(|g| g.as_str()).collect());
-    }
-
-    for reflex in &module.reflexes {
-        for assignment in &reflex.assignments {
-            let target = assignment.target.as_str();
-            let guards = reflex_guards.get(reflex.name.as_str()).cloned().unwrap_or_default();
-            signal_writers.entry(target).or_default().push((reflex.name.as_str(), guards));
-        }
     }
 
     // Build reflex origin lookup: reflex_name -> origin
@@ -417,46 +407,52 @@ fn validate_signal_ownership(module: &Module) -> Vec<MirrError> {
         }
     }
 
-    // Check for true conflicts: multiple reflexes writing to same signal
-    // with overlapping guard sets (not mutually exclusive).
-    for (signal, writers_list) in &signal_writers {
-        if writers_list.len() <= 1 {
-            continue;
-        }
-        // Check if any two writers share a guard (true conflict).
-        let mut i = 0;
-        while i < writers_list.len() {
-            let mut j = i + 1;
-            while j < writers_list.len() {
-                let (reflex_a, guards_a) = &writers_list[i];
-                let (reflex_b, guards_b) = &writers_list[j];
-                // Skip if same reflex (intra-reflex assignments are allowed).
-                if reflex_a == reflex_b {
-                    j += 1;
-                    continue;
-                }
-                // If both reflexes share at least one guard, they can fire simultaneously.
-                let shares_guard = guards_a.iter().any(|g| guards_b.contains(g));
-                if shares_guard {
-                    let origin_a = reflex_origins.get(*reflex_a);
-                    let origin_b = reflex_origins.get(*reflex_b);
-                    let msg = match (origin_a, origin_b) {
+    // Track writers per signal by guard so we can detect conflicts in linear time.
+    let mut signal_guard_writers: HashMap<&str, HashMap<&str, (&str, Option<&str>)>> =
+        HashMap::new();
+    let mut emitted_pairs: HashMap<&str, HashSet<(&str, &str)>> = HashMap::new();
+
+    for reflex in &module.reflexes {
+        let guards = reflex_guards.get(reflex.name.as_str()).cloned().unwrap_or_default();
+        let current_origin = reflex_origins.get(reflex.name.as_str()).copied();
+
+        for assignment in &reflex.assignments {
+            let target = assignment.target.as_str();
+            let writers = signal_guard_writers.entry(target).or_default();
+            let emitted = emitted_pairs.entry(target).or_default();
+
+            for guard in &guards {
+                if let Some((existing_reflex, existing_origin)) = writers.get(guard).copied() {
+                    if existing_reflex == reflex.name.as_str() {
+                        continue;
+                    }
+
+                    let pair = if existing_reflex <= reflex.name.as_str() {
+                        (existing_reflex, reflex.name.as_str())
+                    } else {
+                        (reflex.name.as_str(), existing_reflex)
+                    };
+                    if !emitted.insert(pair) {
+                        continue;
+                    }
+
+                    let msg = match (existing_origin, current_origin) {
                         (Some(p1), Some(p2)) => format!(
                             "[E216] Signal '{}' has multiple writers: \
                              reflex '{}' (from pattern '{}') and reflex '{}' (from pattern '{}').",
-                            signal, reflex_a, p1, reflex_b, p2
+                            target, existing_reflex, p1, reflex.name, p2
                         ),
                         _ => format!(
                             "[E216] Signal '{}' has multiple writers: \
                              reflex '{}' and reflex '{}'.",
-                            signal, reflex_a, reflex_b
+                            target, existing_reflex, reflex.name
                         ),
                     };
                     ownership_errors.push(MirrError::SemanticError { message: msg, span: None });
+                } else {
+                    writers.insert(guard, (reflex.name.as_str(), current_origin));
                 }
-                j += 1;
             }
-            i += 1;
         }
     }
 

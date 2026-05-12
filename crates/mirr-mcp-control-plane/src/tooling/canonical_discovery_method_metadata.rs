@@ -161,6 +161,17 @@ const MRT_KB_QUERY_PARAMETERS: &[DiscoveryParameter] = &[
     DiscoveryParameter::new("timeout_ms", false, "number"),
 ];
 
+const MRT_KB_INDEX_PARAMETERS: &[DiscoveryParameter] =
+    &[DiscoveryParameter::new("path", false, "string")];
+
+const MRT_KB_BRIEF_PARAMETERS: &[DiscoveryParameter] = &[
+    DiscoveryParameter::new("query", true, "string"),
+    DiscoveryParameter::new("mode", false, "string"),
+    DiscoveryParameter::new("limit", false, "number"),
+    DiscoveryParameter::new("scope", false, "string"),
+    DiscoveryParameter::new("format", false, "string"),
+];
+
 const MRT_KB_INDEX_STATUS_PARAMETERS: &[DiscoveryParameter] = &[];
 pub const CANONICAL_DISCOVERY_METHOD_METADATA: &[DiscoveryMethodMetadata] = &[
     DiscoveryMethodMetadata::new(
@@ -350,10 +361,22 @@ pub const CANONICAL_DISCOVERY_METHOD_METADATA: &[DiscoveryMethodMetadata] = &[
         MRT_KB_QUERY_PARAMETERS,
     ),
     DiscoveryMethodMetadata::new(
+        "mrt_kb_index",
+        false,
+        "Build or refresh the KB index from files under a target path.",
+        MRT_KB_INDEX_PARAMETERS,
+    ),
+    DiscoveryMethodMetadata::new(
         "mrt_kb_index_status",
         false,
         "Get KB index freshness, size, and last refresh timestamp.",
         MRT_KB_INDEX_STATUS_PARAMETERS,
+    ),
+    DiscoveryMethodMetadata::new(
+        "mrt_kb_brief",
+        false,
+        "Produce a grounded KB briefing with cited evidence, gaps, and follow-up queries.",
+        MRT_KB_BRIEF_PARAMETERS,
     ),
 ];
 

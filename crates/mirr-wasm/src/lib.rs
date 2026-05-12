@@ -121,7 +121,6 @@ fn length_error(msg: String) -> String {
 
 fn default_config() -> PipelineConfig {
     PipelineConfig {
-        hls: false,
         typecheck: true,
         simplify: true,
         sat_simplify: false,
@@ -137,6 +136,8 @@ fn default_config() -> PipelineConfig {
         totality: false,
         symbolic: false,
         emit_mape_k_rtl: false,
+        hls: false,
+        logic_optimize: false,
     }
 }
 

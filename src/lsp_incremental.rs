@@ -309,6 +309,10 @@ impl IncrementalLspEngine {
         self.documents.get(doc).map(|state| state.snapshot.clone())
     }
 
+    pub fn close_document(&mut self, doc: &DocumentId) -> bool {
+        self.documents.remove(doc).is_some()
+    }
+
     pub fn apply_text_edits(
         &mut self,
         doc: &DocumentId,

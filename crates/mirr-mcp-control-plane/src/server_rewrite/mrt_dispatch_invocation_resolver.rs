@@ -420,6 +420,50 @@ fn daemon_contract_args(test_target: &str, test_filter: &str) -> Vec<String> {
     args
 }
 
+fn mrt_kb_index_args(path: &str) -> Vec<String> {
+    vec![
+        "run".to_owned(),
+        "-p".to_owned(),
+        "mirr-kb-native".to_owned(),
+        "--bin".to_owned(),
+        "mirr-kb-index".to_owned(),
+        "--".to_owned(),
+        "--path".to_owned(),
+        normalize_path(path),
+    ]
+}
+
+fn mrt_kb_brief_args(
+    query: &str,
+    mode: &str,
+    limit: i64,
+    scope: &str,
+    format: &str,
+) -> Vec<String> {
+    let mut args = vec![
+        "run".to_owned(),
+        "-p".to_owned(),
+        "mirr-kb-native".to_owned(),
+        "--bin".to_owned(),
+        "mirr-kb-native".to_owned(),
+        "--".to_owned(),
+        "brief".to_owned(),
+        "--query".to_owned(),
+        query.to_owned(),
+        "--mode".to_owned(),
+        mode.to_owned(),
+        "--limit".to_owned(),
+        limit.to_string(),
+        "--format".to_owned(),
+        format.to_owned(),
+    ];
+    if !scope.is_empty() {
+        args.push("--scope".to_owned());
+        args.push(normalize_path(scope));
+    }
+    args
+}
+
 pub fn resolve_mrt_dispatch_invocation(
     tool: MrtDispatchTool,
     body: &InvocationInputBody,
@@ -627,6 +671,8 @@ pub fn resolve_mrt_dispatch_invocation(
                 "run".to_owned(),
                 "-p".to_owned(),
                 "mirr-kb-native".to_owned(),
+                "--bin".to_owned(),
+                "mirr-kb-native".to_owned(),
                 "--".to_owned(),
                 "query".to_owned(),
                 "--text".to_owned(),
@@ -648,13 +694,41 @@ pub fn resolve_mrt_dispatch_invocation(
             }
             Ok(MrtDispatchInvocationPlan::new(args))
         }
+        MrtDispatchTool::MrtKbIndex => {
+            let path = first_string(body, &["path"], ".");
+            Ok(MrtDispatchInvocationPlan::new(mrt_kb_index_args(&path)))
+        }
         MrtDispatchTool::MrtKbIndexStatus => Ok(MrtDispatchInvocationPlan::new(vec![
             "run".to_owned(),
             "-p".to_owned(),
             "mirr-kb-native".to_owned(),
+            "--bin".to_owned(),
+            "mirr-kb-native".to_owned(),
             "--".to_owned(),
             "status".to_owned(),
         ])),
+        MrtDispatchTool::MrtKbBrief => {
+            let query = get_body_string(body, "query", "");
+            if query.is_empty() {
+                return Err("query parameter is required".to_owned());
+            }
+            let mode = first_string(body, &["mode"], "hybrid");
+            if !matches!(mode.as_str(), "lexical" | "semantic" | "hybrid" | "graph" | "temporal") {
+                return Err("mode must be one of lexical|semantic|hybrid|graph|temporal".to_owned());
+            }
+            let limit = first_number(body, &["limit"], 8.0) as i64;
+            if !(1..=20).contains(&limit) {
+                return Err("limit must be between 1 and 20".to_owned());
+            }
+            let scope = first_string(body, &["scope"], "");
+            let format = first_string(body, &["format"], "brief");
+            if !matches!(format.as_str(), "brief" | "bullet" | "decision") {
+                return Err("format must be one of brief|bullet|decision".to_owned());
+            }
+            Ok(MrtDispatchInvocationPlan::new(mrt_kb_brief_args(
+                &query, &mode, limit, &scope, &format,
+            )))
+        }
     }
 }
 

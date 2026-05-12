@@ -24,6 +24,8 @@ serde_json = "1.0"
 sha2 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
 num_cpus = "1.16"
+mirr-kb-native = { path = "crates/mirr-kb-native" }
+walkdir = "2"
 
 [dev-dependencies]
 criterion = { version = "0.8.2", features = ["html_reports"] }
@@ -56,6 +58,10 @@ path = "src/bin/mirrc.rs"
 [[bin]]
 name = "mirr-lsp"
 path = "src/bin/mirr-lsp.rs"
+
+[[bin]]
+name = "mirr-kb-index"
+path = "crates/mirr-kb-native/src/bin/mirr-kb-index.rs"
 
 [[bench]]
 name = "pipeline_bench"
@@ -90,4 +96,3 @@ required_seed_files_per_target = 1
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
-

@@ -94,7 +94,7 @@ pub async fn run_query_pipeline<E: EmbeddingProvider + ?Sized>(
                     limit,
                     filter: request.filter.clone(),
                 };
-                        let search_result = run_with_resilience(policy, || async {
+                let search_result = run_with_resilience(policy, || async {
                     search_with_original_rerank_query(&searcher, embedder, &query, &request.text)
                         .await
                 })
@@ -104,7 +104,7 @@ pub async fn run_query_pipeline<E: EmbeddingProvider + ?Sized>(
                         .into_iter()
                         .map(|item| item.into_search_result())
                         .collect::<Vec<_>>()),
-                            Err(_err)
+                    Err(_err)
                         if policy.fallback_to_lexical
                             && matches!(
                                 request.mode,

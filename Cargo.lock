@@ -1247,11 +1247,13 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "clap",
  "rusqlite",
  "serde",
  "serde_json",
  "sha2 0.10.9",
  "tokio",
+ "walkdir",
 ]
 
 [[package]]
@@ -1292,6 +1294,7 @@ dependencies = [
  "getrandom 0.2.17",
  "getrandom 0.4.1",
  "glob",
+ "mirr-kb-native",
  "num_cpus",
  "rand 0.10.0",
  "regex",
@@ -1300,6 +1303,7 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "tempfile",
+ "walkdir",
 ]
 
 [[package]]

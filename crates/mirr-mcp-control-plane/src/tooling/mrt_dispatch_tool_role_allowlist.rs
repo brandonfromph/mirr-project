@@ -32,7 +32,9 @@ impl MrtDispatchTool {
             Self::LraSign => ROLE_COMMITTER_ADMIN,
             Self::LraVerify => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::MrtKbQuery => ROLE_BUILDER_COMMITTER_ADMIN,
+            Self::MrtKbIndex => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::MrtKbIndexStatus => ROLE_BUILDER_COMMITTER_ADMIN,
+            Self::MrtKbBrief => ROLE_BUILDER_COMMITTER_ADMIN,
         }
     }
 }

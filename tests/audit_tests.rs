@@ -6,11 +6,7 @@ mod tests {
     use tempfile::tempdir;
 
     fn get_audit_bin() -> PathBuf {
-        let mut path = std::env::current_dir().expect("Failed to get current dir");
-        path.push("target");
-        path.push("debug");
-        path.push("mirr-audit.exe");
-        path
+        PathBuf::from(env!("CARGO_BIN_EXE_mirr-audit"))
     }
 
     #[test]

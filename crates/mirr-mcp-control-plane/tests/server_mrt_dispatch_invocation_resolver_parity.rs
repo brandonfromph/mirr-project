@@ -221,6 +221,8 @@ fn resolve_kb_query_supports_phase4_parameters() {
     let resolved = resolve_mrt_dispatch_invocation_by_name("mrt_kb_query", &body)
         .expect("kb query should resolve with phase4 params");
 
+    assert!(rupu_args_contains(&resolved.args, "--bin"));
+    assert!(rupu_args_contains(&resolved.args, "mirr-kb-native"));
     assert!(rupu_args_contains(&resolved.args, "--expand-mode"));
     assert!(rupu_args_contains(&resolved.args, "synonym"));
     assert!(rupu_args_contains(&resolved.args, "--retry-count"));
@@ -251,6 +253,58 @@ fn resolve_kb_query_rejects_invalid_phase4_parameters() {
     let timeout_err = resolve_mrt_dispatch_invocation_by_name("mrt_kb_query", &invalid_timeout)
         .expect_err("invalid timeout must fail closed");
     assert_eq!(timeout_err, "timeout_ms must be between 1000 and 60000");
+}
+
+#[test]
+fn resolve_kb_index_supports_optional_path() {
+    let mut body = InvocationInputBody::default();
+    body.set_string("path", "docs");
+    let resolved = resolve_mrt_dispatch_invocation_by_name("mrt_kb_index", &body)
+        .expect("kb index should resolve with explicit path");
+
+    assert_eq!(
+        resolved.args,
+        vec!["run", "-p", "mirr-kb-native", "--bin", "mirr-kb-index", "--", "--path", "docs",]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<String>>()
+    );
+}
+
+#[test]
+fn resolve_kb_index_status_invokes_primary_kb_binary() {
+    let body = InvocationInputBody::default();
+    let resolved = resolve_mrt_dispatch_invocation_by_name("mrt_kb_index_status", &body)
+        .expect("kb index status should resolve");
+
+    assert_eq!(
+        resolved.args,
+        vec!["run", "-p", "mirr-kb-native", "--bin", "mirr-kb-native", "--", "status",]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<String>>()
+    );
+}
+
+#[test]
+fn resolve_kb_brief_supports_grounded_summary_inputs() {
+    let mut body = InvocationInputBody::default();
+    body.set_string("query", "where is the kb brief tool wired");
+    body.set_string("mode", "hybrid");
+    body.set_number("limit", 4.0);
+    body.set_string("scope", "crates/mirr-mcp-control-plane/src");
+    body.set_string("format", "decision");
+
+    let resolved = resolve_mrt_dispatch_invocation_by_name("mrt_kb_brief", &body)
+        .expect("kb brief should resolve with briefing inputs");
+
+    assert!(rupu_args_contains(&resolved.args, "brief"));
+    assert!(rupu_args_contains(&resolved.args, "--query"));
+    assert!(rupu_args_contains(&resolved.args, "where is the kb brief tool wired"));
+    assert!(rupu_args_contains(&resolved.args, "--scope"));
+    assert!(rupu_args_contains(&resolved.args, "crates/mirr-mcp-control-plane/src"));
+    assert!(rupu_args_contains(&resolved.args, "--format"));
+    assert!(rupu_args_contains(&resolved.args, "decision"));
 }
 
 fn rupu_args_contains(args: &[String], expected: &str) -> bool {

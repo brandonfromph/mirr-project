@@ -61,6 +61,7 @@ pub mod totality;
 pub mod typeck;
 pub mod validation;
 pub mod width;
+pub mod workspace;
 pub mod zero_debt_closeout;
 
 // Top-level re-exports for ergonomic access.
@@ -90,3 +91,6 @@ pub use width::types::{WidthDiag, WidthExpr, WidthStats};
 // MEGA-4: Totality Engine re-exports.
 pub use cert::{ProofCertificate, TerminationStrategy};
 pub use totality::{run_totality_check, TotalityResult};
+pub use workspace::{
+    Workspace, WorkspaceArtifactSummary, WorkspaceConfig, WorkspaceError, WorkspaceSnapshot,
+};

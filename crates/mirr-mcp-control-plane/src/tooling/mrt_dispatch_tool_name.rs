@@ -24,11 +24,13 @@ pub enum MrtDispatchTool {
     LraSign,
     LraVerify,
     MrtKbQuery,
+    MrtKbIndex,
     MrtKbIndexStatus,
+    MrtKbBrief,
 }
 
 impl MrtDispatchTool {
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 23] = [
         Self::MrtAudit,
         Self::MrtBrainGet,
         Self::MrtGeneralCi,
@@ -49,7 +51,9 @@ impl MrtDispatchTool {
         Self::LraSign,
         Self::LraVerify,
         Self::MrtKbQuery,
+        Self::MrtKbIndex,
         Self::MrtKbIndexStatus,
+        Self::MrtKbBrief,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -74,7 +78,9 @@ impl MrtDispatchTool {
             Self::LraSign => "lra_sign",
             Self::LraVerify => "lra_verify",
             Self::MrtKbQuery => "mrt_kb_query",
+            Self::MrtKbIndex => "mrt_kb_index",
             Self::MrtKbIndexStatus => "mrt_kb_index_status",
+            Self::MrtKbBrief => "mrt_kb_brief",
         }
     }
 
@@ -100,7 +106,9 @@ impl MrtDispatchTool {
             "lra_sign" => Some(Self::LraSign),
             "lra_verify" => Some(Self::LraVerify),
             "mrt_kb_query" => Some(Self::MrtKbQuery),
+            "mrt_kb_index" => Some(Self::MrtKbIndex),
             "mrt_kb_index_status" => Some(Self::MrtKbIndexStatus),
+            "mrt_kb_brief" => Some(Self::MrtKbBrief),
             _ => None,
         }
     }

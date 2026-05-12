@@ -52,6 +52,8 @@ pub struct RspuSimulator {
     /// Shadow interval register file for MEGA-5 symbolic reasoning.
     /// Each register has (lo, hi) bounds — default = (0, u64::MAX).
     pub interval_shadow: Vec<(u64, u64)>,
+    /// Current active type tag register.
+    pub tag_register: RegId,
 }
 
 impl RspuSimulator {
@@ -83,6 +85,7 @@ impl RspuSimulator {
             halted: false,
             cert_verified: false,
             interval_shadow,
+            tag_register: 0,
         }
     }
 
@@ -395,6 +398,17 @@ impl RspuSimulator {
                     *dst,
                     TaggedWord::from_computed(tag_val, TypeTag::Unsigned { width: 8 }),
                 );
+                Ok(StepResult::Continue)
+            }
+
+            RspuInstruction::TagBranch { tag_value, target_pc } => {
+                let current_tag = self.registers.read_tag(self.tag_register);
+                let current_tag_val = type_tag_to_u8(&current_tag);
+                if current_tag_val == *tag_value {
+                    self.pc = *target_pc as usize;
+                } else {
+                    self.pc = self.pc.wrapping_add(1);
+                }
                 Ok(StepResult::Continue)
             }
 

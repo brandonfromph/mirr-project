@@ -400,7 +400,10 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_schema_result, dispatch_host_stdio_line, handler_factory, role_tokens_from_env, AxumMcpHostState};
+    use super::{
+        build_schema_result, dispatch_host_stdio_line, handler_factory, role_tokens_from_env,
+        AxumMcpHostState,
+    };
     use serde_json::Value;
 
     #[test]
@@ -436,7 +439,8 @@ mod tests {
     #[test]
     fn logging_set_level_is_accepted() {
         let state = AxumMcpHostState::with_role_tokens(handler_factory, role_tokens_from_env());
-        let payload = r#"{"jsonrpc":"2.0","id":1,"method":"logging/setLevel","params":{"level":"info"}}"#;
+        let payload =
+            r#"{"jsonrpc":"2.0","id":1,"method":"logging/setLevel","params":{"level":"info"}}"#;
 
         let (status, response) = dispatch_host_stdio_line(&state, payload)
             .expect("logging/setLevel request should dispatch");

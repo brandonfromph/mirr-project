@@ -178,6 +178,7 @@ fn reg_mentioned_after(instrs: &[RspuInstruction], start: usize, reg: RegId) -> 
 
 fn instruction_mentions_reg(instr: &RspuInstruction, reg: RegId) -> bool {
     match instr {
+        RspuInstruction::TagBranch { .. } => todo!(),
         RspuInstruction::LoadInput { dst, .. } => *dst == reg,
         RspuInstruction::StoreOutput { src, .. } => *src == reg,
         RspuInstruction::Mov { dst, src } => *dst == reg || *src == reg,

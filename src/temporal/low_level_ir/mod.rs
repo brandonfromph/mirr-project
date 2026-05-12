@@ -205,51 +205,42 @@ impl TemporalNetlist {
 
     /// Add a compiled guard to the netlist
     pub fn add_guard(&mut self, guard: CompiledGuard) {
+        match &guard {
+            CompiledGuard::ShiftRegister(sr) => {
+                self.statistics.max_delay_cycles =
+                    self.statistics.max_delay_cycles.max(sr.delay_cycles);
+            }
+            CompiledGuard::Counter(c) => {
+                self.statistics.max_delay_cycles =
+                    self.statistics.max_delay_cycles.max(c.target_count);
+            }
+            CompiledGuard::Complex(_) => {}
+            CompiledGuard::DynamicCounter(dc) => {
+                self.statistics.max_delay_cycles =
+                    self.statistics.max_delay_cycles.max(dc.max_delay);
+            }
+        }
         self.guards.push(guard);
-        self.update_statistics();
     }
 
     /// Add a generated signal to the netlist
     pub fn add_signal(&mut self, signal: GeneratedSignal) {
+        self.statistics.total_signals = self.statistics.total_signals.saturating_add(1);
+        match signal.kind {
+            GeneratedSignalKind::ShiftRegisterStage => {
+                self.statistics.shift_registers_used =
+                    self.statistics.shift_registers_used.saturating_add(1);
+            }
+            GeneratedSignalKind::Counter => {
+                self.statistics.counters_used = self.statistics.counters_used.saturating_add(1);
+            }
+            GeneratedSignalKind::LogicGate => {
+                self.statistics.logic_gates_used =
+                    self.statistics.logic_gates_used.saturating_add(1);
+            }
+            GeneratedSignalKind::Comparator | GeneratedSignalKind::Intermediate => {}
+        }
         self.signals.push(signal);
-        self.update_statistics();
-    }
-
-    fn update_statistics(&mut self) {
-        let mut shift_registers = 0u32;
-        let mut counters = 0u32;
-        let mut logic_gates = 0u32;
-
-        for signal in &self.signals {
-            match signal.kind {
-                GeneratedSignalKind::ShiftRegisterStage => shift_registers += 1,
-                GeneratedSignalKind::Counter => counters += 1,
-                GeneratedSignalKind::LogicGate => logic_gates += 1,
-                _ => {}
-            }
-        }
-
-        self.statistics.shift_registers_used = shift_registers;
-        self.statistics.counters_used = counters;
-        self.statistics.logic_gates_used = logic_gates;
-        self.statistics.total_signals = self.signals.len() as u32;
-
-        let mut max_delay = 0u64;
-        for guard in &self.guards {
-            match guard {
-                CompiledGuard::ShiftRegister(sr) => {
-                    max_delay = max_delay.max(sr.delay_cycles);
-                }
-                CompiledGuard::Counter(c) => {
-                    max_delay = max_delay.max(c.target_count);
-                }
-                CompiledGuard::Complex(_) => {}
-                CompiledGuard::DynamicCounter(dc) => {
-                    max_delay = max_delay.max(dc.max_delay);
-                }
-            }
-        }
-        self.statistics.max_delay_cycles = max_delay;
     }
 
     /// Return a one-paragraph summary for CLI output.

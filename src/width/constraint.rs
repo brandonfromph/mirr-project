@@ -8,6 +8,8 @@
 use crate::ast::types::BinaryOp;
 use crate::width::types::{FlatNode, WidthDiag};
 use serde::Serialize;
+use std::borrow::Borrow;
+use std::hash::Hash;
 
 // ---------------------------------------------------------------------------
 // Constraint types
@@ -68,6 +70,16 @@ pub fn generate_constraints(
     nodes: &[FlatNode],
     signals: &std::collections::HashMap<String, u32>,
 ) -> ConstraintSet {
+    generate_constraints_with_index(nodes, signals)
+}
+
+pub(crate) fn generate_constraints_with_index<K>(
+    nodes: &[FlatNode],
+    signals: &std::collections::HashMap<K, u32>,
+) -> ConstraintSet
+where
+    K: Eq + Hash + Borrow<str>,
+{
     let mut constraints = Vec::new();
     let mut diagnostics = Vec::new();
 

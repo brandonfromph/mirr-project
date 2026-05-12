@@ -51,6 +51,8 @@ pub struct PipelineConfig {
     pub emit_mape_k_rtl: bool,
     /// Run MEGA-12 HLS pass (scheduling, sharing, binding, FIFO).
     pub hls: bool,
+    /// Run automated logic optimization pass.
+    pub logic_optimize: bool,
 }
 
 impl Default for PipelineConfig {
@@ -72,6 +74,7 @@ impl Default for PipelineConfig {
             symbolic: false,
             emit_mape_k_rtl: false,
             hls: false,
+            logic_optimize: false,
         }
     }
 }

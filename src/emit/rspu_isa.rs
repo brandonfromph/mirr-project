@@ -241,6 +241,8 @@ pub enum RspuInstruction {
     IntervalHi { dst: RegId, src: RegId },
     /// Trap if R\[src\] is outside interval bounds stored in R\[bounds\]'s shadow.
     IntervalCheck { src: RegId, bounds: RegId },
+    /// Branch on tag match: jump to target_pc if active tag matches expected_tag.
+    TagBranch { tag_value: u8, target_pc: u32 },
 }
 
 impl RspuInstruction {
@@ -274,6 +276,7 @@ impl RspuInstruction {
             Self::TagLoad { .. } => "TAG_LOAD",
             Self::TagCheck { .. } => "TAG_CHECK",
             Self::TagRead { .. } => "TAG_READ",
+            Self::TagBranch { .. } => "TAG_BRANCH",
             Self::Nop => "NOP",
             Self::Fence => "FENCE",
             Self::DeadlineSet { .. } => "DEADLINE_SET",
@@ -345,6 +348,7 @@ impl RspuProgram {
 /// Format a single instruction as R-SPU assembly text.
 fn format_instruction(instr: &RspuInstruction) -> String {
     match instr {
+        RspuInstruction::TagBranch { .. } => todo!(),
         RspuInstruction::LoadInput { dst, port } => {
             format!("LOAD_INPUT  R{dst}, P{port}")
         }

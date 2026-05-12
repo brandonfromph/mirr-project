@@ -21,6 +21,9 @@ use crate::ast::expr::Expr;
 use crate::ast::program::{Assignment, SignalDecl};
 
 use serde::Serialize;
+use std::borrow::Borrow;
+use std::collections::HashMap;
+use std::hash::Hash;
 use types::{DiagSeverity, WidthDiag, WidthExpr, WidthStats};
 
 // ---------------------------------------------------------------------------
@@ -52,6 +55,18 @@ impl WidthInferenceResult {
 /// Pipeline: flatten -> generate constraints -> solve -> reconstruct.
 /// All steps are iterative with bounded loops.
 pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult {
+    let signal_widths = signal_width_map(signals);
+    infer_widths_with_signal_widths(expr, signals, &signal_widths)
+}
+
+fn infer_widths_with_signal_widths<K>(
+    expr: &Expr,
+    signals: &[SignalDecl],
+    signal_widths: &HashMap<K, u32>,
+) -> WidthInferenceResult
+where
+    K: Eq + Hash + Borrow<str>,
+{
     // Step 1: Flatten.
     let flat_nodes = match flatten::flatten_expr(expr, signals) {
         Some(nodes) => nodes,
@@ -78,15 +93,7 @@ pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult
 
     // Step 2: Generate constraints.
     // Convert signal declarations to a name->width map for the constraint generator API.
-    let signal_widths: std::collections::HashMap<String, u32> = signals
-        .iter()
-        .map(|s| {
-            let width = s.ty.signal_type().width();
-            (s.name.clone(), width)
-        })
-        .collect();
-
-    let cset = constraint::generate_constraints(&flat_nodes, &signal_widths);
+    let cset = constraint::generate_constraints_with_index(&flat_nodes, &signal_widths);
     let mut all_diags = cset.diagnostics;
 
     // Step 3: Solve. solver::validate_widths already emits hard errors for
@@ -127,10 +134,7 @@ pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<
     let mut diags = result.diagnostics;
 
     // Look up target width and signedness.
-    let target_info = signals
-        .iter()
-        .find(|s| s.name == assignment.target)
-        .map(|s| s.ty.signal_type().width_and_signed());
+    let target_info = signal_info_map(signals).get(assignment.target.as_str()).copied();
 
     if let (Some(we), Some((tw, ts))) = (&result.expr, target_info) {
         let expr_w = we.width();
@@ -197,6 +201,8 @@ impl ProgramWidthResult {
 /// Bounded: iterates over guards + reflexes (finite, from parsed program).
 pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthResult {
     let signals = &program.module.signals;
+    let signal_widths = signal_width_map(signals);
+    let signal_info = signal_info_map(signals);
     let mut guard_results: Vec<(String, WidthInferenceResult)> = Vec::new();
     let mut assignment_results: Vec<(String, Vec<WidthDiag>)> = Vec::new();
     let mut total_stats = WidthStats {
@@ -210,7 +216,7 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
 
     // Infer widths for guard conditions.
     for g in &program.module.guards {
-        let result = infer_widths(&g.condition, signals);
+        let result = infer_widths_with_signal_widths(&g.condition, signals, &signal_widths);
         total_stats.nodes_analyzed += result.stats.nodes_analyzed;
         total_stats.propagation_rounds += result.stats.propagation_rounds;
         total_stats.diagnostics_count += result.stats.diagnostics_count;
@@ -222,17 +228,14 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
     // propagation_rounds are accumulated alongside diagnostics_count.
     for r in &program.module.reflexes {
         for a in &r.assignments {
-            let rhs_result = infer_widths(&a.value, signals);
+            let rhs_result = infer_widths_with_signal_widths(&a.value, signals, &signal_widths);
             total_stats.nodes_analyzed += rhs_result.stats.nodes_analyzed;
             total_stats.propagation_rounds += rhs_result.stats.propagation_rounds;
 
             let mut diags = rhs_result.diagnostics;
 
             // Perform the truncation check inline.
-            let target_info = signals
-                .iter()
-                .find(|s| s.name == a.target)
-                .map(|s| s.ty.signal_type().width_and_signed());
+            let target_info = signal_info.get(a.target.as_str()).copied();
             if let (Some(we), Some((tw, ts))) = (&rhs_result.expr, target_info) {
                 diags.extend(solver::check_truncation(&a.target, tw, we.width(), ts));
             }
@@ -381,4 +384,18 @@ pub fn infer_program_widths_with_scc(
         scc_diagnostics: scc_diags,
         scc_member_names,
     }
+}
+
+fn signal_width_map(signals: &[SignalDecl]) -> HashMap<String, u32> {
+    signals.iter().map(|signal| (signal.name.clone(), signal.ty.signal_type().width())).collect()
+}
+
+fn signal_info_map<'a>(signals: &'a [SignalDecl]) -> HashMap<&'a str, (u32, bool)> {
+    signals
+        .iter()
+        .map(|signal| {
+            let ty = signal.ty.signal_type();
+            (signal.name.as_str(), ty.width_and_signed())
+        })
+        .collect()
 }
