@@ -40,3 +40,35 @@ fn test_ecs_soa_performance_layout() {
     assert_eq!(registry.names.len(), 1000);
     assert_eq!(registry.types.len(), 1000);
 }
+
+#[test]
+fn test_ecs_full_module_ingestion() {
+    use nasa_rust_project::parser::parse_mirr;
+    use std::fs;
+    
+    // Load a real module: majority_gate
+    let src = fs::read_to_string("stdlib/safety/majority.mirr").expect("failed to read majority.mirr");
+    let prog = parse_mirr(&src).expect("failed to parse majority.mirr");
+    
+    let mut registry = Registry::new();
+    let mod_id = registry.ingest_module(&prog.module);
+    
+    // Verify Module entity
+    assert_eq!(registry.names.get(&mod_id).unwrap().0, "majority_gate");
+    
+    // Verify Signal entities (majority_gate has 3 in, 1 out)
+    assert!(registry.get_entity_by_name("input_a").is_some());
+    assert!(registry.get_entity_by_name("majority_out").is_some());
+    
+    // Verify Guard entities
+    let a_and_b = registry.get_entity_by_name("a_and_b").expect("Guard a_and_b missing");
+    let cond_ref = registry.conditions.get(&a_and_b).expect("Guard condition ref missing");
+    
+    // Verify flattened expression: (input_a && input_b)
+    // The top node should be a BinaryComponent
+    let binary = registry.binary_ops.get(&cond_ref.0).expect("Top node of a_and_b must be binary");
+    assert_eq!(binary.op, nasa_rust_project::ast::types::BinaryOp::And);
+    
+    println!("Successfully ingested majority_gate into ECS. Module Entity: {}", mod_id.0);
+    println!("Guard 'a_and_b' Entity: {}", a_and_b.0);
+}
