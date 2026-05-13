@@ -15,7 +15,7 @@ use crate::ast::program::SignalDecl;
 use serde::Serialize;
 
 /// Result of the Unique Least Solution verification.
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct VerifyResult {
     /// True if the solution was verified as minimal.
     pub is_minimal: bool,

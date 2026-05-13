@@ -26,6 +26,7 @@ chrono = { version = "0.4", features = ["serde"] }
 num_cpus = "1.16"
 mirr-kb-native = { path = "crates/mirr-kb-native" }
 walkdir = "2"
+rayon = "1.10.0"
 
 [dev-dependencies]
 criterion = { version = "0.8.2", features = ["html_reports"] }

@@ -2,8 +2,8 @@
 
 use nasa_rust_project::bootstrap_runner::{BootstrapOpts, BootstrapRunner};
 use std::fs;
-use tempfile::NamedTempFile;
 use std::io::Write;
+use tempfile::NamedTempFile;
 
 fn run_bootstrap_on_patched(path: &str, patches: &[(&str, &str)], expect_parse: bool) -> bool {
     let src = fs::read_to_string(path).expect("failed to read file");
@@ -11,26 +11,24 @@ fn run_bootstrap_on_patched(path: &str, patches: &[(&str, &str)], expect_parse: 
     for (old, new) in patches {
         patched_src = patched_src.replace(old, new);
     }
-    
+
     let mut tmp = NamedTempFile::with_suffix(".mirr").expect("failed to create temp file");
     tmp.write_all(patched_src.as_bytes()).expect("failed to write temp file");
-    
-    let runner = BootstrapRunner::new(BootstrapOpts {
-        run_mirr_stages: true,
-        ..Default::default()
-    });
-    
+
+    let runner =
+        BootstrapRunner::new(BootstrapOpts { run_mirr_stages: true, ..Default::default() });
+
     let result = runner.run(tmp.path());
-    
+
     if !expect_parse {
         // For modules that use advanced features (enum, struct, fn) not yet in the Rust parser
         return result.stages.iter().any(|s| s.name == "Read" && s.ok);
     }
-    
+
     if !result.ok {
         println!("Bootstrap failed: {:#?}", result.stages);
     }
-    
+
     result.ok
 }
 

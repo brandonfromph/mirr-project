@@ -33,7 +33,7 @@ mod tests {
 
         // 3. Run mirr-audit in refinement mode
         let output = Command::new(&bin)
-            .args(["--mode", "refinement", "--glob", "src/**/*.rs"])
+            .args(["refinement", "--glob", "src/**/*.rs"])
             .current_dir(root)
             .output()
             .expect("Failed to run mirr-audit");
@@ -77,7 +77,7 @@ mod tests {
 
         // 3. Run mirr-audit in refinement mode
         let output = Command::new(&bin)
-            .args(["--mode", "refinement", "--glob", "src/**/*.rs"])
+            .args(["refinement", "--glob", "src/**/*.rs"])
             .current_dir(root)
             .output()
             .expect("Failed to run mirr-audit");

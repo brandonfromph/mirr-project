@@ -9,9 +9,8 @@
 
 #![forbid(unsafe_code)]
 
-use std::process;
 use clap::Parser;
-use serde_json::json;
+use std::process;
 
 use nasa_rust_project::mape_k::{
     self, ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
@@ -196,4 +195,3 @@ fn load_config(path: &str) -> SimConfig {
         }
     }
 }
-

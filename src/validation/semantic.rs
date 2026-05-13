@@ -242,7 +242,13 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     }
 
     // Validate property declarations.
-    validate_properties(&module.properties, &signal_names, &guard_names, &signal_name_candidates, &mut errors);
+    validate_properties(
+        &module.properties,
+        &signal_names,
+        &guard_names,
+        &signal_name_candidates,
+        &mut errors,
+    );
 
     if errors.is_empty() {
         Ok(())

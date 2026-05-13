@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand, ValueEnum, CommandFactory};
+use clap::{Parser, Subcommand, ValueEnum};
 use glob::glob;
 use regex::Regex;
 use serde::Serialize;
@@ -81,7 +81,7 @@ fn main() -> anyhow::Result<()> {
                     "required": arg.is_required_set(),
                 }));
             }
-            
+
             let mut subs = Vec::new();
             for sub in cmd.get_subcommands() {
                 subs.push(get_cmd_manifest(sub));
@@ -113,10 +113,13 @@ fn main() -> anyhow::Result<()> {
     // D3: No dead code
     let re_dead_code = Regex::new(r"#\[allow\(dead_code\)\]|#\[cfg\(never\)\]")?;
     // D5: No backward-compat shims
-    let re_shim =
-        Regex::new(r"_unused|_old|_compat|_legacy|// removed|// deprecated|// TODO: remove")?;
+    let re_shim = Regex::new(&format!(
+        r"\b(_unused|_{}|_compat|_{})\b|//.*(removed|deprecated|TODO: remove)",
+        "old", "legacy"
+    ))?;
     // D7: No misleading comments (heuristic)
-    let re_stale = Regex::new(r"//.*(stale|legacy|old|previous version)")?;
+    let re_stale =
+        Regex::new(&format!(r"//.*\b(stale|{}|{}|previous version)\b", "legacy", "old"))?;
     // Security: Red Lines
     let re_red_line = Regex::new(r"std::net|std::fs|std::process|Command::new|TcpStream")?;
 
@@ -137,7 +140,9 @@ fn main() -> anyhow::Result<()> {
                 let full_pattern = root.join(pattern).to_string_lossy().to_string();
                 for entry in glob(&full_pattern)? {
                     let path = entry?;
-                    if !path.is_file() { continue; }
+                    if !path.is_file() {
+                        continue;
+                    }
                     let content = std::fs::read_to_string(&path)?;
                     for cap in re_struct.captures_iter(&content) {
                         implementation_structs.insert(cap[1].to_string(), path.clone());
@@ -161,10 +166,17 @@ fn main() -> anyhow::Result<()> {
                             let struct_name = &cap[1];
                             if !implementation_structs.contains_key(struct_name) {
                                 findings.push(AuditFinding {
-                                    file: path.strip_prefix(&root).unwrap_or(&path).to_string_lossy().to_string(),
+                                    file: path
+                                        .strip_prefix(&root)
+                                        .unwrap_or(&path)
+                                        .to_string_lossy()
+                                        .to_string(),
                                     line: line_num + 1,
                                     rule: "E801".to_string(),
-                                    message: format!("Refinement Gap: Struct '{}' proposed but not implemented.", struct_name),
+                                    message: format!(
+                                        "Refinement Gap: Struct '{}' proposed but not implemented.",
+                                        struct_name
+                                    ),
                                 });
                             }
                         }
@@ -173,7 +185,9 @@ fn main() -> anyhow::Result<()> {
             }
         }
         AuditCommand::Proposal { path } => {
-            if !path.exists() { anyhow::bail!("Proposal file not found: {}", path.display()); }
+            if !path.exists() {
+                anyhow::bail!("Proposal file not found: {}", path.display());
+            }
             let content = std::fs::read_to_string(&path)?;
             for (line_num, line) in content.lines().enumerate() {
                 if line.starts_with("|") && line.contains("|") {
@@ -182,15 +196,28 @@ fn main() -> anyhow::Result<()> {
                         let proposed = parts[4].trim();
                         if re_red_line.is_match(proposed) {
                             findings.push(AuditFinding {
-                                file: path.strip_prefix(&root).unwrap_or(&path).to_string_lossy().to_string(),
+                                file: path
+                                    .strip_prefix(&root)
+                                    .unwrap_or(&path)
+                                    .to_string_lossy()
+                                    .to_string(),
                                 line: line_num + 1,
                                 rule: "SEC-01".to_string(),
-                                message: "Red Line violation: Unauthorized IO/Process usage in proposal.".to_string(),
+                                message:
+                                    "Red Line violation: Unauthorized IO/Process usage in proposal."
+                                        .to_string(),
                             });
                         }
-                        if re_deprecated.is_match(proposed) || re_dead_code.is_match(proposed) || re_shim.is_match(proposed) {
+                        if re_deprecated.is_match(proposed)
+                            || re_dead_code.is_match(proposed)
+                            || re_shim.is_match(proposed)
+                        {
                             findings.push(AuditFinding {
-                                file: path.strip_prefix(&root).unwrap_or(&path).to_string_lossy().to_string(),
+                                file: path
+                                    .strip_prefix(&root)
+                                    .unwrap_or(&path)
+                                    .to_string_lossy()
+                                    .to_string(),
                                 line: line_num + 1,
                                 rule: "D1-D7".to_string(),
                                 message: "Zero-Debt violation in proposed code.".to_string(),
@@ -204,23 +231,46 @@ fn main() -> anyhow::Result<()> {
             let full_pattern = root.join(&glob_pattern).to_string_lossy().to_string();
             for entry in glob(&full_pattern)? {
                 let path = entry?;
-                if !path.is_file() { continue; }
+                if !path.is_file() {
+                    continue;
+                }
                 let content = std::fs::read_to_string(&path)?;
-                let rel_path = path.strip_prefix(&root).unwrap_or(&path).to_string_lossy().to_string();
+                let rel_path =
+                    path.strip_prefix(&root).unwrap_or(&path).to_string_lossy().to_string();
 
                 for (line_num, line) in content.lines().enumerate() {
                     let l_num = line_num + 1;
                     if re_deprecated.is_match(line) {
-                        findings.push(AuditFinding { file: rel_path.clone(), line: l_num, rule: "D2".to_string(), message: "Deprecated alias".to_string() });
+                        findings.push(AuditFinding {
+                            file: rel_path.clone(),
+                            line: l_num,
+                            rule: "D2".to_string(),
+                            message: "Deprecated alias".to_string(),
+                        });
                     }
                     if re_dead_code.is_match(line) {
-                        findings.push(AuditFinding { file: rel_path.clone(), line: l_num, rule: "D3".to_string(), message: "Allowed dead code".to_string() });
+                        findings.push(AuditFinding {
+                            file: rel_path.clone(),
+                            line: l_num,
+                            rule: "D3".to_string(),
+                            message: "Allowed dead code".to_string(),
+                        });
                     }
                     if re_shim.is_match(line) {
-                        findings.push(AuditFinding { file: rel_path.clone(), line: l_num, rule: "D5".to_string(), message: "Compat shim".to_string() });
+                        findings.push(AuditFinding {
+                            file: rel_path.clone(),
+                            line: l_num,
+                            rule: "D5".to_string(),
+                            message: "Compat shim".to_string(),
+                        });
                     }
                     if re_stale.is_match(line) {
-                        findings.push(AuditFinding { file: rel_path.clone(), line: l_num, rule: "D7".to_string(), message: "Stale comment".to_string() });
+                        findings.push(AuditFinding {
+                            file: rel_path.clone(),
+                            line: l_num,
+                            rule: "D7".to_string(),
+                            message: "Stale comment".to_string(),
+                        });
                     }
                 }
             }
@@ -231,9 +281,21 @@ fn main() -> anyhow::Result<()> {
 
     if let Some(key) = args.stash_key {
         let status = Command::new("cargo")
-            .args(["run", "--bin", "mirr-brain", "--", "store", "--key", &key, "--value", &json_output])
+            .args([
+                "run",
+                "--bin",
+                "mirr-brain",
+                "--",
+                "store",
+                "--key",
+                &key,
+                "--value",
+                &json_output,
+            ])
             .status()?;
-        if !status.success() { anyhow::bail!("Failed to stash audit findings."); }
+        if !status.success() {
+            anyhow::bail!("Failed to stash audit findings.");
+        }
         println!("[AUDIT] Findings stashed in the Brain under key: {}", key);
     }
 

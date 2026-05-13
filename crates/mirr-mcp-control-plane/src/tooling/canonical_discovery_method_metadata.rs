@@ -380,16 +380,18 @@ pub const CANONICAL_DISCOVERY_METHOD_METADATA: &[DiscoveryMethodMetadata] = &[
     ),
 ];
 
-use std::sync::OnceLock;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 static DYNAMIC_TOOLS: OnceLock<HashMap<String, DiscoveryMethodMetadata>> = OnceLock::new();
 
 pub fn discovery_method_by_name(name: &str) -> Option<&'static DiscoveryMethodMetadata> {
-    if let Some(method) = CANONICAL_DISCOVERY_METHOD_METADATA.iter().find(|method| method.name == name) {
+    if let Some(method) =
+        CANONICAL_DISCOVERY_METHOD_METADATA.iter().find(|method| method.name == name)
+    {
         return Some(method);
     }
-    
+
     // Check dynamic registry
     let dynamic = DYNAMIC_TOOLS.get_or_init(|| {
         let mut map = HashMap::new();
@@ -401,6 +403,6 @@ pub fn discovery_method_by_name(name: &str) -> Option<&'static DiscoveryMethodMe
         }
         map
     });
-    
+
     dynamic.get(name)
 }

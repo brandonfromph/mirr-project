@@ -1,9 +1,9 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::emit::rspu_encoding::{decode, encode};
-use nasa_rust_project::emit::rspu_isa::RspuInstruction;
 use nasa_rust_project::emit::arm::emit_arm_asm;
 use nasa_rust_project::emit::riscv::emit_riscv_asm;
+use nasa_rust_project::emit::rspu_encoding::{decode, encode};
+use nasa_rust_project::emit::rspu_isa::RspuInstruction;
 use nasa_rust_project::emit::rspu_isa::RspuProgram;
 
 #[test]

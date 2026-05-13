@@ -334,8 +334,8 @@ pub fn is_pattern_call_line(line: &str) -> bool {
         return false;
     }
 
-    // Check it's a valid identifier (alphanumeric + underscore).
-    if !ident.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+    // Check it's a valid identifier (alphanumeric + underscore + colon).
+    if !ident.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == ':') {
         return false;
     }
 

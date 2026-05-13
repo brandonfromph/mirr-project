@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
+use crate::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, UnaryOp};
 use serde::{Deserialize, Serialize};
-use crate::ast::types::{SignalKind, ExtendedType, BinaryOp, UnaryOp, LiteralValue};
 
 /// The Entity ID: The fundamental atom of the ECS compiler.
 /// Fixed-size u32 (NASA P10 Rule #1 & #2).

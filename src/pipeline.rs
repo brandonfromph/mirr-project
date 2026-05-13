@@ -16,8 +16,10 @@ use crate::temporal::low_level_ir::TemporalNetlist;
 use crate::temporal::TemporalGuardCompiler;
 use crate::width::{self, SccWidthResult};
 
+use serde::{Deserialize, Serialize};
+
 /// Configuration for which pipeline stages to run.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PipelineConfig {
     /// Run type checking after validation.
     pub typecheck: bool,
@@ -80,6 +82,7 @@ impl Default for PipelineConfig {
 }
 
 /// Collected results from every pipeline stage.
+#[derive(Debug)]
 pub struct PipelineResult {
     /// The parsed (and possibly simplified) program.
     pub program: MirrProgram,
@@ -121,15 +124,19 @@ impl PipelineResult {
 }
 
 /// Run the full compilation pipeline on MIRR source text.
-///
-/// Bounded: each stage is individually bounded by its own limits.
 pub fn run_pipeline(
     source: &str,
     config: &PipelineConfig,
 ) -> Result<PipelineResult, PipelineErrors> {
-    // Stage 1: Parse.
-    let mut program = crate::parser::parse_mirr(source)?;
+    let program = crate::parser::parse_mirr(source)?;
+    run_pipeline_on_program(program, config)
+}
 
+/// Run the compilation pipeline on a pre-parsed (and potentially merged) MirrProgram.
+pub fn run_pipeline_on_program(
+    mut program: MirrProgram,
+    config: &PipelineConfig,
+) -> Result<PipelineResult, PipelineErrors> {
     // Stage 1.5: Validate pattern definitions, then expand pattern calls.
     // This runs BEFORE module validation so expanded items are validated as
     // part of the normal module (the emission pipeline never sees patterns).

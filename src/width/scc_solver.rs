@@ -17,7 +17,7 @@ use serde::Serialize;
 const MAX_FLOYD_WARSHALL_ITERS: usize = MAX_SCC_SIZE * MAX_SCC_SIZE;
 
 /// Result of solving a single SCC.
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SccSolveResult {
     /// Resolved widths for each signal in the SCC.
     /// Indexed parallel to `SccInfo::signal_indices`.

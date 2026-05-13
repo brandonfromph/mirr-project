@@ -12,15 +12,20 @@
 mod summary;
 mod toolchain;
 
-use std::process;
 use clap::Parser;
+use std::process;
 
 use nasa_rust_project::emit;
 use nasa_rust_project::emit::fpga_target::FpgaTarget;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
 #[derive(Parser, Debug)]
-#[command(name = "mirr-compile", author, version, about = "Unified MIRR compilation driver (Phase 6)")]
+#[command(
+    name = "mirr-compile",
+    author,
+    version,
+    about = "Unified MIRR compilation driver (Phase 6)"
+)]
 struct Cli {
     /// Path to the root MIRR file
     root_file: Option<String>,
@@ -122,8 +127,6 @@ struct Cli {
     toolchain_path: Option<String>,
 }
 
-use clap::CommandFactory;
-
 pub fn main() {
     let args = Cli::parse();
 
@@ -156,7 +159,7 @@ pub fn main() {
         println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
         process::exit(0);
     }
-    
+
     let root_file = args.root_file.unwrap_or_else(|| {
         eprintln!("Error: no input file specified.\nRun with --help for usage.");
         process::exit(1);
@@ -215,13 +218,18 @@ pub fn main() {
     if result.has_width_errors() {
         if let Some(ref wr) = result.width_result {
             let mut width_diags = Vec::new();
-            for (_, diags) in &wr.phase4a.assignment_results { width_diags.extend(diags); }
-            for (_, r) in &wr.phase4a.guard_results { width_diags.extend(&r.diagnostics); }
+            for (_, diags) in &wr.phase4a.assignment_results {
+                width_diags.extend(diags);
+            }
+            for (_, r) in &wr.phase4a.guard_results {
+                width_diags.extend(&r.diagnostics);
+            }
             width_diags.extend(&wr.scc_diagnostics);
             width_diags.extend(&wr.verification.diagnostics);
             for wd in &width_diags {
                 let d = wd.to_diagnostic();
-                let rendered = nasa_rust_project::diagnostic::render_diagnostic(&d, &source, &root_file);
+                let rendered =
+                    nasa_rust_project::diagnostic::render_diagnostic(&d, &source, &root_file);
                 eprint!("{}", rendered);
             }
         }
@@ -238,7 +246,11 @@ pub fn main() {
             }
         }
         "verilog" | "sv" => {
-            let t = if fpga_target == emit::fpga_target::FpgaTarget::Generic { None } else { Some(fpga_target) };
+            let t = if fpga_target == emit::fpga_target::FpgaTarget::Generic {
+                None
+            } else {
+                Some(fpga_target)
+            };
             if args.strip_sva {
                 emit::verilog::emit_sv_synthesis(&result, t, args.dsp_threshold)
             } else {
@@ -255,28 +267,43 @@ pub fn main() {
             eprintln!("Error: R-SPU program not generated.");
             process::exit(1);
         }),
-        "riscv" => result.rspu_program.as_ref().map(|p| emit::riscv::emit_riscv_asm(p).unwrap()).unwrap_or_else(|| {
-             eprintln!("Error emitting RISC-V.");
-             process::exit(1);
-        }),
-        "arm" => result.rspu_program.as_ref().map(|p| emit::arm::emit_arm_asm(p).unwrap()).unwrap_or_else(|| {
-             eprintln!("Error emitting ARM.");
-             process::exit(1);
-        }),
+        "riscv" => result
+            .rspu_program
+            .as_ref()
+            .map(|p| emit::riscv::emit_riscv_asm(p).unwrap())
+            .unwrap_or_else(|| {
+                eprintln!("Error emitting RISC-V.");
+                process::exit(1);
+            }),
+        "arm" => result
+            .rspu_program
+            .as_ref()
+            .map(|p| emit::arm::emit_arm_asm(p).unwrap())
+            .unwrap_or_else(|| {
+                eprintln!("Error emitting ARM.");
+                process::exit(1);
+            }),
         "testbench" => emit::testbench::emit_testbench(&result),
         "scaffold" => emit::fpga_scaffold::emit_constraints(&result, &fpga_target),
         "build-script" => emit::fpga_scaffold::emit_build_script(&result, &fpga_target),
         "sexpr" => emit::sexpr::emit_sexpr(&result),
         "mape-k-rtl" => result.mape_k_rtl.clone().expect("MAPE-K RTL skipped"),
         "cert" => {
-            let cert_bytes = result.rspu_program.as_ref().and_then(|p| p.certificate.as_ref()).expect("Certificate missing");
+            let cert_bytes = result
+                .rspu_program
+                .as_ref()
+                .and_then(|p| p.certificate.as_ref())
+                .expect("Certificate missing");
             if let Some(path) = &args.output {
                 std::fs::write(path, cert_bytes).unwrap();
                 return;
             }
             cert_bytes.iter().map(|b| format!("{:02x}", b)).collect()
         }
-        _ => { eprintln!("Unknown format: {format}"); process::exit(1); }
+        _ => {
+            eprintln!("Unknown format: {format}");
+            process::exit(1);
+        }
     };
 
     if let Some(path) = &args.output {
@@ -302,7 +329,10 @@ pub fn main() {
 
         let build = emit::fpga_scaffold::emit_build_script(&result, &fpga_target);
         let build_ext = match fpga_target {
-            FpgaTarget::LatticeIce40 | FpgaTarget::LatticeEcp5 | FpgaTarget::LatticeNexus | FpgaTarget::Generic => "sh",
+            FpgaTarget::LatticeIce40
+            | FpgaTarget::LatticeEcp5
+            | FpgaTarget::LatticeNexus
+            | FpgaTarget::Generic => "sh",
             _ => "tcl",
         };
         let build_path = derive_path(&root_file, &format!("_build.{build_ext}"));
@@ -323,9 +353,20 @@ pub fn main() {
 
     if args.formal || args.lint || args.simulate || args.pnr || args.timing || args.eqy {
         toolchain::run_toolchain_operations(
-            &result, &root_file, &fpga_target, args.dsp_threshold, args.formal, 
-            args.formal_depth, args.formal_prove, &args.formal_engine, args.lint, 
-            args.simulate, args.pnr, args.timing, args.eqy, args.toolchain_path.as_deref()
+            &result,
+            &root_file,
+            &fpga_target,
+            args.dsp_threshold,
+            args.formal,
+            args.formal_depth,
+            args.formal_prove,
+            &args.formal_engine,
+            args.lint,
+            args.simulate,
+            args.pnr,
+            args.timing,
+            args.eqy,
+            args.toolchain_path.as_deref(),
         );
     }
 }

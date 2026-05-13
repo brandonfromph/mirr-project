@@ -1,0 +1,72 @@
+import "core/alu_0.mirr" as core0;
+import "core/alu_1.mirr" as core1;
+import "core/alu_2.mirr" as core2;
+import "core/alu_3.mirr" as core3;
+import "core/alu_4.mirr" as core4;
+import "core/alu_5.mirr" as core5;
+import "core/alu_6.mirr" as core6;
+import "core/alu_7.mirr" as core7;
+import "core/alu_8.mirr" as core8;
+import "core/alu_9.mirr" as core9;
+import "core/alu_10.mirr" as core10;
+import "core/alu_11.mirr" as core11;
+import "core/alu_12.mirr" as core12;
+import "core/alu_13.mirr" as core13;
+import "core/alu_14.mirr" as core14;
+import "core/alu_15.mirr" as core15;
+
+module rspu_top {
+    signal sys_clk: in bool;
+    signal addr_0: in u16;
+    signal data_0: out u16;
+    alu_core_0(sys_clk, addr_0, data_0);
+    signal addr_1: in u16;
+    signal data_1: out u16;
+    alu_core_1(sys_clk, addr_1, data_1);
+    signal addr_2: in u16;
+    signal data_2: out u16;
+    alu_core_2(sys_clk, addr_2, data_2);
+    signal addr_3: in u16;
+    signal data_3: out u16;
+    alu_core_3(sys_clk, addr_3, data_3);
+    signal addr_4: in u16;
+    signal data_4: out u16;
+    alu_core_4(sys_clk, addr_4, data_4);
+    signal addr_5: in u16;
+    signal data_5: out u16;
+    alu_core_5(sys_clk, addr_5, data_5);
+    signal addr_6: in u16;
+    signal data_6: out u16;
+    alu_core_6(sys_clk, addr_6, data_6);
+    signal addr_7: in u16;
+    signal data_7: out u16;
+    alu_core_7(sys_clk, addr_7, data_7);
+    signal addr_8: in u16;
+    signal data_8: out u16;
+    alu_core_8(sys_clk, addr_8, data_8);
+    signal addr_9: in u16;
+    signal data_9: out u16;
+    alu_core_9(sys_clk, addr_9, data_9);
+    signal addr_10: in u16;
+    signal data_10: out u16;
+    alu_core_10(sys_clk, addr_10, data_10);
+    signal addr_11: in u16;
+    signal data_11: out u16;
+    alu_core_11(sys_clk, addr_11, data_11);
+    signal addr_12: in u16;
+    signal data_12: out u16;
+    alu_core_12(sys_clk, addr_12, data_12);
+    signal addr_13: in u16;
+    signal data_13: out u16;
+    alu_core_13(sys_clk, addr_13, data_13);
+    signal addr_14: in u16;
+    signal data_14: out u16;
+    alu_core_14(sys_clk, addr_14, data_14);
+    signal addr_15: in u16;
+    signal data_15: out u16;
+    alu_core_15(sys_clk, addr_15, data_15);
+
+    property all_cores_active {
+        always (sys_clk -> (addr_0 > 0));
+    }
+}

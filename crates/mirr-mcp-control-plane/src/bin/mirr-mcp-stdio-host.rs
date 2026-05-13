@@ -83,7 +83,7 @@ fn build_initialize_result() -> String {
 
 fn build_tools_list_result() -> String {
     let mut tools = Vec::<Value>::new();
-    
+
     // First, list legacy tools
     for tool in MrtDispatchTool::LEGACY_ALL {
         if let Some(method) = discovery_method_by_name(tool.as_str()) {
@@ -101,14 +101,13 @@ fn build_tools_list_result() -> String {
     // Now, list dynamic tools discovered from the binary schemas
     // (This is the AI-Native part!)
     // We'll skip duplicates already in tools
-    let legacy_names: std::collections::HashSet<String> = tools.iter()
-        .map(|t| t["name"].as_str().unwrap().to_string())
-        .collect();
-    
+    let legacy_names: std::collections::HashSet<String> =
+        tools.iter().map(|t| t["name"].as_str().unwrap().to_string()).collect();
+
     // Discovery logic for AI-Native tools!
     for bin in &["mirr-compile", "mirr-brain", "mirr-simulate", "mirr-audit"] {
         // This will trigger the OnceLock in discovery_method_by_name if needed
-        // but we need to know ALL names discovered. 
+        // but we need to know ALL names discovered.
         // For simplicity, we just check each bin and its subcommands.
         // In a real implementation, we would expose the keys of DYNAMIC_TOOLS.
         if let Some(method) = discovery_method_by_name(bin) {
@@ -130,29 +129,13 @@ fn build_tools_list_result() -> String {
 
 fn build_schema_result() -> String {
     let mut methods = Map::<String, Value>::new();
-    
+
     // Legacy tools
     for tool in MrtDispatchTool::LEGACY_ALL {
         if let Some(method) = discovery_method_by_name(tool.as_str()) {
-            methods.insert(method.name.to_owned(), json!({
-                "autoApprove": method.auto_approve,
-                "description": method.description,
-                "parameters": method.parameters.iter().take(MAX_SCHEMA_PARAMETERS).map(|p| {
-                    json!({
-                        "name": p.name,
-                        "required": p.required,
-                        "type": json_type_from_parameter_type(p.ty),
-                    })
-                }).collect::<Vec<Value>>()
-            }));
-        }
-    }
-
-    // Dynamic tools
-    for name in &["mirr-compile", "mirr-brain", "mirr-simulate", "mirr-audit"] {
-        if !methods.contains_key(*name) {
-            if let Some(method) = discovery_method_by_name(name) {
-                methods.insert(method.name.to_owned(), json!({
+            methods.insert(
+                method.name.to_owned(),
+                json!({
                     "autoApprove": method.auto_approve,
                     "description": method.description,
                     "parameters": method.parameters.iter().take(MAX_SCHEMA_PARAMETERS).map(|p| {
@@ -162,7 +145,29 @@ fn build_schema_result() -> String {
                             "type": json_type_from_parameter_type(p.ty),
                         })
                     }).collect::<Vec<Value>>()
-                }));
+                }),
+            );
+        }
+    }
+
+    // Dynamic tools
+    for name in &["mirr-compile", "mirr-brain", "mirr-simulate", "mirr-audit"] {
+        if !methods.contains_key(*name) {
+            if let Some(method) = discovery_method_by_name(name) {
+                methods.insert(
+                    method.name.to_owned(),
+                    json!({
+                        "autoApprove": method.auto_approve,
+                        "description": method.description,
+                        "parameters": method.parameters.iter().take(MAX_SCHEMA_PARAMETERS).map(|p| {
+                            json!({
+                                "name": p.name,
+                                "required": p.required,
+                                "type": json_type_from_parameter_type(p.ty),
+                            })
+                        }).collect::<Vec<Value>>()
+                    }),
+                );
             }
         }
     }

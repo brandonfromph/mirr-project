@@ -1,0 +1,47 @@
+def mem_block_6(clk: signal in bool, addr: signal in u16, data: signal out u16) {
+    reflect {
+        signal valid: internal bool;
+        guard mem_ready {
+            when ${clk} && ${addr} > 0
+            for 1 cycles;
+        }
+        reflex set_data {
+            on mem_ready {
+                ${data} = ${addr} + 6;
+                valid = true;
+            }
+        }
+    }
+}
+def mem_bulk_6_0(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_1(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_2(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_3(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_4(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_5(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_6(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_7(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_8(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+def mem_bulk_6_9(x: signal in bool, y: signal out bool) {
+    reflect { reflex pass { on ${x} { ${y} = true; } } }
+}
+
+module memory_subsystem_6 {}

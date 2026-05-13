@@ -724,8 +724,9 @@ pub fn resolve_mrt_dispatch_invocation(
             )))
         }
         MrtDispatchTool::Dynamic(bin_name) => {
-            let mut args = vec!["run".to_owned(), "--bin".to_owned(), bin_name.clone(), "--".to_owned()];
-            
+            let mut args =
+                vec!["run".to_owned(), "--bin".to_owned(), bin_name.clone(), "--".to_owned()];
+
             // AI-Native Dynamic Dispatch!
             // Map JSON body directly to CLI flags based on discovered metadata.
             if let Some(method) = crate::tooling::discovery_method_by_name(&bin_name) {

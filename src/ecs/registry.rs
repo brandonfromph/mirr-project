@@ -1,85 +1,113 @@
 #![forbid(unsafe_code)]
 
-use std::collections::HashMap;
-use crate::ecs::components::*;
 use crate::ast::program::Module;
 use crate::ast::Expr;
+use crate::ecs::components::*;
+use std::collections::HashMap;
 
 /// Max capacity for compiler entities (NASA P10 Rule #2: Fixed bounds)
 pub const MAX_ENTITIES: usize = 1_000_000;
 
 /// The Registry: The Data-Oriented "World" of the MIRR Compiler.
-#[derive(Debug, Default)]
+/// Refactored to Vec-based storage for O(1) access and cache locality.
+#[derive(Debug)]
 pub struct Registry {
     pub(super) next_id: u32,
 
-    // --- Component Arrays (SoA) ---
-    pub names: HashMap<EntityId, NameComponent>,
-    pub kinds: HashMap<EntityId, KindComponent>,
-    pub types: HashMap<EntityId, TypeComponent>,
-    pub modules: HashMap<EntityId, ModuleComponent>,
-    pub cycles: HashMap<EntityId, CyclesComponent>,
-    pub conditions: HashMap<EntityId, ConditionComponent>,
+    // --- Component Arrays (Dense SoA) ---
+    pub names: Vec<Option<NameComponent>>,
+    pub kinds: Vec<Option<KindComponent>>,
+    pub types: Vec<Option<TypeComponent>>,
+    pub modules: Vec<Option<ModuleComponent>>,
+    pub cycles: Vec<Option<CyclesComponent>>,
+    pub conditions: Vec<Option<ConditionComponent>>,
 
     // Expression Components
-    pub literals: HashMap<EntityId, LiteralComponent>,
-    pub unary_ops: HashMap<EntityId, UnaryComponent>,
-    pub binary_ops: HashMap<EntityId, BinaryComponent>,
-    pub prev_ops: HashMap<EntityId, PrevComponent>,
-    pub signal_refs: HashMap<EntityId, SignalRefComponent>,
+    pub literals: Vec<Option<LiteralComponent>>,
+    pub unary_ops: Vec<Option<UnaryComponent>>,
+    pub binary_ops: Vec<Option<BinaryComponent>>,
+    pub prev_ops: Vec<Option<PrevComponent>>,
+    pub signal_refs: Vec<Option<SignalRefComponent>>,
 
     pub(super) symbol_to_entity: HashMap<String, EntityId>,
 }
 
+impl Default for Registry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Registry {
     pub fn new() -> Self {
+        let cap = MAX_ENTITIES / 10; // Start with 100k capacity
         Self {
             next_id: 0,
-            names: HashMap::with_capacity(MAX_ENTITIES / 10),
-            kinds: HashMap::with_capacity(MAX_ENTITIES / 10),
-            types: HashMap::with_capacity(MAX_ENTITIES / 10),
-            modules: HashMap::with_capacity(MAX_ENTITIES / 100),
-            cycles: HashMap::with_capacity(MAX_ENTITIES / 100),
-            conditions: HashMap::with_capacity(MAX_ENTITIES / 100),
-            literals: HashMap::with_capacity(MAX_ENTITIES / 10),
-            unary_ops: HashMap::with_capacity(MAX_ENTITIES / 10),
-            binary_ops: HashMap::with_capacity(MAX_ENTITIES / 10),
-            prev_ops: HashMap::with_capacity(MAX_ENTITIES / 10),
-            signal_refs: HashMap::with_capacity(MAX_ENTITIES / 10),
-            symbol_to_entity: HashMap::with_capacity(MAX_ENTITIES / 10),
+            names: vec![None; cap],
+            kinds: vec![None; cap],
+            types: vec![None; cap],
+            modules: vec![None; cap],
+            cycles: vec![None; cap],
+            conditions: vec![None; cap],
+            literals: vec![None; cap],
+            unary_ops: vec![None; cap],
+            binary_ops: vec![None; cap],
+            prev_ops: vec![None; cap],
+            signal_refs: vec![None; cap],
+            symbol_to_entity: HashMap::with_capacity(cap),
         }
     }
 
     fn next_id(&mut self) -> EntityId {
         let id = EntityId(self.next_id);
         self.next_id += 1;
+
+        // Dynamic growth if we exceed capacity (still bounded by MAX_ENTITIES)
+        let idx = id.0 as usize;
+        if idx >= self.names.len() && idx < MAX_ENTITIES {
+            let new_cap = (idx + 1024).min(MAX_ENTITIES);
+            self.names.resize(new_cap, None);
+            self.kinds.resize(new_cap, None);
+            self.types.resize(new_cap, None);
+            self.modules.resize(new_cap, None);
+            self.cycles.resize(new_cap, None);
+            self.conditions.resize(new_cap, None);
+            self.literals.resize(new_cap, None);
+            self.unary_ops.resize(new_cap, None);
+            self.binary_ops.resize(new_cap, None);
+            self.prev_ops.resize(new_cap, None);
+            self.signal_refs.resize(new_cap, None);
+        }
+
         id
     }
 
     /// Ingest a traditional Tree-based Module into the ECS World.
     pub fn ingest_module(&mut self, module: &Module) -> EntityId {
         let mod_id = self.next_id();
-        self.names.insert(mod_id, NameComponent(module.name.clone()));
-        
+        let idx = mod_id.0 as usize;
+        self.names[idx] = Some(NameComponent(module.name.clone()));
+
         // 1. Ingest Signals
         for sig in &module.signals {
             let entity = self.create_signal(
                 sig.name.clone(),
                 KindComponent(sig.kind),
-                TypeComponent(sig.ty.clone())
+                TypeComponent(sig.ty.clone()),
             );
-            self.modules.insert(entity, ModuleComponent(mod_id));
+            self.modules[entity.0 as usize] = Some(ModuleComponent(mod_id));
         }
 
         // 2. Ingest Guards
         for guard in &module.guards {
             let cond_entity = self.ingest_expr(&guard.condition);
             let guard_id = self.next_id();
+            let g_idx = guard_id.0 as usize;
             self.symbol_to_entity.insert(guard.name.clone(), guard_id);
-            self.names.insert(guard_id, NameComponent(guard.name.clone()));
-            self.conditions.insert(guard_id, ConditionComponent(cond_entity));
-            self.cycles.insert(guard_id, CyclesComponent(guard.cycles));
-            self.modules.insert(guard_id, ModuleComponent(mod_id));
+            self.names[g_idx] = Some(NameComponent(guard.name.clone()));
+            self.conditions[g_idx] = Some(ConditionComponent(cond_entity));
+            self.cycles[g_idx] = Some(CyclesComponent(guard.cycles));
+            self.modules[g_idx] = Some(ModuleComponent(mod_id));
         }
 
         mod_id
@@ -90,49 +118,56 @@ impl Registry {
         match expr {
             Expr::Literal(lit) => {
                 let id = self.next_id();
-                self.literals.insert(id, LiteralComponent(lit.clone()));
+                self.literals[id.0 as usize] = Some(LiteralComponent(lit.clone()));
                 id
             }
             Expr::Signal(name) => {
                 let id = self.next_id();
-                // Link to the signal entity if it exists
                 if let Some(sig_ent) = self.get_entity_by_name(name) {
-                    self.signal_refs.insert(id, SignalRefComponent(sig_ent));
+                    self.signal_refs[id.0 as usize] = Some(SignalRefComponent(sig_ent));
                 }
                 id
             }
             Expr::Unary { op, operand } => {
                 let operand_id = self.ingest_expr(operand);
                 let id = self.next_id();
-                self.unary_ops.insert(id, UnaryComponent { op: *op, operand: operand_id });
+                self.unary_ops[id.0 as usize] =
+                    Some(UnaryComponent { op: *op, operand: operand_id });
                 id
             }
             Expr::Binary { op, left, right } => {
                 let left_id = self.ingest_expr(left);
                 let right_id = self.ingest_expr(right);
                 let id = self.next_id();
-                self.binary_ops.insert(id, BinaryComponent { op: *op, left: left_id, right: right_id });
+                self.binary_ops[id.0 as usize] =
+                    Some(BinaryComponent { op: *op, left: left_id, right: right_id });
                 id
             }
             Expr::Prev { signal, delay } => {
                 let id = self.next_id();
                 if let Some(sig_ent) = self.get_entity_by_name(signal) {
-                    self.prev_ops.insert(id, PrevComponent { signal: sig_ent, delay: *delay });
+                    self.prev_ops[id.0 as usize] =
+                        Some(PrevComponent { signal: sig_ent, delay: *delay });
                 }
                 id
             }
-            // Add other Expr variants as needed
             _ => self.next_id(),
         }
     }
 
     /// Create a new Signal Entity
-    pub fn create_signal(&mut self, name: String, kind: KindComponent, ty: TypeComponent) -> EntityId {
+    pub fn create_signal(
+        &mut self,
+        name: String,
+        kind: KindComponent,
+        ty: TypeComponent,
+    ) -> EntityId {
         let id = self.next_id();
+        let idx = id.0 as usize;
         self.symbol_to_entity.insert(name.clone(), id);
-        self.names.insert(id, NameComponent(name));
-        self.kinds.insert(id, kind);
-        self.types.insert(id, ty);
+        self.names[idx] = Some(NameComponent(name));
+        self.kinds[idx] = Some(kind);
+        self.types[idx] = Some(ty);
         id
     }
 
