@@ -16,9 +16,24 @@ pub struct NameComponent(pub String);
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct KindComponent(pub SignalKind);
 
+impl KindComponent {
+    pub const PATTERN: Self = KindComponent(SignalKind::Internal);
+    pub const MODULE: Self = KindComponent(SignalKind::Internal);
+    pub const SIGNAL: Self = KindComponent(SignalKind::Internal);
+}
+
 /// Component: Type (Width, Refinement, etc.)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TypeComponent(pub ExtendedType);
+
+impl TypeComponent {
+    pub fn pattern(_p: crate::ast::pattern::PatternDef) -> Self {
+        TypeComponent(ExtendedType::new(crate::ast::types::SignalType::Bool, Default::default()))
+    }
+    pub fn signal(t: ExtendedType) -> Self {
+        TypeComponent(t)
+    }
+}
 
 /// Component: Parent Module ID
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -58,3 +73,21 @@ pub struct PrevComponent {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SignalRefComponent(pub EntityId);
+
+// --- Knowledge Base Components (Grounding) ---
+
+/// Component: High-dimensional vector embedding (e.g. 1536d)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VectorComponent(pub Vec<f32>);
+
+/// Component: The raw source text of a code chunk
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChunkTextComponent(pub String);
+
+/// Component: Source file path relative to workspace root
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SourcePathComponent(pub String);
+
+/// Component: Line range in the source file
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct LineRangeComponent(pub (usize, usize));

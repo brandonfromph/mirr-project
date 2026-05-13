@@ -120,7 +120,10 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
     }
 
     if index >= lines.len() {
-        return Err(MirrError::parse_error("[E101] MIRR source is empty."));
+        return Err(MirrError::parse_diag(
+            "[E101] MIRR source is empty or missing 'module' declaration.",
+            Span::full_line(index.saturating_sub(1) as u32),
+        ));
     }
 
     let mut module = parse_module(&lines, &mut index)?;
@@ -134,13 +137,19 @@ fn parse_top_level_struct(
     index: &mut usize,
 ) -> Result<(String, Vec<(String, SignalType)>), MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::parse_error("[E805] Expected struct declaration header."));
+        return Err(MirrError::parse_diag(
+            "[E805] Expected struct declaration header.",
+            Span::full_line(*index as u32),
+        ));
     }
 
     let header = lines[*index].trim();
-    let after_struct = header
-        .strip_prefix("struct ")
-        .ok_or_else(|| MirrError::parse_error("[E805] Malformed struct declaration."))?;
+    let after_struct = header.strip_prefix("struct ").ok_or_else(|| {
+        MirrError::parse_diag(
+            "[E805] Malformed struct declaration.",
+            Span::full_line(*index as u32),
+        )
+    })?;
 
     let (name_raw, has_open_brace) = if let Some((name_part, _)) = after_struct.split_once('{') {
         (name_part.trim(), true)
@@ -494,8 +503,9 @@ fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrEr
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::parse_error(
+        return Err(MirrError::parse_diag(
             "[E102] Expected 'module' declaration but found end of file.",
+            Span::full_line(index.saturating_sub(1) as u32),
         ));
     }
 
@@ -503,15 +513,16 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
     let header = lines[*index].trim();
 
     if !header.starts_with("module ") {
-        return Err(MirrError::parse_error(format!(
-            "[E103] Expected 'module' declaration, found: {header}"
-        ))
-        .with_span(Some(Span::full_line(*index as u32))));
+        let msg = format!("[E103] Expected 'module' declaration, found: '{header}'");
+        return Err(MirrError::parse_diag(msg, Span::full_line(*index as u32)));
     }
 
-    let after_keyword = header
-        .strip_prefix("module ")
-        .ok_or_else(|| MirrError::parse_error("[E104] Malformed module declaration."))?;
+    let after_keyword = header.strip_prefix("module ").ok_or_else(|| {
+        MirrError::parse_diag(
+            "[E104] Malformed module declaration.",
+            Span::full_line(*index as u32),
+        )
+    })?;
 
     let (name_part, inline_body) = match after_keyword.split_once('{') {
         Some(parts) => parts,
@@ -520,8 +531,10 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::parse_error("[E105] Module name cannot be empty.")
-            .with_span(Some(Span::full_line(*index as u32))));
+        return Err(MirrError::parse_diag(
+            "[E105] Module name cannot be empty.",
+            Span::full_line(*index as u32),
+        ));
     }
 
     let mut module = Module {
@@ -626,23 +639,23 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 }
 
 fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> {
-    let span = Some(Span::full_line(line_index as u32));
-    let after_keyword = line.strip_prefix("signal ").ok_or_else(|| {
-        MirrError::parse_error("[E108] Malformed signal declaration.").with_span(span)
-    })?;
+    let span = Span::full_line(line_index as u32);
+    let after_keyword = line
+        .strip_prefix("signal ")
+        .ok_or_else(|| MirrError::parse_diag("[E108] Malformed signal declaration.", span))?;
 
     let trimmed = after_keyword.trim();
-    let without_semicolon = trimmed
-        .strip_suffix(';')
-        .ok_or_else(|| MirrError::parse_error("[E109] Signal declaration must end with ';'."))?;
+    let without_semicolon = trimmed.strip_suffix(';').ok_or_else(|| {
+        MirrError::parse_diag("[E109] Signal declaration must end with ';'.", span)
+    })?;
 
-    let (name_part, rest) = without_semicolon
-        .split_once(':')
-        .ok_or_else(|| MirrError::parse_error("[E110] Signal declaration must contain ':'."))?;
+    let (name_part, rest) = without_semicolon.split_once(':').ok_or_else(|| {
+        MirrError::parse_diag("[E110] Signal declaration must contain ':'.", span)
+    })?;
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::parse_error("[E111] Signal name cannot be empty."));
+        return Err(MirrError::parse_diag("[E111] Signal name cannot be empty.", span));
     }
 
     let rest = rest.trim();
@@ -650,13 +663,13 @@ fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> 
     // Delegate to the shared MEGA-1 tokenizer which handles:
     //   <kind> [linear] [stateful|pure] <base_type> [where <refinement>] [@clock] [#phantom]
     // Backward compatible: plain `<kind> <type>` produces default annotations.
-    let parsed = tokenize_signal_decl(rest).map_err(|e| e.with_span(span))?;
+    let parsed = tokenize_signal_decl(rest).map_err(|e| e.with_span(Some(span)))?;
 
     Ok(SignalDecl {
         name: name.to_string(),
         kind: parsed.kind,
         ty: ExtendedType::new(parsed.ty, parsed.annotations),
         origin: None,
-        span,
+        span: Some(span),
     })
 }
