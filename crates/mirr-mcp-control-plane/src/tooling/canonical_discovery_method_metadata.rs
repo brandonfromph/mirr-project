@@ -380,6 +380,27 @@ pub const CANONICAL_DISCOVERY_METHOD_METADATA: &[DiscoveryMethodMetadata] = &[
     ),
 ];
 
+use std::sync::OnceLock;
+use std::collections::HashMap;
+
+static DYNAMIC_TOOLS: OnceLock<HashMap<String, DiscoveryMethodMetadata>> = OnceLock::new();
+
 pub fn discovery_method_by_name(name: &str) -> Option<&'static DiscoveryMethodMetadata> {
-    CANONICAL_DISCOVERY_METHOD_METADATA.iter().find(|method| method.name == name)
+    if let Some(method) = CANONICAL_DISCOVERY_METHOD_METADATA.iter().find(|method| method.name == name) {
+        return Some(method);
+    }
+    
+    // Check dynamic registry
+    let dynamic = DYNAMIC_TOOLS.get_or_init(|| {
+        let mut map = HashMap::new();
+        // Discovery logic for AI-Native tools!
+        for bin in &["mirr-compile", "mirr-brain", "mirr-simulate", "mirr-audit"] {
+            for meta in super::discovery_loader::load_metadata_from_binary(bin) {
+                map.insert(meta.name.to_string(), meta);
+            }
+        }
+        map
+    });
+    
+    dynamic.get(name)
 }

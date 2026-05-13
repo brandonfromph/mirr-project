@@ -10,63 +10,78 @@
 #![forbid(unsafe_code)]
 
 use std::process;
+use clap::Parser;
+use serde_json::json;
 
 use nasa_rust_project::mape_k::{
     self, ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
     TemporalProperty, TriggerCondition,
 };
 
+#[derive(Parser, Debug)]
+#[command(name = "mirr-simulate", version, about = "MAPE-K simulation harness for MIRR/R-SPU")]
+struct Cli {
+    /// Load simulation config from JSON file
+    #[arg(long)]
+    config: Option<String>,
+
+    /// Number of simulation ticks
+    #[arg(long, default_value_t = 10000)]
+    ticks: u64,
+
+    /// Write JSON audit trail to FILE
+    #[arg(long)]
+    audit: Option<String>,
+
+    /// Run built-in neonatal respirator scenario
+    #[arg(long)]
+    neonatal: bool,
+
+    /// Print final signal state
+    #[arg(long)]
+    stats: bool,
+
+    /// Export CLI schema as JSON for tool integration
+    #[arg(long, hide = true)]
+    help_json: bool,
+}
+
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
+    let args = Cli::parse();
 
-    let mut config_path: Option<String> = None;
-    let mut ticks: u64 = 10_000;
-    let mut audit_path: Option<String> = None;
-    let mut neonatal_mode = false;
-    let mut show_help = false;
-    let mut stats_mode = false;
-
-    // Simple arg parsing (no external crate dependency).
-    let mut i = 1;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--config" => {
-                i += 1;
-                if i < args.len() {
-                    config_path = Some(args[i].clone());
-                }
+    if args.help_json {
+        use clap::CommandFactory;
+        fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {
+            let mut args_list = Vec::new();
+            for arg in cmd.get_arguments() {
+                args_list.push(serde_json::json!({
+                    "id": arg.get_id().as_str(),
+                    "long": arg.get_long(),
+                    "short": arg.get_short(),
+                    "help": arg.get_help().map(|h| h.to_string()),
+                    "required": arg.is_required_set(),
+                }));
             }
-            "--ticks" => {
-                i += 1;
-                if i < args.len() {
-                    ticks = args[i].parse().unwrap_or(10_000);
-                }
+            let mut subs = Vec::new();
+            for sub in cmd.get_subcommands() {
+                subs.push(get_cmd_manifest(sub));
             }
-            "--audit" => {
-                i += 1;
-                if i < args.len() {
-                    audit_path = Some(args[i].clone());
-                }
-            }
-            "--neonatal" => neonatal_mode = true,
-            "--stats" => stats_mode = true,
-            "--help" | "-h" => show_help = true,
-            _ => {
-                eprintln!("Unknown argument: {}", args[i]);
-                process::exit(1);
-            }
+            serde_json::json!({
+                "name": cmd.get_name(),
+                "about": cmd.get_about().map(|a| a.to_string()),
+                "version": cmd.get_version().map(|v| v.to_string()),
+                "args": args_list,
+                "subcommands": subs,
+            })
         }
-        i += 1;
+        let cmd = Cli::command();
+        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
+        process::exit(0);
     }
 
-    if show_help {
-        print_help();
-        return;
-    }
-
-    let config = if neonatal_mode {
+    let config = if args.neonatal {
         neonatal_respirator_config()
-    } else if let Some(ref path) = config_path {
+    } else if let Some(ref path) = args.config {
         load_config(path)
     } else {
         eprintln!("Error: specify --config <path> or --neonatal");
@@ -76,12 +91,12 @@ fn main() {
 
     // Run simulation.
     let mut sim = MapeKSimulator::new(config);
-    let result = sim.run(ticks);
+    let result = sim.run(args.ticks);
 
     // Print summary.
     print!("{}", result.summary());
 
-    if stats_mode {
+    if args.stats {
         println!("  Final signal state:");
         let mut sorted = result.final_signal_state.clone();
         sorted.sort_by(|a, b| a.0.cmp(&b.0));
@@ -91,7 +106,7 @@ fn main() {
     }
 
     // Write audit trail if requested.
-    if let Some(ref path) = audit_path {
+    if let Some(ref path) = args.audit {
         match serde_json::to_string_pretty(&result.adaptation_log) {
             Ok(json) => {
                 if let Err(e) = std::fs::write(path, json) {
@@ -182,18 +197,3 @@ fn load_config(path: &str) -> SimConfig {
     }
 }
 
-fn print_help() {
-    println!("mirr-simulate — MAPE-K simulation harness for MIRR/R-SPU");
-    println!();
-    println!("Usage:");
-    println!("  mirr-simulate --neonatal [--ticks N] [--audit FILE] [--stats]");
-    println!("  mirr-simulate --config FILE --ticks N [--audit FILE] [--stats]");
-    println!();
-    println!("Options:");
-    println!("  --neonatal     Run built-in neonatal respirator scenario");
-    println!("  --config FILE  Load simulation config from JSON file");
-    println!("  --ticks N      Number of simulation ticks (default: 10000)");
-    println!("  --audit FILE   Write JSON audit trail to FILE");
-    println!("  --stats        Print final signal state");
-    println!("  --help, -h     Show this help");
-}

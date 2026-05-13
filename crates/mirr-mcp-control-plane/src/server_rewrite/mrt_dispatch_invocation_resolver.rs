@@ -723,6 +723,28 @@ pub fn resolve_mrt_dispatch_invocation(
                 &query, &mode, limit, &scope, &format,
             )))
         }
+        MrtDispatchTool::Dynamic(bin_name) => {
+            let mut args = vec!["run".to_owned(), "--bin".to_owned(), bin_name.clone(), "--".to_owned()];
+            
+            // AI-Native Dynamic Dispatch!
+            // Map JSON body directly to CLI flags based on discovered metadata.
+            if let Some(method) = crate::tooling::discovery_method_by_name(&bin_name) {
+                for param in method.parameters {
+                    if let Some(val) = body.get(param.name) {
+                        // If it can be interpreted as a boolean
+                        if let Some(b) = val.as_bool() {
+                            if b {
+                                args.push(format!("--{}", param.name.replace('_', "-")));
+                            }
+                        } else {
+                            args.push(format!("--{}", param.name.replace('_', "-")));
+                            args.push(val.to_string().trim_matches('"').to_owned());
+                        }
+                    }
+                }
+            }
+            Ok(MrtDispatchInvocationPlan::new(args))
+        }
     }
 }
 

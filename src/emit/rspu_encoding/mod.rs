@@ -24,7 +24,10 @@ use format::*;
 /// Encode a single R-SPU instruction into a 32-bit word.
 pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> {
     let word = match instr {
-        RspuInstruction::TagBranch { .. } => todo!(),
+        RspuInstruction::TagBranch { tag_value, target_pc } => {
+            let imm = ((*target_pc as u32) << 8) | (*tag_value as u32);
+            pack_s_type(OP_TAG_BRANCH, imm)
+        }
         // I-type
         RspuInstruction::LoadInput { dst, port } => {
             let p = check_port10(*port, "LOAD_INPUT")?;

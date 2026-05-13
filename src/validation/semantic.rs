@@ -242,7 +242,7 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
     }
 
     // Validate property declarations.
-    validate_properties(&module.properties, &signal_names, &signal_name_candidates, &mut errors);
+    validate_properties(&module.properties, &signal_names, &guard_names, &signal_name_candidates, &mut errors);
 
     if errors.is_empty() {
         Ok(())
@@ -567,6 +567,7 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
 fn validate_properties(
     properties: &[crate::ast::property::PropertyDecl],
     signal_names: &HashSet<&str>,
+    guard_names: &HashSet<&str>,
     signal_name_candidates: &[&str],
     errors: &mut PipelineErrors,
 ) {
@@ -586,7 +587,7 @@ fn validate_properties(
         } else {
             property_first_span.insert(&prop.name, prop.span);
         }
-        validate_property_signals(prop, signal_names, signal_name_candidates, errors);
+        validate_property_signals(prop, signal_names, guard_names, signal_name_candidates, errors);
         validate_property_prev_delays(prop, errors);
     }
 }
@@ -596,6 +597,7 @@ fn validate_properties(
 fn validate_property_signals(
     prop: &crate::ast::property::PropertyDecl,
     signal_names: &HashSet<&str>,
+    guard_names: &HashSet<&str>,
     signal_name_candidates: &[&str],
     errors: &mut PipelineErrors,
 ) {
@@ -605,7 +607,7 @@ fn validate_property_signals(
             if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
                 return;
             }
-            if !signal_names.contains(sig_ref.as_str()) {
+            if !signal_names.contains(sig_ref.as_str()) && !guard_names.contains(sig_ref.as_str()) {
                 let suggestion = crate::suggest::closest_match(sig_ref, signal_name_candidates);
                 let mut msg = format!(
                     "[E211] Property '{}' references undeclared signal '{}'.",

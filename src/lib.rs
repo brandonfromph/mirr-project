@@ -30,6 +30,7 @@ pub mod bootstrap_runner;
 pub mod cert;
 pub mod cross_surface_stress;
 pub mod diagnostic;
+pub mod ecs;
 pub mod emit;
 pub mod error;
 pub mod expand;

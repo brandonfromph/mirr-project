@@ -334,7 +334,7 @@ fn with_runtime_admission(
 
 fn known_methods_for_dispatch(handlers: &RpcHandlerMap<String>) -> BTreeSet<String> {
     let mut known = handlers.keys().cloned().collect::<BTreeSet<String>>();
-    for tool in MrtDispatchTool::ALL {
+    for tool in MrtDispatchTool::LEGACY_ALL {
         known.insert(tool.as_str().to_owned());
     }
     known

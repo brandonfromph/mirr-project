@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use super::mrt_dispatch_tool_alias::canonical_dispatch_tool_name;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum MrtDispatchTool {
     MrtAudit,
     MrtBrainGet,
@@ -29,10 +29,11 @@ pub enum MrtDispatchTool {
     MrtKbIndex,
     MrtKbIndexStatus,
     MrtKbBrief,
+    Dynamic(String),
 }
 
 impl MrtDispatchTool {
-    pub const ALL: [Self; 23] = [
+    pub const LEGACY_ALL: &[Self] = &[
         Self::MrtAudit,
         Self::MrtBrainGet,
         Self::MrtGeneralCi,
@@ -58,7 +59,7 @@ impl MrtDispatchTool {
         Self::MrtKbBrief,
     ];
 
-    pub const fn as_str(self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::MrtAudit => "mrt_audit",
             Self::MrtBrainGet => "mrt_brain_get",
@@ -83,6 +84,7 @@ impl MrtDispatchTool {
             Self::MrtKbIndex => "mrt_kb_index",
             Self::MrtKbIndexStatus => "mrt_kb_index_status",
             Self::MrtKbBrief => "mrt_kb_brief",
+            Self::Dynamic(_) => "dynamic",
         }
     }
 }
@@ -115,7 +117,14 @@ impl FromStr for MrtDispatchTool {
             "mrt_kb_index" => Ok(Self::MrtKbIndex),
             "mrt_kb_index_status" => Ok(Self::MrtKbIndexStatus),
             "mrt_kb_brief" => Ok(Self::MrtKbBrief),
-            _ => Err(format!("invalid tool: {}", value)),
+            _ => {
+                // If it's one of our discovered tools, treat it as dynamic
+                if ["mirr-compile", "mirr-brain", "mirr-simulate", "mirr-audit"].contains(&value) {
+                    Ok(Self::Dynamic(value.to_string()))
+                } else {
+                    Err(format!("invalid tool: {}", value))
+                }
+            }
         }
     }
 }
@@ -126,7 +135,7 @@ mod tests {
 
     #[test]
     fn all_tools_roundtrip() {
-        for tool in MrtDispatchTool::ALL {
+        for tool in MrtDispatchTool::LEGACY_ALL {
             assert_eq!(tool.as_str().parse::<MrtDispatchTool>(), Ok(tool));
         }
     }

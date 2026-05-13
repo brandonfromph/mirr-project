@@ -20,13 +20,14 @@ env:
   RUSTC_WRAPPER: "sccache"
   SCCACHE_GHA_ENABLED: "false"
   CARGO_INCREMENTAL: 0
-  # Disable in-process caching to rely on sccache exclusively
   SCCACHE_LOCAL_RW_CACHE: "true"
 
 jobs:
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.os == 'ubuntu-latest' && 'ghcr.io/${{ github.repository }}/mirr-ci:latest' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -40,8 +41,6 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      # Cargo registry cache (deps, source index)
-      # This rarely invalidates and speeds up dependency resolution
       - name: Cache cargo registry
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -53,13 +52,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
 
-      # sccache binary and cache
-      # Runs with retry logic; won't fail the job if sccache itself fails
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.7
 
-      # Compiled artifacts cache (the expensive part)
-      # Key includes Cargo.lock, rust version, and target (debug/release)
       - name: Cache cargo build artifacts
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -91,6 +86,8 @@ jobs:
   compile-examples:
     name: Examples
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -146,6 +143,8 @@ jobs:
   scripts-check:
     name: Scripts Check
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Lint scripts
@@ -156,6 +155,8 @@ jobs:
     name: Coverage
     needs: test
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -200,17 +201,21 @@ jobs:
     name: Supply Chain
     needs: test
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Run cargo-deny
         uses: EmbarkStudios/cargo-deny-action@v2
         env:
-          RUSTC_WRAPPER: ""  # Disable sccache for cargo-deny (runs in Docker, no sccache binary)
+          RUSTC_WRAPPER: "" # Disable sccache for cargo-deny (runs in Docker, no sccache binary)
 
   simulate:
     name: RTL Simulation
     needs: test
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -249,6 +254,8 @@ jobs:
     name: WASM Build
     needs: test
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -298,6 +305,8 @@ jobs:
     name: Arsenal WASM
     needs: test
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Cache cargo registry
@@ -354,6 +363,8 @@ jobs:
   lra-cli:
     name: LRA CLI
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -395,12 +406,14 @@ jobs:
   vscode-check:
     name: VS Code Check
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - name: Install dependencies
         working-directory: vscode-mirr
         run: npm install
@@ -411,6 +424,8 @@ jobs:
   rustdoc:
     name: Rustdoc
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -443,6 +458,8 @@ jobs:
   fuzz-check:
     name: Fuzz Check
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -473,9 +490,26 @@ jobs:
 
   pages-deploy:
     name: Deploy
-    needs: [test, compile-examples, scripts-check, coverage, supply-chain, simulate, wasm-build, arsenal-wasm, rocq-proofs, lra-cli, vscode-check, rustdoc, fuzz-check]
+    needs:
+      [
+        test,
+        compile-examples,
+        scripts-check,
+        coverage,
+        supply-chain,
+        simulate,
+        wasm-build,
+        arsenal-wasm,
+        rocq-proofs,
+        lra-cli,
+        vscode-check,
+        rustdoc,
+        fuzz-check,
+      ]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     permissions:
       contents: read
       pages: write

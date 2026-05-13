@@ -4,23 +4,6 @@
 
 **Quality** — Read actual file content, never trust status claims. Verify artifacts.
 
-## The MRT (Presidential Arsenal)
-
-The **MIRR Runtime Tooling (MRT)** is the official command center for this repository. It enforces the **Presidential Loop** and the **Zero-Debt Invariant**.
-
-## 🛡️ The Context Amnesia Fix (Mandatory)
-
-**MANDATE**: Every new Gemini session **MUST** begin with the following command before touching a single file:
-*   `mrt_audit --scope-map <task_description>`
-
-This forces MRT to feed Gemini (Surgical Executor) a precise **Reading Plan**. The legacy KB command surface is retired/unavailable here; use MRT and LRA for live repository work.
-
-### Mandatory Workflow: CDD Lifecycle
-Audit → Propose (`file:line`) → Sign/Veto → Execute (Wave) → CI Gate → Close out
-
-## 🛡️ MRT CLI Sovereign Policy
-
-The preferred repository workflow uses the MRT CLI tooling instead of KB in this environment. `kb` is considered unavailable for this role; use `mrt` and `lra` commands.
 
 ### MRT CLI tools (Available via repo scripts)
 *   `mrt_audit` : Remote repo-wide audit tool.
@@ -97,5 +80,3 @@ The preferred repository workflow uses the MRT CLI tooling instead of KB in this
 | Archdrive | `proposals/archdrive/` |
 on.
 *   **KB STANDARD**: Telemetry MUST be stashed in the **Brain** (`mirr-brain`).
-
-

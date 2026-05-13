@@ -71,7 +71,9 @@ pub fn emit_arm_asm(program: &RspuProgram) -> Result<String, MirrError> {
 /// Emit a single ARM instruction.
 fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter: &mut u32) {
     match instr {
-        RspuInstruction::TagBranch { .. } => todo!(),
+        RspuInstruction::TagBranch { tag_value, target_pc } => {
+            out.push_str(&format!("    @ TAG_BRANCH {}, {}\n", tag_value, target_pc));
+        }
         // Register tier
         RspuInstruction::LoadInput { dst, port } => {
             let addr = MMIO_BASE + (*port as u32) * 4;

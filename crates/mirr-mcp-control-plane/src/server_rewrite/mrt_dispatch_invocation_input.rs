@@ -1,12 +1,39 @@
 #![forbid(unsafe_code)]
 
 use std::collections::BTreeMap;
+use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum InvocationInputValue {
     String(String),
     Number(f64),
     StringArray(Vec<String>),
+    Boolean(bool),
+}
+
+impl InvocationInputValue {
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            Self::Boolean(b) => Some(*b),
+            Self::String(s) => match s.as_str() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for InvocationInputValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::String(v) => write!(f, "{}", v),
+            Self::Number(v) => write!(f, "{}", v),
+            Self::StringArray(v) => write!(f, "{:?}", v),
+            Self::Boolean(v) => write!(f, "{}", v),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod canonical_discovery_method_metadata;
+pub mod discovery_loader;
 pub mod mrt_dispatch_tool_alias;
 pub mod mrt_dispatch_tool_name;
 pub mod mrt_dispatch_tool_role_allowlist;

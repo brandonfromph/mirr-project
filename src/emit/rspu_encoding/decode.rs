@@ -163,6 +163,12 @@ pub fn decode(word: u32) -> Result<RspuInstruction, MirrError> {
             let (_dst, src1, src2, _) = extract_r_fields(word);
             Ok(RspuInstruction::IntervalCheck { src: src1, bounds: src2 })
         }
+        OP_TAG_BRANCH => {
+            let imm26 = extract_s_imm26(word);
+            let target_pc = (imm26 >> 8) as u32;
+            let tag_value = (imm26 & 0xFF) as u8;
+            Ok(RspuInstruction::TagBranch { tag_value, target_pc })
+        }
         _ => Err(rspu_err(format!("[E707] unknown opcode {opcode}"))),
     }
 }

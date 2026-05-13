@@ -83,7 +83,9 @@ fn build_initialize_result() -> String {
 
 fn build_tools_list_result() -> String {
     let mut tools = Vec::<Value>::new();
-    for tool in MrtDispatchTool::ALL {
+    
+    // First, list legacy tools
+    for tool in MrtDispatchTool::LEGACY_ALL {
         if let Some(method) = discovery_method_by_name(tool.as_str()) {
             tools.push(json!({
                 "name": method.name,
@@ -96,42 +98,72 @@ fn build_tools_list_result() -> String {
         }
     }
 
+    // Now, list dynamic tools discovered from the binary schemas
+    // (This is the AI-Native part!)
+    // We'll skip duplicates already in tools
+    let legacy_names: std::collections::HashSet<String> = tools.iter()
+        .map(|t| t["name"].as_str().unwrap().to_string())
+        .collect();
+    
+    // Discovery logic for AI-Native tools!
+    for bin in &["mirr-compile", "mirr-brain", "mirr-simulate", "mirr-audit"] {
+        // This will trigger the OnceLock in discovery_method_by_name if needed
+        // but we need to know ALL names discovered. 
+        // For simplicity, we just check each bin and its subcommands.
+        // In a real implementation, we would expose the keys of DYNAMIC_TOOLS.
+        if let Some(method) = discovery_method_by_name(bin) {
+            if !legacy_names.contains(method.name) {
+                tools.push(json!({
+                    "name": method.name,
+                    "description": method.description,
+                    "inputSchema": build_input_schema(method.parameters),
+                    "annotations": {
+                        "readOnlyHint": method.auto_approve,
+                    },
+                }));
+            }
+        }
+    }
+
     json!({ "tools": tools }).to_string()
 }
 
 fn build_schema_result() -> String {
     let mut methods = Map::<String, Value>::new();
-
-    for tool in MrtDispatchTool::ALL {
+    
+    // Legacy tools
+    for tool in MrtDispatchTool::LEGACY_ALL {
         if let Some(method) = discovery_method_by_name(tool.as_str()) {
-            methods.insert(
-                method.name.to_owned(),
-                json!({
+            methods.insert(method.name.to_owned(), json!({
+                "autoApprove": method.auto_approve,
+                "description": method.description,
+                "parameters": method.parameters.iter().take(MAX_SCHEMA_PARAMETERS).map(|p| {
+                    json!({
+                        "name": p.name,
+                        "required": p.required,
+                        "type": json_type_from_parameter_type(p.ty),
+                    })
+                }).collect::<Vec<Value>>()
+            }));
+        }
+    }
+
+    // Dynamic tools
+    for name in &["mirr-compile", "mirr-brain", "mirr-simulate", "mirr-audit"] {
+        if !methods.contains_key(*name) {
+            if let Some(method) = discovery_method_by_name(name) {
+                methods.insert(method.name.to_owned(), json!({
                     "autoApprove": method.auto_approve,
                     "description": method.description,
-                    "parameters": method
-                        .parameters
-                        .iter()
-                        .take(MAX_SCHEMA_PARAMETERS)
-                        .map(|parameter| {
-                            if parameter.ty == "array" {
-                                json!({
-                                    "name": parameter.name,
-                                    "required": parameter.required,
-                                    "type": "array",
-                                    "items": {},
-                                })
-                            } else {
-                                json!({
-                                    "name": parameter.name,
-                                    "required": parameter.required,
-                                    "type": json_type_from_parameter_type(parameter.ty),
-                                })
-                            }
+                    "parameters": method.parameters.iter().take(MAX_SCHEMA_PARAMETERS).map(|p| {
+                        json!({
+                            "name": p.name,
+                            "required": p.required,
+                            "type": json_type_from_parameter_type(p.ty),
                         })
-                        .collect::<Vec<Value>>(),
-                }),
-            );
+                    }).collect::<Vec<Value>>()
+                }));
+            }
         }
     }
 

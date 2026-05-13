@@ -9,191 +9,190 @@
 
 #![forbid(unsafe_code)]
 
-mod help;
 mod summary;
 mod toolchain;
 
 use std::process;
+use clap::Parser;
 
 use nasa_rust_project::emit;
 use nasa_rust_project::emit::fpga_target::FpgaTarget;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
+#[derive(Parser, Debug)]
+#[command(name = "mirr-compile", author, version, about = "Unified MIRR compilation driver (Phase 6)")]
+struct Cli {
+    /// Path to the root MIRR file
+    root_file: Option<String>,
+
+    /// Export CLI schema as JSON for tool integration
+    #[arg(long, hide = true)]
+    help_json: bool,
+
+    /// Output format: dot, verilog, sv, json, sva, firrtl, rspu, riscv, arm, testbench, scaffold, build-script, sexpr, mape-k-rtl, cert
+    #[arg(short, long)]
+    emit: Option<String>,
+
+    /// Write output to FILE
+    #[arg(short, long)]
+    output: Option<String>,
+
+    /// FPGA target: generic, xilinx-7, xilinx-us, intel-cyclone, lattice-ice40, lattice-ecp5, lattice-nexus
+    #[arg(long, default_value = "generic")]
+    target: String,
+
+    /// Input synchronizer stages
+    #[arg(long, default_value_t = 2)]
+    sync_stages: u32,
+
+    /// Min operand bits for DSP inference
+    #[arg(long, default_value_t = 9)]
+    dsp_threshold: u32,
+
+    /// Also emit self-checking testbench
+    #[arg(long)]
+    testbench: bool,
+
+    /// Also emit FPGA constraint template and build script
+    #[arg(long)]
+    scaffold: bool,
+
+    /// Omit SVA assertions from verilog output
+    #[arg(long)]
+    strip_sva: bool,
+
+    /// Write SVA properties to a separate bind file
+    #[arg(long)]
+    sva_file: Option<String>,
+
+    /// Show full AST trees in DOT output
+    #[arg(long)]
+    dot_detail: bool,
+
+    /// Print detailed pipeline statistics
+    #[arg(long)]
+    stats: bool,
+
+    /// Enable MEGA-4 totality check and generate proof certificate
+    #[arg(long)]
+    totality: bool,
+
+    /// Enable MEGA-5 symbolic interval analysis
+    #[arg(long)]
+    symbolic: bool,
+
+    /// Run SymbiYosys formal verification
+    #[arg(long)]
+    formal: bool,
+
+    /// BMC depth
+    #[arg(long, default_value_t = 20)]
+    formal_depth: u32,
+
+    /// Also run k-induction prove
+    #[arg(long)]
+    formal_prove: bool,
+
+    /// Solver: z3, yices, bitwuzla, btor
+    #[arg(long, default_value = "z3")]
+    formal_engine: String,
+
+    /// Run Verilator lint-only
+    #[arg(long)]
+    lint: bool,
+
+    /// Run Verilator compiled simulation
+    #[arg(long)]
+    simulate: bool,
+
+    /// Run nextpnr place and route
+    #[arg(long)]
+    pnr: bool,
+
+    /// Run icetime static timing analysis
+    #[arg(long)]
+    timing: bool,
+
+    /// Run EQY equivalence checking
+    #[arg(long)]
+    eqy: bool,
+
+    /// Override oss-cad-suite root directory
+    #[arg(long)]
+    toolchain_path: Option<String>,
+}
+
+use clap::CommandFactory;
+
 pub fn main() {
-    let args: Vec<String> = std::env::args().collect();
+    let args = Cli::parse();
 
-    let mut input_path: Option<String> = None;
-    let mut emit_format: Option<String> = None;
-    let mut output_path: Option<String> = None;
-    let mut show_stats = false;
-    let mut show_help = false;
-    let mut dot_detail_expr = false;
-    let mut target_name: Option<String> = None;
-    let mut sync_stages: u32 = 2;
-    let mut dsp_threshold: u32 = nasa_rust_project::emit::dsp::DEFAULT_DSP_THRESHOLD;
-    let mut emit_testbench = false;
-    let mut emit_scaffold = false;
-    let mut strip_sva = false;
-    let mut sva_file: Option<String> = None;
-    let mut formal = false;
-    let mut formal_depth: u32 = 20;
-    let mut formal_prove = false;
-    let mut formal_engine: String = "z3".to_string();
-    let mut lint = false;
-    let mut simulate = false;
-    let mut pnr = false;
-    let mut timing = false;
-    let mut eqy = false;
-    let mut toolchain_path: Option<String> = None;
-    let mut totality = false;
-    let mut symbolic = false;
-
-    let mut i = 1;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--emit" => {
-                i += 1;
-                if i < args.len() {
-                    emit_format = Some(args[i].clone());
-                }
+    if args.help_json {
+        use clap::CommandFactory;
+        fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {
+            let mut args_list = Vec::new();
+            for arg in cmd.get_arguments() {
+                args_list.push(serde_json::json!({
+                    "id": arg.get_id().as_str(),
+                    "long": arg.get_long(),
+                    "short": arg.get_short(),
+                    "help": arg.get_help().map(|h| h.to_string()),
+                    "required": arg.is_required_set(),
+                }));
             }
-            "--output" | "-o" => {
-                i += 1;
-                if i < args.len() {
-                    output_path = Some(args[i].clone());
-                }
+            let mut subs = Vec::new();
+            for sub in cmd.get_subcommands() {
+                subs.push(get_cmd_manifest(sub));
             }
-            "--dot-detail" => {
-                i += 1;
-                if i < args.len() && args[i] == "expr" {
-                    dot_detail_expr = true;
-                }
-            }
-            "--target" => {
-                i += 1;
-                if i < args.len() {
-                    target_name = Some(args[i].clone());
-                }
-            }
-            "--sync-stages" => {
-                i += 1;
-                if i < args.len() {
-                    sync_stages = args[i].parse().unwrap_or(2);
-                }
-            }
-            "--dsp-threshold" => {
-                i += 1;
-                if i < args.len() {
-                    dsp_threshold = args[i].parse().unwrap_or(dsp_threshold);
-                }
-            }
-            "--testbench" => emit_testbench = true,
-            "--scaffold" => emit_scaffold = true,
-            "--strip-sva" => strip_sva = true,
-            "--sva-file" => {
-                i += 1;
-                if i < args.len() {
-                    sva_file = Some(args[i].clone());
-                }
-            }
-            "--stats" => show_stats = true,
-            "--formal" => formal = true,
-            "--formal-depth" => {
-                i += 1;
-                if i < args.len() {
-                    formal_depth = args[i].parse().unwrap_or(20);
-                }
-            }
-            "--formal-prove" => formal_prove = true,
-            "--formal-engine" => {
-                i += 1;
-                if i < args.len() {
-                    formal_engine = args[i].clone();
-                }
-            }
-            "--lint" => lint = true,
-            "--simulate" => simulate = true,
-            "--pnr" => pnr = true,
-            "--timing" => timing = true,
-            "--eqy" => eqy = true,
-            "--totality" => totality = true,
-            "--symbolic" => symbolic = true,
-            "--toolchain-path" => {
-                i += 1;
-                if i < args.len() {
-                    toolchain_path = Some(args[i].clone());
-                }
-            }
-            "--help" | "-h" => show_help = true,
-            other => {
-                if other.starts_with('-') {
-                    eprintln!("Unknown option: {other}");
-                    process::exit(1);
-                }
-                input_path = Some(other.to_string());
-            }
+            serde_json::json!({
+                "name": cmd.get_name(),
+                "about": cmd.get_about().map(|a| a.to_string()),
+                "version": cmd.get_version().map(|v| v.to_string()),
+                "args": args_list,
+                "subcommands": subs,
+            })
         }
-        i += 1;
+        let cmd = Cli::command();
+        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
+        process::exit(0);
     }
+    
+    let root_file = args.root_file.unwrap_or_else(|| {
+        eprintln!("Error: no input file specified.\nRun with --help for usage.");
+        process::exit(1);
+    });
 
-    if show_help {
-        help::print_help();
-        return;
-    }
+    let fpga_target = FpgaTarget::from_str_name(&args.target).unwrap_or_else(|| {
+        eprintln!("Unknown FPGA target: '{}'.", args.target);
+        process::exit(1);
+    });
 
-    let input_path = match input_path {
-        Some(p) => p,
-        None => {
-            eprintln!("Error: no input file specified.");
-            eprintln!("Run with --help for usage.");
-            process::exit(1);
-        }
-    };
+    let source = std::fs::read_to_string(&root_file).unwrap_or_else(|e| {
+        eprintln!("Error: cannot read '{}': {}", root_file, e);
+        process::exit(1);
+    });
 
-    // Parse FPGA target.
-    let fpga_target = match &target_name {
-        Some(name) => match FpgaTarget::from_str_name(name) {
-            Some(t) => t,
-            None => {
-                eprintln!("Unknown FPGA target: '{name}'.");
-                eprintln!(
-                    "Valid targets: generic, xilinx-7, xilinx-us, intel-cyclone, lattice-ice40, lattice-ecp5, lattice-nexus"
-                );
-                process::exit(1);
-            }
-        },
-        None => FpgaTarget::default(),
-    };
-
-    let source = match std::fs::read_to_string(&input_path) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("Error: cannot read '{input_path}': {e}");
-            process::exit(1);
-        }
-    };
-
-    // Run full pipeline — enable R-SPU stage when rspu output is requested.
     let mut config = PipelineConfig::default();
-    if emit_format.as_deref() == Some("rspu")
-        || emit_format.as_deref() == Some("cert")
-        || emit_format.as_deref() == Some("riscv")
-        || emit_format.as_deref() == Some("arm")
-        || totality
+    if args.emit.as_deref() == Some("rspu")
+        || args.emit.as_deref() == Some("cert")
+        || args.emit.as_deref() == Some("riscv")
+        || args.emit.as_deref() == Some("arm")
+        || args.totality
     {
         config.rspu = true;
     }
-    if totality || emit_format.as_deref() == Some("cert") {
+    if args.totality || args.emit.as_deref() == Some("cert") {
         config.totality = true;
     }
-    if symbolic {
+    if args.symbolic {
         config.symbolic = true;
     }
-    if emit_format.as_deref() == Some("mape-k-rtl") {
+    if args.emit.as_deref() == Some("mape-k-rtl") {
         config.temporal = true;
         config.mape_k = true;
         config.emit_mape_k_rtl = true;
     }
+
     let result = match run_pipeline(&source, &config) {
         Ok(r) => r,
         Err(e) => {
@@ -202,253 +201,135 @@ pub fn main() {
                 let rendered = nasa_rust_project::diagnostic::render_diagnostic(
                     &diagnostic,
                     &source,
-                    &input_path,
+                    &root_file,
                 );
                 eprint!("{}", rendered);
-            }
-            let n = e.errors.len();
-            if n == 1 {
-                eprintln!("error: aborting due to previous error");
-            } else {
-                eprintln!("error: aborting due to {n} previous errors");
             }
             process::exit(1);
         }
     };
 
-    // Print summary.
-    summary::print_summary(&result, show_stats);
+    summary::print_summary(&result, args.stats);
 
     // Check for width errors — render through the diagnostic engine.
     if result.has_width_errors() {
         if let Some(ref wr) = result.width_result {
-            // Collect all diagnostics from all phases.
-            let mut width_diags: Vec<&nasa_rust_project::width::types::WidthDiag> = Vec::new();
-            for (_, diags) in &wr.phase4a.assignment_results {
-                for d in diags {
-                    width_diags.push(d);
-                }
-            }
-            for (_, r) in &wr.phase4a.guard_results {
-                for d in &r.diagnostics {
-                    width_diags.push(d);
-                }
-            }
-            for d in &wr.scc_diagnostics {
-                width_diags.push(d);
-            }
-            for d in &wr.verification.diagnostics {
-                width_diags.push(d);
-            }
+            let mut width_diags = Vec::new();
+            for (_, diags) in &wr.phase4a.assignment_results { width_diags.extend(diags); }
+            for (_, r) in &wr.phase4a.guard_results { width_diags.extend(&r.diagnostics); }
+            width_diags.extend(&wr.scc_diagnostics);
+            width_diags.extend(&wr.verification.diagnostics);
             for wd in &width_diags {
                 let d = wd.to_diagnostic();
-                let rendered =
-                    nasa_rust_project::diagnostic::render_diagnostic(&d, &source, &input_path);
+                let rendered = nasa_rust_project::diagnostic::render_diagnostic(&d, &source, &root_file);
                 eprint!("{}", rendered);
             }
         }
         eprintln!("Width errors detected — output may be incomplete.");
     }
 
-    // Emit output.
-    let format = emit_format.as_deref().unwrap_or("dot");
+    let format = args.emit.as_deref().unwrap_or("dot");
     let output = match format {
         "dot" => {
-            if dot_detail_expr {
+            if args.dot_detail {
                 emit::dot::emit_expr_dot(&result)
             } else {
                 emit::dot::emit_module_dot(&result)
             }
         }
         "verilog" | "sv" => {
-            let t = if fpga_target == emit::fpga_target::FpgaTarget::Generic {
-                None
+            let t = if fpga_target == emit::fpga_target::FpgaTarget::Generic { None } else { Some(fpga_target) };
+            if args.strip_sva {
+                emit::verilog::emit_sv_synthesis(&result, t, args.dsp_threshold)
             } else {
-                Some(fpga_target)
-            };
-            if strip_sva {
-                emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
-            } else {
-                emit::verilog::emit_sv_with_options(&result, t, dsp_threshold)
+                emit::verilog::emit_sv_with_options(&result, t, args.dsp_threshold)
             }
         }
-        "json" => match emit::json_netlist::emit_json(&result) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("Error serializing JSON: {e}");
-                process::exit(1);
-            }
-        },
+        "json" => emit::json_netlist::emit_json(&result).unwrap_or_else(|e| {
+            eprintln!("Error serializing JSON: {e}");
+            process::exit(1);
+        }),
         "sva" => emit::verilog::emit_sva_only(&result),
         "firrtl" => emit::firrtl::emit_firrtl(&result),
-        "rspu" => match &result.rspu_program {
-            Some(prog) => prog.emit_asm(),
-            None => {
-                eprintln!(
-                    "Error: R-SPU program was not generated (pipeline may have been skipped)."
-                );
-                process::exit(1);
-            }
-        },
-        "riscv" => match &result.rspu_program {
-            Some(prog) => emit::riscv::emit_riscv_asm(prog).unwrap_or_else(|e| {
-                eprintln!("Error emitting RISC-V assembly: {e:?}");
-                process::exit(1);
-            }),
-            None => {
-                eprintln!("Error: R-SPU program was not generated (required for RISC-V emission).");
-                process::exit(1);
-            }
-        },
-        "arm" => match &result.rspu_program {
-            Some(prog) => emit::arm::emit_arm_asm(prog).unwrap_or_else(|e| {
-                eprintln!("Error emitting ARM assembly: {e:?}");
-                process::exit(1);
-            }),
-            None => {
-                eprintln!("Error: R-SPU program was not generated (required for ARM emission).");
-                process::exit(1);
-            }
-        },
+        "rspu" => result.rspu_program.as_ref().map(|p| p.emit_asm()).unwrap_or_else(|| {
+            eprintln!("Error: R-SPU program not generated.");
+            process::exit(1);
+        }),
+        "riscv" => result.rspu_program.as_ref().map(|p| emit::riscv::emit_riscv_asm(p).unwrap()).unwrap_or_else(|| {
+             eprintln!("Error emitting RISC-V.");
+             process::exit(1);
+        }),
+        "arm" => result.rspu_program.as_ref().map(|p| emit::arm::emit_arm_asm(p).unwrap()).unwrap_or_else(|| {
+             eprintln!("Error emitting ARM.");
+             process::exit(1);
+        }),
         "testbench" => emit::testbench::emit_testbench(&result),
         "scaffold" => emit::fpga_scaffold::emit_constraints(&result, &fpga_target),
         "build-script" => emit::fpga_scaffold::emit_build_script(&result, &fpga_target),
-        "sexpr" | "s-expr" | "sexp" => emit::sexpr::emit_sexpr(&result),
-        "mape-k-rtl" => match &result.mape_k_rtl {
-            Some(rtl) => rtl.clone(),
-            None => {
-                eprintln!("Error: MAPE-K RTL was not generated (pipeline may have been skipped).");
-                process::exit(1);
+        "sexpr" => emit::sexpr::emit_sexpr(&result),
+        "mape-k-rtl" => result.mape_k_rtl.clone().expect("MAPE-K RTL skipped"),
+        "cert" => {
+            let cert_bytes = result.rspu_program.as_ref().and_then(|p| p.certificate.as_ref()).expect("Certificate missing");
+            if let Some(path) = &args.output {
+                std::fs::write(path, cert_bytes).unwrap();
+                return;
             }
-        },
-        "cert" => match &result.rspu_program {
-            Some(prog) => match &prog.certificate {
-                Some(cert_bytes) => {
-                    // Binary certificate — write directly to output path.
-                    if let Some(ref path) = output_path {
-                        if let Err(e) = std::fs::write(path, cert_bytes) {
-                            eprintln!("Error writing certificate '{path}': {e}");
-                            process::exit(1);
-                        }
-                        eprintln!("Certificate written to {path} ({} bytes)", cert_bytes.len());
-                        return;
-                    }
-                    // No output path: hex-encode for stdout.
-                    cert_bytes.iter().fold(String::new(), |mut acc, b| {
-                        use std::fmt::Write;
-                        let _ = write!(acc, "{b:02x}");
-                        acc
-                    })
-                }
-                None => {
-                    eprintln!("Error: totality check did not produce a certificate.");
-                    eprintln!("Hint: use --totality with --emit cert.");
-                    process::exit(1);
-                }
-            },
-            None => {
-                eprintln!("Error: R-SPU program was not generated (required for cert emission).");
-                process::exit(1);
-            }
-        },
-        other => {
-            eprintln!(
-                "Unknown emit format: '{other}'. Use dot, verilog, json, sva, firrtl, rspu, riscv, arm, testbench, scaffold, build-script, sexpr, mape-k-rtl, or cert."
-            );
-            process::exit(1);
+            cert_bytes.iter().map(|b| format!("{:02x}", b)).collect()
         }
+        _ => { eprintln!("Unknown format: {format}"); process::exit(1); }
     };
 
-    // Write primary output.
-    match &output_path {
-        Some(path) => {
-            if let Err(e) = std::fs::write(path, &output) {
-                eprintln!("Error writing '{path}': {e}");
-                process::exit(1);
-            }
-            eprintln!("Output written to {path}");
-        }
-        None => {
-            print!("{output}");
-        }
+    if let Some(path) = &args.output {
+        std::fs::write(path, &output).expect("Error writing output");
+        eprintln!("Output written to {path}");
+    } else {
+        print!("{output}");
     }
 
-    // Emit additional outputs if requested alongside verilog.
-    if (format == "verilog" || format == "sv") && emit_testbench {
+    if (format == "verilog" || format == "sv") && args.testbench {
         let tb = emit::testbench::emit_testbench(&result);
-        let tb_path = derive_path(&input_path, "_tb.sv");
-        if let Err(e) = std::fs::write(&tb_path, &tb) {
-            eprintln!("Error writing testbench '{tb_path}': {e}");
-        } else {
-            eprintln!("Testbench written to {tb_path}");
-        }
+        let path = derive_path(&root_file, "_tb.sv");
+        std::fs::write(&path, tb).unwrap();
+        eprintln!("Testbench written to {path}");
     }
 
-    if (format == "verilog" || format == "sv") && emit_scaffold {
+    if (format == "verilog" || format == "sv") && args.scaffold {
         let constraints = emit::fpga_scaffold::emit_constraints(&result, &fpga_target);
         let ext = fpga_target.constraint_extension();
-        let constr_path = derive_path(&input_path, &format!(".{ext}"));
-        if let Err(e) = std::fs::write(&constr_path, &constraints) {
-            eprintln!("Error writing constraints '{constr_path}': {e}");
-        } else {
-            eprintln!("Constraints written to {constr_path}");
-        }
+        let constr_path = derive_path(&root_file, &format!(".{ext}"));
+        std::fs::write(&constr_path, constraints).unwrap();
+        eprintln!("Constraints written to {constr_path}");
 
         let build = emit::fpga_scaffold::emit_build_script(&result, &fpga_target);
         let build_ext = match fpga_target {
-            FpgaTarget::LatticeIce40
-            | FpgaTarget::LatticeEcp5
-            | FpgaTarget::LatticeNexus
-            | FpgaTarget::Generic => "sh",
+            FpgaTarget::LatticeIce40 | FpgaTarget::LatticeEcp5 | FpgaTarget::LatticeNexus | FpgaTarget::Generic => "sh",
             _ => "tcl",
         };
-        let build_path = derive_path(&input_path, &format!("_build.{build_ext}"));
-        if let Err(e) = std::fs::write(&build_path, &build) {
-            eprintln!("Error writing build script '{build_path}': {e}");
-        } else {
-            eprintln!("Build script written to {build_path}");
-        }
+        let build_path = derive_path(&root_file, &format!("_build.{build_ext}"));
+        std::fs::write(&build_path, build).unwrap();
+        eprintln!("Build script written to {build_path}");
     }
 
-    // Write separate SVA bind file if requested.
-    if let Some(ref sva_path) = sva_file {
+    if let Some(path) = &args.sva_file {
         let sva_content = emit::verilog::emit_sva_bind_file(&result);
-        if sva_content.is_empty() {
-            eprintln!("No properties to write to SVA bind file.");
-        } else if let Err(e) = std::fs::write(sva_path, &sva_content) {
-            eprintln!("Error writing SVA bind file '{sva_path}': {e}");
-        } else {
-            eprintln!("SVA bind file written to {sva_path}");
+        if !sva_content.is_empty() {
+            std::fs::write(path, sva_content).unwrap();
         }
     }
 
-    // Emit synchronizer chain info if non-default.
-    if sync_stages != 2 && (format == "verilog" || format == "sv") {
-        eprintln!("  Sync stages: {sync_stages}");
+    if args.sync_stages != 2 && (format == "verilog" || format == "sv") {
+        eprintln!("  Sync stages: {}", args.sync_stages);
     }
 
-    // Toolchain operations — only if any toolchain flag is set.
-    if formal || lint || simulate || pnr || timing || eqy {
+    if args.formal || args.lint || args.simulate || args.pnr || args.timing || args.eqy {
         toolchain::run_toolchain_operations(
-            &result,
-            &input_path,
-            &fpga_target,
-            dsp_threshold,
-            formal,
-            formal_depth,
-            formal_prove,
-            &formal_engine,
-            lint,
-            simulate,
-            pnr,
-            timing,
-            eqy,
-            toolchain_path.as_deref(),
+            &result, &root_file, &fpga_target, args.dsp_threshold, args.formal, 
+            args.formal_depth, args.formal_prove, &args.formal_engine, args.lint, 
+            args.simulate, args.pnr, args.timing, args.eqy, args.toolchain_path.as_deref()
         );
     }
 }
 
-/// Derive an output path from the input path by replacing the extension.
 pub(crate) fn derive_path(input_path: &str, suffix: &str) -> String {
     if let Some(dot_pos) = input_path.rfind('.') {
         format!("{}{}", &input_path[..dot_pos], suffix)

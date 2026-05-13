@@ -108,13 +108,30 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         // Integer literal with bounds checking.
         if b.is_ascii_digit() {
             let start = pos;
-            while pos < len && bytes[pos].is_ascii_digit() {
-                pos += 1;
+            let mut is_hex = false;
+
+            if b == b'0' && pos + 1 < len && (bytes[pos + 1] == b'x' || bytes[pos + 1] == b'X') {
+                is_hex = true;
+                pos += 2;
+                while pos < len && bytes[pos].is_ascii_hexdigit() {
+                    pos += 1;
+                }
+            } else {
+                while pos < len && bytes[pos].is_ascii_digit() {
+                    pos += 1;
+                }
             }
+            
             let num_str = &input[start..pos];
-            let value: u64 = num_str.parse().map_err(|_| {
-                MirrError::parse_error(format!("[E180] Integer literal too large: '{num_str}'."))
-            })?;
+            let value: u64 = if is_hex {
+                u64::from_str_radix(&num_str[2..], 16).map_err(|_| {
+                    MirrError::parse_error(format!("[E180] Hex literal too large or invalid: '{num_str}'."))
+                })?
+            } else {
+                num_str.parse().map_err(|_| {
+                    MirrError::parse_error(format!("[E180] Integer literal too large: '{num_str}'."))
+                })?
+            };
             tokens.push(Token::Integer(value));
             continue;
         }

@@ -42,7 +42,11 @@ const ENTRY_SOURCE: &str = "mirr-brain";
 #[command(name = "mirr-brain", version, about = "MIRR Knowledge Core")]
 struct Args {
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
+
+    /// Export CLI schema as JSON for tool integration
+    #[arg(long, hide = true)]
+    help_json: bool,
 
     /// Root directory for KB-lite assets.
     #[arg(long, default_value = DEFAULT_KB_ROOT)]
@@ -121,6 +125,42 @@ fn open_kb(kb_root: &Path) -> anyhow::Result<(Connection, PathBuf)> {
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+
+    if args.help_json {
+        use clap::CommandFactory;
+        fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {
+            let mut args_list = Vec::new();
+            for arg in cmd.get_arguments() {
+                args_list.push(serde_json::json!({
+                    "id": arg.get_id().as_str(),
+                    "long": arg.get_long(),
+                    "short": arg.get_short(),
+                    "help": arg.get_help().map(|h| h.to_string()),
+                    "required": arg.is_required_set(),
+                }));
+            }
+            let mut subs = Vec::new();
+            for sub in cmd.get_subcommands() {
+                subs.push(get_cmd_manifest(sub));
+            }
+            serde_json::json!({
+                "name": cmd.get_name(),
+                "about": cmd.get_about().map(|a| a.to_string()),
+                "version": cmd.get_version().map(|v| v.to_string()),
+                "args": args_list,
+                "subcommands": subs,
+            })
+        }
+        let cmd = Args::command();
+        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
+        return Ok(());
+    }
+
+    let command = args.command.unwrap_or_else(|| {
+        eprintln!("Error: no command specified.\nRun with --help for usage.");
+        std::process::exit(1);
+    });
+
     let kb_root_path = PathBuf::from(&args.kb_root);
     let (conn, graph_db_path) = open_kb(&kb_root_path)?;
     let knowledge_lance_path = kb_root_path.join("knowledge.lance");
@@ -138,7 +178,7 @@ fn main() -> anyhow::Result<()> {
         laws: None,
     };
 
-    match args.command {
+    match command {
         Commands::Store { key, value } => {
             let clipped_value = clip_to_max(&value);
             conn.execute(

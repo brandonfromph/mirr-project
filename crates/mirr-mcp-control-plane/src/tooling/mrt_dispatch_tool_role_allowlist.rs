@@ -10,7 +10,7 @@ const ROLE_COMMITTER_ADMIN: &[Role] = &[Role::Committer, Role::Admin];
 const ROLE_BUILDER_COMMITTER_ADMIN: &[Role] = &[Role::Builder, Role::Committer, Role::Admin];
 
 impl MrtDispatchTool {
-    pub const fn role_allowlist(self) -> &'static [Role] {
+    pub fn role_allowlist(&self) -> &'static [Role] {
         match self {
             Self::MrtAudit => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::MrtBrainGet => ROLE_COMMITTER_ADMIN,
@@ -35,6 +35,7 @@ impl MrtDispatchTool {
             Self::MrtKbIndex => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::MrtKbIndexStatus => ROLE_BUILDER_COMMITTER_ADMIN,
             Self::MrtKbBrief => ROLE_BUILDER_COMMITTER_ADMIN,
+            Self::Dynamic(_) => ROLE_BUILDER_COMMITTER_ADMIN,
         }
     }
 }

@@ -348,7 +348,9 @@ impl RspuProgram {
 /// Format a single instruction as R-SPU assembly text.
 fn format_instruction(instr: &RspuInstruction) -> String {
     match instr {
-        RspuInstruction::TagBranch { .. } => todo!(),
+        RspuInstruction::TagBranch { tag_value, target_pc } => {
+            format!("TAG_BRANCH  {}, {}", tag_value, target_pc)
+        }
         RspuInstruction::LoadInput { dst, port } => {
             format!("LOAD_INPUT  R{dst}, P{port}")
         }
