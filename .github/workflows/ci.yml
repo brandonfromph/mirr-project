@@ -21,6 +21,7 @@ env:
   SCCACHE_GHA_ENABLED: "false"
   CARGO_INCREMENTAL: 0
   SCCACHE_LOCAL_RW_CACHE: "true"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   test:
@@ -398,7 +399,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Install dependencies
         working-directory: vscode-mirr
         run: npm install
