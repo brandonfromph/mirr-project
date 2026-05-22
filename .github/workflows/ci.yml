@@ -26,8 +26,6 @@ jobs:
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    container:
-      image: ${{ matrix.os == 'ubuntu-latest' && 'ghcr.io/${{ github.repository }}/mirr-ci:latest' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -86,8 +84,6 @@ jobs:
   compile-examples:
     name: Examples
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -143,8 +139,6 @@ jobs:
   scripts-check:
     name: Scripts Check
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Lint scripts
@@ -155,8 +149,6 @@ jobs:
     name: Coverage
     needs: test
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -201,8 +193,6 @@ jobs:
     name: Supply Chain
     needs: test
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Run cargo-deny
@@ -214,8 +204,6 @@ jobs:
     name: RTL Simulation
     needs: test
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -254,8 +242,6 @@ jobs:
     name: WASM Build
     needs: test
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -305,8 +291,6 @@ jobs:
     name: Arsenal WASM
     needs: test
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Cache cargo registry
@@ -363,8 +347,6 @@ jobs:
   lra-cli:
     name: LRA CLI
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -406,8 +388,6 @@ jobs:
   vscode-check:
     name: VS Code Check
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Setup Node.js
@@ -424,8 +404,6 @@ jobs:
   rustdoc:
     name: Rustdoc
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -458,8 +436,6 @@ jobs:
   fuzz-check:
     name: Fuzz Check
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Install Rust toolchain
@@ -508,8 +484,6 @@ jobs:
       ]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/mirr-ci:latest
     permissions:
       contents: read
       pages: write
