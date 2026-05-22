@@ -137,6 +137,8 @@ scripts/*.py
 
 # ─── Debug Binary Artifacts & Bug Hunt Snapshots ─────────────────────────────
 bug_hunt_*
+!tests/stress_audit/
+!tests/stress_audit/bug_hunt_*
 debug_proc
 debug_proc.rs
 test_replace
