@@ -4,7 +4,8 @@ mod e2e_tests {
     use std::path::PathBuf;
 
     fn get_alu_path() -> String {
-        "/Users/brandonc.blay/projects/mirr-private/rspu_chip/core/alu.mirr".to_string()
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
+        format!("{}/rspu_chip/core/alu.mirr", manifest_dir)
     }
 
     #[test]
@@ -12,9 +13,10 @@ mod e2e_tests {
         let source = std::fs::read_to_string(get_alu_path()).unwrap();
         let config = PipelineConfig {
             temporal: true,
-            base_dir: Some(PathBuf::from(
-                "/Users/brandonc.blay/projects/mirr-private/rspu_chip/core",
-            )),
+            base_dir: Some(PathBuf::from(format!(
+                "{}/rspu_chip/core",
+                std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string())
+            ))),
             ..Default::default()
         };
 
@@ -73,9 +75,10 @@ mod e2e_tests {
         // This test requires actual files on disk
         let alu_source = std::fs::read_to_string(get_alu_path()).unwrap();
         let config = PipelineConfig {
-            base_dir: Some(PathBuf::from(
-                "/Users/brandonc.blay/projects/mirr-private/rspu_chip/core",
-            )),
+            base_dir: Some(PathBuf::from(format!(
+                "{}/rspu_chip/core",
+                std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string())
+            ))),
             ..Default::default()
         };
 
