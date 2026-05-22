@@ -27,10 +27,7 @@ module counter_parity {{
     );
 
     // 1. Compile
-    let cfg = PipelineConfig {
-        rspu: true,
-        ..Default::default()
-    };
+    let cfg = PipelineConfig { rspu: true, ..Default::default() };
     let res = run_pipeline(&mirr, &cfg).expect("Compilation failed");
     let prog = res.rspu_program.expect("RSPU program not generated");
 

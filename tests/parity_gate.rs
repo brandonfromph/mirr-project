@@ -43,10 +43,7 @@ fn test_rspu_16_core_parity_gate() {
     mirr.push_str("}\n");
 
     // 3. COMPILE TO RSPU
-    let cfg = PipelineConfig {
-        rspu: true,
-        ..Default::default()
-    };
+    let cfg = PipelineConfig { rspu: true, ..Default::default() };
     let res = run_pipeline(&mirr, &cfg).expect("Compilation failed");
     let prog = res.rspu_program.expect("RSPU program not generated");
 

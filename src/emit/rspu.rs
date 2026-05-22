@@ -543,11 +543,7 @@ fn emit_properties(
                 let gid = (MAX_GUARDS - 1 - idx) as GuardId;
 
                 // Track the trigger in a shift register.
-                instrs.push(RspuInstruction::SrInit {
-                    guard: gid,
-                    length: *delay_cycles,
-                    cond: p,
-                });
+                instrs.push(RspuInstruction::SrInit { guard: gid, length: *delay_cycles, cond: p });
                 instrs.push(RspuInstruction::SrTick { guard: gid });
 
                 let delayed_p = regs.alloc_temp().ok_or_else(|| {

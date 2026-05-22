@@ -68,8 +68,12 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
         expanded.push(ch);
 
-        if !in_quotes && !in_comment && !in_interpolation && (ch == ';' || ch == '{' || ch == '}')
-            && chars.peek() != Some(&'\n') {
+        if !in_quotes
+            && !in_comment
+            && !in_interpolation
+            && (ch == ';' || ch == '{' || ch == '}')
+            && chars.peek() != Some(&'\n')
+        {
             expanded.push('\n');
         }
 

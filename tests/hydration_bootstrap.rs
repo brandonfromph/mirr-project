@@ -6,10 +6,7 @@ fn run_test(source: &str) -> Result<(), String> {
         Ok(p) => p,
         Err(e) => return Err(format!("{:?}", e)),
     };
-    let config = PipelineConfig {
-        bootstrap_mode: true,
-        ..Default::default()
-    };
+    let config = PipelineConfig { bootstrap_mode: true, ..Default::default() };
     match run_pipeline_on_program(program, &config) {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("{:?}", e)),

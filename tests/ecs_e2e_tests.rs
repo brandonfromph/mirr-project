@@ -12,7 +12,9 @@ mod e2e_tests {
         let source = std::fs::read_to_string(get_alu_path()).unwrap();
         let config = PipelineConfig {
             temporal: true,
-            base_dir: Some(PathBuf::from("/Users/brandonc.blay/projects/mirr-private/rspu_chip/core")),
+            base_dir: Some(PathBuf::from(
+                "/Users/brandonc.blay/projects/mirr-private/rspu_chip/core",
+            )),
             ..Default::default()
         };
 
@@ -71,7 +73,9 @@ mod e2e_tests {
         // This test requires actual files on disk
         let alu_source = std::fs::read_to_string(get_alu_path()).unwrap();
         let config = PipelineConfig {
-            base_dir: Some(PathBuf::from("/Users/brandonc.blay/projects/mirr-private/rspu_chip/core")),
+            base_dir: Some(PathBuf::from(
+                "/Users/brandonc.blay/projects/mirr-private/rspu_chip/core",
+            )),
             ..Default::default()
         };
 
@@ -109,10 +113,7 @@ mod e2e_tests {
     #[test]
     fn test_e2e_resource_strategy_selection() {
         let source = "module top; signal s1: bool; guard g_short(s1) for 5 cycles; guard g_long(s1) for 50 cycles; endmodule";
-        let config = PipelineConfig {
-            temporal: true,
-            ..Default::default()
-        };
+        let config = PipelineConfig { temporal: true, ..Default::default() };
         let result = run_pipeline(source, &config).unwrap();
 
         let netlist = result.temporal_netlist.unwrap();

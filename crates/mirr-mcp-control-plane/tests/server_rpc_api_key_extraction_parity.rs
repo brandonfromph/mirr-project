@@ -15,10 +15,8 @@ fn parse_api_key_value_matches_ts_behavior() {
 
 #[test]
 fn rpc_envelope_api_key_precedence_matches_ts() {
-    let mut envelope = RpcEnvelopeApiKeyInput {
-        api_key: Some("direct".to_owned()),
-        ..Default::default()
-    };
+    let mut envelope =
+        RpcEnvelopeApiKeyInput { api_key: Some("direct".to_owned()), ..Default::default() };
 
     assert_eq!(api_key_from_rpc_envelope(&envelope), "direct");
 
