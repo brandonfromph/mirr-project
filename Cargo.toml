@@ -38,7 +38,7 @@ opt-level = 0
 [profile.test]
 incremental = true
 opt-level = 0
-debug = "full"
+debug = 1
 overflow-checks = true
 
 [profile.release]
