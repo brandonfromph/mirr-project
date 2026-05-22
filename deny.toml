@@ -24,6 +24,8 @@ allow = [
     "0BSD",
     "OpenSSL",
     "CDLA-Permissive-2.0",
+    "BSD-1-Clause",
+    "LGPL-2.1-or-later",
 ]
 
 [bans]
