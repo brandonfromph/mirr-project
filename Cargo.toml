@@ -101,6 +101,6 @@ getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] 
 getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-mirr-kb-native = { path = "crates/mirr-kb-native" }
+mirr-kb-native = { path = "crates/mirr-kb-native", version = "0.1.0" }
 rusqlite = { version = "0.39.0", features = ["bundled"] }
 tokio = { version = "1", features = ["time", "sync", "rt", "macros", "full"] }
