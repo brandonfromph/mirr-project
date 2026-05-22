@@ -1,8 +1,0 @@
-{
-  "insights": {
-    "last_audit": "[\n  {\n    \"file\": \"proposals\\\\031-LRA002-PAPER-UPGRADE-2026-03-11.md\",\n    \"line\": 414,\n    \"rule\": \"E801\",\n    \"message\": \"Refinement Gap: Struct 'surface' proposed in code block but not implemented.\"\n  },\n  {\n    \"file\": \"proposals\\\\045-MEGA-CONVERGENCE-2026-03-14.md\",\n    \"line\": 1003,\n    \"rule\": \"E801\",\n    \"message\": \"Refinement Gap: Struct 'BridgeSignal' proposed in code block but not implemented.\"\n  },\n  {\n    \"file\": \"proposals\\\\045-MEGA-CONVERGENCE-2026-03-14.md\",\n    \"line\": 1010,\n    \"rule\": \"E801\",\n    \"message\": \"Refinement Gap: Struct 'Bridge' proposed in code block but not implemented.\"\n  },\n  {\n    \"file\": \"proposals\\\\045-parts\\\\part4-campaigns-cd.md\",\n    \"line\": 213,\n    \"rule\": \"E801\",\n    \"message\": \"Refinement Gap: Struct 'BridgeSignal' proposed in code block but not implemented.\"\n  },\n  {\n    \"file\": \"proposals\\\\045-parts\\\\part4-campaigns-cd.md\",\n    \"line\": 220,\n    \"rule\": \"E801\",\n    \"message\": \"Refinement Gap: Struct 'Bridge' proposed in code block but not implemented.\"\n  },\n  {\n    \"file\": \"proposals\\\\094-MEGA-10-11-ARCHITECTURE-2026-03-31.md\",\n    \"line\": 98,\n    \"rule\": \"E801\",\n    \"message\": \"Refinement Gap: Struct 'Packet' proposed in code block but not implemented.\"\n  },\n  {\n    \"file\": \"proposals\\\\094-MEGA-10-11-ARCHITECTURE-2026-03-31.md\",\n    \"line\": 105,\n    \"rule\": \"E801\",\n    \"message\": \"Refinement Gap: Struct 'Packet' proposed in code block but not implemented.\"\n  }\n]"
-  },
-  "telemetry": {},
-  "debt": {},
-  "receipts": {}
-}
