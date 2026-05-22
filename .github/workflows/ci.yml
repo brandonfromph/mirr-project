@@ -347,13 +347,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rocq/rocq-prover:9.0
+      options: --user root
     steps:
-      - name: Git ownership fix
-        run: |
-          git config --global --add safe.directory /github/workspace || true
-          git config --global --add safe.directory /__w/mirr-project/mirr-project || true
-          git config --global --add safe.directory /__w/mirr-private/mirr-private || true
-          git config --global --add safe.directory "$GITHUB_WORKSPACE" || true
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
