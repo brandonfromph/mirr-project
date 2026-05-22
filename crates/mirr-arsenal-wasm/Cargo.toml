@@ -2,6 +2,10 @@
 name = "mirr-arsenal-wasm"
 version = "0.1.0"
 edition = "2021"
+description = "WASM bindings for the MIRR compiler semantic bridge"
+license = "GPL-3.0"
+publish = false
+
 
 [lib]
 crate-type = ["cdylib", "rlib"]
