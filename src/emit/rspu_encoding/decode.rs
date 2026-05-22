@@ -169,6 +169,6 @@ pub fn decode(word: u32) -> Result<RspuInstruction, MirrError> {
             let tag_value = (imm26 & 0xFF) as u8;
             Ok(RspuInstruction::TagBranch { tag_value, target_pc })
         }
-        _ => Err(rspu_err(format!("[E707] unknown opcode {opcode}"))),
+        _ => Err(rspu_err(format!("{} unknown opcode {opcode}", crate::error_codes::ec(707)))),
     }
 }

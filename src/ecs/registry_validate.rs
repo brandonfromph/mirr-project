@@ -13,6 +13,18 @@ impl super::Registry {
         if self.types.len() < max_id {
             return Err(anyhow::anyhow!("Types table desync"));
         }
+        if self.reflex_comps.len() < max_id {
+            return Err(anyhow::anyhow!("Reflexes table desync"));
+        }
+        if self.assignment_comps.len() < max_id {
+            return Err(anyhow::anyhow!("Assignments table desync"));
+        }
+        if self.property_comps.len() < max_id {
+            return Err(anyhow::anyhow!("Properties table desync"));
+        }
+        if self.temporal_nodes.len() < max_id {
+            return Err(anyhow::anyhow!("TemporalNodes table desync"));
+        }
 
         // Scan for orphaned entities (Entities that exist in next_id but have no components)
         for i in 0..max_id {

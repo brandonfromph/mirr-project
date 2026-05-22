@@ -114,8 +114,10 @@ in (`in`), some carry water out (`out`), and some are internal connections
 you cannot see from outside.
 
 ```mirr
-signal airway_pressure: in u16;    // a 16-bit number coming in
-signal clamp_valve:     out bool;  // a true/false value going out
+signals {
+    airway_pressure: in u16    // a 16-bit number coming in
+    clamp_valve:     out bool  // a true/false value going out
+}
 ```
 
 ### Guards: the watchers
@@ -213,9 +215,11 @@ Create a file called `my_respirator.mirr` with the following content:
 
 ```mirr
 module neonatal_respirator {
-    signal respirator_enable: in bool;
-    signal airway_pressure:   in u16;
-    signal clamp_valve:       out bool;
+    signals {
+        respirator_enable: in bool
+        airway_pressure:   in u16
+        clamp_valve:       out bool
+    }
 
     guard sustained_pressure_drop {
         when airway_pressure < 50
@@ -593,13 +597,17 @@ Inside a module, call the pattern like a function:
 
 ```mirr
 module dual_sensor {
-    signal temperature:    in  u16;
-    signal pressure:       in  u16;
-    signal temp_alarm:     out bool;
-    signal pressure_alarm: out bool;
+    signals {
+        temperature:    in  u16
+        pressure:       in  u16
+        temp_alarm:     out bool
+        pressure_alarm: out bool
+    }
 
-    threshold_guard(temperature, 100, 5, temp_alarm);
-    threshold_guard(pressure, 300, 3, pressure_alarm);
+    calls {
+        threshold_guard(temperature, 100, 5, temp_alarm)
+        threshold_guard(pressure, 300, 3, pressure_alarm)
+    }
 }
 ```
 
@@ -799,7 +807,9 @@ guard g {
 
 ```mirr
 // Wrong:
-signal x: in out bool;
+signals {
+    x: in out bool
+}
 ```
 
 ```
@@ -814,8 +824,10 @@ signal x: in out bool;
 
 ```mirr
 // Wrong:
-signal x: in bool;
-signal x: out bool;   // x declared twice
+signals {
+    x: in bool
+    x: out bool   // x declared twice
+}
 ```
 
 ```
@@ -865,8 +877,11 @@ guards into counter circuits). They are rare in normal usage.
 
 ```mirr
 module m {
-    signal x: in u16;
-    undefined_pattern(x);    // no such pattern exists
+    signals {
+        x: in u16
+    }
+
+    undefined_pattern(x)    // no such pattern exists
 }
 ```
 

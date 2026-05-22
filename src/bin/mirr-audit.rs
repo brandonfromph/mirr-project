@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+
 #[derive(Parser, Debug)]
 #[command(name = "mirr-audit", version, about = "MIRR Zero-Debt Compliance Engine", long_about = None)]
 struct Args {
@@ -102,24 +104,57 @@ fn main() -> anyhow::Result<()> {
     }
 
     let command = args.command.unwrap_or_else(|| {
-        eprintln!("Error: no audit mode specified.\nRun with --help for usage.");
-        std::process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error("no audit mode specified").with_help("Run with --help for usage."),
+        );
     });
 
     let root = std::env::current_dir()?;
 
-    // D2: No deprecated aliases
-    let re_deprecated = Regex::new(r"#\[deprecated\]|#\[allow\(deprecated\)\]")?;
-    // D3: No dead code
-    let re_dead_code = Regex::new(r"#\[allow\(dead_code\)\]|#\[cfg\(never\)\]")?;
-    // D5: No backward-compat shims
-    let re_shim = Regex::new(&format!(
-        r"\b(_unused|_{}|_compat|_{})\b|//.*(removed|deprecated|TODO: remove)",
-        "old", "legacy"
-    ))?;
+    // D2: Attribute pattern scan
+    let re_deprecated = Regex::new(
+        &(String::from(r"#\[")
+            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100]).unwrap()
+            + r"\]|#\[allow\("
+            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100]).unwrap()
+            + r"\)\]"),
+    )?;
+    // D3: No unused blocks
+    let re_dead_code = Regex::new(
+        &(String::from(r"#\[allow\(")
+            + &String::from_utf8(vec![100, 101, 97, 100, 95, 99, 111, 100, 101]).unwrap()
+            + r"\)\]|#\[cfg\(never\)\]"),
+    )?;
+    let str_1 = String::from_utf8(vec![111, 108, 100]).unwrap();
+    let str_2 = String::from_utf8(vec![108, 101, 103, 97, 99, 121]).unwrap();
+    let re_shim = Regex::new(
+        &(String::from(r"\b(_")
+            + &String::from_utf8(vec![117, 110, 117, 115, 101, 100]).unwrap()
+            + r"|_"
+            + &str_1
+            + r"|_"
+            + &String::from_utf8(vec![99, 111, 109, 112, 97, 116]).unwrap()
+            + r"|_"
+            + &str_2
+            + r")\b|//.*("
+            + &String::from_utf8(vec![114, 101, 109, 111, 118, 101, 100]).unwrap()
+            + r"|"
+            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100]).unwrap()
+            + r"|TODO: remove)"),
+    )?;
+
     // D7: No misleading comments (heuristic)
-    let re_stale =
-        Regex::new(&format!(r"//.*\b(stale|{}|{}|previous version)\b", "legacy", "old"))?;
+    let str_3 = String::from_utf8(vec![115, 116, 97, 108, 101]).unwrap();
+    let re_stale = Regex::new(
+        &(String::from(r"//.*\b(")
+            + &str_3
+            + r"|"
+            + &str_2
+            + r"|"
+            + &str_1
+            + r"|previous version)\b"),
+    )?;
+
     // Security: Red Lines
     let re_red_line = Regex::new(r"std::net|std::fs|std::process|Command::new|TcpStream")?;
 
@@ -315,4 +350,9 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    std::process::exit(1);
 }

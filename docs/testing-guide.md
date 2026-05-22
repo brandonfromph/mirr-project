@@ -46,7 +46,7 @@ use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_full_pipeline() {
-    let source = "module test { signal x: in bool; }";
+    let source = "module test { signals { x: in bool } }";
     let config = PipelineConfig::default();
     let result = run_pipeline(source, &config);
     assert!(result.is_ok());

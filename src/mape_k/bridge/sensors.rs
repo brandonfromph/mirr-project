@@ -3,10 +3,11 @@
 #![forbid(unsafe_code)]
 
 use crate::ast::types::{SignalKind, SignalType};
+use crate::mape_k::error::MapeKError;
 use crate::mape_k::sensor::SensorConfig;
 use crate::pipeline::PipelineResult;
 
-use super::{BridgeError, MAX_BRIDGE_SIGNALS};
+use super::MAX_BRIDGE_SIGNALS;
 
 /// Default noise amplitude for heuristic sensor generation.
 pub(super) const DEFAULT_NOISE_AMPLITUDE: u64 = 2;
@@ -24,13 +25,16 @@ const SEED_BASE: u64 = 1000;
 /// - `Signed(w)`: base_value = 0, noise = 2
 pub(super) fn extract_sensors(
     result: &PipelineResult,
-    errors: &mut Vec<BridgeError>,
+    errors: &mut Vec<MapeKError>,
 ) -> Vec<SensorConfig> {
     let signals = &result.program.module.signals;
 
     let signal_count = signals.len().min(MAX_BRIDGE_SIGNALS.saturating_add(1));
     if signal_count > MAX_BRIDGE_SIGNALS {
-        errors.push(BridgeError::TooManySignals { count: signal_count });
+        errors.push(MapeKError::BridgeConfigError(format!(
+            "too many signals: {} > {}",
+            signal_count, MAX_BRIDGE_SIGNALS
+        )));
         return Vec::new();
     }
 

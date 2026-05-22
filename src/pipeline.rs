@@ -13,7 +13,6 @@ use crate::emit::rspu_isa::RspuProgram;
 use crate::error::PipelineErrors;
 use crate::simplify::SimplifyStats;
 use crate::temporal::low_level_ir::TemporalNetlist;
-use crate::temporal::TemporalGuardCompiler;
 use crate::width::{self, SccWidthResult};
 
 use serde::{Deserialize, Serialize};
@@ -23,6 +22,9 @@ use serde::{Deserialize, Serialize};
 pub struct PipelineConfig {
     /// Run type checking after validation.
     pub typecheck: bool,
+    /// Run typechecker in bootstrap/hydration mode (relaxed bitwise/logical checks on unsigned types).
+    #[serde(default)]
+    pub bootstrap_mode: bool,
     /// Run Phase 3 simplification.
     pub simplify: bool,
     /// Run SAT-based simplification after heuristic simplification.
@@ -54,13 +56,17 @@ pub struct PipelineConfig {
     /// Run MEGA-12 HLS pass (scheduling, sharing, binding, FIFO).
     pub hls: bool,
     /// Run automated logic optimization pass.
+    /// Run automated logic optimization pass.
     pub logic_optimize: bool,
+    /// Base directory for resolving imports during ECS hydration.
+    pub base_dir: Option<std::path::PathBuf>,
 }
 
 impl Default for PipelineConfig {
     fn default() -> Self {
         Self {
             typecheck: true,
+            bootstrap_mode: false,
             simplify: true,
             sat_simplify: false,
             width: true,
@@ -77,6 +83,7 @@ impl Default for PipelineConfig {
             emit_mape_k_rtl: false,
             hls: false,
             logic_optimize: false,
+            base_dir: None,
         }
     }
 }
@@ -128,7 +135,8 @@ pub fn run_pipeline(
     source: &str,
     config: &PipelineConfig,
 ) -> Result<PipelineResult, PipelineErrors> {
-    let program = crate::parser::parse_mirr(source)?;
+    let processed_source = crate::compiler::macro_proc::expand_macros(source);
+    let program = crate::parser::parse_mirr(&processed_source)?;
     run_pipeline_on_program(program, config)
 }
 
@@ -141,14 +149,64 @@ pub fn run_pipeline_on_program(
     // This runs BEFORE module validation so expanded items are validated as
     // part of the normal module (the emission pipeline never sees patterns).
     crate::validation::validate_pattern_defs(&program.patterns)?;
-    crate::expand::expand_patterns(&mut program)?;
 
-    // Stage 2: Validate.
+    // ECS Transition: Create Registry and hydrate definitions for expansion lookup.
+    let mut registry = crate::ecs::Registry::new();
+
+    // 1. Ingest pattern definitions (from current program).
+    for pat in &program.patterns {
+        let entity =
+            registry.create_entity(&pat.name, crate::ecs::components::KindComponent::PATTERN);
+        registry.set_type(entity, crate::ecs::components::TypeComponent::pattern(pat.clone()));
+        registry.pattern_defs[entity.0 as usize] =
+            Some(crate::ecs::components::PatternDefComponent(pat.clone()));
+    }
+
+    // 2. Ingest imports (which contain more patterns).
+    if let Some(dir) = config.base_dir.as_deref() {
+        for import in &program.imports {
+            let import_path = dir.join(&import.path);
+            if let Ok(source) = std::fs::read_to_string(&import_path) {
+                let processed = crate::compiler::macro_proc::expand_macros(&source);
+                if let Ok(imported_prog) = crate::parser::parse_mirr(&processed) {
+                    for pat in imported_prog.patterns {
+                        let entity = registry.create_entity(
+                            &pat.name,
+                            crate::ecs::components::KindComponent::PATTERN,
+                        );
+                        registry.set_type(
+                            entity,
+                            crate::ecs::components::TypeComponent::pattern(pat.clone()),
+                        );
+                        registry.pattern_defs[entity.0 as usize] =
+                            Some(crate::ecs::components::PatternDefComponent(pat.clone()));
+                        let qualified_name = format!("{}::{}", import.alias, pat.name);
+                        registry.register_symbol(&qualified_name, entity);
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Expand patterns in the AST using the Registry as a lookup.
+    crate::expand::expand_patterns(&mut program, &registry)?;
+
+    // Stage 2: Semantic validation (Mandatory diagnostic gate).
     crate::validation::validate_module(&program.module)?;
 
-    // Stage 2.5: Type-check (optional).
+    // 4. Hydrate the full, expanded module into the Registry for Stage 5 synthesis.
+    // This happens AFTER AST validation so we know the AST is semantically sound.
+    registry.ingest_module(&program.module)?;
+
+    // ECS-native typechecking complete. Maintaining AST-based type_map for
+    // downstream emitters until Phase 3 (R-SPU Emission).
     let type_map = if config.typecheck {
-        Some(crate::typeck::typecheck_module(&program.module)?)
+        let mode = if config.bootstrap_mode {
+            crate::typeck::TypecheckMode::Bootstrap
+        } else {
+            crate::typeck::TypecheckMode::Standard
+        };
+        Some(crate::typeck::typecheck_module_with_mode(&program.module, mode)?)
     } else {
         None
     };
@@ -159,7 +217,7 @@ pub fn run_pipeline_on_program(
             .module
             .signals
             .iter()
-            .map(crate::typeck::extended::ExtendedSignalDecl::from_legacy)
+            .map(crate::typeck::extended::ExtendedSignalDecl::from_ast)
             .collect();
         let ext_result = crate::typeck::extended::typecheck_extended(
             &program.module,
@@ -194,10 +252,28 @@ pub fn run_pipeline_on_program(
         None
     };
 
-    // Stage 5: Temporal lowering (optional).
+    // Stage 5: ECS-Native Temporal Synthesis (Proposal 110 — Phase 3 ECS Transition).
+    //
+    // We re-hydrate the registry here to ensure it represents the absolute
+    // final state of the program (after simplification and width inference).
+    let mut final_registry = crate::ecs::Registry::new();
+    if let Err(e) = crate::ecs::adapter::ingest_program(
+        &mut final_registry,
+        program.clone(),
+        config.base_dir.as_deref(),
+    ) {
+        return Err(PipelineErrors { errors: vec![e] });
+    }
+
+    // Phase 3 ECS Systems: Semantic Validation & Typechecking (Shadow Gate)
+    // Runs alongside AST-based gates to ensure ECS parity during transition.
+    let _ = crate::ecs::systems::run_compilation_pipeline(&mut final_registry);
+
     let mut temporal_netlist = if config.temporal {
-        let mut compiler = TemporalGuardCompiler::new();
-        Some(compiler.compile_temporal_guards(&program.module)?)
+        Some(
+            crate::ecs::systems::temporal_synthesis_system(&mut final_registry)
+                .map_err(|e| PipelineErrors { errors: vec![e] })?,
+        )
     } else {
         None
     };

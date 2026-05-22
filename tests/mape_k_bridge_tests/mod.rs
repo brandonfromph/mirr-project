@@ -12,9 +12,10 @@ use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, Property
 use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::ast::{Expr, SignalDecl};
 use nasa_rust_project::mape_k::bridge::{
-    bridge_from_pipeline, BridgeError, DEFAULT_KNOWLEDGE_CAPACITY, DEFAULT_WINDOW_SIZE,
-    MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS,
+    bridge_from_pipeline, DEFAULT_KNOWLEDGE_CAPACITY, DEFAULT_WINDOW_SIZE, MAX_BRIDGE_PROPERTIES,
+    MAX_BRIDGE_SIGNALS,
 };
+use nasa_rust_project::mape_k::error::MapeKError;
 use nasa_rust_project::mape_k::planner::{AdaptationAction, TriggerCondition};
 use nasa_rust_project::mape_k::{SignalPredicate, TemporalProperty};
 use nasa_rust_project::parser::parse_mirr;

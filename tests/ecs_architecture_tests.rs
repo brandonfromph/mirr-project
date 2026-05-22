@@ -9,7 +9,7 @@ fn test_ecs_registry_signal_creation() {
 
     // TDD: Define what we want
     let sig_name = "sys_clk".to_string();
-    let kind = KindComponent(SignalKind::Input);
+    let kind = KindComponent(EntityKind::SIGNAL(SignalKind::Input));
     let ty = TypeComponent(ExtendedType::from_core(SignalType::Bool));
 
     // Act
@@ -31,7 +31,7 @@ fn test_ecs_soa_performance_layout() {
         let name = format!("sig_{}", i);
         registry.create_signal(
             name,
-            KindComponent(SignalKind::Internal),
+            KindComponent(EntityKind::SIGNAL(SignalKind::Internal)),
             TypeComponent(ExtendedType::from_core(SignalType::Unsigned(8))),
         );
     }
@@ -51,7 +51,7 @@ fn test_ecs_full_module_ingestion() {
     let prog = parse_mirr(&src).expect("failed to parse majority.mirr");
 
     let mut registry = Registry::new();
-    let mod_id = registry.ingest_module(&prog.module);
+    let mod_id = registry.ingest_module(&prog.module).expect("failed to ingest");
 
     // Verify Module entity
     assert_eq!(registry.names[mod_id.0 as usize].as_ref().unwrap().0, "majority_gate");
@@ -93,7 +93,7 @@ fn test_ecs_constant_folding_system() {
     let prog = parse_mirr(src).expect("failed to parse");
 
     let mut registry = Registry::new();
-    registry.ingest_module(&prog.module);
+    registry.ingest_module(&prog.module).expect("failed to ingest");
 
     // Find the guard entity
     let guard_ent = registry.get_entity_by_name("always_true").unwrap();
@@ -125,12 +125,12 @@ fn test_ecs_parallel_scaling() {
     for _ in 0..10000 {
         let l = registry.create_signal(
             "".to_string(),
-            KindComponent(SignalKind::Internal),
+            KindComponent(EntityKind::SIGNAL(SignalKind::Internal)),
             TypeComponent(ExtendedType::from_core(SignalType::Bool)),
         );
         let r = registry.create_signal(
             "".to_string(),
-            KindComponent(SignalKind::Internal),
+            KindComponent(EntityKind::SIGNAL(SignalKind::Internal)),
             TypeComponent(ExtendedType::from_core(SignalType::Bool)),
         );
         registry.literals[l.0 as usize] = Some(LiteralComponent(LiteralValue::Bool(true)));
@@ -138,7 +138,7 @@ fn test_ecs_parallel_scaling() {
 
         let op_id = registry.create_signal(
             "".to_string(),
-            KindComponent(SignalKind::Internal),
+            KindComponent(EntityKind::SIGNAL(SignalKind::Internal)),
             TypeComponent(ExtendedType::from_core(SignalType::Bool)),
         );
         registry.binary_ops[op_id.0 as usize] =
@@ -150,4 +150,74 @@ fn test_ecs_parallel_scaling() {
     let duration = start.elapsed();
 
     println!("Parallel system processed 10,000 entities in {:?}", duration);
+}
+
+#[test]
+fn test_ecs_parallel_vector_search() {
+    use nasa_rust_project::ecs::systems::parallel_vector_search_system;
+
+    let mut registry = Registry::new();
+
+    // Create 3 chunks with different vectors
+    registry.create_kb_chunk(
+        "chunk_1".to_string(),
+        "text_1".to_string(),
+        "source".to_string(),
+        (1, 1),
+        Some(vec![1.0, 0.0, 0.0]),
+    );
+    registry.create_kb_chunk(
+        "chunk_2".to_string(),
+        "text_2".to_string(),
+        "source".to_string(),
+        (1, 1),
+        Some(vec![0.0, 1.0, 0.0]),
+    );
+    registry.create_kb_chunk(
+        "chunk_3".to_string(),
+        "text_3".to_string(),
+        "source".to_string(),
+        (1, 1),
+        Some(vec![0.0, 0.0, 1.0]),
+    );
+
+    // Query for something close to chunk_2
+    let query = vec![0.1, 0.9, 0.1];
+    let hits = parallel_vector_search_system(&registry, &query, 1);
+
+    assert_eq!(hits.len(), 1);
+    let top_entity = hits[0].0;
+    assert_eq!(registry.names[top_entity.0 as usize].as_ref().unwrap().0, "chunk_2");
+
+    println!(
+        "Parallel Vector Search found top match: {}",
+        registry.names[top_entity.0 as usize].as_ref().unwrap().0
+    );
+}
+
+#[test]
+fn test_ecs_parallel_width_inference() {
+    use nasa_rust_project::ecs::systems::parallel_width_inference_system;
+
+    let mut registry = Registry::new();
+
+    // Ingest some signals
+    registry.create_signal(
+        "sig_a".to_string(),
+        KindComponent(EntityKind::SIGNAL(SignalKind::Internal)),
+        TypeComponent(ExtendedType::from_core(SignalType::Bool)),
+    );
+    registry.create_signal(
+        "sig_b".to_string(),
+        KindComponent(EntityKind::SIGNAL(SignalKind::Internal)),
+        TypeComponent(ExtendedType::from_core(SignalType::Unsigned(8))),
+    );
+
+    // Run the width inference system
+    let (_, _, _, stats) = parallel_width_inference_system(&mut registry);
+
+    assert_eq!(stats.nodes_analyzed, 2);
+    assert_eq!(stats.scc_count, 2);
+
+    println!("Parallel ECS Width Inference System verified with {} signals.", stats.nodes_analyzed);
 }

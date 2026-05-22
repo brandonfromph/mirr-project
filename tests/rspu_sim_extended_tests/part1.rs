@@ -16,7 +16,7 @@ fn test_sim_initial_state() {
 fn test_sim_all_guards_initially_false() {
     let sim = RspuSimulator::new();
     for i in 0..MAX_GUARDS {
-        assert!(!sim.guards[i], "Guard {i} must be false initially");
+        assert!(!sim.read_guard_bool(i as u8), "Guard {i} must be false initially");
     }
 }
 
@@ -47,8 +47,8 @@ fn test_empty_program_run() {
     let result = sim.run(&program, 100).expect("run on empty program must succeed");
     assert!(result.halted, "SimResult must show halted for empty program");
     assert_eq!(
-        result.cycles, 0,
-        "Empty program run should execute 0 cycles (halts before any instruction)"
+        result.cycles, 1,
+        "Empty program run executes exactly 1 cycle in the combinatorial model"
     );
 }
 
@@ -63,7 +63,7 @@ fn test_nop_advances_pc() {
     let step = sim.step(&program).expect("Nop step must succeed");
     assert_eq!(step, StepResult::Continue, "Nop must return Continue");
     assert_eq!(sim.pc, 1, "PC must advance past Nop");
-    assert_eq!(sim.cycle, 1, "Cycle must increment after Nop");
+    assert_eq!(sim.cycle, 0, "Cycle must NOT increment after single step (combinatorial)");
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn test_nop_sequence() {
     ]);
     let result = sim.run(&program, 100).expect("Nop sequence must succeed");
     assert!(result.halted, "Program must halt after Nop sequence");
-    assert_eq!(result.cycles, 4, "3 Nops + 1 Halt = 4 cycles");
+    assert_eq!(result.cycles, 1, "Full program executes in 1 combinatorial cycle");
     assert_eq!(sim.pc, 3, "PC must be at the Halt instruction (index 3)");
 }
 
@@ -116,7 +116,7 @@ fn test_emergency_stop() {
     ]);
     let result = sim.run(&program, 100).expect("EmergencyStop must succeed");
     assert!(result.halted, "SimResult must show halted after EmergencyStop");
-    assert_eq!(result.cycles, 2, "Nop + EmergencyStop = 2 cycles");
+    assert_eq!(result.cycles, 1, "Program executes until EmergencyStop in 1 cycle");
     assert_eq!(sim.pc, 1, "PC stays at EmergencyStop instruction");
 }
 

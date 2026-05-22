@@ -78,11 +78,16 @@ fn condition_kind_rejects_bare_literal() {
 }
 
 #[test]
-fn condition_kind_rejects_prev_as_guard() {
+fn condition_kind_supports_prev_as_guard() {
     let expr = Expr::Prev { signal: "x".to_string(), delay: 1 };
     let result = ConditionKind::try_from_expr(&expr);
-    assert!(result.is_err());
-    assert_eq!(result.unwrap_err(), "unsupported condition expression form");
+    assert!(result.is_ok());
+    if let Ok(ConditionKind::PrevSignal { signal, delay }) = result {
+        assert_eq!(signal, "x");
+        assert_eq!(delay, 1);
+    } else {
+        panic!("Expected PrevSignal");
+    }
 }
 
 #[test]

@@ -2,12 +2,12 @@
 
 #![forbid(unsafe_code)]
 
+use super::MAX_BRIDGE_PROPERTIES;
 use crate::ast::property::{PropertyDirective, PropertyFormula};
 use crate::ast::Expr;
+use crate::mape_k::error::MapeKError;
 use crate::mape_k::ltl::{SignalPredicate, TemporalProperty};
 use crate::pipeline::PipelineResult;
-
-use super::{BridgeError, MAX_BRIDGE_PROPERTIES};
 
 /// Maximum expression nodes to visit when extracting a signal name.
 const MAX_EXPR_VISIT: usize = 64;
@@ -17,13 +17,16 @@ const MAX_EXPR_VISIT: usize = 64;
 /// `Assume` directives are skipped.
 pub(super) fn extract_properties(
     result: &PipelineResult,
-    errors: &mut Vec<BridgeError>,
+    errors: &mut Vec<MapeKError>,
 ) -> Vec<TemporalProperty> {
     let props = &result.program.module.properties;
 
     let assert_count = count_assert_properties(props);
     if assert_count > MAX_BRIDGE_PROPERTIES {
-        errors.push(BridgeError::TooManyProperties { count: assert_count });
+        errors.push(MapeKError::BridgeConfigError(format!(
+            "too many properties: {} > {}",
+            assert_count, MAX_BRIDGE_PROPERTIES
+        )));
         return Vec::new();
     }
 
@@ -36,7 +39,7 @@ pub(super) fn extract_properties(
 
         match lower_formula(&prop.formula) {
             Ok(tp) => temporal_props.push(tp),
-            Err(desc) => errors.push(BridgeError::UnsupportedFormula { description: desc }),
+            Err(desc) => errors.push(MapeKError::LoweringError(desc)),
         }
 
         if temporal_props.len() >= MAX_BRIDGE_PROPERTIES {

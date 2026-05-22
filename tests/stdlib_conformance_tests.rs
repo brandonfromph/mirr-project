@@ -70,6 +70,9 @@ fn error_class(e: &MirrError) -> &'static str {
         MirrError::SymbolicError { .. } => "symbolic",
         MirrError::TotalityError { .. } => "totality",
         MirrError::WidthError { .. } => "width",
+        MirrError::SymbolError { .. } => "symbol",
+        MirrError::ImportError { .. } => "import",
+        MirrError::InternalError(_) => "internal",
     }
 }
 

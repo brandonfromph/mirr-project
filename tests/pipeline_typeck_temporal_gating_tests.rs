@@ -28,7 +28,7 @@ fn typecheck_enabled_rejects_assignment_mismatch() {
         Ok(_) => panic!("typecheck-enabled pipeline should reject mismatch"),
         Err(e) => e,
     };
-    assert!(err.to_string().contains("[E602]"));
+    assert!(err.to_string().contains("[E601]"));
 }
 
 #[test]

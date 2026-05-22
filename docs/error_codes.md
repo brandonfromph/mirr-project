@@ -188,12 +188,12 @@ The prefix classifies the error; the full code maps to a single creation site.
 | Code | Message pattern | Source |
 |------|----------------|--------|
 | E300 | *(category fallback prefix)* | `src/error.rs` |
-| E301 | `Exceeded maximum compile guard depth ({N}).` | `src/temporal/compiler.rs` |
-| E302 | `Condition cannot be lowered to hardware -- {reason}` | `src/temporal/compiler.rs` |
-| E303 | `Internal error — missing sub-guard result.` | `src/temporal/compiler.rs` |
-| E304 | `Compilation exceeded maximum iteration bound ({N}).` | `src/temporal/compiler.rs` |
-| E305 | `Internal error — no compilation result.` | `src/temporal/compiler.rs` |
-| E306 | `Condition cannot be lowered -- {reason}` | `src/temporal/compiler.rs` |
+| E301 | `Exceeded maximum compile guard depth ({N}).` | Recursive depth of compound AND/OR guards exceeded `MAX_COMPILE_GUARD_DEPTH` (default 64). |
+| E302 | `Condition cannot be lowered to hardware -- {reason}` | Input condition form is not supported by the IR backend (e.g., non-Boolean comparisons). |
+| E303 | `Internal error — missing sub-guard result.` | Iterative work-stack reached an inconsistent state where a parent was popped but children were missing. |
+| E304 | `Compilation exceeded maximum iteration bound ({N}).` | Iterative synthesis loop exceeded `MAX_COMPILE_GUARD_DEPTH * 4` iterations. |
+| E305 | `Internal error — no compilation result.` | Synthesis completed but failed to produce a valid `CompiledGuard` on the result stack. |
+| E306 | `Temporal synthesis failed for guard {id}: {reason}` | General failure during the ECS Registry-to-IR translation pass. |
 | — | `JSON serialization failed: {e}` | `src/temporal/emit.rs` |
 
 ## Pattern Errors (E4xx)

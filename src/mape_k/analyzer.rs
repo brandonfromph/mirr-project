@@ -92,14 +92,15 @@ impl Analyzer {
             None => {
                 return PropertyResult {
                     property_idx: idx,
-                    satisfied: true, // no data => vacuously true
+                    satisfied: false, // Hardening: No data is NOT safe.
                     evidence_tick: None,
                 };
             }
         };
 
         if window.is_empty() {
-            return PropertyResult { property_idx: idx, satisfied: true, evidence_tick: None };
+            // Hardening: An empty window cannot satisfy a safety invariant.
+            return PropertyResult { property_idx: idx, satisfied: false, evidence_tick: None };
         }
 
         // Scan window from oldest to newest. First violation = evidence.
@@ -338,12 +339,10 @@ impl Analyzer {
             if let Some(t) = win_t.get(i) {
                 if trigger.evaluate(t) {
                     let target = i.saturating_add(delay as usize);
+                    // Hardening: If the target tick is outside the window, we cannot
+                    // prove a violation yet. Skip this trigger (Patient Trigger).
                     if target >= len {
-                        return PropertyResult {
-                            property_idx: idx,
-                            satisfied: false,
-                            evidence_tick: Some(i as u64),
-                        };
+                        continue;
                     }
                     if let Some(r) = win_r.get(target) {
                         if !response.evaluate(r) {

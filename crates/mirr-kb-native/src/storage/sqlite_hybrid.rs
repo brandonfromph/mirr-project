@@ -389,8 +389,36 @@ impl SqliteHybridStorage {
 
     pub fn chunk_count(&self) -> anyhow::Result<usize> {
         let conn = self.connection()?;
-        let count: i64 = conn.query_row("SELECT COUNT(*) FROM kb_chunks", [], |row| row.get(0))?;
+        let count: i64 = conn.query_row("SELECT count(*) FROM kb_chunks", [], |row| row.get(0))?;
         Ok(count as usize)
+    }
+
+    pub fn get_all_chunks(&self) -> anyhow::Result<Vec<crate::chunking::MirrChunk>> {
+        let conn = self.connection()?;
+        let mut stmt =
+            conn.prepare("SELECT key, chunk_type, text, source, embedding_json FROM kb_chunks")?;
+        let rows = stmt.query_map([], |row| {
+            let key: String = row.get(0)?;
+            let _chunk_type: String = row.get(1)?;
+            let text: String = row.get(2)?;
+            let source: String = row.get(3)?;
+            let emb_json: Option<String> = row.get(4)?;
+            let vector = emb_json.and_then(|j| serde_json::from_str(&j).ok());
+            Ok(crate::chunking::MirrChunk::new(
+                key,
+                crate::chunking::ChunkType::Module,
+                text,
+                source,
+                vector,
+                (1, 1),
+            ))
+        })?;
+
+        let mut chunks = Vec::new();
+        for row in rows {
+            chunks.push(row?);
+        }
+        Ok(chunks)
     }
 
     fn fallback_lexical_scan(

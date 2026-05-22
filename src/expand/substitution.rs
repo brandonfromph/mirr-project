@@ -23,10 +23,12 @@ pub(super) fn build_substitution_map(
                 crate::ast::pattern::PatternParamKind::Signal { .. },
                 PatternArg::ConstInt(_) | PatternArg::ConstBool(_),
             ) => {
-                return Err(pattern_err(format!(
-                    "Pattern '{}' parameter '{}' expects a signal reference, got a constant.",
-                    def.name, param.name
-                )));
+                return Err(MirrError::PatternError {
+                    message: format!("{} Pattern '{}' parameter '{}' expects a signal reference, got a constant.", crate::error_codes::ec(400),
+                        def.name, param.name
+                    ),
+                    span: call.span
+                });
             }
             (crate::ast::pattern::PatternParamKind::Constant { .. }, PatternArg::ConstInt(n)) => {
                 format!("{n}")
@@ -53,20 +55,21 @@ pub(super) fn build_substitution_map(
                 name.clone()
             }
             (crate::ast::pattern::PatternParamKind::Pattern, _) => {
-                return Err(pattern_err(format!(
-                    "[E426] Pattern '{}' parameter '{}' has kind 'pattern' but argument is not a pattern reference.",
+                return Err(pattern_err(format!("{} Pattern '{}' parameter '{}' has kind 'pattern' but argument is not a pattern reference.", crate::error_codes::ec(426),
                     def.name, param.name
                 )));
             }
             // Signal/Constant params do not accept pattern refs.
             (_, PatternArg::PatternRef(_)) => {
                 return Err(pattern_err(format!(
-                    "[E427] Pattern '{}' parameter '{}' does not accept a pattern reference.",
-                    def.name, param.name
+                    "{} Pattern '{}' parameter '{}' does not accept a pattern reference.",
+                    crate::error_codes::ec(427),
+                    def.name,
+                    param.name
                 )));
             }
         };
-        subs.push((param.name.clone(), replacement));
+        subs.push((param.name.clone(), replacement.clone()));
     }
 
     Ok(subs)

@@ -103,7 +103,7 @@ mod tests {
     #[test]
     fn error_with_span_maps_to_correct_range() {
         let err = MirrError::SemanticError {
-            message: "[E201] Duplicate signal.".to_string(),
+            message: format!("{} Duplicate signal.", crate::error_codes::ec(201)),
             span: Some(Span::full_line(5)),
         };
         let diags = mirr_error_to_diagnostics(&err);
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn error_code_extracted_from_message() {
         let err = MirrError::SemanticError {
-            message: "[E201] Duplicate signal name: 'x'.".to_string(),
+            message: format!("{} Duplicate signal name: 'x'.", crate::error_codes::ec(201)),
             span: None,
         };
         assert_eq!(error_code(&err), Some("E201".to_string()));

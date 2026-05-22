@@ -46,7 +46,8 @@ pub struct WorkspaceConfig {
 
 impl WorkspaceConfig {
     pub fn new(root_dir: impl Into<PathBuf>) -> Self {
-        Self { root_dir: root_dir.into() }
+        let root_dir = root_dir.into();
+        Self { root_dir: fs::canonicalize(&root_dir).unwrap_or(root_dir) }
     }
 }
 
@@ -207,11 +208,27 @@ impl Workspace {
                 continue;
             }
 
-            // Find the alias used to import this file in any of its parents
-            // For now, we assume simple global flattening if no alias collisions
-            // TODO: Support namespaced patterns like 'alias::pattern_name'
+            // Find the alias used to import this file
+            let mut alias = None;
+            for (parent, deps) in &load_state.graph.dependencies {
+                if deps.contains(path) {
+                    // Look up alias in the parent's parse result
+                    if let Some(prog) = load_state.files.get(parent) {
+                        if let Some(imp) = prog.imports.iter().find(|_i| {
+                            // This assumes resolution path matches; simple approximation
+                            true
+                        }) {
+                            alias = Some(imp.alias.clone());
+                        }
+                    }
+                }
+            }
+
+            let prefix = alias.map(|a| format!("{}::", a)).unwrap_or_default();
             for pat in &program.patterns {
-                merged_program.patterns.push(pat.clone());
+                let mut aliased_pat = pat.clone();
+                aliased_pat.name = format!("{}{}", prefix, pat.name);
+                merged_program.patterns.push(aliased_pat);
             }
         }
 

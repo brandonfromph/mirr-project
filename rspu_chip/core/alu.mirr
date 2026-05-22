@@ -1,9 +1,10 @@
 // RSPU Core: Instruction Decoder & ALU
-import "../memory/ram.mirr" as ram;
+import "ram.mirr" as ram;
+import "isa_map.mirr" as isa;
 
 def alu_core(
     clk: signal in bool,
-    instr: signal in u16, 
+    instr: signal in u16,
     addr: signal in u16,
     data_in: signal in u16,
     data_out: signal out u17
@@ -16,45 +17,57 @@ def alu_core(
         signal result: internal u17;
 
         // --- Decoder System (Traffic Controller) ---
-        // Opcode Mapping:
-        // 0: ADD, 1: SUB, 2: MOV (Placeholder)
-        guard is_add { 
-            when ${clk} && ${instr} == 0 
-            for 1 cycles;
-        }
-        
-        guard is_sub { 
-            when ${clk} && ${instr} == 1 
-            for 1 cycles;
-        }
-        
-        guard is_mov { 
-            when ${clk} && ${instr} == 2 
+        guard dispatch {
+            when ${clk}
             for 1 cycles;
         }
 
-        reflex execute_add {
+        guard is_add {
+            when ${clk} && ${instr} == isa::ADD
+            for 1 cycles;
+        }
+
+        guard is_sub {
+            when ${clk} && ${instr} == isa::SUB
+            for 1 cycles;
+        }
+
+        guard is_mov {
+            when ${clk} && ${instr} == isa::MOV
+            for 1 cycles;
+        }
+
+        // --- Formal Verification Invariants ---
+        property no_alu_overflow {
+            always (result < 131072);
+        }
+
+        property exclusive_dispatch {
+            always (!(is_add && is_sub));
+        }
+
+        // --- Dispatcher reflexes ---
+        reflex do_add {
             on is_add {
-                result = data_in + addr;
-                data_out = result;
+                result = ${data_in} + ${addr};
+                ${data_out} = result;
             }
         }
 
-        reflex execute_sub {
+        reflex do_sub {
             on is_sub {
-                result = data_in - addr;
-                data_out = result;
+                result = ${data_in} - ${addr};
+                ${data_out} = result;
             }
         }
 
-        reflex execute_mov {
+        reflex do_mov {
             on is_mov {
-                result = data_in;
-                data_out = result;
+                result = ${data_in};
+                ${data_out} = result;
             }
         }
     }
 }
 
 module alu {}
-

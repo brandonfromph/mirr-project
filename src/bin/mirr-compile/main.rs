@@ -1,5 +1,6 @@
 //! mirr-compile — Unified MIRR compilation driver (Phase 6).
 //!
+//!
 //! End-to-end pipeline: parse -> validate -> simplify -> width -> temporal -> emit.
 //!
 //! Usage:
@@ -13,11 +14,13 @@ mod summary;
 mod toolchain;
 
 use clap::Parser;
+use std::path::Path;
 use std::process;
 
 use nasa_rust_project::emit;
 use nasa_rust_project::emit::fpga_target::FpgaTarget;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use nasa_rust_project::pipeline::PipelineConfig;
+use nasa_rust_project::Workspace;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -196,21 +199,18 @@ pub fn main() {
         config.emit_mape_k_rtl = true;
     }
 
-    let result = match run_pipeline(&source, &config) {
-        Ok(r) => r,
-        Err(e) => {
-            for err in &e.errors {
-                let diagnostic = err.to_diagnostic();
-                let rendered = nasa_rust_project::diagnostic::render_diagnostic(
-                    &diagnostic,
-                    &source,
-                    &root_file,
-                );
-                eprint!("{}", rendered);
-            }
+    let root_path = Path::new(&root_file);
+    let workspace_root = root_path.parent().unwrap_or_else(|| Path::new("."));
+    let mut workspace = Workspace::new(workspace_root);
+    workspace.update_file(&root_file, source.clone());
+    let snapshot = match workspace.compile_snapshot(root_path, &config) {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            eprintln!("Compile error: {}", error);
             process::exit(1);
         }
     };
+    let result = snapshot.pipeline.as_ref();
 
     summary::print_summary(&result, args.stats);
 

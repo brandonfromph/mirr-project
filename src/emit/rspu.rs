@@ -72,6 +72,12 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
         instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
     }
 
+    // Step 3.6: Initialize constant registers.
+    if let Some(true_reg) = regs.map.get("true") {
+        instrs.push(RspuInstruction::LoadImm { dst: *true_reg, value: 1, width: 1 });
+        instrs.push(RspuInstruction::TagLoad { dst: *true_reg, tag: 1 }); // Bool tag
+    }
+
     // Step 4: Temporal guard emission.
     if let Some(net) = netlist {
         emit_temporal_guards(&net.guards, &regs, &guard_map, &mut instrs)?;
@@ -101,7 +107,8 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     // Bounds check.
     if instrs.len() > MAX_INSTRUCTIONS {
         return Err(rspu_err(format!(
-            "[E702] R-SPU instruction budget exceeded: {} instructions > {}.",
+            "{} R-SPU instruction budget exceeded: {} instructions > {}.",
+            crate::error_codes::ec(702),
             instrs.len(),
             MAX_INSTRUCTIONS,
         )));
@@ -138,7 +145,8 @@ fn allocate_guards(netlist: Option<&TemporalNetlist>) -> Result<GuardAllocResult
             let name = guard_name(guard);
             if next_id as usize >= MAX_GUARDS {
                 return Err(rspu_err(format!(
-                    "[E703] R-SPU guard resource exhausted: {} guards > {}.",
+                    "{} R-SPU guard resource exhausted: {} guards > {}.",
+                    crate::error_codes::ec(703),
                     next_id as usize + 1,
                     MAX_GUARDS,
                 )));
@@ -201,9 +209,10 @@ fn emit_temporal_guards(
     while let Some(item) = work.pop() {
         visited += 1;
         if visited > max_iterations {
-            return Err(rspu_err(
-                "[E706] R-SPU guard tree exceeds maximum iteration bound.".to_string(),
-            ));
+            return Err(rspu_err(format!(
+                "{} R-SPU guard tree exceeds maximum iteration bound.",
+                crate::error_codes::ec(706)
+            )));
         }
 
         match item {
@@ -335,9 +344,10 @@ fn emit_expr(
     while let Some(item) = work.pop() {
         visited += 1;
         if visited > MAX_EXPR_NODES {
-            return Err(rspu_err(
-                "[E704] R-SPU expression exceeds maximum node count.".to_string(),
-            ));
+            return Err(rspu_err(format!(
+                "{} R-SPU expression exceeds maximum node count.",
+                crate::error_codes::ec(704)
+            )));
         }
 
         match item {
@@ -347,9 +357,12 @@ fn emit_expr(
                     result_stack.push(r);
                 }
                 Expr::Literal(lit) => {
-                    let tmp = regs
-                        .alloc_temp()
-                        .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
+                    let tmp = regs.alloc_temp().ok_or_else(|| {
+                        rspu_err(format!(
+                            "{} R-SPU temporary registers exhausted.",
+                            crate::error_codes::ec(705)
+                        ))
+                    })?;
                     match lit {
                         LiteralValue::Integer(n) => {
                             instrs.push(RspuInstruction::LoadImm {
@@ -370,9 +383,12 @@ fn emit_expr(
                 }
                 Expr::Prev { signal, delay } => {
                     let sig_reg = regs.map.get(signal.as_str()).copied().unwrap_or(0);
-                    let tmp = regs
-                        .alloc_temp()
-                        .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
+                    let tmp = regs.alloc_temp().ok_or_else(|| {
+                        rspu_err(format!(
+                            "{} R-SPU temporary registers exhausted.",
+                            crate::error_codes::ec(705)
+                        ))
+                    })?;
                     instrs.push(RspuInstruction::Prev {
                         dst: tmp,
                         signal: sig_reg,
@@ -396,22 +412,27 @@ fn emit_expr(
                 | Expr::FieldAccess { .. }
                 | Expr::ArrayLiteral(_)
                 | Expr::StructLiteral { .. } => {
-                    return Err(rspu_err(
-                        "[E720] R-SPU does not support composite type expressions.".to_string(),
-                    ));
+                    return Err(rspu_err(format!(
+                        "{} R-SPU does not support composite type expressions.",
+                        crate::error_codes::ec(720)
+                    )));
                 }
                 Expr::UnfoldIndex(name) => {
                     return Err(rspu_err(format!(
-                        "[E721] UnfoldIndex '{}' reached R-SPU emitter",
+                        "{} UnfoldIndex '{}' reached R-SPU emitter",
+                        crate::error_codes::ec(721),
                         name
                     )));
                 }
             },
             ExprWork::EmitUnary(op) => {
                 let src = result_stack.pop().unwrap_or(0);
-                let tmp = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
+                let tmp = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!(
+                        "{} R-SPU temporary registers exhausted.",
+                        crate::error_codes::ec(705)
+                    ))
+                })?;
                 let alu_op = match op {
                     UnaryOp::Not => AluUnaryOp::Not,
                     UnaryOp::Negate => AluUnaryOp::Negate,
@@ -424,9 +445,12 @@ fn emit_expr(
                 // With left evaluated before right, the stack top is rhs.
                 let rhs = result_stack.pop().unwrap_or(0);
                 let lhs = result_stack.pop().unwrap_or(0);
-                let tmp = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
+                let tmp = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!(
+                        "{} R-SPU temporary registers exhausted.",
+                        crate::error_codes::ec(705)
+                    ))
+                })?;
                 let alu_op = binary_to_alu(op);
                 instrs.push(RspuInstruction::Alu { op: alu_op, dst: tmp, a: lhs, b: rhs });
                 result_stack.push(tmp);
@@ -488,54 +512,65 @@ fn emit_properties(
                 instrs.push(RspuInstruction::AssertNever { cond, property_id });
             }
             PropertyFormula::AlwaysImplies { antecedent, consequent } => {
-                // P -> Q ≡ !P | Q : emit both, combine with OR.
                 let p = emit_expr(antecedent, regs, instrs)?;
                 let q = emit_expr(consequent, regs, instrs)?;
-                // !P
-                let not_p = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
+                let not_p = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
+                })?;
                 instrs.push(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: not_p, src: p });
-                // !P | Q
-                let implies = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
+                let implies = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
+                })?;
                 instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
                 instrs.push(RspuInstruction::AssertAlways { cond: implies, property_id });
             }
-            PropertyFormula::NeverImplies { antecedent, consequent } => {
-                // never (P -> Q) ≡ assert_never(!P | Q)
-                let p = emit_expr(antecedent, regs, instrs)?;
-                let q = emit_expr(consequent, regs, instrs)?;
-                let not_p = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: not_p, src: p });
-                let implies = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
-                instrs.push(RspuInstruction::AssertNever { cond: implies, property_id });
-            }
-            PropertyFormula::EventuallyWithin { expr, .. } => {
-                // Simplified: evaluate expr, assert always (monitoring layer).
+            PropertyFormula::EventuallyWithin { expr, cycles } => {
+                // HARDENED: Synthesize a Shift Register guard to enforce the window.
                 let cond = emit_expr(expr, regs, instrs)?;
-                instrs.push(RspuInstruction::AssertAlways { cond, property_id });
+                let gid = (MAX_GUARDS - 1 - idx) as GuardId; // Allocate from top down for properties.
+                instrs.push(RspuInstruction::SrInit { guard: gid, length: *cycles as u32, cond });
+                instrs.push(RspuInstruction::SrTick { guard: gid });
+                let verified = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
+                })?;
+                instrs.push(RspuInstruction::SrQuery { dst: verified, guard: gid });
+                instrs.push(RspuInstruction::AssertAlways { cond: verified, property_id });
             }
-            PropertyFormula::AlwaysFollowedBy { trigger, response, .. } => {
-                // Simplified: both exprs evaluated, assert trigger -> response.
+            PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => {
+                // HARDENED: Synthesize a Shift Register for the trigger delay.
                 let p = emit_expr(trigger, regs, instrs)?;
                 let q = emit_expr(response, regs, instrs)?;
-                let not_p = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
-                instrs.push(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: not_p, src: p });
-                let implies = regs
-                    .alloc_temp()
-                    .ok_or_else(|| rspu_err("[E705] R-SPU temporary registers exhausted."))?;
+                let gid = (MAX_GUARDS - 1 - idx) as GuardId;
+
+                // Track the trigger in a shift register.
+                instrs.push(RspuInstruction::SrInit {
+                    guard: gid,
+                    length: *delay_cycles as u32,
+                    cond: p,
+                });
+                instrs.push(RspuInstruction::SrTick { guard: gid });
+
+                let delayed_p = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
+                })?;
+                instrs.push(RspuInstruction::SrQuery { dst: delayed_p, guard: gid });
+
+                // Assert: delayed_p -> q
+                let not_p = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
+                })?;
+                instrs.push(RspuInstruction::AluUnary {
+                    op: AluUnaryOp::Not,
+                    dst: not_p,
+                    src: delayed_p,
+                });
+                let implies = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
+                })?;
                 instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
                 instrs.push(RspuInstruction::AssertAlways { cond: implies, property_id });
             }
+            _ => {} // Other properties unimplemented in this tier.
         }
     }
     Ok(())

@@ -64,7 +64,7 @@ pub(super) fn run_toolchain_operations(
     let sv_content = emit::verilog::emit_sv_synthesis(result, t, dsp_threshold);
     let sv_path = super::derive_path(input_path, "_synth.sv");
     if let Err(e) = std::fs::write(&sv_path, &sv_content) {
-        eprintln!("Error writing synthesis SV '{sv_path}': {e}");
+        eprintln!("  [toolchain] failed to write synthesis SV '{sv_path}'\n    help: {}", e);
         return;
     }
 
@@ -73,7 +73,7 @@ pub(super) fn run_toolchain_operations(
     let bind_path = if !bind_content.is_empty() {
         let p = super::derive_path(input_path, "_sva_bind.sv");
         if let Err(e) = std::fs::write(&p, &bind_content) {
-            eprintln!("Error writing SVA bind file '{p}': {e}");
+            eprintln!("  [toolchain] failed to write SVA bind file '{p}'\n    help: {}", e);
         }
         Some(p)
     } else {
@@ -99,7 +99,7 @@ pub(super) fn run_toolchain_operations(
             );
             let sby_path = super::derive_path(input_path, ".sby");
             if let Err(e) = std::fs::write(&sby_path, &sby_content) {
-                eprintln!("Error writing sby config '{sby_path}': {e}");
+                eprintln!("  [formal] failed to write sby config '{sby_path}'\n    help: {}", e);
             } else {
                 eprintln!("  [formal] Config written to {sby_path}");
                 eprintln!("  [formal] Engine: {formal_engine}, depth: {formal_depth}, prove: {formal_prove}");
@@ -116,7 +116,7 @@ pub(super) fn run_toolchain_operations(
                             eprintln!("  [formal] FAILED (exit code: {:?})", res.exit_code);
                         }
                     }
-                    Err(e) => eprintln!("  [formal] Error: {e}"),
+                    Err(e) => eprintln!("  [formal] failed: {e}"),
                 }
             }
         } else {
@@ -143,7 +143,7 @@ pub(super) fn run_toolchain_operations(
                         );
                     }
                 }
-                Err(e) => eprintln!("  [lint] Error: {e}"),
+                Err(e) => eprintln!("  [lint] failed: {e}"),
             }
         } else {
             eprintln!("  [lint] SKIPPED — verilator not found in PATH");
@@ -167,7 +167,7 @@ pub(super) fn run_toolchain_operations(
                         eprintln!("  [simulate] FAILED");
                     }
                 }
-                Err(e) => eprintln!("  [simulate] Error: {e}"),
+                Err(e) => eprintln!("  [simulate] failed: {e}"),
             }
         } else {
             eprintln!("  [simulate] SKIPPED — verilator not found in PATH");

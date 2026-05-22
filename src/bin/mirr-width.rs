@@ -15,6 +15,8 @@ use std::fs;
 use std::process;
 
 use nasa_rust_project::ast::Expr;
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+use nasa_rust_project::error::MirrError;
 use nasa_rust_project::parse_mirr;
 use nasa_rust_project::simplify::simplify_expr;
 use nasa_rust_project::width;
@@ -35,24 +37,29 @@ fn main() {
     let input_path = match input_path {
         Some(p) => p.clone(),
         None => {
-            eprintln!("Error: no input file specified");
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error("no input file specified")
+                    .with_help("Pass a .json or .mirr file, or run with --help."),
+            );
         }
     };
 
     let content = match fs::read_to_string(&input_path) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("Error: cannot read '{}': {}", input_path, e);
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error(format!("cannot read '{}'", input_path))
+                    .with_note(e.to_string())
+                    .with_help("Check the file path and permissions."),
+            );
         }
     };
 
     if input_path.ends_with(".mirr") {
         if scc_mode {
-            run_scc_mode(&content, show_stats);
+            run_scc_mode(&content, show_stats, &input_path);
         } else {
-            run_mirr_mode(&content, show_stats);
+            run_mirr_mode(&content, show_stats, &input_path);
         }
     } else {
         run_json_mode(&content, show_stats);
@@ -78,8 +85,11 @@ fn run_json_mode(content: &str, show_stats: bool) {
     let expr: Expr = match serde_json::from_str(content) {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("Error: invalid Expr JSON: {}", e);
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error("invalid Expr JSON")
+                    .with_note(e.to_string())
+                    .with_help("Ensure the input file contains a serialized Expr value."),
+            );
         }
     };
 
@@ -104,12 +114,11 @@ fn run_json_mode(content: &str, show_stats: bool) {
     }
 }
 
-fn run_mirr_mode(content: &str, show_stats: bool) {
+fn run_mirr_mode(content: &str, show_stats: bool, input_path: &str) {
     let mut program = match parse_mirr(content) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Parse error: {}", e);
-            process::exit(1);
+            fatal_rendered_error(&e, content, &input_path);
         }
     };
 
@@ -151,12 +160,11 @@ fn run_mirr_mode(content: &str, show_stats: bool) {
     }
 }
 
-fn run_scc_mode(content: &str, show_stats: bool) {
+fn run_scc_mode(content: &str, show_stats: bool, input_path: &str) {
     let mut program = match parse_mirr(content) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Parse error: {}", e);
-            process::exit(1);
+            fatal_rendered_error(&e, content, &input_path);
         }
     };
 
@@ -216,4 +224,14 @@ fn print_diagnostics(diags: &[width::types::WidthDiag]) {
     for d in diags {
         println!("  {}", d);
     }
+}
+
+fn fatal_rendered_error(error: &MirrError, source: &str, file_path: &str) -> ! {
+    eprint!("{}", render_diagnostic(&error.to_diagnostic(), source, file_path));
+    process::exit(1);
+}
+
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    process::exit(1);
 }

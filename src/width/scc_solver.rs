@@ -50,9 +50,10 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
         iters += 1;
         if iters > MAX_FLOYD_WARSHALL_ITERS {
             diagnostics.push(
-                WidthDiag::error(
-                    "[E508] nonexpansive SCC solver exceeded iteration budget".to_string(),
-                )
+                WidthDiag::error(format!(
+                    "{} nonexpansive SCC solver exceeded iteration budget",
+                    crate::error_codes::ec(508)
+                ))
                 .with_code("E508"),
             );
             break;
@@ -83,8 +84,9 @@ pub fn solve_nonexpansive(scc: &SccInfo, signals: &[SignalDecl]) -> SccSolveResu
                 .unwrap_or("unknown");
             diagnostics.push(
                 WidthDiag::error(format!(
-                    "[E509] signal '{}' in nonexpansive SCC has no width anchor \
+                    "{} signal '{}' in nonexpansive SCC has no width anchor \
                  (add an explicit type annotation)",
+                    crate::error_codes::ec(509),
                     name
                 ))
                 .with_code("E509")
@@ -153,9 +155,10 @@ pub fn solve_expansive(
                 widths.push(0);
                 diagnostics.push(
                     WidthDiag::error(format!(
-                        "[E510] signal '{}' is in an expansive SCC but has no provable \
+                        "{} signal '{}' is in an expansive SCC but has no provable \
                      width bound. Add an explicit type annotation or a \
                      bounded temporal guard.",
+                        crate::error_codes::ec(510),
                         sig.name
                     ))
                     .with_code("E510")
@@ -232,7 +235,15 @@ fn infer_bound_from_guards(
             for guard_name in &r.guard_names {
                 for g in guards {
                     if g.name == *guard_name && g.cycles > 0 {
-                        let max_val = increment.saturating_mul(g.cycles);
+                        // SAFE: Check for overflow instead of saturating silently.
+                        // If the product exceeds u64, we can't represent it in our 64-bit width system.
+                        let max_val = match increment.checked_mul(g.cycles) {
+                            Some(v) => v,
+                            None => {
+                                // Bit-width would exceed u64 limit.
+                                return None;
+                            }
+                        };
                         let bits = super::types::Width::min_bits_for(max_val);
                         if bits.0 <= 64 {
                             return Some(bits.0);

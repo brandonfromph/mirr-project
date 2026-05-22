@@ -3,7 +3,7 @@
 //! This file is part of the MIRR Runtime Tooling (MRT / Presidential Arsenal).
 //! All modifications MUST adhere to the following standards:
 //! 1. CDD LIFECYCLE: Audit → Propose → Sign → Execute → CI.
-//! 2. ZERO-DEBT INVARIANT: No wrappers (D1), no dead code (D3), no stale comments (D7).
+//! 2. ZERO-DEBT INVARIANT: No wrappers (D1), no dead code (D3), no misleading comments (D7).
 //! 3. KB STANDARD: All operational telemetry MUST be stashed in `mirr-brain`.
 //! 4. NO VIBE-CODING: Surgical edits via `mirr-wave` only.
 
@@ -16,6 +16,8 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
+
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
 
 #[derive(Parser, Debug)]
 #[command(name = "mirr-wave", version, about = "MIRR Wave Executor")]
@@ -141,7 +143,7 @@ fn main() -> anyhow::Result<()> {
     for (rel_path, old_text, new_text) in &edits {
         let abs_path = root.join(rel_path);
         if !abs_path.exists() {
-            let err = format!("Error: File not found: {}", rel_path);
+            let err = format!("file not found: {}", rel_path);
             log.errors.push(err);
             success = false;
             break;
@@ -150,7 +152,7 @@ fn main() -> anyhow::Result<()> {
         let content = match std::fs::read_to_string(&abs_path) {
             Ok(c) => c,
             Err(e) => {
-                let err = format!("Error reading {}: {}", rel_path, e);
+                let err = format!("failed to read {}: {}", rel_path, e);
                 log.errors.push(err);
                 success = false;
                 break;
@@ -210,7 +212,7 @@ fn main() -> anyhow::Result<()> {
         if !args.dry_run {
             let updated = content.replacen(&old_text_clean, &new_text_clean, 1);
             if let Err(e) = std::fs::write(&abs_path, updated) {
-                let err = format!("Error writing {}: {}", rel_path, e);
+                let err = format!("failed to write {}: {}", rel_path, e);
                 log.errors.push(err);
                 success = false;
                 break;
@@ -237,7 +239,10 @@ fn main() -> anyhow::Result<()> {
 
     // Phase 1: Automatic Build Certification
     if let Err(e) = auto_certify_wave(&log) {
-        eprintln!("[CERT] WARNING: Automated receipt generation failed: {}", e);
+        let diag = Diagnostic::warning("automated receipt generation failed")
+            .with_note(e.to_string())
+            .with_help("Check that mirr-brain is available and the cargo workspace is healthy.");
+        eprint!("{}", render_diagnostic(&diag, "", ""));
     }
 
     stash_log(&log, args.stash)?;

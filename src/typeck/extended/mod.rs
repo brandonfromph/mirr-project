@@ -183,7 +183,7 @@ mod tests {
             origin: None,
             span: None,
         };
-        let ext = ExtendedSignalDecl::from_legacy(&legacy);
+        let ext = ExtendedSignalDecl::from_ast(&legacy);
         assert_eq!(ext.ty, SignalType::Unsigned(16));
         assert!(ext.extended_ty.is_base_only());
     }

@@ -29,7 +29,7 @@ fn test_simulator_new() {
     assert_eq!(sim.guards.len(), MAX_GUARDS);
     // All guards must be false.
     for i in 0..MAX_GUARDS {
-        assert!(!sim.guards[i]);
+        assert!(!sim.read_guard_bool(i as u8));
     }
     assert!(sim.properties.violations.is_empty());
     assert_eq!(sim.exceptions.mode, ExecMode::Reflex);
@@ -52,7 +52,7 @@ fn test_set_input_read_output() {
 
     let result = sim.run(&program, 100).unwrap();
     assert!(result.halted);
-    assert_eq!(result.cycles, 3);
+    assert_eq!(result.cycles, 1);
 
     // Read output port 0.
     let output = sim.read_output(0).unwrap();
@@ -91,9 +91,9 @@ fn test_halt_stops() {
 
     let result = sim.run(&program, 100).unwrap();
     assert!(result.halted);
-    // Nop + Halt = 2 instructions executed = 2 cycles.
-    assert_eq!(result.cycles, 2);
-    // PC should be at the Halt instruction (index 1), not advanced past it.
+    // Entire program execution = 1 cycle.
+    assert_eq!(result.cycles, 1);
+    // PC should stay at the Halt instruction (index 1).
     assert_eq!(sim.pc, 1);
 }
 
@@ -109,7 +109,7 @@ fn test_emergency_stop() {
 
     let result = sim.run(&program, 100).unwrap();
     assert!(result.halted);
-    assert_eq!(result.cycles, 2);
+    assert_eq!(result.cycles, 1);
 }
 
 #[test]

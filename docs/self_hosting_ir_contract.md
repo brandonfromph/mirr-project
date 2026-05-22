@@ -320,9 +320,11 @@ The following rules ensure both pipelines produce identical artifacts:
 Input MIRR source:
 ```mirr
 module neonatal_respirator {
-    signal respirator_enable: in bool;
-    signal airway_pressure:   in u16;
-    signal clamp_valve:       out bool;
+    signals {
+        respirator_enable: in bool
+        airway_pressure:   in u16
+        clamp_valve:       out bool
+    }
 
     guard sustained_pressure_drop {
         when airway_pressure < 50

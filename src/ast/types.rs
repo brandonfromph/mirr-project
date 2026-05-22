@@ -26,6 +26,38 @@ pub const MAX_FIXED_POINT_BITS: u32 = 64;
 /// Maximum number of signals in an interface bundle.
 pub const MAX_INTERFACE_SIGNALS: usize = 64;
 
+// =========================================================================
+// Standard RS-16 Structs — resolving E801 refinement gaps.
+// =========================================================================
+
+/// Returns the standard RS-16 Interconnect Packet type.
+///
+/// Proposed in Proposal 094 for the 16-core fabric interconnect.
+pub fn packet_type() -> SignalType {
+    SignalType::Struct {
+        name: "Packet".to_string(),
+        fields: vec![
+            ("source".to_string(), SignalType::Unsigned(4)),
+            ("dest".to_string(), SignalType::Unsigned(4)),
+            ("payload".to_string(), SignalType::Unsigned(8)),
+        ],
+    }
+}
+
+/// Returns the standard LRA Paper surface type.
+///
+/// Proposed in Proposal 031 for interactive paper visualizations.
+pub fn surface_type() -> SignalType {
+    SignalType::Struct {
+        name: "surface".to_string(),
+        fields: vec![
+            ("x".to_string(), SignalType::Unsigned(16)),
+            ("y".to_string(), SignalType::Unsigned(16)),
+            ("z".to_string(), SignalType::Unsigned(16)),
+        ],
+    }
+}
+
 /// Kind of signal in a MIRR module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalKind {

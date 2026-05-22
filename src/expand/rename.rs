@@ -38,21 +38,35 @@ pub(super) fn apply_name_prefixing(
     fragment: &mut ExpandedFragment,
     prefix: &str,
     original_names: &HashSet<String>,
+    param_names: &HashSet<String>,
 ) {
-    // Build rename map: original_name -> prefixed_name
+    // Build rename map: original_name -> prefixed_name.
+    // Only names declared inside the fragment are prefixed. Parameter names were
+    // already resolved by text-level ${param} substitution and must NOT be
+    // included here — their values are module-level signal names that belong to
+    // the calling scope and must remain unchanged.
+    let _ = param_names; // consumed by caller; not needed in rename map
     let mut rename: HashMap<String, String> = HashMap::with_capacity(original_names.len());
     for name in original_names {
         rename.insert(name.clone(), format!("{prefix}_{name}"));
     }
 
+    // PRE-ADD all guard names to the rename map (needed for reflex references)
+    for guard in &fragment.guards {
+        rename.insert(guard.name.clone(), format!("{prefix}_{}", guard.name));
+    }
+
     // Rename signal declarations.
     for sig in &mut fragment.signals {
         if let Some(new_name) = rename.get(&sig.name) {
+            // Only rename if explicitly in the map (i.e., internal signals)
             sig.name = new_name.clone();
         }
+        // Don't prefix signals that aren't in the rename map - they're likely
+        // parameters that should have been substituted earlier
     }
 
-    // Rename guard names and references in conditions.
+    // Rename guard names.
     for guard in &mut fragment.guards {
         if let Some(new_name) = rename.get(&guard.name) {
             guard.name = new_name.clone();
@@ -86,6 +100,21 @@ pub(super) fn apply_name_prefixing(
             prop.name = new_name.clone();
         }
         rename_property_signals(&mut prop.formula, &rename);
+    }
+
+    // Rename arguments in nested pattern calls.
+    for call in &mut fragment.pattern_calls {
+        for arg in &mut call.arguments {
+            match arg {
+                crate::ast::pattern::PatternArg::SignalRef(name)
+                | crate::ast::pattern::PatternArg::PatternRef(name) => {
+                    if let Some(new_name) = rename.get(name.as_str()) {
+                        *name = new_name.clone();
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 }
 

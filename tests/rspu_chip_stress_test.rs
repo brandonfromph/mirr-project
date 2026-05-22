@@ -28,9 +28,8 @@ fn test_rspu_chip_workspace_compilation() {
 
     // Structural checks for the RS-16 Liquid Architecture
     assert!(snapshot.imported_file_count() >= 2, "Should have imported ALU and RAM modules");
-    
+
     // Verify the core alu_core pattern is merged into the global namespace
-    let has_alu = snapshot.pipeline.program.patterns.iter()
-        .any(|p| p.name.contains("alu_core"));
+    let has_alu = snapshot.pipeline.program.patterns.iter().any(|p| p.name.contains("alu_core"));
     assert!(has_alu, "RS-16 should contain the alu_core pattern");
 }

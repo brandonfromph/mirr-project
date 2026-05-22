@@ -43,7 +43,7 @@ fn test_sim_nop_program() {
     ]);
     let mut sim = RspuSimulator::new();
     let result = sim.run(&prog, 1000).expect("sim should succeed");
-    assert_eq!(result.cycles, 4);
+    assert_eq!(result.cycles, 1);
     assert!(result.halted);
     assert!(result.exception.is_none());
     assert!(result.property_violations.is_empty());
@@ -157,9 +157,14 @@ fn test_sim_guard_sr_init_query() {
     let mut sim = RspuSimulator::new();
     let result = sim.run(&prog, 1000).expect("sim should succeed");
     assert!(result.halted);
-    let word = sim.registers.read(194);
-    assert_eq!(word.value, 1, "guard should be active when cond was nonzero");
-    assert_eq!(word.tag, TypeTag::Bool);
+    // Cycle 1: SrInit + SrTick. Query should see 1 (immediate visibility for Init).
+    assert_eq!(sim.registers.read(194).value, 1);
+
+    // Cycle 2: Just Query. Should see 1.
+    let prog_q =
+        make_program(vec![RspuInstruction::SrQuery { dst: 194, guard: 0 }, RspuInstruction::Halt]);
+    let _ = sim.run(&prog_q, 1000).expect("Cycle 2 should succeed");
+    assert_eq!(sim.registers.read(194).value, 1);
 }
 
 #[test]
@@ -176,7 +181,21 @@ fn test_sim_reflex_if_active() {
     let mut sim = RspuSimulator::new();
     let result = sim.run(&prog, 1000).expect("sim should succeed");
     assert!(result.halted);
-    assert_eq!(sim.registers.read(194).value, 42, "ReflexIf should copy when guard is active");
+    // Cycle 1: SrInit is immediate. Guard is now 1.
+    assert_eq!(sim.registers.read(194).value, 42);
+
+    // Now tick it and check in next cycle.
+    let prog_tick = make_program(vec![RspuInstruction::SrTick { guard: 0 }, RspuInstruction::Halt]);
+    sim.run(&prog_tick, 1000).unwrap();
+
+    let prog_reflex = make_program(vec![
+        RspuInstruction::LoadImm { dst: 193, value: 42, width: 8 },
+        RspuInstruction::LoadImm { dst: 194, value: 0, width: 8 },
+        RspuInstruction::ReflexIf { guard: 0, dst: 194, src: 193 },
+        RspuInstruction::Halt,
+    ]);
+    sim.run(&prog_reflex, 1000).unwrap();
+    assert_eq!(sim.registers.read(194).value, 42);
 }
 
 #[test]
@@ -210,7 +229,7 @@ fn test_sim_emergency_stop() {
     // The exception field is None because EmergencyStop uses StepResult::EmergencyStop,
     // not StepResult::Exception.
     assert!(result.exception.is_none());
-    assert_eq!(result.cycles, 2);
+    assert_eq!(result.cycles, 1);
 }
 
 #[test]
@@ -359,7 +378,7 @@ fn test_sim_deadline_set_no_expiry() {
     let result = sim.run(&prog, 2000).expect("sim should succeed");
     assert!(result.halted);
     assert!(result.exception.is_none(), "deadline should not expire");
-    assert_eq!(result.cycles, 4);
+    assert_eq!(result.cycles, 1);
 }
 
 #[test]

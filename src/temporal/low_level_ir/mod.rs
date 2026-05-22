@@ -39,6 +39,28 @@ pub enum CompiledGuard {
     DynamicCounter(DynamicCounterGuard),
 }
 
+impl CompiledGuard {
+    /// Return the name of the original guard this was compiled from.
+    pub fn name(&self) -> &str {
+        match self {
+            CompiledGuard::ShiftRegister(sr) => &sr.name,
+            CompiledGuard::Counter(c) => &c.name,
+            CompiledGuard::Complex(cx) => &cx.name,
+            CompiledGuard::DynamicCounter(dc) => &dc.name,
+        }
+    }
+
+    /// Return the name of the final hardware output signal for this guard.
+    pub fn output_signal(&self) -> &str {
+        match self {
+            CompiledGuard::ShiftRegister(sr) => &sr.output_signal,
+            CompiledGuard::Counter(c) => &c.output_signal,
+            CompiledGuard::Complex(cx) => &cx.output_signal,
+            CompiledGuard::DynamicCounter(dc) => &dc.output_signal,
+        }
+    }
+}
+
 /// Shift register-based temporal guard
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ShiftRegisterGuard {

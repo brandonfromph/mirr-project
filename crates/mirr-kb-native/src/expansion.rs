@@ -1,28 +1,17 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
 const MAX_QUERY_VARIANTS: usize = 3;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExpansionMode {
     None,
     Synonym,
     Hyde,
-}
-
-impl ExpansionMode {
-    pub fn parse(value: &str) -> Option<Self> {
-        let normalized = value.trim().to_ascii_lowercase();
-        match normalized.as_str() {
-            "none" => Some(Self::None),
-            "synonym" => Some(Self::Synonym),
-            "hyde" => Some(Self::Hyde),
-            _ => None,
-        }
-    }
 }
 
 pub fn expand_query_variants(query: &str, mode: ExpansionMode) -> Vec<(String, f32)> {

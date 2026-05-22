@@ -56,8 +56,9 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
             let op_code = alu_op_to_funct(*op);
             if *b > 63 {
                 return Err(rspu_err(format!(
-                    "[E706] ALU register b index {} exceeds 6-bit field max (63); \
+                    "{} ALU register b index {} exceeds 6-bit field max (63); \
                      use MOV to copy to a low register first",
+                    crate::error_codes::ec(706),
                     b
                 )));
             }
@@ -72,14 +73,16 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
             let op_code = alu_op_to_funct(*op) as u16;
             if op_code > 7 {
                 return Err(rspu_err(format!(
-                    "[E706] ALU_IMM alu_op {} exceeds 3-bit field max (7); \
+                    "{} ALU_IMM alu_op {} exceeds 3-bit field max (7); \
                      comparison ops (Eq/Ne/Lt/Le/Gt/Ge) require the register ALU form",
+                    crate::error_codes::ec(706),
                     op_code
                 )));
             }
             let imm7 = if *imm > 127 {
                 return Err(rspu_err(format!(
-                    "[E706] ALU_IMM immediate {imm} exceeds 7-bit field max (127)"
+                    "{} ALU_IMM immediate {imm} exceeds 7-bit field max (127)",
+                    crate::error_codes::ec(706)
                 )));
             } else {
                 *imm as u16
@@ -150,7 +153,8 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
         RspuInstruction::DeadlineSet { cycles } => {
             let imm = if *cycles > 0x03FF_FFFF {
                 return Err(rspu_err(format!(
-                    "[E706] DEADLINE_SET cycles {} exceeds 26-bit immediate max",
+                    "{} DEADLINE_SET cycles {} exceeds 26-bit immediate max",
+                    crate::error_codes::ec(706),
                     cycles
                 )));
             } else {
@@ -161,9 +165,10 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
         // MEGA-4: Totality Engine instructions
         RspuInstruction::Verify { cert_offset } => {
             let imm = if *cert_offset > 0x03FF_FFFF {
-                return Err(rspu_err(
-                    "[E706] VERIFY cert_offset exceeds 26-bit immediate max".to_string(),
-                ));
+                return Err(rspu_err(format!(
+                    "{} VERIFY cert_offset exceeds 26-bit immediate max",
+                    crate::error_codes::ec(706)
+                )));
             } else {
                 *cert_offset
             };
@@ -172,10 +177,10 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
         RspuInstruction::Certify { dst } => pack_r_type(OP_CERTIFY, *dst, 0, 0, 0),
         RspuInstruction::TotalCheck { expected_properties } => {
             let imm = if *expected_properties > 0x03FF_FFFF {
-                return Err(rspu_err(
-                    "[E706] TOTAL_CHECK expected_properties exceeds 26-bit immediate max"
-                        .to_string(),
-                ));
+                return Err(rspu_err(format!(
+                    "{} TOTAL_CHECK expected_properties exceeds 26-bit immediate max",
+                    crate::error_codes::ec(706)
+                )));
             } else {
                 *expected_properties
             };
@@ -184,9 +189,10 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
         // MEGA-5: Symbolic Reasoning tier
         RspuInstruction::Match { dst, src, table_offset } => {
             if *table_offset > 0x03FF {
-                return Err(rspu_err(
-                    "[E706] MATCH table_offset exceeds 10-bit immediate max".to_string(),
-                ));
+                return Err(rspu_err(format!(
+                    "{} MATCH table_offset exceeds 10-bit immediate max",
+                    crate::error_codes::ec(706)
+                )));
             }
             pack_i_type(OP_MATCH, *dst, *src, *table_offset)
         }
@@ -207,7 +213,8 @@ pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> 
 pub fn emit_binary(program: &RspuProgram) -> Result<Vec<u32>, MirrError> {
     if program.instructions.len() > MAX_INSTRUCTIONS {
         return Err(rspu_err(format!(
-            "[E706] program has {} instructions, exceeds MAX_INSTRUCTIONS ({MAX_INSTRUCTIONS})",
+            "{} program has {} instructions, exceeds MAX_INSTRUCTIONS ({MAX_INSTRUCTIONS})",
+            crate::error_codes::ec(706),
             program.instructions.len()
         )));
     }
@@ -215,7 +222,8 @@ pub fn emit_binary(program: &RspuProgram) -> Result<Vec<u32>, MirrError> {
     for (i, instr) in program.instructions.iter().enumerate() {
         let encoded = encode(instr).map_err(|e| {
             rspu_err(format!(
-                "[E706] encoding instruction {i} ({}): {}",
+                "{} encoding instruction {i} ({}): {}",
+                crate::error_codes::ec(706),
                 instr.mnemonic(),
                 e.message()
             ))

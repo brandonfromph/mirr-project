@@ -3,7 +3,7 @@
 //! This file is part of the MIRR Runtime Tooling (MRT / Presidential Arsenal).
 //! All modifications MUST adhere to the following standards:
 //! 1. CDD LIFECYCLE: Audit → Propose → Sign → Execute → CI.
-//! 2. ZERO-DEBT INVARIANT: No wrappers (D1), no dead code (D3), no stale comments (D7).
+//! 2. ZERO-DEBT INVARIANT: No wrappers (D1), no dead code (D3), no misleading comments (D7).
 //! 3. KB STANDARD: All operational telemetry MUST be stashed in `mirr-brain`.
 //! 4. NO VIBE-CODING: Surgical edits via `mirr-wave` only.
 
@@ -27,6 +27,7 @@
 
 use clap::{Parser, Subcommand};
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use std::fs;
@@ -157,8 +158,9 @@ fn main() -> anyhow::Result<()> {
     }
 
     let command = args.command.unwrap_or_else(|| {
-        eprintln!("Error: no command specified.\nRun with --help for usage.");
-        std::process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error("no command specified").with_help("Run with --help for usage."),
+        );
     });
 
     let kb_root_path = PathBuf::from(&args.kb_root);
@@ -251,4 +253,9 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    std::process::exit(1);
 }

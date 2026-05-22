@@ -131,8 +131,11 @@ fn main() {
         source = stripped.to_string();
     }
 
+    // MEGA-10: Pre-process with ergonomic macro processor before parsing
+    let processed_source = nasa_rust_project::compiler::macro_proc::expand_macros(&source);
+
     // Parse the MIRR file
-    let program = match parse_mirr(&source) {
+    let program = match parse_mirr(&processed_source) {
         Ok(program) => program,
         Err(error) => {
             eprintln!("Parse error: {}", error);
@@ -146,18 +149,37 @@ fn main() {
         return;
     }
 
-    // Compile temporal guards
-    let mut compiler = TemporalGuardCompiler::new();
-    let netlist = match compiler.compile_temporal_guards(&program.module) {
-        Ok(netlist) => netlist,
-        Err(error) => {
-            eprintln!("Temporal compilation error: {}", error);
+    let mut config = nasa_rust_project::pipeline::PipelineConfig::default();
+    config.temporal = true;
+    config.base_dir = Some(
+        std::path::PathBuf::from(&input_path)
+            .parent()
+            .unwrap_or(std::path::Path::new(""))
+            .to_path_buf(),
+    );
+
+    let pipeline_result =
+        match nasa_rust_project::pipeline::run_pipeline_on_program(program, &config) {
+            Ok(result) => result,
+            Err(errors) => {
+                for err in errors.errors {
+                    eprintln!("Pipeline error: {}", err);
+                }
+                process::exit(1);
+            }
+        };
+
+    let netlist = match pipeline_result.temporal_netlist {
+        Some(netlist) => netlist,
+        None => {
+            eprintln!("Temporal compilation was skipped");
             process::exit(1);
         }
     };
 
     // Output results
     // support multiple output formats; if none requested show summary
+    let compiler = TemporalGuardCompiler::new();
     if emit_json {
         match compiler.emit_netlist_json(&netlist) {
             Ok(json) => println!("{}", json),

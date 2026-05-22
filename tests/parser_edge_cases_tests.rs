@@ -357,3 +357,11 @@ module inline_when_and_substring {
     assert_eq!(program.module.reflexes.len(), 1);
     assert_eq!(program.module.reflexes[0].guard_names, vec!["gandalf"]);
 }
+
+#[test]
+fn test_empty_signals_block() {
+    let input = "module test_mod {\n    signals {}\n}";
+    let expanded = nasa_rust_project::compiler::macro_proc::expand_macros(input);
+    let result = nasa_rust_project::parser::parse_mirr(&expanded);
+    assert!(result.is_ok(), "Empty signals block should be valid");
+}

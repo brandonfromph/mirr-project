@@ -122,6 +122,7 @@ fn length_error(msg: String) -> String {
 fn default_config() -> PipelineConfig {
     PipelineConfig {
         typecheck: true,
+        bootstrap_mode: false,
         simplify: true,
         sat_simplify: false,
         width: true,
@@ -138,6 +139,7 @@ fn default_config() -> PipelineConfig {
         emit_mape_k_rtl: false,
         hls: false,
         logic_optimize: false,
+        base_dir: None,
     }
 }
 

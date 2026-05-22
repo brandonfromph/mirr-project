@@ -12,6 +12,7 @@
 use clap::Parser;
 use std::process;
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
 use nasa_rust_project::mape_k::{
     self, ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
     TemporalProperty, TriggerCondition,
@@ -83,9 +84,11 @@ fn main() {
     } else if let Some(ref path) = args.config {
         load_config(path)
     } else {
-        eprintln!("Error: specify --config <path> or --neonatal");
-        eprintln!("Run with --help for usage.");
-        process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error("missing simulation input")
+                .with_help("Specify --config <path> or --neonatal.")
+                .with_note("Run with --help for usage."),
+        );
     };
 
     // Run simulation.
@@ -109,17 +112,28 @@ fn main() {
         match serde_json::to_string_pretty(&result.adaptation_log) {
             Ok(json) => {
                 if let Err(e) = std::fs::write(path, json) {
-                    eprintln!("Error writing audit file: {e}");
-                    process::exit(1);
+                    fatal_diagnostic(
+                        Diagnostic::error("failed to write audit file")
+                            .with_note(e.to_string())
+                            .with_help("Check the destination path and permissions."),
+                    );
                 }
                 println!("Audit log written to {path}");
             }
             Err(e) => {
-                eprintln!("Error serializing audit log: {e}");
-                process::exit(1);
+                fatal_diagnostic(
+                    Diagnostic::error("failed to serialize audit log")
+                        .with_note(e.to_string())
+                        .with_help("Inspect the adaptation log data for invalid values."),
+                );
             }
         }
     }
+}
+
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    process::exit(1);
 }
 
 /// Built-in neonatal respirator scenario (Kwon et al. 2021 inspired).
@@ -183,15 +197,21 @@ fn load_config(path: &str) -> SimConfig {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Error reading config file '{path}': {e}");
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error(format!("failed to read config file '{path}'"))
+                    .with_note(e.to_string())
+                    .with_help("Check the file path and permissions."),
+            );
         }
     };
     match serde_json::from_str(&content) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Error parsing config JSON: {e}");
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error("failed to parse config JSON")
+                    .with_note(e.to_string())
+                    .with_help("Ensure the config file contains valid JSON."),
+            );
         }
     }
 }

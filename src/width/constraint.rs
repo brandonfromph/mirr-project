@@ -95,9 +95,13 @@ where
                     constraints.push(WidthConstraint::Fixed { node: node_id, width });
                 } else {
                     diagnostics.push(
-                        WidthDiag::error(format!("[E501] undeclared signal reference: '{}'", name))
-                            .with_code("E501")
-                            .with_signal(name),
+                        WidthDiag::error(format!(
+                            "{} undeclared signal reference: '{}'",
+                            crate::error_codes::ec(501),
+                            name
+                        ))
+                        .with_code("E501")
+                        .with_signal(name),
                     );
                     // Fallback to width 1 to allow solver to continue.
                     constraints.push(WidthConstraint::Fixed { node: node_id, width: 1 });
@@ -241,7 +245,8 @@ where
                 // If it reaches constraint generation, emit a semantic-width diagnostic.
                 diagnostics.push(
                     WidthDiag::error(format!(
-                        "[E506] unresolved UnfoldIndex '{}' reached width constraints",
+                        "{} unresolved UnfoldIndex '{}' reached width constraints",
+                        crate::error_codes::ec(506),
                         name
                     ))
                     .with_code("E506"),

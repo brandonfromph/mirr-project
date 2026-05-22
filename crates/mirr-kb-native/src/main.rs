@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
+use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use mirr_kb_native::adapters::embedding::StubEmbeddingProvider;
 use mirr_kb_native::expansion::ExpansionMode;
 use mirr_kb_native::query_handler::{
@@ -12,216 +13,92 @@ use serde::Serialize;
 use std::process::ExitCode;
 use std::sync::Arc;
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> ExitCode {
-    match run_cli().await {
-        Ok(code) => code,
-        Err(err) => {
-            eprintln!("{}", err);
-            ExitCode::from(2)
-        }
-    }
+#[derive(Parser, Debug)]
+#[command(name = "mirr-kb-native", version, about = "MIRR Knowledge Base Grounding Engine")]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+
+    /// Export CLI schema as JSON for tool integration
+    #[arg(long, hide = true)]
+    help_json: bool,
 }
 
-async fn run_cli() -> anyhow::Result<ExitCode> {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.is_empty() {
-        return Err(anyhow::anyhow!("usage: mirr-kb-native <query|status|brief> [options]"));
-    }
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Query the knowledge base with natural language
+    Query {
+        /// Query text
+        #[arg(short, long)]
+        text: String,
 
-    let kb_root = std::env::var("MIRR_KB_ROOT").unwrap_or_else(|_| ".kb".to_string());
-    let storage = Arc::new(SqliteHybridStorage::new(&kb_root)?);
+        /// Search mode
+        #[arg(short, long, value_enum, default_value_t = SearchMode::Hybrid)]
+        mode: SearchMode,
 
-    match args[0].as_str() {
-        "query" => run_query_command(storage, &args[1..]).await,
-        "brief" => run_brief_command(storage, &args[1..]).await,
-        "status" => {
-            let status = run_status_pipeline(storage.as_ref())?;
-            println!("{}", serde_json::to_string(&status)?);
-            Ok(ExitCode::SUCCESS)
-        }
-        _ => Err(anyhow::anyhow!("unknown command: {}", args[0])),
-    }
+        /// Maximum results to return
+        #[arg(short, long, default_value_t = 16)]
+        limit: usize,
+
+        /// Filter expression (e.g. "module:foo")
+        #[arg(short, long)]
+        filter: Option<String>,
+
+        /// Expansion mode for query variants
+        #[arg(long, value_enum, default_value_t = ExpansionMode::None)]
+        expand_mode: ExpansionMode,
+
+        /// Number of retries on transient errors
+        #[arg(long, default_value_t = 1)]
+        retry_count: u8,
+
+        /// Query timeout in milliseconds
+        #[arg(long, default_value_t = 30000)]
+        timeout_ms: u64,
+
+        /// Temporal range start (unix seconds)
+        #[arg(long)]
+        start_secs: Option<u64>,
+
+        /// Temporal range end (unix seconds)
+        #[arg(long)]
+        end_secs: Option<u64>,
+    },
+    /// Generate a brief, AI-friendly summary of grounded evidence
+    Brief {
+        /// Query text
+        #[arg(short, long)]
+        query: String,
+
+        /// Search mode
+        #[arg(short, long, value_enum, default_value_t = SearchMode::Hybrid)]
+        mode: SearchMode,
+
+        /// Maximum results to return
+        #[arg(short, long, default_value_t = 8)]
+        limit: usize,
+
+        /// Filter scope
+        #[arg(short, long)]
+        scope: Option<String>,
+
+        /// Output format
+        #[arg(short, long, value_enum, default_value_t = BriefFormat::Brief)]
+        format: BriefFormat,
+    },
+    /// Show current index status and metadata
+    Status,
 }
 
-async fn run_query_command(
-    storage: Arc<SqliteHybridStorage>,
-    args: &[String],
-) -> anyhow::Result<ExitCode> {
-    let mut text = String::new();
-    let mut mode = SearchMode::Hybrid;
-    let mut limit: usize = 16;
-    let mut filter: Option<String> = None;
-    let mut expansion_mode = ExpansionMode::None;
-    let mut retry_count: u8 = 1;
-    let mut timeout_ms: u64 = 30_000;
-    let mut temporal_start_secs: Option<u64> = None;
-    let mut temporal_end_secs: Option<u64> = None;
-
-    let mut i = 0usize;
-    while i < args.len() {
-        let flag = args[i].as_str();
-        let next = if i + 1 < args.len() { Some(args[i + 1].as_str()) } else { None };
-
-        match (flag, next) {
-            ("--text", Some(value)) => {
-                text = value.to_string();
-                i += 2;
-            }
-            ("--mode", Some(value)) => {
-                mode = parse_mode(value)?;
-                i += 2;
-            }
-            ("--limit", Some(value)) => {
-                limit = value.parse::<usize>().map_err(|_| anyhow::anyhow!("invalid --limit"))?;
-                i += 2;
-            }
-            ("--filter", Some(value)) => {
-                filter = Some(value.to_string());
-                i += 2;
-            }
-            ("--expand-mode", Some(value)) => {
-                expansion_mode = ExpansionMode::parse(value)
-                    .ok_or_else(|| anyhow::anyhow!("invalid --expand-mode"))?;
-                i += 2;
-            }
-            ("--retry-count", Some(value)) => {
-                retry_count =
-                    value.parse::<u8>().map_err(|_| anyhow::anyhow!("invalid --retry-count"))?;
-                i += 2;
-            }
-            ("--timeout-ms", Some(value)) => {
-                timeout_ms =
-                    value.parse::<u64>().map_err(|_| anyhow::anyhow!("invalid --timeout-ms"))?;
-                i += 2;
-            }
-            ("--start-secs", Some(value)) => {
-                temporal_start_secs = Some(
-                    value.parse::<u64>().map_err(|_| anyhow::anyhow!("invalid --start-secs"))?,
-                );
-                i += 2;
-            }
-            ("--end-secs", Some(value)) => {
-                temporal_end_secs =
-                    Some(value.parse::<u64>().map_err(|_| anyhow::anyhow!("invalid --end-secs"))?);
-                i += 2;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("unknown or incomplete flag: {}", flag));
-            }
-        }
-    }
-
-    let request = QueryPipelineRequest {
-        text,
-        mode,
-        limit,
-        filter,
-        expansion_mode,
-        retry_count,
-        timeout_ms,
-        temporal_start_secs,
-        temporal_end_secs,
-    };
-
-    let response = run_query_pipeline(storage, &StubEmbeddingProvider, request).await?;
-    println!("{}", serde_json::to_string(&response)?);
-    // Always return success if the query ran without error, even if results are empty.
-    Ok(ExitCode::SUCCESS)
-}
-
-async fn run_brief_command(
-    storage: Arc<SqliteHybridStorage>,
-    args: &[String],
-) -> anyhow::Result<ExitCode> {
-    let mut query = String::new();
-    let mut mode = SearchMode::Hybrid;
-    let mut limit: usize = 8;
-    let mut scope: Option<String> = None;
-    let mut format = BriefFormat::Brief;
-
-    let mut i = 0usize;
-    while i < args.len() {
-        let flag = args[i].as_str();
-        let next = if i + 1 < args.len() { Some(args[i + 1].as_str()) } else { None };
-
-        match (flag, next) {
-            ("--query", Some(value)) => {
-                query = value.to_string();
-                i += 2;
-            }
-            ("--mode", Some(value)) => {
-                mode = parse_mode(value)?;
-                i += 2;
-            }
-            ("--limit", Some(value)) => {
-                limit = value.parse::<usize>().map_err(|_| anyhow::anyhow!("invalid --limit"))?;
-                i += 2;
-            }
-            ("--scope", Some(value)) => {
-                scope = Some(value.to_string());
-                i += 2;
-            }
-            ("--format", Some(value)) => {
-                format = BriefFormat::parse(value)?;
-                i += 2;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("unknown or incomplete flag: {}", flag));
-            }
-        }
-    }
-
-    if query.is_empty() {
-        return Err(anyhow::anyhow!("missing --query"));
-    }
-
-    let request = QueryPipelineRequest {
-        text: query.clone(),
-        mode,
-        limit,
-        filter: scope.clone(),
-        expansion_mode: ExpansionMode::None,
-        retry_count: 1,
-        timeout_ms: 30_000,
-        temporal_start_secs: None,
-        temporal_end_secs: None,
-    };
-
-    let response = run_query_pipeline(storage, &StubEmbeddingProvider, request).await?;
-    let output = build_brief_response(&query, mode, scope, format, response);
-    println!("{}", serde_json::to_string(&output)?);
-    Ok(ExitCode::SUCCESS)
-}
-
-fn parse_mode(value: &str) -> anyhow::Result<SearchMode> {
-    match value.to_ascii_lowercase().as_str() {
-        "lexical" => Ok(SearchMode::Lexical),
-        "semantic" => Ok(SearchMode::Semantic),
-        "hybrid" => Ok(SearchMode::Hybrid),
-        "graph" => Ok(SearchMode::Graph),
-        "temporal" => Ok(SearchMode::Temporal),
-        _ => Err(anyhow::anyhow!("invalid --mode")),
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum BriefFormat {
+#[derive(ValueEnum, Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BriefFormat {
     Brief,
     Bullet,
     Decision,
 }
 
 impl BriefFormat {
-    fn parse(value: &str) -> anyhow::Result<Self> {
-        match value.to_ascii_lowercase().as_str() {
-            "brief" => Ok(Self::Brief),
-            "bullet" => Ok(Self::Bullet),
-            "decision" => Ok(Self::Decision),
-            _ => Err(anyhow::anyhow!("invalid --format")),
-        }
-    }
-
     fn as_str(self) -> &'static str {
         match self {
             Self::Brief => "brief",
@@ -254,6 +131,127 @@ struct BriefResponse {
     freshness: mirr_kb_native::retrieval::Freshness,
     query_time_ms: u64,
     truncated: bool,
+}
+
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> ExitCode {
+    let args = Cli::parse();
+
+    if args.help_json {
+        fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {
+            let mut args_list = Vec::new();
+            for arg in cmd.get_arguments() {
+                args_list.push(serde_json::json!({
+                    "id": arg.get_id().as_str(),
+                    "long": arg.get_long(),
+                    "short": arg.get_short(),
+                    "help": arg.get_help().map(|h| h.to_string()),
+                    "required": arg.is_required_set(),
+                }));
+            }
+            let mut subs = Vec::new();
+            for sub in cmd.get_subcommands() {
+                subs.push(get_cmd_manifest(sub));
+            }
+            serde_json::json!({
+                "name": cmd.get_name(),
+                "about": cmd.get_about().map(|a| a.to_string()),
+                "version": cmd.get_version().map(|v| v.to_string()),
+                "args": args_list,
+                "subcommands": subs,
+            })
+        }
+        let cmd = Cli::command();
+        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
+        return ExitCode::SUCCESS;
+    }
+
+    let command = match args.command {
+        Some(cmd) => cmd,
+        None => {
+            eprintln!("Error: no command specified.\nRun with --help for usage.");
+            return ExitCode::from(1);
+        }
+    };
+
+    let kb_root = std::env::var("MIRR_KB_ROOT").unwrap_or_else(|_| ".kb".to_string());
+    let storage = match SqliteHybridStorage::new(&kb_root) {
+        Ok(s) => Arc::new(s),
+        Err(e) => {
+            eprintln!("Error opening KB storage: {}", e);
+            return ExitCode::from(3);
+        }
+    };
+
+    match command {
+        Commands::Query {
+            text,
+            mode,
+            limit,
+            filter,
+            expand_mode,
+            retry_count,
+            timeout_ms,
+            start_secs,
+            end_secs,
+        } => {
+            let request = QueryPipelineRequest {
+                text,
+                mode,
+                limit,
+                filter,
+                expansion_mode: expand_mode,
+                retry_count,
+                timeout_ms,
+                temporal_start_secs: start_secs,
+                temporal_end_secs: end_secs,
+            };
+            match run_query_pipeline(storage, &StubEmbeddingProvider, request).await {
+                Ok(response) => {
+                    println!("{}", serde_json::to_string(&response).unwrap());
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("Query failed: {}", e);
+                    ExitCode::from(4)
+                }
+            }
+        }
+        Commands::Brief { query, mode, limit, scope, format } => {
+            let request = QueryPipelineRequest {
+                text: query.clone(),
+                mode,
+                limit,
+                filter: scope.clone(),
+                expansion_mode: ExpansionMode::None,
+                retry_count: 1,
+                timeout_ms: 30_000,
+                temporal_start_secs: None,
+                temporal_end_secs: None,
+            };
+            match run_query_pipeline(storage, &StubEmbeddingProvider, request).await {
+                Ok(response) => {
+                    let output = build_brief_response(&query, mode, scope, format, response);
+                    println!("{}", serde_json::to_string(&output).unwrap());
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("Brief failed: {}", e);
+                    ExitCode::from(5)
+                }
+            }
+        }
+        Commands::Status => match run_status_pipeline(storage.as_ref()) {
+            Ok(status) => {
+                println!("{}", serde_json::to_string(&status).unwrap());
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("Status failed: {}", e);
+                ExitCode::from(6)
+            }
+        },
+    }
 }
 
 fn build_brief_response(

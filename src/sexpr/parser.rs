@@ -35,7 +35,10 @@ fn tokenize(input: &str) -> Result<Vec<Token>, MirrError> {
 
     while i < bytes.len() {
         if tokens.len() >= max_tokens {
-            return Err(sexpr_err("[E804] Token stream exceeds maximum size"));
+            return Err(sexpr_err(format!(
+                "{} Token stream exceeds maximum size",
+                crate::error_codes::ec(804)
+            )));
         }
 
         match bytes[i] {
@@ -79,7 +82,10 @@ fn tokenize(input: &str) -> Result<Vec<Token>, MirrError> {
                     i += 1;
                 }
                 if i >= bytes.len() {
-                    return Err(sexpr_err("[E801] Unterminated string literal"));
+                    return Err(sexpr_err(format!(
+                        "{} Unterminated string literal",
+                        crate::error_codes::ec(801)
+                    )));
                 }
                 let s = String::from_utf8_lossy(&bytes[start..i]).to_string();
                 tokens.push(Token::Str(s));
@@ -94,7 +100,10 @@ fn tokenize(input: &str) -> Result<Vec<Token>, MirrError> {
                     tokens.push(Token::Bool(false));
                     i += 2;
                 } else {
-                    return Err(sexpr_err("[E800] Invalid '#' token — expected #t or #f"));
+                    return Err(sexpr_err(format!(
+                        "{} Invalid '#' token — expected #t or #f",
+                        crate::error_codes::ec(800)
+                    )));
                 }
             }
             _ => {
@@ -144,17 +153,23 @@ fn tokenize(input: &str) -> Result<Vec<Token>, MirrError> {
 /// Uses an explicit stack — no recursion.
 pub fn parse_sexpr(input: &str) -> Result<SExpr, MirrError> {
     if input.len() > MAX_SEXPR_STRING_LEN {
-        return Err(sexpr_err("[E804] Input exceeds MAX_SEXPR_STRING_LEN"));
+        return Err(sexpr_err(format!(
+            "{} Input exceeds MAX_SEXPR_STRING_LEN",
+            crate::error_codes::ec(804)
+        )));
     }
 
     let trimmed = input.trim();
     if trimmed.is_empty() {
-        return Err(sexpr_err("[E801] Empty S-expression input"));
+        return Err(sexpr_err(format!("{} Empty S-expression input", crate::error_codes::ec(801))));
     }
 
     let tokens = tokenize(trimmed)?;
     if tokens.is_empty() {
-        return Err(sexpr_err("[E801] No tokens in S-expression input"));
+        return Err(sexpr_err(format!(
+            "{} No tokens in S-expression input",
+            crate::error_codes::ec(801)
+        )));
     }
 
     let mut pos = 0;
@@ -163,7 +178,10 @@ pub fn parse_sexpr(input: &str) -> Result<SExpr, MirrError> {
 
     // Check for trailing tokens.
     if pos < tokens.len() {
-        return Err(sexpr_err("[E800] Unexpected tokens after S-expression"));
+        return Err(sexpr_err(format!(
+            "{} Unexpected tokens after S-expression",
+            crate::error_codes::ec(800)
+        )));
     }
 
     Ok(result)
@@ -201,19 +219,31 @@ fn parse_one(
     loop {
         iters += 1;
         if iters > max_iters {
-            return Err(sexpr_err("[E804] Parse iteration limit exceeded"));
+            return Err(sexpr_err(format!(
+                "{} Parse iteration limit exceeded",
+                crate::error_codes::ec(804)
+            )));
         }
 
         // ── Read one token and produce either a leaf or push a frame ──
         if current_depth >= MAX_SEXPR_DEPTH {
-            return Err(sexpr_err("[E803] S-expression nesting exceeds MAX_SEXPR_DEPTH"));
+            return Err(sexpr_err(format!(
+                "{} S-expression nesting exceeds MAX_SEXPR_DEPTH",
+                crate::error_codes::ec(803)
+            )));
         }
         if *pos >= tokens.len() {
-            return Err(sexpr_err("[E801] Unexpected end of S-expression input"));
+            return Err(sexpr_err(format!(
+                "{} Unexpected end of S-expression input",
+                crate::error_codes::ec(801)
+            )));
         }
         *node_count += 1;
         if *node_count > MAX_SEXPR_NODES {
-            return Err(sexpr_err("[E804] S-expression tree exceeds MAX_SEXPR_NODES"));
+            return Err(sexpr_err(format!(
+                "{} S-expression tree exceeds MAX_SEXPR_NODES",
+                crate::error_codes::ec(804)
+            )));
         }
 
         let result = match &tokens[*pos] {
@@ -230,7 +260,10 @@ fn parse_one(
                 }
             }
             Token::CloseParen => {
-                return Err(sexpr_err("[E802] Unexpected ')' — unbalanced parentheses"));
+                return Err(sexpr_err(format!(
+                    "{} Unexpected ')' — unbalanced parentheses",
+                    crate::error_codes::ec(802)
+                )));
             }
             Token::Quote => {
                 *pos += 1;
@@ -289,7 +322,10 @@ fn parse_one(
                     if let Some(Frame::BuildList { mut items, depth: d }) = stack.pop() {
                         items.push(val);
                         if items.len() > MAX_SEXPR_NODES {
-                            return Err(sexpr_err("[E804] List exceeds MAX_SEXPR_NODES elements"));
+                            return Err(sexpr_err(format!(
+                                "{} List exceeds MAX_SEXPR_NODES elements",
+                                crate::error_codes::ec(804)
+                            )));
                         }
                         if *pos < tokens.len() && tokens[*pos] == Token::CloseParen {
                             // List complete.
@@ -298,7 +334,10 @@ fn parse_one(
                             current_depth = d;
                             // keep unwinding
                         } else if *pos >= tokens.len() {
-                            return Err(sexpr_err("[E802] Unbalanced parentheses — missing ')'"));
+                            return Err(sexpr_err(format!(
+                                "{} Unbalanced parentheses — missing ')'",
+                                crate::error_codes::ec(802)
+                            )));
                         } else {
                             // More items — push frame back and parse next child.
                             current_depth = d + 1;

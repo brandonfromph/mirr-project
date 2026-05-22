@@ -31,10 +31,12 @@ Declared in MIRR source:
 
 ```mirr
 module example {
-    signal sensor: in u16;
-    signal offset: in i16;
-    signal alarm:  out bool;
-    signal error_code: out u8;
+    signals {
+        sensor: in u16
+        offset: in i16
+        alarm:  out bool
+        error_code: out u8
+    }
 }
 ```
 
@@ -133,15 +135,19 @@ implicit signed-to-unsigned conversion causes unexpected behavior.
 
 ```mirr
 // REJECTED — E608: cannot mix signed and unsigned
-signal a: in u16;
-signal b: in i16;
+signals {
+    a: in u16
+    b: in i16
+}
 reflex always_on {
     // error_val = a + b;  // E608
 }
 
 // CORRECT — explicit same-category usage
-signal a: in i16;
-signal b: in i16;
+signals {
+    a: in i16
+    b: in i16
+}
 reflex always_on {
     result = a + b;  // OK: both signed
 }

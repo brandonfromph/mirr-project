@@ -168,15 +168,18 @@ impl ExceptionState {
         let idx = code as u8 as usize;
         if idx >= MAX_TRAP_HANDLERS {
             return Err(rspu_err(format!(
-                "[E712] trap handler table full: index {} >= {}",
-                idx, MAX_TRAP_HANDLERS,
+                "{} trap handler table full: index {} >= {}",
+                crate::error_codes::ec(712),
+                idx,
+                MAX_TRAP_HANDLERS,
             )));
         }
         // Extend table to cover the requested index.
         while self.handler_table.len() <= idx {
             if self.handler_table.len() >= MAX_TRAP_HANDLERS {
                 return Err(rspu_err(format!(
-                    "[E712] trap handler table full: {} >= {}",
+                    "{} trap handler table full: {} >= {}",
+                    crate::error_codes::ec(712),
                     self.handler_table.len(),
                     MAX_TRAP_HANDLERS,
                 )));
@@ -194,12 +197,14 @@ impl ExceptionState {
     /// already halted.
     pub fn raise_exception(&mut self, code: ExceptionCode) -> Result<ExceptionAction, MirrError> {
         if self.halted {
-            return Err(rspu_err("[E713] program halted"));
+            return Err(rspu_err(format!("{} program halted", crate::error_codes::ec(713))));
         }
         if self.depth >= MAX_EXCEPTION_DEPTH {
             return Err(rspu_err(format!(
-                "[E711] unhandled nested exception: depth {} >= {}",
-                self.depth, MAX_EXCEPTION_DEPTH,
+                "{} unhandled nested exception: depth {} >= {}",
+                crate::error_codes::ec(711),
+                self.depth,
+                MAX_EXCEPTION_DEPTH,
             )));
         }
         self.depth += 1;
@@ -230,7 +235,8 @@ impl ExceptionState {
     pub fn switch_mode(&mut self, new_mode: ExecMode) -> Result<(), MirrError> {
         if self.mode == new_mode {
             return Err(rspu_err(format!(
-                "[E714] invalid mode transition: already in {} mode",
+                "{} invalid mode transition: already in {} mode",
+                crate::error_codes::ec(714),
                 self.mode,
             )));
         }

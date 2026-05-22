@@ -37,6 +37,10 @@ pub enum MirrError {
     ParseError { message: String, span: Option<Span> },
     /// Semantic analysis error (E2xx).
     SemanticError { message: String, span: Option<Span> },
+    /// Symbol resolution error (E2xx) — undeclared signals, duplicate names, scope errors.
+    SymbolError { message: String, span: Option<Span> },
+    /// Import resolution error (E8xx) — bad path, missing alias, circular import.
+    ImportError { message: String, span: Option<Span> },
     /// Temporal compilation error (E3xx).
     TemporalCompilationError { message: String, span: Option<Span> },
     /// Pattern expansion error (E4xx).
@@ -47,14 +51,26 @@ pub enum MirrError {
     TypeError { message: String, span: Option<Span> },
     /// R-SPU emission error (E7xx).
     RspuError { message: String, span: Option<Span> },
-    /// S-expression error (E8xx).
+    /// S-expression / struct-type error (E8xx).
     SExprError { message: String, span: Option<Span> },
-    /// SAT solver error (E9xx).
+    /// SAT solver / equivalence error (E9xx).
     SatError { message: String, span: Option<Span> },
     /// Symbolic analysis error (E10xx).
     SymbolicError { message: String, span: Option<Span> },
     /// Totality error (E11xx).
     TotalityError { message: String, span: Option<Span> },
+    /// Internal compiler error (Fatal).
+    InternalError(String),
+}
+
+pub trait DiagnosticHelper {
+    fn parse_diag(message: impl Into<String>, span: Span) -> Self;
+}
+
+impl DiagnosticHelper for MirrError {
+    fn parse_diag(message: impl Into<String>, span: Span) -> Self {
+        Self::ParseError { message: message.into(), span: Some(span) }
+    }
 }
 
 impl MirrError {
@@ -68,6 +84,8 @@ impl MirrError {
         match self {
             Self::ParseError { message, .. } => Self::ParseError { message, span },
             Self::SemanticError { message, .. } => Self::SemanticError { message, span },
+            Self::SymbolError { message, .. } => Self::SymbolError { message, span },
+            Self::ImportError { message, .. } => Self::ImportError { message, span },
             Self::TemporalCompilationError { message, .. } => {
                 Self::TemporalCompilationError { message, span }
             }
@@ -79,6 +97,7 @@ impl MirrError {
             Self::SatError { message, .. } => Self::SatError { message, span },
             Self::SymbolicError { message, .. } => Self::SymbolicError { message, span },
             Self::TotalityError { message, .. } => Self::TotalityError { message, span },
+            Self::InternalError(msg) => Self::InternalError(msg),
         }
     }
 
@@ -87,6 +106,8 @@ impl MirrError {
         match self {
             Self::ParseError { span, .. }
             | Self::SemanticError { span, .. }
+            | Self::SymbolError { span, .. }
+            | Self::ImportError { span, .. }
             | Self::TemporalCompilationError { span, .. }
             | Self::PatternError { span, .. }
             | Self::WidthError { span, .. }
@@ -96,6 +117,7 @@ impl MirrError {
             | Self::SatError { span, .. }
             | Self::SymbolicError { span, .. }
             | Self::TotalityError { span, .. } => *span,
+            Self::InternalError(_) => None,
         }
     }
 
@@ -104,6 +126,8 @@ impl MirrError {
         match self {
             Self::ParseError { message, .. }
             | Self::SemanticError { message, .. }
+            | Self::SymbolError { message, .. }
+            | Self::ImportError { message, .. }
             | Self::TemporalCompilationError { message, .. }
             | Self::PatternError { message, .. }
             | Self::WidthError { message, .. }
@@ -113,6 +137,7 @@ impl MirrError {
             | Self::SatError { message, .. }
             | Self::SymbolicError { message, .. }
             | Self::TotalityError { message, .. } => message,
+            Self::InternalError(message) => message,
         }
     }
 
@@ -128,17 +153,19 @@ impl MirrError {
         // Fallback: generic code per variant.
         match self {
             Self::ParseError { .. } => Some("E100".to_string()),
+            Self::SemanticError { .. } => Some("E200".to_string()),
+            Self::SymbolError { .. } => Some("E200".to_string()),
+            Self::ImportError { .. } => Some("E801".to_string()),
             Self::TemporalCompilationError { .. } => Some("E300".to_string()),
             Self::PatternError { .. } => Some("E400".to_string()),
             Self::WidthError { .. } => Some("E500".to_string()),
+            Self::TypeError { .. } => Some("E600".to_string()),
             Self::RspuError { .. } => Some("E700".to_string()),
             Self::SExprError { .. } => Some("E800".to_string()),
             Self::SatError { .. } => Some("E900".to_string()),
             Self::SymbolicError { .. } => Some("E1000".to_string()),
             Self::TotalityError { .. } => Some("E1100".to_string()),
-            // SemanticError and TypeError fall back to category codes.
-            Self::SemanticError { .. } => Some("E200".to_string()),
-            Self::TypeError { .. } => Some("E600".to_string()),
+            Self::InternalError(_) => Some("E000".to_string()),
         }
     }
 
@@ -215,97 +242,69 @@ fn strip_embedded_code(msg: &str) -> String {
 
 impl fmt::Display for MirrError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
+        let emit_code = |msg: &str, fallback: &str| -> String {
+            if let Some(code) = extract_embedded_code(msg) {
+                format!("[{}]", code)
+            } else {
+                fallback.to_string()
+            }
+        };
+        let body = |msg: &str| -> String {
+            if extract_embedded_code(msg).is_some() {
+                strip_embedded_code(msg)
+            } else {
+                msg.to_string()
+            }
+        };
+        let (prefix, category, final_body, span) = match self {
             MirrError::ParseError { message, span } => {
-                write!(f, "[E100] Parse error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                ("[E100]".to_string(), "Parse error", message.clone(), span)
             }
             MirrError::SemanticError { message, span } => {
-                if let Some(code) = extract_embedded_code(message) {
-                    write!(f, "[{}] Semantic error: {}", code, strip_embedded_code(message))?;
-                } else {
-                    write!(f, "[E200] Semantic error: {}", message)?;
-                }
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E200]"), "Semantic error", body(message), span)
+            }
+            MirrError::SymbolError { message, span } => {
+                (emit_code(message, "[E200]"), "Symbol error", body(message), span)
+            }
+            MirrError::ImportError { message, span } => {
+                (emit_code(message, "[E801]"), "Import error", body(message), span)
             }
             MirrError::TemporalCompilationError { message, span } => {
-                write!(f, "[E300] Temporal compilation error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E300]"), "Temporal compilation error", body(message), span)
             }
             MirrError::PatternError { message, span } => {
-                write!(f, "[E400] Pattern error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E400]"), "Pattern error", body(message), span)
             }
             MirrError::WidthError { message, span } => {
-                if let Some(code) = extract_embedded_code(message) {
-                    write!(f, "[{}] Width error: {}", code, strip_embedded_code(message))?;
-                } else {
-                    write!(f, "[E500] Width error: {}", message)?;
-                }
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E500]"), "Width error", body(message), span)
             }
             MirrError::TypeError { message, span } => {
-                if let Some(code) = extract_embedded_code(message) {
-                    write!(f, "[{}] Type error: {}", code, strip_embedded_code(message))?;
-                } else {
-                    write!(f, "[E600] Type error: {}", message)?;
-                }
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E600]"), "Type error", body(message), span)
             }
             MirrError::RspuError { message, span } => {
-                write!(f, "[E700] R-SPU error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E700]"), "R-SPU error", body(message), span)
             }
             MirrError::SExprError { message, span } => {
-                write!(f, "[E800] S-expression error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E800]"), "S-expression error", body(message), span)
             }
             MirrError::SatError { message, span } => {
-                write!(f, "[E900] SAT error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E900]"), "SAT error", body(message), span)
             }
             MirrError::SymbolicError { message, span } => {
-                write!(f, "[E1000] Symbolic error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E1000]"), "Symbolic error", body(message), span)
             }
             MirrError::TotalityError { message, span } => {
-                write!(f, "[E1100] Totality error: {}", message)?;
-                if let Some(s) = span {
-                    write!(f, " (line {})", s.start_line + 1)?;
-                }
-                Ok(())
+                (emit_code(message, "[E1100]"), "Totality error", body(message), span)
             }
+            MirrError::InternalError(message) => {
+                (emit_code(message, "[EFATAL]"), "Internal compiler error", body(message), &None)
+            }
+        };
+        write!(f, "{} {}: {}", prefix, category, final_body)?;
+        if let Some(s) = span {
+            write!(f, " (line {})", s.start_line + 1)?;
         }
+        Ok(())
     }
 }
 
@@ -430,7 +429,7 @@ mod tests {
     #[test]
     fn to_diagnostic_semantic_with_code() {
         let err = MirrError::SemanticError {
-            message: "[E201] duplicate signal name 'x'".to_string(),
+            message: format!("{} duplicate signal name 'x'", crate::error_codes::ec(201)),
             span: Some(Span::full_line(4)),
         };
         let diag = err.to_diagnostic();
@@ -450,7 +449,7 @@ mod tests {
     #[test]
     fn error_code_rspu_embedded() {
         let err = MirrError::RspuError {
-            message: "[E701] register allocation failed".to_string(),
+            message: format!("{} register allocation failed", crate::error_codes::ec(701)),
             span: None,
         };
         assert_eq!(err.error_code().as_deref(), Some("E701"));

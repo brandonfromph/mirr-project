@@ -126,13 +126,15 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
             let value: u64 = if is_hex {
                 u64::from_str_radix(&num_str[2..], 16).map_err(|_| {
                     MirrError::parse_error(format!(
-                        "[E180] Hex literal too large or invalid: '{num_str}'."
+                        "{} Hex literal too large or invalid: '{num_str}'.",
+                        crate::error_codes::ec(180)
                     ))
                 })?
             } else {
                 num_str.parse().map_err(|_| {
                     MirrError::parse_error(format!(
-                        "[E180] Integer literal too large: '{num_str}'."
+                        "{} Integer literal too large: '{num_str}'.",
+                        crate::error_codes::ec(180)
                     ))
                 })?
             };
@@ -162,7 +164,8 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         let ch_display =
             if b.is_ascii() { (b as char).to_string() } else { format!("0x{:02X}", b) };
         return Err(MirrError::parse_error(format!(
-            "[E181] Unexpected character '{}' in expression.",
+            "{} Unexpected character '{}' in expression.",
+            crate::error_codes::ec(181),
             ch_display
         )));
     }

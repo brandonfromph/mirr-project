@@ -14,13 +14,18 @@ use crate::sexpr::types::SExpr;
 
 use super::parse_expr::{parse_expr, parse_pattern_call, parse_pattern_origin};
 pub fn sexpr_to_ast(sexpr: &SExpr) -> Result<MirrProgram, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected program list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected program list", crate::error_codes::ec(805)))
+    })?;
     if items.is_empty() {
-        return Err(sexpr_err("[E806] Empty program list"));
+        return Err(sexpr_err(format!("{} Empty program list", crate::error_codes::ec(806))));
     }
     expect_head(items, "program")?;
     if items.len() < 3 {
-        return Err(sexpr_err("[E806] Program requires (patterns ...) and (module ...)"));
+        return Err(sexpr_err(format!(
+            "{} Program requires (patterns ...) and (module ...)",
+            crate::error_codes::ec(806)
+        )));
     }
     let patterns = parse_patterns_section(&items[1])?;
     let module = parse_module_section(&items[2])?;
@@ -30,13 +35,21 @@ pub fn sexpr_to_ast(sexpr: &SExpr) -> Result<MirrProgram, MirrError> {
 pub(super) fn expect_head(items: &[SExpr], expected: &str) -> Result<(), MirrError> {
     match items[0].as_symbol() {
         Some(s) if s == expected => Ok(()),
-        Some(s) => Err(sexpr_err(format!("[E805] Expected '{expected}', found '{s}'"))),
-        None => Err(sexpr_err(format!("[E805] Expected symbol '{expected}' as list head"))),
+        Some(s) => Err(sexpr_err(format!(
+            "{} Expected '{expected}', found '{s}'",
+            crate::error_codes::ec(805)
+        ))),
+        None => Err(sexpr_err(format!(
+            "{} Expected symbol '{expected}' as list head",
+            crate::error_codes::ec(805)
+        ))),
     }
 }
 
 fn parse_patterns_section(sexpr: &SExpr) -> Result<Vec<PatternDef>, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected patterns list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected patterns list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "patterns")?;
     let mut patterns = Vec::new();
     for item in &items[1..] {
@@ -46,14 +59,21 @@ fn parse_patterns_section(sexpr: &SExpr) -> Result<Vec<PatternDef>, MirrError> {
 }
 
 fn parse_pattern_def(sexpr: &SExpr) -> Result<PatternDef, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected pattern-def list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected pattern-def list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "pattern-def")?;
     if items.len() < 4 {
-        return Err(sexpr_err("[E806] pattern-def requires name, params, reflect"));
+        return Err(sexpr_err(format!(
+            "{} pattern-def requires name, params, reflect",
+            crate::error_codes::ec(806)
+        )));
     }
     let name = items[1]
         .as_str_val()
-        .ok_or_else(|| sexpr_err("[E806] pattern-def name must be a string"))?
+        .ok_or_else(|| {
+            sexpr_err(format!("{} pattern-def name must be a string", crate::error_codes::ec(806)))
+        })?
         .to_string();
     let params = parse_params_section(&items[2])?;
     let body = parse_reflect_section(&items[3])?;
@@ -61,7 +81,9 @@ fn parse_pattern_def(sexpr: &SExpr) -> Result<PatternDef, MirrError> {
 }
 
 fn parse_params_section(sexpr: &SExpr) -> Result<Vec<PatternParam>, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected params list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected params list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "params")?;
     let mut params = Vec::new();
     for item in &items[1..] {
@@ -71,21 +93,32 @@ fn parse_params_section(sexpr: &SExpr) -> Result<Vec<PatternParam>, MirrError> {
 }
 
 fn parse_pattern_param(sexpr: &SExpr) -> Result<PatternParam, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected param list"))?;
+    let items = sexpr
+        .as_list()
+        .ok_or_else(|| sexpr_err(format!("{} Expected param list", crate::error_codes::ec(805))))?;
     expect_head(items, "param")?;
     if items.len() < 3 {
-        return Err(sexpr_err("[E806] param requires name and kind"));
+        return Err(sexpr_err(format!(
+            "{} param requires name and kind",
+            crate::error_codes::ec(806)
+        )));
     }
     let name = items[1]
         .as_str_val()
-        .ok_or_else(|| sexpr_err("[E806] param name must be a string"))?
+        .ok_or_else(|| {
+            sexpr_err(format!("{} param name must be a string", crate::error_codes::ec(806)))
+        })?
         .to_string();
-    let kind_sym =
-        items[2].as_symbol().ok_or_else(|| sexpr_err("[E806] param kind must be a symbol"))?;
+    let kind_sym = items[2].as_symbol().ok_or_else(|| {
+        sexpr_err(format!("{} param kind must be a symbol", crate::error_codes::ec(806)))
+    })?;
     let kind = match kind_sym {
         "signal" => {
             if items.len() < 5 {
-                return Err(sexpr_err("[E806] signal param requires kind and type"));
+                return Err(sexpr_err(format!(
+                    "{} signal param requires kind and type",
+                    crate::error_codes::ec(806)
+                )));
             }
             let sk = parse_signal_kind(&items[3])?;
             let st = parse_signal_type(&items[4])?;
@@ -98,7 +131,10 @@ fn parse_pattern_param(sexpr: &SExpr) -> Result<PatternParam, MirrError> {
         }
         "constant" => {
             if items.len() < 4 {
-                return Err(sexpr_err("[E806] constant param requires type"));
+                return Err(sexpr_err(format!(
+                    "{} constant param requires type",
+                    crate::error_codes::ec(806)
+                )));
             }
             let st = parse_signal_type(&items[3])?;
             let annotations = if items.len() > 4 {
@@ -109,19 +145,28 @@ fn parse_pattern_param(sexpr: &SExpr) -> Result<PatternParam, MirrError> {
             PatternParamKind::Constant { ty: st, annotations }
         }
         "pattern" => PatternParamKind::Pattern,
-        other => return Err(sexpr_err(format!("[E806] Unknown param kind: {other}"))),
+        other => {
+            return Err(sexpr_err(format!(
+                "{} Unknown param kind: {other}",
+                crate::error_codes::ec(806)
+            )))
+        }
     };
     Ok(PatternParam { name, kind })
 }
 
 fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected reflect list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected reflect list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "reflect")?;
     let mut raw_lines = Vec::new();
     for item in &items[1..] {
         let line = item
             .as_str_val()
-            .ok_or_else(|| sexpr_err("[E806] reflect line must be a string"))?
+            .ok_or_else(|| {
+                sexpr_err(format!("{} reflect line must be a string", crate::error_codes::ec(806)))
+            })?
             .to_string();
         raw_lines.push(line);
     }
@@ -129,14 +174,21 @@ fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
 }
 
 fn parse_module_section(sexpr: &SExpr) -> Result<Module, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected module list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected module list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "module")?;
     if items.len() < 3 {
-        return Err(sexpr_err("[E806] Module requires at least name and signals"));
+        return Err(sexpr_err(format!(
+            "{} Module requires at least name and signals",
+            crate::error_codes::ec(806)
+        )));
     }
     let name = items[1]
         .as_str_val()
-        .ok_or_else(|| sexpr_err("[E806] Module name must be a string"))?
+        .ok_or_else(|| {
+            sexpr_err(format!("{} Module name must be a string", crate::error_codes::ec(806)))
+        })?
         .to_string();
 
     let mut signals = Vec::new();
@@ -147,8 +199,9 @@ fn parse_module_section(sexpr: &SExpr) -> Result<Module, MirrError> {
     let mut pattern_origins = Vec::new();
 
     for item in &items[2..] {
-        let inner =
-            item.as_list().ok_or_else(|| sexpr_err("[E805] Expected module section list"))?;
+        let inner = item.as_list().ok_or_else(|| {
+            sexpr_err(format!("{} Expected module section list", crate::error_codes::ec(805)))
+        })?;
         if inner.is_empty() {
             continue;
         }
@@ -200,14 +253,21 @@ fn parse_module_section(sexpr: &SExpr) -> Result<Module, MirrError> {
 }
 
 fn parse_signal_decl(sexpr: &SExpr) -> Result<SignalDecl, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected signal list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected signal list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "signal")?;
     if items.len() < 4 {
-        return Err(sexpr_err("[E806] signal requires name, kind, type"));
+        return Err(sexpr_err(format!(
+            "{} signal requires name, kind, type",
+            crate::error_codes::ec(806)
+        )));
     }
     let name = items[1]
         .as_str_val()
-        .ok_or_else(|| sexpr_err("[E806] Signal name must be a string"))?
+        .ok_or_else(|| {
+            sexpr_err(format!("{} Signal name must be a string", crate::error_codes::ec(806)))
+        })?
         .to_string();
     let kind = parse_signal_kind(&items[2])?;
     let core = parse_signal_type(&items[3])?;
@@ -227,8 +287,12 @@ fn parse_signal_kind(sexpr: &SExpr) -> Result<SignalKind, MirrError> {
         Some("input") => Ok(SignalKind::Input),
         Some("output") => Ok(SignalKind::Output),
         Some("internal") => Ok(SignalKind::Internal),
-        Some(other) => Err(sexpr_err(format!("[E807] Unknown signal kind: {other}"))),
-        None => Err(sexpr_err("[E807] Signal kind must be a symbol")),
+        Some(other) => {
+            Err(sexpr_err(format!("{} Unknown signal kind: {other}", crate::error_codes::ec(807))))
+        }
+        None => {
+            Err(sexpr_err(format!("{} Signal kind must be a symbol", crate::error_codes::ec(807))))
+        }
     }
 }
 
@@ -236,57 +300,94 @@ fn parse_signal_type(sexpr: &SExpr) -> Result<SignalType, MirrError> {
     match sexpr {
         SExpr::Symbol(s) if s == "bool" => Ok(SignalType::Bool),
         SExpr::List(items) if !items.is_empty() => {
-            let head = items[0]
-                .as_symbol()
-                .ok_or_else(|| sexpr_err("[E807] Type head must be a symbol"))?;
+            let head = items[0].as_symbol().ok_or_else(|| {
+                sexpr_err(format!("{} Type head must be a symbol", crate::error_codes::ec(807)))
+            })?;
             match head {
                 "unsigned" => {
                     if items.len() != 2 {
-                        return Err(sexpr_err("[E807] unsigned requires exactly one width"));
+                        return Err(sexpr_err(format!(
+                            "{} unsigned requires exactly one width",
+                            crate::error_codes::ec(807)
+                        )));
                     }
-                    let width = items[1]
-                        .as_integer()
-                        .ok_or_else(|| sexpr_err("[E807] Type width must be an integer"))?;
+                    let width = items[1].as_integer().ok_or_else(|| {
+                        sexpr_err(format!(
+                            "{} Type width must be an integer",
+                            crate::error_codes::ec(807)
+                        ))
+                    })?;
                     Ok(SignalType::Unsigned(width as u32))
                 }
                 "signed" => {
                     if items.len() != 2 {
-                        return Err(sexpr_err("[E807] signed requires exactly one width"));
+                        return Err(sexpr_err(format!(
+                            "{} signed requires exactly one width",
+                            crate::error_codes::ec(807)
+                        )));
                     }
-                    let width = items[1]
-                        .as_integer()
-                        .ok_or_else(|| sexpr_err("[E807] Type width must be an integer"))?;
+                    let width = items[1].as_integer().ok_or_else(|| {
+                        sexpr_err(format!(
+                            "{} Type width must be an integer",
+                            crate::error_codes::ec(807)
+                        ))
+                    })?;
                     Ok(SignalType::Signed(width as u32))
                 }
                 "array" => {
                     if items.len() != 3 {
-                        return Err(sexpr_err("[E807] array requires element type and length"));
+                        return Err(sexpr_err(format!(
+                            "{} array requires element type and length",
+                            crate::error_codes::ec(807)
+                        )));
                     }
                     let element = Box::new(parse_signal_type(&items[1])?);
-                    let length = items[2]
-                        .as_integer()
-                        .ok_or_else(|| sexpr_err("[E807] array length must be an integer"))?;
+                    let length = items[2].as_integer().ok_or_else(|| {
+                        sexpr_err(format!(
+                            "{} array length must be an integer",
+                            crate::error_codes::ec(807)
+                        ))
+                    })?;
                     Ok(SignalType::Array { element, length })
                 }
                 "struct" => {
                     if items.len() < 2 {
-                        return Err(sexpr_err("[E807] struct requires a name"));
+                        return Err(sexpr_err(format!(
+                            "{} struct requires a name",
+                            crate::error_codes::ec(807)
+                        )));
                     }
                     let name = items[1]
                         .as_str_val()
-                        .ok_or_else(|| sexpr_err("[E807] struct name must be a string"))?
+                        .ok_or_else(|| {
+                            sexpr_err(format!(
+                                "{} struct name must be a string",
+                                crate::error_codes::ec(807)
+                            ))
+                        })?
                         .to_string();
                     let mut fields = Vec::new();
                     for item in items[2..].iter().take(32) {
-                        let field_list = item
-                            .as_list()
-                            .ok_or_else(|| sexpr_err("[E807] struct field must be a list"))?;
+                        let field_list = item.as_list().ok_or_else(|| {
+                            sexpr_err(format!(
+                                "{} struct field must be a list",
+                                crate::error_codes::ec(807)
+                            ))
+                        })?;
                         if field_list.len() != 2 {
-                            return Err(sexpr_err("[E807] struct field requires name and type"));
+                            return Err(sexpr_err(format!(
+                                "{} struct field requires name and type",
+                                crate::error_codes::ec(807)
+                            )));
                         }
                         let field_name = field_list[0]
                             .as_str_val()
-                            .ok_or_else(|| sexpr_err("[E807] field name must be a string"))?
+                            .ok_or_else(|| {
+                                sexpr_err(format!(
+                                    "{} field name must be a string",
+                                    crate::error_codes::ec(807)
+                                ))
+                            })?
                             .to_string();
                         let field_type = parse_signal_type(&field_list[1])?;
                         fields.push((field_name, field_type));
@@ -295,31 +396,49 @@ fn parse_signal_type(sexpr: &SExpr) -> Result<SignalType, MirrError> {
                 }
                 "fixed" => {
                     if items.len() != 3 {
-                        return Err(sexpr_err("[E807] fixed requires total_bits and frac_bits"));
+                        return Err(sexpr_err(format!(
+                            "{} fixed requires total_bits and frac_bits",
+                            crate::error_codes::ec(807)
+                        )));
                     }
-                    let total_bits = items[1]
-                        .as_integer()
-                        .ok_or_else(|| sexpr_err("[E807] total_bits must be an integer"))?
-                        as u32;
-                    let frac_bits = items[2]
-                        .as_integer()
-                        .ok_or_else(|| sexpr_err("[E807] frac_bits must be an integer"))?
-                        as u32;
+                    let total_bits = items[1].as_integer().ok_or_else(|| {
+                        sexpr_err(format!(
+                            "{} total_bits must be an integer",
+                            crate::error_codes::ec(807)
+                        ))
+                    })? as u32;
+                    let frac_bits = items[2].as_integer().ok_or_else(|| {
+                        sexpr_err(format!(
+                            "{} frac_bits must be an integer",
+                            crate::error_codes::ec(807)
+                        ))
+                    })? as u32;
                     Ok(SignalType::FixedPoint { total_bits, frac_bits })
                 }
                 "interface" => {
                     if items.len() != 2 {
-                        return Err(sexpr_err("[E807] interface requires exactly one name"));
+                        return Err(sexpr_err(format!(
+                            "{} interface requires exactly one name",
+                            crate::error_codes::ec(807)
+                        )));
                     }
                     let name = items[1]
                         .as_str_val()
-                        .ok_or_else(|| sexpr_err("[E807] interface name must be a string"))?
+                        .ok_or_else(|| {
+                            sexpr_err(format!(
+                                "{} interface name must be a string",
+                                crate::error_codes::ec(807)
+                            ))
+                        })?
                         .to_string();
                     Ok(SignalType::Bundle(name))
                 }
                 "fifo" => {
                     if items.len() != 3 {
-                        return Err(sexpr_err("[E807] fifo requires element type and depth"));
+                        return Err(sexpr_err(format!(
+                            "{} fifo requires element type and depth",
+                            crate::error_codes::ec(807)
+                        )));
                     }
                     let fifo_fields = match (items[1].as_list(), items[2].as_list()) {
                         (Some(element_items), Some(depth_items))
@@ -329,9 +448,12 @@ fn parse_signal_type(sexpr: &SExpr) -> Result<SignalType, MirrError> {
                                 && depth_items[0].as_symbol() == Some("depth") =>
                         {
                             let element = Box::new(parse_signal_type(&element_items[1])?);
-                            let depth = depth_items[1]
-                                .as_integer()
-                                .ok_or_else(|| sexpr_err("[E807] fifo depth must be an integer"))?;
+                            let depth = depth_items[1].as_integer().ok_or_else(|| {
+                                sexpr_err(format!(
+                                    "{} fifo depth must be an integer",
+                                    crate::error_codes::ec(807)
+                                ))
+                            })?;
                             Some((element, depth))
                         }
                         _ => None,
@@ -340,27 +462,36 @@ fn parse_signal_type(sexpr: &SExpr) -> Result<SignalType, MirrError> {
                         Some(fields) => fields,
                         None => {
                             let element = Box::new(parse_signal_type(&items[1])?);
-                            let depth = items[2]
-                                .as_integer()
-                                .ok_or_else(|| sexpr_err("[E807] fifo depth must be an integer"))?;
+                            let depth = items[2].as_integer().ok_or_else(|| {
+                                sexpr_err(format!(
+                                    "{} fifo depth must be an integer",
+                                    crate::error_codes::ec(807)
+                                ))
+                            })?;
                             (element, depth)
                         }
                     };
                     Ok(SignalType::Fifo { element, depth })
                 }
-                other => Err(sexpr_err(format!("[E807] Unknown type: {other}"))),
+                other => {
+                    Err(sexpr_err(format!("{} Unknown type: {other}", crate::error_codes::ec(807))))
+                }
             }
         }
-        _ => Err(sexpr_err("[E807] Invalid type S-expression")),
+        _ => Err(sexpr_err(format!("{} Invalid type S-expression", crate::error_codes::ec(807)))),
     }
 }
 
 fn parse_annotations(sexpr: &SExpr) -> Result<TypeAnnotations, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected annotations list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected annotations list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "annotations")?;
     let mut ann = TypeAnnotations::default();
     for item in &items[1..] {
-        let inner = item.as_list().ok_or_else(|| sexpr_err("[E806] Annotation must be a list"))?;
+        let inner = item.as_list().ok_or_else(|| {
+            sexpr_err(format!("{} Annotation must be a list", crate::error_codes::ec(806)))
+        })?;
         if inner.is_empty() {
             continue;
         }
@@ -374,9 +505,12 @@ fn parse_annotations(sexpr: &SExpr) -> Result<TypeAnnotations, MirrError> {
                 _ => {}
             },
             Some("refinement") if inner.len() > 1 => {
-                let ref_list = inner[1]
-                    .as_list()
-                    .ok_or_else(|| sexpr_err("[E806] Refinement value must be a list"))?;
+                let ref_list = inner[1].as_list().ok_or_else(|| {
+                    sexpr_err(format!(
+                        "{} Refinement value must be a list",
+                        crate::error_codes::ec(806)
+                    ))
+                })?;
                 if !ref_list.is_empty() {
                     match ref_list[0].as_symbol() {
                         Some("range") if ref_list.len() >= 3 => {
@@ -405,34 +539,51 @@ fn parse_annotations(sexpr: &SExpr) -> Result<TypeAnnotations, MirrError> {
 }
 
 fn parse_guard(sexpr: &SExpr) -> Result<Guard, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected guard list"))?;
+    let items = sexpr
+        .as_list()
+        .ok_or_else(|| sexpr_err(format!("{} Expected guard list", crate::error_codes::ec(805))))?;
     expect_head(items, "guard")?;
     if items.len() < 4 {
-        return Err(sexpr_err("[E806] guard requires name, condition, cycles"));
+        return Err(sexpr_err(format!(
+            "{} guard requires name, condition, cycles",
+            crate::error_codes::ec(806)
+        )));
     }
     let name = items[1]
         .as_str_val()
-        .ok_or_else(|| sexpr_err("[E806] Guard name must be a string"))?
+        .ok_or_else(|| {
+            sexpr_err(format!("{} Guard name must be a string", crate::error_codes::ec(806)))
+        })?
         .to_string();
     let condition = parse_expr(&items[2])?;
-    let cycles =
-        items[3].as_integer().ok_or_else(|| sexpr_err("[E806] Guard cycles must be an integer"))?;
+    let cycles = items[3].as_integer().ok_or_else(|| {
+        sexpr_err(format!("{} Guard cycles must be an integer", crate::error_codes::ec(806)))
+    })?;
     Ok(Guard { name, condition, cycles, origin: None, span: None })
 }
 
 fn parse_reflex(sexpr: &SExpr) -> Result<Reflex, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected reflex list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected reflex list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "reflex")?;
     if items.len() < 4 {
-        return Err(sexpr_err("[E806] reflex requires name, on-clause, assignments"));
+        return Err(sexpr_err(format!(
+            "{} reflex requires name, on-clause, assignments",
+            crate::error_codes::ec(806)
+        )));
     }
     let name = items[1]
         .as_str_val()
-        .ok_or_else(|| sexpr_err("[E806] Reflex name must be a string"))?
+        .ok_or_else(|| {
+            sexpr_err(format!("{} Reflex name must be a string", crate::error_codes::ec(806)))
+        })?
         .to_string();
 
     // Parse (on "guard1" "guard2" ...)
-    let on_list = items[2].as_list().ok_or_else(|| sexpr_err("[E805] Expected on-list"))?;
+    let on_list = items[2]
+        .as_list()
+        .ok_or_else(|| sexpr_err(format!("{} Expected on-list", crate::error_codes::ec(805))))?;
     expect_head(on_list, "on")?;
     let guard_names: Vec<String> =
         on_list[1..].iter().filter_map(|s| s.as_str_val().map(|v| v.to_string())).collect();
@@ -440,14 +591,21 @@ fn parse_reflex(sexpr: &SExpr) -> Result<Reflex, MirrError> {
     // Parse assignments
     let mut assignments = Vec::new();
     for item in &items[3..] {
-        let assign_list = item.as_list().ok_or_else(|| sexpr_err("[E805] Expected assign list"))?;
+        let assign_list = item.as_list().ok_or_else(|| {
+            sexpr_err(format!("{} Expected assign list", crate::error_codes::ec(805)))
+        })?;
         expect_head(assign_list, "assign")?;
         if assign_list.len() < 3 {
-            return Err(sexpr_err("[E806] assign requires target and value"));
+            return Err(sexpr_err(format!(
+                "{} assign requires target and value",
+                crate::error_codes::ec(806)
+            )));
         }
         let target = assign_list[1]
             .as_str_val()
-            .ok_or_else(|| sexpr_err("[E806] assign target must be a string"))?
+            .ok_or_else(|| {
+                sexpr_err(format!("{} assign target must be a string", crate::error_codes::ec(806)))
+            })?
             .to_string();
         let value = parse_expr(&assign_list[2])?;
         assignments.push(Assignment { target, value, span: None });
@@ -457,46 +615,69 @@ fn parse_reflex(sexpr: &SExpr) -> Result<Reflex, MirrError> {
 }
 
 fn parse_property(sexpr: &SExpr) -> Result<PropertyDecl, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected property list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected property list", crate::error_codes::ec(805)))
+    })?;
     expect_head(items, "property")?;
     if items.len() < 4 {
-        return Err(sexpr_err("[E806] property requires name, directive, formula"));
+        return Err(sexpr_err(format!(
+            "{} property requires name, directive, formula",
+            crate::error_codes::ec(806)
+        )));
     }
     let name = items[1]
         .as_str_val()
-        .ok_or_else(|| sexpr_err("[E806] Property name must be a string"))?
+        .ok_or_else(|| {
+            sexpr_err(format!("{} Property name must be a string", crate::error_codes::ec(806)))
+        })?
         .to_string();
     let directive = match items[2].as_symbol() {
         Some("assert") => PropertyDirective::Assert,
         Some("cover") => PropertyDirective::Cover,
         Some("assume") => PropertyDirective::Assume,
-        _ => return Err(sexpr_err("[E806] Unknown property directive")),
+        _ => {
+            return Err(sexpr_err(format!(
+                "{} Unknown property directive",
+                crate::error_codes::ec(806)
+            )))
+        }
     };
     let formula = parse_formula(&items[3])?;
     Ok(PropertyDecl { name, directive, formula, origin: None, span: None })
 }
 
 fn parse_formula(sexpr: &SExpr) -> Result<PropertyFormula, MirrError> {
-    let items = sexpr.as_list().ok_or_else(|| sexpr_err("[E805] Expected formula list"))?;
+    let items = sexpr.as_list().ok_or_else(|| {
+        sexpr_err(format!("{} Expected formula list", crate::error_codes::ec(805)))
+    })?;
     if items.is_empty() {
-        return Err(sexpr_err("[E806] Empty formula list"));
+        return Err(sexpr_err(format!("{} Empty formula list", crate::error_codes::ec(806))));
     }
     match items[0].as_symbol() {
         Some("always") => {
             if items.len() < 2 {
-                return Err(sexpr_err("[E806] always requires expression"));
+                return Err(sexpr_err(format!(
+                    "{} always requires expression",
+                    crate::error_codes::ec(806)
+                )));
             }
             Ok(PropertyFormula::Always(parse_expr(&items[1])?))
         }
         Some("never") => {
             if items.len() < 2 {
-                return Err(sexpr_err("[E806] never requires expression"));
+                return Err(sexpr_err(format!(
+                    "{} never requires expression",
+                    crate::error_codes::ec(806)
+                )));
             }
             Ok(PropertyFormula::Never(parse_expr(&items[1])?))
         }
         Some("always-implies") => {
             if items.len() < 3 {
-                return Err(sexpr_err("[E806] always-implies requires antecedent and consequent"));
+                return Err(sexpr_err(format!(
+                    "{} always-implies requires antecedent and consequent",
+                    crate::error_codes::ec(806)
+                )));
             }
             Ok(PropertyFormula::AlwaysImplies {
                 antecedent: parse_expr(&items[1])?,
@@ -505,7 +686,10 @@ fn parse_formula(sexpr: &SExpr) -> Result<PropertyFormula, MirrError> {
         }
         Some("never-implies") => {
             if items.len() < 3 {
-                return Err(sexpr_err("[E806] never-implies requires antecedent and consequent"));
+                return Err(sexpr_err(format!(
+                    "{} never-implies requires antecedent and consequent",
+                    crate::error_codes::ec(806)
+                )));
             }
             Ok(PropertyFormula::NeverImplies {
                 antecedent: parse_expr(&items[1])?,
@@ -514,29 +698,37 @@ fn parse_formula(sexpr: &SExpr) -> Result<PropertyFormula, MirrError> {
         }
         Some("eventually-within") => {
             if items.len() < 3 {
-                return Err(sexpr_err("[E806] eventually-within requires expr and cycles"));
+                return Err(sexpr_err(format!(
+                    "{} eventually-within requires expr and cycles",
+                    crate::error_codes::ec(806)
+                )));
             }
-            let cycles =
-                items[2].as_integer().ok_or_else(|| sexpr_err("[E806] cycles must be integer"))?
-                    as u32;
+            let cycles = items[2].as_integer().ok_or_else(|| {
+                sexpr_err(format!("{} cycles must be integer", crate::error_codes::ec(806)))
+            })? as u32;
             Ok(PropertyFormula::EventuallyWithin { expr: parse_expr(&items[1])?, cycles })
         }
         Some("always-followed-by") => {
             if items.len() < 4 {
-                return Err(sexpr_err(
-                    "[E806] always-followed-by requires trigger, response, delay",
-                ));
+                return Err(sexpr_err(format!(
+                    "{} always-followed-by requires trigger, response, delay",
+                    crate::error_codes::ec(806)
+                )));
             }
-            let delay_cycles =
-                items[3].as_integer().ok_or_else(|| sexpr_err("[E806] delay must be integer"))?
-                    as u32;
+            let delay_cycles = items[3].as_integer().ok_or_else(|| {
+                sexpr_err(format!("{} delay must be integer", crate::error_codes::ec(806)))
+            })? as u32;
             Ok(PropertyFormula::AlwaysFollowedBy {
                 trigger: parse_expr(&items[1])?,
                 response: parse_expr(&items[2])?,
                 delay_cycles,
             })
         }
-        Some(other) => Err(sexpr_err(format!("[E805] Unknown formula form: {other}"))),
-        None => Err(sexpr_err("[E805] Formula head must be a symbol")),
+        Some(other) => {
+            Err(sexpr_err(format!("{} Unknown formula form: {other}", crate::error_codes::ec(805))))
+        }
+        None => {
+            Err(sexpr_err(format!("{} Formula head must be a symbol", crate::error_codes::ec(805))))
+        }
     }
 }

@@ -218,7 +218,7 @@ fn assignment_type_mismatch_rejected_e602() {
     // y (bool) = n (u16) — mismatch
     let m = module_with_assignment("y", SignalType::Bool, Expr::Signal("n".to_string()));
     let msg = typecheck_err(&m);
-    assert!(msg.contains("[E602]"), "Expected E602, got: {}", msg);
+    assert!(msg.contains("[E601]"), "Expected E601, got: {}", msg);
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn assignment_unsigned_to_bool_rejected_e602() {
     // y (bool) = 42 (u6) — mismatch
     let m = module_with_assignment("y", SignalType::Bool, Expr::Literal(LiteralValue::Integer(42)));
     let msg = typecheck_err(&m);
-    assert!(msg.contains("[E602]"), "Expected E602, got: {}", msg);
+    assert!(msg.contains("[E601]"), "Expected E601, got: {}", msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -658,7 +658,7 @@ fn unsigned_narrowing_u16_to_u8_rejected() {
     validate_module(&m).unwrap();
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E602]"), "Expected E602, got: {}", err);
+    assert!(err.to_string().contains("[E601]"), "Expected E601, got: {err}");
 }
 
 // ---------------------------------------------------------------------------

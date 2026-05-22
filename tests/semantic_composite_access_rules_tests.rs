@@ -148,7 +148,9 @@ fn indexing_non_array_signal_reports_e230() {
     let messages = semantic_messages(&bool_assignment_module(value));
     assert!(messages.iter().any(|m| m.contains("[E230]")), "expected E230, got: {messages:?}");
     assert!(
-        messages.iter().any(|m| m.contains("Signal 'pkt' is not an array type but is indexed.")),
+        messages.iter().any(|m| m.contains(
+            "Signal 'pkt' is not an indexable type (array, unsigned, or signed) but is indexed."
+        )),
         "expected non-array index detail, got: {messages:?}"
     );
 }

@@ -85,7 +85,7 @@ fn build_tools_list_result() -> String {
     let mut tools = Vec::<Value>::new();
 
     // First, list legacy tools
-    for tool in MrtDispatchTool::LEGACY_ALL {
+    for tool in MrtDispatchTool::ALL {
         if let Some(method) = discovery_method_by_name(tool.as_str()) {
             tools.push(json!({
                 "name": method.name,
@@ -131,7 +131,7 @@ fn build_schema_result() -> String {
     let mut methods = Map::<String, Value>::new();
 
     // Legacy tools
-    for tool in MrtDispatchTool::LEGACY_ALL {
+    for tool in MrtDispatchTool::ALL {
         if let Some(method) = discovery_method_by_name(tool.as_str()) {
             methods.insert(
                 method.name.to_owned(),
@@ -139,11 +139,20 @@ fn build_schema_result() -> String {
                     "autoApprove": method.auto_approve,
                     "description": method.description,
                     "parameters": method.parameters.iter().take(MAX_SCHEMA_PARAMETERS).map(|p| {
-                        json!({
-                            "name": p.name,
-                            "required": p.required,
-                            "type": json_type_from_parameter_type(p.ty),
-                        })
+                        if p.ty == "array" {
+                            json!({
+                                "name": p.name,
+                                "required": p.required,
+                                "type": "array",
+                                "items": {},
+                            })
+                        } else {
+                            json!({
+                                "name": p.name,
+                                "required": p.required,
+                                "type": json_type_from_parameter_type(p.ty),
+                            })
+                        }
                     }).collect::<Vec<Value>>()
                 }),
             );

@@ -237,6 +237,11 @@ fn emit_condition_expr(ck: &crate::temporal::low_level_ir::ConditionKind) -> Str
     match ck {
         ConditionKind::SimpleSignal(s) => s.clone(),
         ConditionKind::NegatedSignal(s) => format!("!{s}"),
+        ConditionKind::PrevSignal { signal, .. } => {
+            // For now, we return the base signal; the temporal compiler
+            // handles the extra delay by increasing the SR/Counter depth.
+            signal.clone()
+        }
         ConditionKind::Comparison { signal, op, value } => {
             let op_str = match op {
                 BinaryOp::Eq => "==",
@@ -259,5 +264,6 @@ fn emit_condition_expr(ck: &crate::temporal::low_level_ir::ConditionKind) -> Str
             };
             format!("({signal} {op_str} {val_str})")
         }
+        ConditionKind::AlwaysTrue => "1'b1".to_string(),
     }
 }

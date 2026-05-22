@@ -8,10 +8,11 @@ pub use hybrid_search::{HybridCandidate, HybridRetrieval, HybridRetrievalConfig,
 pub use lexical::LexicalRetrieval;
 
 use async_trait::async_trait;
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
 /// Search mode for retrieval queries.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SearchMode {
     /// Lexical (local deterministic) search only.

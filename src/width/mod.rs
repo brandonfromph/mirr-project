@@ -33,7 +33,6 @@ use types::{DiagSeverity, WidthDiag, WidthExpr, WidthStats};
 /// Result of width inference on a single MIRR expression or signal.
 #[derive(Debug, Clone, Serialize)]
 pub struct WidthInferenceResult {
-
     /// Width-annotated expression tree (None if flattening failed).
     pub expr: Option<WidthExpr>,
     /// Diagnostics emitted during inference.
@@ -74,9 +73,10 @@ where
         None => {
             return WidthInferenceResult {
                 expr: None,
-                diagnostics: vec![WidthDiag::error(
-                    "[E500] expression tree exceeds maximum node count (512)".to_string(),
-                )
+                diagnostics: vec![WidthDiag::error(format!(
+                    "{} expression tree exceeds maximum node count (512)",
+                    crate::error_codes::ec(500)
+                ))
                 .with_code("E500")],
                 stats: WidthStats {
                     nodes_analyzed: 0,

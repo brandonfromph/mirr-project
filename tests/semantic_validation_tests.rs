@@ -84,8 +84,8 @@ module dup_guard {
 "#;
     let msg = validate_err(source);
     assert!(
-        msg.contains("[E202]") && msg.contains("Duplicate guard name: 'g'."),
-        "expected E202 duplicate guard error, got: {msg}"
+        msg.contains("[E213]") && msg.contains("Duplicate guard name: 'g'."),
+        "expected E213 duplicate guard error, got: {msg}"
     );
 }
 
@@ -116,8 +116,8 @@ module dup_reflex {
 "#;
     let msg = validate_err(source);
     assert!(
-        msg.contains("[E203]") && msg.contains("Duplicate reflex name: 'r'."),
-        "expected E203 duplicate reflex error, got: {msg}"
+        msg.contains("[E212]") && msg.contains("Duplicate reflex name: 'r'."),
+        "expected E212 duplicate reflex error, got: {msg}"
     );
 }
 

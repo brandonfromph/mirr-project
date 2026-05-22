@@ -71,9 +71,8 @@ pub fn verify_least_solution(
                 // the solver works correctly.
                 let solved_display = super::types::Width(width).display_with_sign(sig_signed);
                 let declared_display = super::types::Width(declared).display_with_sign(sig_signed);
-                diagnostics.push(WidthDiag::error(format!(
-                    "[E511] COMPILER BUG: signal '{}' solved width {} is less \
-                     than declared {}",
+                diagnostics.push(WidthDiag::error(format!("{} COMPILER BUG: signal '{}' solved width {} is less \
+                     than declared {}", crate::error_codes::ec(511),
                     sig.name, solved_display, declared_display
                 )).with_code("E511").with_signal(&sig.name)
                   .with_help("This is a compiler bug. Please report it at https://github.com/brandonfromph/mirr-project/issues"));

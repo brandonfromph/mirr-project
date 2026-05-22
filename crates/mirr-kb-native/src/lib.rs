@@ -1,4 +1,4 @@
-#![forbid(unsafe_code)]
+#![allow(unsafe_code)]
 #![deny(warnings)]
 
 pub mod adapters;

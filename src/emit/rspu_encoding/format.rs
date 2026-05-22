@@ -110,7 +110,7 @@ pub(super) fn funct_to_alu_op(f: u8) -> Result<AluOp, MirrError> {
         11 => Ok(AluOp::Le),
         12 => Ok(AluOp::Gt),
         13 => Ok(AluOp::Ge),
-        _ => Err(rspu_err(format!("[E707] unknown ALU funct code {f}"))),
+        _ => Err(rspu_err(format!("{} unknown ALU funct code {f}", crate::error_codes::ec(707)))),
     }
 }
 
@@ -125,7 +125,10 @@ pub(super) fn funct_to_alu_unary(f: u8) -> Result<AluUnaryOp, MirrError> {
     match f {
         0 => Ok(AluUnaryOp::Not),
         1 => Ok(AluUnaryOp::Negate),
-        _ => Err(rspu_err(format!("[E707] unknown unary ALU funct code {f}"))),
+        _ => Err(rspu_err(format!(
+            "{} unknown unary ALU funct code {f}",
+            crate::error_codes::ec(707)
+        ))),
     }
 }
 
@@ -136,7 +139,8 @@ pub(super) fn funct_to_alu_unary(f: u8) -> Result<AluUnaryOp, MirrError> {
 pub(super) fn check_imm10(value: u64, context: &str) -> Result<u16, MirrError> {
     if value > IMM10_MAX {
         return Err(rspu_err(format!(
-            "[E706] {context} value {value} exceeds 10-bit immediate max ({IMM10_MAX})"
+            "{} {context} value {value} exceeds 10-bit immediate max ({IMM10_MAX})",
+            crate::error_codes::ec(706)
         )));
     }
     Ok(value as u16)
@@ -145,7 +149,8 @@ pub(super) fn check_imm10(value: u64, context: &str) -> Result<u16, MirrError> {
 pub(super) fn check_port10(port: PortId, context: &str) -> Result<u16, MirrError> {
     if port as u64 > IMM10_MAX {
         return Err(rspu_err(format!(
-            "[E706] {context} port {port} exceeds 10-bit immediate max ({IMM10_MAX})"
+            "{} {context} port {port} exceeds 10-bit immediate max ({IMM10_MAX})",
+            crate::error_codes::ec(706)
         )));
     }
     Ok(port)

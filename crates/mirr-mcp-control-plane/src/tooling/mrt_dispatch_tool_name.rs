@@ -33,7 +33,7 @@ pub enum MrtDispatchTool {
 }
 
 impl MrtDispatchTool {
-    pub const LEGACY_ALL: &[Self] = &[
+    pub const ALL: &[Self] = &[
         Self::MrtAudit,
         Self::MrtBrainGet,
         Self::MrtGeneralCi,
@@ -135,8 +135,8 @@ mod tests {
 
     #[test]
     fn all_tools_roundtrip() {
-        for tool in MrtDispatchTool::LEGACY_ALL {
-            assert_eq!(tool.as_str().parse::<MrtDispatchTool>(), Ok(tool));
+        for tool in MrtDispatchTool::ALL {
+            assert_eq!(tool.as_str().parse::<MrtDispatchTool>(), Ok(tool.clone()));
         }
     }
 

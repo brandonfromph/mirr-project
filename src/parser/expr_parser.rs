@@ -81,18 +81,25 @@ impl ExprParser {
     /// Parse a complete expression consuming all tokens.
     fn parse_full(&mut self) -> Result<Expr, MirrError> {
         if self.tokens.is_empty() {
-            return Err(MirrError::parse_error("[E170] Empty expression."));
+            return Err(MirrError::parse_error(format!(
+                "{} Empty expression.",
+                crate::error_codes::ec(170)
+            )));
         }
 
         // Early validation: check for balanced parentheses
         if !self.has_balanced_parens() {
-            return Err(MirrError::parse_error("[E171] Unbalanced parentheses in expression."));
+            return Err(MirrError::parse_error(format!(
+                "{} Unbalanced parentheses in expression.",
+                crate::error_codes::ec(171)
+            )));
         }
 
         let expr = self.parse_expr(0, 0)?;
         if !self.at_end() {
             return Err(MirrError::parse_error(format!(
-                "[E176] Unexpected token in expression: {:?}",
+                "{} Unexpected token in expression: {:?}",
+                crate::error_codes::ec(176),
                 self.peek()
             )));
         }
@@ -126,7 +133,8 @@ impl ExprParser {
     fn parse_expr(&mut self, min_bp: u8, depth: usize) -> Result<Expr, MirrError> {
         if depth > MAX_EXPR_DEPTH {
             return Err(MirrError::parse_error(format!(
-                "[E172] Expression depth exceeds limit of {}.",
+                "{} Expression depth exceeds limit of {}.",
+                crate::error_codes::ec(172),
                 MAX_EXPR_DEPTH
             )));
         }
@@ -146,9 +154,10 @@ impl ExprParser {
                         continue;
                     }
                     _ => {
-                        return Err(MirrError::parse_error(
-                            "[E178] Expected closing ']' in array index.",
-                        ));
+                        return Err(MirrError::parse_error(format!(
+                            "{} Expected closing ']' in array index.",
+                            crate::error_codes::ec(178)
+                        )));
                     }
                 }
             }
@@ -161,9 +170,10 @@ impl ExprParser {
                         continue;
                     }
                     _ => {
-                        return Err(MirrError::parse_error(
-                            "[E179] Expected field name after '.'.",
-                        ));
+                        return Err(MirrError::parse_error(format!(
+                            "{} Expected field name after '.'.",
+                            crate::error_codes::ec(179)
+                        )));
                     }
                 }
             }
@@ -197,15 +207,18 @@ impl ExprParser {
     fn parse_prefix(&mut self, depth: usize) -> Result<Expr, MirrError> {
         if depth > MAX_EXPR_DEPTH {
             return Err(MirrError::parse_error(format!(
-                "[E172] Expression depth exceeds limit of {}.",
+                "{} Expression depth exceeds limit of {}.",
+                crate::error_codes::ec(172),
                 MAX_EXPR_DEPTH
             )));
         }
 
-        let tok = self
-            .advance()
-            .cloned()
-            .ok_or_else(|| MirrError::parse_error("[E173] Unexpected end of expression."))?;
+        let tok = self.advance().cloned().ok_or_else(|| {
+            MirrError::parse_error(format!(
+                "{} Unexpected end of expression.",
+                crate::error_codes::ec(173)
+            ))
+        })?;
 
         match tok {
             Token::True => Ok(Expr::Literal(LiteralValue::Bool(true))),
@@ -230,9 +243,10 @@ impl ExprParser {
                                     break;
                                 }
                                 _ => {
-                                    return Err(MirrError::parse_error(
-                                        "[E182] Expected ',' or ')' in function argument list.",
-                                    ));
+                                    return Err(MirrError::parse_error(format!(
+                                        "{} Expected ',' or ')' in function argument list.",
+                                        crate::error_codes::ec(182)
+                                    )));
                                 }
                             }
                         }
@@ -241,33 +255,37 @@ impl ExprParser {
                     match name.as_str() {
                         "prev" => {
                             if args.len() != 2 {
-                                return Err(MirrError::parse_error(
-                                    "[E183] prev() expects exactly 2 arguments.",
-                                ));
+                                return Err(MirrError::parse_error(format!(
+                                    "{} prev() expects exactly 2 arguments.",
+                                    crate::error_codes::ec(183)
+                                )));
                             }
 
                             let signal = match &args[0] {
                                 Expr::Signal(s) => s.clone(),
                                 _ => {
-                                    return Err(MirrError::parse_error(
-                                        "[E184] prev() first argument must be a signal identifier.",
-                                    ));
+                                    return Err(MirrError::parse_error(format!(
+                                        "{} prev() first argument must be a signal identifier.",
+                                        crate::error_codes::ec(184)
+                                    )));
                                 }
                             };
 
                             let delay = match &args[1] {
                                 Expr::Literal(LiteralValue::Integer(v)) => *v,
                                 _ => {
-                                    return Err(MirrError::parse_error(
-                                        "[E185] prev() delay must be an integer literal.",
-                                    ));
+                                    return Err(MirrError::parse_error(format!(
+                                        "{} prev() delay must be an integer literal.",
+                                        crate::error_codes::ec(185)
+                                    )));
                                 }
                             };
 
                             Ok(Expr::Prev { signal, delay })
                         }
                         _ => Err(MirrError::parse_error(format!(
-                            "[E186] Unknown function call '{}'.",
+                            "{} Unknown function call '{}'.",
+                            crate::error_codes::ec(186),
                             name
                         ))),
                     }
@@ -284,27 +302,28 @@ impl ExprParser {
                             Some(Token::Ident(n)) => n.clone(),
                             Some(t) => {
                                 return Err(MirrError::parse_error(format!(
-                                    "[E181] Unexpected token in struct literal field name: {t:?}"
+                                    "{} Unexpected token in struct literal field name: {t:?}",
+                                    crate::error_codes::ec(181)
                                 )));
                             }
                             None => {
-                                return Err(MirrError::parse_error(
-                                    "[E181] Unexpected end of struct literal.",
-                                ));
+                                return Err(MirrError::parse_error(format!(
+                                    "{} Unexpected end of struct literal.",
+                                    crate::error_codes::ec(181)
+                                )));
                             }
                         };
 
                         match self.advance() {
                             Some(Token::Colon) => {}
                             Some(t) => {
-                                return Err(MirrError::parse_error(format!(
-                                    "[E181] Expected ':' after field name in struct literal, found: {t:?}"
-                                )));
+                                return Err(MirrError::parse_error(format!("{} Expected ':' after field name in struct literal, found: {t:?}", crate::error_codes::ec(181))));
                             }
                             None => {
-                                return Err(MirrError::parse_error(
-                                    "[E181] Unexpected end of struct literal after field name.",
-                                ));
+                                return Err(MirrError::parse_error(format!(
+                                    "{} Unexpected end of struct literal after field name.",
+                                    crate::error_codes::ec(181)
+                                )));
                             }
                         }
 
@@ -322,13 +341,15 @@ impl ExprParser {
                             }
                             Some(t) => {
                                 return Err(MirrError::parse_error(format!(
-                                    "[E181] Expected ',' or '}}' in struct literal, found: {t:?}"
+                                    "{} Expected ',' or '}}' in struct literal, found: {t:?}",
+                                    crate::error_codes::ec(181)
                                 )));
                             }
                             None => {
-                                return Err(MirrError::parse_error(
-                                    "[E181] Unexpected end of struct literal.",
-                                ));
+                                return Err(MirrError::parse_error(format!(
+                                    "{} Unexpected end of struct literal.",
+                                    crate::error_codes::ec(181)
+                                )));
                             }
                         }
                     }
@@ -351,7 +372,10 @@ impl ExprParser {
                 let inner = self.parse_expr(0, depth + 1)?;
                 match self.advance() {
                     Some(Token::RParen) => Ok(inner),
-                    _ => Err(MirrError::parse_error("[E175] Expected closing ')' in expression.")),
+                    _ => Err(MirrError::parse_error(format!(
+                        "{} Expected closing ')' in expression.",
+                        crate::error_codes::ec(175)
+                    ))),
                 }
             }
             Token::LBracket => {
@@ -368,16 +392,18 @@ impl ExprParser {
                         Some(Token::Comma) => continue,
                         Some(Token::RBracket) => break,
                         _ => {
-                            return Err(MirrError::parse_error(
-                                "[E177] Expected ',' or ']' in array literal.",
-                            ))
+                            return Err(MirrError::parse_error(format!(
+                                "{} Expected ',' or ']' in array literal.",
+                                crate::error_codes::ec(177)
+                            )))
                         }
                     }
                 }
                 Ok(Expr::ArrayLiteral(elements))
             }
             other => Err(MirrError::parse_error(format!(
-                "[E174] Unexpected token at start of expression: {:?}",
+                "{} Unexpected token at start of expression: {:?}",
+                crate::error_codes::ec(174),
                 other
             ))),
         }

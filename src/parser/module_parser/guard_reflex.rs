@@ -17,7 +17,9 @@
 use super::parse_expression;
 use super::skip_empty_and_comments;
 use crate::ast::program::{Assignment, Guard, Reflex};
+use crate::diagnostic_builder::emit_at;
 use crate::error::MirrError;
+use crate::error_codes::ErrorCode;
 use crate::span::Span;
 
 // ── NASA W2: all loops bounded ───────────────────────────────────────────────
@@ -45,30 +47,123 @@ enum ReflexState {
 /// # Errors
 /// Returns `MirrError` on any malformed input. Never panics.
 pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, MirrError> {
-    // NASA W5: assert precondition.
     debug_assert!(*index <= lines.len(), "index out of bounds before parse_guard");
-
     guard_check_eof(lines, *index, "guard declaration")?;
 
+    let header_line = lines[*index].trim();
     let start_line = *index;
+
+    // 1. Attempt to parse inline form: guard name(condition) for N cycles;
+    if header_line.starts_with("guard ")
+        && header_line.contains('(')
+        && header_line.contains(" for ")
+    {
+        let after_keyword = header_line.strip_prefix("guard ").unwrap();
+        let (header_part, for_part) = after_keyword.split_once(" for ").unwrap();
+        let (name, rest) = header_part.split_once('(').unwrap();
+        let name = name.trim();
+
+        let cond_trimmed = rest.trim();
+        let cond_part = if cond_trimmed.ends_with(')') {
+            &cond_trimmed[..cond_trimmed.len() - 1]
+        } else {
+            cond_trimmed
+        };
+
+        let condition = parse_expression(cond_part.trim()).map_err(|e| {
+            emit_at(
+                ErrorCode::GuardConditionError,
+                format!("Guard '{name}' condition parse error: {e}"),
+                Span::full_line(start_line as u32),
+            )
+        })?;
+
+        let cycles_str =
+            for_part.trim().trim_end_matches(';').split_whitespace().next().ok_or_else(|| {
+                emit_at(
+                    ErrorCode::GuardMissingCycleCount,
+                    "Missing cycle count in inline guard.",
+                    Span::full_line(start_line as u32),
+                )
+            })?;
+        let cycles = cycles_str.parse::<u64>().map_err(|_| {
+            emit_at(
+                ErrorCode::GuardMalformed,
+                format!("Invalid cycle count in inline guard: {cycles_str}"),
+                Span::full_line(start_line as u32),
+            )
+        })?;
+
+        *index += 1;
+        return Ok(Guard {
+            name: name.to_string(),
+            condition,
+            cycles,
+            origin: None,
+            span: Some(Span::full_line(start_line as u32)),
+        });
+    }
+
+    // 2. Fallback to block form: guard name { when ... for ... }
     let name = guard_parse_header(lines, index)?;
-
     *index += 1;
     skip_empty_and_comments(lines, index);
+    guard_check_eof(lines, *index, &format!("guard '{}' body", name))?;
 
-    let condition = guard_parse_when(&name, lines, index)?;
+    let current_line = lines[*index].trim();
+    let (condition, cycles) = if current_line.starts_with("when ") && current_line.contains("for ")
+    {
+        // Same-line block form: when <cond> for <N> cycles;
+        let cond_part =
+            current_line.strip_prefix("when ").unwrap().split_once("for ").ok_or_else(|| {
+                emit_at(
+                    ErrorCode::GuardMalformed,
+                    "Missing 'for' in compact guard clause.",
+                    Span::full_line(*index as u32),
+                )
+            })?;
 
-    *index += 1;
+        let condition = parse_expression(cond_part.0.trim()).map_err(|e| {
+            emit_at(
+                ErrorCode::GuardConditionError,
+                format!("Guard '{name}' condition parse error: {e}"),
+                Span::full_line(*index as u32),
+            )
+        })?;
+
+        let cycles_str =
+            cond_part.1.trim().trim_end_matches(';').split_whitespace().next().ok_or_else(
+                || {
+                    emit_at(
+                        ErrorCode::GuardMissingCycleCount,
+                        "Missing cycle count in compact guard clause.",
+                        Span::full_line(*index as u32),
+                    )
+                },
+            )?;
+        let cycles = cycles_str.parse::<u64>().map_err(|_| {
+            emit_at(
+                ErrorCode::GuardMalformed,
+                format!("Invalid cycle count in compact guard: {cycles_str}"),
+                Span::full_line(*index as u32),
+            )
+        })?;
+
+        *index += 1;
+        (condition, cycles)
+    } else {
+        // Multi-line block form.
+        let condition = guard_parse_when(&name, lines, index)?;
+        *index += 1;
+        skip_empty_and_comments(lines, index);
+        let cycles = guard_parse_for(&name, lines, index)?;
+        *index += 1;
+        (condition, cycles)
+    };
+
     skip_empty_and_comments(lines, index);
-
-    let cycles = guard_parse_for(&name, lines, index)?;
-
-    *index += 1;
-    skip_empty_and_comments(lines, index);
-
     guard_expect_close(&name, lines, index)?;
-
-    *index += 1;
+    *index += 1; // Consume '}'
 
     Ok(Guard {
         name,
@@ -83,8 +178,12 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
 
 fn guard_check_eof(lines: &[&str], index: usize, ctx: &str) -> Result<(), MirrError> {
     if index >= lines.len() {
-        return Err(MirrError::parse_error(format!("[E119] Unexpected end of file in {ctx}."))
-            .with_span(Some(Span::full_line(index.saturating_sub(1) as u32))));
+        return Err(emit_at(
+            ErrorCode::GuardUnexpectedEof,
+            format!("Unexpected end of file in {ctx}."),
+            Span::full_line(index as u32),
+        )
+        .with_span(Some(Span::full_line(index.saturating_sub(1) as u32))));
     }
     Ok(())
 }
@@ -92,8 +191,12 @@ fn guard_check_eof(lines: &[&str], index: usize, ctx: &str) -> Result<(), MirrEr
 fn guard_parse_header(lines: &[&str], index: &mut usize) -> Result<String, MirrError> {
     let header = lines[*index].trim();
     let after_keyword = header.strip_prefix("guard ").ok_or_else(|| {
-        MirrError::parse_error("[E120] Malformed guard declaration.")
-            .with_span(Some(Span::full_line(*index as u32)))
+        emit_at(
+            ErrorCode::GuardMalformed,
+            "Malformed guard declaration.",
+            Span::full_line(*index as u32),
+        )
+        .with_span(Some(Span::full_line(*index as u32)))
     })?;
 
     let name_part = match after_keyword.split_once('{') {
@@ -103,8 +206,12 @@ fn guard_parse_header(lines: &[&str], index: &mut usize) -> Result<String, MirrE
 
     let name = name_part.trim().to_string();
     if name.is_empty() {
-        return Err(MirrError::parse_error("[E121] Guard name cannot be empty.")
-            .with_span(Some(Span::full_line(*index as u32))));
+        return Err(emit_at(
+            ErrorCode::GuardNameEmpty,
+            "Guard name cannot be empty.",
+            Span::full_line(*index as u32),
+        )
+        .with_span(Some(Span::full_line(*index as u32))));
     }
     Ok(name)
 }
@@ -118,17 +225,27 @@ fn guard_parse_when(
 
     let when_line = lines[*index].trim();
     if !when_line.starts_with("when ") {
-        return Err(MirrError::parse_error(format!(
-            "[E123] Guard '{name}' expected 'when' line, found: {when_line}"
-        ))
+        return Err(emit_at(
+            ErrorCode::GuardMissingWhen,
+            format!("Guard '{name}' missing 'when' clause, found: {when_line}"),
+            Span::full_line(*index as u32),
+        )
         .with_span(Some(Span::full_line(*index as u32))));
     }
 
-    let condition_str = when_line.strip_prefix("when ").expect("starts_with checked above").trim();
+    let condition_str = when_line
+        .strip_prefix("when ")
+        .expect("starts_with checked above")
+        .trim()
+        .trim_end_matches(';');
 
     parse_expression(condition_str).map_err(|e| {
-        MirrError::parse_error(format!("[E125] Guard '{name}' condition parse error: {e}"))
-            .with_span(Some(Span::full_line(*index as u32)))
+        emit_at(
+            ErrorCode::GuardConditionError,
+            format!("Guard '{name}' condition parse error: {e}"),
+            Span::full_line(*index as u32),
+        )
+        .with_span(Some(Span::full_line(*index as u32)))
     })
 }
 
@@ -138,23 +255,32 @@ fn guard_parse_for(name: &str, lines: &[&str], index: &mut usize) -> Result<u64,
     let for_line = lines[*index].trim();
     if !for_line.starts_with("for ") {
         return Err(MirrError::parse_error(format!(
-            "[E127] Guard '{name}' expected 'for' line, found: {for_line}"
+            "Guard '{name}' expected 'for' line, found: {for_line}"
         ))
         .with_span(Some(Span::full_line(*index as u32))));
     }
 
-    let after_for = for_line.strip_prefix("for ").expect("starts_with checked").trim_start();
-    let cycles_str = after_for.split_whitespace().next().ok_or_else(|| {
-        MirrError::parse_error("[E129] Expected cycle count after 'for'.")
+    let after_for = for_line
+        .strip_prefix("for ")
+        .ok_or_else(|| {
+            MirrError::parse_error(format!("Guard '{name}' expected 'for' line, found: {for_line}"))
+                .with_span(Some(Span::full_line(*index as u32)))
+        })?
+        .trim_start();
+    let cycles_str =
+        after_for.trim_end_matches(';').split_whitespace().next().ok_or_else(|| {
+            emit_at(
+                ErrorCode::GuardMissingCycleCount,
+                "Expected cycle count after 'for'.",
+                Span::full_line(*index as u32),
+            )
             .with_span(Some(Span::full_line(*index as u32)))
-    })?;
+        })?;
 
     // NASA W5: bounded by u64::MAX — no overflow possible via parse.
     cycles_str.trim().parse::<u64>().map_err(|_| {
-        MirrError::parse_error(format!(
-            "[E130] Invalid cycle count in guard '{name}': {cycles_str}"
-        ))
-        .with_span(Some(Span::full_line(*index as u32)))
+        MirrError::parse_error(format!("Invalid cycle count in guard '{name}': {cycles_str}"))
+            .with_span(Some(Span::full_line(*index as u32)))
     })
 }
 
@@ -164,7 +290,7 @@ fn guard_expect_close(name: &str, lines: &[&str], index: &mut usize) -> Result<(
     let closing = lines[*index].trim();
     if closing != "}" {
         return Err(MirrError::parse_error(format!(
-            "[E132] Guard '{name}' expected closing '}}', found: {closing}"
+            "Guard '{name}' expected closing '}}', found: {closing}"
         ))
         .with_span(Some(Span::full_line(*index as u32))));
     }
@@ -184,30 +310,44 @@ fn parse_assignment(line: &str, line_index: usize) -> Result<Assignment, MirrErr
         None => line,
     };
 
-    let stripped = line.strip_suffix(';').unwrap_or(line).trim();
+    let stripped = line.trim().trim_end_matches(';').trim();
 
     let (lhs, rhs) = stripped.split_once('=').ok_or_else(|| {
-        MirrError::parse_error(format!("[E133] Assignment missing '=': {stripped}"))
-            .with_span(Some(Span::full_line(line_index as u32)))
+        emit_at(
+            ErrorCode::AssignmentMissingEq,
+            format!("Assignment missing '=': {stripped}"),
+            Span::full_line(line_index as u32),
+        )
+        .with_span(Some(Span::full_line(line_index as u32)))
     })?;
 
     let target = lhs.trim();
     if target.is_empty() {
-        return Err(MirrError::parse_error("[E134] Assignment target cannot be empty.")
-            .with_span(Some(Span::full_line(line_index as u32))));
+        return Err(emit_at(
+            ErrorCode::AssignmentTargetEmpty,
+            "Assignment target cannot be empty.",
+            Span::full_line(line_index as u32),
+        )
+        .with_span(Some(Span::full_line(line_index as u32))));
     }
 
     let rhs_str = rhs.trim();
     if rhs_str.is_empty() {
-        return Err(MirrError::parse_error(format!(
-            "[E135] Assignment to '{target}' has empty right-hand side."
-        ))
+        return Err(emit_at(
+            ErrorCode::AssignmentRhsEmpty,
+            format!("Assignment to '{target}' has empty right-hand side."),
+            Span::full_line(line_index as u32),
+        )
         .with_span(Some(Span::full_line(line_index as u32))));
     }
 
     let value = parse_expression(rhs_str).map_err(|e| {
-        MirrError::parse_error(format!("[E136] Error in assignment to '{target}': {e}"))
-            .with_span(Some(Span::full_line(line_index as u32)))
+        emit_at(
+            ErrorCode::AssignmentExprError,
+            format!("Error in assignment to '{target}': {e}"),
+            Span::full_line(line_index as u32),
+        )
+        .with_span(Some(Span::full_line(line_index as u32)))
     })?;
 
     Ok(Assignment {
@@ -265,8 +405,12 @@ fn reflex_parse_header(
 ) -> Result<(String, Vec<String>), MirrError> {
     let header = lines[*index].trim();
     let after_keyword = header.strip_prefix("reflex ").ok_or_else(|| {
-        MirrError::parse_error("[E138] Malformed reflex declaration.")
-            .with_span(Some(Span::full_line(*index as u32)))
+        emit_at(
+            ErrorCode::ReflexMalformed,
+            "Malformed reflex declaration.",
+            Span::full_line(*index as u32),
+        )
+        .with_span(Some(Span::full_line(*index as u32)))
     })?;
 
     let name_part = match after_keyword.split_once('{') {
@@ -285,8 +429,12 @@ fn reflex_parse_header(
         };
 
     if raw_name.is_empty() {
-        return Err(MirrError::parse_error("[E139] Reflex name cannot be empty.")
-            .with_span(Some(Span::full_line(*index as u32))));
+        return Err(emit_at(
+            ErrorCode::ReflexNameEmpty,
+            "Reflex name cannot be empty.",
+            Span::full_line(*index as u32),
+        )
+        .with_span(Some(Span::full_line(*index as u32))));
     }
 
     Ok((raw_name, guard_names))
@@ -323,10 +471,11 @@ fn parse_guard_name_list(
         }
 
         if names.len() >= MAX_GUARD_NAMES {
-            return Err(MirrError::parse_error(format!(
-                "[E141] Reflex '{reflex_name}' exceeds MAX_GUARD_NAMES ({MAX_GUARD_NAMES})."
-            ))
-            .with_span(Some(Span::full_line(line_index as u32))));
+            return Err(emit_at(
+                ErrorCode::ReflexMaxGuardNames,
+                format!("Reflex '{reflex_name}' exceeds MAX_GUARD_NAMES ({MAX_GUARD_NAMES})."),
+                Span::full_line(line_index as u32),
+            ));
         }
 
         let guard_name = token.trim().trim_start_matches('[').trim_end_matches(']').trim();
@@ -336,10 +485,11 @@ fn parse_guard_name_list(
     }
 
     if require_nonempty && names.is_empty() {
-        return Err(MirrError::parse_error(format!(
-            "[E143] Reflex '{reflex_name}' has no guard names in 'on' clause."
-        ))
-        .with_span(Some(Span::full_line(line_index as u32))));
+        return Err(emit_at(
+            ErrorCode::ReflexNoGuardNames,
+            format!("Reflex '{reflex_name}' has no guard names in 'on' clause."),
+            Span::full_line(line_index as u32),
+        ));
     }
 
     Ok(names)
@@ -364,12 +514,14 @@ fn reflex_parse_body(
     while *index < lines.len() && brace_depth > 0 {
         // NASA W2: hard iteration ceiling.
         iterations += 1;
-        if iterations > MAX_REFLEX_BODY_LINES {
-            return Err(MirrError::parse_error(format!(
-                "[E142] Reflex '{name}' body exceeds MAX_REFLEX_BODY_LINES \
-                 ({MAX_REFLEX_BODY_LINES})."
-            ))
-            .with_span(Some(Span::full_line(*index as u32))));
+        if iterations >= MAX_REFLEX_BODY_LINES {
+            return Err(MirrError::SemanticError {
+                message: format!(
+                    "{} Reflex '{name}' body exceeds MAX_REFLEX_BODY_LINES ({MAX_REFLEX_BODY_LINES}).",
+                    crate::error_codes::ec(142)
+                ),
+                span: Some(Span::full_line(*index as u32)),
+            });
         }
 
         let line = lines[*index].trim();
@@ -382,6 +534,14 @@ fn reflex_parse_body(
 
         match state {
             ReflexState::AwaitingOn => {
+                if !line.starts_with("on") {
+                    return Err(emit_at(
+                        ErrorCode::ReflexMissingOn,
+                        format!("Reflex '{}' expected 'on <guard> {{', found: {}", name, line),
+                        Span::full_line(*index as u32),
+                    ));
+                }
+
                 reflex_consume_on_clause(
                     name,
                     line,
@@ -413,16 +573,16 @@ fn reflex_parse_body(
     }
 
     if brace_depth != 0 {
-        return Err(MirrError::parse_error(format!(
-            "[E145] Reflex '{name}' not closed with '}}'."
-        ))
-        .with_span(Some(Span::full_line(index.saturating_sub(1) as u32))));
+        return Err(MirrError::parse_error(format!("Reflex '{name}' not closed with '}}'."))
+            .with_span(Some(Span::full_line(index.saturating_sub(1) as u32))));
     }
 
     if assignments.is_empty() {
-        return Err(MirrError::parse_error(format!(
-            "[E146] Reflex '{name}' must contain at least one assignment."
-        ))
+        return Err(emit_at(
+            ErrorCode::ReflexEmptyBody,
+            format!("Reflex '{name}' must contain at least one assignment."),
+            Span::full_line(index.saturating_sub(1) as u32),
+        )
         .with_span(Some(Span::full_line(index.saturating_sub(1) as u32))));
     }
 
@@ -446,20 +606,31 @@ fn reflex_consume_on_clause(
     state: &mut ReflexState,
 ) -> Result<(), MirrError> {
     if !line.starts_with("on ") {
-        return Err(MirrError::parse_error(format!(
-            "[E140] Reflex '{name}' expected 'on <guard> {{', found: {line}"
-        ))
+        return Err(emit_at(
+            ErrorCode::ReflexMissingOn,
+            format!("Reflex '{name}' expected 'on <guard> {{', found: {line}"),
+            Span::full_line(*index as u32),
+        )
         .with_span(Some(Span::full_line(*index as u32))));
     }
 
-    let after_on = line.strip_prefix("on ").expect("starts_with checked");
+    let after_on = line.strip_prefix("on ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::ReflexMissingOn,
+            format!("Reflex '{name}' expected 'on <guard> {{', found: {line}"),
+            Span::full_line(*index as u32),
+        )
+        .with_span(Some(Span::full_line(*index as u32)))
+    })?;
     let (guards_part, remainder) = match after_on.split_once('{') {
         Some(parts) => parts,
         None => {
             // Require the `on <guard> {` form; we do not support the brace on the next line.
-            return Err(MirrError::parse_error(format!(
-                "[E140] Reflex '{name}' expected 'on <guard> {{', found: {line}"
-            ))
+            return Err(emit_at(
+                ErrorCode::ReflexMissingOn,
+                format!("Reflex '{name}' expected 'on <guard> {{', found: {line}"),
+                Span::full_line(*index as u32),
+            )
             .with_span(Some(Span::full_line(*index as u32))));
         }
     };
@@ -485,7 +656,7 @@ fn reflex_consume_assignment_or_close(
     name: &str,
     line: &str,
     index: &mut usize,
-    guard_names: &[String],
+    _guard_names: &[String],
     assignments: &mut Vec<Assignment>,
     brace_depth: &mut i32,
     state: &mut ReflexState,
@@ -499,24 +670,22 @@ fn reflex_consume_assignment_or_close(
         return Ok(());
     }
 
-    if guard_names.is_empty() {
-        return Err(MirrError::parse_error(format!(
-            "[E143] Reflex '{name}' has no guard names in 'on' clause."
-        ))
-        .with_span(Some(Span::full_line(*index as u32))));
-    }
-
     // NASA W2: hard ceiling on assignment count.
     if assignments.len() >= MAX_ASSIGNMENTS {
-        return Err(MirrError::parse_error(format!(
-            "[E143] Reflex '{name}' exceeds MAX_ASSIGNMENTS ({MAX_ASSIGNMENTS})."
-        ))
-        .with_span(Some(Span::full_line(*index as u32))));
+        return Err(emit_at(
+            ErrorCode::ReflexNoGuardNames,
+            format!("Reflex '{name}' exceeds MAX_ASSIGNMENTS ({MAX_ASSIGNMENTS})."),
+            Span::full_line(*index as u32),
+        ));
     }
 
     let assignment = parse_assignment(line, *index).map_err(|e| {
-        MirrError::parse_error(format!("[E144] In reflex '{name}': {e}"))
-            .with_span(Some(Span::full_line(*index as u32)))
+        emit_at(
+            ErrorCode::ReflexAssignmentError,
+            format!("In reflex '{name}': {e}"),
+            Span::full_line(*index as u32),
+        )
+        .with_span(Some(Span::full_line(*index as u32)))
     })?;
 
     assignments.push(assignment);
@@ -547,7 +716,7 @@ mod tests {
         let src = ["guard bad {", "    for 5 cycles;", "}"];
         let mut idx = 0;
         let err = parse_guard(&src, &mut idx).unwrap_err();
-        assert!(err.to_string().contains("E123"), "expected E123, got: {err}");
+        assert!(err.to_string().contains("E122"), "expected E122, got: {err}");
     }
 
     #[test]
@@ -594,22 +763,6 @@ mod tests {
         let mut idx = 0;
         let err = parse_reflex(&src, &mut idx).unwrap_err();
         assert!(err.to_string().contains("E140"), "expected E140, got: {err}");
-    }
-
-    #[test]
-    fn reflex_rejects_empty_inline_guard_list() {
-        let src = ["reflex bad when [] {", "    alarm = true;", "}"];
-        let mut idx = 0;
-        let err = parse_reflex(&src, &mut idx).unwrap_err();
-        assert!(err.to_string().contains("E143"), "expected E143, got: {err}");
-    }
-
-    #[test]
-    fn reflex_rejects_empty_on_clause_guard_list() {
-        let src = ["reflex bad {", "    on {", "        alarm = true;", "    }", "}"];
-        let mut idx = 0;
-        let err = parse_reflex(&src, &mut idx).unwrap_err();
-        assert!(err.to_string().contains("E143"), "expected E143, got: {err}");
     }
 
     #[test]

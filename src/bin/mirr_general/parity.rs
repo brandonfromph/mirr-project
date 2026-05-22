@@ -4,6 +4,7 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -126,7 +127,11 @@ pub fn verify_vscode_contract() -> io::Result<ParityRecord> {
 pub fn run_consumer_parity(records: &[ParityRecord]) -> io::Result<()> {
     for record in records {
         if !record.success {
-            eprintln!("PARITY_FAIL subsystem={:?} detail={}", record.subsystem, record.detail);
+            let diag = Diagnostic::error("consumer parity check failed")
+                .with_note(format!("subsystem={:?}", record.subsystem))
+                .with_note(record.detail.clone())
+                .with_code("E909");
+            eprint!("{}", render_diagnostic(&diag, "", ""));
             return Err(io::Error::new(io::ErrorKind::Other, record.detail.clone()));
         }
     }

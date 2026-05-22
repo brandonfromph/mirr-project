@@ -14,17 +14,21 @@ use nasa_rust_project::emit::rspu_encoding::opcodes::*;
 /// Test fixture: simple signal declaration
 const FIXTURE_SIGNALS: &str = r#"
 module test_signals {
-    signal a: in u8;
-    signal b: out u8;
-    signal internal_val: internal u16;
+    signals {
+        a: in u8
+        b: out u8
+        internal_val: internal u16
+    }
 }
 "#;
 
 /// Test fixture: simple guard and reflex
 const FIXTURE_GUARD_REFLEX: &str = r#"
 module test_guard {
-    signal trigger: in bool;
-    signal output: out bool;
+    signals {
+        trigger: in bool
+        output: out bool
+    }
 
     guard g {
         when trigger == true
@@ -42,8 +46,10 @@ module test_guard {
 /// Test fixture: counter guard (delay > 16)
 const FIXTURE_COUNTER: &str = r#"
 module test_counter {
-    signal enable: in bool;
-    signal done: out bool;
+    signals {
+        enable: in bool
+        done: out bool
+    }
 
     guard long_delay {
         when enable == true

@@ -141,6 +141,11 @@ impl RegisterFile {
         Self { registers }
     }
 
+    /// Access all registers as a slice (used for history snapshots).
+    pub fn get_all_values(&self) -> &[TaggedWord] {
+        &self.registers
+    }
+
     /// Read the tagged word at `reg`. Panics if `reg` is out of bounds
     /// (should never happen with valid R-SPU programs, as RegId is u8 and
     /// MAX_REGISTERS is 256).
@@ -187,10 +192,16 @@ impl Default for RegisterFile {
 pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeTag, MirrError> {
     // Reject uninitialized operands.
     if a.tag == TypeTag::Uninitialized {
-        return Err(rspu_err("[E708] tag violation: left operand is uninitialized".to_string()));
+        return Err(rspu_err(format!(
+            "{} tag violation: left operand is uninitialized",
+            crate::error_codes::ec(708)
+        )));
     }
     if b.tag == TypeTag::Uninitialized {
-        return Err(rspu_err("[E708] tag violation: right operand is uninitialized".to_string()));
+        return Err(rspu_err(format!(
+            "{} tag violation: right operand is uninitialized",
+            crate::error_codes::ec(708)
+        )));
     }
 
     match op {
@@ -205,8 +216,10 @@ pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeT
             );
             if !compatible {
                 return Err(rspu_err(format!(
-                    "[E708] tag violation: comparison requires matching types, got {} and {}",
-                    a.tag, b.tag
+                    "{} tag violation: comparison requires matching types, got {} and {}",
+                    crate::error_codes::ec(708),
+                    a.tag,
+                    b.tag
                 )));
             }
             Ok(TypeTag::Bool)
@@ -224,8 +237,10 @@ pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeT
                 Ok(TypeTag::Unsigned { width: 64 })
             }
             _ => Err(rspu_err(format!(
-                "[E708] tag violation: arithmetic requires matching numeric types, got {} and {}",
-                a.tag, b.tag
+                "{} tag violation: arithmetic requires matching numeric types, got {} and {}",
+                crate::error_codes::ec(708),
+                a.tag,
+                b.tag
             ))),
         },
 
@@ -242,8 +257,10 @@ pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeT
                 Ok(TypeTag::Unsigned { width: 64 })
             }
             _ => Err(rspu_err(format!(
-                "[E708] tag violation: bitwise op requires matching types, got {} and {}",
-                a.tag, b.tag
+                "{} tag violation: bitwise op requires matching types, got {} and {}",
+                crate::error_codes::ec(708),
+                a.tag,
+                b.tag
             ))),
         },
 
@@ -251,7 +268,8 @@ pub fn check_alu_tags(a: &TaggedWord, b: &TaggedWord, op: AluOp) -> Result<TypeT
         AluOp::Shl | AluOp::Shr => {
             if !a.tag.is_numeric() {
                 return Err(rspu_err(format!(
-                    "[E708] tag violation: shift requires numeric left operand, got {}",
+                    "{} tag violation: shift requires numeric left operand, got {}",
+                    crate::error_codes::ec(708),
                     a.tag
                 )));
             }
