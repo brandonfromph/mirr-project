@@ -120,9 +120,9 @@ memories/
 scratch/
 mirr-ci-optimization.skill
 mirr-debt-remediation.skill
-run_wave_gates.sh
-run_wave_gates.bat
-run_wave_gates.ps1
+# run_wave_gates.sh
+# run_wave_gates.bat
+# run_wave_gates.ps1
 
 # ─── Python Scripts (project rule: no Python) ─────────────────────────────────
 *.py
