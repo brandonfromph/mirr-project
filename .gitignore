@@ -10,6 +10,7 @@ target/
 
 # Root-local generated files
 /package-lock.json
+/package.json
 
 # Editor / IDE
 .vscode/
