@@ -609,6 +609,7 @@ impl Registry {
         self.symbol_to_entity.insert(symbol.to_string(), entity);
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn hydrate_from_db(
         &mut self,
         storage: &mirr_kb_native::storage::SqliteHybridStorage,
