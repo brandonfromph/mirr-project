@@ -528,7 +528,7 @@ fn emit_properties(
                 // HARDENED: Synthesize a Shift Register guard to enforce the window.
                 let cond = emit_expr(expr, regs, instrs)?;
                 let gid = (MAX_GUARDS - 1 - idx) as GuardId; // Allocate from top down for properties.
-                instrs.push(RspuInstruction::SrInit { guard: gid, length: *cycles as u32, cond });
+                instrs.push(RspuInstruction::SrInit { guard: gid, length: *cycles, cond });
                 instrs.push(RspuInstruction::SrTick { guard: gid });
                 let verified = regs.alloc_temp().ok_or_else(|| {
                     rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
@@ -545,7 +545,7 @@ fn emit_properties(
                 // Track the trigger in a shift register.
                 instrs.push(RspuInstruction::SrInit {
                     guard: gid,
-                    length: *delay_cycles as u32,
+                    length: *delay_cycles,
                     cond: p,
                 });
                 instrs.push(RspuInstruction::SrTick { guard: gid });

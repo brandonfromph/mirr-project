@@ -466,14 +466,14 @@ impl TemporalCompiler {
                     let compiled = if total_delay <= SHIFT_REGISTER_THRESHOLD {
                         self.synthesize_shift_register(
                             &current_name,
-                            &input_signal,
+                            input_signal,
                             total_delay,
                             condition_kind,
                         )?
                     } else {
                         self.synthesize_counter(
                             &current_name,
-                            &input_signal,
+                            input_signal,
                             total_delay,
                             condition_kind,
                         )?

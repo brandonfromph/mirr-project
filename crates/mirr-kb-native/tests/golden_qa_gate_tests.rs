@@ -23,7 +23,7 @@ fn golden_qa_set_fails_when_retrieval_is_off_target() {
     let pair = &default_golden_qa_set()[0];
     let result = evaluate_pair(pair, &["unrelated.chunk".to_string()], "irrelevant answer");
 
-    assert!(!passes_quality_gate_for_set(&[result.clone()]));
+    assert!(!passes_quality_gate_for_set(std::slice::from_ref(&result)));
     assert!(result.context_precision < 0.7);
     assert!(result.faithfulness < 0.8);
 }

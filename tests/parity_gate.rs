@@ -14,12 +14,12 @@ fn test_rspu_16_core_parity_gate() {
     let num_cores = 16;
     let iterations = 10;
     let mut golden_results = vec![0u64; num_cores];
-    for core_id in 0..num_cores {
+    for (core_id, val) in golden_results.iter_mut().enumerate() {
         let mut acc = core_id as u64 * 10;
         for i in 0..iterations {
             acc += i as u64;
         }
-        golden_results[core_id] = acc;
+        *val = acc;
     }
 
     // 2. MIRR SOURCE (RTL)
@@ -43,8 +43,10 @@ fn test_rspu_16_core_parity_gate() {
     mirr.push_str("}\n");
 
     // 3. COMPILE TO RSPU
-    let mut cfg = PipelineConfig::default();
-    cfg.rspu = true;
+    let cfg = PipelineConfig {
+        rspu: true,
+        ..Default::default()
+    };
     let res = run_pipeline(&mirr, &cfg).expect("Compilation failed");
     let prog = res.rspu_program.expect("RSPU program not generated");
 
@@ -59,9 +61,8 @@ fn test_rspu_16_core_parity_gate() {
 
     // 5. PARITY CHECK
     println!("--- Parity Gate Results ---");
-    for i in 0..num_cores {
+    for (i, &expected) in golden_results.iter().enumerate() {
         let actual = sim_result.outputs.get(&(i as u16)).map(|v| v.value).unwrap_or(0);
-        let expected = golden_results[i];
         println!("Core {}: Expected {}, Actual {}", i, expected, actual);
         assert_eq!(actual, expected, "Core {} parity mismatch!", i);
     }

@@ -118,7 +118,7 @@ fn run_mirr_mode(content: &str, show_stats: bool, input_path: &str) {
     let mut program = match parse_mirr(content) {
         Ok(p) => p,
         Err(e) => {
-            fatal_rendered_error(&e, content, &input_path);
+            fatal_rendered_error(&e, content, input_path);
         }
     };
 
@@ -164,7 +164,7 @@ fn run_scc_mode(content: &str, show_stats: bool, input_path: &str) {
     let mut program = match parse_mirr(content) {
         Ok(p) => p,
         Err(e) => {
-            fatal_rendered_error(&e, content, &input_path);
+            fatal_rendered_error(&e, content, input_path);
         }
     };
 

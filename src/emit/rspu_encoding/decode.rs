@@ -165,7 +165,7 @@ pub fn decode(word: u32) -> Result<RspuInstruction, MirrError> {
         }
         OP_TAG_BRANCH => {
             let imm26 = extract_s_imm26(word);
-            let target_pc = (imm26 >> 8) as u32;
+            let target_pc = imm26 >> 8;
             let tag_value = (imm26 & 0xFF) as u8;
             Ok(RspuInstruction::TagBranch { tag_value, target_pc })
         }

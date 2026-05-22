@@ -149,14 +149,16 @@ fn main() {
         return;
     }
 
-    let mut config = nasa_rust_project::pipeline::PipelineConfig::default();
-    config.temporal = true;
-    config.base_dir = Some(
-        std::path::PathBuf::from(&input_path)
-            .parent()
-            .unwrap_or(std::path::Path::new(""))
-            .to_path_buf(),
-    );
+    let config = nasa_rust_project::pipeline::PipelineConfig {
+        temporal: true,
+        base_dir: Some(
+            std::path::PathBuf::from(&input_path)
+                .parent()
+                .unwrap_or(std::path::Path::new(""))
+                .to_path_buf(),
+        ),
+        ..Default::default()
+    };
 
     let pipeline_result =
         match nasa_rust_project::pipeline::run_pipeline_on_program(program, &config) {

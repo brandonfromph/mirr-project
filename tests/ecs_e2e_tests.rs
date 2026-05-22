@@ -10,10 +10,11 @@ mod e2e_tests {
     #[test]
     fn test_e2e_alu_compilation() {
         let source = std::fs::read_to_string(get_alu_path()).unwrap();
-        let mut config = PipelineConfig::default();
-        config.temporal = true;
-        config.base_dir =
-            Some(PathBuf::from("/Users/brandonc.blay/projects/mirr-private/rspu_chip/core"));
+        let config = PipelineConfig {
+            temporal: true,
+            base_dir: Some(PathBuf::from("/Users/brandonc.blay/projects/mirr-private/rspu_chip/core")),
+            ..Default::default()
+        };
 
         let result = run_pipeline(&source, &config);
         assert!(result.is_ok(), "ALU compilation failed: {:?}", result.err());
@@ -69,9 +70,10 @@ mod e2e_tests {
     fn test_e2e_cross_module_import() {
         // This test requires actual files on disk
         let alu_source = std::fs::read_to_string(get_alu_path()).unwrap();
-        let mut config = PipelineConfig::default();
-        config.base_dir =
-            Some(PathBuf::from("/Users/brandonc.blay/projects/mirr-private/rspu_chip/core"));
+        let config = PipelineConfig {
+            base_dir: Some(PathBuf::from("/Users/brandonc.blay/projects/mirr-private/rspu_chip/core")),
+            ..Default::default()
+        };
 
         let result = run_pipeline(&alu_source, &config);
         assert!(result.is_ok(), "ALU with imports failed: {:?}", result.err());
@@ -107,8 +109,10 @@ mod e2e_tests {
     #[test]
     fn test_e2e_resource_strategy_selection() {
         let source = "module top; signal s1: bool; guard g_short(s1) for 5 cycles; guard g_long(s1) for 50 cycles; endmodule";
-        let mut config = PipelineConfig::default();
-        config.temporal = true;
+        let config = PipelineConfig {
+            temporal: true,
+            ..Default::default()
+        };
         let result = run_pipeline(source, &config).unwrap();
 
         let netlist = result.temporal_netlist.unwrap();

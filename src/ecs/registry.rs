@@ -520,11 +520,11 @@ impl Registry {
                         results.push(Expr::Signal(sig_name));
                     } else if let Some(BinaryComponent { op, left, right }) = &self.binary_ops[idx]
                     {
-                        stack.push(Work::FinishBinary(op.clone()));
+                        stack.push(Work::FinishBinary(*op));
                         stack.push(Work::Process(*right));
                         stack.push(Work::Process(*left));
                     } else if let Some(UnaryComponent { op, operand }) = &self.unary_ops[idx] {
-                        stack.push(Work::FinishUnary(op.clone()));
+                        stack.push(Work::FinishUnary(*op));
                         stack.push(Work::Process(*operand));
                     } else if let Some(PrevComponent { signal, delay }) = &self.prev_ops[idx] {
                         let sig_name = self.names[signal.0 as usize]

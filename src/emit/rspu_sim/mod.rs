@@ -54,7 +54,7 @@ pub struct RspuSimulator {
     pub interval_shadow: Vec<(u64, u64)>,
     /// Current active type tag register.
     pub tag_register: RegId,
-    /// Circular buffer for register history [cycle][reg].
+    /// Circular buffer for register history `[cycle][reg]`.
     /// Size: MAX_REGISTERS * MAX_REG_HISTORY
     pub history: Vec<TaggedWord>,
     /// Index of the most recent cycle in the history buffer.

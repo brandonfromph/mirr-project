@@ -15,9 +15,11 @@ fn test_rspu_chip_workspace_compilation() {
     let mut workspace = Workspace::new(&workspace_root);
 
     // Compile the multi-file project, resolving all imports across all subdirectories
-    let mut config = PipelineConfig::default();
-    config.temporal = false; // Disable temporal lowering if unsupported forms are used
-    config.rspu = false;
+    let config = PipelineConfig {
+        temporal: false, // Disable temporal lowering if unsupported forms are used
+        rspu: false,
+        ..Default::default()
+    };
 
     println!("Loading multi-file RSPU project from {}...", root_path.display());
     let snapshot =

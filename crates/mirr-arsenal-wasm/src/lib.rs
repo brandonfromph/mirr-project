@@ -7,6 +7,12 @@ pub struct ArsenalWasm {
     ir_version: String,
 }
 
+impl Default for ArsenalWasm {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl ArsenalWasm {
     #[wasm_bindgen(constructor)]

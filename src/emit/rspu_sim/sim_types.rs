@@ -59,13 +59,13 @@ pub struct SimResult {
 // PropertyState
 // ---------------------------------------------------------------------------
 
-/// Tracks property assertion violations during simulation.
+// Tracks property assertion violations during simulation.
 // ---------------------------------------------------------------------------
 // Guard and Property state
 // ---------------------------------------------------------------------------
 
 /// Internal state of a hardware Guard Unit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GuardUnit {
     /// A shift register of a specific length, storing up to 64 bits of history.
     ShiftRegister {
@@ -88,13 +88,8 @@ pub enum GuardUnit {
     /// A simple combinatorial guard (direct signal pass-through).
     Combinatorial(bool),
     /// An uninitialized or inactive guard unit.
+    #[default]
     Uninitialized,
-}
-
-impl Default for GuardUnit {
-    fn default() -> Self {
-        Self::Uninitialized
-    }
 }
 
 /// A double-buffered guard unit for cycle-accurate simulation.

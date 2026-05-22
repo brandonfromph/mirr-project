@@ -35,18 +35,13 @@ use crate::span::Span;
 pub type TypeMap = HashMap<*const Expr, SignalType>;
 
 /// The type checking mode.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TypecheckMode {
     /// Standard MIRR strict typechecking (strict type checking of bool/unsigned).
+    #[default]
     Standard,
     /// Bootstrap/hydration mode (allows bool in arithmetic and logical ops on unsigned).
     Bootstrap,
-}
-
-impl Default for TypecheckMode {
-    fn default() -> Self {
-        TypecheckMode::Standard
-    }
 }
 
 /// Operator display name for error messages.

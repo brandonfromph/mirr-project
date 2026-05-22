@@ -39,14 +39,13 @@ fn test_width_chaos_nonexpansive_chain_performance() {
 fn test_width_chaos_unbounded_expansive_loop() {
     // Expansive loop: A = A + 1. No temporal guard.
     // This should be caught by Strategy 3 (Hard Error E510).
-    let mut signals = Vec::new();
-    signals.push(SignalDecl {
+    let signals = vec![SignalDecl {
         name: "a".to_string(),
         kind: SignalKind::Internal,
         ty: ExtendedType::from(SignalType::Unsigned(0)), // No width
         span: None,
         origin: None,
-    });
+    }];
 
     let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Expansive };
 

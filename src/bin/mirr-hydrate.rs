@@ -36,6 +36,7 @@ struct YosysPort {
 struct YosysCell {
     #[serde(rename = "type")]
     cell_type: String,
+    #[allow(dead_code)]
     parameters: HashMap<String, serde_json::Value>,
     connections: HashMap<String, Vec<YosysBit>>,
 }
@@ -81,13 +82,7 @@ fn bit_to_str(bit: &YosysBit, bit_to_sig: &HashMap<YosysBit, (String, usize)>) -
 }
 
 fn is_scalar(bit: &YosysBit, bit_to_sig: &HashMap<YosysBit, (String, usize)>) -> bool {
-    if let Some((name, _)) = bit_to_sig.get(bit) {
-        // This is a bit of a hack, but works for most cases
-        // We'd need the full signal map to be sure.
-        true
-    } else {
-        false
-    }
+    bit_to_sig.contains_key(bit)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

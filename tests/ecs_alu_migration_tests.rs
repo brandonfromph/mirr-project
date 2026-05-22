@@ -57,8 +57,10 @@ module isa_map {
     )
     .unwrap();
 
-    let mut config = PipelineConfig::default();
-    config.temporal = false; // Only parse & expand
+    let config = PipelineConfig {
+        temporal: false, // Only parse & expand
+        ..Default::default()
+    };
 
     // We pass the test source directly. Note that pipeline.rs currently doesn't
     // know the base_dir of the source string, but for the sake of the test contract

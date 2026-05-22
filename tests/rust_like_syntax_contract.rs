@@ -50,7 +50,7 @@ module advanced_controller {
 
     // The if/else-if logic should be lowered to separate reflexes or combined with OR logic if possible.
     // For now, we expect two separate reflexes or a single reflex with multiple trigger guards.
-    assert!(program.module.reflexes.len() >= 1);
+    assert!(!program.module.reflexes.is_empty());
 }
 
 #[test]

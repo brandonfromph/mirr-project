@@ -50,8 +50,10 @@ fn stress_test_temporal_synthesis_density() {
     mirr.push_str("}\n");
 
     // Run the pipeline with R-SPU emission enabled
-    let mut cfg = PipelineConfig::default();
-    cfg.rspu = true;
+    let cfg = PipelineConfig {
+        rspu: true,
+        ..Default::default()
+    };
     let result = run_pipeline(&mirr, &cfg);
 
     match result {

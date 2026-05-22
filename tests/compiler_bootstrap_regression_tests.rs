@@ -9,7 +9,7 @@ fn assert_bootstrap_stages(result: BootstrapResult, expected_stages: &[&str]) {
             .stages
             .iter()
             .find(|s| s.name == *stage_name)
-            .expect(&format!("Stage '{}' not found in bootstrap results", stage_name));
+            .unwrap_or_else(|| panic!("Stage '{}' not found in bootstrap results", stage_name));
         assert!(stage.ok, "Stage '{}' failed: {}", stage_name, stage.message);
     }
 }

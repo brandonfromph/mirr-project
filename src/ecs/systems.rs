@@ -84,7 +84,6 @@ pub fn run_compilation_pipeline(registry: &mut Registry) -> WidthStats {
 /// is the absolute source of truth for the entire temporal compilation pass.
 ///
 /// NASA P10 Rule #1: Bounded by `next_id`. No recursion.
-
 pub fn temporal_synthesis_system(registry: &mut Registry) -> Result<TemporalNetlist, MirrError> {
     use crate::temporal::compiler::TemporalCompiler;
 

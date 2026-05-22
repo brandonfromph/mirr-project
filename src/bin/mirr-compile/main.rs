@@ -212,7 +212,7 @@ pub fn main() {
     };
     let result = snapshot.pipeline.as_ref();
 
-    summary::print_summary(&result, args.stats);
+    summary::print_summary(result, args.stats);
 
     // Check for width errors — render through the diagnostic engine.
     if result.has_width_errors() {
@@ -240,9 +240,9 @@ pub fn main() {
     let output = match format {
         "dot" => {
             if args.dot_detail {
-                emit::dot::emit_expr_dot(&result)
+                emit::dot::emit_expr_dot(result)
             } else {
-                emit::dot::emit_module_dot(&result)
+                emit::dot::emit_module_dot(result)
             }
         }
         "verilog" | "sv" => {
@@ -252,17 +252,17 @@ pub fn main() {
                 Some(fpga_target)
             };
             if args.strip_sva {
-                emit::verilog::emit_sv_synthesis(&result, t, args.dsp_threshold)
+                emit::verilog::emit_sv_synthesis(result, t, args.dsp_threshold)
             } else {
-                emit::verilog::emit_sv_with_options(&result, t, args.dsp_threshold)
+                emit::verilog::emit_sv_with_options(result, t, args.dsp_threshold)
             }
         }
-        "json" => emit::json_netlist::emit_json(&result).unwrap_or_else(|e| {
+        "json" => emit::json_netlist::emit_json(result).unwrap_or_else(|e| {
             eprintln!("Error serializing JSON: {e}");
             process::exit(1);
         }),
-        "sva" => emit::verilog::emit_sva_only(&result),
-        "firrtl" => emit::firrtl::emit_firrtl(&result),
+        "sva" => emit::verilog::emit_sva_only(result),
+        "firrtl" => emit::firrtl::emit_firrtl(result),
         "rspu" => result.rspu_program.as_ref().map(|p| p.emit_asm()).unwrap_or_else(|| {
             eprintln!("Error: R-SPU program not generated.");
             process::exit(1);
@@ -283,10 +283,10 @@ pub fn main() {
                 eprintln!("Error emitting ARM.");
                 process::exit(1);
             }),
-        "testbench" => emit::testbench::emit_testbench(&result),
-        "scaffold" => emit::fpga_scaffold::emit_constraints(&result, &fpga_target),
-        "build-script" => emit::fpga_scaffold::emit_build_script(&result, &fpga_target),
-        "sexpr" => emit::sexpr::emit_sexpr(&result),
+        "testbench" => emit::testbench::emit_testbench(result),
+        "scaffold" => emit::fpga_scaffold::emit_constraints(result, &fpga_target),
+        "build-script" => emit::fpga_scaffold::emit_build_script(result, &fpga_target),
+        "sexpr" => emit::sexpr::emit_sexpr(result),
         "mape-k-rtl" => result.mape_k_rtl.clone().expect("MAPE-K RTL skipped"),
         "cert" => {
             let cert_bytes = result
@@ -314,20 +314,20 @@ pub fn main() {
     }
 
     if (format == "verilog" || format == "sv") && args.testbench {
-        let tb = emit::testbench::emit_testbench(&result);
+        let tb = emit::testbench::emit_testbench(result);
         let path = derive_path(&root_file, "_tb.sv");
         std::fs::write(&path, tb).unwrap();
         eprintln!("Testbench written to {path}");
     }
 
     if (format == "verilog" || format == "sv") && args.scaffold {
-        let constraints = emit::fpga_scaffold::emit_constraints(&result, &fpga_target);
+        let constraints = emit::fpga_scaffold::emit_constraints(result, &fpga_target);
         let ext = fpga_target.constraint_extension();
         let constr_path = derive_path(&root_file, &format!(".{ext}"));
         std::fs::write(&constr_path, constraints).unwrap();
         eprintln!("Constraints written to {constr_path}");
 
-        let build = emit::fpga_scaffold::emit_build_script(&result, &fpga_target);
+        let build = emit::fpga_scaffold::emit_build_script(result, &fpga_target);
         let build_ext = match fpga_target {
             FpgaTarget::LatticeIce40
             | FpgaTarget::LatticeEcp5
@@ -341,7 +341,7 @@ pub fn main() {
     }
 
     if let Some(path) = &args.sva_file {
-        let sva_content = emit::verilog::emit_sva_bind_file(&result);
+        let sva_content = emit::verilog::emit_sva_bind_file(result);
         if !sva_content.is_empty() {
             std::fs::write(path, sva_content).unwrap();
         }
@@ -353,7 +353,7 @@ pub fn main() {
 
     if args.formal || args.lint || args.simulate || args.pnr || args.timing || args.eqy {
         toolchain::run_toolchain_operations(
-            &result,
+            result,
             &root_file,
             &fpga_target,
             args.dsp_threshold,

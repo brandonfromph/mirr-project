@@ -38,7 +38,7 @@ fn test_width_mismatch_error() {
     let config = PipelineConfig::default();
     let result = run_pipeline_on_program(program, &config);
     assert!(result.is_err());
-    let errs = result.err().expect("Expected errors for width mismatch");
+    let errs = result.expect_err("Expected errors for width mismatch");
     println!("Actual errors: {:?}", errs);
     assert!(errs.errors.iter().any(|e| format!("{:?}", e).contains("E601")));
 }
@@ -64,7 +64,7 @@ fn test_bitwise_mixed_types() {
         result.is_err(),
         "Expected type error under standard MIRR for mixed-type logical operands"
     );
-    let errs = result.err().unwrap();
+    let errs = result.unwrap_err();
     assert!(
         errs.errors.iter().any(|e| format!("{:?}", e).contains("E604")),
         "Expected E604 error, got: {:?}",

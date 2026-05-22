@@ -77,7 +77,7 @@ fn main() -> Result<()> {
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
         .map(|e| e.path().to_path_buf())
-        .filter(|p| p.extension().map_or(false, |ext| ext == "mirr" || ext == "rs"))
+        .filter(|p| p.extension().is_some_and(|ext| ext == "mirr" || ext == "rs"))
         .collect();
 
     println!("Parallel indexing {} files...", files.len());

@@ -51,7 +51,7 @@ pub fn expand_macros(source: &str) -> String {
                         if c == '$' {
                             if let Some('{') = chars.peek() {
                                 chars.next(); // consume '{'
-                                while let Some(inner) = chars.next() {
+                                for inner in chars.by_ref() {
                                     if inner == '}' {
                                         break;
                                     }
@@ -243,7 +243,7 @@ fn count_braces(line: &str) -> i32 {
         if c == '$' {
             if let Some('{') = chars.peek() {
                 chars.next(); // consume '{'
-                while let Some(inner) = chars.next() {
+                for inner in chars.by_ref() {
                     if inner == '}' {
                         break;
                     }

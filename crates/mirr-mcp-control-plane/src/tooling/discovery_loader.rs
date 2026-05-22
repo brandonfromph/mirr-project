@@ -4,7 +4,7 @@ use std::process::Command;
 
 pub fn load_metadata_from_binary(bin_name: &str) -> Vec<DiscoveryMethodMetadata> {
     let output =
-        Command::new("cargo").args(&["run", "--bin", bin_name, "--", "--help-json"]).output().ok();
+        Command::new("cargo").args(["run", "--bin", bin_name, "--", "--help-json"]).output().ok();
 
     let Some(output) = output else {
         return vec![];

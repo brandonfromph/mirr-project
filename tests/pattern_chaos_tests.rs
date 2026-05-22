@@ -8,13 +8,12 @@ use nasa_rust_project::expand::expand_patterns;
 #[test]
 fn test_pattern_chaos_recursion_depth_limit() {
     // Define a self-recursive pattern: A calls A.
-    let mut patterns = Vec::new();
-    patterns.push(PatternDef {
+    let patterns = vec![PatternDef {
         name: "A".to_string(),
         params: vec![],
         body: ReflectBlock { raw_lines: vec!["A();".to_string()] },
         span: None,
-    });
+    }];
 
     let mut program = MirrProgram {
         imports: vec![],

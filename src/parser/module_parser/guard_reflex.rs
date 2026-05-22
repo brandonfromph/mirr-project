@@ -64,8 +64,8 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
         let name = name.trim();
 
         let cond_trimmed = rest.trim();
-        let cond_part = if cond_trimmed.ends_with(')') {
-            &cond_trimmed[..cond_trimmed.len() - 1]
+        let cond_part = if let Some(stripped) = cond_trimmed.strip_suffix(')') {
+            stripped
         } else {
             cond_trimmed
         };

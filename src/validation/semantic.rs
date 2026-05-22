@@ -39,11 +39,7 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
 
     for sig in &module.signals {
         if let Some((first_span, kind)) = seen_names.get(sig.name.as_str()) {
-            let code = if *kind == "signal" {
-                crate::error_codes::ec(201)
-            } else {
-                crate::error_codes::ec(201)
-            }; // Both E201 for signal collisions
+            let code = crate::error_codes::ec(201); // Both E201 for signal collisions
             let mut msg = if *kind == "signal" {
                 format!("{} Duplicate signal name: '{}'.", code, sig.name)
             } else {

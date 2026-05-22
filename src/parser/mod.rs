@@ -270,9 +270,9 @@ pub(crate) fn tokenize_signal_decl(rest: &str) -> Result<TokenizedSignalDecl, Mi
     let is_type_token =
         matches!(token0, "linear" | "stateful" | "pure" | "struct" | "interface" | "bool")
             || (token0.starts_with('u')
-                && token0[1..].chars().next().map_or(false, |c| c.is_ascii_digit()))
+                && token0[1..].chars().next().is_some_and(|c| c.is_ascii_digit()))
             || (token0.starts_with('i')
-                && token0[1..].chars().next().map_or(false, |c| c.is_ascii_digit()))
+                && token0[1..].chars().next().is_some_and(|c| c.is_ascii_digit()))
             || token0.starts_with("unsigned")
             || token0.starts_with("signed")
             || token0.starts_with("fixed")

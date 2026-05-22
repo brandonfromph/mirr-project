@@ -5,6 +5,7 @@
 use crate::ecs::{EntityId, Registry};
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct RspuAllocator {
     // Current mapping from EntityID to Physical Register ID
     allocation_map: HashMap<EntityId, u32>,

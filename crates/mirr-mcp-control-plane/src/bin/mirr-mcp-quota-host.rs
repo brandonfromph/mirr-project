@@ -29,10 +29,7 @@ struct QuotaHostCliInput {
 
 fn now_unix_millis() -> u64 {
     match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => match u64::try_from(duration.as_millis()) {
-            Ok(value) => value,
-            Err(_) => u64::MAX,
-        },
+        Ok(duration) => u64::try_from(duration.as_millis()).unwrap_or(u64::MAX),
         Err(_) => 0,
     }
 }

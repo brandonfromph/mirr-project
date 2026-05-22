@@ -25,7 +25,7 @@ use format::*;
 pub fn encode(instr: &RspuInstruction) -> Result<EncodedInstruction, MirrError> {
     let word = match instr {
         RspuInstruction::TagBranch { tag_value, target_pc } => {
-            let imm = ((*target_pc as u32) << 8) | (*tag_value as u32);
+            let imm = (*target_pc << 8) | (*tag_value as u32);
             pack_s_type(OP_TAG_BRANCH, imm)
         }
         // I-type

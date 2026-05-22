@@ -15,7 +15,10 @@ pub struct NativeEmbeddingProvider {
 
 impl NativeEmbeddingProvider {
     pub fn new(model_path: &str, tokenizer_path: &str) -> Result<Self> {
+        #[cfg(target_os = "macos")]
         let device = Device::new_metal(0).unwrap_or(Device::Cpu);
+        #[cfg(not(target_os = "macos"))]
+        let device = Device::Cpu;
 
         // Load tokenizer
         let tokenizer = Tokenizer::from_file(tokenizer_path)
