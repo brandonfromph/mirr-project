@@ -22,49 +22,31 @@ def alu_core(
             for 1 cycles;
         }
 
-        guard is_add {
-            when ${clk} && ${instr} == isa::ADD
-            for 1 cycles;
-        }
-
-        guard is_sub {
-            when ${clk} && ${instr} == isa::SUB
-            for 1 cycles;
-        }
-
-        guard is_mov {
-            when ${clk} && ${instr} == isa::MOV
-            for 1 cycles;
-        }
-
         // --- Formal Verification Invariants ---
         property no_alu_overflow {
             always (result < 131072);
         }
 
-        property exclusive_dispatch {
-            always (!(is_add && is_sub));
-        }
-
-        // --- Dispatcher reflexes ---
-        reflex do_add {
-            on is_add {
-                result = ${data_in} + ${addr};
-                ${data_out} = result;
-            }
-        }
-
-        reflex do_sub {
-            on is_sub {
-                result = ${data_in} - ${addr};
-                ${data_out} = result;
-            }
-        }
-
-        reflex do_mov {
-            on is_mov {
-                result = ${data_in};
-                ${data_out} = result;
+        // --- Upgraded Dispatcher reflex using Rust-like let and match syntax ---
+        reflex alu_execution {
+            on dispatch {
+                match instr {
+                    isa::ADD => {
+                        let add_res: u17 = data_in + addr;
+                        result = add_res;
+                        data_out = result;
+                    }
+                    isa::SUB => {
+                        let sub_res: u17 = data_in - addr;
+                        result = sub_res;
+                        data_out = result;
+                    }
+                    _ => {
+                        let mov_res: u17 = data_in;
+                        result = mov_res;
+                        data_out = result;
+                    }
+                }
             }
         }
     }

@@ -95,3 +95,111 @@ module debug_mod {
     println!("--- PROPERTY AFTER REFLEX EXPANDED ---\n{}\n--- END ---", expanded);
     let _program = parse_mirr(&expanded).expect("Property after reflex should work");
 }
+
+#[test]
+fn test_let_binding_expansion() {
+    let source = r#"
+module let_binding_test {
+    signals {
+        clk: in bool;
+        data_out: out u16;
+    }
+    
+    reflex r1 {
+        if clk {
+            let tmp: u16 = 42;
+            data_out = tmp;
+        }
+    }
+}
+"#;
+    let expanded = expand_macros(source);
+    println!("--- LET BINDING EXPANDED ---\n{}\n--- END ---", expanded);
+    
+    assert!(expanded.contains("signal tmp: internal u16;"));
+    assert!(expanded.contains("tmp = 42;"));
+    
+    let program = parse_mirr(&expanded).expect("Let binding expansion should parse successfully");
+    assert_eq!(program.module.signals.len(), 3);
+}
+
+#[test]
+fn test_match_expression_expansion() {
+    let source = r#"
+module match_test {
+    signals {
+        state: in u8;
+        data_out: out u16;
+    }
+    
+    reflex r1 {
+        match state {
+            0 => {
+                data_out = 100;
+            }
+            1 => {
+                data_out = 200;
+            }
+            _ => {
+                data_out = 0;
+            }
+        }
+    }
+}
+"#;
+    let expanded = expand_macros(source);
+    println!("--- MATCH EXPANDED ---\n{}\n--- END ---", expanded);
+    
+    assert!(expanded.contains("on state == 0"));
+    assert!(expanded.contains("on state == 1"));
+    assert!(expanded.contains("on always"));
+    
+    let program = parse_mirr(&expanded).expect("Match expansion should parse successfully");
+    assert!(!program.module.reflexes.is_empty());
+}
+
+#[test]
+fn test_crossbar_match_expansion() {
+    let source = r#"
+module crossbar {
+    signals {
+        select_port: in u16;
+        data_in_0: in u16;
+        data_out_0: out u17;
+    }
+
+    reflex route {
+        match select_port {
+            0 => {
+                data_out_0 = data_in_0;
+            }
+            _ => {
+                data_out_0 = 0;
+            }
+        }
+    }
+}
+"#;
+    let expanded = expand_macros(source);
+    println!("--- CROSSBAR EXPANDED ---\n{}\n--- END ---", expanded);
+    let _program = parse_mirr(&expanded).expect("Crossbar expansion should parse successfully");
+}
+
+#[test]
+fn test_temp_route_let() {
+    let source = r#"
+module crossbar {
+    reflex route {
+        on always_on {
+            // Demonstrate ergonomic let signal assignment inline
+            let temp_route_0: u16 = data_in_0;
+        }
+    }
+}
+"#;
+    let expanded = expand_macros(source);
+    println!("--- TEMP_ROUTE EXPANDED ---\n{}\n--- END ---", expanded);
+}
+
+
+

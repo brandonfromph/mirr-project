@@ -13,13 +13,40 @@ enum ParserState {
     InReflex,
 }
 
+#[derive(Debug, Clone)]
+struct MatchArm {
+    pattern: String,
+    body: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+enum MatchParserState {
+    Normal,
+    CollectingMatch {
+        expr: String,
+        arms: Vec<MatchArm>,
+        current_pattern: Option<String>,
+        current_body: Vec<String>,
+        brace_depth: i32,
+    },
+}
+
 pub fn expand_macros(source: &str) -> String {
+    // Pass 1: Parse and preprocess match blocks into standard if/else if/else structures
+    let matched_source = preprocess_match_blocks(source);
+
+    // Pass 2: Parse and extract local let-bindings into top-level signals
+    let (let_source, decls) = preprocess_let_bindings(&matched_source);
+
+    // Pass 3: Inject the collected signal declarations at the top of the module
+    let preprocessed = inject_declarations(&let_source, &decls);
+
     let mut result = String::new();
     let mut state = ParserState::TopLevel;
     let mut in_on_block = false;
     let mut reflex_depth = 0;
 
-    for line in source.lines() {
+    for line in preprocessed.lines() {
         let trimmed = line.trim();
 
         if trimmed.is_empty() || trimmed.starts_with("//") {
@@ -284,4 +311,215 @@ fn expand_guard_assignment(line: &str) -> Option<String> {
     } else {
         Some(format!("guard {} {{\n  when {}\n  for 1 cycles\n}}", target, after_when))
     }
+}
+
+// --- NEW RUST-LIKE ERGONOMIC SYNTAX SUGAR PREPROCESSORS ---
+
+fn count_braces_in_line(line: &str) -> i32 {
+    let mut count = 0;
+    for c in line.chars() {
+        if c == '{' {
+            count += 1;
+        } else if c == '}' {
+            count -= 1;
+        }
+    }
+    count
+}
+
+fn generate_if_else(expr: &str, arms: &[MatchArm]) -> String {
+    let mut out = String::new();
+    for (i, arm) in arms.iter().enumerate() {
+        let is_default = arm.pattern == "_" || arm.pattern == "default";
+        if i == 0 {
+            if is_default {
+                out.push_str("{\n");
+            } else {
+                out.push_str(&format!("if {} == {} {{\n", expr, arm.pattern));
+            }
+        } else if is_default {
+            out.push_str("} else {\n");
+        } else {
+            out.push_str(&format!("}} else if {} == {} {{\n", expr, arm.pattern));
+        }
+        for line in &arm.body {
+            out.push_str("    ");
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    out.push_str("}\n");
+    out
+}
+
+fn preprocess_match_blocks(source: &str) -> String {
+    let mut result = String::new();
+    let mut state = MatchParserState::Normal;
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("//") {
+            result.push_str(line);
+            result.push('\n');
+            continue;
+        }
+
+        match state {
+            MatchParserState::Normal => {
+                if trimmed.starts_with("match ") && trimmed.contains('{') {
+                    let expr = trimmed
+                        .strip_prefix("match ")
+                        .unwrap()
+                        .split_once('{')
+                        .unwrap()
+                        .0
+                        .trim()
+                        .to_string();
+                    state = MatchParserState::CollectingMatch {
+                        expr,
+                        arms: Vec::new(),
+                        current_pattern: None,
+                        current_body: Vec::new(),
+                        brace_depth: 0,
+                    };
+                } else {
+                    result.push_str(line);
+                    result.push('\n');
+                }
+            }
+            MatchParserState::CollectingMatch {
+                ref expr,
+                ref mut arms,
+                ref mut current_pattern,
+                ref mut current_body,
+                ref mut brace_depth,
+            } => {
+                if current_pattern.is_none() {
+                    if trimmed == "}" {
+                        // End of match block
+                        let expanded = generate_if_else(expr, arms);
+                        result.push_str(&expanded);
+                        state = MatchParserState::Normal;
+                    } else if trimmed.contains("=>") {
+                        let (pat, rest) = trimmed.split_once("=>").unwrap();
+                        let pat = pat.trim().to_string();
+                        let rest = rest.trim();
+                        *current_pattern = Some(pat);
+                        current_body.clear();
+                        *brace_depth = 0;
+                        if rest.contains('{') {
+                            *brace_depth += count_braces_in_line(rest);
+                            let body_part = rest.trim_start_matches('{').trim();
+                            if !body_part.is_empty() {
+                                current_body.push(body_part.to_string());
+                            }
+                        } else {
+                            current_body.push(rest.to_string());
+                            // Single line case without braces
+                            arms.push(MatchArm {
+                                pattern: current_pattern.take().unwrap(),
+                                body: current_body.clone(),
+                            });
+                        }
+                    }
+                } else {
+                    let delta = count_braces_in_line(trimmed);
+                    *brace_depth += delta;
+                    if *brace_depth <= 0 {
+                        // Arm closed
+                        let mut body_line = trimmed.to_string();
+                        if body_line.ends_with('}') {
+                            body_line.pop();
+                        }
+                        let body_line = body_line.trim();
+                        if !body_line.is_empty() {
+                            current_body.push(body_line.to_string());
+                        }
+                        arms.push(MatchArm {
+                            pattern: current_pattern.take().unwrap(),
+                            body: current_body.clone(),
+                        });
+                    } else {
+                        current_body.push(trimmed.to_string());
+                    }
+                }
+            }
+        }
+    }
+    result
+}
+
+fn parse_let_binding(line: &str) -> Option<(String, String, String)> {
+    let trimmed = line.trim().trim_end_matches(';');
+    if !trimmed.starts_with("let ") {
+        return None;
+    }
+    let content = trimmed.strip_prefix("let ")?.trim();
+    // Split by '=' first to get LHS and RHS
+    let (lhs, rhs) = content.split_once('=')?;
+    let lhs = lhs.trim();
+    let rhs = rhs.trim();
+    
+    // LHS should contain ':' for type annotation
+    let (name, ty) = lhs.split_once(':')?;
+    let name = name.trim();
+    let ty = ty.trim();
+    
+    // Validate name is a valid identifier
+    if !name.is_empty() && name.chars().next()?.is_alphabetic() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        Some((name.to_string(), ty.to_string(), rhs.to_string()))
+    } else {
+        None
+    }
+}
+
+fn preprocess_let_bindings(source: &str) -> (String, Vec<String>) {
+    let mut result = String::new();
+    let mut decls = Vec::new();
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("//") {
+            result.push_str(line);
+            result.push('\n');
+            continue;
+        }
+
+        if let Some((name, ty, expr)) = parse_let_binding(trimmed) {
+            let decl = format!("signal {}: internal {};", name, ty);
+            if !decls.contains(&decl) {
+                decls.push(decl);
+            }
+            // Retain the indentation of the original line
+            let indent = line.len() - line.trim_start().len();
+            let indent_str = " ".repeat(indent);
+            result.push_str(&format!("{}{} = {};\n", indent_str, name, expr));
+        } else {
+            result.push_str(line);
+            result.push('\n');
+        }
+    }
+
+    (result, decls)
+}
+
+fn inject_declarations(source: &str, decls: &[String]) -> String {
+    if decls.is_empty() {
+        return source.to_string();
+    }
+    let mut out = String::new();
+    let mut injected = false;
+    for line in source.lines() {
+        out.push_str(line);
+        out.push('\n');
+        if !injected && ((line.trim().starts_with("module ") && line.contains('{')) || line.trim().starts_with("reflect {")) {
+            for decl in decls {
+                out.push_str("    ");
+                out.push_str(decl);
+                out.push('\n');
+            }
+            injected = true;
+        }
+    }
+    out
 }
