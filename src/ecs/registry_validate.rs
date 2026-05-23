@@ -25,6 +25,16 @@ impl super::Registry {
         if self.temporal_nodes.len() < max_id {
             return Err(anyhow::anyhow!("TemporalNodes table desync"));
         }
+        if self.array_literals.len() < max_id {
+            return Err(anyhow::anyhow!("ArrayLiterals table desync"));
+        }
+        if self.struct_literals.len() < max_id {
+            return Err(anyhow::anyhow!("StructLiterals table desync"));
+        }
+        if self.unfold_indices.len() < max_id {
+            return Err(anyhow::anyhow!("UnfoldIndices table desync"));
+        }
+
 
         // Scan for orphaned entities (Entities that exist in next_id but have no components)
         for i in 0..max_id {

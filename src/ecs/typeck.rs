@@ -92,6 +92,8 @@ impl Registry {
             CombineUnary(UnaryOp),
             CombineArrayIndex,
             CombineFieldAccess(String),
+            CombineArrayLiteral(usize),
+            CombineStructLiteral { name: String, field_names: Vec<String> },
         }
 
         let mut stack = vec![Work::Visit(root_ent)];
@@ -119,7 +121,7 @@ impl Registry {
                                     sig_ent.0
                                 ),
                                 span: None,
-                            })?;
+                             })?;
                         results.push(ty);
                     } else if let Some(BinaryComponent { op, left, right }) = self.binary_ops[idx] {
                         stack.push(Work::CombineBinary(op));
@@ -152,6 +154,19 @@ impl Registry {
                                 span: None,
                             })?;
                         results.push(ty);
+                    } else if let Some(ArrayLiteralComponent(elems)) = &self.array_literals[idx] {
+                        stack.push(Work::CombineArrayLiteral(elems.len()));
+                        for elem in elems.iter().rev() {
+                            stack.push(Work::Visit(*elem));
+                        }
+                    } else if let Some(StructLiteralComponent { name, fields }) = &self.struct_literals[idx] {
+                        let field_names: Vec<String> = fields.iter().map(|(n, _)| n.clone()).collect();
+                        stack.push(Work::CombineStructLiteral { name: name.clone(), field_names });
+                        for (_, f_ent) in fields.iter().rev() {
+                            stack.push(Work::Visit(*f_ent));
+                        }
+                    } else if let Some(UnfoldIndexComponent(_)) = &self.unfold_indices[idx] {
+                        results.push(SignalType::Unsigned(32));
                     } else {
                         results.push(SignalType::Bool);
                     }
@@ -181,7 +196,7 @@ impl Registry {
                                     _ => (1, false),
                                 };
                                 if s1 != s2 {
-                                    SignalType::Bool // Mixed signedness error, but keeping it simple for now
+                                    SignalType::Bool // Mixed signedness error
                                 } else if s1 {
                                     SignalType::Signed(w1.max(w2))
                                 } else {
@@ -258,6 +273,56 @@ impl Registry {
                             _ => SignalType::Bool,
                         },
                     });
+                }
+                Work::CombineArrayLiteral(len) => {
+                    if len == 0 {
+                        results.push(SignalType::Array {
+                            element: Box::new(SignalType::Unsigned(1)),
+                            length: 0,
+                        });
+                    } else {
+                        let mut elem_types = Vec::with_capacity(len);
+                        for _ in 0..len {
+                            let ty = results.pop().ok_or_else(|| {
+                                MirrError::InternalError("Type stack underflow (array literal)".to_string())
+                            })?;
+                            elem_types.push(ty);
+                        }
+                        elem_types.reverse();
+
+                        let mut element_ty = elem_types[0].clone();
+                        for elem_ty in elem_types.iter().skip(1) {
+                            if element_ty != *elem_ty {
+                                if self.types_compatible(&element_ty, elem_ty) {
+                                    // Target type is wider, keep it
+                                } else if self.types_compatible(elem_ty, &element_ty) {
+                                    element_ty = elem_ty.clone();
+                                }
+                            }
+                        }
+
+                        results.push(SignalType::Array {
+                            element: Box::new(element_ty),
+                            length: len as u64,
+                        });
+                    }
+                }
+                Work::CombineStructLiteral { name, field_names } => {
+                    let len = field_names.len();
+                    let mut field_types = Vec::with_capacity(len);
+                    for _ in 0..len {
+                        let ty = results.pop().ok_or_else(|| {
+                            MirrError::InternalError("Type stack underflow (struct literal)".to_string())
+                        })?;
+                        field_types.push(ty);
+                    }
+                    field_types.reverse();
+
+                    let mut fields = Vec::with_capacity(len);
+                    for (f_name, f_ty) in field_names.into_iter().zip(field_types) {
+                        fields.push((f_name, f_ty));
+                    }
+                    results.push(SignalType::Struct { name, fields });
                 }
             }
         }

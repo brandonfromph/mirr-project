@@ -259,5 +259,89 @@ mod tests {
         // assert!(reg.typecheck().is_err());
     }
 
+    #[test]
+    fn test_unit_array_literal_roundtrip_and_type_inference() {
+        let mut reg = Registry::new();
+        let expr = Expr::ArrayLiteral(vec![
+            Expr::Literal(LiteralValue::Integer(10)),
+            Expr::Literal(LiteralValue::Integer(20)),
+        ]);
+        let ent = reg.ingest_expr(&expr).expect("Ingestion failed");
+
+        // 1. Verify it was correctly stored in the flat SoA array_literals component table
+        assert!(reg.array_literals[ent.0 as usize].is_some());
+        let array_comp = reg.array_literals[ent.0 as usize].as_ref().unwrap();
+        assert_eq!(array_comp.0.len(), 2);
+
+        // 2. Verify reification (reconstruction back to tree AST)
+        let reified = reg.reify_expr(ent).expect("Reification failed");
+        assert_eq!(expr, reified);
+
+        // 3. Verify type checking / inference
+        let ty = reg.infer_type(ent).expect("Type inference failed");
+        assert!(matches!(ty, SignalType::Array { .. }));
+        if let SignalType::Array { element, length } = ty {
+            assert_eq!(length, 2);
+            assert_eq!(*element, SignalType::Unsigned(5)); // min_bits for 20 is 5
+        }
+    }
+
+    #[test]
+    fn test_unit_struct_literal_roundtrip_and_type_inference() {
+        let mut reg = Registry::new();
+        let expr = Expr::StructLiteral {
+            name: "Coord".to_string(),
+            fields: vec![
+                ("x".to_string(), Expr::Literal(LiteralValue::Integer(5))),
+                ("y".to_string(), Expr::Literal(LiteralValue::Bool(true))),
+            ],
+        };
+        let ent = reg.ingest_expr(&expr).expect("Ingestion failed");
+
+        // 1. Verify SoA storage
+        assert!(reg.struct_literals[ent.0 as usize].is_some());
+        let struct_comp = reg.struct_literals[ent.0 as usize].as_ref().unwrap();
+        assert_eq!(struct_comp.name, "Coord");
+        assert_eq!(struct_comp.fields.len(), 2);
+        assert_eq!(struct_comp.fields[0].0, "x");
+        assert_eq!(struct_comp.fields[1].0, "y");
+
+        // 2. Verify roundtrip reification
+        let reified = reg.reify_expr(ent).expect("Reification failed");
+        assert_eq!(expr, reified);
+
+        // 3. Verify type checking / inference
+        let ty = reg.infer_type(ent).expect("Type inference failed");
+        assert!(matches!(ty, SignalType::Struct { .. }));
+        if let SignalType::Struct { name, fields } = ty {
+            assert_eq!(name, "Coord");
+            assert_eq!(fields.len(), 2);
+            assert_eq!(fields[0].0, "x");
+            assert_eq!(fields[0].1, SignalType::Unsigned(3)); // min bits for 5 is 3
+            assert_eq!(fields[1].0, "y");
+            assert_eq!(fields[1].1, SignalType::Bool);
+        }
+    }
+
+    #[test]
+    fn test_unit_unfold_index_roundtrip_and_type_inference() {
+        let mut reg = Registry::new();
+        let expr = Expr::UnfoldIndex("i".to_string());
+        let ent = reg.ingest_expr(&expr).expect("Ingestion failed");
+
+        // 1. Verify SoA storage
+        assert!(reg.unfold_indices[ent.0 as usize].is_some());
+        let unfold_comp = reg.unfold_indices[ent.0 as usize].as_ref().unwrap();
+        assert_eq!(unfold_comp.0, "i");
+
+        // 2. Verify roundtrip reification
+        let reified = reg.reify_expr(ent).expect("Reification failed");
+        assert_eq!(expr, reified);
+
+        // 3. Verify type checking / inference
+        let ty = reg.infer_type(ent).expect("Type inference failed");
+        assert_eq!(ty, SignalType::Unsigned(32)); // UnfoldIndex infers as u32
+    }
+
     // (Remaining QA tests would involve more complex expression trees and edge cases)
 }

@@ -33,6 +33,10 @@ pub struct Registry {
     pub signal_refs: Vec<Option<SignalRefComponent>>,
     pub array_indices: Vec<Option<ArrayIndexComponent>>,
     pub field_accesses: Vec<Option<FieldAccessComponent>>,
+    pub array_literals: Vec<Option<ArrayLiteralComponent>>,
+    pub struct_literals: Vec<Option<StructLiteralComponent>>,
+    pub unfold_indices: Vec<Option<UnfoldIndexComponent>>,
+
 
     // Knowledge Base Component Tables (Phase 2)
     pub vectors: Vec<Option<VectorComponent>>,
@@ -100,7 +104,11 @@ impl Registry {
             temporal_nodes: vec![None; cap],
             array_indices: vec![None; cap],
             field_accesses: vec![None; cap],
+            array_literals: vec![None; cap],
+            struct_literals: vec![None; cap],
+            unfold_indices: vec![None; cap],
             symbol_to_entity: HashMap::with_capacity(cap),
+
         }
     }
 
@@ -143,7 +151,11 @@ impl Registry {
             self.temporal_nodes.resize(new_cap, None);
             self.array_indices.resize(new_cap, None);
             self.field_accesses.resize(new_cap, None);
+            self.array_literals.resize(new_cap, None);
+            self.struct_literals.resize(new_cap, None);
+            self.unfold_indices.resize(new_cap, None);
         }
+
 
         id
     }
@@ -379,6 +391,8 @@ impl Registry {
             FinishPrev(u64),
             FinishArrayIndex,
             FinishFieldAccess(String),
+            FinishArrayLiteral(usize),
+            FinishStructLiteral { name: String, field_names: Vec<String> },
         }
 
         let mut stack = vec![Work::Process(expr.clone())];
@@ -421,11 +435,23 @@ impl Registry {
                         stack.push(Work::FinishFieldAccess(field));
                         stack.push(Work::Process(*object));
                     }
-                    _ => {
-                        return Err(MirrError::InternalError(format!(
-                            "Unsupported expression variant in ingestion: {:?}",
-                            e
-                        )));
+                    Expr::ArrayLiteral(elems) => {
+                        stack.push(Work::FinishArrayLiteral(elems.len()));
+                        for elem in elems.iter().rev() {
+                            stack.push(Work::Process(elem.clone()));
+                        }
+                    }
+                    Expr::StructLiteral { name, fields } => {
+                        let field_names: Vec<String> = fields.iter().map(|(f, _)| f.clone()).collect();
+                        stack.push(Work::FinishStructLiteral { name: name.clone(), field_names });
+                        for (_, f_expr) in fields.iter().rev() {
+                            stack.push(Work::Process(f_expr.clone()));
+                        }
+                    }
+                    Expr::UnfoldIndex(idx) => {
+                        let id = self.next_id();
+                        self.unfold_indices[id.0 as usize] = Some(UnfoldIndexComponent(idx));
+                        results.push(id);
                     }
                 },
                 Work::FinishBinary(op) => {
@@ -483,6 +509,39 @@ impl Registry {
                         Some(FieldAccessComponent { object, field });
                     results.push(id);
                 }
+                Work::FinishArrayLiteral(len) => {
+                    let mut elems = Vec::with_capacity(len);
+                    for _ in 0..len {
+                        let elem = results.pop().ok_or_else(|| {
+                            MirrError::InternalError("Result stack underflow (array literal)".to_string())
+                        })?;
+                        elems.push(elem);
+                    }
+                    elems.reverse();
+                    let id = self.next_id();
+                    self.array_literals[id.0 as usize] = Some(ArrayLiteralComponent(elems));
+                    results.push(id);
+                }
+                Work::FinishStructLiteral { name, field_names } => {
+                    let len = field_names.len();
+                    let mut field_ids = Vec::with_capacity(len);
+                    for _ in 0..len {
+                        let id = results.pop().ok_or_else(|| {
+                            MirrError::InternalError("Result stack underflow (struct literal)".to_string())
+                        })?;
+                        field_ids.push(id);
+                    }
+                    field_ids.reverse();
+
+                    let mut fields = Vec::with_capacity(len);
+                    for (f_name, f_id) in field_names.into_iter().zip(field_ids) {
+                        fields.push((f_name, f_id));
+                    }
+
+                    let id = self.next_id();
+                    self.struct_literals[id.0 as usize] = Some(StructLiteralComponent { name, fields });
+                    results.push(id);
+                }
             }
         }
 
@@ -497,6 +556,8 @@ impl Registry {
             Process(EntityId),
             FinishBinary(BinaryOp),
             FinishUnary(UnaryOp),
+            FinishArrayLiteral(usize),
+            FinishStructLiteral { name: String, field_names: Vec<String> },
         }
 
         let mut stack = vec![Work::Process(root_id)];
@@ -553,6 +614,19 @@ impl Registry {
                             object: Box::new(object_expr),
                             field: field.clone(),
                         });
+                    } else if let Some(ArrayLiteralComponent(elems)) = &self.array_literals[idx] {
+                        stack.push(Work::FinishArrayLiteral(elems.len()));
+                        for elem in elems.iter().rev() {
+                            stack.push(Work::Process(*elem));
+                        }
+                    } else if let Some(StructLiteralComponent { name, fields }) = &self.struct_literals[idx] {
+                        let field_names: Vec<String> = fields.iter().map(|(n, _)| n.clone()).collect();
+                        stack.push(Work::FinishStructLiteral { name: name.clone(), field_names });
+                        for (_, f_expr) in fields.iter().rev() {
+                            stack.push(Work::Process(*f_expr));
+                        }
+                    } else if let Some(UnfoldIndexComponent(idx_val)) = &self.unfold_indices[idx] {
+                        results.push(Expr::UnfoldIndex(idx_val.clone()));
                     } else {
                         return Err(MirrError::InternalError(format!(
                             "Entity {} is not an expression",
@@ -574,6 +648,34 @@ impl Registry {
                         MirrError::InternalError("Reify stack underflow (operand)".to_string())
                     })?;
                     results.push(Expr::Unary { op, operand: Box::new(operand) });
+                }
+                Work::FinishArrayLiteral(len) => {
+                    let mut elems = Vec::with_capacity(len);
+                    for _ in 0..len {
+                        let elem = results.pop().ok_or_else(|| {
+                            MirrError::InternalError("Reify stack underflow (array literal)".to_string())
+                        })?;
+                        elems.push(elem);
+                    }
+                    elems.reverse();
+                    results.push(Expr::ArrayLiteral(elems));
+                }
+                Work::FinishStructLiteral { name, field_names } => {
+                    let len = field_names.len();
+                    let mut field_exprs = Vec::with_capacity(len);
+                    for _ in 0..len {
+                        let expr = results.pop().ok_or_else(|| {
+                            MirrError::InternalError("Reify stack underflow (struct literal)".to_string())
+                        })?;
+                        field_exprs.push(expr);
+                    }
+                    field_exprs.reverse();
+
+                    let mut fields = Vec::with_capacity(len);
+                    for (f_name, f_expr) in field_names.into_iter().zip(field_exprs) {
+                        fields.push((f_name, f_expr));
+                    }
+                    results.push(Expr::StructLiteral { name, fields });
                 }
             }
         }

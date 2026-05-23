@@ -124,6 +124,19 @@ pub struct FieldAccessComponent {
     pub field: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArrayLiteralComponent(pub Vec<EntityId>);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructLiteralComponent {
+    pub name: String,
+    pub fields: Vec<(String, EntityId)>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UnfoldIndexComponent(pub String);
+
+
 /// Component: Source code span for diagnostic tracing.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SpanComponent(pub crate::span::Span);
