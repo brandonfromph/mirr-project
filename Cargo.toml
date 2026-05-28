@@ -110,3 +110,35 @@ getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] 
 mirr-kb-native = { path = "crates/mirr-kb-native", version = "0.1.0" }
 rusqlite = { version = "0.39.0", features = ["bundled"] }
 tokio = { version = "1", features = ["time", "sync", "rt", "macros", "full"] }
+
+[[test]]
+name = "cycles_tests"
+path = "tests/expand/cycles_tests.rs"
+
+[[test]]
+name = "substitution_tests"
+path = "tests/expand/substitution_tests.rs"
+
+[[test]]
+name = "renaming_tests"
+path = "tests/expand/renaming_tests.rs"
+
+[[test]]
+name = "scoping_tests"
+path = "tests/expand/scoping_tests.rs"
+
+[[test]]
+name = "registry_core_tests"
+path = "tests/ecs/registry_core_tests.rs"
+
+[[test]]
+name = "hydration_tests"
+path = "tests/ecs/hydration_tests.rs"
+
+[[test]]
+name = "systems_execution_tests"
+path = "tests/ecs/systems_execution_tests.rs"
+
+[[test]]
+name = "temporal_synthesis_tests"
+path = "tests/ecs/temporal_synthesis_tests.rs"

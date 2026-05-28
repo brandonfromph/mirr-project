@@ -114,8 +114,11 @@ impl ModuleSymbols {
     pub fn add_symbol(&mut self, symbol: SymbolInfo) -> Result<(), MirrError> {
         if self.symbols.len() >= MAX_SYMBOLS_PER_MODULE {
             return Err(MirrError::SymbolError {
-                message: format!("{} Module '{}' exceeds maximum symbol count ({}).", crate::error_codes::ec(901),
-                    self.name, MAX_SYMBOLS_PER_MODULE
+                message: format!(
+                    "{} Module '{}' exceeds maximum symbol count ({}).",
+                    crate::error_codes::ec(901),
+                    self.name,
+                    MAX_SYMBOLS_PER_MODULE
                 ),
                 span: symbol.span,
             });
@@ -123,8 +126,11 @@ impl ModuleSymbols {
 
         if self.symbols.contains_key(&symbol.name) {
             return Err(MirrError::SymbolError {
-                message: format!("{} Symbol '{}' is already defined in module '{}'.", crate::error_codes::ec(902),
-                    symbol.name, self.name
+                message: format!(
+                    "{} Symbol '{}' is already defined in module '{}'.",
+                    crate::error_codes::ec(902),
+                    symbol.name,
+                    self.name
                 ),
                 span: symbol.span,
             });
@@ -143,8 +149,11 @@ impl ModuleSymbols {
     pub fn add_import(&mut self, import: ImportDecl) -> Result<(), MirrError> {
         if self.imports.len() >= MAX_IMPORT_ALIASES {
             return Err(MirrError::SymbolError {
-                message: format!("{} Module '{}' exceeds maximum import count ({}).", crate::error_codes::ec(903),
-                    self.name, MAX_IMPORT_ALIASES
+                message: format!(
+                    "{} Module '{}' exceeds maximum import count ({}).",
+                    crate::error_codes::ec(903),
+                    self.name,
+                    MAX_IMPORT_ALIASES
                 ),
                 span: import.span,
             });
@@ -154,8 +163,11 @@ impl ModuleSymbols {
         for existing in &self.imports {
             if existing.alias == import.alias {
                 return Err(MirrError::SymbolError {
-                    message: format!("{} Import alias '{}' is already defined in module '{}'.", crate::error_codes::ec(904),
-                        import.alias, self.name
+                    message: format!(
+                        "{} Import alias '{}' is already defined in module '{}'.",
+                        crate::error_codes::ec(904),
+                        import.alias,
+                        self.name
                     ),
                     span: import.span,
                 });
@@ -203,7 +215,9 @@ impl SymbolTable {
     pub fn add_module(&mut self, module_symbols: ModuleSymbols) -> Result<(), MirrError> {
         if self.modules.len() >= MAX_MODULES {
             return Err(MirrError::SymbolError {
-                message: format!("{} Symbol table exceeds maximum module count ({}).", crate::error_codes::ec(905),
+                message: format!(
+                    "{} Symbol table exceeds maximum module count ({}).",
+                    crate::error_codes::ec(905),
                     MAX_MODULES
                 ),
                 span: None,
@@ -245,7 +259,10 @@ impl SymbolTable {
     ) -> Result<&SymbolInfo, MirrError> {
         // Get the current module's import scope.
         let current = self.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} No current module set for symbol resolution.", crate::error_codes::ec(906)),
+            message: format!(
+                "{} No current module set for symbol resolution.",
+                crate::error_codes::ec(906)
+            ),
             span: None,
         })?;
 
@@ -254,15 +271,20 @@ impl SymbolTable {
         // Resolve the alias to a module path.
         let target_path =
             import_scope.resolve_alias(alias).ok_or_else(|| MirrError::SymbolError {
-                message: format!("{} Unknown import alias '{}' in module '{}'.", crate::error_codes::ec(907),
-                    alias, current.name
+                message: format!(
+                    "{} Unknown import alias '{}' in module '{}'.",
+                    crate::error_codes::ec(907),
+                    alias,
+                    current.name
                 ),
                 span: None,
             })?;
 
         // Get the target module.
         let target_module = self.get_module(target_path).ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} Imported module '{}' (alias '{}') not found in symbol table.", crate::error_codes::ec(908),
+            message: format!(
+                "{} Imported module '{}' (alias '{}') not found in symbol table.",
+                crate::error_codes::ec(908),
                 target_path.display(),
                 alias
             ),
@@ -271,8 +293,12 @@ impl SymbolTable {
 
         // Look up the symbol in the target module.
         target_module.get_symbol(symbol_name).ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} Symbol '{}' not found in imported module '{}' (alias '{}').", crate::error_codes::ec(909),
-                symbol_name, target_module.name, alias
+            message: format!(
+                "{} Symbol '{}' not found in imported module '{}' (alias '{}').",
+                crate::error_codes::ec(909),
+                symbol_name,
+                target_module.name,
+                alias
             ),
             span: None,
         })
@@ -281,13 +307,19 @@ impl SymbolTable {
     /// Resolve an unqualified symbol name in the current module.
     pub fn resolve_local(&self, symbol_name: &str) -> Result<&SymbolInfo, MirrError> {
         let current = self.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} No current module set for symbol resolution.", crate::error_codes::ec(906)),
+            message: format!(
+                "{} No current module set for symbol resolution.",
+                crate::error_codes::ec(906)
+            ),
             span: None,
         })?;
 
         current.get_symbol(symbol_name).ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} Symbol '{}' not found in current module '{}'.", crate::error_codes::ec(910),
-                symbol_name, current.name
+            message: format!(
+                "{} Symbol '{}' not found in current module '{}'.",
+                crate::error_codes::ec(910),
+                symbol_name,
+                current.name
             ),
             span: None,
         })

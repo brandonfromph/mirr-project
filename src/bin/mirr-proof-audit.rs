@@ -98,7 +98,13 @@ fn main() -> Result<()> {
 }
 
 fn normalize_name(name: &str) -> String {
-    name.to_lowercase().replace("_", "")
+    let mut normalized = name.to_lowercase().replace("_", "");
+    for suffix in &["ok", "valid", "proof"] {
+        if normalized.ends_with(suffix) && normalized.len() > suffix.len() {
+            normalized = normalized[..normalized.len() - suffix.len()].to_string();
+        }
+    }
+    normalized
 }
 
 fn collect_rust_symbols(
@@ -110,8 +116,17 @@ fn collect_rust_symbols(
     let mut symbols = Vec::new();
     let re = Regex::new(r"^\s*(?:pub\s+)?(?:struct|enum)\s+([A-Z][a-zA-Z0-9_]*)").unwrap();
 
+    let mut scanned = HashSet::new();
+
     for dir in &[ast_dir, emit_dir, mape_k_dir, cert_dir] {
         if !dir.exists() {
+            continue;
+        }
+        let canonical = match dir.canonicalize() {
+            Ok(p) => p,
+            Err(_) => dir.to_path_buf(),
+        };
+        if !scanned.insert(canonical) {
             continue;
         }
         for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
