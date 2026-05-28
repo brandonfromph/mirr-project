@@ -35,3 +35,27 @@ bootstrap:
 # Check bootstrap parity without rebuilding
 bootstrap-check:
 	cargo test bootstrap_parity --release -- --nocapture
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CONTAINER DEV TARGETS
+# ══════════════════════════════════════════════════════════════════════════════
+
+.PHONY: dev-build dev-shell dev-test dev-proofs
+
+dev-build:
+	docker compose build dev
+
+dev-shell:
+	docker compose run --rm dev bash
+
+dev-test:
+	docker compose run --rm dev cargo nextest run --workspace --no-fail-fast --test-threads 12
+
+dev-proofs:
+	docker compose run --rm proofs make -C width && \
+	docker compose run --rm proofs make -C language && \
+	docker compose run --rm proofs make -C rspu && \
+	docker compose run --rm proofs make -C compiler && \
+	docker compose run --rm proofs make -C mape_k && \
+	docker compose run --rm proofs make -C cert
+

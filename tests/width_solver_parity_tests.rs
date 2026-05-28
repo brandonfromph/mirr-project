@@ -167,7 +167,7 @@ fn test_parity_unresolved_signal_emits_error() {
 
     let result = solve(&nodes, &constraints);
 
-    assert!(result.diagnostics.len() > 0);
+    assert!(!result.diagnostics.is_empty());
     let error_codes: Vec<String> =
         result.diagnostics.iter().map(|d| d.code.clone().unwrap_or_default()).collect();
     assert!(error_codes.contains(&"E503".to_string()));
@@ -188,7 +188,7 @@ fn test_parity_bit_width_capping() {
     let result = solve(&nodes, &constraints);
 
     // Capped at 64 bits or reports overflow diagnostic E504
-    assert!(result.diagnostics.len() > 0);
+    assert!(!result.diagnostics.is_empty());
     let error_codes: Vec<String> =
         result.diagnostics.iter().map(|d| d.code.clone().unwrap_or_default()).collect();
     assert!(error_codes.contains(&"E504".to_string()));

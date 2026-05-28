@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![allow(clippy::match_like_matches_macro)]
 //! Regression tests for R-SPU guard conjunction and register tag casting.
 
 use nasa_rust_project::emit::rspu_isa::*;

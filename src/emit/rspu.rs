@@ -413,12 +413,10 @@ fn emit_reflex(
 
         if let Some(acc) = acc_reg {
             // Check if the assigned value is a literal boolean `true`
-            let is_bool_true = match &assignment.value {
-                crate::ast::expr::Expr::Literal(crate::ast::types::LiteralValue::Bool(true)) => {
-                    true
-                }
-                _ => false,
-            };
+            let is_bool_true = matches!(
+                &assignment.value,
+                crate::ast::expr::Expr::Literal(crate::ast::types::LiteralValue::Bool(true))
+            );
 
             if is_bool_true {
                 // Highly optimized 1-instruction path: final = dst_reg | acc

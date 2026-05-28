@@ -1,5 +1,3 @@
-use nasa_rust_project::pipeline::run_pipeline;
-
 #[test]
 fn test_print_expanded_source() {
     let source = std::fs::read_to_string("rspu_chip/rspu_top.mirr").expect("failed to read");
@@ -11,11 +9,7 @@ fn test_print_expanded_source() {
         match ch {
             '"' if !in_comment && !in_interpolation => in_quotes = !in_quotes,
             '/' if !in_quotes && !in_interpolation => {
-                if in_comment {
-                    in_comment = false;
-                } else {
-                    in_comment = true;
-                }
+                in_comment = !in_comment;
             }
             '\n' => {
                 in_comment = false;

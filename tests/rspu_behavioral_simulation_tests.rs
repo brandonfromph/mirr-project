@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![allow(clippy::identity_op)] // Bitwise OR with 0 is intentional for clarity of hardware bit-field layouts
 
 use nasa_rust_project::emit::rspu_sim::RspuSimulator;
 use nasa_rust_project::emit::rspu_tagged::TypeTag;

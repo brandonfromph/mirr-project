@@ -30,6 +30,11 @@ impl Registry {
 
         for i in 0..max_id {
             if let Some(NameComponent(name)) = &self.names[i] {
+                if let Some(KindComponent(EntityKind::PATTERN | EntityKind::ASSIGNMENT)) =
+                    self.kinds[i]
+                {
+                    continue;
+                }
                 // Determine if this is a signal, guard, reflex, or property.
                 // This fulfills the S03 Symbol Shadowing / Collision check.
                 let scope = self.modules[i].as_ref().map(|s| s.0 .0.to_string());
@@ -117,6 +122,7 @@ impl Registry {
         let max_id = self.next_id as usize;
         for i in 0..max_id {
             if let Some(KindComponent(EntityKind::GUARD)) = self.kinds[i] {
+                let name_is_always = self.names[i].as_ref().map(|n| n.0.as_str()) == Some("always");
                 // All GUARDS must have a name, cycles, and condition
                 if self.names[i].is_none() {
                     errors.push(MirrError::SemanticError {
@@ -128,27 +134,32 @@ impl Registry {
                         span: None,
                     });
                 }
-                if self.cycles[i].is_none() {
-                    errors.push(MirrError::SemanticError {
-                        message: format!(
-                            "{} Guard entity {} is missing a CyclesComponent.",
-                            crate::error_codes::ec(306),
-                            i
-                        ),
-                        span: None,
-                    });
-                }
-                if let Some(ConditionComponent(cond_ent)) = &self.conditions[i] {
-                    self.validate_expr_entity(*cond_ent, errors);
-                } else {
-                    errors.push(MirrError::SemanticError {
-                        message: format!(
-                            "{} Guard entity {} is missing a ConditionComponent.",
-                            crate::error_codes::ec(306),
-                            i
-                        ),
-                        span: None,
-                    });
+                if !name_is_always {
+                    if self.cycles[i].is_none() {
+                        errors.push(MirrError::SemanticError {
+                            message: format!(
+                                "{} Guard entity {} is missing a CyclesComponent.",
+                                crate::error_codes::ec(306),
+                                i
+                            ),
+                            span: None,
+                        });
+                    }
+                    if let Some(ConditionComponent(cond_ent)) = &self.conditions[i] {
+                        self.validate_expr_entity(*cond_ent, errors);
+                    } else {
+                        let name_str =
+                            self.names[i].as_ref().map(|n| n.0.as_str()).unwrap_or("<no name>");
+                        errors.push(MirrError::SemanticError {
+                            message: format!(
+                                "{} Guard entity {} (name: {:?}) is missing a ConditionComponent.",
+                                crate::error_codes::ec(306),
+                                i,
+                                name_str
+                            ),
+                            span: None,
+                        });
+                    }
                 }
             } else if self.conditions[i].is_some() {
                 // Non-GUARD with a condition is a structural error
@@ -212,7 +223,7 @@ impl Registry {
                 errors.push(MirrError::SemanticError {
                     message: format!(
                         "{} Expression depth limit exceeded or circular reference detected at entity {}.",
-                        crate::error_codes::ec(172),
+                        crate::error_codes::ec(306),
                         ent.0
                     ),
                     span: None,
@@ -243,6 +254,19 @@ impl Registry {
                         span: None,
                     });
                 }
+            } else if let Some(PendingSignalRef(name)) = &self.pending_signal_refs[idx] {
+                if let Some(resolved_ent) = self.get_entity_by_name(name) {
+                    stack.push(resolved_ent);
+                } else {
+                    errors.push(MirrError::SemanticError {
+                        message: format!(
+                            "{} Expression references undeclared signal {:?}.",
+                            crate::error_codes::ec(204),
+                            name
+                        ),
+                        span: None,
+                    });
+                }
             } else if self.literals[idx].is_some() {
                 // Literal is a valid leaf node, no further traversal needed.
             } else if let Some(BinaryComponent { left, right, .. }) = self.binary_ops[idx] {
@@ -269,6 +293,25 @@ impl Registry {
                         span: None,
                     });
                 }
+            } else if let Some(ArrayIndexComponent { array, index }) = &self.array_indices[idx] {
+                stack.push(*index);
+                stack.push(*array);
+            } else if let Some(FieldAccessComponent { object, .. }) = &self.field_accesses[idx] {
+                stack.push(*object);
+            } else if let Some(ArrayLiteralComponent(elements)) = &self.array_literals[idx] {
+                for &el in elements {
+                    stack.push(el);
+                }
+            } else if let Some(StructLiteralComponent { fields, .. }) = &self.struct_literals[idx] {
+                for &(_, el) in fields {
+                    stack.push(el);
+                }
+            } else if self.unfold_indices[idx].is_some() {
+                // Leaf node representing unfold loop index variable, valid.
+            } else if let Some(KindComponent(EntityKind::SIGNAL(_) | EntityKind::GUARD)) =
+                self.kinds[idx]
+            {
+                // Direct signal or guard entity reference is a valid leaf node.
             } else {
                 // Leaf node that is neither a SignalRef nor a Literal is a broken reference.
                 errors.push(MirrError::SemanticError {

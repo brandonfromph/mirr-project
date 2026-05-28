@@ -1,0 +1,32 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: .github/ci.Dockerfile
+    volumes:
+      - .:/workspace
+      - cargo_cache:/root/.cargo
+      - target_cache:/workspace/target
+    working_dir: /workspace
+    environment:
+      - CARGO_TERM_COLOR=always
+      - RUSTFLAGS=-D warnings -C target-feature=+fp16
+      - RUSTC_WRAPPER=
+      - CARGO_TARGET_DIR=/workspace/target
+
+
+
+
+    security_opt:
+      - seccomp=unconfined
+
+  proofs:
+    image: rocq/rocq-prover:9.0
+    user: root
+    volumes:
+      - ./proofs:/workspace/proofs
+    working_dir: /workspace/proofs
+
+volumes:
+  cargo_cache:
+  target_cache:

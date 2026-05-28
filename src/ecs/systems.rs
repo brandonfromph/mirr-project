@@ -48,8 +48,28 @@ pub fn parallel_width_inference_system(
         })
         .collect();
 
-    let scc_solves: Vec<SccSolveResult> =
-        sccs.iter().map(|_| SccSolveResult { widths: vec![8], diagnostics: Vec::new() }).collect();
+    let scc_solves: Vec<SccSolveResult> = sccs
+        .iter()
+        .map(|scc| {
+            // Derive the canonical width from the first signal index in the SCC.
+            // If the entity has a TypeComponent, use the declared bit-width.
+            // Otherwise fall back to 8 (ECS expression entities without a type).
+            let width = scc
+                .signal_indices
+                .first()
+                .and_then(|&idx| registry.types.get(idx)?.as_ref())
+                .map(|tc| {
+                    let w = tc.0.core.width();
+                    if w == 0 {
+                        8u32
+                    } else {
+                        w
+                    }
+                })
+                .unwrap_or(8);
+            SccSolveResult { widths: vec![width], diagnostics: Vec::new() }
+        })
+        .collect();
 
     let stats = WidthStats {
         nodes_analyzed: registry.names.iter().filter(|n| n.is_some()).count(),

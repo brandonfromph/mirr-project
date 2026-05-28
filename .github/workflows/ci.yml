@@ -211,6 +211,8 @@ jobs:
           tool: cargo-llvm-cov,nextest
 
       - name: Run coverage
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target
         run: cargo llvm-cov nextest --all --locked --codecov --output-path codecov.json
 
   supply-chain:

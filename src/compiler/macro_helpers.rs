@@ -369,10 +369,8 @@ fn format_expr_to_string_bounded(expr: &Expr, depth: usize) -> String {
 
 fn apply_constraints(cond: &str, stack: &[Option<(String, String)>]) -> String {
     let mut current = cond.to_string();
-    for opt in stack {
-        if let Some((s, val)) = opt {
-            current = replace_whole_word(&current, s, val);
-        }
+    for (s, val) in stack.iter().flatten() {
+        current = replace_whole_word(&current, s, val);
     }
     current
 }
@@ -403,7 +401,7 @@ fn simplify_conditional_string(cond: &str) -> String {
 fn has_block_opening_brace(line: &str) -> bool {
     let mut chars = line.chars().peekable();
     let mut prev_char = ' ';
-    while let Some(c) = chars.next() {
+    for c in chars.by_ref() {
         if c == '{' && prev_char != '$' {
             return true;
         }

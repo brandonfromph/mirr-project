@@ -7,12 +7,10 @@ fn main() {
     let root_path = Path::new(root_file);
     let mut workspace = Workspace::new("rspu_chip");
 
-    let source = std::fs::read_to_string(&root_file).unwrap();
-    workspace.update_file(&root_file, source);
+    let source = std::fs::read_to_string(root_file).unwrap();
+    workspace.update_file(root_file, source);
 
-    let mut config = PipelineConfig::default();
-    config.bootstrap_mode = true;
-    config.rspu = true;
+    let config = PipelineConfig { bootstrap_mode: true, rspu: true, ..Default::default() };
 
     match workspace.compile_snapshot(root_path, &config) {
         Ok(_) => println!("Compilation succeeded!"),

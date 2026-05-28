@@ -15,10 +15,34 @@ enum ParserState {
     TopLevel,
     AwaitingSignalsBrace,
     InSignals,
-    InLoop { var: String, start: i32, end: i32, body: Vec<String> },
-    InReflex { injected_on_always: bool },
-    InReflexLoop { var: String, start: i32, end: i32, body: Vec<String>, depth: i32 },
-    InTopLevelLoop { var: String, start: i32, end: i32, body: Vec<String>, depth: i32 },
+    InLoop {
+        var: String,
+        start: i32,
+        end: i32,
+        body: Vec<String>,
+    },
+    InReflex {
+        injected_on_always: bool,
+    },
+    InReflexLoop {
+        var: String,
+        start: i32,
+        end: i32,
+        body: Vec<String>,
+        depth: i32,
+    },
+    InTopLevelLoop {
+        var: String,
+        start: i32,
+        end: i32,
+        body: Vec<String>,
+        depth: i32,
+    },
+    /// Verbatim pass-through for `def` pattern blocks.
+    /// The FSM must not apply any transformation to def body lines.
+    InPatternDef {
+        depth: i32,
+    },
 }
 
 pub fn expand_macros(source: &str) -> String {
@@ -79,6 +103,18 @@ fn expand_macros_pass(source: &str) -> String {
 
         match state {
             ParserState::TopLevel => {
+                // Detect start of a `def` pattern block — pass through verbatim.
+                if trimmed.starts_with("def ") && trimmed.contains('(') {
+                    // Count the opening brace depth on this line (ignoring ${...}).
+                    let open_depth = count_structural_braces(trimmed);
+                    result.push_str(line);
+                    result.push('\n');
+                    if open_depth > 0 {
+                        state = ParserState::InPatternDef { depth: open_depth };
+                    }
+                    continue;
+                }
+
                 if trimmed.starts_with("for ") {
                     if let Some(loop_info) = parse_for_loop_header(trimmed) {
                         state = ParserState::InTopLevelLoop {
@@ -187,6 +223,16 @@ fn expand_macros_pass(source: &str) -> String {
                     state = ParserState::TopLevel;
                     result.push_str(line);
                     result.push('\n');
+                }
+            }
+            ParserState::InPatternDef { ref mut depth } => {
+                // Emit lines verbatim. Track brace depth to know when the def block closes.
+                let delta = count_structural_braces(trimmed);
+                *depth += delta;
+                result.push_str(line);
+                result.push('\n');
+                if *depth <= 0 {
+                    state = ParserState::TopLevel;
                 }
             }
             ParserState::InSignals => {
@@ -379,7 +425,7 @@ fn parse_for_loop_header(line: &str) -> Option<LoopInfo> {
     let var = var.trim().to_string();
 
     // The range part might contain the opening brace '{'
-    let range_part = rest.trim().split_whitespace().next()?.trim_end_matches('{');
+    let range_part = rest.split_whitespace().next()?.trim_end_matches('{');
     let (start_str, end_str) = range_part.split_once("..")?;
 
     let start = start_str.trim().parse().ok()?;
@@ -452,4 +498,28 @@ fn expand_guard_assignment(line: &str) -> Option<String> {
     } else {
         Some(format!("guard {} {{\n  when {}\n  for 1 cycles\n}}", target, after_when))
     }
+}
+
+/// Count the net structural brace depth on a single line, skipping `${…}` template
+/// substitutions so that `guard g_${n} {` counts as +1, not +2.
+fn count_structural_braces(line: &str) -> i32 {
+    let mut depth: i32 = 0;
+    let mut chars = line.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '$' && chars.peek() == Some(&'{') {
+            chars.next(); // consume '{'
+            for inner in chars.by_ref() {
+                if inner == '}' {
+                    break;
+                }
+            }
+            continue;
+        }
+        if ch == '{' {
+            depth += 1;
+        } else if ch == '}' {
+            depth -= 1;
+        }
+    }
+    depth
 }

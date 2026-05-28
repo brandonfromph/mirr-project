@@ -182,8 +182,7 @@ pub fn main() {
         process::exit(1);
     });
 
-    let mut config = PipelineConfig::default();
-    config.bootstrap_mode = true;
+    let mut config = PipelineConfig { bootstrap_mode: true, ..Default::default() };
     if args.emit.as_deref() == Some("rspu")
         || args.emit.as_deref() == Some("cert")
         || args.emit.as_deref() == Some("riscv")

@@ -304,8 +304,20 @@ fn collect_reflect_body(
         let line = lines[*index];
         let trimmed = line.trim();
 
-        // Count braces in this line.
-        for ch in trimmed.chars() {
+        // Count braces in this line, skipping ${…} template substitution expressions
+        // so that `${n}` does not disturb the brace depth counter.
+        let mut chars = trimmed.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if ch == '$' && chars.peek() == Some(&'{') {
+                // Consume the entire ${…} block without counting its braces.
+                chars.next(); // consume '{'
+                for inner in chars.by_ref() {
+                    if inner == '}' {
+                        break;
+                    }
+                }
+                continue;
+            }
             match ch {
                 '{' => {
                     depth = depth.saturating_add(1);

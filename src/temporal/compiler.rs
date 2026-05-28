@@ -304,11 +304,11 @@ impl TemporalCompiler {
                             break;
                         }
                     }
-                    CompiledGuard::Counter(cg) => {
-                        if cg.condition_kind == cond_kind && cg.target_count == g.cycles {
-                            matched = Some(existing.clone());
-                            break;
-                        }
+                    CompiledGuard::Counter(cg)
+                        if cg.condition_kind == cond_kind && cg.target_count == g.cycles =>
+                    {
+                        matched = Some(existing.clone());
+                        break;
                     }
                     _ => {}
                 }
@@ -583,7 +583,7 @@ impl TemporalCompiler {
                     // Bounded search for existing identical guards (NASA P10: bounded search).
                     let mut matched = None;
                     if let Ok(cond_kind) = ConditionKind::try_from_ecs(registry, entity_id) {
-                        for (_, existing) in &self.cache {
+                        for existing in self.cache.values() {
                             match existing {
                                 CompiledGuard::ShiftRegister(sr) => {
                                     if sr.condition_kind == cond_kind
@@ -601,12 +601,10 @@ impl TemporalCompiler {
                                         break;
                                     }
                                 }
-                                CompiledGuard::Complex(cx) => {
+                                CompiledGuard::Complex(cx) if cx.name == current_name => {
                                     // Match complex guards by name and cycle consistency
-                                    if cx.name == current_name {
-                                        matched = Some(existing.clone());
-                                        break;
-                                    }
+                                    matched = Some(existing.clone());
+                                    break;
                                 }
                                 _ => {}
                             }
@@ -622,17 +620,9 @@ impl TemporalCompiler {
 
                     // Check for Compound Guard (AND/OR) in ECS
                     if let Some(binary) = &registry.binary_ops[ent_idx] {
-                        if binary.op == BinaryOp::And || binary.op == BinaryOp::Or {
-                            if work_stack.len() >= MAX_COMPILE_GUARD_DEPTH {
-                                return Err(mirrcode(
-                                    ErrorCode::TemporalGuardDepth,
-                                    format!(
-                                        "Guard '{}' exceeds maximum nesting depth",
-                                        current_name
-                                    ),
-                                ));
-                            }
-
+                        if (binary.op == BinaryOp::And || binary.op == BinaryOp::Or)
+                            && work_stack.len() < MAX_COMPILE_GUARD_DEPTH
+                        {
                             let left_expr = registry.reify_expr(binary.left)?;
                             let right_expr = registry.reify_expr(binary.right)?;
                             let left_name = self.get_deterministic_name(&left_expr, current_cycles);
@@ -647,6 +637,11 @@ impl TemporalCompiler {
                             ));
                             work_stack.push(ECSWork::Lower(binary.left, left_name, current_cycles));
                             continue;
+                        } else if binary.op == BinaryOp::And || binary.op == BinaryOp::Or {
+                            return Err(mirrcode(
+                                ErrorCode::TemporalGuardDepth,
+                                format!("Guard '{}' exceeds maximum nesting depth", current_name),
+                            ));
                         }
                     }
 

@@ -3,6 +3,7 @@
 //! Verifies that the new 64-bit tagged-word core modules
 //! are synthesis-clean using Yosys.
 
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};

@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![allow(clippy::identity_op, clippy::erasing_op)]
 
 use nasa_rust_project::emit::rspu_sim::RspuSimulator;
 use nasa_rust_project::emit::rspu_tagged::TypeTag;
