@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use mirror::tooling::MrtDispatchTool;
+use mirr_mcp_control_plane::tooling::MrtDispatchTool;
 use serde_json::Value;
 
 #[test]
@@ -43,6 +43,6 @@ fn manifest_snapshot_catalog_identity_matches_rust_constants() {
         .and_then(Value::as_str)
         .expect("catalog.display_name must be a string");
 
-    assert_eq!(id, mirror::catalog::CANONICAL_CATALOG_ID);
-    assert_eq!(display, mirror::catalog::CANONICAL_DISPLAY_NAME);
+    assert_eq!(id, mirr_mcp_control_plane::catalog::CANONICAL_CATALOG_ID);
+    assert_eq!(display, mirr_mcp_control_plane::catalog::CANONICAL_DISPLAY_NAME);
 }

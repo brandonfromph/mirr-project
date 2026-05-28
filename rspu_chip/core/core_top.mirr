@@ -1,0 +1,57 @@
+//! Phase 8b: R-SPU Core Top-Level Wrapper
+//!
+//! Encapsulates the 5-stage pipeline and integrates it with
+//! the NoC interface and the Exception Controller.
+
+import "pipeline.mirr" as pipe;
+import "types.mirr" as types;
+
+def core_top(
+    clk: signal in bool,
+    rst_n: signal in bool,
+    
+    // Instruction Memory Interface
+    instr_in: signal in u32,
+    pc_out:   signal out u32,
+    
+    // NoC Packet Interface
+    noc_rx_valid: signal in bool,
+    noc_rx_data:  signal in u64,
+    noc_tx_valid: signal out bool,
+    noc_tx_data:  signal out u64
+) {
+    reflect {
+        // --- 1. 5-Stage Pipeline Instance ---
+        signal trap_signal: internal bool;
+        pipe::rspu_pipeline(${clk}, ${rst_n}, ${instr_in}, ${pc_out}, trap_signal);
+
+        // --- 2. Exception Controller Logic ---
+        // trap_active fires when the pipeline asserts a trap.
+        // idle_tx fires every cycle to set the default (no-exception) outputs.
+        // On a trap cycle, exception_tx overrides the idle_tx assignments.
+        signal core_halted: internal bool;
+
+        guard trap_active {
+            when trap_signal
+            for 1 cycles;
+        }
+
+        reflex idle_tx {
+            on always {
+                core_halted = false;
+                ${noc_tx_valid} = false;
+                ${noc_tx_data} = 0;
+            }
+        }
+
+        reflex exception_tx {
+            on trap_active {
+                core_halted = true;
+                ${noc_tx_valid} = true;
+                ${noc_tx_data} = (1 << 63) | (14 << 32) | ${pc_out};
+            }
+        }
+    }
+}
+
+module core_top {}

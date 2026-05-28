@@ -215,9 +215,14 @@ impl Workspace {
                 if deps.contains(path) {
                     // Look up alias in the parent's parse result
                     if let Some(prog) = load_state.files.get(parent) {
-                        if let Some(imp) = prog.imports.iter().find(|_i| {
-                            // This assumes resolution path matches; simple approximation
-                            true
+                        if let Some(imp) = prog.imports.iter().find(|imp| {
+                            if let Some(parent_dir) = parent.parent() {
+                                let resolved = parent_dir.join(&imp.path);
+                                if let Ok(canonical) = fs::canonicalize(&resolved) {
+                                    return &canonical == path;
+                                }
+                            }
+                            false
                         }) {
                             alias = Some(imp.alias.clone());
                         }
@@ -232,6 +237,11 @@ impl Workspace {
                 merged_program.patterns.push(aliased_pat);
             }
         }
+        println!("=== REGISTERED PATTERNS ===");
+        for pat in &merged_program.patterns {
+            println!("  Pattern: {}", pat.name);
+        }
+        println!("===========================");
 
         // 4. Pipeline Execution
         let pipeline = Rc::new(
@@ -359,7 +369,7 @@ impl Workspace {
             hasher.update(hash_text(&content).as_bytes());
         }
 
-        hasher.update(serde_json::to_vec(config).unwrap());
+        hasher.update(serde_json::to_vec(config).unwrap_or_default());
         hex_encode(hasher.finalize().as_slice())
     }
 

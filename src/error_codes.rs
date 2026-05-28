@@ -190,6 +190,23 @@ pub enum ErrorCode {
     TypeWidthExceeds = 607,
     TypeRefinementFailed = 608,
     TypeSessionViolation = 609,
+    // E610–E625 — Extended Type Checking (MEGA-1)
+    ExtTypeRefineBound = 610,
+    ExtTypeRefineRange = 611,
+    ExtTypeRefineWidth = 612,
+    ExtTypeLinearUnused = 613,
+    ExtTypeLinearDouble = 614,
+    ExtTypeLinearEscape = 615,
+    ExtTypeEffectPure = 616,
+    ExtTypeEffectMix = 617,
+    ExtTypeClockCross = 618,
+    ExtTypeClockUndef = 619,
+    ExtTypePhantomMismatch = 620,
+    ExtTypePhantomUndef = 621,
+    ExtTypeNatOverflow = 622,
+    ExtTypeNatMismatch = 623,
+    ExtTypeDepMismatch = 624,
+    ExtTypeSessionProtocol = 625,
 
     // ── E7xx — R-SPU Emission ────────────────────────────────────────────────
     RspuFallback = 700,
@@ -230,16 +247,17 @@ pub enum ErrorCode {
 
     // ── E9xx — SAT / Equivalence ─────────────────────────────────────────────
     SatFallback = 900,
-    SatEquivGuardCount = 901,
-    SatEquivSrCount = 902,
-    SatEquivCounterCount = 903,
-    SatEquivGateCount = 904,
-    SatTimeout = 905,
-    SatMemory = 906,
-    SatUnsupported = 907,
-    SatProofInvalid = 908,
-    SatWitnessInvalid = 909,
-    SatCircuitTooLarge = 910,
+    // E901–E910 — Build Certification (MEGA-16)
+    ReceiptGenerationFailed = 901,
+    SourceHashMismatch = 902,
+    SignatureVerificationFailed = 903,
+    ToolchainHashMismatch = 904,
+    MissingRequiredField = 905,
+    BootstrapParityFailure = 906,
+    ExplainTargetNotFound = 907,
+    AstDiffOverflow = 908,
+    OpcodeMismatch = 909,
+    CertificateSchemaUnsupported = 910,
     SatVarLimit = 911,
     SatClauseLimit = 912,
     SatLiteralLimit = 913,
@@ -248,8 +266,6 @@ pub enum ErrorCode {
     SatNoResult = 916,
     SatBadModel = 917,
     SatInternalError = 918,
-    SatEquivCheckFailed = 919,
-    SatEquivNotRun = 920,
 
     // ── E10xx — Symbolic Analysis ────────────────────────────────────────────
     SymbolicFallback = 1000,
@@ -260,14 +276,16 @@ pub enum ErrorCode {
     // ── E11xx — Totality ─────────────────────────────────────────────────────
     TotalityFallback = 1100,
 
-    // ── E12xx — MEGA-1 Extended Types ────────────────────────────────────────
-    ExtTypeParseFallback = 1201,
-    ExtTypeRefineFailed = 1202,
-    ExtTypeLinearViolation = 1203,
-    ExtTypeSessionViolation = 1204,
-
-    // ── E1234 — Test / Fixture ───────────────────────────────────────────────
-    TestFixture = 1234,
+    // ── E12xx — Testing & Tooling (MEGA-17) ──────────────────────────────────
+    RiscvEmissionFailed = 1201,
+    ArmEmissionFailed = 1202,
+    HlsSchedulingFailed = 1203,
+    SymbolicAnalysisOverflow = 1204,
+    FpgaTargetUnsupported = 1205,
+    NextestConfigInvalid = 1206,
+    TestFixtureMissing = 1207,
+    ExampleCompilationFailed = 1208,
+    ZeroDebtCloseoutFailed = 1209,
 }
 
 impl ErrorCode {
@@ -300,6 +318,7 @@ impl ErrorCode {
             900..=999 => ErrorCategory::Sat,
             1000..=1099 => ErrorCategory::Symbolic,
             1100..=1199 => ErrorCategory::Totality,
+            1200..=1299 => ErrorCategory::Tooling,
             _ => ErrorCategory::Other,
         }
     }
@@ -325,6 +344,7 @@ pub enum ErrorCategory {
     Sat,
     Symbolic,
     Totality,
+    Tooling,
     Other,
 }
 
@@ -382,6 +402,9 @@ pub fn mirrcode(code: ErrorCode, message: impl std::fmt::Display) -> crate::erro
         ErrorCategory::Totality => {
             crate::error::MirrError::TotalityError { message: full_msg, span: None }
         }
+        ErrorCategory::Tooling => {
+            crate::error::MirrError::ToolingError { message: full_msg, span: None }
+        }
         ErrorCategory::Other => {
             crate::error::MirrError::SemanticError { message: full_msg, span: None }
         }
@@ -407,7 +430,7 @@ mod tests {
     #[test]
     fn number_matches_repr() {
         assert_eq!(ErrorCode::StructNameEmpty.number(), 806);
-        assert_eq!(ErrorCode::SatEquivCheckFailed.number(), 919);
+        assert_eq!(ErrorCode::OpcodeMismatch.number(), 909);
     }
 
     #[test]
@@ -415,8 +438,9 @@ mod tests {
         assert_eq!(ErrorCode::GuardNameEmpty.category(), ErrorCategory::Parse);
         assert_eq!(ErrorCode::DuplicateSignalName.category(), ErrorCategory::Semantic);
         assert_eq!(ErrorCode::StructNameEmpty.category(), ErrorCategory::SExpr);
-        assert_eq!(ErrorCode::SatEquivCheckFailed.category(), ErrorCategory::Sat);
+        assert_eq!(ErrorCode::OpcodeMismatch.category(), ErrorCategory::Sat);
         assert_eq!(ErrorCode::SymbolicWidthExceeds.category(), ErrorCategory::Symbolic);
+        assert_eq!(ErrorCode::RiscvEmissionFailed.category(), ErrorCategory::Tooling);
     }
 
     #[test]
@@ -429,7 +453,13 @@ mod tests {
 
     #[test]
     fn mirrcode_sat_variant() {
-        let err = mirrcode(ErrorCode::SatEquivGuardCount, "guard count changed");
+        let err = mirrcode(ErrorCode::ReceiptGenerationFailed, "receipt failed");
         assert!(matches!(err, crate::error::MirrError::SatError { .. }));
+    }
+
+    #[test]
+    fn mirrcode_tooling_variant() {
+        let err = mirrcode(ErrorCode::RiscvEmissionFailed, "riscv failed");
+        assert!(matches!(err, crate::error::MirrError::ToolingError { .. }));
     }
 }

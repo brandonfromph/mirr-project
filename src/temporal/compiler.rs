@@ -22,6 +22,9 @@ use crate::temporal::low_level_ir::{
     CompiledGuard, ConditionKind, GeneratedSignal, GeneratedSignalKind, TemporalNetlist,
 };
 
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+
 /// Adaptive threshold for choosing between shift registers and counters.
 ///
 /// Guards with N ≤ 16 cycles use a shift register chain (direct pipeline).
@@ -54,6 +57,8 @@ pub struct TemporalCompiler {
     pub signal_counter: u32,
     /// Current compilation context (accumulated netlist)
     pub context: TemporalNetlist,
+    /// Cache of already compiled subguards to ensure deterministic deduplication
+    pub cache: HashMap<String, CompiledGuard>,
 }
 
 impl Default for TemporalCompiler {
@@ -65,11 +70,12 @@ impl Default for TemporalCompiler {
 impl TemporalCompiler {
     /// Create a new temporal compiler
     pub fn new() -> Self {
-        Self { signal_counter: 0, context: TemporalNetlist::new() }
+        Self { signal_counter: 0, context: TemporalNetlist::new(), cache: HashMap::new() }
     }
 
     /// Compile a module's temporal guards into a low-level netlist
     pub fn compile_module(&mut self, guards: &[Guard]) -> Result<TemporalNetlist, MirrError> {
+        self.cache.clear();
         let mut netlist = TemporalNetlist::new();
 
         for guard in guards {
@@ -82,6 +88,149 @@ impl TemporalCompiler {
         }
 
         Ok(netlist)
+    }
+
+    /// Recursively hash an expression for stable deduplication without string allocations.
+    fn hash_expr_stable(
+        &self,
+        expr: &Expr,
+        hasher: &mut std::collections::hash_map::DefaultHasher,
+    ) {
+        match expr {
+            Expr::Literal(val) => {
+                0u8.hash(hasher);
+                match val {
+                    crate::ast::types::LiteralValue::Bool(b) => b.hash(hasher),
+                    crate::ast::types::LiteralValue::Integer(i) => i.hash(hasher),
+                }
+            }
+            Expr::Signal(s) => {
+                1u8.hash(hasher);
+                s.hash(hasher);
+            }
+            Expr::Unary { op, operand } => {
+                2u8.hash(hasher);
+                op.hash(hasher);
+                self.hash_expr_stable(operand, hasher);
+            }
+            Expr::Binary { op, left, right } => {
+                3u8.hash(hasher);
+                op.hash(hasher);
+                self.hash_expr_stable(left, hasher);
+                self.hash_expr_stable(right, hasher);
+            }
+            Expr::Prev { signal, delay } => {
+                4u8.hash(hasher);
+                signal.hash(hasher);
+                delay.hash(hasher);
+            }
+            Expr::ArrayIndex { array, index } => {
+                5u8.hash(hasher);
+                self.hash_expr_stable(array, hasher);
+                self.hash_expr_stable(index, hasher);
+            }
+            Expr::FieldAccess { object, field } => {
+                6u8.hash(hasher);
+                self.hash_expr_stable(object, hasher);
+                field.hash(hasher);
+            }
+            Expr::ArrayLiteral(elems) => {
+                7u8.hash(hasher);
+                elems.len().hash(hasher);
+                for e in elems {
+                    self.hash_expr_stable(e, hasher);
+                }
+            }
+            Expr::StructLiteral { name, fields } => {
+                8u8.hash(hasher);
+                name.hash(hasher);
+                fields.len().hash(hasher);
+                for (f, e) in fields {
+                    f.hash(hasher);
+                    self.hash_expr_stable(e, hasher);
+                }
+            }
+            Expr::UnfoldIndex(s) => {
+                9u8.hash(hasher);
+                s.hash(hasher);
+            }
+        }
+    }
+
+    /// Generate a human-readable prefix for an expression, depth-bounded to prevent blowup.
+    fn format_expr_short(&self, expr: &Expr, depth: usize) -> String {
+        if depth > 3 {
+            return "complex".to_string();
+        }
+        match expr {
+            Expr::Literal(val) => match val {
+                crate::ast::types::LiteralValue::Bool(b) => b.to_string(),
+                crate::ast::types::LiteralValue::Integer(i) => i.to_string(),
+            },
+            Expr::Signal(s) => s.clone(),
+            Expr::Unary { op, operand } => {
+                let op_str = match op {
+                    crate::ast::types::UnaryOp::Not => "not",
+                    crate::ast::types::UnaryOp::Negate => "neg",
+                };
+                format!("{}_{}", op_str, self.format_expr_short(operand, depth + 1))
+            }
+            Expr::Binary { op, left, right } => {
+                let op_str = match op {
+                    BinaryOp::And => "and",
+                    BinaryOp::Or => "or",
+                    _ => "op",
+                };
+                format!(
+                    "{}_{}_{}",
+                    self.format_expr_short(left, depth + 1),
+                    op_str,
+                    self.format_expr_short(right, depth + 1)
+                )
+            }
+            Expr::Prev { signal, delay } => format!("prev_{}_{}", signal, delay),
+            _ => "expr".to_string(),
+        }
+    }
+
+    /// Generate a deterministic, valid identifier guard name based on the expression and cycles.
+    fn get_deterministic_name(&self, expr: &Expr, cycles: u64) -> String {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.hash_expr_stable(expr, &mut hasher);
+        cycles.hash(&mut hasher);
+        let hash_val = hasher.finish();
+
+        let prefix = self.format_expr_short(expr, 0);
+        let mut sanitized = String::new();
+        for c in prefix.chars() {
+            if c.is_alphanumeric() {
+                sanitized.push(c);
+            } else {
+                sanitized.push('_');
+            }
+        }
+
+        let mut clean = String::new();
+        let mut prev_was_underscore = false;
+        for c in sanitized.chars() {
+            if c == '_' {
+                if !prev_was_underscore {
+                    clean.push(c);
+                    prev_was_underscore = true;
+                }
+            } else {
+                clean.push(c);
+                prev_was_underscore = false;
+            }
+        }
+        let clean = clean.trim_matches('_');
+        let clean_trunc = if clean.len() > 24 { &clean[0..24] } else { clean };
+
+        if clean_trunc.is_empty() {
+            format!("sub_g_{:016x}", hash_val)
+        } else {
+            format!("sub_g_{}_{:016x}", clean_trunc.trim_end_matches('_'), hash_val)
+        }
     }
 
     /// Compile a single temporal guard using the adaptive strategy.
@@ -139,6 +288,38 @@ impl TemporalCompiler {
         work_stack: &mut Vec<WorkItem>,
         result_stack: &mut Vec<CompiledGuard>,
     ) -> Result<(), MirrError> {
+        if let Some(cached) = self.cache.get(&g.name) {
+            result_stack.push(cached.clone());
+            return Ok(());
+        }
+
+        // Bounded search for existing identical guards (NASA P10: bounded search).
+        let mut matched = None;
+        if let Ok(cond_kind) = ConditionKind::try_from_expr(&g.condition) {
+            for existing in self.cache.values() {
+                match existing {
+                    CompiledGuard::ShiftRegister(sr) => {
+                        if sr.condition_kind == cond_kind && sr.delay_cycles == g.cycles {
+                            matched = Some(existing.clone());
+                            break;
+                        }
+                    }
+                    CompiledGuard::Counter(cg) => {
+                        if cg.condition_kind == cond_kind && cg.target_count == g.cycles {
+                            matched = Some(existing.clone());
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        if let Some(existing) = matched {
+            self.cache.insert(g.name.clone(), existing.clone());
+            result_stack.push(existing);
+            return Ok(());
+        }
+
         // WorkItem enum is defined in compile_guard; use fully qualified match
         match ConditionKind::try_from_expr(&g.condition) {
             Ok(_) => {
@@ -147,6 +328,7 @@ impl TemporalCompiler {
                 } else {
                     self.compile_counter_guard(&g)?
                 };
+                self.cache.insert(g.name.clone(), compiled.clone());
                 result_stack.push(compiled);
                 Ok(())
             }
@@ -164,10 +346,8 @@ impl TemporalCompiler {
                                 span: g.span,
                             });
                         }
-                        let left_name = format!("{}_sub{}", g.name, self.signal_counter);
-                        self.signal_counter += 1;
-                        let right_name = format!("{}_sub{}", g.name, self.signal_counter);
-                        self.signal_counter += 1;
+                        let left_name = self.get_deterministic_name(left, g.cycles);
+                        let right_name = self.get_deterministic_name(right, g.cycles);
                         let left_guard = Guard {
                             name: left_name,
                             condition: (*left.clone()),
@@ -247,7 +427,7 @@ impl TemporalCompiler {
         };
 
         let complex = crate::temporal::low_level_ir::ComplexGuard::new(
-            name,
+            name.clone(),
             vec![left_comp, right_comp],
             combo_expr.clone(),
         );
@@ -259,7 +439,9 @@ impl TemporalCompiler {
             source: Some(combo_expr),
         });
 
-        result_stack.push(CompiledGuard::Complex(complex));
+        let compiled = CompiledGuard::Complex(complex);
+        self.cache.insert(name, compiled.clone());
+        result_stack.push(compiled);
         Ok(())
     }
 
@@ -393,6 +575,49 @@ impl TemporalCompiler {
 
             match item {
                 ECSWork::Lower(entity_id, current_name, current_cycles) => {
+                    if let Some(cached) = self.cache.get(&current_name) {
+                        result_stack.push(cached.clone());
+                        continue;
+                    }
+
+                    // Bounded search for existing identical guards (NASA P10: bounded search).
+                    let mut matched = None;
+                    if let Ok(cond_kind) = ConditionKind::try_from_ecs(registry, entity_id) {
+                        for (_, existing) in &self.cache {
+                            match existing {
+                                CompiledGuard::ShiftRegister(sr) => {
+                                    if sr.condition_kind == cond_kind
+                                        && sr.delay_cycles == current_cycles
+                                    {
+                                        matched = Some(existing.clone());
+                                        break;
+                                    }
+                                }
+                                CompiledGuard::Counter(cg) => {
+                                    if cg.condition_kind == cond_kind
+                                        && cg.target_count == current_cycles
+                                    {
+                                        matched = Some(existing.clone());
+                                        break;
+                                    }
+                                }
+                                CompiledGuard::Complex(cx) => {
+                                    // Match complex guards by name and cycle consistency
+                                    if cx.name == current_name {
+                                        matched = Some(existing.clone());
+                                        break;
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    if let Some(existing) = matched {
+                        self.cache.insert(current_name.clone(), existing.clone());
+                        result_stack.push(existing);
+                        continue;
+                    }
+
                     let ent_idx = entity_id.0 as usize;
 
                     // Check for Compound Guard (AND/OR) in ECS
@@ -408,10 +633,11 @@ impl TemporalCompiler {
                                 ));
                             }
 
-                            let left_name = format!("{}_sub{}", current_name, self.signal_counter);
-                            self.signal_counter += 1;
-                            let right_name = format!("{}_sub{}", current_name, self.signal_counter);
-                            self.signal_counter += 1;
+                            let left_expr = registry.reify_expr(binary.left)?;
+                            let right_expr = registry.reify_expr(binary.right)?;
+                            let left_name = self.get_deterministic_name(&left_expr, current_cycles);
+                            let right_name =
+                                self.get_deterministic_name(&right_expr, current_cycles);
 
                             work_stack.push(ECSWork::Combine(current_name, binary.op));
                             work_stack.push(ECSWork::Lower(
@@ -457,6 +683,7 @@ impl TemporalCompiler {
                             condition_kind,
                         )?
                     };
+                    self.cache.insert(current_name, compiled.clone());
                     result_stack.push(compiled);
                 }
                 ECSWork::Always(current_name, total_delay) => {
@@ -478,6 +705,7 @@ impl TemporalCompiler {
                             condition_kind,
                         )?
                     };
+                    self.cache.insert(current_name, compiled.clone());
                     result_stack.push(compiled);
                 }
                 ECSWork::Combine(name, op) => {
@@ -504,7 +732,7 @@ impl TemporalCompiler {
                     };
 
                     let complex = crate::temporal::low_level_ir::ComplexGuard::new(
-                        name,
+                        name.clone(),
                         vec![left_comp, right_comp],
                         combo_expr.clone(),
                     );
@@ -516,7 +744,9 @@ impl TemporalCompiler {
                         source: Some(combo_expr),
                     });
 
-                    result_stack.push(CompiledGuard::Complex(complex));
+                    let compiled = CompiledGuard::Complex(complex);
+                    self.cache.insert(name, compiled.clone());
+                    result_stack.push(compiled);
                 }
             }
         }

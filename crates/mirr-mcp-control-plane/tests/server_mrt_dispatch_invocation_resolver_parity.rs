@@ -1,5 +1,5 @@
-use mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
-use mirror::server_rewrite::mrt_dispatch_invocation_resolver::resolve_mrt_dispatch_invocation_by_name;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_resolver::resolve_mrt_dispatch_invocation_by_name;
 
 #[test]
 fn resolve_defaults_match_ts_dispatch_contract() {

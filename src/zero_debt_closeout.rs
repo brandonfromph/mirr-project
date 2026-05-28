@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -160,15 +162,24 @@ impl CompatibilityRouteDisablementContract {
         route: &str,
         ttl_epochs: u32,
         incident_id: &str,
-    ) -> Result<(), String> {
+    ) -> Result<(), MirrError> {
         if ttl_epochs == u32::MAX {
-            return Err("temporary re-enable ttl must be bounded".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "temporary re-enable ttl must be bounded",
+            ));
         }
         if !self.legacy_routes.contains(route) {
-            return Err(format!("legacy route '{route}' is not registered"));
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("legacy route '{route}' is not registered"),
+            ));
         }
         if incident_id.trim().is_empty() {
-            return Err("incident id for temporary re-enable must be non-empty".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "incident id for temporary re-enable must be non-empty",
+            ));
         }
 
         self.temporary_reenables.borrow_mut().insert(
@@ -281,7 +292,7 @@ pub struct LegacyPathRemovalManifest {
 }
 
 impl LegacyPathRemovalManifest {
-    pub fn from_routes(routes: Vec<LegacyRoute>) -> Result<Self, String> {
+    pub fn from_routes(routes: Vec<LegacyRoute>) -> Result<Self, MirrError> {
         let mut manifest = Self::empty();
         for route in routes {
             manifest.add_route(route)?;
@@ -293,35 +304,51 @@ impl LegacyPathRemovalManifest {
         Self { routes: BTreeMap::new(), frozen_mode: None }
     }
 
-    pub fn add_route(&mut self, route: LegacyRoute) -> Result<(), String> {
+    pub fn add_route(&mut self, route: LegacyRoute) -> Result<(), MirrError> {
         if self.frozen_mode.is_some() {
-            return Err("manifest is frozen and cannot accept new routes".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "manifest is frozen and cannot accept new routes",
+            ));
         }
 
         let LegacyRoute { removed_route, replacement_route } = route;
 
         let removed = removed_route.trim();
         if removed.is_empty() {
-            return Err("removed legacy route path must be non-empty".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "removed legacy route path must be non-empty",
+            ));
         }
 
-        let replacement = replacement_route
-            .ok_or_else(|| format!("removed route '{removed}' must define a replacement route"))?;
+        let replacement = replacement_route.ok_or_else(|| {
+            mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("removed route '{removed}' must define a replacement route"),
+            )
+        })?;
         if replacement.trim().is_empty() {
-            return Err(format!("removed route '{removed}' must define a replacement route"));
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("removed route '{removed}' must define a replacement route"),
+            ));
         }
 
         if self.routes.contains_key(removed) {
-            return Err(format!("duplicate removed route '{removed}'"));
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("duplicate removed route '{removed}'"),
+            ));
         }
 
         self.routes.insert(removed.to_string(), replacement.to_string());
         Ok(())
     }
 
-    pub fn freeze(&mut self, mode: RemovalMode) -> Result<(), String> {
+    pub fn freeze(&mut self, mode: RemovalMode) -> Result<(), MirrError> {
         if self.frozen_mode.is_some() {
-            return Err("manifest is already frozen".to_string());
+            return Err(mirrcode(ErrorCode::ZeroDebtCloseoutFailed, "manifest is already frozen"));
         }
 
         self.frozen_mode = Some(mode);
@@ -395,27 +422,30 @@ impl ZeroDebtCloseoutReport {
             && self.validate_component_alignment().is_ok()
     }
 
-    pub fn validate_component_alignment(&self) -> Result<(), String> {
+    pub fn validate_component_alignment(&self) -> Result<(), MirrError> {
         if self.manifest.is_empty() {
             return Ok(());
         }
 
         if !self.contract.disables_on_cutover() {
-            return Err(
-                "compatibility contract must disable legacy routes when manifest removes paths"
-                    .to_string(),
-            );
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "compatibility contract must disable legacy routes when manifest removes paths",
+            ));
         }
 
         if self.planner.window.required_samples == 0 {
-            return Err("planner must use a non-empty enforcement window for non-empty manifest"
-                .to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "planner must use a non-empty enforcement window for non-empty manifest",
+            ));
         }
 
         for removed_route in self.manifest.ordered_removed_routes() {
             if !self.contract.has_legacy_route(&removed_route) {
-                return Err(format!(
-                    "manifest route '{removed_route}' missing in compatibility contract"
+                return Err(mirrcode(
+                    ErrorCode::ZeroDebtCloseoutFailed,
+                    format!("manifest route '{removed_route}' missing in compatibility contract"),
                 ));
             }
         }
@@ -427,15 +457,21 @@ impl ZeroDebtCloseoutReport {
         self.debt_score = debt_score;
     }
 
-    pub fn finalize(&self) -> Result<(), String> {
+    pub fn finalize(&self) -> Result<(), MirrError> {
         if self.debt_score > 0 {
-            return Err(format!(
-                "proposal '{}' cannot finalize with debt score {}",
-                self.proposal_id, self.debt_score
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!(
+                    "proposal '{}' cannot finalize with debt score {}",
+                    self.proposal_id, self.debt_score
+                ),
             ));
         }
         if !self.is_closeout_ready() {
-            return Err(format!("proposal '{}' closeout report is not ready", self.proposal_id));
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("proposal '{}' closeout report is not ready", self.proposal_id),
+            ));
         }
 
         Ok(())
@@ -469,12 +505,18 @@ pub struct DeferredScope {
 }
 
 impl DeferredScope {
-    pub fn new(scope: &str, owner: &str, reason: &str) -> Result<Self, String> {
+    pub fn new(scope: &str, owner: &str, reason: &str) -> Result<Self, MirrError> {
         if scope.trim().is_empty() {
-            return Err("deferred scope name must be non-empty".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "deferred scope name must be non-empty",
+            ));
         }
         if owner.trim().is_empty() || reason.trim().is_empty() {
-            return Err("deferred scope owner and reason must be non-empty".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "deferred scope owner and reason must be non-empty",
+            ));
         }
 
         Ok(Self { scope: scope.to_string(), owner: owner.to_string(), reason: reason.to_string() })
@@ -489,15 +531,24 @@ pub struct RollbackMetadata {
 }
 
 impl RollbackMetadata {
-    pub fn new(rollback_plan_id: &str, steps: Vec<String>) -> Result<Self, String> {
+    pub fn new(rollback_plan_id: &str, steps: Vec<String>) -> Result<Self, MirrError> {
         if rollback_plan_id.trim().is_empty() {
-            return Err("rollback plan id must be non-empty".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "rollback plan id must be non-empty",
+            ));
         }
         if steps.len() > MAX_ROLLBACK_STEPS {
-            return Err(format!("rollback metadata cannot exceed {MAX_ROLLBACK_STEPS} steps"));
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("rollback metadata cannot exceed {MAX_ROLLBACK_STEPS} steps"),
+            ));
         }
         if steps.iter().any(|step| step.trim().is_empty()) {
-            return Err("rollback step identifiers must be non-empty".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "rollback step identifiers must be non-empty",
+            ));
         }
 
         Ok(Self {
@@ -525,7 +576,7 @@ impl DeferredScopeRollbackMetadata {
     pub fn new(
         mut deferred_scopes: Vec<DeferredScope>,
         rollback: RollbackMetadata,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, MirrError> {
         deferred_scopes.sort_by(|left, right| {
             left.scope
                 .cmp(&right.scope)
@@ -536,7 +587,10 @@ impl DeferredScopeRollbackMetadata {
         let mut seen = BTreeSet::new();
         for scope in &deferred_scopes {
             if !seen.insert(scope.scope.clone()) {
-                return Err(format!("duplicate deferred scope '{}'", scope.scope));
+                return Err(mirrcode(
+                    ErrorCode::ZeroDebtCloseoutFailed,
+                    format!("duplicate deferred scope '{}'", scope.scope),
+                ));
             }
         }
 
@@ -569,16 +623,22 @@ impl DeferredScopeRollbackMetadata {
         bytes
     }
 
-    pub fn from_canonical_bytes(bytes: &[u8]) -> Result<Self, String> {
+    pub fn from_canonical_bytes(bytes: &[u8]) -> Result<Self, MirrError> {
         if !bytes.starts_with(CANONICAL_MAGIC) {
-            return Err("canonical bytes header mismatch".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "canonical bytes header mismatch",
+            ));
         }
 
         let mut cursor = CANONICAL_MAGIC.len();
 
         let scope_count = to_usize(read_u32(bytes, &mut cursor)?)?;
         if scope_count > MAX_CANONICAL_SCOPES {
-            return Err(format!("canonical scope count exceeds limit ({MAX_CANONICAL_SCOPES})"));
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("canonical scope count exceeds limit ({MAX_CANONICAL_SCOPES})"),
+            ));
         }
 
         let mut deferred_scopes = Vec::with_capacity(scope_count);
@@ -592,7 +652,10 @@ impl DeferredScopeRollbackMetadata {
         let rollback_plan_id = read_string(bytes, &mut cursor)?;
         let step_count = to_usize(read_u32(bytes, &mut cursor)?)?;
         if step_count > MAX_ROLLBACK_STEPS {
-            return Err(format!("canonical step count exceeds limit ({MAX_ROLLBACK_STEPS})"));
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("canonical step count exceeds limit ({MAX_ROLLBACK_STEPS})"),
+            ));
         }
 
         let mut steps = Vec::with_capacity(step_count);
@@ -602,8 +665,9 @@ impl DeferredScopeRollbackMetadata {
 
         let strategy_count = to_usize(read_u32(bytes, &mut cursor)?)?;
         if strategy_count > MAX_CANONICAL_STRATEGIES {
-            return Err(format!(
-                "canonical strategy count exceeds limit ({MAX_CANONICAL_STRATEGIES})"
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                format!("canonical strategy count exceeds limit ({MAX_CANONICAL_STRATEGIES})"),
             ));
         }
 
@@ -615,7 +679,10 @@ impl DeferredScopeRollbackMetadata {
         }
 
         if cursor != bytes.len() {
-            return Err("canonical bytes contain trailing data".to_string());
+            return Err(mirrcode(
+                ErrorCode::ZeroDebtCloseoutFailed,
+                "canonical bytes contain trailing data",
+            ));
         }
 
         Self::new(deferred_scopes, rollback)
@@ -634,7 +701,7 @@ impl DeferredScopeRollbackMetadata {
         format!("{hash:016x}")
     }
 
-    pub fn validate_one_to_one_scope_to_strategy(&self) -> Result<(), String> {
+    pub fn validate_one_to_one_scope_to_strategy(&self) -> Result<(), MirrError> {
         let mut scope_set = BTreeSet::new();
         for scope in &self.deferred_scopes {
             scope_set.insert(scope.scope.clone());
@@ -643,7 +710,10 @@ impl DeferredScopeRollbackMetadata {
         let mut strategy_scope_set = BTreeSet::new();
         for (scope, strategy) in &self.rollback.strategy_by_scope {
             if strategy.trim().is_empty() {
-                return Err(format!("rollback strategy for scope '{scope}' is empty"));
+                return Err(mirrcode(
+                    ErrorCode::ZeroDebtCloseoutFailed,
+                    format!("rollback strategy for scope '{scope}' is empty"),
+                ));
             }
             strategy_scope_set.insert(scope.clone());
         }
@@ -655,10 +725,13 @@ impl DeferredScopeRollbackMetadata {
         let missing: Vec<String> = scope_set.difference(&strategy_scope_set).cloned().collect();
         let extra: Vec<String> = strategy_scope_set.difference(&scope_set).cloned().collect();
 
-        Err(format!(
-            "scope/strategy mapping mismatch (missing: [{}], extra: [{}])",
-            missing.join(", "),
-            extra.join(", ")
+        Err(mirrcode(
+            ErrorCode::ZeroDebtCloseoutFailed,
+            format!(
+                "scope/strategy mapping mismatch (missing: [{}], extra: [{}])",
+                missing.join(", "),
+                extra.join(", ")
+            ),
         ))
     }
 }
@@ -671,8 +744,9 @@ fn to_u32(value: usize) -> u32 {
     }
 }
 
-fn to_usize(value: u32) -> Result<usize, String> {
-    usize::try_from(value).map_err(|_| "length does not fit into usize".to_string())
+fn to_usize(value: u32) -> Result<usize, MirrError> {
+    usize::try_from(value)
+        .map_err(|_| mirrcode(ErrorCode::ZeroDebtCloseoutFailed, "length does not fit into usize"))
 }
 
 fn push_u32(bytes: &mut Vec<u8>, value: u32) {
@@ -686,9 +760,12 @@ fn push_string(bytes: &mut Vec<u8>, value: &str) {
     bytes.extend_from_slice(&value_bytes[..capped_len]);
 }
 
-fn read_u32(bytes: &[u8], cursor: &mut usize) -> Result<u32, String> {
+fn read_u32(bytes: &[u8], cursor: &mut usize) -> Result<u32, MirrError> {
     if bytes.len().saturating_sub(*cursor) < 4 {
-        return Err("canonical bytes truncated while reading u32".to_string());
+        return Err(mirrcode(
+            ErrorCode::ZeroDebtCloseoutFailed,
+            "canonical bytes truncated while reading u32",
+        ));
     }
 
     let mut raw = [0_u8; 4];
@@ -697,15 +774,19 @@ fn read_u32(bytes: &[u8], cursor: &mut usize) -> Result<u32, String> {
     Ok(u32::from_le_bytes(raw))
 }
 
-fn read_string(bytes: &[u8], cursor: &mut usize) -> Result<String, String> {
+fn read_string(bytes: &[u8], cursor: &mut usize) -> Result<String, MirrError> {
     let len = to_usize(read_u32(bytes, cursor)?)?;
     if bytes.len().saturating_sub(*cursor) < len {
-        return Err("canonical bytes truncated while reading string".to_string());
+        return Err(mirrcode(
+            ErrorCode::ZeroDebtCloseoutFailed,
+            "canonical bytes truncated while reading string",
+        ));
     }
 
     let slice = &bytes[*cursor..*cursor + len];
     *cursor += len;
-    let value = std::str::from_utf8(slice)
-        .map_err(|_| "canonical bytes contain invalid utf-8".to_string())?;
+    let value = std::str::from_utf8(slice).map_err(|_| {
+        mirrcode(ErrorCode::ZeroDebtCloseoutFailed, "canonical bytes contain invalid utf-8")
+    })?;
     Ok(value.to_string())
 }

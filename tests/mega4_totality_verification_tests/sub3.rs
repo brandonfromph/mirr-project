@@ -47,7 +47,7 @@ fn f2_example_tmr_sensor_fusion_cert_generation() {
 fn f8_adversarial_empty_input() {
     let result = nasa_rust_project::cert::deserialize_certificate(&[]);
     assert!(result.is_err(), "Empty input must fail deserialization");
-    let msg = result.unwrap_err();
+    let msg = result.unwrap_err().to_string();
     assert!(msg.contains("too short"), "Error should mention 'too short', got: {}", msg);
 }
 
@@ -79,7 +79,7 @@ fn f8_adversarial_truncated_cert() {
     let truncated = &bytes[..20];
     let result = cert::deserialize_certificate(truncated);
     assert!(result.is_err(), "Truncated cert (20 bytes) must fail deserialization");
-    let msg = result.unwrap_err();
+    let msg = result.unwrap_err().to_string();
     assert!(msg.contains("too short"), "Error should mention 'too short', got: {}", msg);
 }
 
@@ -92,7 +92,7 @@ fn f8_adversarial_wrong_magic_valid_length() {
     // Fill rest with zeros (structurally plausible body).
     let result = nasa_rust_project::cert::deserialize_certificate(&data);
     assert!(result.is_err(), "Wrong magic must fail deserialization");
-    let msg = result.unwrap_err();
+    let msg = result.unwrap_err().to_string();
     assert!(
         msg.contains("Invalid certificate magic"),
         "Error should mention invalid magic, got: {}",
@@ -122,7 +122,7 @@ fn f8_adversarial_unknown_strategy_tag() {
 
     let result = nasa_rust_project::cert::deserialize_certificate(&data);
     assert!(result.is_err(), "Unknown strategy tag must fail deserialization");
-    let msg = result.unwrap_err();
+    let msg = result.unwrap_err().to_string();
     assert!(
         msg.contains("Unknown termination strategy tag: 255"),
         "Error should report unknown strategy tag 255, got: {}",
@@ -167,7 +167,7 @@ fn f8_adversarial_excessive_type_witness_count() {
 
     let result = cert::deserialize_certificate(&bytes);
     assert!(result.is_err(), "Excessive type witness count must fail deserialization");
-    let msg = result.unwrap_err();
+    let msg = result.unwrap_err().to_string();
     assert!(
         msg.contains("Too many type witnesses"),
         "Error should mention too many type witnesses, got: {}",
@@ -227,7 +227,7 @@ fn f8_adversarial_truncated_after_strategy() {
 
     let result = nasa_rust_project::cert::deserialize_certificate(&data);
     assert!(result.is_err(), "Truncated cert after strategy must fail");
-    let msg = result.unwrap_err();
+    let msg = result.unwrap_err().to_string();
     assert!(msg.contains("Unexpected end"), "Error should mention unexpected end, got: {}", msg);
 }
 
@@ -262,7 +262,7 @@ fn f8_adversarial_excessive_property_verdict_count() {
 
     let result = cert::deserialize_certificate(&bytes);
     assert!(result.is_err(), "Excessive property verdict count must fail deserialization");
-    let msg = result.unwrap_err();
+    let msg = result.unwrap_err().to_string();
     assert!(
         msg.contains("Too many property verdicts"),
         "Error should mention too many property verdicts, got: {}",

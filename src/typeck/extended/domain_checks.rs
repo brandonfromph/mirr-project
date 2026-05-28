@@ -386,7 +386,7 @@ pub(super) fn check_phantom_tags(
 /// all state transitions observable in the module are legal.
 ///
 /// Bounded: iterates over signals, protocols, and transitions.
-pub(super) fn check_session_types(
+pub fn check_session_types(
     module: &crate::ast::program::Module,
     extended_signals: &[ExtendedSignalDecl],
     protocols: &[SessionProtocol],

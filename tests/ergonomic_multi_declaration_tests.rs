@@ -1,6 +1,6 @@
 //! Contract: Multi-Declaration Interop
 //! This test enforces that the compiler correctly handles mixed signal syntax:
-//! legacy individual signal declarations existing alongside new 'signals { ... }' blocks.
+//! individual signal declarations existing alongside new 'signals { ... }' blocks.
 
 use nasa_rust_project::compiler::macro_proc::expand_macros;
 use nasa_rust_project::parser::parse_mirr;

@@ -27,19 +27,6 @@ const MAX_REFLEX_BODY_LINES: usize = 4_096;
 const MAX_ASSIGNMENTS: usize = 256;
 const MAX_GUARD_NAMES: usize = 64;
 
-// ── Reflex parse state machine ───────────────────────────────────────────────
-// Replaces the fragile (saw_on_clause, inside_on) boolean pair.
-// Impossible states (e.g. InsideOn before AwaitingOn) are now unrepresentable.
-#[derive(Debug, PartialEq, Eq)]
-enum ReflexState {
-    /// Waiting for an `on <guard> {` clause (or `when [guard]` header).
-    AwaitingOn,
-    /// Inside the `on` block — consuming assignment lines.
-    InsideOn,
-    /// The `on` block closed; reflex body ends at next `}`.
-    Done,
-}
-
 // ── Guard parsing ─────────────────────────────────────────────────────────────
 
 /// Parse a `guard <name> { when <cond> for <N> cycles; }` block.
@@ -58,9 +45,21 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
         && header_line.contains('(')
         && header_line.contains(" for ")
     {
-        let after_keyword = header_line.strip_prefix("guard ").unwrap();
-        let (header_part, for_part) = after_keyword.split_once(" for ").unwrap();
-        let (name, rest) = header_part.split_once('(').unwrap();
+        let after_keyword = header_line.strip_prefix("guard ").unwrap_or(header_line);
+        let (header_part, for_part) = after_keyword.split_once(" for ").ok_or_else(|| {
+            emit_at(
+                ErrorCode::GuardMalformed,
+                "Malformed guard header. Expected 'for <cycles>' specification.",
+                Span::full_line(start_line as u32),
+            )
+        })?;
+        let (name, rest) = header_part.split_once('(').ok_or_else(|| {
+            emit_at(
+                ErrorCode::GuardMalformed,
+                "Malformed guard header. Expected parenthesis around condition.",
+                Span::full_line(start_line as u32),
+            )
+        })?;
         let name = name.trim();
 
         let cond_trimmed = rest.trim();
@@ -114,14 +113,14 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
     let (condition, cycles) = if current_line.starts_with("when ") && current_line.contains("for ")
     {
         // Same-line block form: when <cond> for <N> cycles;
-        let cond_part =
-            current_line.strip_prefix("when ").unwrap().split_once("for ").ok_or_else(|| {
-                emit_at(
-                    ErrorCode::GuardMalformed,
-                    "Missing 'for' in compact guard clause.",
-                    Span::full_line(*index as u32),
-                )
-            })?;
+        let after_when = current_line.strip_prefix("when ").unwrap_or(current_line);
+        let cond_part = after_when.split_once("for ").ok_or_else(|| {
+            emit_at(
+                ErrorCode::GuardMalformed,
+                "Missing 'for' in compact guard clause.",
+                Span::full_line(*index as u32),
+            )
+        })?;
 
         let condition = parse_expression(cond_part.0.trim()).map_err(|e| {
             emit_at(
@@ -233,11 +232,8 @@ fn guard_parse_when(
         .with_span(Some(Span::full_line(*index as u32))));
     }
 
-    let condition_str = when_line
-        .strip_prefix("when ")
-        .expect("starts_with checked above")
-        .trim()
-        .trim_end_matches(';');
+    let condition_str = &when_line[5..].trim();
+    let condition_str = condition_str.trim_end_matches(';');
 
     parse_expression(condition_str).map_err(|e| {
         emit_at(
@@ -363,36 +359,42 @@ fn parse_assignment(line: &str, line_index: usize) -> Result<Assignment, MirrErr
 ///
 /// Also accepts the inline header form: `reflex <name> when [<guard>] { ... }`.
 ///
+/// Returns ONE or MORE `Reflex` objects — one per assignment group sharing the
+/// same guard stack, as produced by nested `on A { on B { ... } }` blocks.
+///
 /// # Errors
 /// Returns `MirrError` on any malformed input. Never panics.
-pub(super) fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> {
+pub(super) fn parse_reflexes(lines: &[&str], index: &mut usize) -> Result<Vec<Reflex>, MirrError> {
     // NASA W5: assert precondition.
-    debug_assert!(*index <= lines.len(), "index out of bounds before parse_reflex");
+    debug_assert!(*index <= lines.len(), "index out of bounds before parse_reflexes");
 
     guard_check_eof(lines, *index, "reflex declaration")?;
 
     let start_line = *index;
-    let (name, mut guard_names) = reflex_parse_header(lines, index)?;
-
-    // If the header already declared guards via `when [...]`, skip AwaitingOn.
-    let initial_state =
-        if guard_names.is_empty() { ReflexState::AwaitingOn } else { ReflexState::InsideOn };
+    let (name, inline_guards) = reflex_parse_header(lines, index)?;
 
     *index += 1;
     skip_empty_and_comments(lines, index);
 
-    let assignments = reflex_parse_body(&name, lines, index, &mut guard_names, initial_state)?;
+    // Parse body using guard-stack algorithm that handles nested on-blocks.
+    let reflexes = reflex_parse_nested_body(&name, lines, index, inline_guards, start_line)?;
 
-    // NASA W5: postcondition — assignments must be non-empty.
-    debug_assert!(!assignments.is_empty(), "reflex body returned empty assignments");
+    if reflexes.is_empty() {
+        return Err(emit_at(
+            ErrorCode::ReflexEmptyBody,
+            format!("Reflex '{name}' must contain at least one assignment."),
+            Span::full_line(start_line as u32),
+        ));
+    }
 
-    Ok(Reflex {
-        name,
-        guard_names,
-        assignments,
-        origin: None,
-        span: Some(Span::multi_line(start_line as u32, (*index - 1) as u32)),
-    })
+    Ok(reflexes)
+}
+
+/// Backward-compat shim used by tests — returns only the first reflex.
+/// For production use, call `parse_reflexes`.
+pub(super) fn parse_reflex(lines: &[&str], index: &mut usize) -> Result<Reflex, MirrError> {
+    let mut reflexes = parse_reflexes(lines, index)?;
+    Ok(reflexes.remove(0))
 }
 
 // ── Reflex sub-parsers ────────────────────────────────────────────────────────
@@ -495,24 +497,72 @@ fn parse_guard_name_list(
     Ok(names)
 }
 
-/// Consume the reflex body using the `ReflexState` machine.
+// ── Nested on-block body parser ───────────────────────────────────────────────
+
+/// Parse a reflex body that may contain nested `on <guard> { ... }` blocks.
 ///
-/// Returns the collected assignments on success.
-/// NASA W2: loop bounded by MAX_REFLEX_BODY_LINES.
-fn reflex_parse_body(
+/// Uses an explicit guard-stack (NASA P10: no recursion) to accumulate guard
+/// names from enclosing `on` clauses. Each assignment is tagged with the full
+/// guard stack at the time it appears, and flushed into a `Reflex` object when
+/// the guard stack changes back to a previous depth.
+///
+/// Bounded: at most MAX_REFLEX_BODY_LINES iterations.
+fn reflex_parse_nested_body(
     name: &str,
     lines: &[&str],
     index: &mut usize,
-    guard_names: &mut Vec<String>,
-    initial: ReflexState,
-) -> Result<Vec<Assignment>, MirrError> {
-    let mut state = initial;
-    let mut assignments = Vec::new();
-    let mut brace_depth = 1_i32;
-    let mut iterations = 0_usize;
+    inline_guards: Vec<String>,
+    start_line: usize,
+) -> Result<Vec<Reflex>, MirrError> {
+    // guard_stack[i] = list of guard names added at depth i.
+    // depth 0 = inside the outer reflex { } block.
+    let mut guard_stack: Vec<Vec<String>> = Vec::new();
+    // If the reflex header had inline when-guards, seed the stack.
+    if !inline_guards.is_empty() {
+        guard_stack.push(inline_guards);
+    }
 
-    while *index < lines.len() && brace_depth > 0 {
-        // NASA W2: hard iteration ceiling.
+    let mut result: Vec<Reflex> = Vec::new();
+    // pending collects assignments at the CURRENT guard stack depth.
+    let mut pending: Vec<Assignment> = Vec::new();
+    // pending_guard_key records the guard_names for the current pending batch.
+    let mut pending_guard_key: Vec<String> = Vec::new();
+    // outer_depth tracks braces so we know when we exit the reflex {} block.
+    let mut outer_depth: i32 = 1;
+    let mut iterations = 0usize;
+
+    // Helper: flatten guard_stack into a Vec<String>.
+    fn flat_guards(stack: &[Vec<String>]) -> Vec<String> {
+        stack.iter().flat_map(|v| v.iter().cloned()).collect()
+    }
+
+    let mut chunk_index = 0usize;
+
+    // Flush pending assignments into a Reflex.
+    let mut flush = |pending: &mut Vec<Assignment>,
+                     pending_key: &mut Vec<String>,
+                     result: &mut Vec<Reflex>,
+                     name: &str,
+                     start_line: usize,
+                     end_line: usize| {
+        if !pending.is_empty() {
+            let unique_name = if chunk_index == 0 {
+                name.to_string()
+            } else {
+                format!("{}_split_{}", name, chunk_index)
+            };
+            result.push(Reflex {
+                name: unique_name,
+                guard_names: pending_key.clone(),
+                assignments: std::mem::take(pending),
+                origin: None,
+                span: Some(Span::multi_line(start_line as u32, end_line as u32)),
+            });
+            chunk_index += 1;
+        }
+    };
+
+    while *index < lines.len() && outer_depth > 0 {
         iterations += 1;
         if iterations >= MAX_REFLEX_BODY_LINES {
             return Err(MirrError::SemanticError {
@@ -525,172 +575,183 @@ fn reflex_parse_body(
         }
 
         let line = lines[*index].trim();
+        *index += 1;
 
         // Skip blank lines and comments.
         if line.is_empty() || line.starts_with("//") {
-            *index += 1;
             continue;
         }
 
-        match state {
-            ReflexState::AwaitingOn => {
-                if !line.starts_with("on") {
-                    return Err(emit_at(
-                        ErrorCode::ReflexMissingOn,
-                        format!("Reflex '{}' expected 'on <guard> {{', found: {}", name, line),
-                        Span::full_line(*index as u32),
-                    ));
+        // Detect an `on <guards> {` clause (possibly with leading `}` from a
+        // closed previous block on the same line, like `} on next_guard {`).
+        let check = if line.starts_with('}') { line.trim_start_matches('}').trim() } else { line };
+
+        let leading_closes = line.chars().take_while(|&c| c == '}').count() as i32;
+
+        if check.starts_with("on ") {
+            // If the line doesn't have an opening brace, peek at the next line.
+            let mut extra_opens = 0;
+            if !check.contains('{') {
+                // Peek at next line(s) to find the brace
+                let mut temp_idx = *index;
+                while temp_idx < lines.len() && extra_opens == 0 {
+                    let next_line = lines[temp_idx].trim();
+                    if next_line.is_empty() || next_line.starts_with("//") {
+                        temp_idx += 1;
+                        continue;
+                    }
+                    if next_line.starts_with('{') {
+                        extra_opens = 1;
+                        // Consume lines until the brace
+                        *index = temp_idx + 1;
+                    }
+                    break; // Either we found it or we hit content that isn't a brace
                 }
+            }
 
-                reflex_consume_on_clause(
+            if check.contains('{') || extra_opens > 0 {
+                // Flush any pending assignments before changing the guard context.
+                flush(
+                    &mut pending,
+                    &mut pending_guard_key,
+                    &mut result,
                     name,
-                    line,
-                    index,
-                    guard_names,
-                    &mut brace_depth,
-                    &mut state,
-                )?;
+                    start_line,
+                    (*index - 1).max(start_line),
+                );
             }
-            ReflexState::InsideOn => {
-                reflex_consume_assignment_or_close(
-                    name,
-                    line,
-                    index,
-                    guard_names,
-                    &mut assignments,
-                    &mut brace_depth,
-                    &mut state,
-                )?;
+
+            // Pop guards for the leading `}` closes before the new `on`.
+            for _ in 0..leading_closes {
+                guard_stack.pop();
+                outer_depth -= 1;
             }
-            ReflexState::Done => {
-                // Consume the outer closing brace.
-                let opens = line.matches('{').count() as i32;
-                let closes = line.matches('}').count() as i32;
-                brace_depth += opens - closes;
-                *index += 1;
-            }
+
+            // Parse the `on <guards> {` portion.
+            let after_on = check.strip_prefix("on ").unwrap_or(check);
+            let guards_part = after_on.split('{').next().unwrap_or("").trim();
+            let new_guards = parse_guard_name_list(name, guards_part, *index - 1, false)?;
+            guard_stack.push(new_guards);
+
+            // Count braces on this line
+            let opens = check.matches('{').count() as i32 + extra_opens;
+            let closes = check.matches('}').count() as i32;
+            // outer_depth was already decremented for leading_closes above;
+            // add the net brace delta for the rest of the line.
+            outer_depth += opens - closes - (-leading_closes);
+
+            // Update the guard key for the next pending batch.
+            pending_guard_key = flat_guards(&guard_stack);
+            continue;
         }
+
+        if line.starts_with('}') {
+            // Handle one or more closing braces.
+            let closes = line.matches('}').count() as i32;
+            let opens = line.matches('{').count() as i32;
+            let net = closes - opens;
+
+            for _ in 0..net {
+                if outer_depth <= 1 {
+                    // This is the outer reflex closing brace.
+                    flush(
+                        &mut pending,
+                        &mut pending_guard_key,
+                        &mut result,
+                        name,
+                        start_line,
+                        (*index - 1).max(start_line),
+                    );
+                    outer_depth -= 1;
+                    break;
+                }
+                // Flush before popping guard context.
+                flush(
+                    &mut pending,
+                    &mut pending_guard_key,
+                    &mut result,
+                    name,
+                    start_line,
+                    (*index - 1).max(start_line),
+                );
+                if !guard_stack.is_empty() {
+                    guard_stack.pop();
+                }
+                outer_depth -= 1;
+            }
+            pending_guard_key = flat_guards(&guard_stack);
+            continue;
+        }
+
+        // Assignment line: record it with the current guard context.
+        if line.contains('=') && !line.starts_with("on ") {
+            if guard_stack.is_empty() {
+                return Err(emit_at(
+                    ErrorCode::ReflexMissingOn,
+                    format!("Reflex '{name}' assignment is outside of any 'on' clause and has no inline guards."),
+                    Span::full_line(*index as u32),
+                ));
+            }
+            let current_key = flat_guards(&guard_stack);
+
+            // Check guard key changed (shouldn't happen without intervening on/}).
+            if current_key != pending_guard_key && !pending.is_empty() {
+                flush(
+                    &mut pending,
+                    &mut pending_guard_key,
+                    &mut result,
+                    name,
+                    start_line,
+                    (*index - 1).max(start_line),
+                );
+            }
+            pending_guard_key = current_key;
+
+            if pending.len() >= MAX_ASSIGNMENTS {
+                return Err(emit_at(
+                    ErrorCode::ReflexNoGuardNames,
+                    format!("Reflex '{name}' exceeds MAX_ASSIGNMENTS ({MAX_ASSIGNMENTS})."),
+                    Span::full_line(*index as u32),
+                ));
+            }
+            let assignment = parse_assignment(line, *index - 1).map_err(|e| {
+                emit_at(
+                    ErrorCode::ReflexAssignmentError,
+                    format!("In reflex '{name}': {e}"),
+                    Span::full_line(*index as u32),
+                )
+            })?;
+            pending.push(assignment);
+        }
+        // Lines that are neither on-clauses, closing braces, nor assignments
+        // (e.g., variable declarations inlined by macro_proc) are skipped.
     }
 
-    if brace_depth != 0 {
-        return Err(MirrError::parse_error(format!("Reflex '{name}' not closed with '}}'."))
-            .with_span(Some(Span::full_line(index.saturating_sub(1) as u32))));
+    if outer_depth > 0 {
+        return Err(MirrError::parse_error(format!(
+            "{} Reflex '{name}' reached end of file with {outer_depth} unclosed braces.",
+            crate::error_codes::ec(175)
+        )));
     }
 
-    if assignments.is_empty() {
-        return Err(emit_at(
-            ErrorCode::ReflexEmptyBody,
-            format!("Reflex '{name}' must contain at least one assignment."),
-            Span::full_line(index.saturating_sub(1) as u32),
-        )
-        .with_span(Some(Span::full_line(index.saturating_sub(1) as u32))));
-    }
-
-    // NASA W5: postcondition.
-    debug_assert!(
-        assignments.len() <= MAX_ASSIGNMENTS,
-        "assignments exceeded MAX_ASSIGNMENTS — loop bound violated"
+    // Flush any remaining assignments.
+    flush(
+        &mut pending,
+        &mut pending_guard_key,
+        &mut result,
+        name,
+        start_line,
+        (*index - 1).max(start_line),
     );
 
-    Ok(assignments)
-}
-
-/// Handle a line while in `AwaitingOn` state.
-/// NASA W4: ≤ 60 lines.
-fn reflex_consume_on_clause(
-    name: &str,
-    line: &str,
-    index: &mut usize,
-    guard_names: &mut Vec<String>,
-    brace_depth: &mut i32,
-    state: &mut ReflexState,
-) -> Result<(), MirrError> {
-    if !line.starts_with("on ") {
-        return Err(emit_at(
-            ErrorCode::ReflexMissingOn,
-            format!("Reflex '{name}' expected 'on <guard> {{', found: {line}"),
-            Span::full_line(*index as u32),
-        )
-        .with_span(Some(Span::full_line(*index as u32))));
-    }
-
-    let after_on = line.strip_prefix("on ").ok_or_else(|| {
-        emit_at(
-            ErrorCode::ReflexMissingOn,
-            format!("Reflex '{name}' expected 'on <guard> {{', found: {line}"),
-            Span::full_line(*index as u32),
-        )
-        .with_span(Some(Span::full_line(*index as u32)))
-    })?;
-    let (guards_part, remainder) = match after_on.split_once('{') {
-        Some(parts) => parts,
-        None => {
-            // Require the `on <guard> {` form; we do not support the brace on the next line.
-            return Err(emit_at(
-                ErrorCode::ReflexMissingOn,
-                format!("Reflex '{name}' expected 'on <guard> {{', found: {line}"),
-                Span::full_line(*index as u32),
-            )
-            .with_span(Some(Span::full_line(*index as u32))));
+    let final_end_line = (*index - 1).max(start_line) as u32;
+    for r in &mut result {
+        if let Some(ref mut span) = r.span {
+            span.end_line = final_end_line;
         }
-    };
-
-    guard_names.clear();
-    guard_names.extend(parse_guard_name_list(name, guards_part, *index, false)?);
-
-    // Account for the `{` that opens the on-block in the current line, plus any
-    // additional braces occurring later on the same line.
-    *brace_depth += 1;
-    let opens = remainder.matches('{').count() as i32;
-    let closes = remainder.matches('}').count() as i32;
-    *brace_depth += opens - closes;
-
-    *state = ReflexState::InsideOn;
-    *index += 1;
-    Ok(())
-}
-
-/// Handle a line while in `InsideOn` state.
-/// NASA W4: ≤ 60 lines.
-fn reflex_consume_assignment_or_close(
-    name: &str,
-    line: &str,
-    index: &mut usize,
-    _guard_names: &[String],
-    assignments: &mut Vec<Assignment>,
-    brace_depth: &mut i32,
-    state: &mut ReflexState,
-) -> Result<(), MirrError> {
-    if line == "}" {
-        *brace_depth -= 1;
-        *index += 1;
-        if *brace_depth == 1 {
-            *state = ReflexState::Done;
-        }
-        return Ok(());
     }
 
-    // NASA W2: hard ceiling on assignment count.
-    if assignments.len() >= MAX_ASSIGNMENTS {
-        return Err(emit_at(
-            ErrorCode::ReflexNoGuardNames,
-            format!("Reflex '{name}' exceeds MAX_ASSIGNMENTS ({MAX_ASSIGNMENTS})."),
-            Span::full_line(*index as u32),
-        ));
-    }
-
-    let assignment = parse_assignment(line, *index).map_err(|e| {
-        emit_at(
-            ErrorCode::ReflexAssignmentError,
-            format!("In reflex '{name}': {e}"),
-            Span::full_line(*index as u32),
-        )
-        .with_span(Some(Span::full_line(*index as u32)))
-    })?;
-
-    assignments.push(assignment);
-    *index += 1;
-    Ok(())
+    Ok(result)
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

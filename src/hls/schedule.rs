@@ -14,6 +14,8 @@
 #![forbid(unsafe_code)]
 
 use super::{OpDag, ResourceKind};
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
 
 /// Maximum schedule cycles (NASA P10 bound).
 pub const MAX_SCHEDULE_CYCLES: u32 = 1024;
@@ -47,7 +49,7 @@ impl ScheduleOp {
 ///
 /// Each operation is scheduled at the earliest cycle it can execute,
 /// based on data dependencies. Bounded by graph size.
-pub fn asap_schedule(dag: &OpDag) -> Result<Vec<ScheduleOp>, &'static str> {
+pub fn asap_schedule(dag: &OpDag) -> Result<Vec<ScheduleOp>, MirrError> {
     let mut schedule: Vec<ScheduleOp> = Vec::new();
     let mut visited: Vec<bool> = vec![false; dag.ops.len()];
 
@@ -56,17 +58,17 @@ pub fn asap_schedule(dag: &OpDag) -> Result<Vec<ScheduleOp>, &'static str> {
     while i < dag.ops.len() {
         let op = &dag.ops[i];
         if op.predecessors.is_empty() {
-            let result = asap_from_node(dag, &mut schedule, &mut visited, op.op_id, 0);
-            if result.is_err() {
-                return Err("Failed to schedule source node");
-            }
+            asap_from_node(dag, &mut schedule, &mut visited, op.op_id, 0)?;
         }
         i += 1;
     }
 
     // Verify all operations were scheduled.
     if schedule.len() != dag.ops.len() {
-        return Err("Not all operations could be scheduled (disconnected graph or cycle)");
+        return Err(mirrcode(
+            ErrorCode::HlsSchedulingFailed,
+            "Not all operations could be scheduled (disconnected graph or cycle)",
+        ));
     }
 
     // Sort by op_id for consistent ordering.
@@ -82,7 +84,7 @@ fn asap_from_node(
     visited: &mut [bool],
     op_id: u32,
     cycle: u32,
-) -> Result<(), &'static str> {
+) -> Result<(), MirrError> {
     if op_id >= dag.ops.len() as u32 {
         return Ok(());
     }
@@ -130,7 +132,7 @@ fn asap_from_node(
     }
 
     if actual_earliest >= MAX_SCHEDULE_CYCLES {
-        return Err("Schedule exceeds maximum cycles");
+        return Err(mirrcode(ErrorCode::HlsSchedulingFailed, "Schedule exceeds maximum cycles"));
     }
 
     schedule.push(ScheduleOp {
@@ -155,9 +157,9 @@ fn asap_from_node(
 ///
 /// Each operation is scheduled at the latest cycle it can execute
 /// without violating the target latency. Bounded by graph size.
-pub fn alap_schedule(dag: &OpDag, latency: u32) -> Result<Vec<ScheduleOp>, &'static str> {
+pub fn alap_schedule(dag: &OpDag, latency: u32) -> Result<Vec<ScheduleOp>, MirrError> {
     if latency == 0 || latency > MAX_SCHEDULE_CYCLES {
-        return Err("Invalid latency: must be 1..=1024");
+        return Err(mirrcode(ErrorCode::HlsSchedulingFailed, "Invalid latency: must be 1..=1024"));
     }
 
     let mut schedule: Vec<ScheduleOp> = Vec::new();
@@ -169,23 +171,17 @@ pub fn alap_schedule(dag: &OpDag, latency: u32) -> Result<Vec<ScheduleOp>, &'sta
     while i < dag.ops.len() {
         let op = &dag.ops[i];
         if op.successors.is_empty() {
-            let result = alap_from_node(
-                dag,
-                &mut schedule,
-                &mut visited,
-                op.op_id,
-                latency.saturating_sub(1),
-            );
-            if result.is_err() {
-                return Err("Failed to schedule sink node");
-            }
+            alap_from_node(dag, &mut schedule, &mut visited, op.op_id, latency.saturating_sub(1))?;
         }
         i += 1;
     }
 
     // Verify all operations were scheduled.
     if schedule.len() != dag.ops.len() {
-        return Err("Not all operations could be scheduled (disconnected graph or cycle)");
+        return Err(mirrcode(
+            ErrorCode::HlsSchedulingFailed,
+            "Not all operations could be scheduled (disconnected graph or cycle)",
+        ));
     }
 
     // Sort by op_id for consistent ordering.
@@ -201,7 +197,7 @@ fn alap_from_node(
     visited: &mut [bool],
     op_id: u32,
     latest_cycle: u32,
-) -> Result<(), &'static str> {
+) -> Result<(), MirrError> {
     if op_id >= dag.ops.len() as u32 {
         return Ok(());
     }
@@ -250,7 +246,10 @@ fn alap_from_node(
     }
 
     if actual_latest == 0 && !op.predecessors.is_empty() {
-        return Err("ALAP scheduling conflict: operation must execute before cycle 0");
+        return Err(mirrcode(
+            ErrorCode::HlsSchedulingFailed,
+            "ALAP scheduling conflict: operation must execute before cycle 0",
+        ));
     }
 
     schedule.push(ScheduleOp {

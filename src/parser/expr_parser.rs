@@ -18,12 +18,14 @@ fn infix_binding_power(op: &BinaryOp) -> (u8, u8) {
     match op {
         BinaryOp::Or => (2, 3),
         BinaryOp::And => (4, 5),
-        BinaryOp::Xor => (6, 7),
-        BinaryOp::Eq | BinaryOp::Ne => (8, 9),
-        BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => (10, 11),
-        BinaryOp::Shl | BinaryOp::Shr => (12, 13),
-        BinaryOp::Add | BinaryOp::Sub => (14, 15),
-        BinaryOp::Mul => (16, 17),
+        BinaryOp::BitwiseOr => (6, 7),
+        BinaryOp::BitwiseAnd => (8, 9),
+        BinaryOp::Xor => (10, 11),
+        BinaryOp::Eq | BinaryOp::Ne => (12, 13),
+        BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => (14, 15),
+        BinaryOp::Shl | BinaryOp::Shr => (16, 17),
+        BinaryOp::Add | BinaryOp::Sub => (18, 19),
+        BinaryOp::Mul => (20, 21),
     }
 }
 
@@ -34,7 +36,9 @@ const MAX_EXPR_DEPTH: usize = 128;
 fn token_to_binop(tok: &Token) -> Option<BinaryOp> {
     match tok {
         Token::AmpAmp => Some(BinaryOp::And),
+        Token::Amp => Some(BinaryOp::BitwiseAnd),
         Token::PipePipe => Some(BinaryOp::Or),
+        Token::Pipe => Some(BinaryOp::BitwiseOr),
         Token::Caret => Some(BinaryOp::Xor),
         Token::EqEq => Some(BinaryOp::Eq),
         Token::BangEq => Some(BinaryOp::Ne),

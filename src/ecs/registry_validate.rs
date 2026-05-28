@@ -35,7 +35,6 @@ impl super::Registry {
             return Err(anyhow::anyhow!("UnfoldIndices table desync"));
         }
 
-
         // Scan for orphaned entities (Entities that exist in next_id but have no components)
         for i in 0..max_id {
             let has_name = self.names[i].is_some();

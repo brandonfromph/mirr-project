@@ -125,8 +125,17 @@ pub fn interval_binary(op: BinaryOp, lhs: SymValue, rhs: SymValue) -> SymValue {
             let hi = a_hi.min(b_hi);
             normalize(0, hi)
         }
+        BinaryOp::BitwiseAnd => {
+            let hi = a_hi.min(b_hi);
+            normalize(0, hi)
+        }
         BinaryOp::Or => {
             // OR can set any bit present in either operand.
+            let lo = a_lo.max(b_lo);
+            let hi = a_hi | b_hi;
+            normalize(lo, hi)
+        }
+        BinaryOp::BitwiseOr => {
             let lo = a_lo.max(b_lo);
             let hi = a_hi | b_hi;
             normalize(lo, hi)

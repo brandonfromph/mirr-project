@@ -4,18 +4,24 @@ use std::collections::BTreeMap;
 use std::env;
 use std::io::{self, BufRead, BufReader, Read, Write};
 
-use mirror::catalog::{
+use mirr_mcp_control_plane::catalog::{
     CANONICAL_CATALOG_ID, CATALOG_ALIASES, MCP_PROTOCOL_VERSION, MCP_SERVER_NAME,
     MCP_SERVER_VERSION,
 };
-use mirror::policy::Role;
-use mirror::server_rewrite::axum_route_host::{dispatch_host_stdio_line, AxumMcpHostState};
-use mirror::server_rewrite::rpc_dispatch_bridge::{RpcHandlerMap, RpcHandlerResponse};
-use mirror::server_rewrite::rpc_role_gate::{RoleTokenMap, VerifiedPrincipal};
-use mirror::server_rewrite::rpc_stdio_message_dispatch::{
+use mirr_mcp_control_plane::policy::Role;
+use mirr_mcp_control_plane::server_rewrite::axum_route_host::{
+    dispatch_host_stdio_line, AxumMcpHostState,
+};
+use mirr_mcp_control_plane::server_rewrite::rpc_dispatch_bridge::{
+    RpcHandlerMap, RpcHandlerResponse,
+};
+use mirr_mcp_control_plane::server_rewrite::rpc_role_gate::{RoleTokenMap, VerifiedPrincipal};
+use mirr_mcp_control_plane::server_rewrite::rpc_stdio_message_dispatch::{
     format_stdio_rpc_output_line, MAX_STDIO_LINE_BYTES,
 };
-use mirror::tooling::{discovery_method_by_name, DiscoveryParameter, MrtDispatchTool};
+use mirr_mcp_control_plane::tooling::{
+    discovery_method_by_name, DiscoveryParameter, MrtDispatchTool,
+};
 use serde_json::{json, Map, Value};
 
 const MAX_STDIO_INPUT_LINES: usize = 1_000_000;
@@ -84,7 +90,7 @@ fn build_initialize_result() -> String {
 fn build_tools_list_result() -> String {
     let mut tools = Vec::<Value>::new();
 
-    // First, list legacy tools
+    // First, list core tools
     for tool in MrtDispatchTool::ALL {
         if let Some(method) = discovery_method_by_name(tool.as_str()) {
             tools.push(json!({
@@ -315,7 +321,7 @@ fn parse_content_length_from_headers(header_lines: &[String]) -> Result<Option<u
 
 fn write_response<W: Write>(
     writer: &mut W,
-    response: &mirror::server_rewrite::rpc_stdio_message_dispatch::StdioRpcResponse,
+    response: &mirr_mcp_control_plane::server_rewrite::rpc_stdio_message_dispatch::StdioRpcResponse,
     mode: StdioInputMode,
 ) -> Result<(), String> {
     let Some(output_line) = format_stdio_rpc_output_line(response) else {

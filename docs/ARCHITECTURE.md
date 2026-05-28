@@ -17,9 +17,11 @@ mirr-private/
 │   ├── ast/                  # Abstract Syntax Tree definitions
 │   ├── parser/               # Front-end parsing (Lexer & Parser)
 │   ├── ecs/                  # Entity Component System (ECS) architecture (Registry)
+│   ├── cert/                 # MEGA-4 Proof certificate format & MEGA-16 PCC verifier
 │   ├── typeck/               # Type checking & constraint validation
 │   ├── width/                # Width constraint solving (SCC paths)
 │   ├── temporal/             # Temporal lowering of hardware guards
+│   ├── symbolic/             # Hardware-preparatory symbolic evaluation engine
 │   ├── emit/                 # Emission backends (SystemVerilog, FIRRTL, R-SPU, etc.)
 │   ├── bin/                  # Executable entrypoints (mirr-compile, mirr-general, etc.)
 │   └── lib.rs                # Public module exports
@@ -61,8 +63,10 @@ The following statements describe how services and subsystems interact within th
    - Source code is ingested by the [Lexer/Parser](../src/parser/module_parser/mod.rs), generating an AST.
    - The AST is hydrated into the [ECS Registry](../src/ecs/registry.rs), where all hardware declarations become entities.
    - [Semantic Validation](../src/ecs/semantic_validate.rs) ensures entity integrity (Name and Kind constraints).
-   - [Width Solver](../src/width/solver.rs) infers missing signal widths using SCC propagation.
-   - [Temporal Lowering](../src/temporal/mod.rs) translates hardware guards into deterministic netlist primitives. This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes `TemporalNodeComponent` metadata for each guard entity, closing the "Temporal Seam".
+   - [Width Solver](../src/width/solver.rs) infers missing signal widths using SCC propagation. Note: The ECS-native width inference system is currently a mock; the AST-based solver remains the primary engine.
+   - [Temporal Lowering](../src/temporal/mod.rs) translates hardware guards into deterministic netlist primitives.
+ This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes `TemporalNodeComponent` metadata for each guard entity, closing the "Temporal Seam".
+   - [Symbolic Evaluation Engine](../src/symbolic/mod.rs) provides abstract interpretation, discrete calculus approximations, anomaly signature fingerprinting, and a term rewriting engine for runtime logic optimization.
    - Finally, [Emission Backends](../src/emit/mod.rs) generate the target artifacts.
 
 2. **Control Plane & RAG Integration:**
@@ -117,6 +121,7 @@ flowchart LR
         KB[mirr-kb-native]
         Audit[mirr-audit]
         Wave[mirr-wave]
+        ProofAudit[mirr-proof-audit]
     end
 
     subgraph Consumers[Consumer Surfaces]
@@ -129,10 +134,43 @@ flowchart LR
     MCP --> Pipeline
     MCP --> Audit
     MCP --> Wave
+    ProofAudit --> Pipeline
     WASM --> Pipeline
     LRA --> Pipeline
     VSCode --> MCP
 ```
+
+## 4.5 Formal Proofs Topology (proofs/)
+
+The repository maintains rigorous formal verification infrastructure in the `proofs/` directory:
+
+- **`proofs/compiler/`**: Coq/Rocq verification of AST simplification passes.
+  - `ConstFold.v`: Proves semantic preservation of constant folding on arithmetic expressions.
+  - `Simplify.v`: Equivalence proofs for logic simplification rules.
+- **`proofs/cert/`**: Formal specification and totality proofs of Proof-Carrying Code (PCC) boundary conditions.
+  - `Verifier.v`: Axiomatizes safety invariants for dynamic hardware and software bounds.
+- **`proofs/mape_k/`**: Proves behavioral equivalence of software and hardware control loops.
+  - `Equivalence.v`: Relates abstract software MAPE-K logic to the synthesized gate-level representations.
+- **Tooling (`src/bin/mirr-proof-audit.rs`)**:
+  - Automatically maps and audits Rocq proof coverage against compiled AST nodes, reporting proof densities and gaps for formal CI gates.
+
+## 4.6 R-SPU 16-Core Architecture (rspu_chip/)
+
+The `rspu_chip/` directory houses the complete structural hardware layout of the R-SPU processor:
+
+- **64-bit Tagged-Word Specification (`core/types.mirr`)**:
+  - Encodes the standard 64-bit word format: `[63:40]` Reserved (24 bits), `[39:36]` Provenance tracking (4 bits), `[35:32]` Hardware Type Tag (4 bits), and `[31:0]` Raw Data Payload (32 bits).
+- **Core Subsystems**:
+  - `core/alu.mirr`: High-assurance ALU performing hardware type dispatch and dynamic arithmetic safety trap generation.
+  - `core/regfile.mirr`: Bounded register file (256x64-bit tagged words) with concurrent dual read and single write lines.
+  - `core/pipeline.mirr`: Bounded 5-stage pipeline wiring together Fetch (IF), Decode (ID), Execute (EX), Memory (MEM), and Writeback (WB) stages.
+  - `core/core_top.mirr`: Top-level core wrapper integrating pipeline stages and exception routing.
+- **Verification Subsystems**:
+  - `verification/pcc_verifier.mirr`: Safe IF-stage hardware gatekeeper enforcing dynamic verification bounds and instruction boundaries.
+  - `verification/tmr_voter.mirr`: Triple-Modular Redundancy (TMR) majority voter mask to mitigate single-core physical faults.
+- **Interconnect & Fabric**:
+  - `interconnect/noc_router.mirr`: 16-port packet-switched Network-on-Chip (NoC) router supporting broadcast/star topology routing.
+  - `rspu_top.mirr`: Top-level integration file wiring the 16 cores to the NoC router and verification voters.
 
 ## 5. Main Projects At A Glance
 
@@ -140,8 +178,9 @@ flowchart LR
 
 | Project | What it is | Architecture overview | Current phase/status |
 |---|---|---|---|
-| [`src`](../src) / core compiler | The compiler engine | Front-end -> semantic validation -> type/width solving -> temporal lowering -> emit backends | Phases 0-7e complete; 7f+ not started |
+| [`src`](../src) / core compiler | The compiler engine | Front-end -> semantic validation -> type/width solving -> temporal lowering -> emit backends | Phases 0-7h complete; 7i+ in progress |
 | [`src/bin/mirr-hydrate.rs`](../src/bin/mirr-hydrate.rs) | MIRR Hydrator | Converts Yosys JSON technology-mapped netlists to structured MIRR files | Core component; complete and verified |
+| [`src/bin/mirr-proof-audit.rs`](../src/bin/mirr-proof-audit.rs) | Proof Auditor | Audits coverage of formal proofs across compiler AST and emission nodes | Phase 7i tool; initialized |
 | [`compiler_mirr`](../compiler_mirr) | Self-hosting compiler subset | MIRR-written bootstrap implementation | Stage-1 hosted self-hosting, in progress |
 
 ### Control Plane Layer
@@ -184,7 +223,12 @@ flowchart LR
 | Phase 6 | Complete | Integration and visualization |
 | Phase 7a-d | Complete | Safety properties, pattern system, advanced types, S-expression IR |
 | Phase 7e | Complete | Hardened Temporal Simulator (Double-buffered, Cycle-accurate, Prev) |
-| Phase 7f-h | In Progress | Proof-carrying code, symbolic evaluation, MAPE-K hardware realization |
+| Phase 7f | Complete    | Proof-carrying code (PCC) infrastructure |
+| Phase 7g | Complete    | Symbolic evaluation engine (Intervals, Fingerprints) |
+| Phase 7h | Complete    | MAPE-K hardware realization (SV emitter & verification) |
+
+| Phase 7i | In Progress | Verified compilation chain (ConstFold proof & audit tool) |
+| Phase 8a | In Progress | R-SPU Core Architecture (64-bit tagged-word pipeline) |
 
 ## 8. Practical Pitfalls In This Workspace
 

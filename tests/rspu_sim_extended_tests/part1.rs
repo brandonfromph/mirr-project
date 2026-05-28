@@ -423,7 +423,7 @@ fn test_alu_imm_sub() {
 fn test_alu_unary_not() {
     let mut sim = RspuSimulator::new();
     let program = make_program(vec![
-        RspuInstruction::LoadImm { dst: 192, value: 0, width: 8 },
+        RspuInstruction::LoadImm { dst: 192, value: 0, width: 64 },
         RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: 193, src: 192 },
         RspuInstruction::Halt,
     ]);
@@ -435,7 +435,7 @@ fn test_alu_unary_not() {
 fn test_alu_unary_negate() {
     let mut sim = RspuSimulator::new();
     let program = make_program(vec![
-        RspuInstruction::LoadImm { dst: 192, value: 42, width: 8 },
+        RspuInstruction::LoadImm { dst: 192, value: 42, width: 64 },
         RspuInstruction::AluUnary { op: AluUnaryOp::Negate, dst: 193, src: 192 },
         RspuInstruction::Halt,
     ]);

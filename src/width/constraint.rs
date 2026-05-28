@@ -170,7 +170,12 @@ where
                             right: *right,
                         });
                     }
-                    BinaryOp::Sub | BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
+                    BinaryOp::Sub
+                    | BinaryOp::And
+                    | BinaryOp::Or
+                    | BinaryOp::BitwiseOr
+                    | BinaryOp::BitwiseAnd
+                    | BinaryOp::Xor => {
                         constraints.push(WidthConstraint::MaxOf {
                             node: node_id,
                             left: *left,

@@ -198,7 +198,11 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
             if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
                 break;
             }
-            if gname != "always" && !guard_names.contains(gname.as_str()) {
+            let is_bool_signal = module
+                .signals
+                .iter()
+                .any(|s| s.name == *gname && s.ty.core == crate::ast::types::SignalType::Bool);
+            if gname != "always" && !guard_names.contains(gname.as_str()) && !is_bool_signal {
                 let suggestion = crate::suggest::closest_match(gname, &guard_name_candidates);
                 let mut msg = format!(
                     "{} Reflex '{}' references undeclared guard '{}'.",
@@ -219,9 +223,32 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
             if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
                 break;
             }
-            // Target must be a writable signal.
-            if !writable_signals.contains(assignment.target.as_str()) {
-                if signal_names.contains(assignment.target.as_str()) {
+            let has_bracket = assignment.target.contains('[');
+            let clean_target = if let Some(pos) = assignment.target.find('[') {
+                assignment.target[..pos].trim()
+            } else {
+                assignment.target.as_str()
+            };
+
+            if has_bracket {
+                if let Some(sig) = module.signals.iter().find(|s| s.name == clean_target) {
+                    if !matches!(sig.ty.core, crate::ast::types::SignalType::Array { .. }) {
+                        errors.push(MirrError::SemanticError {
+                            message: format!(
+                                "{} Reflex '{}' assigns to non-array signal '{}' with indexing.",
+                                crate::error_codes::ec(207),
+                                reflex.name,
+                                assignment.target
+                            ),
+                            span: reflex.span,
+                        });
+                        continue;
+                    }
+                }
+            }
+
+            if !writable_signals.contains(clean_target) {
+                if signal_names.contains(clean_target) {
                     errors.push(MirrError::SemanticError {
                         message: format!(
                             "{} Reflex '{}' assigns to input signal '{}', which is not writable.",
@@ -234,7 +261,7 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
                     continue;
                 }
                 let suggestion =
-                    crate::suggest::closest_match(&assignment.target, &signal_name_candidates);
+                    crate::suggest::closest_match(clean_target, &signal_name_candidates);
                 let mut msg = format!(
                     "{} Reflex '{}' assigns to undeclared signal '{}'.",
                     crate::error_codes::ec(207),
@@ -446,6 +473,14 @@ fn expr_contains_composite(expr: &Expr) -> bool {
     false
 }
 
+fn get_reflex_base_name(name: &str) -> &str {
+    if let Some(idx) = name.find("_split_") {
+        &name[..idx]
+    } else {
+        name
+    }
+}
+
 /// Validate single-writer: each writable signal has at most one reflex writer.
 /// Exception: "clear" or "tick" reflexes may write to signals also written by other reflexes.
 /// This allows the common "clear before set" pattern.
@@ -485,7 +520,9 @@ fn validate_signal_ownership(module: &Module) -> Vec<MirrError> {
 
             for guard in &guards {
                 if let Some((existing_reflex, existing_origin)) = writers.get(guard).copied() {
-                    if existing_reflex == reflex.name.as_str() {
+                    let existing_base = get_reflex_base_name(existing_reflex);
+                    let current_base = get_reflex_base_name(reflex.name.as_str());
+                    if existing_base == current_base {
                         continue;
                     }
 

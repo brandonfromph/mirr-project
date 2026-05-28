@@ -46,7 +46,7 @@ module advanced_controller {
 
     assert_eq!(program.module.name, "advanced_controller");
     assert_eq!(program.module.signals.len(), 3);
-    assert_eq!(program.module.guards.len(), 1);
+    assert_eq!(program.module.guards.len(), 2);
 
     // The if/else-if logic should be lowered to separate reflexes or combined with OR logic if possible.
     // For now, we expect two separate reflexes or a single reflex with multiple trigger guards.
@@ -115,10 +115,10 @@ module let_binding_test {
 "#;
     let expanded = expand_macros(source);
     println!("--- LET BINDING EXPANDED ---\n{}\n--- END ---", expanded);
-    
+
     assert!(expanded.contains("signal tmp: internal u16;"));
     assert!(expanded.contains("tmp = 42;"));
-    
+
     let program = parse_mirr(&expanded).expect("Let binding expansion should parse successfully");
     assert_eq!(program.module.signals.len(), 3);
 }
@@ -149,11 +149,13 @@ module match_test {
 "#;
     let expanded = expand_macros(source);
     println!("--- MATCH EXPANDED ---\n{}\n--- END ---", expanded);
-    
-    assert!(expanded.contains("on state == 0"));
-    assert!(expanded.contains("on state == 1"));
+
+    assert!(expanded.contains("guard auto_g_0"));
+    assert!(expanded.contains("guard auto_g_1"));
+    assert!(expanded.contains("on auto_g_0"));
+    assert!(expanded.contains("on auto_g_1"));
     assert!(expanded.contains("on always"));
-    
+
     let program = parse_mirr(&expanded).expect("Match expansion should parse successfully");
     assert!(!program.module.reflexes.is_empty());
 }
@@ -201,5 +203,52 @@ module crossbar {
     println!("--- TEMP_ROUTE EXPANDED ---\n{}\n--- END ---", expanded);
 }
 
+#[test]
+fn test_reflex_loop_expansion() {
+    let source = r#"
+module reflex_loop_expansion {
+    signals {
+        for i in 0..4 {
+            data_in[i]: in bool;
+        }
+        for i in 0..4 {
+            data_out[i]: out bool;
+        }
+    }
 
+    reflex route {
+        on always {
+            for i in 0..4 {
+                data_out[i] = data_in[i];
+            }
+        }
+    }
+}
+"#;
 
+    let expanded = expand_macros(source);
+    println!("--- REFLEX LOOP EXPANDED ---\n{}\n--- END ---", expanded);
+
+    // Verify unrolled signal names exist in the expanded source
+    assert!(expanded.contains("signal data_in_0: in bool;"));
+    assert!(expanded.contains("signal data_in_1: in bool;"));
+    assert!(expanded.contains("signal data_in_2: in bool;"));
+    assert!(expanded.contains("signal data_in_3: in bool;"));
+
+    assert!(expanded.contains("signal data_out_0: out bool;"));
+    assert!(expanded.contains("signal data_out_1: out bool;"));
+    assert!(expanded.contains("signal data_out_2: out bool;"));
+    assert!(expanded.contains("signal data_out_3: out bool;"));
+
+    // Verify unrolled assignments exist in the expanded source
+    assert!(expanded.contains("data_out_0 = data_in_0;"));
+    assert!(expanded.contains("data_out_1 = data_in_1;"));
+    assert!(expanded.contains("data_out_2 = data_in_2;"));
+    assert!(expanded.contains("data_out_3 = data_in_3;"));
+
+    // Ensure it parses successfully
+    let program = parse_mirr(&expanded).expect("Expanded loop syntax should parse successfully");
+    assert_eq!(program.module.name, "reflex_loop_expansion");
+    assert_eq!(program.module.signals.len(), 8);
+    assert_eq!(program.module.reflexes.len(), 1);
+}

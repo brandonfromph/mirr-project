@@ -22,8 +22,12 @@ pub enum Token {
     Bang,
     /// `&&` — logical AND.
     AmpAmp,
+    /// `&` — bitwise AND.
+    Amp,
     /// `||` — logical OR.
     PipePipe,
+    /// `|` — bitwise OR.
+    Pipe,
     /// `^` — bitwise XOR.
     Caret,
     /// `+` — addition.
@@ -213,6 +217,8 @@ fn match_two_char_operator(pair: &str) -> Option<Token> {
 fn match_single_char_operator(b: u8) -> Option<Token> {
     match b {
         b'!' => Some(Token::Bang),
+        b'|' => Some(Token::Pipe),
+        b'&' => Some(Token::Amp),
         b'^' => Some(Token::Caret),
         b'+' => Some(Token::Plus),
         b'-' => Some(Token::Minus),

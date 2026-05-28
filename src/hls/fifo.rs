@@ -36,17 +36,26 @@ pub struct FifoHardware {
     pub name: String,
 }
 
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
+
 impl FifoHardware {
     /// Create a new FIFO with the given depth and element width.
-    pub fn new(depth: u32, elem_width: u32) -> Result<Self, &'static str> {
+    pub fn new(depth: u32, elem_width: u32) -> Result<Self, MirrError> {
         if depth == 0 {
-            return Err("FIFO depth must be >= 1");
+            return Err(mirrcode(ErrorCode::HlsSchedulingFailed, "FIFO depth must be >= 1"));
         }
         if depth > MAX_FIFO_DEPTH {
-            return Err("FIFO depth exceeds MAX_FIFO_DEPTH");
+            return Err(mirrcode(
+                ErrorCode::HlsSchedulingFailed,
+                "FIFO depth exceeds MAX_FIFO_DEPTH",
+            ));
         }
         if elem_width == 0 {
-            return Err("FIFO element width must be >= 1");
+            return Err(mirrcode(
+                ErrorCode::HlsSchedulingFailed,
+                "FIFO element width must be >= 1",
+            ));
         }
 
         Ok(Self {
@@ -72,9 +81,9 @@ impl FifoHardware {
     }
 
     /// Push an element (advance tail pointer).
-    pub fn push(&mut self) -> Result<(), &'static str> {
+    pub fn push(&mut self) -> Result<(), MirrError> {
         if self.full {
-            return Err("FIFO full: cannot push");
+            return Err(mirrcode(ErrorCode::HlsSchedulingFailed, "FIFO full: cannot push"));
         }
 
         self.tail = (self.tail + 1) % self.depth;
@@ -88,9 +97,9 @@ impl FifoHardware {
     }
 
     /// Pop an element (advance head pointer).
-    pub fn pop(&mut self) -> Result<(), &'static str> {
+    pub fn pop(&mut self) -> Result<(), MirrError> {
         if self.empty {
-            return Err("FIFO empty: cannot pop");
+            return Err(mirrcode(ErrorCode::HlsSchedulingFailed, "FIFO empty: cannot pop"));
         }
 
         self.head = (self.head + 1) % self.depth;
@@ -130,7 +139,7 @@ impl FifoHardware {
 /// Synthesize a FIFO from depth and element width specifications.
 ///
 /// Returns the hardware representation ready for RTL emission.
-pub fn synthesize_fifo(depth: u32, elem_width: u32) -> Result<FifoHardware, &'static str> {
+pub fn synthesize_fifo(depth: u32, elem_width: u32) -> Result<FifoHardware, MirrError> {
     FifoHardware::new(depth, elem_width)
 }
 

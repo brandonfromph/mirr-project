@@ -135,9 +135,11 @@ const WORKSPACE_SELECTIVE_NEXTEST_ARGS: &[&str] = &[
     "--test",
     "semantic_validation_tests",
     "--test",
-    "mega10_composite_integration_tests",
+    "composite_type_integration_tests",
     "--test",
-    "mega11_meta_stage_tests",
+    "meta_stage_unroller_tests",
+    "--test",
+    "compiler_flexibility_tests",
     "--test",
     "orchestrator_scheduler_tests",
     "--test",
@@ -160,9 +162,11 @@ const WORKSPACE_SELECTIVE_CARGO_TEST_ARGS: &[&str] = &[
     "--test",
     "semantic_validation_tests",
     "--test",
-    "mega10_composite_integration_tests",
+    "composite_type_integration_tests",
     "--test",
-    "mega11_meta_stage_tests",
+    "meta_stage_unroller_tests",
+    "--test",
+    "compiler_flexibility_tests",
     "--test",
     "orchestrator_scheduler_tests",
     "--test",
@@ -893,10 +897,11 @@ fn package_fingerprint_sources(package_name: &str) -> io::Result<Vec<PathBuf>> {
             collect_files_under(Path::new("tests/parser_composite_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/semantic_validation_tests.rs"), &mut files)?;
             collect_files_under(
-                Path::new("tests/mega10_composite_integration_tests.rs"),
+                Path::new("tests/composite_type_integration_tests.rs"),
                 &mut files,
             )?;
-            collect_files_under(Path::new("tests/mega11_meta_stage_tests.rs"), &mut files)?;
+            collect_files_under(Path::new("tests/meta_stage_unroller_tests.rs"), &mut files)?;
+            collect_files_under(Path::new("tests/compiler_flexibility_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/orchestrator_scheduler_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/orchestrator_cache_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/orchestrator_migration_tests.rs"), &mut files)?;

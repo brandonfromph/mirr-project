@@ -4,17 +4,19 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use mirror::policy::Role;
-use mirror::server_rewrite::axum_route_host::{dispatch_host_rpc_message, AxumMcpHostState};
-use mirror::server_rewrite::mrt_dispatch_audit_store::MrtDispatchAuditEventSink;
-use mirror::server_rewrite::mrt_dispatch_invocation_executor::{
+use mirr_mcp_control_plane::policy::Role;
+use mirr_mcp_control_plane::server_rewrite::axum_route_host::{
+    dispatch_host_rpc_message, AxumMcpHostState,
+};
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_audit_store::MrtDispatchAuditEventSink;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_executor::{
     MrtDispatchExecutionConfig, MrtDispatchExecutionError, MrtDispatchExecutionResult,
 };
-use mirror::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
-use mirror::server_rewrite::mrt_dispatch_route_handler::MrtDispatchAuditEvent;
-use mirror::server_rewrite::rpc_dispatch_bridge::RpcHandlerMap;
-use mirror::server_rewrite::rpc_role_gate::VerifiedPrincipal;
-use mirror::server_rewrite::rpc_stdio_message_dispatch::StdioRpcDispatchInput;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_route_handler::MrtDispatchAuditEvent;
+use mirr_mcp_control_plane::server_rewrite::rpc_dispatch_bridge::RpcHandlerMap;
+use mirr_mcp_control_plane::server_rewrite::rpc_role_gate::VerifiedPrincipal;
+use mirr_mcp_control_plane::server_rewrite::rpc_stdio_message_dispatch::StdioRpcDispatchInput;
 use serde_json::json;
 use std::sync::Arc;
 
@@ -102,7 +104,7 @@ fn mrt_kb_query_dual_run_prefers_new_path_and_logs_telemetry() {
         method: Some("mrt_kb_query".to_string()),
         params: {
             let mut body =
-                mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody::default(
+                mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody::default(
                 );
             body.set_string("query", "alpha signal");
             body.set_string("mode", "hybrid");
@@ -144,7 +146,7 @@ fn mrt_kb_query_dual_run_falls_back_to_legacy_when_new_path_errors() {
         method: Some("mrt_kb_query".to_string()),
         params: {
             let mut body =
-                mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody::default(
+                mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody::default(
                 );
             body.set_string("query", "beta signal");
             body.set_string("mode", "hybrid");

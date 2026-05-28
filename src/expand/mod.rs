@@ -12,7 +12,9 @@ mod scoping;
 mod substitution;
 
 use cycles::detect_pattern_cycles;
-use rename::{apply_name_prefixing, collect_fragment_names, set_origin_tags};
+use rename::{
+    apply_name_prefixing, apply_parameter_substitution, collect_fragment_names, set_origin_tags,
+};
 use scoping::validate_internal_signal_scoping;
 use substitution::{
     build_args_summary, build_substitution_map, parse_reflect_fragment, substitute_line,
@@ -27,7 +29,7 @@ use crate::error::MirrError;
 const MAX_EXPANSION_DEPTH: usize = 4;
 
 /// Maximum total items (signals + guards + reflexes + properties) from all expansions.
-const MAX_EXPANDED_ITEMS: usize = 256;
+const MAX_EXPANDED_ITEMS: usize = 2048;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -58,13 +60,19 @@ pub fn expand_patterns(
     let mut call_index = 0usize;
     let mut telemetry_log: Vec<String> = Vec::new();
 
-    // The work stack stores (call, depth).
-    let mut stack: Vec<(PatternCall, usize)> =
-        std::mem::take(&mut program.module.pattern_calls).into_iter().map(|c| (c, 0)).collect();
+    // The work stack stores (call, depth, parent_origin).
+    let mut stack: Vec<(PatternCall, usize, Option<String>)> =
+        std::mem::take(&mut program.module.pattern_calls)
+            .into_iter()
+            .map(|c| (c, 0, None))
+            .collect();
+
+    let mut parent_map: std::collections::HashMap<String, Option<String>> =
+        std::collections::HashMap::new();
 
     // Bounded iteration: each loop processes one expansion.
     // Total expansions are bounded by MAX_EXPANDED_ITEMS indirect limit.
-    while let Some((call, depth)) = stack.pop() {
+    while let Some((call, depth, parent_origin)) = stack.pop() {
         if depth >= MAX_EXPANSION_DEPTH {
             return Err(pattern_err(format!(
                 "expansion depth limit ({MAX_EXPANSION_DEPTH}) exceeded in '{}'",
@@ -73,11 +81,21 @@ pub fn expand_patterns(
         }
 
         let entity_id = registry.get_entity_by_name(&call.pattern_name).ok_or_else(|| {
+            let is_namespaced = call.pattern_name.contains("::");
+            let hint = if is_namespaced {
+                format!(
+                    "\n  Hint: Pattern '{}' is namespaced. This usually indicates an import, alias, or workspace linker resolution failure at the compilation layer.",
+                    call.pattern_name
+                )
+            } else {
+                "".to_string()
+            };
             MirrError::SemanticError {
                 message: format!(
-                    "{} Pattern call references undefined pattern '{}'.",
+                    "{} Pattern call references undefined pattern '{}'.{}",
                     crate::error_codes::ec(200),
-                    call.pattern_name
+                    call.pattern_name,
+                    hint
                 ),
                 span: call.span,
             }
@@ -119,9 +137,12 @@ pub fn expand_patterns(
         validate_fragment_signals(&fragment, &call.pattern_name)?;
 
         // Renaming and origin tagging.
-        let origin_tag = format!("{}_{}", call.pattern_name, call_index);
-        let prefix = format!("{}_{}", call.pattern_name, call_index);
+        let sanitized_pattern_name = call.pattern_name.replace("::", "_");
+        let origin_tag = format!("{}_{}", sanitized_pattern_name, call_index);
+        let prefix = format!("{}_{}", sanitized_pattern_name, call_index);
         call_index += 1;
+
+        parent_map.insert(origin_tag.clone(), parent_origin);
 
         let names = collect_fragment_names(&fragment);
         let mut param_names = std::collections::HashSet::new();
@@ -130,6 +151,7 @@ pub fn expand_patterns(
         }
 
         apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
+        apply_parameter_substitution(&mut fragment, &subs);
         set_origin_tags(&mut fragment, &origin_tag);
 
         // Check total item bounds.
@@ -148,7 +170,11 @@ pub fn expand_patterns(
         // Push results to module.
         program.module.signals.extend(fragment.signals);
         program.module.guards.extend(fragment.guards);
-        program.module.reflexes.extend(fragment.reflexes);
+        // Prepended so that submodule reflexes are executed before parent reflexes.
+        // This ensures parent/coordinator reflexes take precedence over submodules.
+        let mut new_reflexes = fragment.reflexes;
+        new_reflexes.extend(std::mem::take(&mut program.module.reflexes));
+        program.module.reflexes = new_reflexes;
         program.module.properties.extend(fragment.properties);
         program.module.pattern_origins.push(PatternOrigin {
             pattern_name: call.pattern_name.clone(),
@@ -157,7 +183,7 @@ pub fn expand_patterns(
 
         // Queue nested pattern calls for further expansion (preserving depth).
         for nested_call in fragment.pattern_calls {
-            stack.push((nested_call, depth + 1));
+            stack.push((nested_call, depth + 1, Some(origin_tag.clone())));
         }
 
         // Record telemetry (to be batched).
@@ -185,7 +211,7 @@ pub fn expand_patterns(
     }
 
     // Post-expansion: validate internal signal scoping.
-    validate_internal_signal_scoping(&program.module)?;
+    validate_internal_signal_scoping(&program.module, &parent_map)?;
 
     Ok(())
 }

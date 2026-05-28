@@ -59,6 +59,8 @@ pub enum MirrError {
     SymbolicError { message: String, span: Option<Span> },
     /// Totality error (E11xx).
     TotalityError { message: String, span: Option<Span> },
+    /// Testing & Tooling error (E12xx).
+    ToolingError { message: String, span: Option<Span> },
     /// Internal compiler error (Fatal).
     InternalError(String),
 }
@@ -97,6 +99,7 @@ impl MirrError {
             Self::SatError { message, .. } => Self::SatError { message, span },
             Self::SymbolicError { message, .. } => Self::SymbolicError { message, span },
             Self::TotalityError { message, .. } => Self::TotalityError { message, span },
+            Self::ToolingError { message, .. } => Self::ToolingError { message, span },
             Self::InternalError(msg) => Self::InternalError(msg),
         }
     }
@@ -116,7 +119,8 @@ impl MirrError {
             | Self::SExprError { span, .. }
             | Self::SatError { span, .. }
             | Self::SymbolicError { span, .. }
-            | Self::TotalityError { span, .. } => *span,
+            | Self::TotalityError { span, .. }
+            | Self::ToolingError { span, .. } => *span,
             Self::InternalError(_) => None,
         }
     }
@@ -136,7 +140,8 @@ impl MirrError {
             | Self::SExprError { message, .. }
             | Self::SatError { message, .. }
             | Self::SymbolicError { message, .. }
-            | Self::TotalityError { message, .. } => message,
+            | Self::TotalityError { message, .. }
+            | Self::ToolingError { message, .. } => message,
             Self::InternalError(message) => message,
         }
     }
@@ -165,6 +170,7 @@ impl MirrError {
             Self::SatError { .. } => Some("E900".to_string()),
             Self::SymbolicError { .. } => Some("E1000".to_string()),
             Self::TotalityError { .. } => Some("E1100".to_string()),
+            Self::ToolingError { .. } => Some("E1200".to_string()),
             Self::InternalError(_) => Some("E000".to_string()),
         }
     }
@@ -295,6 +301,9 @@ impl fmt::Display for MirrError {
             }
             MirrError::TotalityError { message, span } => {
                 (emit_code(message, "[E1100]"), "Totality error", body(message), span)
+            }
+            MirrError::ToolingError { message, span } => {
+                (emit_code(message, "[E1200]"), "Tooling error", body(message), span)
             }
             MirrError::InternalError(message) => {
                 (emit_code(message, "[EFATAL]"), "Internal compiler error", body(message), &None)

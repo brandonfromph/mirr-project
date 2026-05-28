@@ -4,39 +4,61 @@
 
 #![forbid(unsafe_code)]
 
+use super::inline_helpers::inline_types_functions;
+use super::macro_helpers::{
+    inject_declarations, inline_let_bindings, preprocess_if_else_reflexes, preprocess_let_bindings,
+    preprocess_match_blocks,
+};
+
 #[derive(Debug, PartialEq, Clone)]
 enum ParserState {
     TopLevel,
     AwaitingSignalsBrace,
     InSignals,
     InLoop { var: String, start: i32, end: i32, body: Vec<String> },
-    InReflex,
-}
-
-#[derive(Debug, Clone)]
-struct MatchArm {
-    pattern: String,
-    body: Vec<String>,
-}
-
-#[derive(Debug, Clone)]
-enum MatchParserState {
-    Normal,
-    CollectingMatch {
-        expr: String,
-        arms: Vec<MatchArm>,
-        current_pattern: Option<String>,
-        current_body: Vec<String>,
-        brace_depth: i32,
-    },
+    InReflex { injected_on_always: bool },
+    InReflexLoop { var: String, start: i32, end: i32, body: Vec<String>, depth: i32 },
+    InTopLevelLoop { var: String, start: i32, end: i32, body: Vec<String>, depth: i32 },
 }
 
 pub fn expand_macros(source: &str) -> String {
+    let inlined = inline_types_functions(source);
+    let mut current = inlined;
+    let max_iterations = 4;
+
+    for _ in 0..max_iterations {
+        let next = expand_macros_pass(&current);
+        if next == current {
+            if std::env::var("MIRR_DUMP_EXPANDED").is_ok() {
+                if let Err(e) = std::fs::write("DEBUG_EXPANDED.mirr", &next) {
+                    eprintln!("Warning: failed to write DEBUG_EXPANDED.mirr: {}", e);
+                }
+            }
+            return next;
+        }
+        current = next;
+    }
+    if std::env::var("MIRR_DUMP_EXPANDED").is_ok() {
+        if let Err(e) = std::fs::write("DEBUG_EXPANDED.mirr", &current) {
+            eprintln!("Warning: failed to write DEBUG_EXPANDED.mirr: {}", e);
+        }
+    }
+    current
+}
+
+fn expand_macros_pass(source: &str) -> String {
     // Pass 1: Parse and preprocess match blocks into standard if/else if/else structures
     let matched_source = preprocess_match_blocks(source);
 
+    // Inline let-bindings (e.g. is_reflexive) before extracting complex conditions
+    let inlined_source = inline_let_bindings(&matched_source);
+
+    // Pass 0: Parse and extract complex conditional expressions inside reflexes to standard guards
+    let (if_source, if_decls) = preprocess_if_else_reflexes(&inlined_source);
+    let if_injected = inject_declarations(&if_source, &if_decls);
+
     // Pass 2: Parse and extract local let-bindings into top-level signals
-    let (let_source, decls) = preprocess_let_bindings(&matched_source);
+    let (let_source, decls) = preprocess_let_bindings(&if_injected);
 
     // Pass 3: Inject the collected signal declarations at the top of the module
     let preprocessed = inject_declarations(&let_source, &decls);
@@ -57,6 +79,20 @@ pub fn expand_macros(source: &str) -> String {
 
         match state {
             ParserState::TopLevel => {
+                if trimmed.starts_with("for ") {
+                    if let Some(loop_info) = parse_for_loop_header(trimmed) {
+                        state = ParserState::InTopLevelLoop {
+                            var: loop_info.var,
+                            start: loop_info.start,
+                            end: loop_info.end,
+                            body: Vec::new(),
+                            depth: 1,
+                        };
+                        result.push('\n');
+                        continue;
+                    }
+                }
+
                 if trimmed.starts_with("signals") {
                     if trimmed.contains('{') {
                         if trimmed.contains('}') {
@@ -98,12 +134,19 @@ pub fn expand_macros(source: &str) -> String {
 
                     if has_close {
                         // Single-line reflex
-                        let (prefix, rest) = trimmed.split_once('{').unwrap();
+                        let (prefix, rest) = trimmed.split_once('{').unwrap_or((trimmed, ""));
                         result.push_str(prefix);
                         result.push_str(" {\n");
-                        let inner = rest.trim_end_matches('}').trim();
+                        let mut inner = rest.trim();
+                        if inner.ends_with('}') {
+                            inner = inner[..inner.len() - 1].trim();
+                        }
                         if !inner.is_empty() {
-                            if inner.contains('=') {
+                            let inner_trimmed = inner.trim();
+                            let has_conditional = inner_trimmed.starts_with("on ")
+                                || inner_trimmed.starts_with("if ")
+                                || inner_trimmed.starts_with("else");
+                            if inner.contains('=') && !has_conditional {
                                 result.push_str("on always {\n");
                                 result.push_str(inner.trim_end_matches(';'));
                                 result.push_str(";\n}\n");
@@ -114,7 +157,7 @@ pub fn expand_macros(source: &str) -> String {
                         }
                         result.push_str("}\n");
                     } else {
-                        state = ParserState::InReflex;
+                        state = ParserState::InReflex { injected_on_always: false };
                         reflex_depth = 1;
                         in_on_block = trimmed.contains(" when ");
                         result.push_str(line);
@@ -151,20 +194,14 @@ pub fn expand_macros(source: &str) -> String {
                     state = ParserState::TopLevel;
                     result.push('\n');
                 } else if trimmed.starts_with("for ") {
-                    let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                    if parts.len() >= 4 {
-                        let var = parts[1].to_string();
-                        let range = parts[3].trim_end_matches('{').trim();
-                        let range_parts: Vec<&str> = range.split("..").collect();
-                        if range_parts.len() == 2 {
-                            let start = range_parts[0].parse().unwrap_or(0);
-                            let end = range_parts[1].parse().unwrap_or(0);
-                            state = ParserState::InLoop { var, start, end, body: Vec::new() };
-                            result.push('\n');
-                        } else {
-                            result.push_str(line);
-                            result.push('\n');
-                        }
+                    if let Some(loop_info) = parse_for_loop_header(trimmed) {
+                        state = ParserState::InLoop {
+                            var: loop_info.var,
+                            start: loop_info.start,
+                            end: loop_info.end,
+                            body: Vec::new(),
+                        };
+                        result.push('\n');
                     } else {
                         result.push_str(line);
                         result.push('\n');
@@ -179,10 +216,7 @@ pub fn expand_macros(source: &str) -> String {
                 if trimmed == "}" {
                     for i in start..end {
                         for line in body.iter() {
-                            let mut expanded = line.clone();
-                            let placeholder = format!("[{}]", var);
-                            let replacement = format!("_{}", i);
-                            expanded = expanded.replace(&placeholder, &replacement);
+                            let expanded = unroll_line(line, var, i);
                             result.push_str("    signal ");
                             result.push_str(&expanded);
                             result.push_str(";\n");
@@ -195,14 +229,28 @@ pub fn expand_macros(source: &str) -> String {
                     result.push('\n');
                 }
             }
-            ParserState::InReflex => {
+            ParserState::InReflex { ref mut injected_on_always } => {
+                if trimmed.starts_with("for ") {
+                    if let Some(loop_info) = parse_for_loop_header(trimmed) {
+                        state = ParserState::InReflexLoop {
+                            var: loop_info.var,
+                            start: loop_info.start,
+                            end: loop_info.end,
+                            body: Vec::new(),
+                            depth: 1,
+                        };
+                        result.push('\n');
+                        continue;
+                    }
+                }
+
                 let delta = count_braces(trimmed);
                 reflex_depth += delta;
 
                 // Flexible check for 'if', 'else if', 'else' with possible leading '}'
                 let mut check_line = trimmed;
                 if check_line.starts_with('}') {
-                    check_line = check_line.strip_prefix('}').unwrap().trim();
+                    check_line = check_line.strip_prefix('}').unwrap_or(check_line).trim();
                 }
 
                 if (check_line.starts_with("on ")
@@ -210,11 +258,18 @@ pub fn expand_macros(source: &str) -> String {
                     || check_line.starts_with("else"))
                     && check_line.contains('{')
                 {
+                    if *injected_on_always {
+                        result.push_str("}\n");
+                        *injected_on_always = false;
+                    }
                     in_on_block = true;
 
                     if check_line.starts_with("if ") {
-                        let cond =
-                            check_line.strip_prefix("if ").unwrap().trim_end_matches('{').trim();
+                        let cond = check_line
+                            .strip_prefix("if ")
+                            .unwrap_or(check_line)
+                            .trim_end_matches('{')
+                            .trim();
                         result.push_str("on ");
                         result.push_str(cond);
                         result.push_str(" {\n");
@@ -222,7 +277,7 @@ pub fn expand_macros(source: &str) -> String {
                     } else if check_line.starts_with("else if ") {
                         let cond = check_line
                             .strip_prefix("else if ")
-                            .unwrap()
+                            .unwrap_or(check_line)
                             .trim_end_matches('{')
                             .trim();
                         result.push_str("} on ");
@@ -236,18 +291,27 @@ pub fn expand_macros(source: &str) -> String {
                 }
 
                 if reflex_depth <= 0 {
+                    if *injected_on_always {
+                        result.push_str("}\n");
+                    }
                     state = ParserState::TopLevel;
                     result.push_str(line);
                     result.push('\n');
                 } else if trimmed == "}" && in_on_block {
+                    if *injected_on_always {
+                        result.push_str("}\n");
+                        *injected_on_always = false;
+                    }
                     in_on_block = false;
                     result.push_str(line);
                     result.push('\n');
                 } else if trimmed.contains('=') {
                     if !in_on_block {
                         result.push_str("on always {\n");
-                        result.push_str(trimmed.trim_end_matches(';'));
-                        result.push_str(";\n}\n");
+                        result.push_str(line);
+                        result.push('\n');
+                        *injected_on_always = true;
+                        in_on_block = true;
                     } else {
                         result.push_str(line);
                         result.push('\n');
@@ -257,10 +321,87 @@ pub fn expand_macros(source: &str) -> String {
                     result.push('\n');
                 }
             }
+            ParserState::InReflexLoop { ref var, start, end, ref mut body, ref mut depth } => {
+                let delta = count_braces(trimmed);
+                *depth += delta;
+                if *depth <= 0 {
+                    // Unroll the loop body
+                    for i in start..end {
+                        for body_line in body.iter() {
+                            let expanded = unroll_line(body_line, var, i);
+                            result.push_str(&expanded);
+                            result.push('\n');
+                        }
+                    }
+                    state = ParserState::InReflex { injected_on_always: false };
+                } else {
+                    body.push(line.to_string());
+                }
+            }
+            ParserState::InTopLevelLoop { ref var, start, end, ref mut body, ref mut depth } => {
+                let delta = count_braces(trimmed);
+                *depth += delta;
+                if *depth <= 0 {
+                    // Unroll the loop body
+                    for i in start..end {
+                        for body_line in body.iter() {
+                            let expanded = unroll_line(body_line, var, i);
+                            result.push_str(&expanded);
+                            result.push('\n');
+                        }
+                    }
+                    state = ParserState::TopLevel;
+                } else {
+                    body.push(line.to_string());
+                }
+            }
         }
     }
 
     result
+}
+
+struct LoopInfo {
+    var: String,
+    start: i32,
+    end: i32,
+}
+
+fn parse_for_loop_header(line: &str) -> Option<LoopInfo> {
+    let trimmed = line.trim();
+    if !trimmed.starts_with("for ") {
+        return None;
+    }
+
+    // Expected: for <var> in <start>..<end> {
+    let after_for = trimmed.strip_prefix("for ")?.trim();
+    let (var, rest) = after_for.split_once(" in ")?;
+    let var = var.trim().to_string();
+
+    // The range part might contain the opening brace '{'
+    let range_part = rest.trim().split_whitespace().next()?.trim_end_matches('{');
+    let (start_str, end_str) = range_part.split_once("..")?;
+
+    let start = start_str.trim().parse().ok()?;
+    let end = end_str.trim().parse().ok()?;
+
+    Some(LoopInfo { var, start, end })
+}
+
+fn unroll_line(line: &str, var: &str, i: i32) -> String {
+    let mut expanded = line.to_string();
+
+    // Support both suffix format s[i] -> s_0
+    let placeholder = format!("[{}]", var);
+    let replacement = format!("_{}", i);
+    expanded = expanded.replace(&placeholder, &replacement);
+
+    // And interpolation format ${i} -> 0
+    let placeholder2 = format!("${{{}}}", var);
+    let replacement2 = format!("{}", i);
+    expanded = expanded.replace(&placeholder2, &replacement2);
+
+    expanded
 }
 
 fn count_braces(line: &str) -> i32 {
@@ -311,215 +452,4 @@ fn expand_guard_assignment(line: &str) -> Option<String> {
     } else {
         Some(format!("guard {} {{\n  when {}\n  for 1 cycles\n}}", target, after_when))
     }
-}
-
-// --- NEW RUST-LIKE ERGONOMIC SYNTAX SUGAR PREPROCESSORS ---
-
-fn count_braces_in_line(line: &str) -> i32 {
-    let mut count = 0;
-    for c in line.chars() {
-        if c == '{' {
-            count += 1;
-        } else if c == '}' {
-            count -= 1;
-        }
-    }
-    count
-}
-
-fn generate_if_else(expr: &str, arms: &[MatchArm]) -> String {
-    let mut out = String::new();
-    for (i, arm) in arms.iter().enumerate() {
-        let is_default = arm.pattern == "_" || arm.pattern == "default";
-        if i == 0 {
-            if is_default {
-                out.push_str("{\n");
-            } else {
-                out.push_str(&format!("if {} == {} {{\n", expr, arm.pattern));
-            }
-        } else if is_default {
-            out.push_str("} else {\n");
-        } else {
-            out.push_str(&format!("}} else if {} == {} {{\n", expr, arm.pattern));
-        }
-        for line in &arm.body {
-            out.push_str("    ");
-            out.push_str(line);
-            out.push('\n');
-        }
-    }
-    out.push_str("}\n");
-    out
-}
-
-fn preprocess_match_blocks(source: &str) -> String {
-    let mut result = String::new();
-    let mut state = MatchParserState::Normal;
-
-    for line in source.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("//") {
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-
-        match state {
-            MatchParserState::Normal => {
-                if trimmed.starts_with("match ") && trimmed.contains('{') {
-                    let expr = trimmed
-                        .strip_prefix("match ")
-                        .unwrap()
-                        .split_once('{')
-                        .unwrap()
-                        .0
-                        .trim()
-                        .to_string();
-                    state = MatchParserState::CollectingMatch {
-                        expr,
-                        arms: Vec::new(),
-                        current_pattern: None,
-                        current_body: Vec::new(),
-                        brace_depth: 0,
-                    };
-                } else {
-                    result.push_str(line);
-                    result.push('\n');
-                }
-            }
-            MatchParserState::CollectingMatch {
-                ref expr,
-                ref mut arms,
-                ref mut current_pattern,
-                ref mut current_body,
-                ref mut brace_depth,
-            } => {
-                if current_pattern.is_none() {
-                    if trimmed == "}" {
-                        // End of match block
-                        let expanded = generate_if_else(expr, arms);
-                        result.push_str(&expanded);
-                        state = MatchParserState::Normal;
-                    } else if trimmed.contains("=>") {
-                        let (pat, rest) = trimmed.split_once("=>").unwrap();
-                        let pat = pat.trim().to_string();
-                        let rest = rest.trim();
-                        *current_pattern = Some(pat);
-                        current_body.clear();
-                        *brace_depth = 0;
-                        if rest.contains('{') {
-                            *brace_depth += count_braces_in_line(rest);
-                            let body_part = rest.trim_start_matches('{').trim();
-                            if !body_part.is_empty() {
-                                current_body.push(body_part.to_string());
-                            }
-                        } else {
-                            current_body.push(rest.to_string());
-                            // Single line case without braces
-                            arms.push(MatchArm {
-                                pattern: current_pattern.take().unwrap(),
-                                body: current_body.clone(),
-                            });
-                        }
-                    }
-                } else {
-                    let delta = count_braces_in_line(trimmed);
-                    *brace_depth += delta;
-                    if *brace_depth <= 0 {
-                        // Arm closed
-                        let mut body_line = trimmed.to_string();
-                        if body_line.ends_with('}') {
-                            body_line.pop();
-                        }
-                        let body_line = body_line.trim();
-                        if !body_line.is_empty() {
-                            current_body.push(body_line.to_string());
-                        }
-                        arms.push(MatchArm {
-                            pattern: current_pattern.take().unwrap(),
-                            body: current_body.clone(),
-                        });
-                    } else {
-                        current_body.push(trimmed.to_string());
-                    }
-                }
-            }
-        }
-    }
-    result
-}
-
-fn parse_let_binding(line: &str) -> Option<(String, String, String)> {
-    let trimmed = line.trim().trim_end_matches(';');
-    if !trimmed.starts_with("let ") {
-        return None;
-    }
-    let content = trimmed.strip_prefix("let ")?.trim();
-    // Split by '=' first to get LHS and RHS
-    let (lhs, rhs) = content.split_once('=')?;
-    let lhs = lhs.trim();
-    let rhs = rhs.trim();
-    
-    // LHS should contain ':' for type annotation
-    let (name, ty) = lhs.split_once(':')?;
-    let name = name.trim();
-    let ty = ty.trim();
-    
-    // Validate name is a valid identifier
-    if !name.is_empty() && name.chars().next()?.is_alphabetic() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-        Some((name.to_string(), ty.to_string(), rhs.to_string()))
-    } else {
-        None
-    }
-}
-
-fn preprocess_let_bindings(source: &str) -> (String, Vec<String>) {
-    let mut result = String::new();
-    let mut decls = Vec::new();
-
-    for line in source.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("//") {
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-
-        if let Some((name, ty, expr)) = parse_let_binding(trimmed) {
-            let decl = format!("signal {}: internal {};", name, ty);
-            if !decls.contains(&decl) {
-                decls.push(decl);
-            }
-            // Retain the indentation of the original line
-            let indent = line.len() - line.trim_start().len();
-            let indent_str = " ".repeat(indent);
-            result.push_str(&format!("{}{} = {};\n", indent_str, name, expr));
-        } else {
-            result.push_str(line);
-            result.push('\n');
-        }
-    }
-
-    (result, decls)
-}
-
-fn inject_declarations(source: &str, decls: &[String]) -> String {
-    if decls.is_empty() {
-        return source.to_string();
-    }
-    let mut out = String::new();
-    let mut injected = false;
-    for line in source.lines() {
-        out.push_str(line);
-        out.push('\n');
-        if !injected && ((line.trim().starts_with("module ") && line.contains('{')) || line.trim().starts_with("reflect {")) {
-            for decl in decls {
-                out.push_str("    ");
-                out.push_str(decl);
-                out.push('\n');
-            }
-            injected = true;
-        }
-    }
-    out
 }

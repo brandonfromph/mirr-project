@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
-use mirror::server_rewrite::rpc_dispatch_bridge::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
+use mirr_mcp_control_plane::server_rewrite::rpc_dispatch_bridge::{
     RpcDispatchRequestShim, RpcHandlerMap, RpcHandlerResponse,
 };
-use mirror::server_rewrite::rpc_stdio_message_dispatch::{
+use mirr_mcp_control_plane::server_rewrite::rpc_stdio_message_dispatch::{
     consume_stdio_input_chunk, dispatch_stdio_message, format_stdio_rpc_output_line,
     parse_stdio_rpc_line, StdioRpcDispatchInput, StdioRpcError, StdioRpcResponse, JSON_RPC_VERSION,
     MAX_STDIO_BUFFER_BYTES, MAX_STDIO_LINE_BYTES, STDLIB_FORCE_RESET_ERROR_CODE,
@@ -144,7 +144,7 @@ fn stdio_tools_call_uses_arguments_payload_as_params() {
     assert_eq!(parsed.params_api_key, Some("Bearer abc".to_owned()));
 
     assert_eq!(
-        mirror::server_rewrite::mrt_dispatch_invocation_input::get_body_string(
+        mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::get_body_string(
             &parsed.params,
             "query",
             ""
@@ -152,7 +152,7 @@ fn stdio_tools_call_uses_arguments_payload_as_params() {
         "alpha"
     );
     assert_eq!(
-        mirror::server_rewrite::mrt_dispatch_invocation_input::get_body_string(
+        mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::get_body_string(
             &parsed.params,
             "mode",
             ""
@@ -160,7 +160,7 @@ fn stdio_tools_call_uses_arguments_payload_as_params() {
         "hybrid"
     );
     assert_eq!(
-        mirror::server_rewrite::mrt_dispatch_invocation_input::get_body_number(
+        mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::get_body_number(
             &parsed.params,
             "limit",
             0.0

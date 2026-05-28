@@ -25,6 +25,14 @@ use serde::{Deserialize, Serialize};
 pub const MAX_REGISTERS: usize = 256;
 
 /// Maximum temporal guard hardware units.
+///
+/// **Architectural Verification & Formal Proof Invariant:**
+/// Enforced strictly at `64` to align with the DFA state-space bounds and formal proof constraints
+/// in Rocq/Coq specifications (cf. `proofs/language/DFA.v` and `proofs/language/Semantics.v` where
+/// `MAX_GUARDS = 64` bounds the total Mealy state-space of verified controllers).
+/// Changing this constant violates the decidability proofs and is safety-critical.
+/// Exhaustion issues MUST be resolved by macro preprocessor optimization and temporal sub-guard
+/// deterministic deduplication in `src/temporal/compiler.rs`.
 pub const MAX_GUARDS: usize = 64;
 
 /// Maximum instructions in a single R-SPU program.

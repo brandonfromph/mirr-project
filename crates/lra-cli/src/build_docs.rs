@@ -69,7 +69,7 @@ pub fn run(input_dir: &str, output_dir: &str, css_path: &str) -> i32 {
     }
     nav_entries.sort_by_key(|e| e.nav_order);
 
-    // Only show files with explicit nav_order in the nav (exclude legacy/hidden files)
+    // Only show files with explicit nav_order in the nav (exclude unlisted/hidden files)
     let visible_nav: Vec<&NavEntry> = nav_entries.iter().filter(|e| e.nav_order < 900).collect();
 
     // Build the nav HTML once

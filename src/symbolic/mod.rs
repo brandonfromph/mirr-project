@@ -16,8 +16,12 @@
 #![forbid(unsafe_code)]
 
 pub mod diff;
+pub mod fingerprint;
+pub mod integration;
 pub mod interval;
 pub mod pattern;
+pub mod rewrite;
+pub mod statistics;
 
 use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
@@ -293,8 +297,10 @@ pub fn sym_eval_binary(op: BinaryOp, lhs: SymValue, rhs: SymValue) -> SymValue {
         // Both concrete: compute exactly.
         (SymValue::Concrete(a), SymValue::Concrete(b)) => {
             let result = match op {
-                BinaryOp::And => u64::from(a != 0 && b != 0),
-                BinaryOp::Or => u64::from(a != 0 || b != 0),
+                BinaryOp::And => a & b,
+                BinaryOp::Or => a | b,
+                BinaryOp::BitwiseOr => a | b,
+                BinaryOp::BitwiseAnd => a & b,
                 BinaryOp::Xor => a ^ b,
                 BinaryOp::Lt => u64::from(a < b),
                 BinaryOp::Le => u64::from(a <= b),

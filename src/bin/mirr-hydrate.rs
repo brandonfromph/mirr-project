@@ -36,8 +36,6 @@ struct YosysPort {
 struct YosysCell {
     #[serde(rename = "type")]
     cell_type: String,
-    #[allow(dead_code)]
-    parameters: HashMap<String, serde_json::Value>,
     connections: HashMap<String, Vec<YosysBit>>,
 }
 

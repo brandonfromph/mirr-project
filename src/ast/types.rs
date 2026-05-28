@@ -191,12 +191,16 @@ impl SignalType {
 }
 
 /// Binary operator in an expression.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum BinaryOp {
     /// Logical AND (`&&`). Requires bool operands.
     And,
     /// Logical OR (`||`). Requires bool operands.
     Or,
+    /// Bitwise OR (`|`). Requires unsigned/signed integer operands.
+    BitwiseOr,
+    /// Bitwise AND (`&`). Requires unsigned/signed integer operands.
+    BitwiseAnd,
     /// Bitwise XOR (`^`). Requires matching types.
     Xor,
     /// Less than (`<`). Returns bool.
@@ -224,7 +228,7 @@ pub enum BinaryOp {
 }
 
 /// Unary operator in an expression.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UnaryOp {
     /// Logical/bitwise NOT (`!`). Works on bool, unsigned, and signed.
     Not,
@@ -233,7 +237,7 @@ pub enum UnaryOp {
 }
 
 /// Literal value in an expression.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LiteralValue {
     /// Boolean constant (`true` or `false`).
     Bool(bool),
@@ -310,6 +314,13 @@ pub enum Refinement {
     Predicate(String),
 }
 
+/// A reference to a session type protocol and its current state.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SessionTypeRef {
+    pub protocol: String,
+    pub state: String,
+}
+
 /// Collected MEGA-1 type annotations beyond the base signal type.
 ///
 /// All fields default to their zero/none values for backward compatibility.
@@ -332,6 +343,9 @@ pub struct TypeAnnotations {
     /// Phantom type tag: `#<Tag>` after the base type.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phantom_tag: Option<String>,
+    /// Session type state: `session Protocol::State`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session: Option<SessionTypeRef>,
 }
 
 impl TypeAnnotations {
@@ -342,6 +356,7 @@ impl TypeAnnotations {
             && self.refinement.is_none()
             && self.clock_domain.is_none()
             && self.phantom_tag.is_none()
+            && self.session.is_none()
     }
 }
 

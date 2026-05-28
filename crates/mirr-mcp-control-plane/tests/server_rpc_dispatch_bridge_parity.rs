@@ -2,8 +2,8 @@ use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
-use mirror::server_rewrite::rpc_dispatch_bridge::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
+use mirr_mcp_control_plane::server_rewrite::rpc_dispatch_bridge::{
     dispatch_rpc_to_handler, RpcDispatchBody, RpcDispatchMessage, RpcDispatchRequestShim,
     RpcHandlerMap, RpcHandlerResponse, MAX_REGISTERED_HANDLERS,
 };

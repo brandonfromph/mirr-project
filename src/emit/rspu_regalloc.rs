@@ -47,6 +47,10 @@ impl RegAllocResult {
     /// Allocate the next temporary register. Returns `None` if exhausted.
     pub fn alloc_temp(&mut self) -> Option<RegId> {
         if self.next_temp > REG_TEMP_MAX as u16 {
+            println!(
+                "DEBUG alloc_temp EXHAUSTED: next_temp={} map={:#?}",
+                self.next_temp, self.map
+            );
             return None;
         }
         let r = self.next_temp as RegId;

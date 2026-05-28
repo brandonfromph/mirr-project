@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use mirror::server_rewrite::rpc_api_key_extraction::{
+use mirr_mcp_control_plane::server_rewrite::rpc_api_key_extraction::{
     api_key_from_request_sources, api_key_from_rpc_envelope, parse_api_key_value,
     RequestApiKeyInput, RpcEnvelopeApiKeyInput, RpcParamsApiKeyInput,
 };

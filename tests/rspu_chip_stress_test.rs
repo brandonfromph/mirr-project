@@ -18,6 +18,7 @@ fn test_rspu_chip_workspace_compilation() {
     let config = PipelineConfig {
         temporal: false, // Disable temporal lowering if unsupported forms are used
         rspu: false,
+        bootstrap_mode: true,
         ..Default::default()
     };
 

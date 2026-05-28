@@ -15,6 +15,9 @@ const MAX_EXPR_VISIT: usize = 64;
 /// Walk the module's property declarations. For each `Assert` property,
 /// attempt to lower the formula to a `TemporalProperty`. `Cover` and
 /// `Assume` directives are skipped.
+/// Walk the module's property declarations. For each `Assert` property,
+/// attempt to lower the formula to a `TemporalProperty`. `Cover` and
+/// `Assume` directives are skipped.
 pub(super) fn extract_properties(
     result: &PipelineResult,
     errors: &mut Vec<MapeKError>,
@@ -39,7 +42,7 @@ pub(super) fn extract_properties(
 
         match lower_formula(&prop.formula) {
             Ok(tp) => temporal_props.push(tp),
-            Err(desc) => errors.push(MapeKError::LoweringError(desc)),
+            Err(err) => errors.push(err),
         }
 
         if temporal_props.len() >= MAX_BRIDGE_PROPERTIES {
@@ -70,7 +73,7 @@ pub(super) fn count_assert_properties(props: &[crate::ast::property::PropertyDec
 /// - `NeverImplies { antecedent, consequent }` -> `TemporalProperty::NeverImplies(pred_a, pred_b)`
 /// - `AlwaysFollowedBy { trigger, delay_cycles, response }` -> `TemporalProperty::AlwaysFollowedBy(trigger, delay, response)`
 /// - `EventuallyWithin { expr, cycles }` -> `TemporalProperty::EventuallyWithin(predicate, cycles)`
-fn lower_formula(formula: &PropertyFormula) -> Result<TemporalProperty, String> {
+fn lower_formula(formula: &PropertyFormula) -> Result<TemporalProperty, MapeKError> {
     match formula {
         PropertyFormula::Always(expr) => {
             let pred = lower_expr_to_predicate(expr)?;
@@ -104,7 +107,7 @@ fn lower_formula(formula: &PropertyFormula) -> Result<TemporalProperty, String> 
 }
 
 /// Lower a simple expression to a `SignalPredicate`.
-fn lower_expr_to_predicate(expr: &Expr) -> Result<SignalPredicate, String> {
+fn lower_expr_to_predicate(expr: &Expr) -> Result<SignalPredicate, MapeKError> {
     match expr {
         Expr::Signal(name) => Ok(SignalPredicate::IsTrue(name.clone())),
         Expr::Binary { op, left, right } => lower_binary_predicate(op, left, right),
@@ -112,11 +115,13 @@ fn lower_expr_to_predicate(expr: &Expr) -> Result<SignalPredicate, String> {
             let name = extract_signal_name(expr)?;
             Ok(SignalPredicate::IsTrue(name))
         }
-        Expr::Literal(_) => Err("bare literal cannot be a signal predicate".to_string()),
-        Expr::Prev { signal, .. } => Ok(SignalPredicate::IsTrue(signal.clone())),
-        Expr::UnfoldIndex(_) => {
-            Err("E506: UnfoldIndex reached analysis stage unresolved".to_string())
+        Expr::Literal(_) => {
+            Err(MapeKError::LoweringError("bare literal cannot be a signal predicate".to_string()))
         }
+        Expr::Prev { signal, .. } => Ok(SignalPredicate::IsTrue(signal.clone())),
+        Expr::UnfoldIndex(_) => Err(MapeKError::LoweringError(
+            "E506: UnfoldIndex reached analysis stage unresolved".to_string(),
+        )),
         Expr::ArrayIndex { .. }
         | Expr::FieldAccess { .. }
         | Expr::ArrayLiteral(_)
@@ -132,7 +137,7 @@ fn lower_binary_predicate(
     op: &crate::ast::types::BinaryOp,
     left: &Expr,
     right: &Expr,
-) -> Result<SignalPredicate, String> {
+) -> Result<SignalPredicate, MapeKError> {
     use crate::ast::types::BinaryOp;
 
     if let (Expr::Signal(name), Some(threshold)) = (left, literal_u64(right)) {
@@ -163,7 +168,7 @@ fn literal_u64(expr: &Expr) -> Option<u64> {
 }
 
 /// Walk an expression tree (bounded, iterative) to find the first `Signal` name.
-pub(super) fn extract_signal_name(expr: &Expr) -> Result<String, String> {
+pub(super) fn extract_signal_name(expr: &Expr) -> Result<String, MapeKError> {
     let mut stack: Vec<&Expr> = Vec::with_capacity(MAX_EXPR_VISIT);
     stack.push(expr);
 
@@ -201,5 +206,5 @@ pub(super) fn extract_signal_name(expr: &Expr) -> Result<String, String> {
         }
     }
 
-    Err("no signal reference found in expression".to_string())
+    Err(MapeKError::LoweringError("no signal reference found in expression".to_string()))
 }

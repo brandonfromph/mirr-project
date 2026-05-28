@@ -5,11 +5,7 @@ fn test_garbage_after_module_close() {
     let input = "module test { signal a: in bool; } GARBAGE_DATA";
     let result = parse_mirr(input);
     assert!(
-        result.is_ok(),
-        "Parser should successfully parse the module and ignore trailing garbage data"
+        result.is_err(),
+        "Parser should fail accurately when trailing garbage data follows a module definition"
     );
-    let program = result.unwrap();
-    assert_eq!(program.module.name, "test");
-    assert_eq!(program.module.signals.len(), 1);
-    assert_eq!(program.module.signals[0].name, "a");
 }

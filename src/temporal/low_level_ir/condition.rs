@@ -65,6 +65,8 @@ impl ConditionKind {
                     BinaryOp::Ge => ">=",
                     BinaryOp::And => "AND",
                     BinaryOp::Or => "OR",
+                    BinaryOp::BitwiseOr => "BITOR",
+                    BinaryOp::BitwiseAnd => "BITAND",
                     BinaryOp::Xor => "XOR",
                     BinaryOp::Add => "+",
                     BinaryOp::Sub => "-",
@@ -84,9 +86,9 @@ impl ConditionKind {
 
     /// Attempt to lower an `Expr` into a `ConditionKind`.
     ///
-    /// Returns `Err(&'static str)` for unsupported forms — no heap allocation
-    /// on the error path. The caller embeds the guard name in diagnostics.
-    pub fn try_from_expr(expr: &Expr) -> Result<Self, &'static str> {
+    /// Returns `Err(MirrError)` for unsupported forms — strongly typed structured diagnostic.
+    /// The caller embeds the guard name in diagnostics.
+    pub fn try_from_expr(expr: &Expr) -> Result<Self, MirrError> {
         match expr {
             Expr::Signal(name) => Ok(ConditionKind::SimpleSignal(name.clone())),
             Expr::Prev { signal, delay } => {
@@ -94,10 +96,14 @@ impl ConditionKind {
             }
             Expr::Unary { op: UnaryOp::Not, operand } => match operand.as_ref() {
                 Expr::Signal(name) => Ok(ConditionKind::NegatedSignal(name.clone())),
-                Expr::Prev { .. } => {
-                    Err("negation of prev() is not yet supported in temporal guards")
-                }
-                _ => Err("negation of non-signal expressions is not supported"),
+                Expr::Prev { .. } => Err(mirrcode(
+                    ErrorCode::TemporalCondUnsupported,
+                    "negation of prev() is not yet supported in temporal guards",
+                )),
+                _ => Err(mirrcode(
+                    ErrorCode::TemporalCondUnsupported,
+                    "negation of non-signal expressions is not supported",
+                )),
             },
             Expr::Binary { op, left, right }
                 if matches!(
@@ -116,10 +122,16 @@ impl ConditionKind {
                         op: *op,
                         value: v.clone(),
                     }),
-                    _ => Err("comparisons must be of the form <signal> <op> <literal>"),
+                    _ => Err(mirrcode(
+                        ErrorCode::TemporalCondUnsupported,
+                        "comparisons must be of the form <signal> <op> <literal>",
+                    )),
                 }
             }
-            _ => Err("unsupported condition expression form"),
+            _ => Err(mirrcode(
+                ErrorCode::TemporalCondUnsupported,
+                "unsupported condition expression form",
+            )),
         }
     }
 
@@ -141,6 +153,12 @@ impl ConditionKind {
         entity_id: crate::ecs::EntityId,
     ) -> Result<Self, MirrError> {
         let idx = entity_id.0 as usize;
+
+        if let Some(lit) = &registry.literals[idx] {
+            if lit.0 == LiteralValue::Bool(true) {
+                return Ok(ConditionKind::AlwaysTrue);
+            }
+        }
 
         if let Some(sig_ref) = &registry.signal_refs[idx] {
             let name = registry.names[sig_ref.0 .0 as usize]

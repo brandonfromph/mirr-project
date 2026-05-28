@@ -538,8 +538,46 @@ fn parse_qualified_type(
             }
             annotations.phantom_tag = Some(tag.to_string());
             pos += 1;
+        } else if token == "session" || token.starts_with("session(") {
+            // --- Session type ---
+            if annotations.session.is_some() {
+                return Err(MirrError::parse_error(format!(
+                    "{} Duplicate 'session' annotation in signal declaration.",
+                    crate::error_codes::ec(198)
+                )));
+            }
+
+            let session_content = if token.starts_with("session(") {
+                let content = token.strip_prefix("session(").unwrap_or(token).trim_end_matches(')');
+                pos += 1;
+                content.to_string()
+            } else {
+                pos += 1;
+                if pos >= tokens.len() {
+                    return Err(MirrError::parse_error(format!(
+                        "{} Missing session reference after 'session'. Expected 'Protocol::State'.",
+                        crate::error_codes::ec(199)
+                    )));
+                }
+                let next = &tokens[pos];
+                pos += 1;
+                next.clone()
+            };
+
+            if let Some((proto, state)) = session_content.split_once("::") {
+                annotations.session = Some(crate::ast::types::SessionTypeRef {
+                    protocol: proto.trim().to_string(),
+                    state: state.trim().to_string(),
+                });
+            } else {
+                return Err(MirrError::parse_error(format!(
+                    "{} Invalid session reference '{}': expected 'Protocol::State'.",
+                    crate::error_codes::ec(199),
+                    session_content
+                )));
+            }
         } else {
-            return Err(MirrError::parse_error(format!("{} Unexpected token '{token}' after signal type. Expected 'where', '@clock', or '#Tag'.", crate::error_codes::ec(183),
+            return Err(MirrError::parse_error(format!("{} Unexpected token '{token}' after signal type. Expected 'where', '@clock', '#Tag', or 'session'.", crate::error_codes::ec(183),
             )));
         }
     }

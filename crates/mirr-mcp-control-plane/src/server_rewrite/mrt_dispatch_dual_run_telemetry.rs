@@ -12,7 +12,7 @@ pub enum DriftCategory {
     MinorReordering,
     /// Paths returned different number of results.
     ResultCountMismatch,
-    /// Freshness signals differ (fresh vs stale index states).
+    /// Freshness signals differ (fresh vs outdated index states).
     FreshnessMismatch,
     /// Results differ in quality or relevance (semantic drift).
     QualityDrift,
@@ -21,7 +21,7 @@ pub enum DriftCategory {
 /// Execution details for a single path in dual-run mode.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PathExecutionEvent {
-    /// Name of the path: "legacy" or "new".
+    /// Name of the path: "original" or "new".
     pub path_name: String,
 
     /// Whether execution succeeded (true) or failed (false).
@@ -49,7 +49,7 @@ pub struct ParityMetrics {
     /// Whether result counts are equal.
     pub result_count_match: bool,
 
-    /// Signed difference: new_count - legacy_count.
+    /// Signed difference: new_count - original_count.
     pub result_count_diff: i32,
 
     /// Whether truncation status matches between paths.
@@ -61,7 +61,7 @@ pub struct ParityMetrics {
     /// Whether top-k results are reordered between paths.
     pub top_k_reordered: bool,
 
-    /// Percentage of legacy results also in new results (0-100).
+    /// Percentage of original results also in new results (0-100).
     pub result_overlap_percent: u32,
 }
 
@@ -89,7 +89,7 @@ pub struct DualRunTelemetry {
     /// Original query text (truncated to 200 chars for logging).
     pub query_snippet: String,
 
-    /// Execution details for legacy path (mrt_brain_get).
+    /// Execution details for original path (mrt_brain_get).
     pub legacy_path: PathExecutionEvent,
 
     /// Execution details for new path (mrt_kb_query).
@@ -98,7 +98,7 @@ pub struct DualRunTelemetry {
     /// Parity comparison metrics.
     pub parity_metrics: ParityMetrics,
 
-    /// Which path was returned to caller: "legacy", "new", or "fallback".
+    /// Which path was returned to caller: "original", "new", or "fallback".
     pub primary_path_returned: String,
 
     /// Unix timestamp (milliseconds) when request was received.

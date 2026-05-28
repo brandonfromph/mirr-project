@@ -364,6 +364,18 @@ jobs:
         working-directory: proofs/rspu
         run: make
 
+      - name: Build proofs (compiler)
+        working-directory: proofs/compiler
+        run: make
+
+      - name: Build proofs (mape_k)
+        working-directory: proofs/mape_k
+        run: make
+
+      - name: Build proofs (cert)
+        working-directory: proofs/cert
+        run: make
+
   lra-cli:
     name: LRA CLI
     runs-on: ubuntu-latest

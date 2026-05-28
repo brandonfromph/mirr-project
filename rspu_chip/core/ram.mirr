@@ -1,9 +1,9 @@
-// RAM pattern — generic memory block
+// RAM pattern — generic memory block upgraded to 64-bit word
 def ram(
     clk: signal in bool,
     addr: signal in u16,
-    data_in: signal in u16,
-    data_out: signal out u17
+    data_in: signal in u64,
+    data_out: signal out u64
 ) {
     reflect {
         guard mem_ready {
@@ -19,4 +19,4 @@ def ram(
     }
 }
 
-module ram_stub {}
+module ram {}

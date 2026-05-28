@@ -37,10 +37,10 @@
 #![forbid(unsafe_code)]
 
 mod checks;
-mod domain_checks;
+pub mod domain_checks;
 mod emit;
 mod qualifiers;
-mod types;
+pub mod types;
 
 // Re-export everything so external code sees no change.
 pub use checks::*;

@@ -4,15 +4,15 @@ use std::env;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use mirror::envelope::{MRT_EXECUTION_ERROR, TOKEN_QUOTA_LIMIT_ERROR};
-use mirror::server_rewrite::mrt_dispatch_invocation_executor::{
+use mirr_mcp_control_plane::envelope::{MRT_EXECUTION_ERROR, TOKEN_QUOTA_LIMIT_ERROR};
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_executor::{
     MrtRuntimeAdmissionConfig, MrtRuntimeAdmissionError, MrtRuntimeAdmissionState,
     DEFAULT_MAX_CONCURRENT_PER_KEY,
 };
-use mirror::server_rewrite::mrt_dispatch_quota_host_boundary::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_quota_host_boundary::{
     MrtDispatchQuotaHostBoundary, DEFAULT_QUOTA_HYDRATE_ROWS,
 };
-use mirror::server_rewrite::mrt_dispatch_quota_store::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_quota_store::{
     MrtDispatchQuotaEventSink, SqliteMrtDispatchQuotaEventSink,
 };
 use serde_json::{json, Value};

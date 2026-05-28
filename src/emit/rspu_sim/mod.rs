@@ -280,7 +280,7 @@ impl RspuSimulator {
                         crate::error_codes::ec(708)
                     )));
                 }
-                let result_val = execute_alu_unary(*op, word.value);
+                let result_val = execute_alu_unary(*op, word.value, word.tag);
                 self.registers.write(*dst, TaggedWord::from_computed(result_val, word.tag));
                 Ok(StepResult::Continue)
             }

@@ -49,6 +49,8 @@ fn op_symbol(op: BinaryOp) -> &'static str {
     match op {
         BinaryOp::And => "&&",
         BinaryOp::Or => "||",
+        BinaryOp::BitwiseOr => "|",
+        BinaryOp::BitwiseAnd => "&",
         BinaryOp::Xor => "^",
         BinaryOp::Lt => "<",
         BinaryOp::Le => "<=",
@@ -526,6 +528,37 @@ fn infer_binary_type(
                 } else {
                     Ok(SignalType::Unsigned(max_w))
                 }
+            }
+        }
+
+        // Hardware bitwise integer operators: accept any numeric widths, return max-width.
+        // These are explicit RTL operators (`|` and `&`) distinct from logical And/Or.
+        BinaryOp::BitwiseOr | BinaryOp::BitwiseAnd => {
+            let (left_w, left_signed) = match left {
+                SignalType::Bool => (1, false),
+                _ => require_numeric(op, left, right, context_span, mode)?,
+            };
+            let (right_w, right_signed) = match right {
+                SignalType::Bool => (1, false),
+                _ => require_numeric(op, right, left, context_span, mode)?,
+            };
+            if left_signed != right_signed {
+                return Err(MirrError::TypeError {
+                    message: format!(
+                        "{} Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
+                        crate::error_codes::ec(608),
+                        op_symbol(op),
+                        left,
+                        right
+                    ),
+                    span: context_span,
+                });
+            }
+            let max_w = left_w.max(right_w);
+            if left_signed {
+                Ok(SignalType::Signed(max_w))
+            } else {
+                Ok(SignalType::Unsigned(max_w))
             }
         }
 

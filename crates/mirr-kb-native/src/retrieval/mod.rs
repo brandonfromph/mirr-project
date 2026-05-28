@@ -68,7 +68,7 @@ pub struct QueryResponse {
     /// List of search results.
     pub results: Vec<SearchResult>,
 
-    /// Whether this result set is fresh (recently indexed) or potentially stale.
+    /// Whether this result set is fresh (recently indexed) or potentially outdated.
     pub freshness: Freshness,
 
     /// Total milliseconds spent on the query.
@@ -87,7 +87,7 @@ pub struct QueryResponse {
 pub enum Freshness {
     /// Index was recently refreshed (within last hour).
     Fresh,
-    /// Index may be stale (older than configured threshold).
+    /// Index may be outdated (older than configured threshold).
     Stale,
     /// Freshness status unknown.
     Unknown,
@@ -114,7 +114,7 @@ pub struct IndexStatus {
     /// Last index refresh timestamp (Unix seconds).
     pub last_refresh_secs: u64,
 
-    /// Whether the index is currently stale.
+    /// Whether the index is currently outdated.
     pub is_stale: bool,
 
     /// Optional error message if index build failed recently.

@@ -18,8 +18,9 @@ pub fn ingest_program(
 
     // 1.5. Ingest imports
     if let Some(dir) = base_dir {
+        let mut loaded = std::collections::HashSet::new();
         for import in program.imports {
-            ingest_import(registry, import, dir)?;
+            ingest_import_recursive(registry, import, dir, &mut loaded)?;
         }
     }
 
@@ -33,12 +34,19 @@ pub fn ingest_program(
     })
 }
 
-fn ingest_import(
+fn ingest_import_recursive(
     registry: &mut Registry,
     import: crate::ast::program::ImportDecl,
-    base_dir: &std::path::Path,
+    current_dir: &std::path::Path,
+    loaded_paths: &mut std::collections::HashSet<std::path::PathBuf>,
 ) -> Result<(), MirrError> {
-    let import_path = base_dir.join(&import.path);
+    let import_path = current_dir.join(&import.path);
+    let canonical_path = import_path.canonicalize().unwrap_or_else(|_| import_path.clone());
+    if loaded_paths.contains(&canonical_path) {
+        return Ok(());
+    }
+    loaded_paths.insert(canonical_path.clone());
+
     let source = std::fs::read_to_string(&import_path).map_err(|e| MirrError::SemanticError {
         message: format!(
             "{} Failed to read imported file '{}': {}",
@@ -62,6 +70,12 @@ fn ingest_import(
     }
 
     registry.ingest_module(&imported_prog.module)?;
+
+    if let Some(parent_dir) = import_path.parent() {
+        for nested_import in imported_prog.imports {
+            ingest_import_recursive(registry, nested_import, parent_dir, loaded_paths)?;
+        }
+    }
 
     Ok(())
 }

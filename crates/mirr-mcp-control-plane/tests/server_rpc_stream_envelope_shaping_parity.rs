@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
-use mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
-use mirror::server_rewrite::rpc_dispatch_bridge::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
+use mirr_mcp_control_plane::server_rewrite::rpc_dispatch_bridge::{
     RpcDispatchBody, RpcDispatchRequestShim, RpcDispatchResult, RpcHandlerMap, RpcHandlerResponse,
 };
-use mirror::server_rewrite::rpc_stream_envelope_shaping::{
+use mirr_mcp_control_plane::server_rewrite::rpc_stream_envelope_shaping::{
     shape_stream_rpc_envelope, shape_stream_rpc_envelope_from_dispatch, StreamRpcEnvelopeInput,
     STREAM_JSON_RPC_VERSION,
 };

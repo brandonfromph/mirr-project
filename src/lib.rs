@@ -95,7 +95,7 @@ pub use validation::validate_module;
 pub use width::types::{WidthDiag, WidthExpr, WidthStats};
 
 // MEGA-4: Totality Engine re-exports.
-pub use cert::{ProofCertificate, TerminationStrategy};
+pub use cert::{verify_certificate, ProofCertificate, TerminationStrategy};
 pub use totality::{run_totality_check, TotalityResult};
 pub use workspace::{
     Workspace, WorkspaceArtifactSummary, WorkspaceConfig, WorkspaceError, WorkspaceSnapshot,

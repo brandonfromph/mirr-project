@@ -22,9 +22,11 @@
 mod deserialize;
 mod serialize;
 mod sha256;
+mod verifier;
 
 pub use deserialize::deserialize_certificate;
 pub use serialize::serialize_certificate;
+pub use verifier::verify_certificate;
 
 use crate::totality::ResourceBound;
 

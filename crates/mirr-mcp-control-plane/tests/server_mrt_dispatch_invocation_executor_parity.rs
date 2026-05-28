@@ -1,10 +1,10 @@
-use mirror::server_rewrite::mrt_dispatch_invocation_executor::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_executor::{
     enforce_token_quota, execute_mrt_dispatch_invocation_with_runner, resolve_runtime_token,
     with_token_concurrency_limit, MrtDispatchExecutionConfig, MrtDispatchExecutionError,
     MrtDispatchInvocationRunner, MrtDispatchRunnerOutcome, MrtRuntimeAdmissionConfig,
     MrtRuntimeAdmissionError, MrtRuntimeAdmissionState, TokenQuotaState,
 };
-use mirror::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
 
 #[derive(Clone)]
 struct FakeRunner {

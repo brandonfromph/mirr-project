@@ -135,8 +135,7 @@ pub fn run_pipeline(
     source: &str,
     config: &PipelineConfig,
 ) -> Result<PipelineResult, PipelineErrors> {
-    let processed_source = crate::compiler::macro_proc::expand_macros(source);
-    let program = crate::parser::parse_mirr(&processed_source)?;
+    let program = crate::parser::parse_mirr(source)?;
     run_pipeline_on_program(program, config)
 }
 
@@ -164,28 +163,9 @@ pub fn run_pipeline_on_program(
 
     // 2. Ingest imports (which contain more patterns).
     if let Some(dir) = config.base_dir.as_deref() {
-        for import in &program.imports {
-            let import_path = dir.join(&import.path);
-            if let Ok(source) = std::fs::read_to_string(&import_path) {
-                let processed = crate::compiler::macro_proc::expand_macros(&source);
-                if let Ok(imported_prog) = crate::parser::parse_mirr(&processed) {
-                    for pat in imported_prog.patterns {
-                        let entity = registry.create_entity(
-                            &pat.name,
-                            crate::ecs::components::KindComponent::PATTERN,
-                        );
-                        registry.set_type(
-                            entity,
-                            crate::ecs::components::TypeComponent::pattern(pat.clone()),
-                        );
-                        registry.pattern_defs[entity.0 as usize] =
-                            Some(crate::ecs::components::PatternDefComponent(pat.clone()));
-                        let qualified_name = format!("{}::{}", import.alias, pat.name);
-                        registry.register_symbol(&qualified_name, entity);
-                    }
-                }
-            }
-        }
+        let mut loaded = std::collections::HashSet::new();
+        let _ =
+            load_imports_recursive_for_pipeline(&mut registry, &program.imports, dir, &mut loaded);
     }
 
     // 3. Expand patterns in the AST using the Registry as a lookup.
@@ -470,4 +450,49 @@ fn sat_simplify_program(program: &mut MirrProgram) -> SatSimplifyPipelineStats {
     }
 
     total
+}
+
+fn load_imports_recursive_for_pipeline(
+    registry: &mut crate::ecs::Registry,
+    imports: &[crate::ast::program::ImportDecl],
+    current_dir: &std::path::Path,
+    loaded_paths: &mut std::collections::HashSet<std::path::PathBuf>,
+) -> Result<(), crate::error::MirrError> {
+    for import in imports {
+        let import_path = current_dir.join(&import.path);
+        let canonical_path = import_path.canonicalize().unwrap_or_else(|_| import_path.clone());
+        if loaded_paths.contains(&canonical_path) {
+            continue;
+        }
+        loaded_paths.insert(canonical_path.clone());
+
+        if let Ok(source) = std::fs::read_to_string(&import_path) {
+            let processed = crate::compiler::macro_proc::expand_macros(&source);
+            if let Ok(imported_prog) = crate::parser::parse_mirr(&processed) {
+                for pat in imported_prog.patterns {
+                    let entity = registry
+                        .create_entity(&pat.name, crate::ecs::components::KindComponent::PATTERN);
+                    registry.set_type(
+                        entity,
+                        crate::ecs::components::TypeComponent::pattern(pat.clone()),
+                    );
+                    registry.pattern_defs[entity.0 as usize] =
+                        Some(crate::ecs::components::PatternDefComponent(pat.clone()));
+                    let qualified_name = format!("{}::{}", import.alias, pat.name);
+                    registry.register_symbol(&qualified_name, entity);
+                }
+
+                // Recurse using the imported file's parent directory
+                if let Some(parent_dir) = import_path.parent() {
+                    load_imports_recursive_for_pipeline(
+                        registry,
+                        &imported_prog.imports,
+                        parent_dir,
+                        loaded_paths,
+                    )?;
+                }
+            }
+        }
+    }
+    Ok(())
 }

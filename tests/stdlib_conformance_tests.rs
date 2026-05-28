@@ -21,7 +21,6 @@ use nasa_rust_project::{parse_mirr, validate_module, MirrError};
 // DiagCode numeric values matching stdlib/mirr_core/diagnostics.mirr
 // These must stay in sync with the DiagCode enum ordering there.
 // ---------------------------------------------------------------------------
-#[allow(dead_code)]
 mod diag_code {
     // Parse errors
     pub const PARSE_EMPTY_SOURCE: u32 = 0;
@@ -72,6 +71,7 @@ fn error_class(e: &MirrError) -> &'static str {
         MirrError::WidthError { .. } => "width",
         MirrError::SymbolError { .. } => "symbol",
         MirrError::ImportError { .. } => "import",
+        MirrError::ToolingError { .. } => "tooling",
         MirrError::InternalError(_) => "internal",
     }
 }

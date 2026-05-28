@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use mirror::tooling::{discovery_method_by_name, DiscoveryParameter, MrtDispatchTool};
+use mirr_mcp_control_plane::tooling::{
+    discovery_method_by_name, DiscoveryParameter, MrtDispatchTool,
+};
 use serde_json::Value;
 
 fn expected_json_type(parameter_type: &str) -> &str {

@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use mirror::server_rewrite::rpc_method_normalization::normalize_rpc_method_name;
+use mirr_mcp_control_plane::server_rewrite::rpc_method_normalization::normalize_rpc_method_name;
 
 #[test]
 fn method_normalization_matches_alias_and_fallback_contract() {

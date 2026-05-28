@@ -2,15 +2,15 @@ use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
-use mirror::server_rewrite::axum_route_host::{AxumHostConfig, AxumMcpHostState};
-use mirror::server_rewrite::mrt_dispatch_quota_store::{
+use mirr_mcp_control_plane::server_rewrite::axum_route_host::{AxumHostConfig, AxumMcpHostState};
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_quota_store::{
     MrtDispatchQuotaEventSink, PersistedTokenQuotaState,
 };
-use mirror::server_rewrite::rpc_dispatch_bridge::RpcHandlerMap;
-use mirror::server_rewrite::transport_bootstrap::{
+use mirr_mcp_control_plane::server_rewrite::rpc_dispatch_bridge::RpcHandlerMap;
+use mirr_mcp_control_plane::server_rewrite::transport_bootstrap::{
     bootstrap_transport_with_runner, TransportStartupAction, TransportStartupRunner,
 };
-use mirror::server_rewrite::transport_mode_resolution::{
+use mirr_mcp_control_plane::server_rewrite::transport_mode_resolution::{
     TransportMode, TRANSPORT_STREAM_FEATURE_FLAG, TRANSPORT_STREAM_PORT_KEY,
 };
 

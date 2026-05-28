@@ -14,13 +14,13 @@ use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 
 /// Maximum number of parameters in a pattern definition.
-pub(crate) const MAX_PARAMS: usize = 32;
+pub(crate) const MAX_PARAMS: usize = 128;
 
 /// Maximum number of arguments in a pattern call.
-const MAX_ARGS: usize = 32;
+const MAX_ARGS: usize = 128;
 
 /// Maximum number of lines in a reflect body.
-pub(crate) const MAX_REFLECT_LINES: usize = 512;
+pub(crate) const MAX_REFLECT_LINES: usize = 8192;
 
 /// Maximum brace nesting depth inside a reflect body.
 const MAX_BRACE_DEPTH: usize = 16;
@@ -151,12 +151,13 @@ fn collect_def_header(lines: &[&str], index: &mut usize) -> Result<String, MirrE
         }
 
         if !header.is_empty() {
-            header.push(' ');
+            header.push('\n');
         }
         header.push_str(line);
 
-        // Check if we've seen `) {` marking end of header.
-        if header.contains(") {") || header.contains("){") {
+        // Check if we've seen closing parenthesis followed by opening brace
+        let clean_check = header.replace(|c: char| c.is_whitespace(), "");
+        if clean_check.contains("){") {
             return Ok(header);
         }
     }
@@ -189,7 +190,18 @@ fn parse_pattern_params(param_str: &str, name: &str) -> Result<Vec<PatternParam>
         return Ok(Vec::new());
     }
 
-    let parts: Vec<&str> = trimmed.split(',').collect();
+    let mut clean_param_str = String::with_capacity(param_str.len());
+    for line in param_str.lines() {
+        let mut line_part = line;
+        if let Some(pos) = line.find("//") {
+            line_part = &line[..pos];
+        }
+        clean_param_str.push_str(line_part);
+        clean_param_str.push(' ');
+    }
+    let trimmed_clean = clean_param_str.trim();
+
+    let parts: Vec<&str> = trimmed_clean.split(',').collect();
     if parts.len() > MAX_PARAMS {
         return Err(pattern_err(format!(
             "{} Pattern '{name}' has too many parameters (max {MAX_PARAMS}).",
@@ -332,14 +344,12 @@ fn collect_reflect_body(
 // Pattern call parser
 // ---------------------------------------------------------------------------
 
-/// Check if a line looks like a pattern call: `identifier(args);`
+/// Check if a line looks like the start of a pattern call: `identifier(`
 ///
-/// Returns true if the line matches the pattern and the identifier is not a MIRR keyword.
-pub fn is_pattern_call_line(line: &str) -> bool {
+/// Returns true if the line starts with an identifier followed by '(' and is not a keyword.
+pub fn is_pattern_call_start(line: &str) -> bool {
     let trimmed = line.trim();
-
-    // Must end with ");".
-    if !trimmed.ends_with(");") {
+    if trimmed.is_empty() {
         return false;
     }
 
@@ -356,19 +366,52 @@ pub fn is_pattern_call_line(line: &str) -> bool {
     }
 
     // Check it's a valid identifier (alphanumeric + underscore + colon).
-    if !ident.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == ':') {
-        return false;
+    for c in ident.chars() {
+        if !(c.is_ascii_alphanumeric() || c == '_' || c == ':') {
+            return false;
+        }
     }
 
     // Must not be a MIRR keyword.
-    !KEYWORDS.contains(&ident)
+    let is_kw = KEYWORDS.contains(&ident);
+    if is_kw {
+        return false;
+    }
+
+    true
 }
 
-/// Parse a pattern call line: `name(arg1, arg2, ...);`
+/// Check if a line looks like a single-line pattern call: `identifier(args);`
 ///
-/// Bounded: MAX_ARGS arguments.
-pub fn parse_pattern_call(line: &str) -> Result<PatternCall, MirrError> {
+/// Returns true if the line matches the pattern and the identifier is not a MIRR keyword.
+pub fn is_pattern_call_line(line: &str) -> bool {
     let trimmed = line.trim();
+
+    // Must end with ");".
+    if !trimmed.ends_with(");") {
+        return false;
+    }
+
+    is_pattern_call_start(line)
+}
+
+/// Parse a pattern call (may span multiple lines): `name(arg1, arg2, ...);`
+///
+/// Bounded: MAX_ARGS arguments, MAX_HEADER_LINES lines.
+pub fn parse_pattern_call(lines: &[&str], index: &mut usize) -> Result<PatternCall, MirrError> {
+    // Collect the full call (may span multiple lines until we see `);`)
+    let full_call = collect_call_header(lines, index)?;
+    parse_pattern_call_str(&full_call)
+}
+
+/// Parse a pattern call from a single-line string.
+pub fn parse_pattern_call_single(line: &str) -> Result<PatternCall, MirrError> {
+    parse_pattern_call_str(line)
+}
+
+/// Internal helper: parse a pattern call from a joined string.
+fn parse_pattern_call_str(full_call: &str) -> Result<PatternCall, MirrError> {
+    let trimmed = full_call.trim();
 
     // Strip trailing ";".
     let without_semi = trimmed
@@ -403,6 +446,41 @@ pub fn parse_pattern_call(line: &str) -> Result<PatternCall, MirrError> {
     let arguments = parse_call_args(args_str, pattern_name)?;
 
     Ok(PatternCall { pattern_name: pattern_name.to_string(), arguments, span: None })
+}
+
+/// Collect a pattern call header, which may span multiple lines.
+///
+/// Joins lines until we see `);`. Returns the joined string.
+/// Bounded: at most 64 lines.
+fn collect_call_header(lines: &[&str], index: &mut usize) -> Result<String, MirrError> {
+    let mut header = String::new();
+    let max_header_lines = 64usize;
+    let mut count = 0usize;
+
+    while *index < lines.len() && count < max_header_lines {
+        let line = lines[*index].trim();
+        *index += 1;
+        count += 1;
+
+        if line.is_empty() || line.starts_with("//") {
+            continue;
+        }
+
+        if !header.is_empty() {
+            header.push(' ');
+        }
+        header.push_str(line);
+
+        // Check if we've seen `);` marking end of call.
+        if header.ends_with(");") || header.contains(");") {
+            return Ok(header);
+        }
+    }
+
+    Err(pattern_err(format!(
+        "{} Pattern call header not closed with ');'.",
+        crate::error_codes::ec(420)
+    )))
 }
 
 /// Parse comma-separated call arguments.

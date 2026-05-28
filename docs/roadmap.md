@@ -80,12 +80,15 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 ## Phase 0 – Foundation (Completed)
 
 {: .tip }
-> Phases 0--5, 6, 7a, 7b, 7c complete. Phase 5 is complete (5a complete, 5b complete).
+> Phases 0--6, 7a, 7b, 7c, 7e, 7f, 7g, 7h complete. Phase 5 is complete (5a complete, 5b complete).
 > The compiler is operational with 3,469+ tests passing, zero unsafe code,
 > and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
-> Formal proofs: 80+ Rocq proofs.
+> Formal proofs: 90+ Rocq proofs (13.54% Symbol Coverage).
 > Code metrics: 509,000+ total lines across 293+ files.
 > Error codes: 162 unique codes (E100--E705). SAT simplification module added (E900--E902).
+> Phase 7h (MAPE-K RTL) complete with Yosys validation and equivalence proofs.
+> Phase 7i (Verified Compilation) initialized with ConstFold proof and audit tool.
+> Phase 8a (R-SPU Core) in progress: 64-bit tagged pipeline architecture initialized.
 
 - **Goal:** Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.
 - **Tasks:**
@@ -398,9 +401,11 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 7f — Proof-Carrying Code Infrastructure (Not Started)
+## Phase 7f — Proof-Carrying Code Infrastructure (Completed)
 
 - **Goal:** Implement a proof-carrying code framework where compiled R-SPU programs carry machine-checkable safety certificates alongside their executable code, enabling hardware-verified trust.
+
+- **Status (May 2026):** COMPLETE. Certificate generation and serialization implemented in `src/cert/`. Hardware Proof Verification Unit implemented in `rspu_chip/verification/pcc_verifier.mirr`. Formal verifier specification and correctness invariants proven in `proofs/cert/Verifier.v`.
 
 - **Scope:**
   - Proof-carrying code model: every compiled R-SPU binary includes a compact safety certificate attesting to specific verified properties.
@@ -418,9 +423,11 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 7g — Symbolic Evaluation Engine (Not Started)
+## Phase 7g — Symbolic Evaluation Engine (Completed)
 
 - **Goal:** Build a hardware-acceleratable symbolic evaluation engine for runtime signal classification, constraint resolution, and logic optimization within the R-SPU execution model.
+
+- **Status (May 2026):** COMPLETE. Symbolic evaluation library implemented in `src/symbolic/` including interval analysis, fingerprinting, and term rewriting. Verified through extensive integration tests (`tests/symbolic_*.rs`).
 
 - **Scope:**
   - Hardware-accelerated pattern matching engine for classifying signal waveforms against known templates (e.g., QRS complex detection, sensor drift signatures).
@@ -438,9 +445,11 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 7h — MAPE-K Hardware Realization (Not Started)
+## Phase 7h — MAPE-K Hardware Realization (Completed)
 
 - **Goal:** Port Phase 5's MAPE-K simulation harness to synthesizable RTL, creating a hardware-realized autonomic control loop with sub-microsecond response times.
+
+- **Status (May 2026):** COMPLETE. Synthesizable SystemVerilog emitter implemented in `src/emit/mape_k_rtl`. Verified via Yosys synthesis validation (`tests/synth_mape_k_tests.rs`). Behavioral equivalence established via Rocq proofs (`proofs/mape_k/`).
 
 - **Scope:**
   - Translate the Phase 5a Rust MAPE-K simulation model to synthesizable SystemVerilog RTL via the MIRR compilation pipeline.
@@ -459,9 +468,11 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 7i — Verified Compilation Chain (Not Started)
+## Phase 7i — Verified Compilation Chain (In Progress)
 
 - **Goal:** Establish an end-to-end formally verified compilation chain from MIRR source code to gate-level netlist, providing mathematical proof that generated hardware preserves source-level semantics.
+
+- **Status (May 2026):** Infrastructure established. `mirr-proof-audit` tool implemented for coverage tracking. `ConstFold.v` proof stub created. CI updated with Rocq validation.
 
 - **Scope:**
   - Rocq-verified compiler passes: extend Phase 4's width inference proofs to cover ALL compiler passes — parsing, type checking, simplification, temporal lowering, and code emission.
@@ -480,9 +491,10 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ---
 
-## Phase 8a — R-SPU Core Architecture (Not Started)
+## Phase 8a — R-SPU Core Architecture (In Progress)
 
 - **Goal:** Design and implement the R-SPU processor core with reflexive capabilities as synthesizable RTL.
+- **Status (May 2026):** IN PROGRESS. Tagged-word architecture (64-bit) defined in `rspu_chip/core/types.mirr`. Upgraded 64-bit ALU and Register File implemented. 5-stage synthesizable pipeline with PCC verification interlock initialized in `rspu_chip/core/pipeline.mirr`.
 - **Scope:**
   - Word architecture: 64-bit data words with type metadata tags for runtime type safety.
   - Datapath design: ALU, FPU, dedicated evaluation units for signal processing.

@@ -27,6 +27,25 @@ pub(super) fn collect_fragment_names(fragment: &ExpandedFragment) -> HashSet<Str
     names
 }
 
+fn rename_target(target: &mut String, rename: &HashMap<String, String>) {
+    if let Some(bracket_pos) = target.find('[') {
+        if target.ends_with(']') {
+            let array_name = target[..bracket_pos].trim();
+            let idx_str = target[bracket_pos + 1..target.len() - 1].trim();
+
+            let new_array_name =
+                rename.get(array_name).cloned().unwrap_or_else(|| array_name.to_string());
+            let new_idx_str = rename.get(idx_str).cloned().unwrap_or_else(|| idx_str.to_string());
+
+            *target = format!("{}[{}]", new_array_name, new_idx_str);
+        }
+    } else {
+        if let Some(new_name) = rename.get(target) {
+            *target = new_name.clone();
+        }
+    }
+}
+
 /// Apply name prefixing to all names in the fragment.
 ///
 /// Scheme: `{prefix}_{original_name}`
@@ -87,9 +106,7 @@ pub(super) fn apply_name_prefixing(
         }
         // Rename assignment targets and RHS expressions (only internal names).
         for assignment in &mut reflex.assignments {
-            if let Some(new_name) = rename.get(&assignment.target) {
-                assignment.target = new_name.clone();
-            }
+            rename_target(&mut assignment.target, &rename);
             rename_expr_signals(&mut assignment.value, &rename);
         }
     }
@@ -198,5 +215,54 @@ pub(super) fn set_origin_tags(fragment: &mut ExpandedFragment, origin: &str) {
     }
     for prop in &mut fragment.properties {
         prop.origin = Some(origin.to_string());
+    }
+}
+
+pub(super) fn apply_parameter_substitution(
+    fragment: &mut ExpandedFragment,
+    subs: &[(String, String)],
+) {
+    let mut rename: HashMap<String, String> = HashMap::with_capacity(subs.len());
+    for (param, arg) in subs {
+        rename.insert(param.clone(), arg.clone());
+    }
+
+    // Rename guard names in reflex triggers
+    for reflex in &mut fragment.reflexes {
+        for gname in &mut reflex.guard_names {
+            if let Some(new_name) = rename.get(gname.as_str()) {
+                *gname = new_name.clone();
+            }
+        }
+        // Rename assignments
+        for assignment in &mut reflex.assignments {
+            rename_target(&mut assignment.target, &rename);
+            rename_expr_signals(&mut assignment.value, &rename);
+        }
+    }
+
+    // Rename guard conditions
+    for guard in &mut fragment.guards {
+        rename_expr_signals(&mut guard.condition, &rename);
+    }
+
+    // Rename property formulas
+    for prop in &mut fragment.properties {
+        rename_property_signals(&mut prop.formula, &rename);
+    }
+
+    // Rename nested pattern call arguments
+    for call in &mut fragment.pattern_calls {
+        for arg in &mut call.arguments {
+            match arg {
+                crate::ast::pattern::PatternArg::SignalRef(name)
+                | crate::ast::pattern::PatternArg::PatternRef(name) => {
+                    if let Some(new_name) = rename.get(name.as_str()) {
+                        *name = new_name.clone();
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 }

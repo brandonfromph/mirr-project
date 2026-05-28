@@ -31,12 +31,12 @@ pub struct Registry {
     pub binary_ops: Vec<Option<BinaryComponent>>,
     pub prev_ops: Vec<Option<PrevComponent>>,
     pub signal_refs: Vec<Option<SignalRefComponent>>,
+    pub pending_signal_refs: Vec<Option<PendingSignalRef>>,
     pub array_indices: Vec<Option<ArrayIndexComponent>>,
     pub field_accesses: Vec<Option<FieldAccessComponent>>,
     pub array_literals: Vec<Option<ArrayLiteralComponent>>,
     pub struct_literals: Vec<Option<StructLiteralComponent>>,
     pub unfold_indices: Vec<Option<UnfoldIndexComponent>>,
-
 
     // Knowledge Base Component Tables (Phase 2)
     pub vectors: Vec<Option<VectorComponent>>,
@@ -92,6 +92,7 @@ impl Registry {
             binary_ops: vec![None; cap],
             prev_ops: vec![None; cap],
             signal_refs: vec![None; cap],
+            pending_signal_refs: vec![None; cap],
             vectors: vec![None; cap],
             chunk_texts: vec![None; cap],
             source_paths: vec![None; cap],
@@ -108,7 +109,6 @@ impl Registry {
             struct_literals: vec![None; cap],
             unfold_indices: vec![None; cap],
             symbol_to_entity: HashMap::with_capacity(cap),
-
         }
     }
 
@@ -138,7 +138,9 @@ impl Registry {
             self.binary_ops.resize(new_cap, None);
             self.prev_ops.resize(new_cap, None);
             self.signal_refs.resize(new_cap, None);
-            self.spans.resize(new_cap, None);
+            self.pending_signal_refs.resize(new_cap, None);
+            self.assignment_comps.resize(new_cap, None);
+
             self.vectors.resize(new_cap, None);
             self.chunk_texts.resize(new_cap, None);
             self.source_paths.resize(new_cap, None);
@@ -155,7 +157,6 @@ impl Registry {
             self.struct_literals.resize(new_cap, None);
             self.unfold_indices.resize(new_cap, None);
         }
-
 
         id
     }
@@ -397,63 +398,81 @@ impl Registry {
 
         let mut stack = vec![Work::Process(expr.clone())];
         let mut results = Vec::new();
+        let mut node_count = 0;
 
         while let Some(work) = stack.pop() {
             match work {
-                Work::Process(e) => match e {
-                    Expr::Literal(lit) => {
-                        let id = self.next_id();
-                        self.literals[id.0 as usize] = Some(LiteralComponent(lit));
-                        results.push(id);
+                Work::Process(e) => {
+                    node_count += 1;
+                    if node_count > crate::ast::MAX_EXPR_NODES {
+                        return Err(MirrError::InternalError(format!(
+                            "Expression complexity limit exceeded (MAX_EXPR_NODES={})",
+                            crate::ast::MAX_EXPR_NODES
+                        )));
                     }
-                    Expr::Signal(name) => {
-                        let id = self.next_id();
-                        if let Some(sig_ent) = self.get_entity_by_name(&name) {
-                            self.signal_refs[id.0 as usize] = Some(SignalRefComponent(sig_ent));
+                    match e {
+                        Expr::Literal(lit) => {
+                            let id = self.next_id();
+                            self.literals[id.0 as usize] = Some(LiteralComponent(lit));
+                            results.push(id);
                         }
-                        results.push(id);
-                    }
-                    Expr::Unary { op, operand } => {
-                        stack.push(Work::FinishUnary(op));
-                        stack.push(Work::Process(*operand));
-                    }
-                    Expr::Binary { op, left, right } => {
-                        stack.push(Work::FinishBinary(op));
-                        stack.push(Work::Process(*right));
-                        stack.push(Work::Process(*left));
-                    }
-                    Expr::Prev { signal, delay } => {
-                        stack.push(Work::FinishPrev(delay));
-                        stack.push(Work::Process(Expr::Signal(signal)));
-                    }
-                    Expr::ArrayIndex { array, index } => {
-                        stack.push(Work::FinishArrayIndex);
-                        stack.push(Work::Process(*index));
-                        stack.push(Work::Process(*array));
-                    }
-                    Expr::FieldAccess { object, field } => {
-                        stack.push(Work::FinishFieldAccess(field));
-                        stack.push(Work::Process(*object));
-                    }
-                    Expr::ArrayLiteral(elems) => {
-                        stack.push(Work::FinishArrayLiteral(elems.len()));
-                        for elem in elems.iter().rev() {
-                            stack.push(Work::Process(elem.clone()));
+                        Expr::Signal(name) => {
+                            let id = self.next_id();
+                            if let Some(sig_ent) = self.get_entity_by_name(&name) {
+                                self.signal_refs[id.0 as usize] = Some(SignalRefComponent(sig_ent));
+                            } else {
+                                // Store as pending reference if not yet declared
+                                self.pending_signal_refs[id.0 as usize] =
+                                    Some(PendingSignalRef(name));
+                            }
+                            results.push(id);
+                        }
+                        Expr::Unary { op, operand } => {
+                            stack.push(Work::FinishUnary(op));
+                            stack.push(Work::Process(*operand));
+                        }
+                        Expr::Binary { op, left, right } => {
+                            stack.push(Work::FinishBinary(op));
+                            stack.push(Work::Process(*right));
+                            stack.push(Work::Process(*left));
+                        }
+                        Expr::Prev { signal, delay } => {
+                            stack.push(Work::FinishPrev(delay));
+                            stack.push(Work::Process(Expr::Signal(signal)));
+                        }
+                        Expr::ArrayIndex { array, index } => {
+                            stack.push(Work::FinishArrayIndex);
+                            stack.push(Work::Process(*index));
+                            stack.push(Work::Process(*array));
+                        }
+                        Expr::FieldAccess { object, field } => {
+                            stack.push(Work::FinishFieldAccess(field));
+                            stack.push(Work::Process(*object));
+                        }
+                        Expr::ArrayLiteral(elems) => {
+                            stack.push(Work::FinishArrayLiteral(elems.len()));
+                            for elem in elems.iter().rev() {
+                                stack.push(Work::Process(elem.clone()));
+                            }
+                        }
+                        Expr::StructLiteral { name, fields } => {
+                            let field_names: Vec<String> =
+                                fields.iter().map(|(f, _)| f.clone()).collect();
+                            stack.push(Work::FinishStructLiteral {
+                                name: name.clone(),
+                                field_names,
+                            });
+                            for (_, f_expr) in fields.iter().rev() {
+                                stack.push(Work::Process(f_expr.clone()));
+                            }
+                        }
+                        Expr::UnfoldIndex(idx) => {
+                            let id = self.next_id();
+                            self.unfold_indices[id.0 as usize] = Some(UnfoldIndexComponent(idx));
+                            results.push(id);
                         }
                     }
-                    Expr::StructLiteral { name, fields } => {
-                        let field_names: Vec<String> = fields.iter().map(|(f, _)| f.clone()).collect();
-                        stack.push(Work::FinishStructLiteral { name: name.clone(), field_names });
-                        for (_, f_expr) in fields.iter().rev() {
-                            stack.push(Work::Process(f_expr.clone()));
-                        }
-                    }
-                    Expr::UnfoldIndex(idx) => {
-                        let id = self.next_id();
-                        self.unfold_indices[id.0 as usize] = Some(UnfoldIndexComponent(idx));
-                        results.push(id);
-                    }
-                },
+                }
                 Work::FinishBinary(op) => {
                     let right = results.pop().ok_or_else(|| {
                         MirrError::InternalError("Result stack underflow (right)".to_string())
@@ -513,7 +532,9 @@ impl Registry {
                     let mut elems = Vec::with_capacity(len);
                     for _ in 0..len {
                         let elem = results.pop().ok_or_else(|| {
-                            MirrError::InternalError("Result stack underflow (array literal)".to_string())
+                            MirrError::InternalError(
+                                "Result stack underflow (array literal)".to_string(),
+                            )
                         })?;
                         elems.push(elem);
                     }
@@ -527,7 +548,9 @@ impl Registry {
                     let mut field_ids = Vec::with_capacity(len);
                     for _ in 0..len {
                         let id = results.pop().ok_or_else(|| {
-                            MirrError::InternalError("Result stack underflow (struct literal)".to_string())
+                            MirrError::InternalError(
+                                "Result stack underflow (struct literal)".to_string(),
+                            )
                         })?;
                         field_ids.push(id);
                     }
@@ -539,7 +562,8 @@ impl Registry {
                     }
 
                     let id = self.next_id();
-                    self.struct_literals[id.0 as usize] = Some(StructLiteralComponent { name, fields });
+                    self.struct_literals[id.0 as usize] =
+                        Some(StructLiteralComponent { name, fields });
                     results.push(id);
                 }
             }
@@ -551,24 +575,59 @@ impl Registry {
     /// Iteratively reify an EntityId back into an AST Expr.
     /// Replaces the recursive implementation to comply with NASA Power of 10 Rule #1.
     pub fn reify_expr(&self, root_id: EntityId) -> Result<Expr, MirrError> {
+        let mut memo = std::collections::HashMap::new();
+        self.reify_expr_memoized(root_id, 0, &mut memo)
+    }
+
+    fn reify_expr_memoized(
+        &self,
+        root_id: EntityId,
+        current_depth: usize,
+        memo: &mut std::collections::HashMap<EntityId, Expr>,
+    ) -> Result<Expr, MirrError> {
+        if current_depth > 64 {
+            return Err(MirrError::SemanticError {
+                message: "Expression exceeds maximum nesting depth".to_string(),
+                span: None,
+            });
+        }
+
+        if let Some(cached) = memo.get(&root_id) {
+            return Ok(cached.clone());
+        }
+
         #[derive(Debug)]
         enum Work {
-            Process(EntityId),
+            Process(EntityId, usize),
             FinishBinary(BinaryOp),
             FinishUnary(UnaryOp),
             FinishArrayLiteral(usize),
             FinishStructLiteral { name: String, field_names: Vec<String> },
         }
 
-        let mut stack = vec![Work::Process(root_id)];
+        let mut stack = vec![Work::Process(root_id, current_depth)];
         let mut results: Vec<Expr> = Vec::new();
 
         while let Some(work) = stack.pop() {
             match work {
-                Work::Process(id) => {
+                Work::Process(id, depth) => {
+                    if depth > 64 {
+                        return Err(MirrError::SemanticError {
+                            message: "Expression exceeds maximum nesting depth".to_string(),
+                            span: None,
+                        });
+                    }
+
+                    if let Some(cached) = memo.get(&id) {
+                        results.push(cached.clone());
+                        continue;
+                    }
+
                     let idx = id.0 as usize;
                     if let Some(LiteralComponent(lit)) = &self.literals[idx] {
-                        results.push(Expr::Literal(lit.clone()));
+                        let res = Expr::Literal(lit.clone());
+                        memo.insert(id, res.clone());
+                        results.push(res);
                     } else if let Some(SignalRefComponent(sig_ent)) = self.signal_refs[idx] {
                         let sig_name = self.names[sig_ent.0 as usize]
                             .as_ref()
@@ -578,15 +637,21 @@ impl Registry {
                                     "Signal reference to unnamed entity".to_string(),
                                 )
                             })?;
-                        results.push(Expr::Signal(sig_name));
+                        let res = Expr::Signal(sig_name);
+                        memo.insert(id, res.clone());
+                        results.push(res);
+                    } else if let Some(PendingSignalRef(name)) = &self.pending_signal_refs[idx] {
+                        let res = Expr::Signal(name.clone());
+                        memo.insert(id, res.clone());
+                        results.push(res);
                     } else if let Some(BinaryComponent { op, left, right }) = &self.binary_ops[idx]
                     {
                         stack.push(Work::FinishBinary(*op));
-                        stack.push(Work::Process(*right));
-                        stack.push(Work::Process(*left));
+                        stack.push(Work::Process(*right, depth + 1));
+                        stack.push(Work::Process(*left, depth + 1));
                     } else if let Some(UnaryComponent { op, operand }) = &self.unary_ops[idx] {
                         stack.push(Work::FinishUnary(*op));
-                        stack.push(Work::Process(*operand));
+                        stack.push(Work::Process(*operand, depth + 1));
                     } else if let Some(PrevComponent { signal, delay }) = &self.prev_ops[idx] {
                         let sig_name = self.names[signal.0 as usize]
                             .as_ref()
@@ -596,37 +661,48 @@ impl Registry {
                                     "Prev reference to unnamed entity".to_string(),
                                 )
                             })?;
-                        results.push(Expr::Prev { signal: sig_name, delay: *delay });
+                        let res = Expr::Prev { signal: sig_name, delay: *delay };
+                        memo.insert(id, res.clone());
+                        results.push(res);
                     } else if let Some(ArrayIndexComponent { array, index }) =
                         &self.array_indices[idx]
                     {
-                        let array_expr = self.reify_expr(*array)?;
-                        let index_expr = self.reify_expr(*index)?;
-                        results.push(Expr::ArrayIndex {
+                        let array_expr = self.reify_expr_memoized(*array, depth + 1, memo)?;
+                        let index_expr = self.reify_expr_memoized(*index, depth + 1, memo)?;
+                        let res = Expr::ArrayIndex {
                             array: Box::new(array_expr),
                             index: Box::new(index_expr),
-                        });
+                        };
+                        memo.insert(id, res.clone());
+                        results.push(res);
                     } else if let Some(FieldAccessComponent { object, field }) =
                         &self.field_accesses[idx]
                     {
-                        let object_expr = self.reify_expr(*object)?;
-                        results.push(Expr::FieldAccess {
+                        let object_expr = self.reify_expr_memoized(*object, depth + 1, memo)?;
+                        let res = Expr::FieldAccess {
                             object: Box::new(object_expr),
                             field: field.clone(),
-                        });
+                        };
+                        memo.insert(id, res.clone());
+                        results.push(res);
                     } else if let Some(ArrayLiteralComponent(elems)) = &self.array_literals[idx] {
                         stack.push(Work::FinishArrayLiteral(elems.len()));
                         for elem in elems.iter().rev() {
-                            stack.push(Work::Process(*elem));
+                            stack.push(Work::Process(*elem, depth + 1));
                         }
-                    } else if let Some(StructLiteralComponent { name, fields }) = &self.struct_literals[idx] {
-                        let field_names: Vec<String> = fields.iter().map(|(n, _)| n.clone()).collect();
+                    } else if let Some(StructLiteralComponent { name, fields }) =
+                        &self.struct_literals[idx]
+                    {
+                        let field_names: Vec<String> =
+                            fields.iter().map(|(n, _)| n.clone()).collect();
                         stack.push(Work::FinishStructLiteral { name: name.clone(), field_names });
                         for (_, f_expr) in fields.iter().rev() {
-                            stack.push(Work::Process(*f_expr));
+                            stack.push(Work::Process(*f_expr, depth + 1));
                         }
                     } else if let Some(UnfoldIndexComponent(idx_val)) = &self.unfold_indices[idx] {
-                        results.push(Expr::UnfoldIndex(idx_val.clone()));
+                        let res = Expr::UnfoldIndex(idx_val.clone());
+                        memo.insert(id, res.clone());
+                        results.push(res);
                     } else {
                         return Err(MirrError::InternalError(format!(
                             "Entity {} is not an expression",
@@ -635,11 +711,11 @@ impl Registry {
                     }
                 }
                 Work::FinishBinary(op) => {
-                    let left = results.pop().ok_or_else(|| {
-                        MirrError::InternalError("Reify stack underflow (left)".to_string())
-                    })?;
                     let right = results.pop().ok_or_else(|| {
                         MirrError::InternalError("Reify stack underflow (right)".to_string())
+                    })?;
+                    let left = results.pop().ok_or_else(|| {
+                        MirrError::InternalError("Reify stack underflow (left)".to_string())
                     })?;
                     results.push(Expr::Binary { op, left: Box::new(left), right: Box::new(right) });
                 }
@@ -653,7 +729,9 @@ impl Registry {
                     let mut elems = Vec::with_capacity(len);
                     for _ in 0..len {
                         let elem = results.pop().ok_or_else(|| {
-                            MirrError::InternalError("Reify stack underflow (array literal)".to_string())
+                            MirrError::InternalError(
+                                "Reify stack underflow (array literal)".to_string(),
+                            )
                         })?;
                         elems.push(elem);
                     }
@@ -665,7 +743,9 @@ impl Registry {
                     let mut field_exprs = Vec::with_capacity(len);
                     for _ in 0..len {
                         let expr = results.pop().ok_or_else(|| {
-                            MirrError::InternalError("Reify stack underflow (struct literal)".to_string())
+                            MirrError::InternalError(
+                                "Reify stack underflow (struct literal)".to_string(),
+                            )
                         })?;
                         field_exprs.push(expr);
                     }
@@ -680,7 +760,11 @@ impl Registry {
             }
         }
 
-        results.pop().ok_or_else(|| MirrError::InternalError("Empty reify stack".to_string()))
+        let final_res = results
+            .pop()
+            .ok_or_else(|| MirrError::InternalError("Empty reify stack".to_string()))?;
+        memo.insert(root_id, final_res.clone());
+        Ok(final_res)
     }
 
     /// Create a new Signal Entity

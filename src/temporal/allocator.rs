@@ -3,6 +3,8 @@
 #![forbid(unsafe_code)]
 
 use crate::ecs::{EntityId, Registry};
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -17,10 +19,12 @@ impl RspuAllocator {
         Self { allocation_map: HashMap::new(), next_register: 0 }
     }
 
-    pub fn allocate(&mut self, _registry: &Registry, entity: EntityId) -> Result<u32, String> {
+    pub fn allocate(&mut self, _registry: &Registry, entity: EntityId) -> Result<u32, MirrError> {
         if self.next_register >= 256 {
-            return Err("E706: Register allocation failed: physical register limit exceeded (256)"
-                .to_string());
+            return Err(mirrcode(
+                ErrorCode::RspuRegisterAlloc,
+                "physical register limit exceeded (256)",
+            ));
         }
 
         let reg = self.next_register;

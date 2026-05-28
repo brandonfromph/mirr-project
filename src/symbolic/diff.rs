@@ -161,6 +161,8 @@ pub fn sym_diff(expr: &Expr, signal_name: &str) -> Expr {
                         // Bitwise and comparison ops: not differentiable.
                         BinaryOp::And
                         | BinaryOp::Or
+                        | BinaryOp::BitwiseOr
+                        | BinaryOp::BitwiseAnd
                         | BinaryOp::Xor
                         | BinaryOp::Lt
                         | BinaryOp::Le

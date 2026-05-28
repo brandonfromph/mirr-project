@@ -112,6 +112,9 @@ pub struct PrevComponent {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SignalRefComponent(pub EntityId);
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingSignalRef(pub String);
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ArrayIndexComponent {
     pub array: EntityId,
@@ -135,7 +138,6 @@ pub struct StructLiteralComponent {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnfoldIndexComponent(pub String);
-
 
 /// Component: Source code span for diagnostic tracing.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

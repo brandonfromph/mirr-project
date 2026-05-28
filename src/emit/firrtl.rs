@@ -421,6 +421,8 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
             let op_fn = match op {
                 BinaryOp::And => "and",
                 BinaryOp::Or => "or",
+                BinaryOp::BitwiseOr => "or",
+                BinaryOp::BitwiseAnd => "and",
                 BinaryOp::Xor => "xor",
                 BinaryOp::Lt => "lt",
                 BinaryOp::Le => "leq",

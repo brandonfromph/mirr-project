@@ -30,6 +30,8 @@ futures = "0.3.32"
 [dev-dependencies]
 criterion = { version = "0.8.2", features = ["html_reports"] }
 tempfile = "3.27.0"
+proptest = "1.4.0"
+proptest-derive = "0.4.0"
 
 [profile.dev]
 incremental = true
@@ -64,6 +66,10 @@ path = "src/bin/mirr-lsp.rs"
 [[bin]]
 name = "mirr-hydrate"
 path = "src/bin/mirr-hydrate.rs"
+
+[[bin]]
+name = "mirr-proof-audit"
+path = "src/bin/mirr-proof-audit.rs"
 
 [[bench]]
 name = "pipeline_bench"

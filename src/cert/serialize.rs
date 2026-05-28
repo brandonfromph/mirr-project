@@ -6,10 +6,13 @@ use super::{
     ProofCertificate, TerminationStrategy, MAX_CERT_SIZE, MAX_PROPERTY_VERDICTS, MAX_TYPE_WITNESSES,
 };
 
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
+
 /// Serialize a proof certificate to binary format.
 ///
 /// Bounded: output size ≤ MAX_CERT_SIZE.
-pub fn serialize_certificate(cert: &ProofCertificate) -> Result<Vec<u8>, String> {
+pub fn serialize_certificate(cert: &ProofCertificate) -> Result<Vec<u8>, MirrError> {
     let mut buf: Vec<u8> = Vec::new();
 
     // Magic bytes.
@@ -72,7 +75,10 @@ pub fn serialize_certificate(cert: &ProofCertificate) -> Result<Vec<u8>, String>
     }
 
     if buf.len() > MAX_CERT_SIZE {
-        return Err(format!("Certificate exceeds {} bytes", MAX_CERT_SIZE));
+        return Err(mirrcode(
+            ErrorCode::ReceiptGenerationFailed,
+            format!("Certificate exceeds {} bytes", MAX_CERT_SIZE),
+        ));
     }
 
     Ok(buf)

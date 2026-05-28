@@ -128,6 +128,10 @@ struct Cli {
     /// Override oss-cad-suite root directory
     #[arg(long)]
     toolchain_path: Option<String>,
+
+    /// Verify a proof certificate against the compiled R-SPU program
+    #[arg(long)]
+    verify: Option<String>,
 }
 
 pub fn main() {
@@ -179,11 +183,13 @@ pub fn main() {
     });
 
     let mut config = PipelineConfig::default();
+    config.bootstrap_mode = true;
     if args.emit.as_deref() == Some("rspu")
         || args.emit.as_deref() == Some("cert")
         || args.emit.as_deref() == Some("riscv")
         || args.emit.as_deref() == Some("arm")
         || args.totality
+        || args.verify.is_some()
     {
         config.rspu = true;
     }
@@ -211,6 +217,41 @@ pub fn main() {
         }
     };
     let result = snapshot.pipeline.as_ref();
+
+    if let Some(cert_path) = &args.verify {
+        let cert_bytes = std::fs::read(cert_path).unwrap_or_else(|e| {
+            eprintln!("Error: failed to read certificate file '{}': {}", cert_path, e);
+            process::exit(1);
+        });
+
+        let cert =
+            nasa_rust_project::cert::deserialize_certificate(&cert_bytes).unwrap_or_else(|e| {
+                eprintln!("Error: failed to deserialize certificate: {}", e);
+                process::exit(1);
+            });
+
+        let rspu_program = result.rspu_program.as_ref().unwrap_or_else(|| {
+            eprintln!("Error: R-SPU program was not compiled successfully");
+            process::exit(1);
+        });
+
+        let binary_words = nasa_rust_project::emit::rspu_encoding::emit_binary(rspu_program)
+            .unwrap_or_else(|e| {
+                eprintln!("Error: failed to encode R-SPU binary: {}", e);
+                process::exit(1);
+            });
+
+        match nasa_rust_project::cert::verify_certificate(&cert, rspu_program, &binary_words) {
+            Ok(()) => {
+                println!("Proof certificate verification PASSED.");
+                process::exit(0);
+            }
+            Err(e) => {
+                eprintln!("Proof certificate verification FAILED: {}", e);
+                process::exit(1);
+            }
+        }
+    }
 
     summary::print_summary(result, args.stats);
 

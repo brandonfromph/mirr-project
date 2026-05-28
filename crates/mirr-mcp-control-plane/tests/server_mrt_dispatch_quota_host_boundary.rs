@@ -1,12 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use mirror::server_rewrite::mrt_dispatch_invocation_executor::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_executor::{
     MrtRuntimeAdmissionConfig, MrtRuntimeAdmissionError, MrtRuntimeAdmissionState,
 };
-use mirror::server_rewrite::mrt_dispatch_quota_host_boundary::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_quota_host_boundary::{
     MrtDispatchQuotaHostBoundary, QuotaHostBoundaryAdmissionDecision,
 };
-use mirror::server_rewrite::mrt_dispatch_quota_store::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_quota_store::{
     MrtDispatchQuotaEventSink, PersistedTokenQuotaState,
 };
 

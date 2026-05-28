@@ -1,15 +1,15 @@
 use std::cell::Cell;
 
-use mirror::policy::Role;
-use mirror::server_rewrite::mrt_dispatch_invocation_executor::MrtDispatchExecutionError;
-use mirror::server_rewrite::mrt_dispatch_invocation_executor::MrtDispatchExecutionResult;
-use mirror::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
-use mirror::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
-use mirror::server_rewrite::mrt_dispatch_route_handler::{
+use mirr_mcp_control_plane::policy::Role;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_executor::MrtDispatchExecutionError;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_executor::MrtDispatchExecutionResult;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_input::InvocationInputBody;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_route_handler::{
     handle_mrt_dispatch_route, MrtDispatchPipelineError, MrtDispatchRouteResponse,
     PayloadValidationError,
 };
-use mirror::server_rewrite::rpc_role_gate::{RoleCheckFailure, VerifiedPrincipal};
+use mirr_mcp_control_plane::server_rewrite::rpc_role_gate::{RoleCheckFailure, VerifiedPrincipal};
 
 #[test]
 fn route_handler_success_path_matches_dispatch_contract_shape() {

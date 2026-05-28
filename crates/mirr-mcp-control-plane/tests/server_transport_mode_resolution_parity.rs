@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use mirror::server_rewrite::transport_mode_resolution::{
+use mirr_mcp_control_plane::server_rewrite::transport_mode_resolution::{
     is_stream_mode_enabled, parse_stream_port, resolve_transport_config, TransportMode,
     DEFAULT_STREAM_PORT, TRANSPORT_STREAM_FEATURE_FLAG, TRANSPORT_STREAM_PORT_KEY,
 };

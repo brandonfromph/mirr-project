@@ -1,5 +1,4 @@
-#[forbid(unsafe_code)]
-
+#![forbid(unsafe_code)]
 use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use nasa_rust_project::ast::Expr;
 use nasa_rust_project::ecs::*;
@@ -9,11 +8,7 @@ use std::path::PathBuf;
 
 fn tool_available(name: &str) -> bool {
     let flag = if name == "yosys" || name == "icetime" { "-V" } else { "--version" };
-    std::process::Command::new(name)
-        .arg(flag)
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    std::process::Command::new(name).arg(flag).output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 fn write_temp(name: &str, content: &str) -> std::path::PathBuf {
@@ -30,11 +25,8 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
     // 1. Compile the multi-file RSPU project (TDD verification of the real silicon architecture)
     assert!(root_path.exists(), "RSPU top file does not exist, check workspace pathing");
     let mut workspace = Workspace::new(&workspace_root);
-    let config = PipelineConfig {
-        temporal: false,
-        rspu: false,
-        ..Default::default()
-    };
+    let config =
+        PipelineConfig { temporal: false, rspu: false, bootstrap_mode: true, ..Default::default() };
 
     println!("Compiling upgraded multi-file RSPU project from {}...", root_path.display());
     let snapshot = workspace
@@ -47,10 +39,10 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
     // 2. STRESS TEST: Flood the ECS Registry to trigger lockstep vector growth & reallocation
     println!("Initiating high-scale Registry memory pressure and resizing tests...");
     let mut registry = Registry::new();
-    
+
     // Create a base module and register signals
     let mod_ent = registry.create_entity("top_stress_module", KindComponent::MODULE);
-    
+
     // Register 1,000 signals sequentially to verify contiguous EntityId allocation
     let mut signal_entities = Vec::with_capacity(1000);
     for i in 0..1000 {
@@ -67,7 +59,7 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
     // 3. Build a pathologically deep, nested composite structure (Structs within Arrays)
     // Satisfies the 512 MAX_EXPR_NODES and 256 validation depth bounds checks
     println!("Constructing nested structural expressions...");
-    
+
     // Dynamically build a massive array of structure literals
     let mut struct_exprs = Vec::with_capacity(200);
     for i in 0..100 {
@@ -80,9 +72,9 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
         };
         struct_exprs.push(st);
     }
-    
+
     let array_expr = Expr::ArrayLiteral(struct_exprs);
-    
+
     // Ingest the nested composite literal into our ECS Registry
     let root_ent = registry.ingest_expr(&array_expr).expect("Ingesting composite literal failed");
 
@@ -92,7 +84,8 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
 
     // 5. Perform typechecking & flat bottom-up type inference on the nested composite row
     println!("Running type checking and flat type inference passes...");
-    let inferred_ty = registry.infer_type(root_ent).expect("Type inference on flat elements failed");
+    let inferred_ty =
+        registry.infer_type(root_ent).expect("Type inference on flat elements failed");
     assert!(matches!(inferred_ty, SignalType::Array { .. }));
 
     // 6. Verify loss-less iterative round-trip reification (Reconstruct back to tree AST)
@@ -104,16 +97,10 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
     println!("Verifying cyclic dependency loop detection...");
     let loop_ent = registry.next_id();
     let loop_ent_2 = registry.next_id();
-    registry.binary_ops[loop_ent.0 as usize] = Some(BinaryComponent {
-        op: BinaryOp::Add,
-        left: loop_ent_2,
-        right: loop_ent_2,
-    });
-    registry.binary_ops[loop_ent_2.0 as usize] = Some(BinaryComponent {
-        op: BinaryOp::Add,
-        left: loop_ent,
-        right: loop_ent,
-    });
+    registry.binary_ops[loop_ent.0 as usize] =
+        Some(BinaryComponent { op: BinaryOp::Add, left: loop_ent_2, right: loop_ent_2 });
+    registry.binary_ops[loop_ent_2.0 as usize] =
+        Some(BinaryComponent { op: BinaryOp::Add, left: loop_ent, right: loop_ent });
 
     // We must connect the cyclic expression to an active GUARD or REFLEX
     // for semantic_validate to traverse it
@@ -127,17 +114,16 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
     registry.semantic_validate().unwrap_err();
     println!("Cyclic validation checks completed successfully.");
 
-
     // 8. Open-Source RTL Synthesis Integration (Icarus Verilog TDD check)
     if tool_available("iverilog") {
         println!("Icarus Verilog found in PATH. Initiating RTL compilation check...");
-        
+
         // Extract the generated SystemVerilog code from the compiled workspace snapshot
         let sv_rtl = nasa_rust_project::emit::verilog::emit_sv(&snapshot.pipeline);
-        
+
         let sv_path = write_temp("rspu_stress_top.sv", &sv_rtl);
         let out_path = std::env::temp_dir().join("rspu_stress_top.vvp");
-        
+
         let out = std::process::Command::new("iverilog")
             .arg("-g2012")
             .arg("-Wall")
@@ -154,7 +140,9 @@ fn test_rspu_massive_compiler_stress_and_rtl_synthesis() {
             "Icarus Verilog compilation of RSPU upgraded chip top failed:\n{}",
             String::from_utf8_lossy(&out.stderr)
         );
-        println!("Icarus Verilog successfully compiled and verified the generated RSPU Verilog RTL.");
+        println!(
+            "Icarus Verilog successfully compiled and verified the generated RSPU Verilog RTL."
+        );
     } else {
         println!("Icarus Verilog (iverilog) not available in this sandbox context. Skipping external RTL compilation.");
     }

@@ -6,24 +6,26 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use hyper::body::to_bytes;
-use mirror::policy::Role;
-use mirror::server_rewrite::axum_route_host::{
+use mirr_mcp_control_plane::policy::Role;
+use mirr_mcp_control_plane::server_rewrite::axum_route_host::{
     build_axum_mcp_router, AxumHostConfig, AxumMcpHostState,
 };
-use mirror::server_rewrite::mrt_dispatch_audit_store::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_audit_store::{
     MrtDispatchAuditEventSink, SqliteMrtDispatchAuditEventSink, SqliteMrtDispatchAuditStore,
 };
-use mirror::server_rewrite::mrt_dispatch_invocation_executor::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_executor::{
     MrtDispatchExecutionConfig, MrtDispatchExecutionError, MrtDispatchExecutionResult,
     MrtRuntimeAdmissionConfig,
 };
-use mirror::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
-use mirror::server_rewrite::mrt_dispatch_quota_store::{
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_invocation_plan::MrtDispatchInvocationPlan;
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_quota_store::{
     MrtDispatchQuotaEventSink, SqliteMrtDispatchQuotaEventSink, SqliteMrtDispatchQuotaStore,
 };
-use mirror::server_rewrite::mrt_dispatch_route_handler::MrtDispatchAuditEvent;
-use mirror::server_rewrite::rpc_dispatch_bridge::{RpcHandlerMap, RpcHandlerResponse};
-use mirror::server_rewrite::rpc_role_gate::{RoleTokenMap, VerifiedPrincipal};
+use mirr_mcp_control_plane::server_rewrite::mrt_dispatch_route_handler::MrtDispatchAuditEvent;
+use mirr_mcp_control_plane::server_rewrite::rpc_dispatch_bridge::{
+    RpcHandlerMap, RpcHandlerResponse,
+};
+use mirr_mcp_control_plane::server_rewrite::rpc_role_gate::{RoleTokenMap, VerifiedPrincipal};
 use serde_json::Value;
 use tower::ServiceExt;
 

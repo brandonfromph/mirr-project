@@ -330,6 +330,8 @@ fn symbol_to_binop(sym: &str) -> Result<BinaryOp, MirrError> {
     match sym {
         "and" => Ok(BinaryOp::And),
         "or" => Ok(BinaryOp::Or),
+        "bitor" => Ok(BinaryOp::BitwiseOr),
+        "bitand" => Ok(BinaryOp::BitwiseAnd),
         "xor" => Ok(BinaryOp::Xor),
         "<" => Ok(BinaryOp::Lt),
         "<=" => Ok(BinaryOp::Le),

@@ -306,10 +306,9 @@ fn check_linear_signals(
             let mut ref_idx = 0usize;
             while ref_idx < refs.len() && ref_idx < MAX_EXTENDED_TYPE_NODES {
                 if linear_names.contains(refs[ref_idx].as_str()) {
-                    ever_read.insert(
-                        // Safe: we only insert refs that are in linear_names
-                        linear_names.iter().find(|n| **n == refs[ref_idx].as_str()).unwrap(),
-                    );
+                    if let Some(&name) = linear_names.get(refs[ref_idx].as_str()) {
+                        ever_read.insert(name);
+                    }
                 }
                 ref_idx += 1;
             }

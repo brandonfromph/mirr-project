@@ -1,0 +1,5 @@
+module macro_test {
+    for i in 0..2 {
+        signal s[i]: bool;
+    }
+}

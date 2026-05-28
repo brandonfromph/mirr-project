@@ -121,7 +121,7 @@ impl Registry {
                                     sig_ent.0
                                 ),
                                 span: None,
-                             })?;
+                            })?;
                         results.push(ty);
                     } else if let Some(BinaryComponent { op, left, right }) = self.binary_ops[idx] {
                         stack.push(Work::CombineBinary(op));
@@ -159,8 +159,11 @@ impl Registry {
                         for elem in elems.iter().rev() {
                             stack.push(Work::Visit(*elem));
                         }
-                    } else if let Some(StructLiteralComponent { name, fields }) = &self.struct_literals[idx] {
-                        let field_names: Vec<String> = fields.iter().map(|(n, _)| n.clone()).collect();
+                    } else if let Some(StructLiteralComponent { name, fields }) =
+                        &self.struct_literals[idx]
+                    {
+                        let field_names: Vec<String> =
+                            fields.iter().map(|(n, _)| n.clone()).collect();
                         stack.push(Work::CombineStructLiteral { name: name.clone(), field_names });
                         for (_, f_ent) in fields.iter().rev() {
                             stack.push(Work::Visit(*f_ent));
@@ -284,7 +287,9 @@ impl Registry {
                         let mut elem_types = Vec::with_capacity(len);
                         for _ in 0..len {
                             let ty = results.pop().ok_or_else(|| {
-                                MirrError::InternalError("Type stack underflow (array literal)".to_string())
+                                MirrError::InternalError(
+                                    "Type stack underflow (array literal)".to_string(),
+                                )
                             })?;
                             elem_types.push(ty);
                         }
@@ -312,7 +317,9 @@ impl Registry {
                     let mut field_types = Vec::with_capacity(len);
                     for _ in 0..len {
                         let ty = results.pop().ok_or_else(|| {
-                            MirrError::InternalError("Type stack underflow (struct literal)".to_string())
+                            MirrError::InternalError(
+                                "Type stack underflow (struct literal)".to_string(),
+                            )
                         })?;
                         field_types.push(ty);
                     }

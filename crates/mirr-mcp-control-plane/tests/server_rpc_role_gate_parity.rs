@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use mirror::policy::Role;
-use mirror::server_rewrite::rpc_role_failure_envelope::role_failure_to_envelope;
-use mirror::server_rewrite::rpc_role_gate::{
+use mirr_mcp_control_plane::policy::Role;
+use mirr_mcp_control_plane::server_rewrite::rpc_role_failure_envelope::role_failure_to_envelope;
+use mirr_mcp_control_plane::server_rewrite::rpc_role_gate::{
     require_mrt_dispatch_role, require_role, RoleCheckFailure, RoleTokenMap, VerifiedPrincipal,
 };
 

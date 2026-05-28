@@ -17,7 +17,10 @@ pub(crate) use super::parse_signal_type_str;
 pub(crate) use super::skip_empty_and_comments;
 pub(crate) use super::tokenize_signal_decl;
 
-use super::pattern_parser::{is_pattern_call_line, parse_pattern_call, parse_pattern_def};
+use super::pattern_parser::{
+    is_pattern_call_line, is_pattern_call_start, parse_pattern_call, parse_pattern_call_single,
+    parse_pattern_def,
+};
 use crate::ast::pattern::PatternDef;
 use crate::ast::program::{ImportDecl, MirrProgram, Module, SignalDecl};
 use crate::ast::types::ExtendedType;
@@ -40,15 +43,22 @@ const MAX_STRUCT_DEFS: usize = 64;
 ///
 /// Handles zero or more top-level `import` and `def` blocks before the `module` declaration.
 pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
+    // Stage 0: Text-level macro expansion (loop unrolling, let-bindings, match blocks)
+    let processed_source = crate::compiler::macro_proc::expand_macros(source);
+    let _ = std::fs::write(
+        "/Users/brandonc.blay/projects/mirr-private/DEBUG_EXPANDED.mirr",
+        &processed_source,
+    );
+
     // Normalization: Ensure single-line sources (common in tests) are expanded
     // so the line-based parser can process them. We split by ';' and '{'/'}',
     // taking care NOT to split inside quotes (paths), comments, or
     // pattern interpolations (${param}).
-    let mut expanded = String::with_capacity(source.len() * 2);
+    let mut expanded = String::with_capacity(processed_source.len() * 2);
     let mut in_quotes = false;
     let mut in_comment = false;
     let mut in_interpolation = false;
-    let mut chars = source.chars().peekable();
+    let mut chars = processed_source.chars().peekable();
 
     while let Some(ch) = chars.next() {
         if !in_comment && ch == '"' {
@@ -187,6 +197,18 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
     let mut module = parse_module(&lines, &mut index)?;
     hydrate_struct_signal_fields(&mut module, &struct_defs);
 
+    skip_empty_and_comments(&lines, &mut index);
+    if index < lines.len() {
+        return Err(emit_at(
+            ErrorCode::ExpectedModuleFound,
+            format!(
+                "Unexpected content after module: '{}'. Only one module per file is supported.",
+                lines[index]
+            ),
+            Span::full_line(index as u32),
+        ));
+    }
+
     Ok(MirrProgram { patterns, imports, module })
 }
 
@@ -319,18 +341,44 @@ fn parse_top_level_struct(
     ))
 }
 
-fn hydrate_struct_signal_fields(
-    module: &mut Module,
-    struct_defs: &HashMap<String, Vec<(String, SignalType)>>,
-) {
-    for sig in &mut module.signals {
-        if let SignalType::Struct { name, fields } = &mut sig.ty.core {
+fn hydrate_type(ty: &mut SignalType, struct_defs: &HashMap<String, Vec<(String, SignalType)>>) {
+    match ty {
+        SignalType::Struct { name, fields } => {
             if fields.is_empty() {
                 if let Some(def_fields) = struct_defs.get(name) {
                     *fields = def_fields.clone();
                 }
             }
+            for (_, field_ty) in fields.iter_mut() {
+                hydrate_type(field_ty, struct_defs);
+            }
         }
+        SignalType::Array { element, .. } => {
+            hydrate_type(element.as_mut(), struct_defs);
+        }
+        SignalType::Fifo { element, .. } => {
+            hydrate_type(element.as_mut(), struct_defs);
+        }
+        _ => {}
+    }
+}
+
+fn hydrate_struct_signal_fields(
+    module: &mut Module,
+    struct_defs: &HashMap<String, Vec<(String, SignalType)>>,
+) {
+    let mut resolved_defs = struct_defs.clone();
+    for _ in 0..8 {
+        let current_defs = resolved_defs.clone();
+        for fields in resolved_defs.values_mut() {
+            for (_, field_ty) in fields.iter_mut() {
+                hydrate_type(field_ty, &current_defs);
+            }
+        }
+    }
+
+    for sig in &mut module.signals {
+        hydrate_type(&mut sig.ty.core, &resolved_defs);
     }
 }
 
@@ -741,7 +789,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                     let reflex = parse_inline_reflex(stmt_trimmed)?;
                     module.reflexes.push(reflex);
                 } else if is_pattern_call_line(stmt_trimmed) {
-                    let mut call = parse_pattern_call(stmt_trimmed)?;
+                    let mut call = parse_pattern_call_single(stmt_trimmed)?;
                     call.span = Some(Span::full_line(module_start as u32));
                     module.pattern_calls.push(call);
                 } else {
@@ -848,7 +896,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                             &normalised_call
                         };
                         if is_pattern_call_line(call_line) {
-                            let mut call = parse_pattern_call(call_line)?;
+                            let mut call = parse_pattern_call_single(call_line)?;
                             call.span = Some(Span::full_line(*index as u32));
                             module.pattern_calls.push(call);
                         } else {
@@ -870,22 +918,28 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                 module.guards.push(guard);
             }
             "reflex" => {
-                let reflex = guard_reflex::parse_reflex(lines, index)?;
-                module.reflexes.push(reflex);
+                let new_reflexes = guard_reflex::parse_reflexes(lines, index)?;
+                module.reflexes.extend(new_reflexes);
             }
             "property" => {
                 let prop = formula_parser::parse_property(lines, index)?;
                 module.properties.push(prop);
             }
             _ => {
-                // Heuristic: if it looks like a signal (has ':') but didn't start
-                // with a known keyword, try parsing it as a signal to catch E115.
-                if is_pattern_call_line(trimmed) {
-                    let mut call = parse_pattern_call(line)?;
-                    call.span = Some(Span::full_line(*index as u32));
+                // Heuristic: if it looks like the start of a pattern call (ident + '(')
+                // but didn't start with a known keyword, try parsing it as a call.
+                if is_pattern_call_start(trimmed) {
+                    let start_line = *index as u32;
+                    let mut call = parse_pattern_call(lines, index)?;
+                    call.span = Some(Span::full_line(start_line));
                     module.pattern_calls.push(call);
-                    *index += 1;
-                } else if trimmed.contains(':') && !trimmed.starts_with('{') {
+                    // *index is already incremented by parse_pattern_call
+                } else if trimmed.contains(':')
+                    && !trimmed.starts_with('{')
+                    && !trimmed.contains(',')
+                    && !trimmed.contains('=')
+                    && !trimmed.contains("::")
+                {
                     let signal = parse_signal(line, *index)?;
                     module.signals.push(signal);
                     *index += 1;

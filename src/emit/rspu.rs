@@ -15,25 +15,20 @@
 
 #![forbid(unsafe_code)]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use crate::ast::expr::Expr;
-use crate::ast::property::{PropertyDecl, PropertyFormula};
-use crate::ast::types::{BinaryOp, LiteralValue, SignalKind, UnaryOp};
-use crate::ast::MAX_EXPR_NODES;
+use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 use crate::pipeline::PipelineResult;
-use crate::temporal::low_level_ir::{CompiledGuard, ConditionKind, TemporalNetlist};
+use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
 use super::rspu_isa::*;
 use super::rspu_regalloc::{allocate_registers, RegAllocResult};
+use crate::emit::rspu_helpers::{condition_to_reg, emit_expr, emit_properties};
 use crate::emit::rspu_opt::peephole_optimize;
 use crate::emit::rspu_tagged::tag_from_signal_type;
 
 /// Emit an R-SPU program from pipeline results.
-///
-/// Requires temporal lowering to have run (`temporal_netlist` must be `Some`).
-/// Returns `Err(E702)` if instruction budget is exceeded.
 pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     let module = &result.program.module;
     let netlist = result.temporal_netlist.as_ref();
@@ -42,7 +37,25 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     let mut regs = allocate_registers(module)?;
 
     // Step 2: Guard allocation.
-    let (guard_map_vec, guard_map) = allocate_guards(netlist)?;
+    let (guard_map_vec, guard_map) = allocate_guards(netlist, module)?;
+
+    // Build a helper map to check compiled guards by name in emit_reflex.
+    let mut compiled_guard_map = HashMap::new();
+    if let Some(net) = netlist {
+        let mut stack = Vec::new();
+        for guard in net.guards.iter().rev() {
+            stack.push(guard);
+        }
+        while let Some(guard) = stack.pop() {
+            let name = guard_name(guard);
+            compiled_guard_map.insert(name.clone(), guard);
+            if let CompiledGuard::Complex(cx) = guard {
+                for sub in cx.sub_guards.iter().rev() {
+                    stack.push(sub);
+                }
+            }
+        }
+    }
 
     // Instruction accumulator.
     let mut instrs: Vec<RspuInstruction> = Vec::with_capacity(256);
@@ -61,13 +74,12 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     for sig in &module.signals {
         let r = regs.reg(&sig.name);
         let tag = tag_from_signal_type(&sig.ty.core);
-        // Encode TypeTag as u8 for the instruction field.
         let tag_byte = match tag {
             crate::emit::rspu_tagged::TypeTag::Uninitialized => 0u8,
             crate::emit::rspu_tagged::TypeTag::Bool => 1u8,
             crate::emit::rspu_tagged::TypeTag::Unsigned { width } => width,
             crate::emit::rspu_tagged::TypeTag::Signed { width } => width.saturating_add(128),
-            crate::emit::rspu_tagged::TypeTag::Interval { .. } => 2u8, // Encode as unsigned for tag byte
+            crate::emit::rspu_tagged::TypeTag::Interval { .. } => 2u8,
         };
         instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
     }
@@ -75,17 +87,26 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     // Step 3.6: Initialize constant registers.
     if let Some(true_reg) = regs.map.get("true") {
         instrs.push(RspuInstruction::LoadImm { dst: *true_reg, value: 1, width: 1 });
-        instrs.push(RspuInstruction::TagLoad { dst: *true_reg, tag: 1 }); // Bool tag
+        instrs.push(RspuInstruction::TagLoad { dst: *true_reg, tag: 1 });
     }
 
     // Step 4: Temporal guard emission.
     if let Some(net) = netlist {
-        emit_temporal_guards(&net.guards, &regs, &guard_map, &mut instrs)?;
+        emit_temporal_guards(&net.guards, &mut regs, &guard_map, &mut instrs, module)?;
+    }
+
+    // Step 4.5: Initialize signal-based guards.
+    for (name, &gid) in &guard_map {
+        if name != "always" && regs.map.contains_key(name) {
+            let cond_reg = regs.map[name];
+            instrs.push(RspuInstruction::SrInit { guard: gid, length: 1, cond: cond_reg });
+            instrs.push(RspuInstruction::SrTick { guard: gid });
+        }
     }
 
     // Step 5: Reflex emission (conditional assignments).
     for reflex in &module.reflexes {
-        emit_reflex(reflex, &guard_map, &mut regs, &mut instrs)?;
+        emit_reflex(reflex, &guard_map, &compiled_guard_map, &mut regs, &mut instrs, module)?;
     }
 
     // Step 6: Property assertion emission.
@@ -101,7 +122,7 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
         }
     }
 
-    // Apply a bounded peephole pass to reduce trivial temporary instructions.
+    // Apply a bounded peephole pass.
     let instrs = peephole_optimize(&instrs);
 
     // Bounds check.
@@ -128,32 +149,64 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
 // Guard allocation
 // ---------------------------------------------------------------------------
 
-/// Guard allocation result: ordered entries for metadata + lookup map.
 type GuardAllocResult = (Vec<(String, GuardId)>, HashMap<String, GuardId>);
 
-/// Allocate guard hardware unit IDs from the temporal netlist.
-///
-/// Returns both the ordered vec (for program metadata) and the lookup map.
-/// Bounded: at most `MAX_GUARDS` entries.
-fn allocate_guards(netlist: Option<&TemporalNetlist>) -> Result<GuardAllocResult, MirrError> {
+fn allocate_guards(
+    netlist: Option<&TemporalNetlist>,
+    module: &crate::ast::program::Module,
+) -> Result<GuardAllocResult, MirrError> {
     let mut entries = Vec::new();
     let mut map = HashMap::new();
-    let mut next_id: GuardId = 0;
+
+    map.insert("always".to_string(), 0);
+    entries.push(("always".to_string(), 0));
+    let mut next_id: GuardId = 1;
 
     if let Some(net) = netlist {
-        for guard in &net.guards {
+        let mut stack = Vec::new();
+        for guard in net.guards.iter().rev() {
+            stack.push(guard);
+        }
+
+        while let Some(guard) = stack.pop() {
             let name = guard_name(guard);
-            if next_id as usize >= MAX_GUARDS {
-                return Err(rspu_err(format!(
-                    "{} R-SPU guard resource exhausted: {} guards > {}.",
-                    crate::error_codes::ec(703),
-                    next_id as usize + 1,
-                    MAX_GUARDS,
-                )));
+            if !map.contains_key(&name) {
+                if next_id as usize >= MAX_GUARDS {
+                    return Err(rspu_err(format!(
+                        "{} R-SPU guard resource exhausted: {} guards > {}.",
+                        crate::error_codes::ec(703),
+                        next_id as usize + 1,
+                        MAX_GUARDS,
+                    )));
+                }
+                map.insert(name.clone(), next_id);
+                entries.push((name, next_id));
+                next_id = next_id.saturating_add(1);
             }
-            map.insert(name.clone(), next_id);
-            entries.push((name, next_id));
-            next_id = next_id.saturating_add(1);
+            if let CompiledGuard::Complex(cx) = guard {
+                for sub in cx.sub_guards.iter().rev() {
+                    stack.push(sub);
+                }
+            }
+        }
+    }
+
+    // Allocate hardware guards for any direct signal-based guards in reflexes
+    for reflex in &module.reflexes {
+        for gname in &reflex.guard_names {
+            if gname != "always" && !map.contains_key(gname) {
+                if next_id as usize >= MAX_GUARDS {
+                    return Err(rspu_err(format!(
+                        "{} R-SPU guard resource exhausted: {} guards > {}.",
+                        crate::error_codes::ec(703),
+                        next_id as usize + 1,
+                        MAX_GUARDS,
+                    )));
+                }
+                map.insert(gname.clone(), next_id);
+                entries.push((gname.clone(), next_id));
+                next_id = next_id.saturating_add(1);
+            }
         }
     }
 
@@ -173,38 +226,30 @@ fn guard_name(guard: &CompiledGuard) -> String {
 // Temporal guard emission
 // ---------------------------------------------------------------------------
 
-/// Maximum depth for guard tree processing (NASA P10: no recursion).
 const MAX_GUARD_DEPTH: usize = 64;
 
-/// Explicit work-stack item for bounded guard traversal.
 enum GuardWork<'a> {
-    /// Process a single guard (may push sub-work for Complex guards).
     Process(&'a CompiledGuard),
-    /// Emit combination logic for a Complex guard after its sub-guards are emitted.
-    Combine { name: &'a str, sub_guards: &'a [CompiledGuard] },
+    Combine { name: &'a str, sub_guards: &'a [CompiledGuard], is_or: bool },
 }
 
-/// Emit instructions for all temporal guards.
-///
-/// For each guard: init, tick, query (deterministic three-instruction pattern).
-/// Complex guards are flattened via an explicit work-stack (NASA P10: no recursion).
-/// Bounded: at most `MAX_GUARD_DEPTH * 4` iterations.
 fn emit_temporal_guards(
     guards: &[CompiledGuard],
-    regs: &RegAllocResult,
+    regs: &mut RegAllocResult,
     guard_map: &HashMap<String, GuardId>,
     instrs: &mut Vec<RspuInstruction>,
+    module: &crate::ast::program::Module,
 ) -> Result<(), MirrError> {
-    // Explicit work-stack to avoid recursion (NASA P10).
     let mut work: Vec<GuardWork<'_>> = Vec::with_capacity(MAX_GUARD_DEPTH);
+    let mut emitted = HashSet::new();
 
-    // Push initial guards in reverse order (stack is LIFO).
     for guard in guards.iter().rev() {
         work.push(GuardWork::Process(guard));
     }
 
     let max_iterations = MAX_GUARD_DEPTH * 4;
     let mut visited = 0usize;
+    let temp_start = regs.next_temp;
 
     while let Some(item) = work.pop() {
         visited += 1;
@@ -215,360 +260,250 @@ fn emit_temporal_guards(
             )));
         }
 
+        regs.next_temp = temp_start;
+
         match item {
-            GuardWork::Process(guard) => match guard {
-                CompiledGuard::ShiftRegister(sr) => {
-                    let gid = guard_map[&sr.name];
-                    let cond_reg = condition_to_reg(&sr.condition_kind, regs);
-                    instrs.push(RspuInstruction::SrInit {
-                        guard: gid,
-                        length: sr.delay_cycles as u32,
-                        cond: cond_reg,
-                    });
-                    instrs.push(RspuInstruction::SrTick { guard: gid });
-                    instrs.push(RspuInstruction::SrQuery { dst: cond_reg, guard: gid });
+            GuardWork::Process(guard) => {
+                let name = guard_name(guard);
+                if !emitted.insert(name) {
+                    continue;
                 }
-                CompiledGuard::Counter(cg) => {
-                    let gid = guard_map[&cg.name];
-                    let cond_reg = condition_to_reg(&cg.condition_kind, regs);
-                    instrs.push(RspuInstruction::CtrInit {
-                        guard: gid,
-                        target: cg.target_count,
-                        cond: cond_reg,
-                    });
-                    instrs.push(RspuInstruction::CtrTick { guard: gid });
-                    instrs.push(RspuInstruction::CtrQuery { dst: cond_reg, guard: gid });
-                }
-                CompiledGuard::Complex(cx) => {
-                    // Push combine step first (will execute after sub-guards).
-                    work.push(GuardWork::Combine { name: &cx.name, sub_guards: &cx.sub_guards });
-                    // Push sub-guards in reverse order for correct processing order.
-                    for sub in cx.sub_guards.iter().rev() {
-                        work.push(GuardWork::Process(sub));
+                match guard {
+                    CompiledGuard::ShiftRegister(sr) => {
+                        let gid = guard_map[&sr.name];
+                        let cond_reg = condition_to_reg(&sr.condition_kind, regs, instrs, module)?;
+                        instrs.push(RspuInstruction::SrInit {
+                            guard: gid,
+                            length: sr.delay_cycles as u32,
+                            cond: cond_reg,
+                        });
+                        instrs.push(RspuInstruction::SrTick { guard: gid });
+                        let dst_reg = regs
+                            .map
+                            .get(&sr.output_signal)
+                            .copied()
+                            .unwrap_or_else(|| regs.alloc_temp().unwrap_or(0));
+                        instrs.push(RspuInstruction::SrQuery { dst: dst_reg, guard: gid });
+                    }
+                    CompiledGuard::Counter(cg) => {
+                        let gid = guard_map[&cg.name];
+                        let cond_reg = condition_to_reg(&cg.condition_kind, regs, instrs, module)?;
+                        instrs.push(RspuInstruction::CtrInit {
+                            guard: gid,
+                            target: cg.target_count,
+                            cond: cond_reg,
+                        });
+                        instrs.push(RspuInstruction::CtrTick { guard: gid });
+                        let dst_reg = regs
+                            .map
+                            .get(&cg.output_signal)
+                            .copied()
+                            .unwrap_or_else(|| regs.alloc_temp().unwrap_or(0));
+                        instrs.push(RspuInstruction::CtrQuery { dst: dst_reg, guard: gid });
+                    }
+                    CompiledGuard::Complex(cx) => {
+                        let is_or = matches!(
+                            &cx.combination_logic,
+                            crate::ast::expr::Expr::Binary {
+                                op: crate::ast::types::BinaryOp::Or,
+                                ..
+                            }
+                        );
+                        work.push(GuardWork::Combine {
+                            name: &cx.name,
+                            sub_guards: &cx.sub_guards,
+                            is_or,
+                        });
+                        for sub in cx.sub_guards.iter().rev() {
+                            work.push(GuardWork::Process(sub));
+                        }
+                    }
+                    CompiledGuard::DynamicCounter(dc) => {
+                        let gid = guard_map[&dc.name];
+                        let cond_reg = condition_to_reg(&dc.condition_kind, regs, instrs, module)?;
+                        instrs.push(RspuInstruction::CtrInit {
+                            guard: gid,
+                            target: dc.max_delay,
+                            cond: cond_reg,
+                        });
+                        instrs.push(RspuInstruction::CtrTick { guard: gid });
+                        let dst_reg = regs
+                            .map
+                            .get(&dc.output_signal)
+                            .copied()
+                            .unwrap_or_else(|| regs.alloc_temp().unwrap_or(0));
+                        instrs.push(RspuInstruction::CtrQuery { dst: dst_reg, guard: gid });
                     }
                 }
-                CompiledGuard::DynamicCounter(dc) => {
-                    let gid = guard_map[&dc.name];
-                    let cond_reg = condition_to_reg(&dc.condition_kind, regs);
-                    instrs.push(RspuInstruction::CtrInit {
-                        guard: gid,
-                        target: dc.max_delay,
-                        cond: cond_reg,
-                    });
-                    instrs.push(RspuInstruction::CtrTick { guard: gid });
-                    instrs.push(RspuInstruction::CtrQuery { dst: cond_reg, guard: gid });
-                }
-            },
-            GuardWork::Combine { name, sub_guards } => {
-                // The complex guard itself is derived from combination logic.
-                // Emit a GUARD_AND if it has exactly 2 sub-guards.
+            }
+            GuardWork::Combine { name, sub_guards, is_or } => {
                 let gid = guard_map[name];
                 if sub_guards.len() == 2 {
                     let a_gid = guard_map[&guard_name(&sub_guards[0])];
                     let b_gid = guard_map[&guard_name(&sub_guards[1])];
-                    instrs.push(RspuInstruction::GuardAnd { dst: gid, a: a_gid, b: b_gid });
+                    if is_or {
+                        instrs.push(RspuInstruction::GuardOr { dst: gid, a: a_gid, b: b_gid });
+                    } else {
+                        instrs.push(RspuInstruction::GuardAnd { dst: gid, a: a_gid, b: b_gid });
+                    }
                 }
             }
         }
     }
 
+    regs.next_temp = temp_start;
     Ok(())
-}
-
-/// Map a condition kind to the register holding its primary signal.
-fn condition_to_reg(cond: &ConditionKind, regs: &RegAllocResult) -> RegId {
-    let sig = cond.primary_signal();
-    regs.map.get(sig).copied().unwrap_or(0)
 }
 
 // ---------------------------------------------------------------------------
 // Reflex emission
 // ---------------------------------------------------------------------------
 
-/// Emit instructions for a single reflex.
-///
-/// For each assignment:
-/// 1. Evaluate RHS expression into a temporary register.
-/// 2. Resolve the guard(s).
-/// 3. Emit `REFLEX_IF` conditional move.
 fn emit_reflex(
     reflex: &crate::ast::program::Reflex,
     guard_map: &HashMap<String, GuardId>,
+    compiled_guard_map: &HashMap<String, &CompiledGuard>,
     regs: &mut RegAllocResult,
     instrs: &mut Vec<RspuInstruction>,
+    module: &crate::ast::program::Module,
 ) -> Result<(), MirrError> {
-    // Resolve the first guard name to a GuardId.
-    // If the guard is a direct output signal from temporal compilation,
-    // its name matches an entry in guard_map. Otherwise, use guard 0.
-    let gid = reflex
-        .guard_names
-        .first()
-        .and_then(|name| guard_map.get(name.as_str()))
-        .copied()
-        .unwrap_or(0);
+    // 1. Resolve temporal_gid to the first guard (if any), otherwise always (0)
+    let gid = if reflex.guard_names.is_empty() {
+        0
+    } else {
+        guard_map.get(&reflex.guard_names[0]).copied().unwrap_or(0)
+    };
 
+    let temp_start = regs.next_temp;
+
+    // 2. Conjunctor all subsequent guards in registers
+    let mut cond_regs = Vec::new();
+    if reflex.guard_names.len() > 1 {
+        for gname in &reflex.guard_names[1..] {
+            if let Some(guard) = compiled_guard_map.get(gname.as_str()) {
+                let sig_name = guard.output_signal();
+                let reg = regs.map.get(sig_name).copied().unwrap_or(0);
+                cond_regs.push(reg);
+            } else {
+                let reg = regs.map.get(gname.as_str()).copied().unwrap_or(0);
+                cond_regs.push(reg);
+            }
+        }
+    }
+
+    let mut acc_reg = None;
+    for cond_reg in cond_regs {
+        if let Some(acc) = acc_reg {
+            let tmp = regs.alloc_temp().ok_or_else(|| {
+                rspu_err("R-SPU temporary registers exhausted during reflex guard conjunction.")
+            })?;
+            instrs.push(RspuInstruction::Alu { op: AluOp::And, dst: tmp, a: acc, b: cond_reg });
+            acc_reg = Some(tmp);
+        } else {
+            acc_reg = Some(cond_reg);
+        }
+    }
+
+    let assignment_temp_start = regs.next_temp;
+
+    // 3. Emit each assignment
     for assignment in &reflex.assignments {
+        regs.next_temp = assignment_temp_start;
         let dst_reg = regs.map.get(&assignment.target).copied().unwrap_or(0);
 
-        // Evaluate RHS expression into a temp register.
-        let src_reg = emit_expr(&assignment.value, regs, instrs)?;
-
-        // Conditional move.
-        instrs.push(RspuInstruction::ReflexIf { guard: gid, dst: dst_reg, src: src_reg });
-    }
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// Expression emission
-// ---------------------------------------------------------------------------
-
-/// Emit instructions to evaluate an expression, returning the register
-/// holding the result.
-///
-/// Bounded: at most `MAX_EXPR_NODES` recursive visits via explicit stack.
-fn emit_expr(
-    expr: &Expr,
-    regs: &mut RegAllocResult,
-    instrs: &mut Vec<RspuInstruction>,
-) -> Result<RegId, MirrError> {
-    // Use explicit stack to avoid recursion (NASA P10).
-    // We collect a postorder sequence, then emit instructions bottom-up.
-    let mut result_stack: Vec<RegId> = Vec::with_capacity(32);
-    let mut work: Vec<ExprWork> = Vec::with_capacity(32);
-    work.push(ExprWork::Eval(expr));
-
-    let mut visited = 0usize;
-
-    while let Some(item) = work.pop() {
-        visited += 1;
-        if visited > MAX_EXPR_NODES {
-            return Err(rspu_err(format!(
-                "{} R-SPU expression exceeds maximum node count.",
-                crate::error_codes::ec(704)
-            )));
-        }
-
-        match item {
-            ExprWork::Eval(e) => match e {
-                Expr::Signal(name) => {
-                    let r = regs.map.get(name.as_str()).copied().unwrap_or(0);
-                    result_stack.push(r);
+        if let Some(acc) = acc_reg {
+            // Check if the assigned value is a literal boolean `true`
+            let is_bool_true = match &assignment.value {
+                crate::ast::expr::Expr::Literal(crate::ast::types::LiteralValue::Bool(true)) => {
+                    true
                 }
-                Expr::Literal(lit) => {
-                    let tmp = regs.alloc_temp().ok_or_else(|| {
-                        rspu_err(format!(
-                            "{} R-SPU temporary registers exhausted.",
-                            crate::error_codes::ec(705)
-                        ))
-                    })?;
-                    match lit {
-                        LiteralValue::Integer(n) => {
-                            instrs.push(RspuInstruction::LoadImm {
-                                dst: tmp,
-                                value: *n,
-                                width: 64,
-                            });
-                        }
-                        LiteralValue::Bool(b) => {
-                            instrs.push(RspuInstruction::LoadImm {
-                                dst: tmp,
-                                value: if *b { 1 } else { 0 },
-                                width: 1,
-                            });
-                        }
-                    }
-                    result_stack.push(tmp);
-                }
-                Expr::Prev { signal, delay } => {
-                    let sig_reg = regs.map.get(signal.as_str()).copied().unwrap_or(0);
-                    let tmp = regs.alloc_temp().ok_or_else(|| {
-                        rspu_err(format!(
-                            "{} R-SPU temporary registers exhausted.",
-                            crate::error_codes::ec(705)
-                        ))
-                    })?;
-                    instrs.push(RspuInstruction::Prev {
-                        dst: tmp,
-                        signal: sig_reg,
-                        delay: *delay as u32,
-                    });
-                    result_stack.push(tmp);
-                }
-                Expr::Unary { op, operand } => {
-                    // Push emit-unary marker, then evaluate operand.
-                    work.push(ExprWork::EmitUnary(*op));
-                    work.push(ExprWork::Eval(operand));
-                }
-                Expr::Binary { op, left, right } => {
-                    // Push emit-binary marker, then evaluate both sides.
-                    // Right first (stack reversal for left-first evaluation).
-                    work.push(ExprWork::EmitBinary(*op));
-                    work.push(ExprWork::Eval(right));
-                    work.push(ExprWork::Eval(left));
-                }
-                Expr::ArrayIndex { .. }
-                | Expr::FieldAccess { .. }
-                | Expr::ArrayLiteral(_)
-                | Expr::StructLiteral { .. } => {
-                    return Err(rspu_err(format!(
-                        "{} R-SPU does not support composite type expressions.",
-                        crate::error_codes::ec(720)
-                    )));
-                }
-                Expr::UnfoldIndex(name) => {
-                    return Err(rspu_err(format!(
-                        "{} UnfoldIndex '{}' reached R-SPU emitter",
-                        crate::error_codes::ec(721),
-                        name
-                    )));
-                }
-            },
-            ExprWork::EmitUnary(op) => {
-                let src = result_stack.pop().unwrap_or(0);
-                let tmp = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!(
-                        "{} R-SPU temporary registers exhausted.",
-                        crate::error_codes::ec(705)
-                    ))
+                _ => false,
+            };
+
+            if is_bool_true {
+                // Highly optimized 1-instruction path: final = dst_reg | acc
+                let final_src_reg = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(
+                        "R-SPU temporary registers exhausted during reflex assignment evaluation.",
+                    )
                 })?;
-                let alu_op = match op {
-                    UnaryOp::Not => AluUnaryOp::Not,
-                    UnaryOp::Negate => AluUnaryOp::Negate,
-                };
-                instrs.push(RspuInstruction::AluUnary { op: alu_op, dst: tmp, src });
-                result_stack.push(tmp);
-            }
-            ExprWork::EmitBinary(op) => {
-                // Preserve source-level operand order: lhs op rhs.
-                // With left evaluated before right, the stack top is rhs.
-                let rhs = result_stack.pop().unwrap_or(0);
-                let lhs = result_stack.pop().unwrap_or(0);
-                let tmp = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!(
-                        "{} R-SPU temporary registers exhausted.",
-                        crate::error_codes::ec(705)
-                    ))
-                })?;
-                let alu_op = binary_to_alu(op);
-                instrs.push(RspuInstruction::Alu { op: alu_op, dst: tmp, a: lhs, b: rhs });
-                result_stack.push(tmp);
-            }
-        }
-    }
-
-    Ok(result_stack.pop().unwrap_or(0))
-}
-
-/// Explicit work-stack item for bounded expression traversal.
-enum ExprWork<'a> {
-    Eval(&'a Expr),
-    EmitUnary(UnaryOp),
-    EmitBinary(BinaryOp),
-}
-
-fn binary_to_alu(op: BinaryOp) -> AluOp {
-    match op {
-        BinaryOp::Add => AluOp::Add,
-        BinaryOp::Sub => AluOp::Sub,
-        BinaryOp::Mul => AluOp::Mul,
-        BinaryOp::And => AluOp::And,
-        BinaryOp::Or => AluOp::Or,
-        BinaryOp::Xor => AluOp::Xor,
-        BinaryOp::Shl => AluOp::Shl,
-        BinaryOp::Shr => AluOp::Shr,
-        BinaryOp::Eq => AluOp::Eq,
-        BinaryOp::Ne => AluOp::Ne,
-        BinaryOp::Lt => AluOp::Lt,
-        BinaryOp::Le => AluOp::Le,
-        BinaryOp::Gt => AluOp::Gt,
-        BinaryOp::Ge => AluOp::Ge,
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Property emission
-// ---------------------------------------------------------------------------
-
-/// Emit LTL assertion tier instructions for properties.
-///
-/// Verification-only: these do not affect the hardware datapath.
-fn emit_properties(
-    properties: &[PropertyDecl],
-    regs: &mut RegAllocResult,
-    instrs: &mut Vec<RspuInstruction>,
-) -> Result<(), MirrError> {
-    for (idx, prop) in properties.iter().enumerate() {
-        let property_id = idx as PropertyId;
-
-        match &prop.formula {
-            PropertyFormula::Always(expr) => {
-                let cond = emit_expr(expr, regs, instrs)?;
-                instrs.push(RspuInstruction::AssertAlways { cond, property_id });
-            }
-            PropertyFormula::Never(expr) => {
-                let cond = emit_expr(expr, regs, instrs)?;
-                instrs.push(RspuInstruction::AssertNever { cond, property_id });
-            }
-            PropertyFormula::AlwaysImplies { antecedent, consequent } => {
-                let p = emit_expr(antecedent, regs, instrs)?;
-                let q = emit_expr(consequent, regs, instrs)?;
-                let not_p = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
-                })?;
-                instrs.push(RspuInstruction::AluUnary { op: AluUnaryOp::Not, dst: not_p, src: p });
-                let implies = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
-                })?;
-                instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
-                instrs.push(RspuInstruction::AssertAlways { cond: implies, property_id });
-            }
-            PropertyFormula::EventuallyWithin { expr, cycles } => {
-                // HARDENED: Synthesize a Shift Register guard to enforce the window.
-                let cond = emit_expr(expr, regs, instrs)?;
-                let gid = (MAX_GUARDS - 1 - idx) as GuardId; // Allocate from top down for properties.
-                instrs.push(RspuInstruction::SrInit { guard: gid, length: *cycles, cond });
-                instrs.push(RspuInstruction::SrTick { guard: gid });
-                let verified = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
-                })?;
-                instrs.push(RspuInstruction::SrQuery { dst: verified, guard: gid });
-                instrs.push(RspuInstruction::AssertAlways { cond: verified, property_id });
-            }
-            PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => {
-                // HARDENED: Synthesize a Shift Register for the trigger delay.
-                let p = emit_expr(trigger, regs, instrs)?;
-                let q = emit_expr(response, regs, instrs)?;
-                let gid = (MAX_GUARDS - 1 - idx) as GuardId;
-
-                // Track the trigger in a shift register.
-                instrs.push(RspuInstruction::SrInit { guard: gid, length: *delay_cycles, cond: p });
-                instrs.push(RspuInstruction::SrTick { guard: gid });
-
-                let delayed_p = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
-                })?;
-                instrs.push(RspuInstruction::SrQuery { dst: delayed_p, guard: gid });
-
-                // Assert: delayed_p -> q
-                let not_p = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
-                })?;
-                instrs.push(RspuInstruction::AluUnary {
-                    op: AluUnaryOp::Not,
-                    dst: not_p,
-                    src: delayed_p,
+                instrs.push(RspuInstruction::Alu {
+                    op: AluOp::Or,
+                    dst: final_src_reg,
+                    a: dst_reg,
+                    b: acc,
                 });
-                let implies = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temps exhausted.", crate::error_codes::ec(705)))
+                instrs.push(RspuInstruction::ReflexIf {
+                    guard: gid,
+                    dst: dst_reg,
+                    src: final_src_reg,
+                });
+            } else {
+                let src_reg = emit_expr(&assignment.value, regs, instrs)?;
+
+                // Cast acc to dst_reg's tag to satisfy strict ALU typing
+                let acc_cast = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err("R-SPU temporary registers exhausted during reflex assignment cast.")
                 })?;
-                instrs.push(RspuInstruction::Alu { op: AluOp::Or, dst: implies, a: not_p, b: q });
-                instrs.push(RspuInstruction::AssertAlways { cond: implies, property_id });
+                let dst_tag =
+                    crate::emit::rspu_helpers::get_signal_tag_byte(&assignment.target, module);
+                instrs.push(RspuInstruction::Mov { dst: acc_cast, src: acc });
+                instrs.push(RspuInstruction::TagLoad { dst: acc_cast, tag: dst_tag });
+
+                // Highly optimized 3-instruction XOR-multiplexer path:
+                // tmp = dst_reg ^ src_reg
+                // tmp2 = tmp * acc_cast
+                // final = dst_reg ^ tmp2
+                let tmp = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(
+                        "R-SPU temporary registers exhausted during reflex assignment evaluation.",
+                    )
+                })?;
+                instrs.push(RspuInstruction::Alu {
+                    op: AluOp::Xor,
+                    dst: tmp,
+                    a: dst_reg,
+                    b: src_reg,
+                });
+
+                let tmp2 = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(
+                        "R-SPU temporary registers exhausted during reflex assignment evaluation.",
+                    )
+                })?;
+                instrs.push(RspuInstruction::Alu {
+                    op: AluOp::Mul,
+                    dst: tmp2,
+                    a: tmp,
+                    b: acc_cast,
+                });
+
+                let final_src_reg = regs.alloc_temp().ok_or_else(|| {
+                    rspu_err(
+                        "R-SPU temporary registers exhausted during reflex assignment evaluation.",
+                    )
+                })?;
+                instrs.push(RspuInstruction::Alu {
+                    op: AluOp::Xor,
+                    dst: final_src_reg,
+                    a: dst_reg,
+                    b: tmp2,
+                });
+
+                instrs.push(RspuInstruction::ReflexIf {
+                    guard: gid,
+                    dst: dst_reg,
+                    src: final_src_reg,
+                });
             }
-            _ => {} // Other properties unimplemented in this tier.
+        } else {
+            // Normal assignment gated purely on temporal hardware guard
+            let src_reg = emit_expr(&assignment.value, regs, instrs)?;
+            instrs.push(RspuInstruction::ReflexIf { guard: gid, dst: dst_reg, src: src_reg });
         }
     }
+
+    regs.next_temp = temp_start;
     Ok(())
 }
 
@@ -578,4 +513,8 @@ fn emit_properties(
 
 pub(crate) fn rspu_err(msg: impl Into<String>) -> MirrError {
     MirrError::RspuError { message: msg.into(), span: None }
+}
+
+pub(crate) fn rspu_err_ref(code: String, msg: impl Into<String>) -> MirrError {
+    MirrError::RspuError { message: format!("{} {}", code, msg.into()), span: None }
 }
