@@ -5,12 +5,7 @@ use std::process::Command;
 fn generator_runs_and_outputs_text_rust() {
     let generator_bin = env!("CARGO_BIN_EXE_generate_mirr_stress");
     let output = Command::new(generator_bin)
-        .args([
-            "--type",
-            "mux_forest",
-            "--size",
-            "10",
-        ])
+        .args(["--type", "mux_forest", "--size", "10"])
         .output()
         .expect("failed to execute rust generator");
 
@@ -41,12 +36,7 @@ fn generated_templates_compile() {
     for typ in types {
         let generator_bin = env!("CARGO_BIN_EXE_generate_mirr_stress");
         let output = Command::new(generator_bin)
-            .args([
-                "--type",
-                typ,
-                "--size",
-                "5",
-            ])
+            .args(["--type", typ, "--size", "5"])
             .output()
             .expect("failed to execute rust generator");
         assert!(output.status.success());
