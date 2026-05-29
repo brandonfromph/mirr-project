@@ -4,6 +4,25 @@
  * @param {string} source
  * @returns {string}
  */
+export function compile_cert(source) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.compile_cert(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * @param {string} source
+ * @returns {string}
+ */
 export function compile_dot(source) {
     let deferred2_0;
     let deferred2_1;
@@ -11,6 +30,26 @@ export function compile_dot(source) {
         const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.compile_dot(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * @param {string} source
+ * @param {boolean} detail_expr
+ * @returns {string}
+ */
+export function compile_dot_with_detail(source, detail_expr) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.compile_dot_with_detail(ptr0, len0, detail_expr);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -49,6 +88,44 @@ export function compile_graph_data(source) {
         const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.compile_graph_data(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * @param {string} source
+ * @returns {string}
+ */
+export function compile_json_netlist(source) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.compile_json_netlist(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * @param {string} source
+ * @returns {string}
+ */
+export function compile_mapek_rtl(source) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.compile_mapek_rtl(ptr0, len0);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -116,6 +193,28 @@ export function compile_sexpr(source) {
 
 /**
  * @param {string} source
+ * @param {string} target
+ * @returns {string}
+ */
+export function compile_target(source, target) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(target, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.compile_target(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} source
  * @returns {string}
  */
 export function compile_verilog(source) {
@@ -154,6 +253,30 @@ export function compile_verilog_sat(source) {
 
 /**
  * @param {string} source
+ * @param {string} target
+ * @param {number} dsp_threshold
+ * @param {boolean} strip_sva
+ * @returns {string}
+ */
+export function compile_verilog_with_options(source, target, dsp_threshold, strip_sva) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(target, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.compile_verilog_with_options(ptr0, len0, ptr1, len1, dsp_threshold, strip_sva);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} source
  * @returns {string}
  */
 export function infer_widths(source) {
@@ -169,72 +292,6 @@ export function infer_widths(source) {
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
-}
-
-/**
- * Compatibility shim for target-based compile API.
- * @param {string} source
- * @param {string} target
- * @returns {string}
- */
-export function compile_target(source, target) {
-    switch (target) {
-        case 'verilog':
-        case 'sv':
-            return compile_verilog(source);
-        case 'firrtl':
-            return compile_firrtl(source);
-        case 'rspu':
-            return compile_rspu(source);
-        case 'sexpr':
-            return compile_sexpr(source);
-        case 'json':
-            return infer_widths(source);
-        case 'dot':
-            return compile_dot(source);
-        default:
-            return JSON.stringify({
-                type: 'Err',
-                errors: [{
-                    code: 'E001',
-                    message: 'Unknown target format: ' + target,
-                    span: null,
-                    labels: [],
-                    help: 'Valid targets: verilog, firrtl, rspu, json, sexpr, dot'
-                }]
-            });
-    }
-}
-
-/**
- * Compatibility shim for advanced verilog compile options.
- * @param {string} source
- * @param {string} _target
- * @param {number} _dsp_threshold
- * @param {boolean} _strip_sva
- * @returns {string}
- */
-export function compile_verilog_with_options(source, _target, _dsp_threshold, _strip_sva) {
-    return compile_verilog(source);
-}
-
-/**
- * Compatibility shim for JSON netlist compile API.
- * @param {string} source
- * @returns {string}
- */
-export function compile_json_netlist(source) {
-    return infer_widths(source);
-}
-
-/**
- * Compatibility shim for DOT detail-level API.
- * @param {string} source
- * @param {boolean} _detail_expr
- * @returns {string}
- */
-export function compile_dot_with_detail(source, _detail_expr) {
-    return compile_dot(source);
 }
 
 /**
@@ -331,16 +388,6 @@ export function simulate_waveform(source, cycles) {
 export function wasm_init() {
     wasm.wasm_init();
 }
-
-export function rwfi2_contract_probe() {
-    return JSON.stringify({
-        has_compile_target: typeof compile_target === 'function',
-        has_compile_verilog_with_options: typeof compile_verilog_with_options === 'function',
-        has_compile_json_netlist: typeof compile_json_netlist === 'function',
-        has_compile_dot_with_detail: typeof compile_dot_with_detail === 'function'
-    });
-}
-
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
@@ -391,8 +438,7 @@ function getDataViewMemory0() {
 }
 
 function getStringFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return decodeText(ptr, len);
+    return decodeText(ptr >>> 0, len);
 }
 
 let cachedUint8ArrayMemory0 = null;
@@ -469,8 +515,9 @@ if (!('encodeInto' in cachedTextEncoder)) {
 
 let WASM_VECTOR_LEN = 0;
 
-let wasmModule, wasm;
+let wasmModule, wasmInstance, wasm;
 function __wbg_finalize_init(instance, module) {
+    wasmInstance = instance;
     wasm = instance.exports;
     wasmModule = module;
     cachedDataViewMemory0 = null;

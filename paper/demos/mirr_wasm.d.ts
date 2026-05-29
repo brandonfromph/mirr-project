@@ -1,11 +1,19 @@
 /* tslint:disable */
 /* eslint-disable */
 
+export function compile_cert(source: string): string;
+
 export function compile_dot(source: string): string;
+
+export function compile_dot_with_detail(source: string, detail_expr: boolean): string;
 
 export function compile_firrtl(source: string): string;
 
 export function compile_graph_data(source: string): string;
+
+export function compile_json_netlist(source: string): string;
+
+export function compile_mapek_rtl(source: string): string;
 
 export function compile_pipeline_stages(source: string): string;
 
@@ -13,19 +21,15 @@ export function compile_rspu(source: string): string;
 
 export function compile_sexpr(source: string): string;
 
+export function compile_target(source: string, target: string): string;
+
 export function compile_verilog(source: string): string;
 
 export function compile_verilog_sat(source: string): string;
 
-export function infer_widths(source: string): string;
-
-export function compile_target(source: string, target: string): string;
-
 export function compile_verilog_with_options(source: string, target: string, dsp_threshold: number, strip_sva: boolean): string;
 
-export function compile_json_netlist(source: string): string;
-
-export function compile_dot_with_detail(source: string, detail_expr: boolean): string;
+export function infer_widths(source: string): string;
 
 export function mirr_version(): string;
 
@@ -43,21 +47,27 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly wasm_init: () => void;
-    readonly compile_verilog: (a: number, b: number) => [number, number];
-    readonly compile_firrtl: (a: number, b: number) => [number, number];
-    readonly compile_sexpr: (a: number, b: number) => [number, number];
+    readonly compile_cert: (a: number, b: number) => [number, number];
     readonly compile_dot: (a: number, b: number) => [number, number];
-    readonly compile_rspu: (a: number, b: number) => [number, number];
-    readonly compile_verilog_sat: (a: number, b: number) => [number, number];
-    readonly simulate_waveform: (a: number, b: number, c: number) => [number, number];
+    readonly compile_dot_with_detail: (a: number, b: number, c: number) => [number, number];
+    readonly compile_firrtl: (a: number, b: number) => [number, number];
     readonly compile_graph_data: (a: number, b: number) => [number, number];
-    readonly infer_widths: (a: number, b: number) => [number, number];
-    readonly simulate_rspu: (a: number, b: number) => [number, number];
-    readonly simulate_mapek: (a: number, b: number, c: number) => [number, number];
-    readonly mirr_version: () => [number, number];
+    readonly compile_json_netlist: (a: number, b: number) => [number, number];
+    readonly compile_mapek_rtl: (a: number, b: number) => [number, number];
     readonly compile_pipeline_stages: (a: number, b: number) => [number, number];
+    readonly compile_rspu: (a: number, b: number) => [number, number];
+    readonly compile_sexpr: (a: number, b: number) => [number, number];
+    readonly compile_target: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly compile_verilog: (a: number, b: number) => [number, number];
+    readonly compile_verilog_sat: (a: number, b: number) => [number, number];
+    readonly compile_verilog_with_options: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly mirr_version: () => [number, number];
     readonly proof_status: () => [number, number];
+    readonly simulate_mapek: (a: number, b: number, c: number) => [number, number];
+    readonly simulate_rspu: (a: number, b: number) => [number, number];
+    readonly simulate_waveform: (a: number, b: number, c: number) => [number, number];
+    readonly wasm_init: () => void;
+    readonly infer_widths: (a: number, b: number) => [number, number];
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
