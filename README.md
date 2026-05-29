@@ -18,11 +18,13 @@
 
 ## What MIRR is
 
-MIRR is a domain-specific language that compiles **temporal safety rules into synthesizable hardware logic** — directly, without an OS, scheduler, or interrupt handler in the loop.
+> [!IMPORTANT]
+> MIRR is a domain-specific language that compiles **temporal safety rules into synthesizable hardware logic** — directly, without an OS, scheduler, or interrupt handler in the loop.
 
 You write a rule like: *"if airway pressure drops for more than a second, close the valve."* MIRR compiles that into a shift-register chain in RTL that enforces the rule in nanoseconds — with mathematical proof that it cannot be missed.
 
-The target domain is safety-critical embedded hardware: ventilators, flight controllers, autonomous vehicle brake systems. Places where a scheduling delay is not a crash report — it is a physical consequence.
+> [!NOTE]
+> The target domain is safety-critical embedded hardware: ventilators, flight controllers, autonomous vehicle brake systems. Places where a scheduling delay is not a crash report — it is a physical consequence.
 
 ---
 
@@ -62,19 +64,20 @@ module neonatal_respirator {
 
 If `airway_pressure` stays below 50 for 1000 consecutive clock cycles, `clamp_valve` is set to `true`. The compiler turns the `for 1000 cycles` rule into a shift register chain. No polling loop. No interrupt handler. No kernel.
 
-**Compiled output** (`--emit verilog`):
-```systemverilog
-module neonatal_respirator (
-    input  logic        clk,
-    input  logic        rst,
-    input  logic [15:0] airway_pressure,
-    output logic        clamp_valve
-);
-    // Shift-register chain: 1000-cycle temporal guard
-    logic [999:0] sustained_pressure_drop_sr;
-    // ... RTL implementation
-endmodule
-```
+> [!TIP]
+> **Compiled output** (`--emit verilog`):
+> ```systemverilog
+> module neonatal_respirator (
+>     input  logic        clk,
+>     input  logic        rst,
+>     input  logic [15:0] airway_pressure,
+>     output logic        clamp_valve
+> );
+>     // Shift-register chain: 1000-cycle temporal guard
+>     logic [999:0] sustained_pressure_drop_sr;
+>     // ... RTL implementation
+> endmodule
+> ```
 
 ---
 
@@ -124,7 +127,8 @@ The ECS Registry (`src/ecs/registry.rs`) is the compiler's source of truth for a
 
 ## Design Philosophy
 
-MIRR enforces correctness guarantees at **compile time**, not runtime:
+> [!WARNING]
+> MIRR enforces correctness guarantees at **compile time**, not runtime.
 
 | Constraint | Enforcement mechanism |
 |---|---|

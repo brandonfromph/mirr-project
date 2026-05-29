@@ -256,7 +256,7 @@ The prefix classifies the error; the full code maps to a single creation site.
 | E510 | `signal '{name}' is in an expansive SCC but has no provable width bound.` | `src/width/scc_solver.rs` |
 | E511 | `COMPILER BUG: signal '{name}' solved width {i\|u}{n} is less than declared {i\|u}{m}` | `src/width/verify.rs` |
 
-{: .important }
+> [!IMPORTANT]
 > Error E511 indicates a compiler bug -- the solved width is narrower than
 > the declared type. If you encounter this error, please file a bug report
 > with the `.mirr` source that triggered it.
@@ -354,7 +354,7 @@ The prefix classifies the error; the full code maps to a single creation site.
 
 ## Removed Variants
 
-{: .warning }
+> [!WARNING]
 > The `LexicalError` and `TemporalCausalityViolation` variants were removed.
 > If your tooling matches on these variants, update to use `ParseError` and
 > remove the causality match arm.

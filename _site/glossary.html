@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glossary — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Glossary — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Glossary — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>Glossary</h1>
+<p>Terminology and acronyms used throughout the MIRR project.</p>
+<hr />
+<table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody>
+<tr><td><strong>AHL</strong></td><td>Adaptive Hold Logic — circuit-level mitigation that pauses the clock on timing violations</td></tr>
+<tr><td><strong>BMC</strong></td><td>Bounded Model Checking — formal verification technique checking properties up to a bounded depth</td></tr>
+<tr><td><strong>Cement2</strong></td><td>Temporal hardware transaction model replacing absolute timing with shift-register delays</td></tr>
+<tr><td><strong>Claims</strong></td><td>Verifiable statements in an LRA paper backed by evidence</td></tr>
+<tr><td><strong>DAC</strong></td><td>Design Automation Conference — target venue for the MIRR living research paper</td></tr>
+<tr><td><strong>DPR</strong></td><td>Dynamic Partial Reconfiguration — loading partial FPGA bitstreams at runtime</td></tr>
+<tr><td><strong>DSL</strong></td><td>Domain-Specific Language</td></tr>
+<tr><td><strong>Dual-Mode Execution</strong></td><td>R-SPU execution mode switching between normal and exception handling</td></tr>
+<tr><td><strong>EDA</strong></td><td>Electronic Design Automation</td></tr>
+<tr><td><strong>ECS</strong></td><td>Entity Component System — data-oriented architecture introduced in Phase 3 for cache-friendly flat array iteration</td></tr>
+<tr><td><strong>EntityId</strong></td><td>A 32-bit handle representing an AST node or hardware primitive in the ECS Registry</td></tr>
+<tr><td><strong>EQY</strong></td><td>Yosys Equivalence Checker tool</td></tr>
+<tr><td><strong>Exception Code</strong></td><td>Numeric identifier for R-SPU trap conditions (E7xx range)</td></tr>
+<tr><td><strong>FIRRTL</strong></td><td>Flexible Intermediate Representation for RTL — Chisel's IR, used as a MIRR emission target</td></tr>
+<tr><td><strong>FIRWINE</strong></td><td>Formally verified width inference procedure (Wang et al. 2026)</td></tr>
+<tr><td><strong>FPGA</strong></td><td>Field-Programmable Gate Array</td></tr>
+<tr><td><strong>Guard</strong></td><td>MIRR temporal condition monitoring signals over time; triggers when condition holds for N cycles</td></tr>
+<tr><td><strong>HLS</strong></td><td>High-Level Synthesis</td></tr>
+<tr><td><strong>Homoiconic</strong></td><td>Property where code and data share the same representation (S-expressions)</td></tr>
+<tr><td><strong>ISA</strong></td><td>Instruction Set Architecture</td></tr>
+<tr><td><strong>JSON-RPC</strong></td><td>Remote procedure call protocol used by the LRA Service Worker</td></tr>
+<tr><td><strong>Living Research Artifact (LRA)</strong></td><td>A paper that bundles code, proofs, and GUI into a single GPL-licensed repository</td></tr>
+<tr><td><strong>LPF</strong></td><td>Lattice Preference File — ECP5 constraint format</td></tr>
+<tr><td><strong>LRA-1.0</strong></td><td>The specification standard for Living Research Artifacts</td></tr>
+<tr><td><strong>LTL</strong></td><td>Linear Temporal Logic — formal language for specifying temporal properties</td></tr>
+<tr><td><strong>Macro Hygiene</strong></td><td>Ensuring macro-expanded identifiers do not capture surrounding bindings</td></tr>
+<tr><td><strong>MAPE-K</strong></td><td>Monitor–Analyze–Plan–Execute–Knowledge — autonomic computing feedback loop</td></tr>
+<tr><td><strong>MIRR</strong></td><td>The hardware rule language this project implements</td></tr>
+<tr><td><strong>MinGW</strong></td><td>Minimalist GNU for Windows — used by oss-cad-suite on Windows</td></tr>
+<tr><td><strong>NBTI</strong></td><td>Negative Bias Temperature Instability — silicon aging mechanism</td></tr>
+<tr><td><strong>NASA P10</strong></td><td>NASA Power-of-10 coding rules for safety-critical software</td></tr>
+<tr><td><strong>nextpnr</strong></td><td>Open-source FPGA place-and-route tool (supports iCE40, ECP5, Nexus)</td></tr>
+<tr><td><strong>oss-cad-suite</strong></td><td>YosysHQ open-source EDA toolchain distribution</td></tr>
+<tr><td><strong>PCF</strong></td><td>Physical Constraints File — iCE40 pin assignment format</td></tr>
+<tr><td><strong>PDC</strong></td><td>Physical Design Constraints — Lattice Nexus constraint format</td></tr>
+<tr><td><strong>Provenance</strong></td><td>Type-level tracking of a signal's origin through tagged words</td></tr>
+<tr><td><strong>Quasiquote</strong></td><td>S-expression template with unquote splicing for code generation</td></tr>
+<tr><td><strong>R-SPU</strong></td><td>Reflex Signal Processing Unit — the custom processor MIRR targets</td></tr>
+<tr><td><strong>Reader Macro</strong></td><td>User-defined syntax extension in the S-expression parser</td></tr>
+<tr><td><strong>Registry</strong></td><td>The central data store in the ECS containing all components as contiguous arrays</td></tr>
+<tr><td><strong>Reflex</strong></td><td>MIRR action that fires when a guard triggers; the only way to drive outputs</td></tr>
+<tr><td><strong>Rocq</strong></td><td>Interactive theorem prover (formerly Coq); used for FIRWINE proofs</td></tr>
+<tr><td><strong>RTL</strong></td><td>Register Transfer Level — hardware description abstraction</td></tr>
+<tr><td><strong>S-expression</strong></td><td>Symbolic expression — the homoiconic IR used by MIRR</td></tr>
+<tr><td><strong>SCC</strong></td><td>Strongly Connected Component — cycle in the width dependency graph</td></tr>
+<tr><td><strong>SDC</strong></td><td>Synopsys Design Constraints — timing constraint format</td></tr>
+<tr><td><strong>Service Worker</strong></td><td>Browser-side proxy that enables offline operation and the LRA protocol</td></tr>
+<tr><td><strong>Signal</strong></td><td>MIRR named data path carrying a typed value every clock cycle</td></tr>
+<tr><td><strong>SmaRTLy</strong></td><td>Inference-driven RTL logic optimization (Li et al. 2025)</td></tr>
+<tr><td><strong>SVA</strong></td><td>SystemVerilog Assertions — property specification language</td></tr>
+<tr><td><strong>Tagged Architecture</strong></td><td>R-SPU ISA v2 feature where values carry type metadata at runtime</td></tr>
+<tr><td><strong>Tagged Word</strong></td><td>R-SPU machine word carrying type and provenance metadata</td></tr>
+<tr><td><strong>sby</strong></td><td>SymbiYosys — formal verification front-end for Yosys</td></tr>
+<tr><td><strong>WASM</strong></td><td>WebAssembly — portable binary format; used for running MIRR compiler in the browser</td></tr>
+<tr><td><strong>XDC</strong></td><td>Xilinx Design Constraints — Vivado constraint format</td></tr>
+<tr><td><strong>Yosys</strong></td><td>Open-source synthesis tool</td></tr>
+<tr><td><strong>zext</strong></td><td>Zero-extension — explicit widening of an unsigned value</td></tr>
+</tbody></table>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="roadmap.html">Roadmap</a> — Full project context</li>
+<li><a href="contributing.html">Contributing</a> — Coding standards and workflow</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

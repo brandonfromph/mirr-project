@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIRR Self-Hosting IR Contract — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="MIRR Self-Hosting IR Contract — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MIRR Self-Hosting IR Contract — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#1-introduction">1. Introduction</a></li>
+        <li><a href="#2-contract-levels">2. Contract Levels</a></li>
+          <li class="toc-h3"><a href="#level-1-ast-abstract-syntax-tree">Level 1 — AST (Abstract Syntax Tree)</a></li>
+          <li class="toc-h3"><a href="#level-2-hir-high-level-ir">Level 2 — HIR (High-level IR)</a></li>
+          <li class="toc-h3"><a href="#level-3-temporal-netlist-ir">Level 3 — Temporal Netlist IR</a></li>
+        <li><a href="#3-ast-contract-level-1">3. AST Contract (Level 1)</a></li>
+          <li class="toc-h3"><a href="#31-root-mirrprogram">3.1 Root — `MirrProgram`</a></li>
+          <li class="toc-h3"><a href="#32-module">3.2 `Module`</a></li>
+          <li class="toc-h3"><a href="#33-signaldecl">3.3 `SignalDecl`</a></li>
+          <li class="toc-h3"><a href="#34-signaltype">3.4 `SignalType`</a></li>
+          <li class="toc-h3"><a href="#35-guard">3.5 `Guard`</a></li>
+          <li class="toc-h3"><a href="#36-reflex">3.6 `Reflex`</a></li>
+          <li class="toc-h3"><a href="#37-assignment">3.7 `Assignment`</a></li>
+          <li class="toc-h3"><a href="#38-expr">3.8 `Expr`</a></li>
+          <li class="toc-h3"><a href="#39-binaryop-enum-values">3.9 `BinaryOp` Enum Values</a></li>
+          <li class="toc-h3"><a href="#310-unaryop-enum-values">3.10 `UnaryOp` Enum Values</a></li>
+        <li><a href="#4-hir-contract-level-2">4. HIR Contract (Level 2)</a></li>
+          <li class="toc-h3"><a href="#41-root-mirrhir">4.1 Root — `MirrHir`</a></li>
+          <li class="toc-h3"><a href="#42-resolvedsignal">4.2 `ResolvedSignal`</a></li>
+          <li class="toc-h3"><a href="#43-resolvedguard">4.3 `ResolvedGuard`</a></li>
+        <li><a href="#5-temporal-netlist-ir-contract-level-3">5. Temporal Netlist IR Contract (Level 3)</a></li>
+          <li class="toc-h3"><a href="#51-root-temporalnetlist">5.1 Root — `TemporalNetlist`</a></li>
+          <li class="toc-h3"><a href="#52-compiledguard">5.2 `CompiledGuard`</a></li>
+          <li class="toc-h3"><a href="#53-conditionkind">5.3 `ConditionKind`</a></li>
+          <li class="toc-h3"><a href="#54-generatedsignal">5.4 `GeneratedSignal`</a></li>
+          <li class="toc-h3"><a href="#55-compilationstatistics">5.5 `CompilationStatistics`</a></li>
+        <li><a href="#6-serialization-rules">6. Serialization Rules</a></li>
+        <li><a href="#7-canonical-example">7. Canonical Example</a></li>
+        <li><a href="#8-schema-test-requirements">8. Schema Test Requirements</a></li>
+        <li><a href="#9-parity-rules">9. Parity Rules</a></li>
+        <li><a href="#10-versioning">10. Versioning</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Self-Hosting IR Contract</h1>
+<p><strong>Version:</strong> 1.0-draft<br />
+<strong>Status:</strong> Frozen for self-hosting milestone v1<br />
+<strong>Purpose:</strong> Canonical AST + HIR data contracts that both the Rust reference implementation and MIRR compiler modules must produce identically.</p>
+<hr />
+<h2 id="1-introduction">1. Introduction</h2>
+<p>This document defines the <strong>intermediate representation (IR) contracts</strong> for the MIRR self-hosting pipeline. Both pipelines — the Rust reference compiler and the MIRR-in-MIRR compiler — must serialize their internal IR to JSON using exactly the structure defined here.</p>
+<p>Canonical JSON serialization enables:</p>
+<ul>
+<li>Differential testing (fixture comparison).</li>
+<li>Schema validation (CI gate).</li>
+<li>Debugging and visualization.</li>
+<li>Stable ABI between compiler stages.</li>
+</ul>
+<p>Refer to <code>docs/schemas/</code> for machine-readable JSON Schema files.</p>
+<hr />
+<h2 id="2-contract-levels">2. Contract Levels</h2>
+<h3 id="level-1-ast-abstract-syntax-tree">Level 1 — AST (Abstract Syntax Tree)</h3>
+<p>The direct output of the parser. Preserves all syntactic information needed for the next pass.</p>
+<h3 id="level-2-hir-high-level-ir">Level 2 — HIR (High-level IR)</h3>
+<p>The output of the semantic validation pass. Adds resolved types and links. Used by the temporal lowering pass.</p>
+<h3 id="level-3-temporal-netlist-ir">Level 3 — Temporal Netlist IR</h3>
+<p>The output of the temporal guard lowering pass. Maps to concrete hardware primitives (shift registers, counters).</p>
+<hr />
+<h2 id="3-ast-contract-level-1">3. AST Contract (Level 1)</h2>
+<h3 id="31-root-mirrprogram">3.1 Root — <code>MirrProgram</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;$schema&quot;</span>: <span class="hl-str">&quot;docs/schemas/mirr_ast.schema.json&quot;</span>,
+  <span class="hl-var">&quot;ir_version&quot;</span>: <span class="hl-str">&quot;1.0&quot;</span>,
+  <span class="hl-var">&quot;module&quot;</span>: { ... }
+}
+</code></pre>
+<h3 id="32-module">3.2 <code>Module</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;signals&quot;</span>: [ <SignalDecl>... ],
+  <span class="hl-var">&quot;guards&quot;</span>: [ <Guard>... ],
+  <span class="hl-var">&quot;reflexes&quot;</span>: [ <Reflex>... ]
+}
+</code></pre>
+<h3 id="33-signaldecl">3.3 <code>SignalDecl</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;Input&quot;</span> | <span class="hl-str">&quot;Output&quot;</span> | <span class="hl-str">&quot;Internal&quot;</span>,
+  <span class="hl-var">&quot;ty&quot;</span>: <SignalType>
+}
+</code></pre>
+<h3 id="34-signaltype">3.4 <code>SignalType</code></h3>
+<pre><code class="language-json"><span class="hl-str">&quot;Bool&quot;</span>
+
+// or for unsigned integers:
+{ <span class="hl-var">&quot;Unsigned&quot;</span>: <integer> }
+
+// or for signed integers:
+{ <span class="hl-var">&quot;Signed&quot;</span>: <integer> }
+</code></pre>
+<h3 id="35-guard">3.5 <code>Guard</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;condition&quot;</span>: <Expr>,
+  <span class="hl-var">&quot;cycles&quot;</span>: <integer>
+}
+</code></pre>
+<h3 id="36-reflex">3.6 <code>Reflex</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;guard_names&quot;</span>: [ <span class="hl-str">&quot;&lt;string&gt;&quot;</span>... ],
+  <span class="hl-var">&quot;assignments&quot;</span>: [ <Assignment>... ]
+}
+</code></pre>
+<h3 id="37-assignment">3.7 <code>Assignment</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;target&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;value&quot;</span>: <Expr>
+}
+</code></pre>
+<h3 id="38-expr">3.8 <code>Expr</code></h3>
+<p>Expressions are tagged objects:</p>
+<pre><code class="language-json">// Literal boolean
+{ <span class="hl-var">&quot;Literal&quot;</span>: { <span class="hl-var">&quot;Bool&quot;</span>: <span class="hl-num">true</span> } }
+{ <span class="hl-var">&quot;Literal&quot;</span>: { <span class="hl-var">&quot;Bool&quot;</span>: <span class="hl-num">false</span> } }
+
+// Literal integer
+{ <span class="hl-var">&quot;Literal&quot;</span>: { <span class="hl-var">&quot;Integer&quot;</span>: <span class="hl-num">42</span> } }
+
+// Signal reference
+{ <span class="hl-var">&quot;Signal&quot;</span>: <span class="hl-str">&quot;&lt;name&gt;&quot;</span> }
+
+// Unary expression
+{
+  <span class="hl-var">&quot;Unary&quot;</span>: {
+    <span class="hl-var">&quot;op&quot;</span>: <span class="hl-str">&quot;Not&quot;</span>,
+    <span class="hl-var">&quot;operand&quot;</span>: <Expr>
+  }
+}
+
+// Binary expression
+{
+  <span class="hl-var">&quot;Binary&quot;</span>: {
+    <span class="hl-var">&quot;op&quot;</span>: <span class="hl-str">&quot;&lt;BinaryOp&gt;&quot;</span>,
+    <span class="hl-var">&quot;left&quot;</span>: <Expr>,
+    <span class="hl-var">&quot;right&quot;</span>: <Expr>
+  }
+}
+</code></pre>
+<h3 id="39-binaryop-enum-values">3.9 <code>BinaryOp</code> Enum Values</h3>
+<table><thead><tr><th>JSON string</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>"And"</code></td><td>Logical AND <code>&amp;&amp;</code></td></tr>
+<tr><td><code>"Or"</code></td><td>Logical OR <code>||</code></td></tr>
+<tr><td><code>"Xor"</code></td><td>Bitwise XOR <code>^</code></td></tr>
+<tr><td><code>"Lt"</code></td><td>Less-than <code>&lt;</code></td></tr>
+<tr><td><code>"Le"</code></td><td>Less-or-equal <code>&lt;=</code></td></tr>
+<tr><td><code>"Gt"</code></td><td>Greater-than <code>&gt;</code></td></tr>
+<tr><td><code>"Ge"</code></td><td>Greater-or-equal <code>&gt;=</code></td></tr>
+<tr><td><code>"Eq"</code></td><td>Equality <code>==</code></td></tr>
+<tr><td><code>"Ne"</code></td><td>Not-equal <code>!=</code></td></tr>
+<tr><td><code>"Add"</code></td><td>Addition <code>+</code></td></tr>
+<tr><td><code>"Sub"</code></td><td>Subtraction <code>-</code></td></tr>
+<tr><td><code>"Mul"</code></td><td>Multiplication <code>*</code></td></tr>
+<tr><td><code>"Shl"</code></td><td>Left shift <code>&lt;&lt;</code></td></tr>
+<tr><td><code>"Shr"</code></td><td>Right shift <code>&gt;&gt;</code></td></tr>
+</tbody></table>
+<h3 id="310-unaryop-enum-values">3.10 <code>UnaryOp</code> Enum Values</h3>
+<table><thead><tr><th>JSON string</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>"Not"</code></td><td>Negation <code>!</code></td></tr>
+</tbody></table>
+<hr />
+<h2 id="4-hir-contract-level-2">4. HIR Contract (Level 2)</h2>
+<p>The HIR extends the AST with semantic annotations. It is produced after the semantic validation pass.</p>
+<h3 id="41-root-mirrhir">4.1 Root — <code>MirrHir</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;$schema&quot;</span>: <span class="hl-str">&quot;docs/schemas/mirr_hir.schema.json&quot;</span>,
+  <span class="hl-var">&quot;ir_version&quot;</span>: <span class="hl-str">&quot;1.0&quot;</span>,
+  <span class="hl-var">&quot;module&quot;</span>: { ... },
+  <span class="hl-var">&quot;signal_table&quot;</span>: { <span class="hl-var">&quot;&lt;name&gt;&quot;</span>: <ResolvedSignal>... },
+  <span class="hl-var">&quot;guard_table&quot;</span>: { <span class="hl-var">&quot;&lt;name&gt;&quot;</span>: <ResolvedGuard>... }
+}
+</code></pre>
+<h3 id="42-resolvedsignal">4.2 <code>ResolvedSignal</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;Input&quot;</span> | <span class="hl-str">&quot;Output&quot;</span> | <span class="hl-str">&quot;Internal&quot;</span>,
+  <span class="hl-var">&quot;ty&quot;</span>: <SignalType>,
+  <span class="hl-var">&quot;writable&quot;</span>: <span class="hl-num">true</span> | <span class="hl-num">false</span>
+}
+</code></pre>
+<h3 id="43-resolvedguard">4.3 <code>ResolvedGuard</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;condition&quot;</span>: <Expr>,
+  <span class="hl-var">&quot;cycles&quot;</span>: <integer>,
+  <span class="hl-var">&quot;condition_signals&quot;</span>: [ <span class="hl-str">&quot;&lt;string&gt;&quot;</span>... ]
+}
+</code></pre>
+<p>The <code>condition_signals</code> field is the resolved set of signal names referenced by the guard condition — used by the temporal lowering pass.</p>
+<hr />
+<h2 id="5-temporal-netlist-ir-contract-level-3">5. Temporal Netlist IR Contract (Level 3)</h2>
+<p>The temporal netlist IR is the output of the temporal guard lowering pass. This is already serialized to JSON by the Rust implementation (via <code>serde_json</code>); this contract formalizes the expected shape.</p>
+<h3 id="51-root-temporalnetlist">5.1 Root — <code>TemporalNetlist</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;$schema&quot;</span>: <span class="hl-str">&quot;docs/schemas/mirr_temporal_netlist.schema.json&quot;</span>,
+  <span class="hl-var">&quot;ir_version&quot;</span>: <span class="hl-str">&quot;1.0&quot;</span>,
+  <span class="hl-var">&quot;guards&quot;</span>: [ <CompiledGuard>... ],
+  <span class="hl-var">&quot;signals&quot;</span>: [ <GeneratedSignal>... ],
+  <span class="hl-var">&quot;statistics&quot;</span>: <CompilationStatistics>
+}
+</code></pre>
+<h3 id="52-compiledguard">5.2 <code>CompiledGuard</code></h3>
+<p>Either a <code>ShiftRegister</code> or <code>Counter</code> variant (tagged):</p>
+<pre><code class="language-json">// Shift register guard (N ≤ <span class="hl-num">16</span> cycles)
+{
+  <span class="hl-var">&quot;ShiftRegister&quot;</span>: {
+    <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;input_signal&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;output_signal&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;stages&quot;</span>: [ <span class="hl-str">&quot;&lt;string&gt;&quot;</span>... ],
+    <span class="hl-var">&quot;delay_cycles&quot;</span>: <integer>,
+    <span class="hl-var">&quot;condition_kind&quot;</span>: <ConditionKind>
+  }
+}
+
+// Counter guard (N > <span class="hl-num">16</span> cycles)
+{
+  <span class="hl-var">&quot;Counter&quot;</span>: {
+    <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;input_signal&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;output_signal&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;counter_signal&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;comparator_signal&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+    <span class="hl-var">&quot;target_count&quot;</span>: <integer>,
+    <span class="hl-var">&quot;condition_kind&quot;</span>: <ConditionKind>
+  }
+}
+</code></pre>
+<h3 id="53-conditionkind">5.3 <code>ConditionKind</code></h3>
+<pre><code class="language-json">// Simple signal: when <signal>
+{ <span class="hl-var">&quot;SimpleSignal&quot;</span>: <span class="hl-str">&quot;&lt;name&gt;&quot;</span> }
+
+// Negated signal: when !<signal>
+{ <span class="hl-var">&quot;NegatedSignal&quot;</span>: <span class="hl-str">&quot;&lt;name&gt;&quot;</span> }
+
+// Comparison: when <signal> <op> <literal>
+{
+  <span class="hl-var">&quot;Comparison&quot;</span>: {
+    <span class="hl-var">&quot;signal&quot;</span>: <span class="hl-str">&quot;&lt;name&gt;&quot;</span>,
+    <span class="hl-var">&quot;op&quot;</span>: <span class="hl-str">&quot;&lt;BinaryOp&gt;&quot;</span>,
+    <span class="hl-var">&quot;value&quot;</span>: { <span class="hl-var">&quot;Bool&quot;</span>: <span class="hl-num">true</span> } | { <span class="hl-var">&quot;Integer&quot;</span>: <span class="hl-num">42</span> }
+  }
+}
+</code></pre>
+<h3 id="54-generatedsignal">5.4 <code>GeneratedSignal</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;&lt;string&gt;&quot;</span>,
+  <span class="hl-var">&quot;ty&quot;</span>: <SignalType>,
+  <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;ShiftRegisterStage&quot;</span> | <span class="hl-str">&quot;Counter&quot;</span> | <span class="hl-str">&quot;Comparator&quot;</span> | <span class="hl-str">&quot;LogicGate&quot;</span> | <span class="hl-str">&quot;Intermediate&quot;</span>,
+  <span class="hl-var">&quot;source&quot;</span>: <span class="hl-num">null</span> | <Expr>
+}
+</code></pre>
+<h3 id="55-compilationstatistics">5.5 <code>CompilationStatistics</code></h3>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;shift_registers_used&quot;</span>: <integer>,
+  <span class="hl-var">&quot;counters_used&quot;</span>: <integer>,
+  <span class="hl-var">&quot;logic_gates_used&quot;</span>: <integer>,
+  <span class="hl-var">&quot;max_delay_cycles&quot;</span>: <integer>,
+  <span class="hl-var">&quot;total_signals&quot;</span>: <integer>,
+  <span class="hl-var">&quot;compilation_time_us&quot;</span>: <span class="hl-num">null</span> | <integer>
+}
+</code></pre>
+<hr />
+<h2 id="6-serialization-rules">6. Serialization Rules</h2>
+<p>The following rules ensure both pipelines produce identical artifacts:</p>
+<ol>
+<li><strong>Field ordering:</strong> Fields within each object must appear in the order defined in this document. (Rust serde produces alphabetical order by default; MIRR serializer must match.)</li>
+<li><strong>No extra fields:</strong> Neither pipeline may emit fields not listed here.</li>
+<li><strong>Integer encoding:</strong> All integers are JSON numbers (no string encoding).</li>
+<li><strong>Null handling:</strong> Optional fields use JSON <code>null</code> when absent (no field omission).</li>
+<li><strong>String encoding:</strong> All strings are UTF-8 JSON strings.</li>
+<li><strong>Enum tags:</strong> Enum variants are encoded as tagged objects (<code>{"VariantName": ...}</code> or <code>"VariantName"</code> for unit variants), matching Rust <code>serde</code> default behavior.</li>
+<li><strong>Array ordering:</strong> All arrays preserve insertion / declaration order from the source file.</li>
+</ol>
+<hr />
+<h2 id="7-canonical-example">7. Canonical Example</h2>
+<p>Input MIRR source:</p>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">neonatal_respirator</span> {
+    <span class="mirr-name">signals</span> {
+        <span class="mirr-name">respirator_enable</span>: <span class="mirr-dir">in</span> <span class="mirr-type">bool</span>
+        <span class="mirr-name">airway_pressure</span>:   <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>
+        <span class="mirr-name">clamp_valve</span>:       <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>
+    }
+
+    <span class="mirr-guard">guard</span> <span class="mirr-name">sustained_pressure_drop</span> {
+        <span class="mirr-guard">when</span> <span class="mirr-name">airway_pressure</span> <span class="mirr-op">&lt;</span> <span class="mirr-num">50</span>
+        <span class="mirr-guard">for</span>  <span class="mirr-num">1000</span> <span class="mirr-guard">cycles</span>;
+    }
+
+    <span class="mirr-reflex">reflex</span> <span class="mirr-name">emergency_clamp</span> {
+        <span class="mirr-reflex">on</span> <span class="mirr-name">sustained_pressure_drop</span> {
+            <span class="mirr-name">clamp_valve</span> <span class="mirr-op">=</span> <span class="mirr-bool">true</span>;
+        }
+    }
+}</code></pre>
+<p>Expected AST JSON output:</p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;ir_version&quot;</span>: <span class="hl-str">&quot;1.0&quot;</span>,
+  <span class="hl-var">&quot;module&quot;</span>: {
+    <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;neonatal_respirator&quot;</span>,
+    <span class="hl-var">&quot;signals&quot;</span>: [
+      { <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;respirator_enable&quot;</span>, <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;Input&quot;</span>,  <span class="hl-var">&quot;ty&quot;</span>: <span class="hl-str">&quot;Bool&quot;</span> },
+      { <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;airway_pressure&quot;</span>,   <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;Input&quot;</span>,  <span class="hl-var">&quot;ty&quot;</span>: { <span class="hl-var">&quot;Unsigned&quot;</span>: <span class="hl-num">16</span> } },
+      { <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;clamp_valve&quot;</span>,       <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;Output&quot;</span>, <span class="hl-var">&quot;ty&quot;</span>: <span class="hl-str">&quot;Bool&quot;</span> }
+    ],
+    <span class="hl-var">&quot;guards&quot;</span>: [
+      {
+        <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop&quot;</span>,
+        <span class="hl-var">&quot;condition&quot;</span>: {
+          <span class="hl-var">&quot;Binary&quot;</span>: {
+            <span class="hl-var">&quot;op&quot;</span>: <span class="hl-str">&quot;Lt&quot;</span>,
+            <span class="hl-var">&quot;left&quot;</span>:  { <span class="hl-var">&quot;Signal&quot;</span>: <span class="hl-str">&quot;airway_pressure&quot;</span> },
+            <span class="hl-var">&quot;right&quot;</span>: { <span class="hl-var">&quot;Literal&quot;</span>: { <span class="hl-var">&quot;Integer&quot;</span>: <span class="hl-num">50</span> } }
+          }
+        },
+        <span class="hl-var">&quot;cycles&quot;</span>: <span class="hl-num">1000</span>
+      }
+    ],
+    <span class="hl-var">&quot;reflexes&quot;</span>: [
+      {
+        <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;emergency_clamp&quot;</span>,
+        <span class="hl-var">&quot;guard_names&quot;</span>: [ <span class="hl-str">&quot;sustained_pressure_drop&quot;</span> ],
+        <span class="hl-var">&quot;assignments&quot;</span>: [
+          {
+            <span class="hl-var">&quot;target&quot;</span>: <span class="hl-str">&quot;clamp_valve&quot;</span>,
+            <span class="hl-var">&quot;value&quot;</span>: { <span class="hl-var">&quot;Literal&quot;</span>: { <span class="hl-var">&quot;Bool&quot;</span>: <span class="hl-num">true</span> } }
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre>
+<p>Expected Temporal Netlist JSON output:</p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;ir_version&quot;</span>: <span class="hl-str">&quot;1.0&quot;</span>,
+  <span class="hl-var">&quot;guards&quot;</span>: [
+    {
+      <span class="hl-var">&quot;Counter&quot;</span>: {
+        <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop&quot;</span>,
+        <span class="hl-var">&quot;input_signal&quot;</span>: <span class="hl-str">&quot;airway_pressure&quot;</span>,
+        <span class="hl-var">&quot;output_signal&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop_out&quot;</span>,
+        <span class="hl-var">&quot;counter_signal&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop_counter&quot;</span>,
+        <span class="hl-var">&quot;comparator_signal&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop_cmp&quot;</span>,
+        <span class="hl-var">&quot;target_count&quot;</span>: <span class="hl-num">1000</span>,
+        <span class="hl-var">&quot;condition_kind&quot;</span>: {
+          <span class="hl-var">&quot;Comparison&quot;</span>: {
+            <span class="hl-var">&quot;signal&quot;</span>: <span class="hl-str">&quot;airway_pressure&quot;</span>,
+            <span class="hl-var">&quot;op&quot;</span>: <span class="hl-str">&quot;Lt&quot;</span>,
+            <span class="hl-var">&quot;value&quot;</span>: { <span class="hl-var">&quot;Integer&quot;</span>: <span class="hl-num">50</span> }
+          }
+        }
+      }
+    }
+  ],
+  <span class="hl-var">&quot;signals&quot;</span>: [
+    {
+      <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop_counter&quot;</span>,
+      <span class="hl-var">&quot;ty&quot;</span>: { <span class="hl-var">&quot;Unsigned&quot;</span>: <span class="hl-num">11</span> },
+      <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;Counter&quot;</span>,
+      <span class="hl-var">&quot;source&quot;</span>: <span class="hl-num">null</span>
+    },
+    {
+      <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop_cmp&quot;</span>,
+      <span class="hl-var">&quot;ty&quot;</span>: <span class="hl-str">&quot;Bool&quot;</span>,
+      <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;Comparator&quot;</span>,
+      <span class="hl-var">&quot;source&quot;</span>: <span class="hl-num">null</span>
+    },
+    {
+      <span class="hl-var">&quot;name&quot;</span>: <span class="hl-str">&quot;sustained_pressure_drop_out&quot;</span>,
+      <span class="hl-var">&quot;ty&quot;</span>: <span class="hl-str">&quot;Bool&quot;</span>,
+      <span class="hl-var">&quot;kind&quot;</span>: <span class="hl-str">&quot;LogicGate&quot;</span>,
+      <span class="hl-var">&quot;source&quot;</span>: <span class="hl-num">null</span>
+    }
+  ],
+  <span class="hl-var">&quot;statistics&quot;</span>: {
+    <span class="hl-var">&quot;shift_registers_used&quot;</span>: <span class="hl-num">0</span>,
+    <span class="hl-var">&quot;counters_used&quot;</span>: <span class="hl-num">1</span>,
+    <span class="hl-var">&quot;logic_gates_used&quot;</span>: <span class="hl-num">1</span>,
+    <span class="hl-var">&quot;max_delay_cycles&quot;</span>: <span class="hl-num">1000</span>,
+    <span class="hl-var">&quot;total_signals&quot;</span>: <span class="hl-num">3</span>,
+    <span class="hl-var">&quot;compilation_time_us&quot;</span>: <span class="hl-num">null</span>
+  }
+}
+</code></pre>
+<hr />
+<h2 id="8-schema-test-requirements">8. Schema Test Requirements</h2>
+<p>Schema tests in <code>tests/self_hosting_ir_schema_tests.rs</code> must verify:</p>
+<ol>
+<li>The Rust pipeline produces JSON matching the canonical example exactly.</li>
+<li>All golden fixture files in <code>tests/fixtures/ast/</code> and <code>tests/fixtures/netlist/</code> round-trip through parse → emit → compare without modification.</li>
+<li>Any field missing from or added to the Rust output (not in contract) is a test failure.</li>
+</ol>
+<hr />
+<h2 id="9-parity-rules">9. Parity Rules</h2>
+<p>The parity gate in <code>tests/self_hosting_parity_tests.rs</code> enforces:</p>
+<ul>
+<li><strong>Byte-stable parity:</strong> Rust AST JSON == MIRR AST JSON for all fixtures.</li>
+<li><strong>Byte-stable netlist parity:</strong> Rust netlist JSON == MIRR netlist JSON for all fixtures.</li>
+<li><strong>Semantic-equivalence fallback:</strong> If byte parity is too strict (e.g., floating-point field ordering), a semantic comparator may be used — but must be documented.</li>
+</ul>
+<hr />
+<h2 id="10-versioning">10. Versioning</h2>
+<ul>
+<li><code>ir_version</code> in output JSON tracks this contract document's version.</li>
+<li>Any schema change breaks all parity tests and requires a version bump.</li>
+<li>Both Rust and MIRR implementations must check <code>ir_version</code> at runtime and reject mismatched versions.</li>
+</ul>
+<hr />
+<p><em>End of MIRR Self-Hosting IR Contract v1.0-draft</em></p>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

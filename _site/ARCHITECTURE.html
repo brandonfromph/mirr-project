@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIRR Project Architecture &amp; Directory Topology — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="MIRR Project Architecture &amp; Directory Topology — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MIRR Project Architecture &amp; Directory Topology — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#1-directory-map">1. Directory Map</a></li>
+        <li><a href="#2-one-screen-mental-model">2. One-Screen Mental Model</a></li>
+        <li><a href="#3-data-flow-pathways">3. Data Flow Pathways</a></li>
+        <li><a href="#4-architectural-component-graphs">4. Architectural Component Graphs</a></li>
+          <li class="toc-h3"><a href="#core-pipeline-architecture">Core Pipeline Architecture</a></li>
+          <li class="toc-h3"><a href="#ecosystem-integration-map">Ecosystem Integration Map</a></li>
+        <li><a href="#45-formal-proofs-topology-proofs">4.5 Formal Proofs Topology (proofs/)</a></li>
+        <li><a href="#46-r-spu-16-core-architecture-rspuchip">4.6 R-SPU 16-Core Architecture (rspu_chip/)</a></li>
+        <li><a href="#5-main-projects-at-a-glance">5. Main Projects At A Glance</a></li>
+          <li class="toc-h3"><a href="#core-layer">Core Layer</a></li>
+          <li class="toc-h3"><a href="#control-plane-layer">Control Plane Layer</a></li>
+          <li class="toc-h3"><a href="#consumer-bridge-layer">Consumer / Bridge Layer</a></li>
+        <li><a href="#6-first-90-minutes-repository-onboarding-sequence">6. First 90 Minutes: Repository Onboarding Sequence</a></li>
+        <li><a href="#7-roadmap-crosswalk">7. Roadmap Crosswalk</a></li>
+        <li><a href="#8-practical-pitfalls-in-this-workspace">8. Practical Pitfalls In This Workspace</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Project Architecture &amp; Directory Topology</h1>
+<p>Date: 2026-05-17</p>
+<p>This document provides a comprehensive map of the repository, detailing the structural layout, data flow pathways, and architectural components of the MIRR compiler platform.</p>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>MAINTENANCE MANDATE</strong>: This file is the single source of truth for the repository's topology. Under the project's zero-debt policy, whenever a new module, crate, or major architectural flow is added, moved, or removed, <strong>you must immediately update this document</strong> to reflect the new state. Outdated architecture mapping is strictly forbidden.</p>
+</blockquote>
+<h2 id="1-directory-map">1. Directory Map</h2>
+<p>A clear tree breakdown explaining the directory structure of the repository:</p>
+<pre><code class="language-text">mirr-private/
+├── src/                      # Core Compiler Pipeline
+│   ├── ast/                  # Abstract Syntax Tree definitions
+│   ├── parser/               # Front-end parsing (Lexer &amp; Parser)
+│   ├── expand/               # Compile-time pattern expansion &amp; macro engine
+│   ├── ecs/                  # Entity Component System (ECS) architecture (Registry)
+│   ├── cert/                 # MEGA-4 Proof certificate format &amp; MEGA-16 PCC verifier
+│   ├── typeck/               # Type checking &amp; constraint validation
+│   ├── width/                # Width constraint solving (SCC paths)
+│   ├── sat/                  # Bounded DPLL SAT solver &amp; SmaRTLy logic simplifier
+│   ├── temporal/             # Temporal lowering of hardware guards
+│   ├── symbolic/             # Hardware-preparatory symbolic evaluation engine
+│   ├── sexpr/                # S-expression intermediate representation (MEGA-2)
+│   ├── mape_k/               # MAPE-K software simulation loop &amp; LTL checkers
+│   ├── emit/                 # Emission backends (SystemVerilog, FIRRTL, R-SPU, etc.)
+│   ├── bin/                  # Executable entrypoints (mirr-compile, mirr-general, etc.)
+│   └── lib.rs                # Public module exports
+├── crates/                   # Consumer &amp; Control Plane Surfaces
+│   ├── mirr-wasm/            # WASM compilation API (browser/JS consumers)
+│   ├── mirr-arsenal-wasm/    # Validation and compile-contract wrapper
+│   ├── lra-cli/              # Living Research Artifact CLI tooling
+│   ├── mirr-kb-native/       # Knowledge Base native engine (RAG / Vector search)
+│   └── mirr-mcp-control-plane/ # Model Context Protocol bridge &amp; governance
+├── tests/                    # Integration &amp; Parity Test Matrix
+├── fuzz/                     # Fuzzing harnesses for robustness
+├── proofs/                   # Formal verification (Coq/Rocq)
+├── docs/                     # Documentation and Architecture definitions
+├── proposals/                # Architectural proposals and RFCs
+├── rspu_chip/                # Primary hardware project (16-core R-SPU processor)
+├── stdlib/                   # Standard library definitions
+└── compiler_mirr/            # Self-hosting bootstrap implementation
+</code></pre>
+<h2 id="2-one-screen-mental-model">2. One-Screen Mental Model</h2>
+<p>MIRR is a safety-critical compiler platform with three kinds of surfaces:</p>
+<ol>
+<li><strong>Core compiler</strong>: Parse -&gt; Validate/Expand -&gt; Type/Width -&gt; Temporal Lowering -&gt; Emit.</li>
+<li><strong>Control planes</strong>: MRT / Presidential Arsenal, KB-lite, and private campaign planning.</li>
+<li><strong>Consumers and bridges</strong>: WASM, LRA, MCP, VS Code, paper/demos, proofs, fuzz, and CI scripts.</li>
+</ol>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>MIRR language (Signal/Guard/Reflex + properties/patterns)</li>
+</ul>
+<p><strong>Outputs:</strong></p>
+<ul>
+<li>SystemVerilog, FIRRTL, JSON netlist, DOT graphs, S-expression IR, R-SPU assembly/binary, Yosys-compatible netlists</li>
+</ul>
+<h2 id="3-data-flow-pathways">3. Data Flow Pathways</h2>
+<p>The following statements describe how services and subsystems interact within the MIRR ecosystem:</p>
+<ol>
+<li>
+<p><strong>Compiler Pipeline Flow:</strong></p>
+<ul>
+<li>Source code is ingested by the <a href="../src/parser/module_parser/mod.rs">Lexer/Parser</a>, generating an AST.</li>
+<li>The AST is hydrated into the <a href="../src/ecs/registry.rs">ECS Registry</a>, where all hardware declarations become entities.</li>
+<li><a href="../src/ecs/semantic_validate.rs">Semantic Validation</a> ensures entity integrity (Name and Kind constraints).</li>
+<li><a href="../src/width/solver.rs">Width Solver</a> infers missing signal widths using SCC propagation. Note: The ECS-native width inference system is currently a mock; the AST-based solver remains the primary engine.</li>
+<li><a href="../src/temporal/mod.rs">Temporal Lowering</a> translates hardware guards into deterministic netlist primitives.
+This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes <code>TemporalNodeComponent</code> metadata for each guard entity, closing the "Temporal Seam".</li>
+<li><a href="../src/symbolic/mod.rs">Symbolic Evaluation Engine</a> provides abstract interpretation, discrete calculus approximations, anomaly signature fingerprinting, and a term rewriting engine for runtime logic optimization.</li>
+<li>Finally, <a href="../src/emit/mod.rs">Emission Backends</a> generate the target artifacts.</li>
+</ul>
+</li>
+<li>
+<p><strong>Control Plane &amp; RAG Integration:</strong></p>
+<ul>
+<li>The <a href="../crates/mirr-mcp-control-plane/">MCP Semantic Bridge</a> routes cross-subsystem tool calls.</li>
+<li>The <a href="../crates/mirr-kb-native/">Knowledge Base Engine</a> serves as a RAG vector store. The compiler queries <code>mirr-kb-native</code> for synthesis precedents and formal proofs before resolving complex guard patterns.</li>
+</ul>
+</li>
+<li>
+<p><strong>Consumer Facades:</strong></p>
+<ul>
+<li>The <a href="../crates/mirr-wasm/">mirr-wasm</a> crate provides a JS-compatible binding over the core compiler, enabling browser-based IDEs and demonstrations.</li>
+<li>The <a href="../crates/lra-cli/">lra-cli</a> interacts with the Arsenal tooling for markdown/HTML validation and receipt signing.</li>
+</ul>
+</li>
+<li>
+<p><strong>Yosys-to-MIRR Roundtrip Parity Validation Pipeline:</strong></p>
+<ul>
+<li>Arbitrary input Verilog/RTL is synthesized using Yosys into a technology-mapped JSON netlist.</li>
+<li>The <a href="../src/bin/mirr-hydrate.rs">MIRR Hydrator</a> ingests this JSON and maps the cells directly back into MIRR signals and reflexes.</li>
+<li>The compiled MIRR output is then lower-synthesized again via Yosys and formally verified using SAT Equivalence Checking (<code>equiv</code>) to guarantee absolute codegen parity and correct optimization.</li>
+</ul>
+</li>
+</ol>
+<h2 id="4-architectural-component-graphs">4. Architectural Component Graphs</h2>
+<h3 id="core-pipeline-architecture">Core Pipeline Architecture</h3>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph Core[Core Compiler Pipeline]
+        A[Lexer &amp; Parser] --&gt;|AST| B[ECS Hydration &amp; Validation]
+        B --&gt;|Entities| C[Type Checking &amp; Width Inference]
+        C --&gt;|Typed Netlist| D[Temporal Lowering]
+        D --&gt;|Deterministic IR| E[Emit Backends]
+    end
+
+    Input([.mirr source]) --&gt; A
+    E --&gt; V([SystemVerilog])
+    E --&gt; F([FIRRTL])
+    E --&gt; R([R-SPU Bytecode])
+
+    subgraph Roundtrip[Yosys Parity Roundtrip]
+        YosysIn([Original Verilog RTL]) --&gt;|yosys synth| YosysJSON[JSON Netlist]
+        YosysJSON --&gt;|mirr-hydrate| Input
+        V --&gt;|gold vs gate| SAT[Yosys SAT Equivalence Check]
+        YosysIn --&gt;|gold vs gate| SAT
+    end
+</code></pre>
+<h3 id="ecosystem-integration-map">Ecosystem Integration Map</h3>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph Core[Core Compiler]
+        Pipeline[mirr pipeline]
+    end
+
+    subgraph ControlPlane[Command &amp; Control]
+        MCP[mcp_server]
+        KB[mirr-kb-native]
+        Audit[mirr-audit]
+        Wave[mirr-wave]
+        ProofAudit[mirr-proof-audit]
+    end
+
+    subgraph Consumers[Consumer Surfaces]
+        WASM[mirr-wasm]
+        LRA[lra-cli]
+        VSCode[vscode-mirr]
+    end
+
+    Pipeline &lt;--&gt; KB
+    MCP --&gt; Pipeline
+    MCP --&gt; Audit
+    MCP --&gt; Wave
+    ProofAudit --&gt; Pipeline
+    WASM --&gt; Pipeline
+    LRA --&gt; Pipeline
+    VSCode --&gt; MCP
+</code></pre>
+<h2 id="45-formal-proofs-topology-proofs">4.5 Formal Proofs Topology (proofs/)</h2>
+<p>The repository maintains rigorous formal verification infrastructure in the <code>proofs/</code> directory:</p>
+<ul>
+<li><strong><code>proofs/compiler/</code></strong>: Coq/Rocq verification of AST simplification passes.
+<ul>
+<li><code>ConstFold.v</code>: Proves semantic preservation of constant folding on arithmetic expressions.</li>
+<li><code>Simplify.v</code>: Equivalence proofs for logic simplification rules.</li>
+</ul>
+</li>
+<li><strong><code>proofs/cert/</code></strong>: Formal specification and totality proofs of Proof-Carrying Code (PCC) boundary conditions.
+<ul>
+<li><code>Verifier.v</code>: Axiomatizes safety invariants for dynamic hardware and software bounds.</li>
+</ul>
+</li>
+<li><strong><code>proofs/mape_k/</code></strong>: Proves behavioral equivalence of software and hardware control loops.
+<ul>
+<li><code>Equivalence.v</code>: Relates abstract software MAPE-K logic to the synthesized gate-level representations.</li>
+</ul>
+</li>
+<li><strong><code>proofs/language/</code></strong>: Core MIRR language semantics and type soundness proofs.</li>
+<li><strong><code>proofs/rspu/</code></strong>: R-SPU ISA instruction set encoding bijectivity and behavioral proofs.</li>
+<li><strong><code>proofs/width/</code></strong>: FIRWINE width inference uniqueness and optimality theorems.</li>
+<li><strong>Tooling (<code>src/bin/mirr-proof-audit.rs</code>)</strong>:
+<ul>
+<li>Automatically maps and audits Rocq proof coverage against compiled AST nodes, reporting proof densities and gaps for formal CI gates.</li>
+</ul>
+</li>
+</ul>
+<h2 id="46-r-spu-16-core-architecture-rspuchip">4.6 R-SPU 16-Core Architecture (rspu_chip/)</h2>
+<p>The <code>rspu_chip/</code> directory houses the complete structural hardware layout of the R-SPU processor:</p>
+<ul>
+<li><strong>64-bit Tagged-Word Specification (<code>core/types.mirr</code>)</strong>:
+<ul>
+<li>Encodes the standard 64-bit word format: <code>[63:40]</code> Reserved (24 bits), <code>[39:36]</code> Provenance tracking (4 bits), <code>[35:32]</code> Hardware Type Tag (4 bits), and <code>[31:0]</code> Raw Data Payload (32 bits).</li>
+</ul>
+</li>
+<li><strong>Core Subsystems</strong>:
+<ul>
+<li><code>core/alu.mirr</code>: High-assurance ALU performing hardware type dispatch and dynamic arithmetic safety trap generation.</li>
+<li><code>core/regfile.mirr</code>: Bounded register file (256x64-bit tagged words) with concurrent dual read and single write lines.</li>
+<li><code>core/pipeline.mirr</code>: Bounded 5-stage pipeline wiring together Fetch (IF), Decode (ID), Execute (EX), Memory (MEM), and Writeback (WB) stages.</li>
+<li><code>core/core_top.mirr</code>: Top-level core wrapper integrating pipeline stages and exception routing.</li>
+</ul>
+</li>
+<li><strong>Verification Subsystems</strong>:
+<ul>
+<li><code>verification/pcc_verifier.mirr</code>: Safe IF-stage hardware gatekeeper enforcing dynamic verification bounds and instruction boundaries.</li>
+<li><code>verification/tmr_voter.mirr</code>: Triple-Modular Redundancy (TMR) majority voter mask to mitigate single-core physical faults.</li>
+</ul>
+</li>
+<li><strong>Interconnect &amp; Fabric</strong>:
+<ul>
+<li><code>interconnect/noc_router.mirr</code>: 16-port packet-switched Network-on-Chip (NoC) router supporting broadcast/star topology routing.</li>
+<li><code>rspu_top.mirr</code>: Top-level integration file wiring the 16 cores to the NoC router and verification voters.</li>
+</ul>
+</li>
+</ul>
+<h2 id="5-main-projects-at-a-glance">5. Main Projects At A Glance</h2>
+<h3 id="core-layer">Core Layer</h3>
+<table><thead><tr><th>Project</th><th>What it is</th><th>Architecture overview</th><th>Current phase/status</th></tr></thead><tbody>
+<tr><td><a href="../src"><code>src</code></a> / core compiler</td><td>The compiler engine</td><td>Front-end -&gt; semantic validation -&gt; type/width solving -&gt; temporal lowering -&gt; emit backends</td><td>Phases 0-7h complete; 7i+ in progress</td></tr>
+<tr><td><a href="../src/bin/mirr-hydrate.rs"><code>src/bin/mirr-hydrate.rs</code></a></td><td>MIRR Hydrator</td><td>Converts Yosys JSON technology-mapped netlists to structured MIRR files</td><td>Core component; complete and verified</td></tr>
+<tr><td><a href="../src/bin/mirr-proof-audit.rs"><code>src/bin/mirr-proof-audit.rs</code></a></td><td>Proof Auditor</td><td>Audits coverage of formal proofs across compiler AST and emission nodes</td><td>Phase 7i tool; initialized</td></tr>
+<tr><td><a href="../compiler_mirr"><code>compiler_mirr</code></a></td><td>Self-hosting compiler subset</td><td>MIRR-written bootstrap implementation</td><td>Stage-1 hosted self-hosting, in progress</td></tr>
+</tbody></table>
+<h3 id="control-plane-layer">Control Plane Layer</h3>
+<table><thead><tr><th>Project</th><th>What it is</th><th>Architecture overview</th><th>Current phase/status</th></tr></thead><tbody>
+<tr><td><code>MRT / Presidential Arsenal</code></td><td>The command/control plane</td><td><code>mirr-audit</code>, <code>mirr-brain</code>, <code>mirr-wave</code>, <code>mirr-general</code>, <code>mirr-lsp</code>; KB-lite local governance via <code>mcp_server</code></td><td>Shared governance/roadmap layer</td></tr>
+</tbody></table>
+<h3 id="consumer-bridge-layer">Consumer / Bridge Layer</h3>
+<table><thead><tr><th>Project</th><th>What it is</th><th>Architecture overview</th><th>Current phase/status</th></tr></thead><tbody>
+<tr><td><a href="../crates/mirr-wasm"><code>crates/mirr-wasm</code></a></td><td>Browser/WASM compiler API</td><td>wasm-bindgen facade over <code>run_pipeline</code></td><td>Consumer surface; parity-gated</td></tr>
+<tr><td><a href="../crates/mirr-arsenal-wasm"><code>crates/mirr-arsenal-wasm</code></a></td><td>Arsenal/RWFI2 contract bridge</td><td>WASM validation wrapper over core compiler</td><td>Consumer surface; parity-gated</td></tr>
+<tr><td><a href="../crates/lra-cli"><code>crates/lra-cli</code></a></td><td>Living Research Artifact CLI</td><td>Arsenal-facing CLI for local serving &amp; validation</td><td>Arsenal-facing CLI surface</td></tr>
+<tr><td><a href="../crates/mirr-mcp-control-plane"><code>crates/mirr-mcp-control-plane</code></a></td><td>MRT MCP bridge</td><td>Stdio MCP bridge dispatching to <code>mirr-*</code> CLI</td><td>Bridge surface; contract-tested</td></tr>
+</tbody></table>
+<h2 id="6-first-90-minutes-repository-onboarding-sequence">6. First 90 Minutes: Repository Onboarding Sequence</h2>
+<ol>
+<li>
+<p><strong>Read Product &amp; Constraints:</strong></p>
+<ul>
+<li><a href="../README.md"><code>README.md</code></a></li>
+<li><a href="../GEMINI.md"><code>GEMINI.md</code></a></li>
+</ul>
+</li>
+<li>
+<p><strong>Read Compiler API Surface:</strong></p>
+<ul>
+<li><a href="../src/lib.rs"><code>src/lib.rs</code></a></li>
+</ul>
+</li>
+<li>
+<p><strong>Read Entrypoint Binaries:</strong></p>
+<ul>
+<li><a href="../src/bin/mirr-compile/main.rs"><code>src/bin/mirr-compile/main.rs</code></a></li>
+<li><a href="../src/bin/mirr-general/main.rs"><code>src/bin/mirr-general/main.rs</code></a></li>
+</ul>
+</li>
+<li>
+<p><strong>Run Confidence Gate:</strong></p>
+<ul>
+<li><code>./target/debug/mirr-general ci --format json</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="7-roadmap-crosswalk">7. Roadmap Crosswalk</h2>
+<table><thead><tr><th>Phase</th><th>Status</th><th>What it is</th></tr></thead><tbody>
+<tr><td>Phase 0 - 4</td><td>Complete</td><td>Foundation through Width inference</td></tr>
+<tr><td>Phase 5</td><td>Complete</td><td>MAPE-K simulation harness</td></tr>
+<tr><td>Phase 6</td><td>Complete</td><td>Integration and visualization</td></tr>
+<tr><td>Phase 7a-d</td><td>Complete</td><td>Safety properties, pattern system, advanced types, S-expression IR</td></tr>
+<tr><td>Phase 7e</td><td>Complete</td><td>Hardened Temporal Simulator (Double-buffered, Cycle-accurate, Prev)</td></tr>
+<tr><td>Phase 7f</td><td>Complete</td><td>Proof-carrying code (PCC) infrastructure</td></tr>
+<tr><td>Phase 7g</td><td>Complete</td><td>Symbolic evaluation engine (Intervals, Fingerprints)</td></tr>
+<tr><td>Phase 7h</td><td>Complete</td><td>MAPE-K hardware realization (SV emitter &amp; verification)</td></tr>
+</tbody></table>
+<p>| Phase 7i | In Progress | Verified compilation chain (ConstFold proof &amp; audit tool) |
+| Phase 8a | In Progress | R-SPU Core Architecture (64-bit tagged-word pipeline) |</p>
+<h2 id="8-practical-pitfalls-in-this-workspace">8. Practical Pitfalls In This Workspace</h2>
+<ul>
+<li><strong>Environment Note:</strong> <code>cargo run --bin &lt;name&gt; -- &lt;args&gt;</code> is broken in this environment due to a rustup home-dir error. Always invoke compiled binaries directly (<code>./target/debug/&lt;name&gt;</code>).</li>
+<li>Do not trust stale status docs/logs over source and tests.</li>
+<li>Self-hosting is active but still evolving; parity tests are a better truth source than narrative status files.</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

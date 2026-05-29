@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIRR Compiler — File Tree &amp; Module Map — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="MIRR Compiler — File Tree &amp; Module Map — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MIRR Compiler — File Tree &amp; Module Map — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#repository-statistics">Repository Statistics</a></li>
+        <li><a href="#source-tree-src-35892-lines">Source Tree (`src/`) — 35,892 lines</a></li>
+        <li><a href="#test-suite-tests-59073-lines-110-files">Test Suite (`tests/`) — 59,073 lines, 110 files</a></li>
+        <li><a href="#rocq-proofs-proofs-2536-lines-16-files">Rocq Proofs (`proofs/`) — 2,536 lines, 16 files</a></li>
+        <li><a href="#paper-living-document-paper-6179-lines">Paper &amp; Living Document (`paper/`) — 6,179 lines</a></li>
+        <li><a href="#infrastructure">Infrastructure</a></li>
+        <li><a href="#compilation-pipeline-flow">Compilation Pipeline Flow</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Compiler — File Tree &amp; Module Map</h1>
+<blockquote>
+<p>Auto-generated 2026-03-17. 509K total lines, 293 Rust files, 3,469 tests passing.</p>
+</blockquote>
+<blockquote>
+<p>Snapshot note: this file is a dated module-tree snapshot, not the canonical topology source. For the current repository map, use <a href="../REPO_UNDERSTANDING.md">REPO_UNDERSTANDING.md</a>.</p>
+</blockquote>
+<h2 id="repository-statistics">Repository Statistics</h2>
+<table><thead><tr><th>Category</th><th>Files</th><th>Lines</th></tr></thead><tbody>
+<tr><td>Rust source (<code>src/</code>)</td><td>183</td><td>35,892</td></tr>
+<tr><td>Rust tests (<code>tests/</code>)</td><td>110</td><td>59,073</td></tr>
+<tr><td>Rocq proofs (<code>proofs/</code>)</td><td>16</td><td>2,536</td></tr>
+<tr><td>LaTeX paper (<code>paper/</code>)</td><td>23</td><td>6,179</td></tr>
+<tr><td>Documentation (<code>docs/</code>)</td><td>49</td><td>9,802</td></tr>
+<tr><td>Static site (<code>_site/</code>)</td><td>20</td><td>9,828</td></tr>
+<tr><td>Everything (all tracked)</td><td>293+</td><td><strong>508,997</strong></td></tr>
+</tbody></table>
+<h2 id="source-tree-src-35892-lines">Source Tree (<code>src/</code>) — 35,892 lines</h2>
+<pre><code>src/
+├── lib.rs                          82    Crate root, #![deny(warnings)]
+├── main.rs                        229    CLI entry point
+├── error.rs                       453    MirrError enum, error formatting
+├── span.rs                         96    Source span tracking
+├── pipeline.rs                    368    Compilation pipeline orchestration
+├── mirr_driver.rs                 260    Driver for multi-file compilation
+├── mirr_runtime.rs                318    Runtime support for MIRR execution
+├── simplify.rs                    414    Expression simplification engine
+├── suggest.rs                     134    Typo correction suggestions
+│
+├── ast/                           779    Abstract Syntax Tree
+│   ├── mod.rs                            Module, Signal, Assignment, Property
+│   ├── expr.rs                           Expr enum (14 variants incl. composites)
+│   └── types.rs                          SignalType (8 variants), BinaryOp, UnaryOp
+│
+├── lexer/                         197    Lexical analysis
+│   └── mod.rs                            Token types, lexer state machine
+│
+├── parser/                      1,802    Recursive-descent parser
+│   ├── mod.rs                            Top-level parse(), error recovery
+│   └── module_parser/                    Module-level parsing (signals, reflexes)
+│
+├── typeck/                      2,816    Type checking (Phase 2)
+│   ├── mod.rs                            infer_type(), check_binary/unary, E226
+│   └── extended/                         Pattern checks, width constraints
+│
+├── validation/                    589    Semantic validation
+│   └── semantic.rs                       Signal ref checks, prev() validation
+│
+├── totality/                      709    Totality checking (Phase 2b)
+│   ├── mod.rs                            Reflex completeness analysis
+│   ├── checks.rs                         Guard coverage algorithms
+│   └── types.rs                          TotalityCoverage, GuardSet
+│
+├── temporal/                    1,958    Temporal logic compilation (Phase 3)
+│   ├── mod.rs                            Temporal guard lowering
+│   └── low_level_ir/                     LTL → automaton compilation
+│
+├── width/                       2,232    Width inference engine (Phase 4)
+│   ├── mod.rs                            Constraint solver, SCC analysis
+│   ├── graph.rs                          Dependency graph construction
+│   └── types.rs                          Width, WidthConstraint, MAX_*
+│
+├── expand/                        920    Macro/template expansion
+│   ├── mod.rs                            Fragment expansion pipeline
+│   ├── rename.rs                         Signal renaming in expanded frags
+│   └── scoping.rs                        Scope validation for expansions
+│
+├── simplify.rs                    414    Bottom-up expression simplifier
+│
+├── sat/                         1,034    SAT-based reasoning
+│   ├── mod.rs                            Propositional satisfiability
+│   └── simplify_sat.rs                   SAT-guided simplification
+│
+├── symbolic/                    1,345    Symbolic reasoning engine (MEGA-5)
+│   └── mod.rs                            Interval arithmetic, pattern matching
+│
+├── sexpr/                       2,733    S-expression IR
+│   ├── mod.rs                            SExpr type, parser
+│   └── convert/                          AST ↔ S-expr round-trip
+│       ├── to_sexpr.rs                   AST → SExpr (iterative work-stack)
+│       ├── from_sexpr.rs                 SExpr → AST reconstruction
+│       └── parse_expr.rs                 Expression parsing from S-exprs
+│
+├── emit/                        7,569    Code generation backends
+│   ├── mod.rs                            Backend trait, format dispatch
+│   ├── verilog/                          SystemVerilog emission
+│   │   └── mod.rs                        SV modules, always blocks
+│   ├── firrtl.rs                         FIRRTL backend (iterative)
+│   ├── rspu_asm.rs                       R-SPU assembly emission
+│   ├── rspu_encoding/                    R-SPU binary encoding
+│   ├── rspu_sim/                         R-SPU cycle-accurate simulator
+│   ├── rspu_tagged.rs                    Tagged-word R-SPU emission
+│   ├── testbench.rs                      SystemVerilog testbench generation
+│   ├── dsp.rs                            DSP inference &amp; annotation
+│   ├── json_emit.rs                      JSON IR export
+│   ├── dot.rs                            Graphviz DOT export
+│   ├── scaffold.rs                       Scaffold/skeleton generation
+│   ├── mape_k_rtl/                       MAPE-K RTL monitor emission
+│   └── formal.rs                         Formal verification harnesses
+│
+├── mape_k/                      2,911    MAPE-K autonomic loop
+│   ├── mod.rs                            Monitor-Analyze-Plan-Execute-Knowledge
+│   └── bridge/                           RTL ↔ software bridge
+│
+├── diagnostic/                    511    Diagnostic reporting
+│   └── mod.rs                            Error/warning formatting, codes
+│
+├── cert/                          677    Compilation certificates
+│   └── mod.rs                            Hash-based build provenance
+│
+├── toolchain/                   1,392    External tool integration
+│   └── mod.rs                            Yosys, Verilator, Icarus, GHDL
+│
+├── lsp/                           568    Language Server Protocol
+│   └── mod.rs                            Diagnostics, hover, completions
+│
+├── bootstrap_runner/              619    Self-hosted test runner
+│   └── mod.rs                            Execute .mirr test suites
+│
+├── mirr_executor/                 660    Interpreter/executor
+│   └── mod.rs                            Step-based MIRR execution
+│
+└── bin/
+    └── mirr-compile/            1,517    Standalone compiler binary
+        └── main.rs                       Multi-format batch compilation
+</code></pre>
+<h2 id="test-suite-tests-59073-lines-110-files">Test Suite (<code>tests/</code>) — 59,073 lines, 110 files</h2>
+<pre><code>tests/
+├── mega1_typeck_verification_tests.rs      4,171   MEGA-1 type system
+├── typeck_extended_deep_tests.rs           2,766   Extended type checking
+├── mape_k_integration_tests.rs             2,171   MAPE-K integration
+├── bootstrap_runner_extended_tests.rs      2,125   Bootstrap runner
+├── mega2_sexpr_verification_tests.rs       2,070   MEGA-2 S-expr round-trip
+├── pattern_coverage_tests.rs               2,058   Pattern completeness
+├── emit_verilog_extended_tests.rs          2,052   SystemVerilog backend
+├── sexpr_convert_tests.rs                  1,810   S-expr conversion
+├── mape_k_bridge_tests.rs                  1,708   MAPE-K bridge
+├── rspu_encoding_extended_tests.rs         1,578   R-SPU encoding
+├── rspu_sim_extended_tests.rs              1,566   R-SPU simulator
+├── mega4_totality_verification_tests.rs    1,499   MEGA-4 totality
+├── mega3_rspu_verification_tests.rs        1,380   MEGA-3 R-SPU
+├── pattern_tests.rs                        1,348   Pattern matching
+├── parser_module_extended_tests.rs         1,232   Module parser
+├── formal_orchestration_tests.rs           1,080   Formal verification
+├── diagnostic_extended_tests.rs            1,056   Diagnostics
+├── mega5_symbolic_verification_tests.rs    1,027   MEGA-5 symbolic
+├── expand_extended_tests.rs                  976   Expansion
+├── width_solver_tests.rs                     906   Width solver
+├── ... (90 more test files)
+├── eda/                                          EDA tool integration
+│   └── run_eda_tests.sh                          Yosys/Verilator/eqy
+├── fixtures/                                     Test data
+│   ├── ast/                                      AST snapshots
+│   ├── netlist/                                  Netlist references
+│   ├── parse/                                    Parse fixtures
+│   ├── semantic/                                 Semantic fixtures
+│   └── tokens/                                   Lexer fixtures
+├── sim/                                          Simulation tests
+└── ui/                                           UI regression tests
+    ├── parse/                                    Parse error snapshots
+    └── semantic/                                 Semantic error snapshots
+</code></pre>
+<h2 id="rocq-proofs-proofs-2536-lines-16-files">Rocq Proofs (<code>proofs/</code>) — 2,536 lines, 16 files</h2>
+<pre><code>proofs/
+├── width/                          11 files
+│   ├── Solver.v                   475   Width solver correctness
+│   ├── Constraints.v                    Constraint system proofs
+│   ├── BitOps.v                         Bitwise operation lemmas
+│   ├── SCC/                             SCC algorithm proofs
+│   └── ...
+└── rspu/                            5 files
+    ├── Encoding.v                       Instruction encoding proofs
+    ├── TaggedWord.v                     Tagged word field proofs
+    └── test_fields.v                    Field extraction tests
+</code></pre>
+<h2 id="paper-living-document-paper-6179-lines">Paper &amp; Living Document (<code>paper/</code>) — 6,179 lines</h2>
+<pre><code>paper/
+├── living-doc/
+│   ├── main.tex                   222   Master document
+│   ├── metrics.tex                133   Metrics &amp; counters
+│   ├── ch-width.tex               239   Width inference chapter
+│   ├── ch-vision.tex              101   Vision &amp; architecture
+│   └── ...                              Additional chapters
+└── demos/
+    ├── mirr_wasm_bg.wasm          596K  WASM compiler binary
+    └── ...                              Playground assets
+</code></pre>
+<h2 id="infrastructure">Infrastructure</h2>
+<pre><code>.claude/commands/                        6 skill definitions
+.github/
+├── skills/                              6 SKILL.md specs
+└── workflows/ci.yml                     CI pipeline
+crates/
+├── lra-cli/                             LRA scaffolding tool
+└── mirr-wasm/                           WASM compilation target
+mcp_server/                              MCP language server
+_site/                              20   Static documentation site
+fuzz/                                    Fuzzing harnesses
+vscode-mirr/                             VS Code extension
+</code></pre>
+<h2 id="compilation-pipeline-flow">Compilation Pipeline Flow</h2>
+<pre><code>.mirr source
+  │
+  ├─ lexer/        → Token stream
+  ├─ parser/       → AST (ast/)
+  ├─ typeck/       → Type-checked AST
+  ├─ validation/   → Validated AST
+  ├─ totality/     → Completeness-checked AST
+  ├─ temporal/     → Temporal-lowered AST
+  ├─ width/        → Width-inferred AST
+  ├─ expand/       → Expanded AST
+  ├─ simplify      → Simplified AST
+  │
+  └─ emit/
+     ├─ verilog/       → .sv
+     ├─ firrtl         → .fir
+     ├─ rspu_asm       → .rasm
+     ├─ rspu_encoding  → binary
+     ├─ testbench      → _tb.sv
+     ├─ json_emit      → .json
+     ├─ dot            → .dot
+     ├─ scaffold       → skeleton
+     ├─ formal         → .sv + .sby
+     └─ mape_k_rtl     → monitors
+</code></pre>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

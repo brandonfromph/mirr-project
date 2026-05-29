@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testing Guide — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Testing Guide — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Testing Guide — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#test-organization">Test Organization</a></li>
+        <li><a href="#writing-tests">Writing Tests</a></li>
+          <li class="toc-h3"><a href="#unit-tests">Unit Tests</a></li>
+          <li class="toc-h3"><a href="#integration-tests">Integration Tests</a></li>
+        <li><a href="#test-conventions">Test Conventions</a></li>
+        <li><a href="#running-tests">Running Tests</a></li>
+        <li><a href="#test-coverage">Test Coverage</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>Testing Guide</h1>
+<p>MIRR has a comprehensive test suite with 3000+ tests covering all compiler subsystems.</p>
+<h2 id="test-organization">Test Organization</h2>
+<table><thead><tr><th>Directory</th><th>Contents</th></tr></thead><tbody>
+<tr><td><code>tests/</code></td><td>Integration tests</td></tr>
+<tr><td><code>src/*/</code></td><td>Unit tests (inline <code>#[cfg(test)]</code>)</td></tr>
+<tr><td><code>benches/</code></td><td>Benchmarks</td></tr>
+<tr><td><code>fuzz/</code></td><td>Fuzz targets</td></tr>
+</tbody></table>
+<h2 id="writing-tests">Writing Tests</h2>
+<h3 id="unit-tests">Unit Tests</h3>
+<p>Unit tests go inline in the module they test:</p>
+<pre><code class="language-rust"><span class="hl-cmt">#[cfg(test)]</span>
+<span class="hl-kw">mod</span> tests {
+    <span class="hl-kw">use</span> <span class="hl-kw">super</span>::<span class="hl-op">*</span>;
+
+    <span class="hl-cmt">#[test]</span>
+    <span class="hl-kw">fn</span> test_feature() {
+        <span class="hl-fn">assert_eq</span><span class="hl-op">!</span>(result, expected);
+    }
+}</code></pre>
+<h3 id="integration-tests">Integration Tests</h3>
+<p>Integration tests go in <code>tests/</code> directory:</p>
+<pre><code class="language-rust"><span class="hl-cmt">#![forbid(unsafe_code)]</span>
+<span class="hl-cmt">#![deny(warnings)]</span>
+
+<span class="hl-kw">use</span> nasa_rust_project::pipeline::{run_pipeline, <span class="hl-type">PipelineConfig</span>};
+
+<span class="hl-cmt">#[test]</span>
+<span class="hl-kw">fn</span> test_full_pipeline() {
+    <span class="hl-kw">let</span> source <span class="hl-op">=</span> <span class="hl-str">&quot;module test { signals { x: in bool } }&quot;</span>;
+    <span class="hl-kw">let</span> config <span class="hl-op">=</span> <span class="hl-type">PipelineConfig</span>::default();
+    <span class="hl-kw">let</span> result <span class="hl-op">=</span> run_pipeline(source, <span class="hl-op">&amp;</span>config);
+    <span class="hl-fn">assert</span><span class="hl-op">!</span>(result.is_ok());
+}</code></pre>
+<h2 id="test-conventions">Test Conventions</h2>
+<ol>
+<li><strong>File size limit</strong>: Test files must be ≤ 600 lines (CI enforced)</li>
+<li><strong>No unsafe code</strong>: All test files use <code>#![forbid(unsafe_code)]</code></li>
+<li><strong>Zero warnings</strong>: All test files use <code>#![deny(warnings)]</code></li>
+<li><strong>Bounded loops</strong>: All loops must have explicit upper bounds</li>
+<li><strong>Error codes</strong>: Use <code>[E-codes]</code> in assertions</li>
+</ol>
+<h2 id="running-tests">Running Tests</h2>
+<pre><code class="language-bash"><span class="hl-cmt"># All tests</span>
+<span class="hl-fn">cargo</span> <span class="hl-fn">test</span> --all
+
+<span class="hl-cmt"># With nextest (recommended)</span>
+<span class="hl-fn">cargo</span> nextest run
+
+<span class="hl-cmt"># Specific test</span>
+<span class="hl-fn">cargo</span> nextest run --<span class="hl-fn">test</span> riscv_integration_tests
+
+<span class="hl-cmt"># With output</span>
+<span class="hl-fn">cargo</span> <span class="hl-fn">test</span> -- --nocapture</code></pre>
+<h2 id="test-coverage">Test Coverage</h2>
+<table><thead><tr><th>Subsystem</th><th>Test Files</th><th>Approx Tests</th></tr></thead><tbody>
+<tr><td>Parser</td><td>5+</td><td>200+</td></tr>
+<tr><td>Type checker</td><td>3+</td><td>150+</td></tr>
+<tr><td>Width inference</td><td>4+</td><td>300+</td></tr>
+<tr><td>Temporal</td><td>3+</td><td>200+</td></tr>
+<tr><td>Emitters</td><td>5+</td><td>400+</td></tr>
+<tr><td>Symbolic</td><td>2+</td><td>200+</td></tr>
+<tr><td>MAPE-K</td><td>2+</td><td>300+</td></tr>
+<tr><td>S-expression</td><td>3+</td><td>200+</td></tr>
+<tr><td>Patterns</td><td>2+</td><td>100+</td></tr>
+<tr><td>Integration</td><td>10+</td><td>500+</td></tr>
+</tbody></table>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="nextest-guide.html">Nextest Guide</a> — Optimized test runner</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

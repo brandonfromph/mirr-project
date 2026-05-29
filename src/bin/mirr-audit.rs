@@ -99,7 +99,7 @@ fn main() -> anyhow::Result<()> {
         }
 
         let cmd = Args::command();
-        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
+        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd))?);
         return Ok(());
     }
 
@@ -114,37 +114,37 @@ fn main() -> anyhow::Result<()> {
     // D2: Attribute pattern scan
     let re_deprecated = Regex::new(
         &(String::from(r"#\[")
-            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100]).unwrap()
+            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100])?
             + r"\]|#\[allow\("
-            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100]).unwrap()
+            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100])?
             + r"\)\]"),
     )?;
     // D3: No unused blocks
     let re_dead_code = Regex::new(
         &(String::from(r"#\[allow\(")
-            + &String::from_utf8(vec![100, 101, 97, 100, 95, 99, 111, 100, 101]).unwrap()
+            + &String::from_utf8(vec![100, 101, 97, 100, 95, 99, 111, 100, 101])?
             + r"\)\]|#\[cfg\(never\)\]"),
     )?;
-    let str_1 = String::from_utf8(vec![111, 108, 100]).unwrap();
-    let str_2 = String::from_utf8(vec![108, 101, 103, 97, 99, 121]).unwrap();
+    let str_1 = String::from_utf8(vec![111, 108, 100])?;
+    let str_2 = String::from_utf8(vec![108, 101, 103, 97, 99, 121])?;
     let re_shim = Regex::new(
         &(String::from(r"\b(_")
-            + &String::from_utf8(vec![117, 110, 117, 115, 101, 100]).unwrap()
+            + &String::from_utf8(vec![117, 110, 117, 115, 101, 100])?
             + r"|_"
             + &str_1
             + r"|_"
-            + &String::from_utf8(vec![99, 111, 109, 112, 97, 116]).unwrap()
+            + &String::from_utf8(vec![99, 111, 109, 112, 97, 116])?
             + r"|_"
             + &str_2
             + r")\b|//.*("
-            + &String::from_utf8(vec![114, 101, 109, 111, 118, 101, 100]).unwrap()
+            + &String::from_utf8(vec![114, 101, 109, 111, 118, 101, 100])?
             + r"|"
-            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100]).unwrap()
+            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100])?
             + r"|TODO: remove)"),
     )?;
 
     // D7: No misleading comments (heuristic)
-    let str_3 = String::from_utf8(vec![115, 116, 97, 108, 101]).unwrap();
+    let str_3 = String::from_utf8(vec![115, 116, 97, 108, 101])?;
     let re_stale = Regex::new(
         &(String::from(r"//.*\b(")
             + &str_3

@@ -1,0 +1,224 @@
+[
+  {
+    "title": "MIRR Project Architecture & Directory Topology",
+    "url": "ARCHITECTURE.html",
+    "headings": ["1. Directory Map", "2. One-Screen Mental Model", "3. Data Flow Pathways", "4. Architectural Component Graphs", "Core Pipeline Architecture", "Ecosystem Integration Map", "4.5 Formal Proofs Topology (proofs/)", "4.6 R-SPU 16-Core Architecture (rspu_chip/)", "5. Main Projects At A Glance", "Core Layer", "Control Plane Layer", "Consumer / Bridge Layer", "6. First 90 Minutes: Repository Onboarding Sequence", "7. Roadmap Crosswalk", "8. Practical Pitfalls In This Workspace"],
+    "snippet": "Date: 2026-05-17"
+  },
+  {
+    "title": "ECS Migration Guide: From AST to Registry",
+    "url": "ECS_MIGRATION_GUIDE.html",
+    "headings": ["1. The Core Philosophy", "2. Migration Steps", "Step 1: Component Identification", "Step 2: Adaptive Factory Methods", "Step 3: Iterative Traversal (NASA P10)", "Step 4: Feedback Loops", "3. Benefits of ECS-Native Paths"],
+    "snippet": "This guide provides technical instructions for migrating legacy AST-based compiler passes to the modern Entity Component System (ECS) architecture."
+  },
+  {
+    "title": "Shift-Left QA: The Parity Testing Pattern",
+    "url": "QA_WORKFLOW.html",
+    "headings": ["1. The Parity Testing Pattern", "Why Use It?", "2. Implementation in MIRR", "The Workflow:", "3. Global Regression"],
+    "snippet": "The MIRR project employs a \"Shift-Left QA\" strategy to ensure that architectural refactorings—such as the transition from AST-based synthesis to ECS-native synthesis—never introduce regressions."
+  },
+  {
+    "title": "ARM Target Guide",
+    "url": "arm-target-guide.html",
+    "headings": ["Overview", "Register Mapping", "Memory-Mapped I/O", "Compilation", "Instruction Mapping", "IT Blocks", "See Also"],
+    "snippet": "The MIRR compiler includes an ARM Thumb-2 backend that translates R-SPU programs\ninto ARM assembly suitable for Cortex-M microcontrollers."
+  },
+  {
+    "title": "MIRR Compiler Benchmarks",
+    "url": "benchmarks.html",
+    "headings": ["Running", "Benchmark Suites", "Standard Pipeline Tiers", "Comparing changes"],
+    "snippet": "Criterion benchmarks for measuring parser, ECS transformations, simulation engines, and full-pipeline performance."
+  },
+  {
+    "title": "Consumer Contracts",
+    "url": "consumer-contracts.html",
+    "headings": ["Ownership", "Section C: Security Contract Obligations", "Default-Deny Policy", "Authentication Requirements", "Validation Behavior", "Rate-Limit Behavior", "Canonical Error Envelope Contract", "Section D: LRA Tool Namespace and Contracts (Wave 4)", "Overview and Namespace Conventions", "Role-Based Access Control for LRA Tools", "LRA Tool Catalog", "Rate Limiting for LRA Tools", "Example: Validating and Signing an LRA Project", "Example: Error Handling", "LRA Tool Argument Validation Reference", "Deprecation and Evolution"],
+    "snippet": "This document defines repo-wide consumer contracts used by architecture proposals."
+  },
+  {
+    "title": "Contributing",
+    "url": "contributing.html",
+    "headings": ["Coding Standards", "Mandatory for All Files", "NASA Power-of-10 Compliance", "Naming Conventions", "Error Code Allocation", "Campaign Workflow", "Quick Summary", "Scope Categories", "Testing Requirements", "Every New Feature Must Have Tests", "Test Organization", "Running Tests", "Conditional Skip Pattern", "Documentation Requirements", "See Also"],
+    "snippet": "This guide covers coding standards, campaign workflow, error code allocation, and testing requirements."
+  },
+  {
+    "title": "Documentation Index",
+    "url": "doc-index.html",
+    "headings": ["Status Legend", "Core Documentation", "Architecture References", "Self-Hosting", "Legacy", "Papers", "Proposal Archive", "See Also"],
+    "snippet": "Canonical index for all project documentation. Updated each campaign."
+  },
+  {
+    "title": "Error Codes",
+    "url": "error_codes.html",
+    "headings": ["Error Code Scheme", "WASM Builder Errors (E001–E004)", "Parse Errors — Module (E100–E166)", "Parse Errors — Expressions (E170–E181)", "Parse Errors -- MEGA-1 Type Annotations (E177–E183, E190–E197)", "Semantic Errors (E2xx)", "Temporal Errors (E3xx)", "Pattern Errors (E4xx)", "Semantic-level (E400)", "Parse-level (E401–E425)", "Width Inference Errors (E5xx)", "Type Errors (E6xx)", "Extended Type Errors -- MEGA-1 (E610--E625)", "R-SPU Emission Errors (E7xx)", "S-Expression Errors (E800--E815)", "Removed Variants", "Diagnostic Rendering (ERR-001)", "See Also", "E9xx — SAT Simplification", "E901–E910 — Build Certification (MEGA-16)", "E12xx — Testing & Tooling (MEGA-17)"],
+    "snippet": "Status: Active\nLast updated: 2026-03-20 (063: E001–E004 WASM builder)"
+  },
+  {
+    "title": "MIRR Compiler — File Tree & Module Map",
+    "url": "file-tree.html",
+    "headings": ["Repository Statistics", "Source Tree (`src/`) — 35,892 lines", "Test Suite (`tests/`) — 59,073 lines, 110 files", "Rocq Proofs (`proofs/`) — 2,536 lines, 16 files", "Paper & Living Document (`paper/`) — 6,179 lines", "Infrastructure", "Compilation Pipeline Flow"],
+    "snippet": "Auto-generated 2026-03-17. 509K total lines, 293 Rust files, 3,469 tests passing."
+  },
+  {
+    "title": "FPGA Targets Guide",
+    "url": "fpga-targets-guide.html",
+    "headings": ["Overview", "Supported FPGA families", "CLI name aliases", "Constraint file formats", "PCF -- Lattice iCE40", "LPF -- Lattice ECP5", "PDC -- Lattice Nexus", "XDC -- Xilinx 7-Series and UltraScale+", "Auto-generated XDC constraints for neonatal_respirator (Xilinx 7-Series)", "Fill in PACKAGE_PIN values for your board.", "SDC -- Intel Cyclone and Generic", "Auto-generated SDC constraints for neonatal_respirator (Intel Cyclone)", "Fill in pin assignments for your board.", "Build script generation", "Vivado Tcl (Xilinx)", "Quartus Tcl (Intel)", "Shell scripts (Lattice and Generic)", "Yosys and nextpnr integration", "SVA stripping", "Yosys synthesis commands", "Example usage", "Step 1: Compile to SystemVerilog", "Step 2: Generate FPGA scaffold", "Step 3: Fill in pin assignments", "Step 4: Run the build", "Target-specific details", "Clock primitives", "Default clock period", "I/O standards", "DSP mapping", "Resource bounds", "See Also"],
+    "snippet": "MIRR generates vendor-specific constraint files and build scripts for\nsix FPGA target families. This enables one-command synthesis-to-bitstream\nworkflows for prototyping safety-critical hardware monit..."
+  },
+  {
+    "title": "Glossary",
+    "url": "glossary.html",
+    "headings": ["See Also"],
+    "snippet": "Terminology and acronyms used throughout the MIRR project."
+  },
+  {
+    "title": "HLS Optimization Guide",
+    "url": "hls-guide.html",
+    "headings": ["Overview", "Usage", "Scheduling", "ASAP (As Soon As Possible)", "ALAP (As Late As Possible)", "Combined", "Resource Sharing", "Operation Binding", "See Also"],
+    "snippet": "The MIRR compiler includes a High-Level Synthesis (HLS) pass that optimizes\nhardware resource usage through scheduling, sharing, and binding."
+  },
+  {
+    "title": "Home",
+    "url": "index.html",
+    "headings": ["The Three Primitives", "Quick Example", "Documentation", "Getting Started", "License"],
+    "snippet": "MIRR programs are built from exactly three constructs. Every safety rule\nyou write uses only these:"
+  },
+  {
+    "title": "KB-Lite Design",
+    "url": "kb-lite-design.html",
+    "headings": ["Stack", "Scope", "Non-Goals"],
+    "snippet": "KB-lite is a repository-local capability used for proposal and governance workflows."
+  },
+  {
+    "title": "MIRR Logic Simplification & Constant Folding",
+    "url": "logic_simplification.html",
+    "headings": ["Overview", "1. ECS Parallel Constant Folding (Phase 3 Native)", "Architecture", "2. AST Iterative Simplification (Legacy / Bootstrap)", "Architecture", "3. Supported Rules", "Boolean Identity / Annihilation (8 rules)", "Boolean Idempotence / Absorption (5 rules)", "Comparison Constant Folding (6 rules)", "Arithmetic Identity / Annihilation (9 rules)", "Arithmetic Constant Folding (5 rules)", "4. CLI Tool", "5. Extensibility Roadmap"],
+    "snippet": "The simplification engine reduces boolean, comparison, and arithmetic expressions in MIRR before temporal lowering and hardware mapping."
+  },
+  {
+    "title": "MAPE-K Simulation Guide",
+    "url": "mape-k-guide.html",
+    "headings": ["What is MAPE-K?", "Architecture", "The five components", "Monitor (`src/mape_k/monitor.rs`)", "Analyzer (`src/mape_k/analyzer.rs`)", "Planner (`src/mape_k/planner.rs`)", "Executor (`src/mape_k/executor.rs`)", "Knowledge Base (`src/mape_k/knowledge.rs`)", "Bounded LTL properties", "Always -- G(P)", "EventuallyWithin -- F<=N(P)", "Persists -- P for N", "AlwaysImplies -- G(P -> Q)", "NeverImplies -- never (P -> Q)", "AlwaysFollowedBy -- always (P followed_by N Q)", "Signal predicates", "Adaptation actions", "SetSignal", "SwitchMode", "EmergencyStop", "Trigger conditions", "The neonatal monitoring scenario", "Scenario configuration", "Expected behavior", "Sensor model", "API entry points", "Running a simulation", "Reading the result", "Exporting the audit trail", "Bounded iteration guarantees", "Knowledge base and audit trail", "See Also"],
+    "snippet": "MIRR includes a deterministic MAPE-K autonomic simulator that validates\nwhether hardware monitors can observe and respond to runtime anomalies.\nUnlike purely static verification, the simulator exercis..."
+  },
+  {
+    "title": "Migration Guide",
+    "url": "migration-guide.html",
+    "headings": ["0.1.0 → 0.2.0", "For Rust API Consumers", "New enum variants on `PropertyFormula`", "New `directive` field on `PropertyDecl`", "New fields on `Module`", "New public types", "New public functions", "For JSON Netlist Consumers", "New top-level field: `schema_version`", "`properties` array is always present", "Property objects have new fields and values", "`pattern_origins` array (conditional)", "For MIRR Syntax / Tool Authors", "New keywords in `property` blocks", "New top-level keywords: `def` and `reflect`", "For Error Message Parsers", "0.2.0 → 0.3.0", "Campaign summary", "For Rust API Consumers", "For JSON Netlist Consumers", "For MIRR Syntax / Tool Authors", "For Error Message Parsers", "0.3.0 → 0.4.0 (Phase 3 ECS Migration)", "For Rust API Consumers", "For Error Message Parsers", "See Also"],
+    "snippet": "This guide covers breaking and notable changes between MIRR compiler versions.\nEach version section is organized by audience."
+  },
+  {
+    "title": "",
+    "url": "mirr_spec.html",
+    "headings": ["MIRR Language – Minimal Core Specification (Draft)", "1. Design goals", "2. Core concepts", "3. Core primitives", "4. Modules and full program structure", "5. Compiler passes (Phase 1+ roadmap connection)", "6. Immediate implementation targets (Phase 1)"],
+    "snippet": "Deprecated. This spec describes the Phase 1 minimal core only.\nFor the current language, see Tutorial and Type System.\nCurrent MIRR includes signed types (iN), property declarations, def/reflect\npatte..."
+  },
+  {
+    "title": "MIRR Runtime Interface (MRI) Specification",
+    "url": "mri-spec.html",
+    "headings": ["Overview", "Interface", "`mri_init`", "`mri_set_input`", "`mri_tick`", "`mri_get_output`", "`mri_check_property`", "`mri_destroy`", "`mri_run`", "Status Codes", "Constants", "Target Implementations", "Cross-Target Guarantee"],
+    "snippet": "Version: 1.0.0\nDate: 2026-03-20\nCampaign: MEGA-15 TARGET-PORTABLE"
+  },
+  {
+    "title": "Nextest Configuration Guide",
+    "url": "nextest-guide.html",
+    "headings": ["Installation", "Configuration", "Test Groups", "Usage", "Performance", "See Also"],
+    "snippet": "MIRR uses cargo-nextest for optimized test execution, especially for the 3000+ test suite."
+  },
+  {
+    "title": "",
+    "url": "phase2_temporal_guard_compiler.html",
+    "headings": ["Phase 2 & 3 — Temporal Guard Synthesis: Design Note", "1. Purpose", "2. Scope", "3. Module structure (NASA rule: no monolithic files)", "4. Safety constraints", "5. Adaptive strategy threshold", "6. Requirement-to-test traceability", "7. Phase 3 ECS Upgrades"],
+    "snippet": "Document ID: MIRR-PHASE3-TEMPORAL-001\nStatus: Active\nRevision: 2.0 — Phase 3 ECS Transition &amp; Deterministic Condition Lowering"
+  },
+  {
+    "title": "",
+    "url": "presidential-arsenal-roadmap.html",
+    "headings": [],
+    "snippet": "Exhaustive Analysis and Upgraded Formulation of the 8-Phase MIRR Arsenal Roadmap\nIntroduction to the MIRR Arsenal Paradigm\nThe deployment of autonomous, self-modifying, and safety-critical artificial ..."
+  },
+  {
+    "title": "Repository Topology",
+    "url": "repo-topology.html",
+    "headings": ["Core", "Control Plane", "First-Class Consumers", "Contract Rule"],
+    "snippet": "Canonical topology for first-class consumers in this workspace."
+  },
+  {
+    "title": "RISC-V Target Guide",
+    "url": "riscv-target-guide.html",
+    "headings": ["Overview", "Register Mapping", "Memory-Mapped I/O", "Compilation", "Instruction Mapping", "Example", "See Also"],
+    "snippet": "The MIRR compiler includes a RISC-V RV32I backend that translates R-SPU programs\ninto RISC-V assembly suitable for soft-core FPGA implementations."
+  },
+  {
+    "title": "Roadmap",
+    "url": "roadmap.html",
+    "headings": ["The Problem This Solves: The Autonomic Observability Gap", "What Makes MIRR Unique: Three Roles in One Language", "Why MIRR v2.2 Failed: The Lessons Built Into This Design", "Phase 0 – Foundation (Completed)", "Phase 1 – Mini MIRR: Reflex-Oriented DSL (Completed)", "Phase 2 – Temporal Guard Compiler (Cement2-Inspired, Completed)", "Phase 3 – Logic Simplifier (SmaRTLy-Inspired, Completed)", "Phase 4 – Bit-Width Inference (FIRWINE-Inspired, Completed)", "Phase 5 – MAPE-K Simulation Harness (Phase 5a Complete, 5b Complete)", "Phase 6 – Integration and Visualization (Completed)", "Phase 7a – Safety Properties & SVA Assertion Emission (Completed)", "Phase 7b – Homoiconic Pattern System (Completed)", "Phase 7c — Advanced Type System (Complete)", "Phase 7d — S-Expression IR (MEGA-2)", "Metaprogramming & Code Generation (Phase 7d extension, Complete)", "Phase 7e — R-SPU Instruction Set Architecture (Complete)", "Phase 7f — Proof-Carrying Code Infrastructure (Completed)", "Phase 7g — Symbolic Evaluation Engine (Completed)", "Phase 7h — MAPE-K Hardware Realization (Completed)", "Phase 7i — Verified Compilation Chain (In Progress)", "Phase 8a — R-SPU Core Architecture (In Progress)", "Phase 8b — Multi-Core Fabric & Tape-Out Preparation (Not Started)", "Phase 9 — Production Deployment & Certification (Not Started)", "The Ultimate Goal", "Key Benchmarks to Target", "Research Foundation", "Repository Structure", "Where to make changes", "See Also"],
+    "snippet": "This roadmap breaks the Reflexive Processing Unit (R‑SPU) concept into small, Rust‑based subprojects. Each step is intended to be realistically completable and to produce visible results."
+  },
+  {
+    "title": "R-SPU ISA v2 Specification",
+    "url": "rspu_isa_spec.html",
+    "headings": ["1. Overview", "2. Register File Architecture", "2.1 Register Partitions", "2.2 Tagged-Word Format", "3. Instruction Encoding", "3.1 Instruction Formats", "4. Instruction Set", "4.1 Register Tier (opcodes 0–3)", "4.2 ALU Tier (opcodes 4–6)", "4.3 Temporal Tier (opcodes 7–16)", "4.4 Safety Tier (opcodes 17–19)", "4.5 Exception Tier (opcodes 20–22) — NEW in v2", "4.6 Control Tier (opcodes 23, 27–28) — NEW in v2", "4.7 Tagged Tier (opcodes 24–26, 30) — NEW in v2", "4.8 Temporal Extension (opcode 29) — NEW in v2", "7. Execution Model", "7.1 Pipeline", "7.2 Cycle Semantics", "7.3 Program Termination", "7.4 Expression Evaluation", "8. Exception Model", "8.1 Exception Codes", "8.2 Exception Handler Table", "8.3 Exception Depth", "8.4 Exception Actions", "8.5 Mode-Dependent Default Behavior", "9. Dual-Mode Execution", "9.1 Reflex Mode", "9.2 Host Mode", "9.3 Mode Transitions", "10. Resource Limits", "11. Error Codes", "12. Pipeline Integration", "13. Assembly Output Format", "14. See Also"],
+    "snippet": "Status: Active (MEGA-3 delivered)\nISA Version: 2.1 (Added TAG_BRANCH)\nLast updated: 2026-05-11"
+  },
+  {
+    "title": "MIRR-CORE Self-Hosting Subset Specification",
+    "url": "self_hosting_core_spec.html",
+    "headings": ["1. Introduction", "2. Included Features (Frozen)", "2.1 Primitive Types", "2.2 Aggregate Types", "2.3 Control Flow", "2.4 Functions", "2.5 Modules", "2.6 Expressions", "2.7 Let Bindings and Mutation", "2.8 String Slices (Borrowed, Read-Only)", "2.9 References", "2.10 Constants", "3. Excluded Features (MIRR-CORE v1)", "4. Required Standard Library Primitives", "5. Determinism and Safety Rules (NASA-CORE)", "6. Grammar Summary (MIRR-CORE v1)", "7. Versioning and Stability", "8. Acceptance Criteria"],
+    "snippet": "Version: 1.0-draft\nStatus: Frozen for self-hosting milestone v1\nPurpose: Defines the minimal language feature set required for MIRR to implement its own compiler front-end (self-hosting)."
+  },
+  {
+    "title": "MIRR Self-Hosting IR Contract",
+    "url": "self_hosting_ir_contract.html",
+    "headings": ["1. Introduction", "2. Contract Levels", "Level 1 — AST (Abstract Syntax Tree)", "Level 2 — HIR (High-level IR)", "Level 3 — Temporal Netlist IR", "3. AST Contract (Level 1)", "3.1 Root — `MirrProgram`", "3.2 `Module`", "3.3 `SignalDecl`", "3.4 `SignalType`", "3.5 `Guard`", "3.6 `Reflex`", "3.7 `Assignment`", "3.8 `Expr`", "3.9 `BinaryOp` Enum Values", "3.10 `UnaryOp` Enum Values", "4. HIR Contract (Level 2)", "4.1 Root — `MirrHir`", "4.2 `ResolvedSignal`", "4.3 `ResolvedGuard`", "5. Temporal Netlist IR Contract (Level 3)", "5.1 Root — `TemporalNetlist`", "5.2 `CompiledGuard`", "5.3 `ConditionKind`", "5.4 `GeneratedSignal`", "5.5 `CompilationStatistics`", "6. Serialization Rules", "7. Canonical Example", "8. Schema Test Requirements", "9. Parity Rules", "10. Versioning"],
+    "snippet": "Version: 1.0-draft\nStatus: Frozen for self-hosting milestone v1\nPurpose: Canonical AST + HIR data contracts that both the Rust reference implementation and MIRR compiler modules must produce identical..."
+  },
+  {
+    "title": "MIRR Self-Hosting Milestone — v1",
+    "url": "self_hosting_milestone.html",
+    "headings": ["1  What \"Self-Hosting\" Means for MIRR", "2  Completed Tasks", "3  Architecture Overview", "4  MIRR-CORE Language Subset", "5  IR Contract", "6  Test Coverage Summary", "Integration Parity Tests (`tests/self_hosting_parity_tests.rs`)", "Expanded Self-Hosting Test Suites", "7  CLI Interface", "8  Release Checklist", "Compiler-in-MIRR Modules", "Standard Library", "Infrastructure", "9  Rust Reference Fallback"],
+    "snippet": "Status: ACHIEVED\nDate: 2026-03-01\nIR Contract Version: 1.0\nReference: docs/self_hosting_core_spec.md, docs/self_hosting_ir_contract.md"
+  },
+  {
+    "title": "Self-Hosting Status",
+    "url": "self_hosting_status.html",
+    "headings": ["Executive Summary", "Module Status", "Overall Progress", "Blockers", "Next Steps"],
+    "snippet": "Status: In Progress\nLast updated: 2026-03-20 (Campaign D)"
+  },
+  {
+    "title": "S-Expression IR Guide",
+    "url": "sexpr-guide.html",
+    "headings": ["What is the S-expression IR?", "When to use --emit sexpr", "The 8 SExpr variants", "Atoms", "Compound forms", "Tagged list conventions", "Round-trip property", "Using the round-trip in Rust", "Bounded evaluation model", "Resource bounds", "Evaluation state", "Supported special forms", "Hygienic macro expansion", "Reader macros", "Example output", "Error codes (E8xx)", "See Also"],
+    "snippet": "The S-expression intermediate representation (IR) provides a homoiconic\nencoding of MIRR programs. Every AST node maps to a unique S-expression\nform, enabling code-as-data transformations, hygienic ma..."
+  },
+  {
+    "title": "Symbolic Analysis Guide",
+    "url": "symbolic-guide.html",
+    "headings": ["Overview", "Abstract Domain", "Usage", "Transfer Functions", "Binary Operations", "Unary Operations", "Widening Operator", "Refinement Checking", "See Also"],
+    "snippet": "The MIRR compiler includes a symbolic analysis engine that performs abstract\ninterpretation to detect width violations and refine signal bounds."
+  },
+  {
+    "title": "Testing Guide",
+    "url": "testing-guide.html",
+    "headings": ["Test Organization", "Writing Tests", "Unit Tests", "Integration Tests", "Test Conventions", "Running Tests", "Test Coverage", "See Also"],
+    "snippet": "MIRR has a comprehensive test suite with 3000+ tests covering all compiler subsystems."
+  },
+  {
+    "title": "Tutorial",
+    "url": "tutorial.html",
+    "headings": ["Lesson 1: What is hardware and why it matters", "Software vs. hardware", "Why does this matter?", "What is a clock cycle?", "What is MIRR?", "Key terms", "Lesson 2: The three building blocks", "Signals: the wires", "Guards: the watchers", "Reflexes: the responders", "How they connect", "The module wrapper", "Lesson 3: Your first MIRR program", "The scenario", "Step 1: Create the file", "Step 2: Compile it", "Step 3: Try other output formats", "Lesson 4: Types and expressions", "Types", "Comparison operators", "Logical operators", "Arithmetic operators", "The `prev()` function", "Truth table: AND, OR, NOT", "Lesson 5: Temporal guards", "What \"temporal\" means", "The `for N cycles` clause", "How it works inside the chip", "Using `prev()` in guards", "Lesson 6: Properties", "What properties do", "The three property formulas (basic)", "The three property formulas (advanced)", "Directives: assert, cover, assume", "Properties do NOT generate hardware", "Lesson 7: Patterns", "The problem patterns solve", "Defining a pattern with `def` and `reflect`", "Using a pattern", "When to use patterns", "Lesson 8: Reading compiler output", "Verilog (`--emit verilog`)", "FIRRTL (`--emit firrtl`)", "R-SPU Assembly (`--emit rspu`)", "DOT (`--emit dot`)", "JSON (`--emit json`)", "Testbench (`--emit testbench`)", "S-expression IR (`--emit sexpr`)", "FPGA Scaffold (`--emit fpga_scaffold`)", "Build Script (`--emit build_script`)", "DSP (`--emit dsp`)", "Lesson 9: Common errors", "Error code categories", "[E1xx] Parse errors", "[E2xx] Semantic errors", "[E300] Temporal errors", "[E4xx] Pattern errors", "Lesson 10: What MIRR does NOT do", "No loops", "No functions", "No conditionals", "No variables", "No heap, no allocation", "No recursion", "No floating point", "Why so minimal?", "What to read next"],
+    "snippet": "A step-by-step guide for absolute beginners. No prior hardware experience\nrequired. You just need to be able to read code."
+  },
+  {
+    "title": "Type System",
+    "url": "type-system.html",
+    "headings": ["Signal Types", "Type Rules", "T1: Assignment Compatibility", "T2: Arithmetic Operators (`+`, `-`, `*`)", "T3: Shift Operators (`<<`, `>>`)", "T4: Logical Operators (`&&`, `||`)", "T5: XOR Operator (`^`)", "T6: Ordering Comparisons (`<`, `<=`, `>`, `>=`)", "T7: Equality Comparisons (`==`, `!=`)", "T8: Logical Not (`!`)", "T9: Arithmetic Negation (`-expr`)", "T10: Previous-tick (`prev(signal, delay)`)", "T11: Guard Conditions", "T12: Literal Inference", "The Cross-Category Rule", "TypeMap Output", "Error Codes", "Pipeline Integration", "MEGA-1 Type Annotations (Phase 7c -- Complete)", "Type Annotation Syntax", "Linearity", "Effect Qualification", "Refinement Types", "Clock Domain Qualifiers", "Phantom Tags", "Extended Error Codes (E610--E625)", "See Also"],
+    "snippet": "Status: Active\nMEGA-1 Extended: Refinement types, linear types, effect types, clock domains, phantom tags — all wired into the pipeline via typecheck_extended(). Opt-in with PipelineConfig::extended..."
+  },
+  {
+    "title": "NASA Power-of-10 — Web Edition (W1–W10)",
+    "url": "web-rules.html",
+    "headings": ["Compliance Record (2026-03-14)"],
+    "snippet": "Ten rules for safety-critical web development. Derived from audit of paper/ and docs/ sites."
+  }
+]

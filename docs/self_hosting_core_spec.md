@@ -14,6 +14,7 @@ MIRR-CORE is the **self-hostable subset** of the MIRR language. It contains exac
 - Parser (recursive descent / Pratt)
 - Semantic validator
 - Temporal guard lowering pass
+- Netlist emitter
 
 The goal is **stage-1 self-hosting**: the Rust runtime hosts and executes MIRR compiler modules, while the MIRR compiler modules themselves process MIRR source text. In a later stage, the MIRR compiler modules will compile themselves.
 

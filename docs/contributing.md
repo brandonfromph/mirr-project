@@ -42,13 +42,17 @@ Error codes are allocated per subsystem to avoid collisions:
 | Range | Subsystem | Module |
 |-------|-----------|--------|
 | E1xx | Parse errors (lexer + parser) | `src/lexer/`, `src/parser/` |
-| E2xx | Semantic / validation errors | `src/validation/` |
-| E3xx | Temporal compilation errors | `src/temporal/` |
+| E2xx | Semantic / validation errors | `src/ecs/semantic_validate.rs`, `src/validation/` |
+| E3xx | Temporal compilation errors | `src/temporal/`, `src/ecs/systems.rs` |
 | E4xx | Pattern matching errors | `src/expand/` |
 | E5xx | Width inference errors | `src/width/` |
 | E6xx | Extended type checking errors | `src/typeck/` |
 | E7xx | R-SPU backend errors | `src/emit/rspu.rs` |
-| E8xx | S-expression IR errors | `src/sexpr/` |
+| E8xx | S-expression / Struct errors | `src/sexpr/`, `src/ast/` |
+| E9xx | SAT / Equivalence errors | `src/sat/`, `src/verify/` |
+| E10xx | Symbolic analysis errors | `src/symbolic/` |
+| E11xx | Totality checker errors | `src/totality/` |
+| E12xx | Testing & Tooling errors | `src/tools/`, `src/emit/hls.rs` |
 
 When adding a new error code:
 1. Choose the next sequential number in the appropriate range

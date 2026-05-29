@@ -134,7 +134,7 @@ struct Cli {
     verify: Option<String>,
 }
 
-pub fn main() {
+pub fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
     if args.help_json {
@@ -163,8 +163,8 @@ pub fn main() {
             })
         }
         let cmd = Cli::command();
-        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
-        process::exit(0);
+        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd))?);
+        return Ok(());
     }
 
     let root_file = args.root_file.unwrap_or_else(|| {
@@ -307,22 +307,20 @@ pub fn main() {
             eprintln!("Error: R-SPU program not generated.");
             process::exit(1);
         }),
-        "riscv" => result
-            .rspu_program
-            .as_ref()
-            .map(|p| emit::riscv::emit_riscv_asm(p).unwrap())
-            .unwrap_or_else(|| {
-                eprintln!("Error emitting RISC-V.");
-                process::exit(1);
-            }),
-        "arm" => result
-            .rspu_program
-            .as_ref()
-            .map(|p| emit::arm::emit_arm_asm(p).unwrap())
-            .unwrap_or_else(|| {
-                eprintln!("Error emitting ARM.");
-                process::exit(1);
-            }),
+        "riscv" => {
+            let p = result
+                .rspu_program
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("Error emitting RISC-V."))?;
+            emit::riscv::emit_riscv_asm(p)?
+        }
+        "arm" => {
+            let p = result
+                .rspu_program
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("Error emitting ARM."))?;
+            emit::arm::emit_arm_asm(p)?
+        }
         "testbench" => emit::testbench::emit_testbench(result),
         "scaffold" => emit::fpga_scaffold::emit_constraints(result, &fpga_target),
         "build-script" => emit::fpga_scaffold::emit_build_script(result, &fpga_target),
@@ -335,8 +333,8 @@ pub fn main() {
                 .and_then(|p| p.certificate.as_ref())
                 .expect("Certificate missing");
             if let Some(path) = &args.output {
-                std::fs::write(path, cert_bytes).unwrap();
-                return;
+                std::fs::write(path, cert_bytes)?;
+                return Ok(());
             }
             cert_bytes.iter().map(|b| format!("{:02x}", b)).collect()
         }
@@ -356,7 +354,7 @@ pub fn main() {
     if (format == "verilog" || format == "sv") && args.testbench {
         let tb = emit::testbench::emit_testbench(result);
         let path = derive_path(&root_file, "_tb.sv");
-        std::fs::write(&path, tb).unwrap();
+        std::fs::write(&path, tb)?;
         eprintln!("Testbench written to {path}");
     }
 
@@ -364,7 +362,7 @@ pub fn main() {
         let constraints = emit::fpga_scaffold::emit_constraints(result, &fpga_target);
         let ext = fpga_target.constraint_extension();
         let constr_path = derive_path(&root_file, &format!(".{ext}"));
-        std::fs::write(&constr_path, constraints).unwrap();
+        std::fs::write(&constr_path, constraints)?;
         eprintln!("Constraints written to {constr_path}");
 
         let build = emit::fpga_scaffold::emit_build_script(result, &fpga_target);
@@ -376,14 +374,14 @@ pub fn main() {
             _ => "tcl",
         };
         let build_path = derive_path(&root_file, &format!("_build.{build_ext}"));
-        std::fs::write(&build_path, build).unwrap();
+        std::fs::write(&build_path, build)?;
         eprintln!("Build script written to {build_path}");
     }
 
     if let Some(path) = &args.sva_file {
         let sva_content = emit::verilog::emit_sva_bind_file(result);
         if !sva_content.is_empty() {
-            std::fs::write(path, sva_content).unwrap();
+            std::fs::write(path, sva_content)?;
         }
     }
 
@@ -409,6 +407,7 @@ pub fn main() {
             args.toolchain_path.as_deref(),
         );
     }
+    Ok(())
 }
 
 pub(crate) fn derive_path(input_path: &str, suffix: &str) -> String {

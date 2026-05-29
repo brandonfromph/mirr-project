@@ -98,7 +98,7 @@ module autonomous_flight_controller {
         config.simplify = true;
 
         let result = run_pipeline(src, &config);
-        
+
         match &result {
             Ok(_) => println!("Compilation successful!"),
             Err(e) => {

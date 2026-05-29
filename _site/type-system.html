@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Type System — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Type System — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Type System — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#signal-types">Signal Types</a></li>
+        <li><a href="#type-rules">Type Rules</a></li>
+          <li class="toc-h3"><a href="#t1-assignment-compatibility">T1: Assignment Compatibility</a></li>
+          <li class="toc-h3"><a href="#t2-arithmetic-operators">T2: Arithmetic Operators (`+`, `-`, `*`)</a></li>
+          <li class="toc-h3"><a href="#t3-shift-operators">T3: Shift Operators (`&lt;&lt;`, `&gt;&gt;`)</a></li>
+          <li class="toc-h3"><a href="#t4-logical-operators">T4: Logical Operators (`&amp;&amp;`, `||`)</a></li>
+          <li class="toc-h3"><a href="#t5-xor-operator">T5: XOR Operator (`^`)</a></li>
+          <li class="toc-h3"><a href="#t6-ordering-comparisons">T6: Ordering Comparisons (`&lt;`, `&lt;=`, `&gt;`, `&gt;=`)</a></li>
+          <li class="toc-h3"><a href="#t7-equality-comparisons">T7: Equality Comparisons (`==`, `!=`)</a></li>
+          <li class="toc-h3"><a href="#t8-logical-not">T8: Logical Not (`!`)</a></li>
+          <li class="toc-h3"><a href="#t9-arithmetic-negation-expr">T9: Arithmetic Negation (`-expr`)</a></li>
+          <li class="toc-h3"><a href="#t10-previous-tick-prevsignal-delay">T10: Previous-tick (`prev(signal, delay)`)</a></li>
+          <li class="toc-h3"><a href="#t11-guard-conditions">T11: Guard Conditions</a></li>
+          <li class="toc-h3"><a href="#t12-literal-inference">T12: Literal Inference</a></li>
+        <li><a href="#the-cross-category-rule">The Cross-Category Rule</a></li>
+        <li><a href="#typemap-output">TypeMap Output</a></li>
+        <li><a href="#error-codes">Error Codes</a></li>
+        <li><a href="#pipeline-integration">Pipeline Integration</a></li>
+        <li><a href="#mega-1-type-annotations-phase-7c-complete">MEGA-1 Type Annotations (Phase 7c -- Complete)</a></li>
+          <li class="toc-h3"><a href="#type-annotation-syntax">Type Annotation Syntax</a></li>
+          <li class="toc-h3"><a href="#linearity">Linearity</a></li>
+          <li class="toc-h3"><a href="#effect-qualification">Effect Qualification</a></li>
+          <li class="toc-h3"><a href="#refinement-types">Refinement Types</a></li>
+          <li class="toc-h3"><a href="#clock-domain-qualifiers">Clock Domain Qualifiers</a></li>
+          <li class="toc-h3"><a href="#phantom-tags">Phantom Tags</a></li>
+          <li class="toc-h3"><a href="#extended-error-codes-e610-e625">Extended Error Codes (E610--E625)</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Type System Reference</h1>
+<blockquote>
+<p><strong>Status:</strong> Active
+<strong>MEGA-1 Extended:</strong> Refinement types, linear types, effect types, clock domains, phantom tags — all wired into the pipeline via <code>typecheck_extended()</code>. Opt-in with <code>PipelineConfig::extended_typecheck</code>.
+<strong>Module:</strong> <code>src/typeck/mod.rs</code>
+<strong>Campaigns:</strong> TYPE-001 through TYPE-005, FOUNDATION-001, MEGA-1, MEGA-1b
+<strong>Error codes:</strong> E601–E625</p>
+</blockquote>
+<p>The MIRR type checker runs after semantic validation and before simplification.
+It enforces signedness consistency across all expressions: guard conditions,
+reflex assignments, and property formulas.</p>
+<hr />
+<h2 id="signal-types">Signal Types</h2>
+<p>MIRR has three categories of signal types:</p>
+<table><thead><tr><th>Category</th><th>Types</th><th>Representation</th></tr></thead><tbody>
+<tr><td>Boolean</td><td><code>bool</code></td><td>1-bit logical (true/false)</td></tr>
+<tr><td>Unsigned</td><td><code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code></td><td>N-bit unsigned integer</td></tr>
+<tr><td>Signed</td><td><code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code></td><td>N-bit two's complement signed integer</td></tr>
+</tbody></table>
+<p>Declared in MIRR source:</p>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">example</span> {
+    <span class="mirr-name">signals</span> {
+        <span class="mirr-name">sensor</span>: <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>
+        <span class="mirr-name">offset</span>: <span class="mirr-dir">in</span> <span class="mirr-type">i16</span>
+        <span class="mirr-name">alarm</span>:  <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>
+        <span class="mirr-name">error_code</span>: <span class="mirr-dir">out</span> <span class="mirr-type">u8</span>
+    }
+}</code></pre>
+<hr />
+<h2 id="type-rules">Type Rules</h2>
+<h3 id="t1-assignment-compatibility">T1: Assignment Compatibility</h3>
+<p>An assignment <code>target = expr</code> requires the expression type to be compatible
+with the target signal type. Compatible means:</p>
+<ul>
+<li><strong>Exact match</strong> — always accepted</li>
+<li><strong>Bool &lt;-&gt; Unsigned(1)</strong> — bidirectional promotion</li>
+<li><strong>Unsigned(N) -&gt; Unsigned(M)</strong> where N &lt;= M — safe zero-extension</li>
+<li><strong>Signed(N) -&gt; Signed(M)</strong> where N &lt;= M — safe sign-extension</li>
+<li><strong>Signed &lt;-&gt; Unsigned</strong> — always rejected (E602)</li>
+</ul>
+<h3 id="t2-arithmetic-operators">T2: Arithmetic Operators (<code>+</code>, <code>-</code>, <code>*</code>)</h3>
+<ul>
+<li>Both operands must be numeric (not Bool — E603)</li>
+<li>Both operands must be the same category (both signed or both unsigned — E608)</li>
+<li>Result width = <code>max(left_width, right_width)</code>, preserving signedness</li>
+</ul>
+<h3 id="t3-shift-operators">T3: Shift Operators (<code>&lt;&lt;</code>, <code>&gt;&gt;</code>)</h3>
+<ul>
+<li>Both operands must be numeric (not Bool — E603)</li>
+<li>Both must be same category (signed/unsigned — E608)</li>
+<li>Result width = left operand width, preserving signedness</li>
+</ul>
+<h3 id="t4-logical-operators">T4: Logical Operators (<code>&amp;&amp;</code>, <code>||</code>)</h3>
+<ul>
+<li>Both operands must be <code>Bool</code> (E604)</li>
+<li>Result type: <code>Bool</code></li>
+</ul>
+<h3 id="t5-xor-operator">T5: XOR Operator (<code>^</code>)</h3>
+<ul>
+<li>Both operands must match types (E607)</li>
+<li>Bool &lt;-&gt; Unsigned(1) allowed</li>
+<li>Result type: left operand type</li>
+</ul>
+<h3 id="t6-ordering-comparisons">T6: Ordering Comparisons (<code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>)</h3>
+<ul>
+<li>Cannot compare <code>Bool</code> values (E605)</li>
+<li>Cannot compare signed vs unsigned (E605)</li>
+<li>Result type: <code>Bool</code></li>
+</ul>
+<h3 id="t7-equality-comparisons">T7: Equality Comparisons (<code>==</code>, <code>!=</code>)</h3>
+<ul>
+<li>Both operands must be same category: both Bool, both Unsigned, or both Signed (E606)</li>
+<li>Result type: <code>Bool</code></li>
+</ul>
+<h3 id="t8-logical-not">T8: Logical Not (<code>!</code>)</h3>
+<ul>
+<li>Works on <code>Bool</code>, <code>Unsigned</code>, and <code>Signed</code></li>
+<li>Result type: same as operand</li>
+</ul>
+<h3 id="t9-arithmetic-negation-expr">T9: Arithmetic Negation (<code>-expr</code>)</h3>
+<blockquote>
+<p>[!WARNING]
+Negating an unsigned value produces a signed result one bit wider:
+<code>-(u8)</code> yields <code>i9</code>. This is intentional -- two's complement negation
+requires the sign bit. Plan your signal widths accordingly.</p>
+</blockquote>
+<ul>
+<li><code>Unsigned(N)</code> -&gt; <code>Signed(N+1)</code> — two's complement requires one extra bit</li>
+<li><code>Signed(N)</code> -&gt; <code>Signed(N)</code> — preserves width</li>
+<li><code>Bool</code> -&gt; error (E609) — use <code>!</code> for logical negation</li>
+</ul>
+<h3 id="t10-previous-tick-prevsignal-delay">T10: Previous-tick (<code>prev(signal, delay)</code>)</h3>
+<ul>
+<li>Preserves the declared type of the signal</li>
+<li>Delay is a compile-time constant (not type-checked)</li>
+</ul>
+<h3 id="t11-guard-conditions">T11: Guard Conditions</h3>
+<ul>
+<li>Guard conditions must evaluate to <code>Bool</code> (E601)</li>
+</ul>
+<h3 id="t12-literal-inference">T12: Literal Inference</h3>
+<ul>
+<li>Boolean literals (<code>true</code>, <code>false</code>) -&gt; <code>Bool</code></li>
+<li>Integer literals -&gt; <code>Unsigned(min_bits)</code> where min_bits is the minimum
+bit width needed to represent the value</li>
+</ul>
+<hr />
+<h2 id="the-cross-category-rule">The Cross-Category Rule</h2>
+<blockquote>
+<p>[!IMPORTANT]
+Signed and unsigned types never mix in the same expression. There is no
+implicit conversion. This eliminates an entire class of bugs common in
+C/C++ where signed-to-unsigned promotion causes unexpected behavior.</p>
+</blockquote>
+<p>The fundamental invariant: <strong>signed and unsigned types never mix in the same
+expression</strong>. This eliminates an entire class of bugs common in C/C++ where
+implicit signed-to-unsigned conversion causes unexpected behavior.</p>
+<pre><code class="language-mirr"><span class="mirr-cmt">// REJECTED — E608: cannot mix signed and unsigned</span>
+<span class="mirr-name">signals</span> {
+    <span class="mirr-name">a</span>: <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>
+    <span class="mirr-name">b</span>: <span class="mirr-dir">in</span> <span class="mirr-type">i16</span>
+}
+<span class="mirr-reflex">reflex</span> <span class="mirr-name">always_on</span> {
+    <span class="mirr-cmt">// error_val = a + b;  // E608</span>
+}
+
+<span class="mirr-cmt">// CORRECT — explicit same-category usage</span>
+<span class="mirr-name">signals</span> {
+    <span class="mirr-name">a</span>: <span class="mirr-dir">in</span> <span class="mirr-type">i16</span>
+    <span class="mirr-name">b</span>: <span class="mirr-dir">in</span> <span class="mirr-type">i16</span>
+}
+<span class="mirr-reflex">reflex</span> <span class="mirr-name">always_on</span> {
+    <span class="mirr-name">result</span> <span class="mirr-op">=</span> <span class="mirr-name">a</span> <span class="mirr-op">+</span> <span class="mirr-name">b</span>;  <span class="mirr-cmt">// OK: both signed</span>
+}</code></pre>
+<hr />
+<h2 id="typemap-output">TypeMap Output</h2>
+<p>The type checker returns a <code>TypeMap</code> (<code>HashMap&lt;*const Expr, SignalType&gt;</code>) that
+maps every visited expression node (by pointer identity) to its inferred type.
+Downstream passes (width inference, R-SPU emission) can query this map to
+determine signedness without re-walking expression trees.</p>
+<pre><code class="language-rust"><span class="hl-kw">use</span> mirr::{run_pipeline, <span class="hl-type">PipelineConfig</span>};
+
+<span class="hl-kw">let</span> config <span class="hl-op">=</span> <span class="hl-type">PipelineConfig</span> {
+    typecheck: <span class="hl-num">true</span>,
+    <span class="hl-cmt">// ... other fields</span>
+};
+<span class="hl-kw">let</span> result <span class="hl-op">=</span> run_pipeline(source, config)?;
+<span class="hl-kw">let</span> type_map <span class="hl-op">=</span> <span class="hl-op">&amp;</span>result.type_map;  <span class="hl-cmt">// Option&lt;TypeMap&gt;</span></code></pre>
+<p>The TypeMap is now wired into the compilation pipeline and will be consumed
+by width inference in a future update (proposal 025, Section F). An extended
+type map (<code>ExtendedTypeMap</code>) is defined in <code>src/typeck/extended.rs</code> for
+MEGA-1 programs.</p>
+<hr />
+<h2 id="error-codes">Error Codes</h2>
+<table><thead><tr><th>Code</th><th>Rule</th><th>Description</th></tr></thead><tbody>
+<tr><td>E601</td><td>T11</td><td>Guard condition must be <code>Bool</code></td></tr>
+<tr><td>E602</td><td>T1</td><td>Assignment type incompatible with target signal</td></tr>
+<tr><td>E603</td><td>T2/T3</td><td>Arithmetic operator requires numeric operands (not Bool)</td></tr>
+<tr><td>E604</td><td>T4</td><td>Logical operator requires <code>Bool</code> operands</td></tr>
+<tr><td>E605</td><td>T6</td><td>Ordering comparison on <code>Bool</code> or signed/unsigned mismatch</td></tr>
+<tr><td>E606</td><td>T7</td><td>Equality comparison across type categories</td></tr>
+<tr><td>E607</td><td>T5</td><td>XOR requires matching types</td></tr>
+<tr><td>E608</td><td>T2/T3</td><td>Arithmetic operator cannot mix signed and unsigned operands</td></tr>
+<tr><td>E609</td><td>T9</td><td>Arithmetic negation cannot be applied to <code>Bool</code></td></tr>
+</tbody></table>
+<hr />
+<h2 id="pipeline-integration">Pipeline Integration</h2>
+<p>Type checking is optional and controlled by <code>PipelineConfig::typecheck</code>:</p>
+<pre><code class="language-rust"><span class="hl-kw">let</span> config <span class="hl-op">=</span> <span class="hl-type">PipelineConfig</span> {
+    typecheck: <span class="hl-num">true</span>,   <span class="hl-cmt">// Enable type checking (default: true)</span>
+    <span class="hl-cmt">// ...</span>
+};</code></pre>
+<p>When enabled, the type checker runs between semantic validation (Step 4) and
+simplification (Step 6) in the pipeline. If disabled, downstream passes still
+function correctly but without signedness enforcement.</p>
+<hr />
+<h2 id="mega-1-type-annotations-phase-7c-complete">MEGA-1 Type Annotations (Phase 7c -- Complete)</h2>
+<blockquote>
+<p><strong>Status:</strong> Complete (all sections of proposals 025 + 027 delivered). Extended type checker wired into pipeline.
+<strong>Module:</strong> <code>src/typeck/extended.rs</code> (2138 lines)
+<strong>Error codes:</strong> E610--E625</p>
+</blockquote>
+<p>MIRR's type system is being extended with compile-time annotations that
+encode hardware constraints directly in the type language. All annotations
+are opt-in -- existing programs remain valid. Annotations generate zero
+additional hardware; they are checked at compile time only.</p>
+<h3 id="type-annotation-syntax">Type Annotation Syntax</h3>
+<p>Signal declarations now support optional qualifier and constraint syntax:</p>
+<pre><code class="language-mirr"><span class="mirr-signal">signal</span> <span class="mirr-name">sensor</span>: <span class="mirr-dir">in</span> <span class="mirr-name">linear</span> <span class="mirr-type">u16</span> <span class="mirr-name">where</span> <span class="mirr-num">0</span>..<span class="mirr-num">1023</span> <span class="mirr-ann">@clk_fast</span> <span class="mirr-tag">#Sensor</span>;</code></pre>
+<p>Grammar:</p>
+<pre><code class="language-text">&lt;kind&gt; [linear] [stateful|pure] &lt;base_type&gt; [where &lt;refinement&gt;] [@&lt;clock&gt;] [#&lt;Tag&gt;]
+</code></pre>
+<h3 id="linearity">Linearity</h3>
+<p><code>linear</code> signals must be consumed exactly once per clock cycle. This
+prevents the hardware anti-pattern of multiple drivers on a single net.</p>
+<h3 id="effect-qualification">Effect Qualification</h3>
+<ul>
+<li><code>stateful</code> -- signal carries state across clock cycles (implies register)</li>
+<li><code>pure</code> -- signal is purely combinational (no register inference)</li>
+</ul>
+<h3 id="refinement-types">Refinement Types</h3>
+<p><code>where</code> clauses constrain signal value ranges at compile time:</p>
+<ul>
+<li><code>where 0..1023</code> -- inclusive range</li>
+<li><code>where value &lt; 1024</code> -- predicate form</li>
+</ul>
+<h3 id="clock-domain-qualifiers">Clock Domain Qualifiers</h3>
+<p><code>@domain</code> annotations tag signals with their clock domain. Cross-domain
+assignments without explicit synchronizers produce E618.</p>
+<h3 id="phantom-tags">Phantom Tags</h3>
+<p><code>#Tag</code> annotations add zero-cost provenance tracking. Mismatched phantom
+tags in assignments produce E620.</p>
+<h3 id="extended-error-codes-e610-e625">Extended Error Codes (E610--E625)</h3>
+<table><thead><tr><th>Code</th><th>Rule</th><th>Description</th></tr></thead><tbody>
+<tr><td>E610</td><td>REF-BOUND</td><td>Refinement lower bound exceeds upper bound</td></tr>
+<tr><td>E611</td><td>REF-RANGE</td><td>Value outside refinement range at compile time</td></tr>
+<tr><td>E612</td><td>REF-WIDTH</td><td>Refinement bound exceeds declared bit-width capacity</td></tr>
+<tr><td>E613</td><td>LIN-UNUSED</td><td>Linear signal declared but never consumed</td></tr>
+<tr><td>E614</td><td>LIN-DOUBLE</td><td>Linear signal consumed more than once</td></tr>
+<tr><td>E615</td><td>LIN-ESCAPE</td><td>Linear signal escapes owning module</td></tr>
+<tr><td>E616</td><td>EFF-PURE</td><td>Stateful operation in pure context</td></tr>
+<tr><td>E617</td><td>EFF-MIX</td><td>Stateful signal used in pure expression</td></tr>
+<tr><td>E618</td><td>CLK-CROSS</td><td>Clock domain crossing without synchronizer</td></tr>
+<tr><td>E619</td><td>CLK-UNDEF</td><td>Reference to undeclared clock domain</td></tr>
+<tr><td>E620</td><td>PHT-MISMATCH</td><td>Phantom tag mismatch</td></tr>
+<tr><td>E621</td><td>PHT-UNDEF</td><td>Reference to undeclared phantom tag</td></tr>
+<tr><td>E622</td><td>NAT-OVERFLOW</td><td>Type-level natural exceeds MAX_TYPE_NAT</td></tr>
+<tr><td>E623</td><td>NAT-MISMATCH</td><td>Dimension mismatch</td></tr>
+<tr><td>E624</td><td>DEP-MISMATCH</td><td>Dependent type parameter mismatch</td></tr>
+<tr><td>E625</td><td>SES-PROTOCOL</td><td>Session type protocol violation</td></tr>
+</tbody></table>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="error_codes.html">Error Codes</a> — Full error code catalogue (E6xx section)</li>
+<li><a href="tutorial.md">Tutorial</a> — Lesson 8: Reading compiler output</li>
+<li><a href="rspu_isa_spec.md">R-SPU ISA Spec</a> — How types map to R-SPU registers</li>
+<li><a href="roadmap.html">Roadmap</a> — TYPE campaigns overview</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

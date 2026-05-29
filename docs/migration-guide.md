@@ -10,7 +10,7 @@ Each version section is organized by audience.
 
 ## 0.1.0 → 0.2.0
 
-{: .note }
+> [!NOTE]
 > All new fields use `#[serde(default)]`, so JSON deserialization of data
 > produced by older compiler versions continues to work without changes.
 
@@ -20,7 +20,7 @@ Each version section is organized by audience.
 
 ### New enum variants on `PropertyFormula`
 
-{: .important }
+> [!IMPORTANT]
 > If your code matches on `PropertyFormula` without a wildcard arm, you
 > must add cases for the three new variants or compilation will fail.
 
@@ -184,7 +184,7 @@ categorize errors programmatically.
 
 ## 0.2.0 → 0.3.0
 
-{: .warning }
+> [!WARNING]
 > Version 0.3.0 introduces signed types, a type checker, and the R-SPU
 > backend. Code that matches exhaustively on `SignalType`, `UnaryOp`, or
 > `PatternParamKind` will require updates.
@@ -325,6 +325,37 @@ The full error code table (0.1.0 through 0.3.0) is:
 | `[E6xx]` (E601–E609) | Type errors |
 | `[E7xx]` (E701–E715) | R-SPU backend errors |
 | `[E8xx]` (E800–E815) | S-expression errors |
+
+---
+
+## 0.3.0 → 0.4.0 (Phase 3 ECS Migration)
+
+> [!WARNING]
+> Version 0.4.0 introduces the Data-Oriented Entity Component System (ECS) architecture. AST `Expr` nodes are no longer used for logic evaluation in production pipelines; all expressions are lowered into flat contiguous arrays in `src/ecs/registry.rs`.
+
+### For Rust API Consumers
+
+#### New ECS Pipeline
+The compilation pipeline now centers entirely around the ECS `Registry`. The `Expr` AST tree is strictly used for the parsing phase and legacy bootstrap tools. If your code directly manipulates `Expr` enum variants for passes like constant folding, it must be rewritten to iterate over `Registry` component arrays.
+
+#### New `PipelineConfig` Fields
+Several new execution controls have been added:
+- `bootstrap_mode`: Runs the typechecker in a relaxed hydration mode.
+- `sat_simplify`: Enables formal SAT-based logic simplification.
+- `mape_k`: Runs the MAPE-K autonomic simulation pass.
+- `emit_mape_k_rtl`: Emits full SystemVerilog logic from the MAPE-K simulation.
+
+#### Rayon Concurrency
+Systems in `src/ecs/systems.rs` (e.g., `parallel_constant_folding_system`) heavily utilize `rayon`. To prevent thread starvation, avoid invoking the MIRR pipeline from within external tight `rayon` threadpools without allocating capacity.
+
+### For Error Message Parsers
+New structured error code ranges were introduced:
+| Range | Category | Example |
+|-------|----------|---------|
+| `[E9xx]` | SAT / Equivalence | `Sat error: [E901] Receipt generation failed.` |
+| `[E10xx]`| Symbolic Analysis | `Symbolic error: [E1003] Signal limit exceeded.` |
+| `[E11xx]`| Totality | `Totality error: [E1100] Fallback.` |
+| `[E12xx]`| Testing & Tooling | `Tooling error: [E1201] RISC-V emission failed.` |
 
 ---
 

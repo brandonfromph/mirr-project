@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIRR Runtime Interface (MRI) Specification — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="MIRR Runtime Interface (MRI) Specification — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MIRR Runtime Interface (MRI) Specification — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#interface">Interface</a></li>
+          <li class="toc-h3"><a href="#mriinit">`mri_init`</a></li>
+          <li class="toc-h3"><a href="#mrisetinput">`mri_set_input`</a></li>
+          <li class="toc-h3"><a href="#mritick">`mri_tick`</a></li>
+          <li class="toc-h3"><a href="#mrigetoutput">`mri_get_output`</a></li>
+          <li class="toc-h3"><a href="#mricheckproperty">`mri_check_property`</a></li>
+          <li class="toc-h3"><a href="#mridestroy">`mri_destroy`</a></li>
+          <li class="toc-h3"><a href="#mrirun">`mri_run`</a></li>
+        <li><a href="#status-codes">Status Codes</a></li>
+        <li><a href="#constants">Constants</a></li>
+        <li><a href="#target-implementations">Target Implementations</a></li>
+        <li><a href="#cross-target-guarantee">Cross-Target Guarantee</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Runtime Interface (MRI) Specification</h1>
+<p><strong>Version:</strong> 1.0.0
+<strong>Date:</strong> 2026-03-20
+<strong>Campaign:</strong> MEGA-15 TARGET-PORTABLE</p>
+<h2 id="overview">Overview</h2>
+<p>The MIRR Runtime Interface (MRI) defines the abstract execution interface that
+all MIRR targets must implement. Any platform implementing MRI can run MIRR
+programs with guaranteed behavioral equivalence.</p>
+<p>MRI guarantees:</p>
+<ul>
+<li><strong>Bounded execution:</strong> Every <code>mri_tick()</code> completes within MAX_TICKS total calls</li>
+<li><strong>Deterministic I/O:</strong> Inputs are read before outputs are written each tick</li>
+<li><strong>Sub-Turing:</strong> No target can introduce unbounded computation</li>
+</ul>
+<h2 id="interface">Interface</h2>
+<h3 id="mriinit"><code>mri_init</code></h3>
+<pre><code class="language-c">mri_module_t* mri_init(const uint8_t* module_binary, size_t len);
+</code></pre>
+<p>Initialize a MIRR module from a compiled binary. Returns NULL on failure.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>module_binary</code>: Pointer to the compiled MIRR module bytes</li>
+<li><code>len</code>: Length of the binary in bytes</li>
+</ul>
+<p><strong>Returns:</strong> Module handle, or NULL if the binary is invalid</p>
+<h3 id="mrisetinput"><code>mri_set_input</code></h3>
+<pre><code class="language-c">void mri_set_input(mri_module_t* mod, uint16_t port, uint64_t value);
+</code></pre>
+<p>Set the value of an input signal.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mod</code>: Module handle</li>
+<li><code>port</code>: Input port index (0-based)</li>
+<li><code>value</code>: Signal value (unsigned, up to 64 bits)</li>
+</ul>
+<h3 id="mritick"><code>mri_tick</code></h3>
+<pre><code class="language-c">mri_status_t mri_tick(mri_module_t* mod);
+</code></pre>
+<p>Advance the module by one clock cycle. This is the core execution function.</p>
+<p><strong>Execution order:</strong></p>
+<ol>
+<li>Read all input signal values</li>
+<li>Evaluate all guard conditions</li>
+<li>Fire all active reflexes (assignments)</li>
+<li>Update all output signal values</li>
+<li>Increment tick counter</li>
+</ol>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>MRI_OK</code>: Tick completed successfully</li>
+<li><code>MRI_ERROR_TIMEOUT</code>: MAX_TICKS exceeded</li>
+</ul>
+<h3 id="mrigetoutput"><code>mri_get_output</code></h3>
+<pre><code class="language-c">uint64_t mri_get_output(mri_module_t* mod, uint16_t port);
+</code></pre>
+<p>Read the value of an output signal.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mod</code>: Module handle</li>
+<li><code>port</code>: Output port index (0-based)</li>
+</ul>
+<p><strong>Returns:</strong> Signal value (unsigned, up to 64 bits)</p>
+<h3 id="mricheckproperty"><code>mri_check_property</code></h3>
+<pre><code class="language-c">bool mri_check_property(mri_module_t* mod, uint32_t property_id);
+</code></pre>
+<p>Evaluate an LTL property over the module's execution history.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mod</code>: Module handle</li>
+<li><code>property_id</code>: Property index (0-based)</li>
+</ul>
+<p><strong>Returns:</strong> true if the property holds, false otherwise</p>
+<h3 id="mridestroy"><code>mri_destroy</code></h3>
+<pre><code class="language-c">void mri_destroy(mri_module_t* mod);
+</code></pre>
+<p>Clean up module state and free all resources.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mod</code>: Module handle (may be NULL)</li>
+</ul>
+<h3 id="mrirun"><code>mri_run</code></h3>
+<pre><code class="language-c">mri_status_t mri_run(mri_module_t* mod, size_t max_ticks);
+</code></pre>
+<p>Run the module for <code>max_ticks</code> clock cycles and check all properties.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mod</code>: Module handle</li>
+<li><code>max_ticks</code>: Maximum number of ticks to execute</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>MRI_OK</code>: All ticks completed, all properties passed</li>
+<li><code>MRI_ERROR_TIMEOUT</code>: MAX_TICKS exceeded</li>
+<li><code>MRI_ERROR_PROPERTY_FAIL</code>: A property was violated</li>
+</ul>
+<h2 id="status-codes">Status Codes</h2>
+<pre><code class="language-c">typedef enum {
+    MRI_OK = 0,
+    MRI_ERROR_INVALID_MODULE = -1,
+    MRI_ERROR_OUT_OF_MEMORY = -2,
+    MRI_ERROR_TIMEOUT = -3,
+    MRI_ERROR_PROPERTY_FAIL = -4,
+} mri_status_t;
+</code></pre>
+<h2 id="constants">Constants</h2>
+<table><thead><tr><th>Constant</th><th>Value</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>MRI_MAX_TICKS</code></td><td>1,000,000</td><td>Maximum ticks per <code>mri_run()</code> call</td></tr>
+<tr><td><code>MRI_MAX_INPUTS</code></td><td>256</td><td>Maximum input ports per module</td></tr>
+<tr><td><code>MRI_MAX_OUTPUTS</code></td><td>256</td><td>Maximum output ports per module</td></tr>
+<tr><td><code>MRI_MAX_SIGNALS</code></td><td>256</td><td>Maximum total signals per module</td></tr>
+<tr><td><code>MRI_MAX_PROPERTIES</code></td><td>32</td><td>Maximum LTL properties per module</td></tr>
+</tbody></table>
+<h2 id="target-implementations">Target Implementations</h2>
+<table><thead><tr><th>Target</th><th>File</th><th>Status</th></tr></thead><tbody>
+<tr><td>R-SPU ISA Simulator</td><td><code>src/emit/rspu_sim/</code></td><td>Reference implementation</td></tr>
+<tr><td>RISC-V</td><td><code>src/emit/riscv.rs</code></td><td>This campaign</td></tr>
+<tr><td>ARM Thumb-2</td><td><code>src/emit/arm.rs</code></td><td>This campaign</td></tr>
+<tr><td>WASM</td><td><code>crates/mirr-wasm/</code></td><td>This campaign</td></tr>
+</tbody></table>
+<h2 id="cross-target-guarantee">Cross-Target Guarantee</h2>
+<p>Given the same MIRR module and the same input sequence, all MRI-compliant
+targets produce the identical output sequence. This is guaranteed by:</p>
+<ol>
+<li><strong>Sub-Turing proof (MEGA-14):</strong> Every MIRR module is a finite-state
+transducer with identical behavior on any execution substrate</li>
+<li><strong>R-SPU golden model:</strong> The R-SPU ISA simulator is the reference
+implementation that all other targets must match</li>
+<li><strong>Bounded execution:</strong> No target can introduce unbounded computation
+because MRI enforces MAX_TICKS</li>
+</ol>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

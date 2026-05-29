@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content=" — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content=" — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#mirr-language-minimal-core-specification-draft">MIRR Language – Minimal Core Specification (Draft)</a></li>
+          <li class="toc-h3"><a href="#1-design-goals">1. Design goals</a></li>
+          <li class="toc-h3"><a href="#2-core-concepts">2. Core concepts</a></li>
+          <li class="toc-h3"><a href="#3-core-primitives">3. Core primitives</a></li>
+          <li class="toc-h3"><a href="#4-modules-and-full-program-structure">4. Modules and full program structure</a></li>
+          <li class="toc-h3"><a href="#5-compiler-passes-phase-1-roadmap-connection">5. Compiler passes (Phase 1+ roadmap connection)</a></li>
+          <li class="toc-h3"><a href="#6-immediate-implementation-targets-phase-1">6. Immediate implementation targets (Phase 1)</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h2 id="mirr-language-minimal-core-specification-draft">MIRR Language – Minimal Core Specification (Draft)</h2>
+<blockquote>
+<p><strong>Deprecated.</strong> This spec describes the Phase 1 minimal core only.
+For the current language, see <a href="tutorial.html">Tutorial</a> and <a href="type-system.html">Type System</a>.
+Current MIRR includes signed types (<code>iN</code>), <code>property</code> declarations, <code>def</code>/<code>reflect</code>
+pattern system, <code>prev()</code> temporal back-references, and 9 type error codes (E601–E609).</p>
+</blockquote>
+<p>This document specifies a <strong>minimal MIRR core</strong> designed for reflexive clinical hardware. The goal is to keep the surface language extremely small (3 primitives) while allowing powerful compiler passes (Cement2‑style timing, SmaRTLy‑style optimization, FIRWINE‑style width inference) underneath. This project is in the (EDA) Electronic Design Automation Domain.</p>
+<h3 id="1-design-goals">1. Design goals</h3>
+<ul>
+<li><strong>Reflex‑first</strong>: Express <em>when</em> and <em>under what clinical condition</em> hardware must react, not low‑level implementation detail.</li>
+<li><strong>Temporal safety</strong>: Make timing and duration explicit, so the compiler can check and synthesize temporal guards.</li>
+<li><strong>Meta‑friendly</strong>: MIRR code can generate or transform other MIRR modules (future work), but the core syntax stays tiny.</li>
+<li><strong>Hardware‑targeted</strong>: Every construct must map to a finite, synthesizable structure (shift registers, counters, gates).</li>
+</ul>
+<h3 id="2-core-concepts">2. Core concepts</h3>
+<ul>
+<li><strong>Signals</strong>: Named wires or buses carrying boolean or numeric values.</li>
+<li><strong>Reflexes</strong>: Deterministic, safety‑critical actions that must fire when a condition is satisfied.</li>
+<li><strong>Temporal guards</strong>: Conditions over time (e.g. “signal X high for N cycles”).</li>
+<li><strong>Scopes (modules)</strong>: Named blocks that encapsulate inputs, outputs, internal signals, and reflexes.</li>
+</ul>
+<h3 id="3-core-primitives">3. Core primitives</h3>
+<p>The minimal MIRR core exposes <strong>3 top‑level primitives</strong>:</p>
+<ol>
+<li><code>signal</code> – declare typed signals and their roles.</li>
+<li><code>guard</code> – specify temporal safety conditions.</li>
+<li><code>reflex</code> – bind guards to deterministic actions.</li>
+</ol>
+<h4>3.1 <code>signal</code></h4>
+<p><strong>Purpose</strong>: Declare inputs, outputs, and internal signals with explicit type and width.</p>
+<p><strong>Syntax (core idea)</strong>:</p>
+<pre><code class="language-text">signal &lt;name&gt;: &lt;kind&gt; &lt;type&gt;;
+</code></pre>
+<p>Where:</p>
+<ul>
+<li><code>&lt;kind&gt;</code> ∈ <code>{in, out, internal}</code>.</li>
+<li><code>&lt;type&gt;</code> ∈:
+<ul>
+<li><code>bool</code></li>
+<li><code>uN</code> (unsigned N‑bit, e.g. <code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code>)</li>
+<li><code>iN</code> (signed N‑bit, e.g. <code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>)</li>
+</ul>
+</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<pre><code class="language-text">signals {
+    respirator_enable: in bool
+    airway_pressure:   in u16
+    clamp_valve:       out bool
+    pressure_error:    internal u16
+}
+</code></pre>
+<h4>3.2 <code>guard</code></h4>
+<p><strong>Purpose</strong>: Define named <strong>temporal conditions</strong> that must be satisfied before a reflex can fire. These are the main hooks for Cement2‑style compilation.</p>
+<p><strong>Syntax (core idea)</strong>:</p>
+<pre><code class="language-text">guard &lt;name&gt; {
+    when &lt;boolean_expr&gt;
+    for  &lt;cycles&gt; cycles;
+}
+</code></pre>
+<p>Where:</p>
+<ul>
+<li><code>&lt;boolean_expr&gt;</code> is a pure boolean expression over signals and comparisons, using:
+<ul>
+<li>logical operators: <code>!</code>, <code>&amp;&amp;</code>, <code>||</code></li>
+<li>relational operators for numeric signals: <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>==</code>, <code>!=</code></li>
+</ul>
+</li>
+<li><code>&lt;cycles&gt;</code> is a positive integer literal (bounded delay).</li>
+</ul>
+<p><strong>Semantics</strong>:</p>
+<ul>
+<li>The guard <code>G</code> is <strong>satisfied</strong> at time ( t ) if and only if <code>&lt;boolean_expr&gt;</code> has been continuously true for the previous <code>&lt;cycles&gt;</code> clock cycles.</li>
+<li>The compiler will lower this into:
+<ul>
+<li><strong>shift‑register structures</strong> for short delays, and/or</li>
+<li><strong>counter‑comparator structures</strong> for longer delays (Adaptive Temporal Synthesis).</li>
+</ul>
+</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<pre><code class="language-text">guard sustained_pressure_drop {
+    when airway_pressure &lt; 50
+    for  1000 cycles;
+}
+
+guard seizure_pattern {
+    when eeg_spike &amp;&amp; !artifact_noise
+    for  32 cycles;
+}
+</code></pre>
+<h4>3.3 <code>reflex</code></h4>
+<p><strong>Purpose</strong>: Define <strong>deterministic actions</strong> that must occur when one or more guards are satisfied. These are the “hardware reflexes” for clinical safety.</p>
+<p><strong>Syntax (core idea)</strong>:</p>
+<pre><code class="language-text">reflex &lt;name&gt; {
+    on &lt;guard_name&gt; [and &lt;guard_name&gt; ...] {
+        &lt;assignments&gt;
+    }
+}
+</code></pre>
+<p>Assignments:</p>
+<pre><code class="language-text">&lt;signal&gt; = &lt;expression&gt;;
+</code></pre>
+<p>Where <code>&lt;expression&gt;</code> is:</p>
+<ul>
+<li>boolean algebra over <code>bool</code> signals: <code>!</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>^</code></li>
+<li>arithmetic over numeric signals: <code>+</code>, <code>-</code>, <code>*</code>, shifts <code>&lt;&lt;</code>, <code>&gt;&gt;</code></li>
+</ul>
+<p><strong>Semantics</strong>:</p>
+<ul>
+<li>When the <code>on</code> condition becomes true (all referenced guards satisfied), the assignments in the block are <strong>atomically committed</strong>.</li>
+<li>The compiler ensures:
+<ul>
+<li>No combinational cycles in reflex logic.</li>
+<li>Bit‑width safety of arithmetic (via width inference pass).</li>
+</ul>
+</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-text">reflex emergency_clamp {
+    on sustained_pressure_drop {
+        clamp_valve = true;
+    }
+}
+</code></pre>
+<h3 id="4-modules-and-full-program-structure">4. Modules and full program structure</h3>
+<p>At the top level, MIRR code is organized into <strong>modules</strong>:</p>
+<pre><code class="language-text">module &lt;name&gt; {
+    // 1. signal declarations
+    signals {
+        ...
+    }
+
+    // 2. pattern calls
+    calls {
+        pattern_name(...)
+    }
+
+    // 3. guards
+    guard ... { ... }
+
+    // 4. reflexes
+    reflex ... { ... }
+}
+</code></pre>
+<p><strong>Example: Neonatal Respirator Reflex Module</strong></p>
+<pre><code class="language-text">module neonatal_respirator {
+    signals {
+        respirator_enable: in bool
+        airway_pressure:   in u16
+        clamp_valve:       out bool
+    }
+
+    guard sustained_pressure_drop {
+        when airway_pressure &lt; 50
+        for  1000 cycles;
+    }
+
+    reflex emergency_clamp {
+        on sustained_pressure_drop {
+            clamp_valve = true;
+        }
+    }
+}
+</code></pre>
+<h3 id="5-compiler-passes-phase-1-roadmap-connection">5. Compiler passes (Phase 1+ roadmap connection)</h3>
+<p>While MIRR exposes only <code>signal</code>, <code>guard</code>, and <code>reflex</code>, the Rust compiler will implement multiple internal passes:</p>
+<ol>
+<li>
+<p><strong>Parsing &amp; AST / IR construction (Phase 1)</strong></p>
+<ul>
+<li>Recognize modules, signals, guards, reflexes.</li>
+<li>Build a typed IR with explicit temporal guard nodes.</li>
+</ul>
+</li>
+<li>
+<p><strong>Temporal lowering (Cement2‑inspired, Phase 2)</strong></p>
+<ul>
+<li>Convert <code>guard</code> nodes into concrete timing hardware (shift registers vs counters).</li>
+</ul>
+</li>
+<li>
+<p><strong>Logic simplification (SmaRTLy‑inspired, Phase 3)</strong></p>
+<ul>
+<li>Reduce boolean and arithmetic expressions in reflex bodies and guard expressions.</li>
+</ul>
+</li>
+<li>
+<p><strong>Bit‑width inference (FIRWINE‑inspired, Phase 4)</strong></p>
+<ul>
+<li>Compute safe widths for all numeric signals and expressions.</li>
+</ul>
+</li>
+<li>
+<p><strong>MAPE‑K simulation (Phase 5)</strong></p>
+<ul>
+<li>Use MIRR modules as the specification for the reflex domain in software simulations.</li>
+</ul>
+</li>
+</ol>
+<h3 id="6-immediate-implementation-targets-phase-1">6. Immediate implementation targets (Phase 1)</h3>
+<p>For Phase 1 of the project, the spec is intentionally simplified:</p>
+<ul>
+<li>Support:
+<ul>
+<li>Single module per file.</li>
+<li><code>signal</code>, <code>guard</code>, <code>reflex</code> as defined above.</li>
+<li>Boolean expressions and simple integer comparisons.</li>
+<li><code>for &lt;N&gt; cycles</code> with compile‑time constant ( N ).</li>
+</ul>
+</li>
+<li>A Rust CLI <code>mirr-parse</code> should:
+<ul>
+<li>Read a <code>.mirr</code> file.</li>
+<li>Parse into an IR.</li>
+<li>Pretty‑print the IR as text or JSON.</li>
+<li>Exit with clear errors on syntax/typing issues.</li>
+</ul>
+</li>
+</ul>
+<p>Later phases will extend the spec (e.g., meta‑programming, multiple modules, parameterization), but this document defines the <strong>minimal, implementable MIRR core</strong> to start coding immediately.</p>
+<p>src/
+├── main.rs                    # Entry point — CLI only
+├── lib.rs                     # Public API re-exports
+├── error.rs                   # Centralized error authority
+├── ast/
+│   ├── mod.rs                 # Re-exports all AST types
+│   ├── types.rs               # SignalKind, SignalType, BinaryOp, UnaryOp, LiteralValue
+│   ├── expr.rs                # Expr enum (expression tree)
+│   └── program.rs             # SignalDecl, Guard, Assignment, Reflex, Module, MirrProgram
+├── lexer/
+│   ├── mod.rs                 # Re-exports
+│   └── tokenizer.rs           # Token enum + tokenize_expr() with performance optimizations
+├── parser/
+│   ├── mod.rs                 # Re-exports parse_mirr + parse_expression
+│   ├── expr_parser.rs         # Pratt parser (precedence-climbing) with early validation
+│   |── module_parser.rs       # Line-based module/signal/guard/reflex parser
+|   └── temporal
+|<br />
+└── validation/
+├── mod.rs                 # Re-exports
+└── semantic.rs            # validate_module + collect_signal_refs with pre-allocated collections</p>
+<p>tests/
+├── expr_tests.rs              # 17 expression parser tests
+├── module_tests.rs            # 23 module parser + error tests
+├── validation_tests.rs        # 9 semantic validation tests
+└── stress_tests.rs            # 5 stress/edge-case tests</p>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

@@ -16,12 +16,16 @@ mirr-private/
 ├── src/                      # Core Compiler Pipeline
 │   ├── ast/                  # Abstract Syntax Tree definitions
 │   ├── parser/               # Front-end parsing (Lexer & Parser)
+│   ├── expand/               # Compile-time pattern expansion & macro engine
 │   ├── ecs/                  # Entity Component System (ECS) architecture (Registry)
 │   ├── cert/                 # MEGA-4 Proof certificate format & MEGA-16 PCC verifier
 │   ├── typeck/               # Type checking & constraint validation
 │   ├── width/                # Width constraint solving (SCC paths)
+│   ├── sat/                  # Bounded DPLL SAT solver & SmaRTLy logic simplifier
 │   ├── temporal/             # Temporal lowering of hardware guards
 │   ├── symbolic/             # Hardware-preparatory symbolic evaluation engine
+│   ├── sexpr/                # S-expression intermediate representation (MEGA-2)
+│   ├── mape_k/               # MAPE-K software simulation loop & LTL checkers
 │   ├── emit/                 # Emission backends (SystemVerilog, FIRRTL, R-SPU, etc.)
 │   ├── bin/                  # Executable entrypoints (mirr-compile, mirr-general, etc.)
 │   └── lib.rs                # Public module exports
@@ -151,6 +155,9 @@ The repository maintains rigorous formal verification infrastructure in the `pro
   - `Verifier.v`: Axiomatizes safety invariants for dynamic hardware and software bounds.
 - **`proofs/mape_k/`**: Proves behavioral equivalence of software and hardware control loops.
   - `Equivalence.v`: Relates abstract software MAPE-K logic to the synthesized gate-level representations.
+- **`proofs/language/`**: Core MIRR language semantics and type soundness proofs.
+- **`proofs/rspu/`**: R-SPU ISA instruction set encoding bijectivity and behavioral proofs.
+- **`proofs/width/`**: FIRWINE width inference uniqueness and optimality theorems.
 - **Tooling (`src/bin/mirr-proof-audit.rs`)**:
   - Automatically maps and audits Rocq proof coverage against compiled AST nodes, reporting proof densities and gaps for formal CI gates.
 

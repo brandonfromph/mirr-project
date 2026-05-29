@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consumer Contracts — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Consumer Contracts — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Consumer Contracts — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#ownership">Ownership</a></li>
+        <li><a href="#section-c-security-contract-obligations">Section C: Security Contract Obligations</a></li>
+          <li class="toc-h3"><a href="#default-deny-policy">Default-Deny Policy</a></li>
+          <li class="toc-h3"><a href="#authentication-requirements">Authentication Requirements</a></li>
+          <li class="toc-h3"><a href="#validation-behavior">Validation Behavior</a></li>
+          <li class="toc-h3"><a href="#rate-limit-behavior">Rate-Limit Behavior</a></li>
+          <li class="toc-h3"><a href="#canonical-error-envelope-contract">Canonical Error Envelope Contract</a></li>
+        <li><a href="#section-d-lra-tool-namespace-and-contracts-wave-4">Section D: LRA Tool Namespace and Contracts (Wave 4)</a></li>
+          <li class="toc-h3"><a href="#overview-and-namespace-conventions">Overview and Namespace Conventions</a></li>
+          <li class="toc-h3"><a href="#role-based-access-control-for-lra-tools">Role-Based Access Control for LRA Tools</a></li>
+          <li class="toc-h3"><a href="#lra-tool-catalog">LRA Tool Catalog</a></li>
+          <li class="toc-h3"><a href="#rate-limiting-for-lra-tools">Rate Limiting for LRA Tools</a></li>
+          <li class="toc-h3"><a href="#example-validating-and-signing-an-lra-project">Example: Validating and Signing an LRA Project</a></li>
+          <li class="toc-h3"><a href="#example-error-handling">Example: Error Handling</a></li>
+          <li class="toc-h3"><a href="#lra-tool-argument-validation-reference">LRA Tool Argument Validation Reference</a></li>
+          <li class="toc-h3"><a href="#deprecation-and-evolution">Deprecation and Evolution</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>Consumer Contracts</h1>
+<p>This document defines repo-wide consumer contracts used by architecture proposals.</p>
+<table><thead><tr><th>Consumer</th><th>Contract</th></tr></thead><tbody>
+<tr><td>crates/mirr-wasm</td><td>Public exported API remains backward-compatible unless explicitly versioned</td></tr>
+<tr><td>crates/mirr-arsenal-wasm</td><td>Compile-contract output remains deterministic and schema-stable</td></tr>
+<tr><td>crates/lra-cli</td><td>Compile path must call compiler library entrypoints, not shell-out wrappers</td></tr>
+<tr><td>mcp_server</td><td>Tool routing is explicit, typed, allowlisted, and keeps MRT tool names stable; interface/bridge layer only and must not own core compiler logic</td></tr>
+<tr><td>vscode-mirr</td><td>Package contract text must match actual capability</td></tr>
+<tr><td>demos/proofs/fuzz/scripts</td><td>Must have explicit compatibility evidence in architecture waves</td></tr>
+</tbody></table>
+<h2 id="ownership">Ownership</h2>
+<ul>
+<li>Compiler boundary: elvie (primary), compiler maintainers (backup), compiler reviewers (escalation)</li>
+<li>Consumer boundary: elvie (primary), consumer maintainers (backup), architecture reviewers (escalation)</li>
+<li>Proposal conformance: proposal reviewers (primary), repository governance maintainers (backup), campaign owner (escalation)</li>
+</ul>
+<h2 id="section-c-security-contract-obligations">Section C: Security Contract Obligations</h2>
+<h3 id="default-deny-policy">Default-Deny Policy</h3>
+<ul>
+<li>All MCP tool routes are deny-by-default.</li>
+<li>A request is rejected unless the tool name is present in the explicit server allowlist.</li>
+<li>Unknown or unmapped tool names MUST return the canonical error envelope.</li>
+</ul>
+<h3 id="authentication-requirements">Authentication Requirements</h3>
+<ul>
+<li>Protected MCP operations require authenticated caller identity before tool dispatch.</li>
+<li>Unauthenticated requests to protected operations MUST be rejected before handler execution.</li>
+<li>Authentication failure responses MUST use the canonical error envelope.</li>
+</ul>
+<h3 id="validation-behavior">Validation Behavior</h3>
+<ul>
+<li>Every request payload MUST be validated against its declared schema before execution.</li>
+<li>Validation failure MUST prevent tool execution.</li>
+<li>Validation errors MUST return the canonical error envelope with validation-specific details in details.</li>
+</ul>
+<h3 id="rate-limit-behavior">Rate-Limit Behavior</h3>
+<ul>
+<li>Rate limits are enforced per caller identity or transport principal.</li>
+<li>Requests exceeding configured limits MUST be rejected without invoking tool execution.</li>
+<li>Rate-limit rejections MUST return the canonical error envelope.</li>
+</ul>
+<h3 id="canonical-error-envelope-contract">Canonical Error Envelope Contract</h3>
+<ul>
+<li>All non-success responses from MCP tool routing, authentication, validation, and rate-limit checks MUST use the same envelope fields.</li>
+<li>Required fields:</li>
+</ul>
+<table><thead><tr><th>Field</th><th>Type</th><th>Contract</th></tr></thead><tbody>
+<tr><td>ok</td><td>boolean</td><td>MUST be false on error responses</td></tr>
+<tr><td>error.code</td><td>string</td><td>Stable machine-readable code</td></tr>
+<tr><td>error.message</td><td>string</td><td>Human-readable error summary</td></tr>
+<tr><td>error.details</td><td>object or null</td><td>Structured context for validation, auth, routing, or rate-limit failures</td></tr>
+<tr><td>request_id</td><td>string</td><td>Correlation identifier for the request</td></tr>
+<tr><td>timestamp</td><td>string</td><td>UTC timestamp in RFC 3339 format</td></tr>
+</tbody></table>
+<h2 id="section-d-lra-tool-namespace-and-contracts-wave-4">Section D: LRA Tool Namespace and Contracts (Wave 4)</h2>
+<h3 id="overview-and-namespace-conventions">Overview and Namespace Conventions</h3>
+<p>The LRA tool namespace exposes Linear Relation Analysis capabilities via the MCP protocol. All LRA tools:</p>
+<ul>
+<li>Follow the naming convention <code>lra_*</code> (prefix reserved for LRA dispatcher).</li>
+<li>Are subject to the default-deny authentication and authorization policy (Section C).</li>
+<li>Return responses in the canonical error envelope format on failure.</li>
+<li>Support per-caller rate-limiting (inherited from Wave 3).</li>
+<li>Are bounded by NASA Power-of-10 constraints: all string inputs have maximum lengths, all numeric inputs have ranges, and directory traversals are validated.</li>
+</ul>
+<p>LRA tools are implemented as wrappers around the <code>lra-cli</code> command-line utility. Tool dispatch into the MCP protocol allows orchestrators and automation frameworks to:</p>
+<ul>
+<li>Scaffold and initialize Living Research Artifact projects.</li>
+<li>Validate papers against the LRA-1.0 specification (Bronze/Silver/Gold compliance tiers).</li>
+<li>Serve interactive papers with live reload during development.</li>
+<li>Sign verification receipts with Ed25519 keypairs.</li>
+<li>Verify deployed papers' claims and content integrity.</li>
+<li>Check compliance status and retrieve diagnostic information.</li>
+</ul>
+<h3 id="role-based-access-control-for-lra-tools">Role-Based Access Control for LRA Tools</h3>
+<p>LRA tools follow a three-tier role hierarchy:</p>
+<table><thead><tr><th>Role</th><th>Write Capability</th><th>LRA Tool Access</th></tr></thead><tbody>
+<tr><td><strong>admin</strong></td><td>Full</td><td>All LRA tools (init, validate, serve, check, sign, verify)</td></tr>
+<tr><td><strong>committer</strong></td><td>File write</td><td>lra_init, lra_validate, lra_serve, lra_check, lra_sign, lra_verify</td></tr>
+<tr><td><strong>builder</strong></td><td>Read-only</td><td>lra_validate, lra_serve, lra_check, lra_verify</td></tr>
+<tr><td><strong>anonymous</strong></td><td>None</td><td>Denied (401 auth_missing_api_key)</td></tr>
+</tbody></table>
+<p><strong>Access Grants:</strong></p>
+<ul>
+<li><code>lra_init</code> (write/scaffold): <strong>admin</strong>, <strong>committer</strong> — Only authenticated users with project creation authority may scaffold new LRA projects.</li>
+<li><code>lra_validate</code> (read/analyze): <strong>admin</strong>, <strong>committer</strong>, <strong>builder</strong> — Compliance checking is read-only; all roles with build access may validate.</li>
+<li><code>lra_serve</code> (write/server): <strong>admin</strong>, <strong>committer</strong>, <strong>builder</strong> — Dev server startup is write-capable but non-destructive; permitted for builders.</li>
+<li><code>lra_check</code> (read/alias): <strong>admin</strong>, <strong>committer</strong>, <strong>builder</strong> — Alias for <code>lra_validate</code>; same access as validate.</li>
+<li><code>lra_sign</code> (write/crypto): <strong>admin</strong>, <strong>committer</strong> — Cryptographic signing requires elevated trust; restricted to committers and admins.</li>
+<li><code>lra_verify</code> (read/network): <strong>admin</strong>, <strong>committer</strong>, <strong>builder</strong> — Network verification is read-only; all roles with build access may verify.</li>
+</ul>
+<p><strong>Access Denial:</strong></p>
+<ul>
+<li>Unauthenticated callers: 401 <code>auth_missing_api_key</code></li>
+<li>Invalid API key: 403 <code>auth_invalid_api_key</code></li>
+<li>Insufficient role for tool: 403 <code>auth_insufficient_role</code> (details include caller's current role)</li>
+<li>Unknown tool name: 400 <code>validation_unknown_method</code></li>
+</ul>
+<h3 id="lra-tool-catalog">LRA Tool Catalog</h3>
+<p>Six LRA tools are exposed via the MCP <code>mrt_dispatch</code> protocol. Each tool maps to a subcommand in <code>lra-cli</code>.</p>
+<h4>Tool Reference Table</h4>
+<table><thead><tr><th>Tool Name</th><th>Category</th><th>Type</th><th>Required Roles</th><th>Primary Input</th><th>Success Response</th><th>Status Codes</th></tr></thead><tbody>
+<tr><td><code>lra_init</code></td><td>Project</td><td>Write</td><td>admin, committer</td><td>project_name (string, 1–255 chars, no path separators)</td><td>200: STDOUT from <code>lra init &lt;name&gt;</code>; project structure created</td><td>201, 400, 403, 429</td></tr>
+<tr><td><code>lra_validate</code></td><td>Compliance</td><td>Read</td><td>admin, committer, builder</td><td>path (string, 1–1024 chars, no <code>..</code>)</td><td>200: STDOUT from <code>lra validate &lt;path&gt;</code>; tier (Bronze/Silver/Gold)</td><td>200, 400, 403, 404, 429</td></tr>
+<tr><td><code>lra_serve</code></td><td>Dev Server</td><td>Write</td><td>admin, committer, builder</td><td>port (number, 1024–65535; optional, default 8080)</td><td>200: STDOUT; server running at specified port</td><td>200, 400, 403, 429</td></tr>
+<tr><td><code>lra_check</code></td><td>Compliance</td><td>Read</td><td>admin, committer, builder</td><td>path (string, 1–1024 chars)</td><td>200: STDOUT from <code>lra validate</code>; alias for validate</td><td>200, 400, 403, 404, 429</td></tr>
+<tr><td><code>lra_sign</code></td><td>Crypto</td><td>Write</td><td>admin, committer</td><td>receipt (string, 1–1024 chars); key (path, 1–1024 chars, default: lra-identity.key)</td><td>200: STDOUT; signed receipt JSON</td><td>200, 400, 403, 429</td></tr>
+<tr><td><code>lra_verify</code></td><td>Network</td><td>Read</td><td>admin, committer, builder</td><td>target (URL or hash, 1–1024 chars, no <code>..</code>)</td><td>200: STDOUT; verification results (claims, tier, integrity)</td><td>200, 400, 403, 429</td></tr>
+</tbody></table>
+<h4>Tool Details and Error Mappings</h4>
+<h5><code>lra_init</code> — Initialize LRA Project</h5>
+<p><strong>Category:</strong> Write / Scaffold</p>
+<p><strong>Roles:</strong> admin, committer</p>
+<p><strong>Input Schema:</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;project_name&quot;</span>: <span class="hl-str">&quot;my-paper&quot;</span>
+}
+</code></pre>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Bounds</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>project_name</code></td><td>string</td><td>Yes</td><td>1–255 characters</td><td>Project directory name; cannot contain <code>/</code>, <code>\</code>, or <code>..</code></td></tr>
+</tbody></table>
+<p><strong>Success Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_init&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;Created LRA project: my-paper/\n  index.html     — your paper (edit this!)\n  paper.css      — styling\n  ...&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>,
+  <span class="hl-var">&quot;output_limit_bytes&quot;</span>: <span class="hl-num">65536</span>
+}
+</code></pre>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Creates a directory with the project name.</li>
+<li>Scaffolds standard LRA-1.0 files: <code>index.html</code>, <code>paper.css</code>, <code>paper.js</code>, <code>sw.js</code>, <code>CITATION.cff</code>, <code>LICENSE</code>.</li>
+<li>Returns exit code 0 on success.</li>
+<li>Returns exit code 1 if directory already exists or write permission denied.</li>
+</ul>
+<p><strong>Error Scenarios:</strong></p>
+<table><thead><tr><th>HTTP Status</th><th>error_code</th><th>error_message</th><th>details</th><th>Cause</th></tr></thead><tbody>
+<tr><td>401</td><td><code>auth_missing_api_key</code></td><td>API key is required.</td><td>—</td><td>No X-MCP-API-Key header provided</td></tr>
+<tr><td>403</td><td><code>auth_invalid_api_key</code></td><td>API key is invalid.</td><td>—</td><td>API key does not match any known key</td></tr>
+<tr><td>403</td><td><code>auth_insufficient_role</code></td><td>API key role is not allowed.</td><td><code>{ "role": "builder" }</code></td><td>Caller has role builder; requires committer or admin</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "missing_project_name" }</code></td><td>project_name argument absent or empty</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "project_name_too_long" }</code></td><td>project_name exceeds 255 characters</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "invalid_project_name" }</code></td><td>project_name contains path separators or <code>..</code></td></tr>
+<tr><td>400</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Directory already exists"</code></td><td>Scaffolding failed (dir exists, permission denied, etc.)</td></tr>
+<tr><td>429</td><td><code>limit_concurrency_exceeded</code></td><td>Concurrency limit exceeded.</td><td>—</td><td>Caller has exhausted per-identity concurrency quota</td></tr>
+</tbody></table>
+<h5><code>lra_validate</code> — Validate LRA Compliance</h5>
+<p><strong>Category:</strong> Read / Analyze</p>
+<p><strong>Roles:</strong> admin, committer, builder</p>
+<p><strong>Input Schema:</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;path&quot;</span>: <span class="hl-str">&quot;my-paper/index.html&quot;</span>
+}
+</code></pre>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Bounds</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>path</code></td><td>string</td><td>Yes</td><td>1–1024 characters</td><td>Path to LRA index.html or project directory; normalized; no <code>..</code></td></tr>
+</tbody></table>
+<p><strong>Success Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_validate&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;LRA Validate — my-paper/index.html\n\nBronze (16 checks)\n  ✓ html lang attribute\n  ✓ meta charset\n  ...\nSilver (3 checks)\n  ✓ demo section\n  ...\nGold (4 checks)\n  ✗ WASM module present\n  ...\nTier: SILVER (23/23 pass)\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>,
+  <span class="hl-var">&quot;output_limit_bytes&quot;</span>: <span class="hl-num">65536</span>
+}
+</code></pre>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Reads and parses the LRA HTML and project structure.</li>
+<li>Runs 23 compliance checks categorized into Bronze (16), Silver (3), and Gold (4).</li>
+<li>Reports pass/fail status for each check.</li>
+<li>Assigns a compliance tier (Bronze, Silver, Gold, or None).</li>
+<li>Returns exit code 0 on success (even if tier is None; validation process succeeded).</li>
+</ul>
+<p><strong>Validation Tiers:</strong></p>
+<ul>
+<li><strong>Bronze:</strong> Must pass all 16 Bronze checks (HTML structure, metadata, LICENSE, CITATION.cff, etc.).</li>
+<li><strong>Silver:</strong> Must pass all Bronze + pass all 3 Silver checks (demo section, noscript fallback, paper.js).</li>
+<li><strong>Gold:</strong> Must pass all Bronze + Silver + pass all 4 Gold checks (WASM module, evidence links, no external resources, aria-live).</li>
+<li><strong>None:</strong> Fails to pass Bronze checks.</li>
+</ul>
+<p><strong>Error Scenarios:</strong></p>
+<table><thead><tr><th>HTTP Status</th><th>error_code</th><th>error_message</th><th>details</th><th>Cause</th></tr></thead><tbody>
+<tr><td>401</td><td><code>auth_missing_api_key</code></td><td>API key is required.</td><td>—</td><td>No X-MCP-API-Key header</td></tr>
+<tr><td>403</td><td><code>auth_invalid_api_key</code></td><td>API key is invalid.</td><td>—</td><td>API key invalid</td></tr>
+<tr><td>403</td><td><code>auth_insufficient_role</code></td><td>API key role is not allowed.</td><td><code>{ "role": "anonymous" }</code></td><td>Caller refused role check</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "missing_path" }</code></td><td>path argument absent</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "path_too_long" }</code></td><td>path exceeds 1024 characters</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "invalid_path" }</code></td><td>path contains <code>..</code> (traversal attempt)</td></tr>
+<tr><td>404</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Cannot read &lt;path&gt;: file not found"</code></td><td>File does not exist or cannot be read</td></tr>
+<tr><td>400</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"I/O error"</code></td><td>File system error (permissions, etc.)</td></tr>
+<tr><td>429</td><td><code>limit_concurrency_exceeded</code></td><td>Concurrency limit exceeded.</td><td>—</td><td>Caller concurrency quota exceeded</td></tr>
+</tbody></table>
+<h5><code>lra_serve</code> — Development Server</h5>
+<p><strong>Category:</strong> Write / Server</p>
+<p><strong>Roles:</strong> admin, committer, builder</p>
+<p><strong>Input Schema:</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;port&quot;</span>: <span class="hl-num">8080</span>
+}
+</code></pre>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Bounds</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>port</code></td><td>number</td><td>No</td><td>1024–65535 (default: 8080)</td><td>Port for dev server; must be in valid range</td></tr>
+</tbody></table>
+<p><strong>Success Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_serve&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;LRA Dev Server\n  Serving at http://localhost:3000\n  Press Ctrl+C to stop\n  Watching for file changes...\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>,
+  <span class="hl-var">&quot;output_limit_bytes&quot;</span>: <span class="hl-num">65536</span>
+}
+</code></pre>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Starts a local HTTP dev server.</li>
+<li>Watches for file changes and triggers live reload.</li>
+<li>Binds to the specified port (or default 8080).</li>
+<li>Returns exit code 0 on success.</li>
+<li>Returns exit code 1 if port is already in use or permission denied.</li>
+</ul>
+<p><strong>Error Scenarios:</strong></p>
+<table><thead><tr><th>HTTP Status</th><th>error_code</th><th>error_message</th><th>details</th><th>Cause</th></tr></thead><tbody>
+<tr><td>401</td><td><code>auth_missing_api_key</code></td><td>API key is required.</td><td>—</td><td>No API key</td></tr>
+<tr><td>403</td><td><code>auth_invalid_api_key</code></td><td>API key is invalid.</td><td>—</td><td>API key invalid</td></tr>
+<tr><td>403</td><td><code>auth_insufficient_role</code></td><td>API key role is not allowed.</td><td><code>{ "role": "anonymous" }</code></td><td>Insufficient role</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "invalid_port" }</code></td><td>Port outside 1024–65535 range</td></tr>
+<tr><td>400</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Address already in use"</code></td><td>Port in use; bind failed</td></tr>
+<tr><td>429</td><td><code>limit_concurrency_exceeded</code></td><td>Concurrency limit exceeded.</td><td>—</td><td>Concurrency quota exceeded</td></tr>
+</tbody></table>
+<h5><code>lra_check</code> — Check Compliance (Alias)</h5>
+<p><strong>Category:</strong> Read / Alias</p>
+<p><strong>Roles:</strong> admin, committer, builder</p>
+<p><strong>Input Schema:</strong> Same as <code>lra_validate</code></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;path&quot;</span>: <span class="hl-str">&quot;my-paper/index.html&quot;</span>
+}
+</code></pre>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Alias for <code>lra_validate</code> (compliance check).</li>
+<li>Returns identical output and error codes as <code>lra_validate</code>.</li>
+<li>Useful for semantic clarity when querying compliance status.</li>
+</ul>
+<p><strong>Error Scenarios:</strong> See <code>lra_validate</code> error table above.</p>
+<h5><code>lra_sign</code> — Sign Verification Receipt</h5>
+<p><strong>Category:</strong> Write / Crypto</p>
+<p><strong>Roles:</strong> admin, committer</p>
+<p><strong>Input Schema:</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;receipt&quot;</span>: <span class="hl-str">&quot;my-paper/verification-receipt.json&quot;</span>,
+  <span class="hl-var">&quot;key&quot;</span>: <span class="hl-str">&quot;lra-identity.key&quot;</span>
+}
+</code></pre>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Bounds</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>receipt</code></td><td>string</td><td>Yes</td><td>1–1024 characters</td><td>Path to JSON receipt file (from <code>lra verify --receipt</code>)</td></tr>
+<tr><td><code>key</code></td><td>string</td><td>No</td><td>1–1024 characters (default: lra-identity.key)</td><td>Path to Ed25519 secret key file</td></tr>
+</tbody></table>
+<p><strong>Success Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_sign&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;{\n  \&quot;receipt\&quot;: { ... },\n  \&quot;signature\&quot;: \&quot;abc123...\&quot;,\n  \&quot;public_key\&quot;: \&quot;xyz789...\&quot;,\n  \&quot;timestamp\&quot;: \&quot;2026-04-06T14:22:11Z\&quot;\n}\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>,
+  <span class="hl-var">&quot;output_limit_bytes&quot;</span>: <span class="hl-num">65536</span>
+}
+</code></pre>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Reads a verification receipt (JSON).</li>
+<li>Reads the Ed25519 secret key.</li>
+<li>Signs the receipt with the key.</li>
+<li>Outputs the signed receipt with signature and public key.</li>
+<li>Returns exit code 0 on success.</li>
+</ul>
+<p><strong>Error Scenarios:</strong></p>
+<table><thead><tr><th>HTTP Status</th><th>error_code</th><th>error_message</th><th>details</th><th>Cause</th></tr></thead><tbody>
+<tr><td>401</td><td><code>auth_missing_api_key</code></td><td>API key is required.</td><td>—</td><td>No API key</td></tr>
+<tr><td>403</td><td><code>auth_invalid_api_key</code></td><td>API key is invalid.</td><td>—</td><td>API key invalid</td></tr>
+<tr><td>403</td><td><code>auth_insufficient_role</code></td><td>API key role is not allowed.</td><td><code>{ "role": "builder" }</code></td><td>Insufficient role (requires committer or admin)</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "missing_receipt" }</code></td><td>receipt argument absent</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "receipt_too_long" }</code></td><td>receipt path exceeds 1024 characters</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "invalid_path" }</code></td><td>receipt or key contains <code>..</code></td></tr>
+<tr><td>404</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Receipt file not found"</code></td><td>Receipt file does not exist</td></tr>
+<tr><td>404</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Key file not found"</code></td><td>Key file does not exist</td></tr>
+<tr><td>400</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Invalid key format"</code></td><td>Key file is not a valid Ed25519 secret key</td></tr>
+<tr><td>429</td><td><code>limit_concurrency_exceeded</code></td><td>Concurrency limit exceeded.</td><td>—</td><td>Concurrency quota exceeded</td></tr>
+</tbody></table>
+<h5><code>lra_verify</code> — Verify Deployed Paper</h5>
+<p><strong>Category:</strong> Read / Network</p>
+<p><strong>Roles:</strong> admin, committer, builder</p>
+<p><strong>Input Schema:</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;path&quot;</span>: <span class="hl-str">&quot;https://example.com/paper/&quot;</span>
+}
+</code></pre>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Bounds</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>path</code> (or <code>target</code>)</td><td>string</td><td>Yes</td><td>1–1024 characters</td><td>URL of deployed paper or hash (registry lookup); no <code>..</code></td></tr>
+</tbody></table>
+<p><strong>Success Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_verify&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;LRA Verify — https://example.com/paper/\n\n  [PASS] Target URL: https://example.com/paper/\n  [PASS] Content hash matches registry\n  [PASS] LRA version tag detected\n  [PASS] Service Worker reference found\n  [PASS] 5 claims extracted\n  [PASS] All structural checks passed\n  [PASS] Compliance tier: SILVER\n\nVerification complete (all checks passed).\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>,
+  <span class="hl-var">&quot;output_limit_bytes&quot;</span>: <span class="hl-num">65536</span>
+}
+</code></pre>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Fetches the HTML from the target URL (or looks up URL in registry by hash).</li>
+<li>Extracts and validates claims marked with <code>data-lra-claim</code> attributes.</li>
+<li>Checks structural markers (lra:version, sw.js reference, etc.).</li>
+<li>Computes SHA256 hash of content.</li>
+<li>Compares hash against registry (if available).</li>
+<li>Returns exit code 0 on success.</li>
+<li>Outputs detailed pass/fail status for each verification check.</li>
+</ul>
+<p><strong>Error Scenarios:</strong></p>
+<table><thead><tr><th>HTTP Status</th><th>error_code</th><th>error_message</th><th>details</th><th>Cause</th></tr></thead><tbody>
+<tr><td>401</td><td><code>auth_missing_api_key</code></td><td>API key is required.</td><td>—</td><td>No API key</td></tr>
+<tr><td>403</td><td><code>auth_invalid_api_key</code></td><td>API key is invalid.</td><td>—</td><td>API key invalid</td></tr>
+<tr><td>403</td><td><code>auth_insufficient_role</code></td><td>API key role is not allowed.</td><td><code>{ "role": "anonymous" }</code></td><td>Insufficient role</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "missing_target" }</code></td><td>target argument absent</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "target_too_long" }</code></td><td>target exceeds 1024 characters</td></tr>
+<tr><td>400</td><td><code>validation_failed</code></td><td>Invalid MRT dispatch input.</td><td><code>{ "reason": "invalid_target" }</code></td><td>target contains <code>..</code></td></tr>
+<tr><td>404</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"HTTP 404: target not found"</code></td><td>URL cannot be reached</td></tr>
+<tr><td>400</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Connection timeout (10s)"</code></td><td>URL fetch timeout exceeded</td></tr>
+<tr><td>400</td><td><code>validation_mrt_exec_failed</code></td><td>MRT execution failed.</td><td><code>"Invalid JSON: registry parse failed"</code></td><td>Registry file malformed</td></tr>
+<tr><td>429</td><td><code>limit_concurrency_exceeded</code></td><td>Concurrency limit exceeded.</td><td>—</td><td>Concurrency quota exceeded</td></tr>
+</tbody></table>
+<h3 id="rate-limiting-for-lra-tools">Rate Limiting for LRA Tools</h3>
+<p>LRA tools are subject to the same per-caller rate-limiting policy as other MRT tools (Wave 3 default):</p>
+<ul>
+<li><strong>Rate Limit:</strong> Enforced per caller identity (API key holder).</li>
+<li><strong>Capacity:</strong> Default 10 concurrent requests per caller.</li>
+<li><strong>Enforcement:</strong> Before tool execution; no request to the subprocess if limit exceeded.</li>
+<li><strong>Response on Limit Exceeded:</strong> HTTP 429 with error code <code>limit_concurrency_exceeded</code>.</li>
+</ul>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;error_code&quot;</span>: <span class="hl-str">&quot;limit_concurrency_exceeded&quot;</span>,
+  <span class="hl-var">&quot;message&quot;</span>: <span class="hl-str">&quot;Concurrency limit exceeded.&quot;</span>,
+  <span class="hl-var">&quot;details&quot;</span>: <span class="hl-num">null</span>
+}
+</code></pre>
+<p><strong>Example:</strong> Caller A has 10 concurrent LRA requests in flight. If caller A sends request #11, the server responds with HTTP 429 immediately without executing the tool.</p>
+<h3 id="example-validating-and-signing-an-lra-project">Example: Validating and Signing an LRA Project</h3>
+<p>Below is a complete walkthrough of a multi-step LRA workflow: scaffold, validate, and sign a verification receipt.</p>
+<h4>Step 1: Initialize a New LRA Project</h4>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /mrt_dispatch HTTP/1.1
+X-MCP-API-Key: sk-committer-abc123
+Content-Type: application/json
+
+{
+  "tool": "lra_init",
+  "args": {
+    "project_name": "my-research-paper"
+  }
+}
+</code></pre>
+<p><strong>Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_init&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;Created LRA project: my-research-paper/\n  index.html\n  paper.css\n  paper.js\n  sw.js\n  CITATION.cff\n  LICENSE\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>
+}
+</code></pre>
+<h4>Step 2: Validate Compliance</h4>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /mrt_dispatch HTTP/1.1
+X-MCP-API-Key: sk-committer-abc123
+Content-Type: application/json
+
+{
+  "tool": "lra_validate",
+  "args": {
+    "path": "my-research-paper/index.html"
+  }
+}
+</code></pre>
+<p><strong>Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_validate&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;LRA Validate — my-research-paper/index.html\n\nBronze (16 checks)\n  ✓ html lang attribute\n  ✓ meta charset\n  ✓ meta viewport\n  ...\n\nSilver (3 checks)\n  ✓ demo section\n  ✓ noscript fallback\n  ✓ paper.js exists\n\nGold (4 checks)\n  ✗ WASM module present\n  ✓ evidence link\n  ✓ no external resources\n  ✓ aria-live region\n\nTier: SILVER (22/23 pass)\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>
+}
+</code></pre>
+<h4>Step 3: Verify Deployed Paper (Network Check)</h4>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /mrt_dispatch HTTP/1.1
+X-MCP-API-Key: sk-committer-abc123
+Content-Type: application/json
+
+{
+  "tool": "lra_verify",
+  "args": {
+    "path": "https://example.org/papers/my-research-paper/"
+  }
+}
+</code></pre>
+<p><strong>Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_verify&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;LRA Verify — https://example.org/papers/my-research-paper/\n\n  [PASS] Target URL accessible\n  [PASS] Content hash: abc123def456...\n  [PASS] LRA version tag detected\n  [PASS] Service Worker reference found\n  [PASS] 3 claims extracted\n  [PASS] Compliance tier: SILVER\n\nVerification complete (all checks passed).\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>
+}
+</code></pre>
+<p><strong>Verification receipt generated and written to:</strong></p>
+<pre><code>my-research-paper/verification-receipt.json
+</code></pre>
+<h4>Step 4: Sign Verification Receipt</h4>
+<p><strong>Request:</strong></p>
+<pre><code class="language-http">POST /mrt_dispatch HTTP/1.1
+X-MCP-API-Key: sk-committer-abc123
+Content-Type: application/json
+
+{
+  "tool": "lra_sign",
+  "args": {
+    "receipt": "my-research-paper/verification-receipt.json",
+    "key": "~/.lra/identity.key"
+  }
+}
+</code></pre>
+<p><strong>Response (HTTP 200):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;1&quot;</span>,
+  <span class="hl-var">&quot;tool&quot;</span>: <span class="hl-str">&quot;lra_sign&quot;</span>,
+  <span class="hl-var">&quot;exitCode&quot;</span>: <span class="hl-num">0</span>,
+  <span class="hl-var">&quot;stdout&quot;</span>: <span class="hl-str">&quot;{\n  \&quot;receipt\&quot;: {\n    \&quot;target_url\&quot;: \&quot;https://example.org/papers/my-research-paper/\&quot;,\n    \&quot;claims_found\&quot;: 3,\n    \&quot;compliance_tier\&quot;: \&quot;SILVER\&quot;,\n    \&quot;timestamp\&quot;: \&quot;2026-04-06T15:30:00Z\&quot;\n  },\n  \&quot;signature\&quot;: \&quot;ed25519_sig_abc123...\&quot;,\n  \&quot;public_key\&quot;: \&quot;ed25519_pk_xyz789...\&quot;,\n  \&quot;signed_at\&quot;: \&quot;2026-04-06T15:30:05Z\&quot;\n}\n&quot;</span>,
+  <span class="hl-var">&quot;stderr&quot;</span>: <span class="hl-str">&quot;&quot;</span>
+}
+</code></pre>
+<h3 id="example-error-handling">Example: Error Handling</h3>
+<h4>Insufficient Role for <code>lra_sign</code></h4>
+<p><strong>Request (with builder role):</strong></p>
+<pre><code class="language-http">POST /mrt_dispatch HTTP/1.1
+X-MCP-API-Key: sk-builder-xy9
+Content-Type: application/json
+
+{
+  "tool": "lra_sign",
+  "args": {
+    "receipt": "receipt.json",
+    "key": "identity.key"
+  }
+}
+</code></pre>
+<p><strong>Response (HTTP 403):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;error_code&quot;</span>: <span class="hl-str">&quot;auth_insufficient_role&quot;</span>,
+  <span class="hl-var">&quot;message&quot;</span>: <span class="hl-str">&quot;API key role is not allowed.&quot;</span>,
+  <span class="hl-var">&quot;details&quot;</span>: {
+    <span class="hl-var">&quot;role&quot;</span>: <span class="hl-str">&quot;builder&quot;</span>
+  }
+}
+</code></pre>
+<h4>Rate Limit Exceeded</h4>
+<p><strong>Request (11th concurrent request from same caller):</strong></p>
+<pre><code class="language-http">POST /mrt_dispatch HTTP/1.1
+X-MCP-API-Key: sk-committer-abc123
+Content-Type: application/json
+
+{
+  "tool": "lra_validate",
+  "args": { "path": "..." }
+}
+</code></pre>
+<p><strong>Response (HTTP 429):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;error_code&quot;</span>: <span class="hl-str">&quot;limit_concurrency_exceeded&quot;</span>,
+  <span class="hl-var">&quot;message&quot;</span>: <span class="hl-str">&quot;Concurrency limit exceeded.&quot;</span>,
+  <span class="hl-var">&quot;details&quot;</span>: <span class="hl-num">null</span>
+}
+</code></pre>
+<h4>Missing Required Argument</h4>
+<p><strong>Request (no project_name):</strong></p>
+<pre><code class="language-http">POST /mrt_dispatch HTTP/1.1
+X-MCP-API-Key: sk-committer-abc123
+Content-Type: application/json
+
+{
+  "tool": "lra_init",
+  "args": {}
+}
+</code></pre>
+<p><strong>Response (HTTP 400):</strong></p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;error_code&quot;</span>: <span class="hl-str">&quot;validation_failed&quot;</span>,
+  <span class="hl-var">&quot;message&quot;</span>: <span class="hl-str">&quot;Invalid MRT dispatch input.&quot;</span>,
+  <span class="hl-var">&quot;details&quot;</span>: {
+    <span class="hl-var">&quot;reason&quot;</span>: <span class="hl-str">&quot;missing_project_name&quot;</span>
+  }
+}
+</code></pre>
+<h3 id="lra-tool-argument-validation-reference">LRA Tool Argument Validation Reference</h3>
+<p>All LRA tool arguments are validated before tool execution. Validators are defined in <a href="../mcp_server/src/mrt_kb_lite.ts">mcp_server/src/mrt_kb_lite.ts</a>.</p>
+<table><thead><tr><th>Tool</th><th>Arg Name</th><th>Type</th><th>Max Length</th><th>Special Rules</th><th>Error Code</th></tr></thead><tbody>
+<tr><td><code>lra_init</code></td><td>project_name</td><td>string</td><td>255</td><td>No <code>/</code>, <code>\</code>, <code>..</code></td><td>invalid_project_name</td></tr>
+<tr><td><code>lra_validate</code></td><td>path</td><td>string</td><td>1024</td><td>No <code>..</code></td><td>invalid_path</td></tr>
+<tr><td><code>lra_serve</code></td><td>port</td><td>number</td><td>—</td><td>1024–65535</td><td>(handled by OS bind)</td></tr>
+<tr><td><code>lra_check</code></td><td>path</td><td>string</td><td>1024</td><td>No <code>..</code></td><td>invalid_path</td></tr>
+<tr><td><code>lra_sign</code></td><td>receipt</td><td>string</td><td>1024</td><td>No <code>..</code></td><td>invalid_path</td></tr>
+<tr><td><code>lra_sign</code></td><td>key</td><td>string</td><td>1024</td><td>No <code>..</code> (default: lra-identity.key)</td><td>invalid_path</td></tr>
+<tr><td><code>lra_verify</code></td><td>target</td><td>string</td><td>1024</td><td>No <code>..</code> (URL or hash)</td><td>invalid_target</td></tr>
+</tbody></table>
+<h3 id="deprecation-and-evolution">Deprecation and Evolution</h3>
+<ul>
+<li><strong>Current Status:</strong> LRA tools are actively maintained and part of Wave 4 arsenal (2026-04-06).</li>
+<li><strong>Stability:</strong> Tool names, argument keys, role requirements, and error codes are stable per this contract.</li>
+<li><strong>Future Evolution:</strong> If LRA-1.0 specification evolves or new LRA tools are added, changes will be documented in a subsequent wave (e.g., Wave 5). Current tools will maintain backward compatibility.</li>
+<li><strong>Sunset Policy:</strong> No lra_* tools are currently scheduled for deprecation. If removal or breaking changes are planned, advance notice of 1 full wave cycle (minimum 2 weeks) will be provided in project documentation.</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

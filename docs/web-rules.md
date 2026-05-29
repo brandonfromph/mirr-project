@@ -17,4 +17,4 @@ Ten rules for safety-critical web development. Derived from audit of `paper/` an
 
 ## Compliance Record (2026-03-14)
 
-All 10 rules: **PASS**. See `CLAUDE.md` history for per-rule evidence.
+All 10 rules: **PASS**. See `AGENT.md` history for per-rule evidence.

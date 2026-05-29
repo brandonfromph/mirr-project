@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>R-SPU ISA v2 Specification — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="R-SPU ISA v2 Specification — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="R-SPU ISA v2 Specification — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#1-overview">1. Overview</a></li>
+        <li><a href="#2-register-file-architecture">2. Register File Architecture</a></li>
+          <li class="toc-h3"><a href="#21-register-partitions">2.1 Register Partitions</a></li>
+          <li class="toc-h3"><a href="#22-tagged-word-format">2.2 Tagged-Word Format</a></li>
+        <li><a href="#3-instruction-encoding">3. Instruction Encoding</a></li>
+          <li class="toc-h3"><a href="#31-instruction-formats">3.1 Instruction Formats</a></li>
+        <li><a href="#4-instruction-set">4. Instruction Set</a></li>
+          <li class="toc-h3"><a href="#41-register-tier-opcodes-03">4.1 Register Tier (opcodes 0–3)</a></li>
+          <li class="toc-h3"><a href="#42-alu-tier-opcodes-46">4.2 ALU Tier (opcodes 4–6)</a></li>
+          <li class="toc-h3"><a href="#43-temporal-tier-opcodes-716">4.3 Temporal Tier (opcodes 7–16)</a></li>
+          <li class="toc-h3"><a href="#44-safety-tier-opcodes-1719">4.4 Safety Tier (opcodes 17–19)</a></li>
+          <li class="toc-h3"><a href="#45-exception-tier-opcodes-2022-new-in-v2">4.5 Exception Tier (opcodes 20–22) — NEW in v2</a></li>
+          <li class="toc-h3"><a href="#46-control-tier-opcodes-23-2728-new-in-v2">4.6 Control Tier (opcodes 23, 27–28) — NEW in v2</a></li>
+          <li class="toc-h3"><a href="#47-tagged-tier-opcodes-2426-30-new-in-v2">4.7 Tagged Tier (opcodes 24–26, 30) — NEW in v2</a></li>
+          <li class="toc-h3"><a href="#48-temporal-extension-opcode-29-new-in-v2">4.8 Temporal Extension (opcode 29) — NEW in v2</a></li>
+        <li><a href="#7-execution-model">7. Execution Model</a></li>
+          <li class="toc-h3"><a href="#71-pipeline">7.1 Pipeline</a></li>
+          <li class="toc-h3"><a href="#72-cycle-semantics">7.2 Cycle Semantics</a></li>
+          <li class="toc-h3"><a href="#73-program-termination">7.3 Program Termination</a></li>
+          <li class="toc-h3"><a href="#74-expression-evaluation">7.4 Expression Evaluation</a></li>
+        <li><a href="#8-exception-model">8. Exception Model</a></li>
+          <li class="toc-h3"><a href="#81-exception-codes">8.1 Exception Codes</a></li>
+          <li class="toc-h3"><a href="#82-exception-handler-table">8.2 Exception Handler Table</a></li>
+          <li class="toc-h3"><a href="#83-exception-depth">8.3 Exception Depth</a></li>
+          <li class="toc-h3"><a href="#84-exception-actions">8.4 Exception Actions</a></li>
+          <li class="toc-h3"><a href="#85-mode-dependent-default-behavior">8.5 Mode-Dependent Default Behavior</a></li>
+        <li><a href="#9-dual-mode-execution">9. Dual-Mode Execution</a></li>
+          <li class="toc-h3"><a href="#91-reflex-mode">9.1 Reflex Mode</a></li>
+          <li class="toc-h3"><a href="#92-host-mode">9.2 Host Mode</a></li>
+          <li class="toc-h3"><a href="#93-mode-transitions">9.3 Mode Transitions</a></li>
+        <li><a href="#10-resource-limits">10. Resource Limits</a></li>
+        <li><a href="#11-error-codes">11. Error Codes</a></li>
+        <li><a href="#12-pipeline-integration">12. Pipeline Integration</a></li>
+        <li><a href="#13-assembly-output-format">13. Assembly Output Format</a></li>
+        <li><a href="#14-see-also">14. See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>R-SPU ISA v2 — Formal Specification</h1>
+<blockquote>
+<p><strong>Status:</strong> Active (MEGA-3 delivered)
+<strong>ISA Version:</strong> 2.1 (Added <code>TAG_BRANCH</code>)
+<strong>Last updated:</strong> 2026-05-11</p>
+</blockquote>
+<hr />
+<h2 id="1-overview">1. Overview</h2>
+<p>The <strong>R-SPU (Reflexive Signal Processing Unit)</strong> is a safety-critical, deterministic,
+single-issue, in-order processor designed for real-time autonomic control. It serves
+as the hardware execution target for the MIRR compiler, mapping directly from the
+three MIRR language primitives — Signal, Guard, and Reflex — into register
+operations, temporal hardware units, and conditional datapath moves.</p>
+<p>Key design principles:</p>
+<ul>
+<li>
+<p><strong>Register-only architecture.</strong> The R-SPU has no external memory load/store
+instructions. All data resides in the 256-entry register file, partitioned into
+four fixed regions (input ports, output ports, internal signals, temporaries).
+This eliminates cache misses, TLB faults, and memory-ordering hazards.</p>
+</li>
+<li>
+<p><strong>Deterministic single-cycle execution.</strong> Every instruction executes in exactly
+one clock cycle. There are no pipeline stalls, branch mispredictions, or
+variable-latency operations. Worst-case execution time (WCET) equals the
+instruction count.</p>
+</li>
+<li>
+<p><strong>NASA Power-of-10 compliance.</strong> The ISA enforces bounded resource usage at
+every level: bounded register file, bounded instruction count, bounded guard
+units, bounded exception depth. No recursion. No unbounded loops. All resource
+limits are compile-time constants with <code>MAX_*</code> prefixes.</p>
+</li>
+<li>
+<p><strong>Safety-first design.</strong> The ISA includes a dedicated safety tier with
+<code>EMERGENCY_STOP</code>, <code>ASSERT_ALWAYS</code>, and <code>ASSERT_NEVER</code> instructions for MAPE-K
+autonomic control. Exception handling is bounded and deterministic. An unhandled
+exception in reflex mode triggers an immediate emergency stop.</p>
+</li>
+<li>
+<p><strong>Dual-mode execution.</strong> The R-SPU supports two execution modes — reflex mode
+(deterministic, cycle-accurate, interrupt-free) and host mode (interrupt-driven,
+variable latency) — with explicit <code>MODE_SWITCH</code> transitions.</p>
+</li>
+</ul>
+<p>The R-SPU ISA v2 extends the original v1 instruction set with exception handling
+(TRAP, TRAP_IF, HALT), mode switching (MODE_SWITCH), tagged memory operations
+(TAG_LOAD, TAG_CHECK, TAG_READ, TAG_BRANCH), pipeline control (NOP, FENCE), and
+temporal deadlines (DEADLINE_SET).</p>
+<hr />
+<h2 id="2-register-file-architecture">2. Register File Architecture</h2>
+<p>The R-SPU register file contains <strong>256 eight-bit-indexed registers</strong> (<code>RegId = u8</code>).
+Registers are statically partitioned into four non-overlapping regions by signal kind.</p>
+<h3 id="21-register-partitions">2.1 Register Partitions</h3>
+<table><thead><tr><th>Partition</th><th>Range</th><th style="text-align: right">Count</th><th>Purpose</th><th>Maps to</th></tr></thead><tbody>
+<tr><td>Input</td><td>R0–R63</td><td style="text-align: right">64</td><td>Hardware input ports</td><td><code>SignalKind::Input</code></td></tr>
+<tr><td>Output</td><td>R64–R127</td><td style="text-align: right">64</td><td>Hardware output ports</td><td><code>SignalKind::Output</code></td></tr>
+<tr><td>Internal</td><td>R128–R191</td><td style="text-align: right">64</td><td>Module-internal signals</td><td><code>SignalKind::Internal</code></td></tr>
+<tr><td>Temporary</td><td>R192–R255</td><td style="text-align: right">64</td><td>Expression intermediates</td><td>Compiler-allocated</td></tr>
+</tbody></table>
+<p>Partition constants (defined in <code>src/emit/rspu_isa.rs</code>):</p>
+<pre><code>REG_INPUT_BASE    =   0    REG_INPUT_MAX    =  63
+REG_OUTPUT_BASE   =  64    REG_OUTPUT_MAX   = 127
+REG_INTERNAL_BASE = 128    REG_INTERNAL_MAX = 191
+REG_TEMP_BASE     = 192    REG_TEMP_MAX     = 255
+</code></pre>
+<p>The compiler's linear-scan register allocator (<code>src/emit/rspu_regalloc.rs</code>) maps
+each MIRR signal to a register in the appropriate partition in a single O(n) pass.
+Temporary registers are allocated on demand during expression emission. If any
+partition overflows, the compiler emits error E701.</p>
+<h3 id="22-tagged-word-format">2.2 Tagged-Word Format</h3>
+<p>Each register holds a tagged word with three fields:</p>
+<table><thead><tr><th>Field</th><th>Type</th><th>Width</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>value</code></td><td><code>u64</code></td><td>64 bits</td><td>The data payload</td></tr>
+<tr><td><code>tag</code></td><td><code>TypeTag</code></td><td>4 bits</td><td>Runtime type discriminant</td></tr>
+<tr><td><code>provenance</code></td><td><code>Provenance</code></td><td>4 bits</td><td>Data origin for taint tracking</td></tr>
+</tbody></table>
+<p><strong>TypeTag values:</strong></p>
+<table><thead><tr><th>Tag</th><th>Encoding</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>Bool</code></td><td>0x0</td><td>Single-bit boolean</td></tr>
+<tr><td><code>Unsigned{w}</code></td><td>0x1</td><td>Unsigned integer of width <code>w</code> bits</td></tr>
+<tr><td><code>Signed{w}</code></td><td>0x2</td><td>Signed (two's complement) of width <code>w</code> bits</td></tr>
+<tr><td><code>Uninitialized</code></td><td>0xF</td><td>Register has not been written</td></tr>
+</tbody></table>
+<p><strong>Provenance values:</strong></p>
+<table><thead><tr><th>Provenance</th><th>Encoding</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>Input(port)</code></td><td>0x0</td><td>Value came from a hardware input port</td></tr>
+<tr><td><code>Computed</code></td><td>0x1</td><td>Value was produced by an ALU operation</td></tr>
+<tr><td><code>Literal</code></td><td>0x2</td><td>Value was loaded from an immediate</td></tr>
+<tr><td><code>Unset</code></td><td>0xF</td><td>Register provenance has not been set</td></tr>
+</tbody></table>
+<hr />
+<h2 id="3-instruction-encoding">3. Instruction Encoding</h2>
+<p>All R-SPU instructions are encoded as <strong>fixed 32-bit words</strong>. The top 6 bits
+(bits [31:26]) hold the opcode. The remaining 26 bits hold the payload, whose
+interpretation depends on the instruction format.</p>
+<h3 id="31-instruction-formats">3.1 Instruction Formats</h3>
+<p>The ISA defines four instruction formats:</p>
+<p><strong>R-type (register-register):</strong></p>
+<pre><code> 31      26 25      18 17      10  9       2  1  0
++----------+----------+----------+----------+----+
+|  opcode  |   dst    |   src1   |   src2   |func|
++----------+----------+----------+----------+----+
+   6 bits    8 bits     8 bits     8 bits   2 bits
+</code></pre>
+<p>Used by: <code>MOV</code>, <code>ALU</code>, <code>ALU_UNARY</code>, <code>TAG_LOAD</code>, <code>TAG_CHECK</code>, <code>TAG_READ</code>.</p>
+<p><strong>I-type (register-immediate):</strong></p>
+<pre><code> 31      26 25      18 17      10  9            0
++----------+----------+----------+--------------+
+|  opcode  |   dst    |   src    |    imm10     |
++----------+----------+----------+--------------+
+   6 bits    8 bits     8 bits      10 bits
+</code></pre>
+<p>Used by: <code>LOAD_INPUT</code>, <code>STORE_OUTPUT</code>, <code>LOAD_IMM</code>, <code>ALU_IMM</code>, <code>TAG_BRANCH</code>.</p>
+<p><strong>G-type (guard operations):</strong></p>
+<pre><code> 31      26 25      18 17      10  9       2  1  0
++----------+----------+----------+----------+----+
+|  opcode  |  guard   |  src_dst |  guard2  |func|
++----------+----------+----------+----------+----+
+   6 bits    8 bits     8 bits     8 bits   2 bits
+</code></pre>
+<p>Used by: <code>SR_INIT</code>, <code>SR_TICK</code>, <code>SR_QUERY</code>, <code>CTR_INIT</code>, <code>CTR_TICK</code>, <code>CTR_QUERY</code>,
+<code>GUARD_AND</code>, <code>GUARD_OR</code>, <code>REFLEX_IF</code>.</p>
+<p><strong>S-type (system/immediate-only):</strong></p>
+<pre><code> 31      26 25                                  0
++----------+------------------------------------+
+|  opcode  |             imm26                  |
++----------+------------------------------------+
+   6 bits               26 bits
+</code></pre>
+<p>Used by: <code>EMERGENCY_STOP</code>, <code>ASSERT_ALWAYS</code>, <code>ASSERT_NEVER</code>, <code>TRAP</code>, <code>HALT</code>,
+<code>NOP</code>, <code>FENCE</code>, <code>DEADLINE_SET</code>, <code>TAG_BRANCH</code> (Target PC branch version if needed, currently I-type branch).</p>
+<hr />
+<h2 id="4-instruction-set">4. Instruction Set</h2>
+<p>The R-SPU v2 ISA contains <strong>31 instructions</strong> organized into seven tiers. Each
+instruction executes in exactly one cycle. Opcode numbers are decimal.</p>
+<h3 id="41-register-tier-opcodes-03">4.1 Register Tier (opcodes 0–3)</h3>
+<p>These instructions move data between ports, registers, and immediates.</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">0</td><td><code>LOAD_INPUT</code></td><td>I-type</td><td><code>dst</code>, <code>port</code></td><td>Load value from input port into register <code>dst</code>.</td></tr>
+<tr><td style="text-align: right">1</td><td><code>STORE_OUTPUT</code></td><td>I-type</td><td><code>src</code>, <code>port</code></td><td>Store register <code>src</code> to output port.</td></tr>
+<tr><td style="text-align: right">2</td><td><code>MOV</code></td><td>R-type</td><td><code>dst</code>, <code>src</code></td><td>Copy register <code>src</code> to register <code>dst</code>.</td></tr>
+<tr><td style="text-align: right">3</td><td><code>LOAD_IMM</code></td><td>I-type</td><td><code>dst</code>, <code>value</code>, <code>width</code></td><td>Load immediate <code>value</code> (with bit-width) into <code>dst</code>.</td></tr>
+</tbody></table>
+<h3 id="42-alu-tier-opcodes-46">4.2 ALU Tier (opcodes 4–6)</h3>
+<p>Arithmetic and logic operations on register operands.</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">4</td><td><code>ALU</code></td><td>R-type</td><td><code>op</code>, <code>dst</code>, <code>a</code>, <code>b</code></td><td>Binary ALU: <code>dst = a op b</code>.</td></tr>
+<tr><td style="text-align: right">5</td><td><code>ALU_IMM</code></td><td>I-type</td><td><code>op</code>, <code>dst</code>, <code>a</code>, <code>imm</code></td><td>Binary ALU with immediate: <code>dst = a op imm</code>.</td></tr>
+<tr><td style="text-align: right">6</td><td><code>ALU_UNARY</code></td><td>R-type</td><td><code>op</code>, <code>dst</code>, <code>src</code></td><td>Unary ALU: <code>dst = op(src)</code>.</td></tr>
+</tbody></table>
+<p><strong>AluOp encoding (14 binary operations):</strong></p>
+<table><thead><tr><th style="text-align: right">Funct</th><th>Mnemonic</th><th>Operation</th><th style="text-align: right">Funct</th><th>Mnemonic</th><th>Operation</th></tr></thead><tbody>
+<tr><td style="text-align: right">0</td><td><code>ADD</code></td><td>Addition</td><td style="text-align: right">7</td><td><code>SHR</code></td><td>Logical right shift</td></tr>
+<tr><td style="text-align: right">1</td><td><code>SUB</code></td><td>Subtraction</td><td style="text-align: right">8</td><td><code>EQ</code></td><td>Equality comparison</td></tr>
+<tr><td style="text-align: right">2</td><td><code>MUL</code></td><td>Multiplication</td><td style="text-align: right">9</td><td><code>NE</code></td><td>Inequality comparison</td></tr>
+<tr><td style="text-align: right">3</td><td><code>AND</code></td><td>Bitwise/logical AND</td><td style="text-align: right">10</td><td><code>LT</code></td><td>Less than</td></tr>
+<tr><td style="text-align: right">4</td><td><code>OR</code></td><td>Bitwise/logical OR</td><td style="text-align: right">11</td><td><code>LE</code></td><td>Less than or equal</td></tr>
+<tr><td style="text-align: right">5</td><td><code>XOR</code></td><td>Bitwise XOR</td><td style="text-align: right">12</td><td><code>GT</code></td><td>Greater than</td></tr>
+<tr><td style="text-align: right">6</td><td><code>SHL</code></td><td>Logical left shift</td><td style="text-align: right">13</td><td><code>GE</code></td><td>Greater than or equal</td></tr>
+</tbody></table>
+<p><strong>AluUnaryOp encoding (2 unary operations):</strong></p>
+<table><thead><tr><th style="text-align: right">Funct</th><th>Mnemonic</th><th>Operation</th></tr></thead><tbody>
+<tr><td style="text-align: right">0</td><td><code>NOT</code></td><td>Bitwise/logical NOT</td></tr>
+<tr><td style="text-align: right">1</td><td><code>NEG</code></td><td>Arithmetic negation (two's complement)</td></tr>
+</tbody></table>
+<h3 id="43-temporal-tier-opcodes-716">4.3 Temporal Tier (opcodes 7–16)</h3>
+<p>Guard hardware units: shift registers and counters that implement MIRR's temporal
+<code>for N cycles</code> semantics. Each guard unit is addressed by a <code>GuardId</code> (u8).</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">7</td><td><code>SR_INIT</code></td><td>G-type</td><td><code>guard</code>, <code>length</code>, <code>cond</code></td><td>Initialize shift-register guard with pipeline length and condition register.</td></tr>
+<tr><td style="text-align: right">8</td><td><code>SR_TICK</code></td><td>G-type</td><td><code>guard</code></td><td>Advance shift-register guard by one tick.</td></tr>
+<tr><td style="text-align: right">9</td><td><code>SR_QUERY</code></td><td>G-type</td><td><code>dst</code>, <code>guard</code></td><td>Read shift-register guard result into register.</td></tr>
+<tr><td style="text-align: right">10</td><td><code>CTR_INIT</code></td><td>G-type</td><td><code>guard</code>, <code>target</code>, <code>cond</code></td><td>Initialize counter guard with target count and condition register.</td></tr>
+<tr><td style="text-align: right">11</td><td><code>CTR_TICK</code></td><td>G-type</td><td><code>guard</code></td><td>Advance counter guard by one tick.</td></tr>
+<tr><td style="text-align: right">12</td><td><code>CTR_QUERY</code></td><td>G-type</td><td><code>dst</code>, <code>guard</code></td><td>Read counter guard result into register.</td></tr>
+<tr><td style="text-align: right">13</td><td><code>GUARD_AND</code></td><td>G-type</td><td><code>dst</code>, <code>a</code>, <code>b</code></td><td>Combine two guard outputs with AND: <code>dst = a &amp; b</code>.</td></tr>
+<tr><td style="text-align: right">14</td><td><code>GUARD_OR</code></td><td>G-type</td><td><code>dst</code>, <code>a</code>, <code>b</code></td><td>Combine two guard outputs with OR: `dst = a</td></tr>
+<tr><td style="text-align: right">15</td><td><code>REFLEX_IF</code></td><td>G-type</td><td><code>guard</code>, <code>dst</code>, <code>src</code></td><td>Conditional move: if guard active, <code>dst = src</code>.</td></tr>
+<tr><td style="text-align: right">16</td><td><code>PREV</code></td><td>G-type</td><td><code>dst</code>, <code>signal</code>, <code>delay</code></td><td>Read previous-tick value: <code>dst = signal[t - delay]</code>.</td></tr>
+</tbody></table>
+<p>The three-instruction guard pattern (INIT, TICK, QUERY) corresponds directly to
+MIRR's temporal compilation of <code>guard G { when COND; for N cycles; }</code>.</p>
+<h3 id="44-safety-tier-opcodes-1719">4.4 Safety Tier (opcodes 17–19)</h3>
+<p>MAPE-K autonomic safety actions and formal verification assertions.</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">17</td><td><code>EMERGENCY_STOP</code></td><td>S-type</td><td><em>(none)</em></td><td>Halt the R-SPU immediately. Non-recoverable safety action.</td></tr>
+<tr><td style="text-align: right">18</td><td><code>ASSERT_ALWAYS</code></td><td>S-type</td><td><code>cond</code>, <code>property_id</code></td><td>Assert condition is always true (verification only, no datapath).</td></tr>
+<tr><td style="text-align: right">19</td><td><code>ASSERT_NEVER</code></td><td>S-type</td><td><code>cond</code>, <code>property_id</code></td><td>Assert condition is never true (verification only, no datapath).</td></tr>
+</tbody></table>
+<p><code>ASSERT_ALWAYS</code> and <code>ASSERT_NEVER</code> map to MIRR property declarations and generate
+SystemVerilog Assertions (SVA) in the Verilog backend. They do not produce hardware
+in the R-SPU datapath; they are consumed by formal verification tools.</p>
+<h3 id="45-exception-tier-opcodes-2022-new-in-v2">4.5 Exception Tier (opcodes 20–22) — NEW in v2</h3>
+<p>Structured exception handling with bounded trap depth.</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">20</td><td><code>TRAP</code></td><td>S-type</td><td><code>exception_code</code></td><td>Raise an unconditional exception with the given code.</td></tr>
+<tr><td style="text-align: right">21</td><td><code>TRAP_IF</code></td><td>S-type</td><td><code>cond</code>, <code>exception_code</code></td><td>Raise an exception if condition register is true.</td></tr>
+<tr><td style="text-align: right">22</td><td><code>HALT</code></td><td>S-type</td><td><code>exit_code</code></td><td>Graceful program termination with exit code.</td></tr>
+</tbody></table>
+<p>Exception codes are enumerated in section 6. The <code>HALT</code> instruction differs from
+<code>EMERGENCY_STOP</code> in that it is a graceful termination (exit code 0 = success),
+whereas <code>EMERGENCY_STOP</code> is an immediate safety-critical abort.</p>
+<h3 id="46-control-tier-opcodes-23-2728-new-in-v2">4.6 Control Tier (opcodes 23, 27–28) — NEW in v2</h3>
+<p>Mode switching and pipeline control.</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">23</td><td><code>MODE_SWITCH</code></td><td>S-type</td><td><code>target_mode</code></td><td>Switch between reflex mode and host mode (see section 7).</td></tr>
+<tr><td style="text-align: right">27</td><td><code>NOP</code></td><td>S-type</td><td><em>(none)</em></td><td>No operation. Consumes one cycle. Used for alignment.</td></tr>
+<tr><td style="text-align: right">28</td><td><code>FENCE</code></td><td>S-type</td><td><em>(none)</em></td><td>Memory/pipeline fence. Ensures all prior writes are visible before subsequent reads.</td></tr>
+</tbody></table>
+<h3 id="47-tagged-tier-opcodes-2426-30-new-in-v2">4.7 Tagged Tier (opcodes 24–26, 30) — NEW in v2</h3>
+<p>Runtime type tag inspection and manipulation for dynamic safety checks.</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">24</td><td><code>TAG_LOAD</code></td><td>R-type</td><td><code>dst</code>, <code>tag_value</code></td><td>Load an explicit type tag into the tag field of register <code>dst</code>.</td></tr>
+<tr><td style="text-align: right">25</td><td><code>TAG_CHECK</code></td><td>R-type</td><td><code>src</code>, <code>expected_tag</code></td><td>Trap if <code>src</code> register's tag does not match <code>expected_tag</code>.</td></tr>
+<tr><td style="text-align: right">26</td><td><code>TAG_READ</code></td><td>R-type</td><td><code>dst</code>, <code>src</code></td><td>Copy the tag field of <code>src</code> into the value field of <code>dst</code>.</td></tr>
+<tr><td style="text-align: right">30</td><td><code>TAG_BRANCH</code></td><td>I-type</td><td><code>tag_value</code>, <code>target_pc</code></td><td>Jump to <code>target_pc</code> if active tag matches <code>tag_value</code>.</td></tr>
+</tbody></table>
+<p><code>TAG_BRANCH</code> enables low-latency branching based on the runtime type system state.</p>
+<h3 id="48-temporal-extension-opcode-29-new-in-v2">4.8 Temporal Extension (opcode 29) — NEW in v2</h3>
+<p>Hardware deadline enforcement for real-time constraints.</p>
+<table><thead><tr><th style="text-align: right">Opcode</th><th>Mnemonic</th><th>Format</th><th>Fields</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">29</td><td><code>DEADLINE_SET</code></td><td>S-type</td><td><code>guard</code>, <code>max_cycles</code></td><td>Set a hard deadline: if guard has not fired within <code>max_cycles</code>, raise DeadlineMiss exception.</td></tr>
+</tbody></table>
+<p><code>DEADLINE_SET</code> supports MIRR's <code>eventually within N</code> property semantics at the
+hardware level, converting a verification-only temporal assertion into a runtime
+enforcement mechanism.</p>
+<hr />
+<h2 id="7-execution-model">7. Execution Model</h2>
+<h3 id="71-pipeline">7.1 Pipeline</h3>
+<p>The R-SPU uses a <strong>fetch-decode-execute</strong> pipeline with single-issue, in-order
+execution. There is no branch prediction, no speculative execution, and no
+out-of-order retirement.</p>
+<ul>
+<li><strong>Fetch:</strong> Read the 32-bit instruction word at the current program counter (PC).</li>
+<li><strong>Decode:</strong> Extract the 6-bit opcode and route to the appropriate functional unit.</li>
+<li><strong>Execute:</strong> Perform the operation and write results in the same cycle.</li>
+</ul>
+<p>The program counter starts at address 0 and increments by 1 each cycle (there
+are no branch or jump instructions; control flow is implicit via guards and
+reflexes). <code>TAG_BRANCH</code> is an exception to the implicit increment rule: it
+sets the PC to <code>target_pc</code> if the condition is met.</p>
+<h3 id="72-cycle-semantics">7.2 Cycle Semantics</h3>
+<p>Each clock cycle corresponds to one "tick" of the MIRR temporal model. Within
+a single tick, the R-SPU executes the following deterministic sequence:</p>
+<ol>
+<li><strong>Input capture:</strong> <code>LOAD_INPUT</code> instructions read hardware port values into
+the input register partition (R0–R63).</li>
+<li><strong>Guard evaluation:</strong> Temporal guard instructions (<code>SR_INIT</code>/<code>TICK</code>/<code>QUERY</code>,
+<code>CTR_INIT</code>/<code>TICK</code>/<code>QUERY</code>, <code>GUARD_AND</code>/<code>OR</code>) update guard hardware units
+and query their activation state.</li>
+<li><strong>Reflex execution:</strong> <code>REFLEX_IF</code> instructions conditionally move values
+gated by guard activation. Expression preambles (<code>ALU</code>, <code>ALU_IMM</code>,
+<code>ALU_UNARY</code>, <code>LOAD_IMM</code>, <code>PREV</code>, <code>TAG_BRANCH</code>) compute intermediate values
+and control flow updates.</li>
+<li><strong>Property assertion:</strong> <code>ASSERT_ALWAYS</code> and <code>ASSERT_NEVER</code> check verification
+conditions (simulation/formal verification only).</li>
+<li><strong>Output commit:</strong> <code>STORE_OUTPUT</code> instructions write the output register
+partition (R64–R127) to hardware ports.</li>
+</ol>
+<h3 id="73-program-termination">7.3 Program Termination</h3>
+<p>A program terminates when one of the following occurs:</p>
+<ul>
+<li><strong><code>HALT</code> instruction:</strong> Graceful termination with an exit code.</li>
+<li><strong><code>EMERGENCY_STOP</code> instruction:</strong> Immediate safety-critical abort.</li>
+<li><strong>Maximum cycle count reached:</strong> The simulator enforces <code>MAX_SIM_CYCLES</code>
+to prevent runaway execution.</li>
+<li><strong>Unhandled exception in reflex mode:</strong> Triggers <code>EMERGENCY_STOP</code> automatically.</li>
+</ul>
+<h3 id="74-expression-evaluation">7.4 Expression Evaluation</h3>
+<p>Expressions are compiled using an explicit work-stack (no recursion, per NASA P10).
+Each sub-expression is evaluated bottom-up, storing intermediate results in
+temporary registers (R192–R255).</p>
+<p>The work-stack uses three item types:</p>
+<ul>
+<li><code>Eval(expr)</code> — schedule an expression for evaluation</li>
+<li><code>EmitUnary(op)</code> — pop one result, apply unary op, push result</li>
+<li><code>EmitBinary(op)</code> — pop two results, apply binary op, push result</li>
+</ul>
+<p>Bounded by <code>MAX_EXPR_NODES</code> (512 nodes per expression).</p>
+<hr />
+<h2 id="8-exception-model">8. Exception Model</h2>
+<h3 id="81-exception-codes">8.1 Exception Codes</h3>
+<p>The R-SPU subsystem defines a fixed set of exception codes:</p>
+<table><thead><tr><th style="text-align: right">Code</th><th>Name</th><th>Description</th></tr></thead><tbody>
+<tr><td style="text-align: right">0</td><td><code>None</code></td><td>No exception (sentinel value).</td></tr>
+<tr><td style="text-align: right">1</td><td><code>DivisionByZero</code></td><td>ALU division or modulo by zero.</td></tr>
+<tr><td style="text-align: right">2</td><td><code>RegisterUninitialized</code></td><td>Read from a register with <code>Uninitialized</code> tag.</td></tr>
+<tr><td style="text-align: right">3</td><td><code>TagMismatch</code></td><td><code>TAG_CHECK</code> detected a type tag mismatch.</td></tr>
+<tr><td style="text-align: right">4</td><td><code>DeadlineMiss</code></td><td><code>DEADLINE_SET</code> deadline expired without guard firing.</td></tr>
+<tr><td style="text-align: right">5</td><td><code>AssertionViolation</code></td><td><code>ASSERT_ALWAYS</code> or <code>ASSERT_NEVER</code> condition failed.</td></tr>
+<tr><td style="text-align: right">6</td><td><code>UserTrap</code></td><td>Software-initiated trap via <code>TRAP</code> or <code>TRAP_IF</code>.</td></tr>
+</tbody></table>
+<h3 id="82-exception-handler-table">8.2 Exception Handler Table</h3>
+<p>Exception handlers are registered in a bounded handler table:</p>
+<ul>
+<li><strong>Maximum handlers:</strong> <code>MAX_TRAP_HANDLERS = 16</code></li>
+<li><strong>Table structure:</strong> Array of <code>(ExceptionCode, HandlerAddress)</code> pairs.</li>
+<li><strong>Lookup:</strong> Linear scan (bounded by <code>MAX_TRAP_HANDLERS</code>).</li>
+</ul>
+<p>When an exception occurs, the R-SPU searches the handler table for a matching
+entry. If found, control transfers to the handler address. If not found, the
+default action depends on the current execution mode.</p>
+<h3 id="83-exception-depth">8.3 Exception Depth</h3>
+<p>Exception nesting is bounded to prevent unbounded stack growth:</p>
+<ul>
+<li><strong>Maximum nesting depth:</strong> <code>MAX_EXCEPTION_DEPTH = 8</code></li>
+<li>If an exception occurs while already at maximum depth, the R-SPU executes
+an immediate <code>EMERGENCY_STOP</code> regardless of mode.</li>
+</ul>
+<h3 id="84-exception-actions">8.4 Exception Actions</h3>
+<p>Each exception handler may specify one of four actions:</p>
+<table><thead><tr><th>Action</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>Halt</code></td><td>Graceful program termination.</td></tr>
+<tr><td><code>EmergencyStop</code></td><td>Immediate safety-critical abort (non-recoverable).</td></tr>
+<tr><td><code>IgnoreAndContinue</code></td><td>Suppress the exception and resume execution at PC+1.</td></tr>
+<tr><td><code>TrapToHost</code></td><td>Transfer control to the host processor (exit reflex mode).</td></tr>
+</tbody></table>
+<h3 id="85-mode-dependent-default-behavior">8.5 Mode-Dependent Default Behavior</h3>
+<ul>
+<li><strong>Reflex mode:</strong> An unhandled exception triggers <code>EMERGENCY_STOP</code>. Safety
+is the overriding concern; the R-SPU must never continue in an undefined
+state during deterministic reflex execution.</li>
+<li><strong>Host mode:</strong> An unhandled exception traps to the software handler on the
+host processor. The host may inspect the exception code, log diagnostics,
+and decide how to proceed.</li>
+</ul>
+<hr />
+<h2 id="9-dual-mode-execution">9. Dual-Mode Execution</h2>
+<p>The R-SPU supports two execution modes to bridge the gap between deterministic
+hardware control and flexible software supervision.</p>
+<h3 id="91-reflex-mode">9.1 Reflex Mode</h3>
+<ul>
+<li><strong>Deterministic, cycle-accurate execution.</strong> Every instruction takes exactly
+one cycle. No interrupts, no preemption.</li>
+<li><strong>Guard and reflex semantics are fully active.</strong> Shift registers tick,
+counters decrement, conditional moves fire.</li>
+<li><strong>All temporal guarantees hold.</strong> WCET = instruction count.</li>
+<li><strong>Exceptions are fail-safe.</strong> Unhandled exceptions trigger <code>EMERGENCY_STOP</code>.</li>
+</ul>
+<p>This is the primary execution mode for safety-critical autonomic control.</p>
+<h3 id="92-host-mode">9.2 Host Mode</h3>
+<ul>
+<li><strong>Interrupt-driven, variable latency.</strong> The host processor can interrupt
+the R-SPU between instructions.</li>
+<li><strong>Temporal guards are suspended.</strong> Guard ticking does not occur; the host
+is responsible for managing time.</li>
+<li><strong>Used for diagnostics, configuration, and non-critical tasks.</strong></li>
+<li><strong>Exceptions trap to the host</strong> for software-level handling.</li>
+</ul>
+<h3 id="93-mode-transitions">9.3 Mode Transitions</h3>
+<p>The <code>MODE_SWITCH</code> instruction transitions between modes:</p>
+<ul>
+<li><strong>Reflex to Host:</strong> Allowed at any point. The R-SPU completes the current
+instruction, then suspends temporal processing and enables host interrupts.</li>
+<li><strong>Host to Reflex:</strong> Requires quiescence. The host must ensure there are no
+pending interrupts and no in-flight DMA transfers before issuing
+<code>MODE_SWITCH</code> back to reflex mode. Violating the quiescence requirement
+raises a <code>UserTrap</code> exception.</li>
+</ul>
+<hr />
+<h2 id="10-resource-limits">10. Resource Limits</h2>
+<p>All resource limits are compile-time constants enforced by the MIRR compiler
+and the R-SPU hardware. These bounds ensure NASA Power-of-10 compliance:
+every loop terminates, every buffer has a fixed maximum size, and every
+resource can be statically verified at compile time.</p>
+<table><thead><tr><th>Constant</th><th style="text-align: right">Value</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>MAX_REGISTERS</code></td><td style="text-align: right">256</td><td>Total register file entries (4 partitions of 64).</td></tr>
+<tr><td><code>MAX_GUARDS</code></td><td style="text-align: right">64</td><td>Maximum temporal guard hardware units.</td></tr>
+<tr><td><code>MAX_INSTRUCTIONS</code></td><td style="text-align: right">4,096</td><td>Maximum instructions in a single R-SPU program.</td></tr>
+<tr><td><code>MAX_TRAP_HANDLERS</code></td><td style="text-align: right">16</td><td>Maximum registered exception handlers.</td></tr>
+<tr><td><code>MAX_EXCEPTION_DEPTH</code></td><td style="text-align: right">8</td><td>Maximum nested exception depth.</td></tr>
+<tr><td><code>MAX_SIM_CYCLES</code></td><td style="text-align: right">1,000,000</td><td>Maximum simulation cycles (simulator-only bound).</td></tr>
+<tr><td><code>MAX_TAGGED_WORD_BITS</code></td><td style="text-align: right">128</td><td>Maximum bits per tagged register word (64 data + tags).</td></tr>
+<tr><td><code>MAX_EXPR_NODES</code></td><td style="text-align: right">512</td><td>Maximum AST nodes per expression (compiler bound).</td></tr>
+</tbody></table>
+<p>These constants are defined in <code>src/emit/rspu_isa.rs</code> (ISA-level) and
+<code>src/ast/mod.rs</code> (compiler-level). Error E702 is emitted when the instruction
+budget is exceeded, E703 when guard resources are exhausted, and E704/E705 when
+expression or temporary register limits are reached.</p>
+<hr />
+<h2 id="11-error-codes">11. Error Codes</h2>
+<p>The R-SPU subsystem uses error codes in the E7xx range. All errors are emitted
+by the MIRR compiler during R-SPU code generation; the R-SPU hardware itself
+does not produce software-visible error codes (it uses exception codes instead).</p>
+<table><thead><tr><th>Code</th><th>Message Pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E700</td><td><em>(R-SPU category fallback prefix)</em></td><td><code>src/error.rs</code></td></tr>
+<tr><td>E701</td><td><code>R-SPU register allocation failed: too many {kind} signals ({n} &gt; {max}).</code></td><td><code>src/emit/rspu_regalloc.rs</code></td></tr>
+<tr><td>E702</td><td><code>R-SPU instruction budget exceeded: {n} instructions &gt; {max}.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E703</td><td><code>R-SPU guard resource exhausted: {n} guards &gt; {max}.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E704</td><td><code>R-SPU expression exceeds maximum node count.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E705</td><td><code>R-SPU temporary registers exhausted.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E706</td><td><code>R-SPU encoding field overflow: immediate/register exceeds bit-width.</code></td><td><code>src/emit/rspu_encoding.rs</code></td></tr>
+<tr><td>E707</td><td><code>R-SPU unknown or reserved opcode in binary stream.</code></td><td><code>src/emit/rspu_encoding.rs</code></td></tr>
+<tr><td>E708</td><td><code>R-SPU tag violation: runtime type mismatch on tagged register.</code></td><td><code>src/emit/rspu_tagged.rs</code></td></tr>
+<tr><td>E709</td><td><code>R-SPU uninitialized register read.</code></td><td><code>src/emit/rspu_tagged.rs</code></td></tr>
+<tr><td>E710</td><td><code>R-SPU guard index out of bounds.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E711</td><td><code>R-SPU exception depth overflow: nested traps exceed MAX_EXCEPTION_DEPTH.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E712</td><td><code>R-SPU simulation cycle budget exceeded (MAX_SIM_CYCLES).</code></td><td><code>src/emit/rspu_sim.rs</code></td></tr>
+<tr><td>E713</td><td><code>R-SPU trap handler table overflow: exceeds MAX_TRAP_HANDLERS.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E714</td><td><code>R-SPU invalid execution mode for ModeSwitch.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E715</td><td><code>R-SPU deadline expired: DeadlineSet counter reached zero.</code></td><td><code>src/emit/rspu_sim.rs</code></td></tr>
+</tbody></table>
+<p>All error codes E700–E715 are actively used in the current compiler and ISA simulator.
+Codes E706–E715 were activated by MEGA-3 for the v2 instruction extensions: binary
+encoding (E706–E707), tagged words (E708–E709), guard bounds (E710), exception model
+(E711, E713–E714), simulation limits (E712), and temporal deadlines (E715).</p>
+<hr />
+<h2 id="12-pipeline-integration">12. Pipeline Integration</h2>
+<p>Enable R-SPU emission via <code>PipelineConfig</code>:</p>
+<pre><code class="language-rust"><span class="hl-kw">let</span> config <span class="hl-op">=</span> <span class="hl-type">PipelineConfig</span> {
+    rspu: <span class="hl-num">true</span>,
+    <span class="hl-cmt">// ... other fields</span>
+};
+<span class="hl-kw">let</span> result <span class="hl-op">=</span> run_pipeline(source, config)?;
+<span class="hl-kw">let</span> program <span class="hl-op">=</span> result.rspu_program.unwrap();
+<span class="hl-fn">println</span><span class="hl-op">!</span>(<span class="hl-str">&quot;{}&quot;</span>, program.emit_asm());</code></pre>
+<p>The R-SPU backend requires temporal compilation to have run first
+(<code>temporal_netlist</code> must be populated in <code>PipelineResult</code>).</p>
+<hr />
+<h2 id="13-assembly-output-format">13. Assembly Output Format</h2>
+<p><code>RspuProgram::emit_asm()</code> produces human-readable assembly:</p>
+<pre><code class="language-asm"><span class="hl-cmt">; R-SPU Assembly — generated by MIRR compiler</span>
+<span class="hl-cmt">; Registers used: 5</span>
+<span class="hl-cmt">; Guards used:    1</span>
+<span class="hl-cmt">; Instructions:   12</span>
+<span class="hl-cmt">;</span>
+<span class="hl-cmt">; Register map:</span>
+<span class="hl-cmt">;   R0   = sensor</span>
+<span class="hl-cmt">;   R1   = threshold</span>
+<span class="hl-cmt">;   R64  = alarm</span>
+<span class="hl-cmt">;</span>
+<span class="hl-cmt">; Guard map:</span>
+<span class="hl-cmt">;   G0   = sustained_fault</span>
+
+   <span class="hl-fn">0:</span>  LOAD_INPUT  R0, P0
+   <span class="hl-fn">1:</span>  LOAD_INPUT  R1, P1
+   <span class="hl-fn">2:</span>  SR_INIT     G0, 3, R0
+   <span class="hl-fn">3:</span>  SR_TICK     G0
+   <span class="hl-fn">4:</span>  SR_QUERY    R0, G0
+   <span class="hl-fn">5:</span>  TAG_BRANCH  0x1, 0xA      ; Branch on 'Verified' tag
+   <span class="hl-fn">6:</span>  REFLEX_IF   G0, R64, R192
+   <span class="hl-fn">7:</span>  STORE_OUTPUT R64, P0</code></pre>
+<hr />
+<h2 id="14-see-also">14. See Also</h2>
+<ul>
+<li><a href="error_codes.md">Error Codes</a> — Complete MIRR error code reference (E1xx–E8xx).</li>
+<li><a href="tutorial.md">Tutorial</a> — Hands-on introduction to the MIRR compiler.</li>
+<li><a href="roadmap.md">Roadmap</a> — R-SPU compiler and EDA project roadmap.</li>
+<li><a href="type-system.md">Type System</a> — MIRR type rules behind E6xx errors and signal types.</li>
+<li><code>src/emit/rspu_isa.rs</code> — Canonical Rust definition of the ISA types and constants.</li>
+<li><code>src/emit/rspu.rs</code> — R-SPU code generation backend.</li>
+<li><code>src/emit/rspu_regalloc.rs</code> — Bounded linear-scan register allocator.</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

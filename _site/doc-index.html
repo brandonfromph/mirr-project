@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation Index — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Documentation Index — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Documentation Index — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#status-legend">Status Legend</a></li>
+        <li><a href="#core-documentation">Core Documentation</a></li>
+        <li><a href="#architecture-references">Architecture References</a></li>
+        <li><a href="#self-hosting">Self-Hosting</a></li>
+        <li><a href="#legacy">Legacy</a></li>
+        <li><a href="#papers">Papers</a></li>
+        <li><a href="#proposal-archive">Proposal Archive</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Documentation Index</h1>
+<p>Canonical index for all project documentation. Updated each campaign.</p>
+<hr />
+<h2 id="status-legend">Status Legend</h2>
+<table><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><strong>Active</strong></td><td>Current, maintained documentation</td></tr>
+<tr><td><strong>Frozen</strong></td><td>Historical, will not be updated</td></tr>
+<tr><td><strong>Deprecated</strong></td><td>Superseded by newer docs; kept for reference</td></tr>
+<tr><td><strong>Stub</strong></td><td>Placeholder awaiting content</td></tr>
+</tbody></table>
+<hr />
+<h2 id="core-documentation">Core Documentation</h2>
+<table><thead><tr><th>Document</th><th>Status</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="ARCHITECTURE.html">Architecture</a></td><td>Active</td><td>Canonical source of truth for the codebase tree</td></tr>
+<tr><td><a href="roadmap.html">Roadmap</a></td><td>Active</td><td>Project phases, architecture, research foundation</td></tr>
+<tr><td><a href="presidential-arsenal-roadmap.html">Presidential Arsenal Roadmap</a></td><td>Active</td><td>Mega-campaign execution plans and strategies</td></tr>
+<tr><td><a href="tutorial.html">Tutorial</a></td><td>Active</td><td>Learn MIRR from scratch</td></tr>
+<tr><td><a href="type-system.html">Type System</a></td><td>Active</td><td>Type checker reference (E601–E625)</td></tr>
+<tr><td><a href="error_codes.html">Error Codes</a></td><td>Active</td><td>Error codes introduced per phase</td></tr>
+<tr><td><a href="logic_simplification.html">Logic Simplification</a></td><td>Active</td><td>Phase 3 simplifier architecture and rules</td></tr>
+<tr><td><a href="benchmarks.html">Benchmarks</a></td><td>Active</td><td>Criterion benchmark tiers and usage</td></tr>
+<tr><td><a href="glossary.html">Glossary</a></td><td>Active</td><td>Project terminology and acronyms (~55 terms)</td></tr>
+<tr><td><a href="contributing.html">Contributing</a></td><td>Active</td><td>Coding standards, campaign workflow, error allocation</td></tr>
+<tr><td><a href="testing-guide.html">Testing Guide</a></td><td>Active</td><td>Testing architecture and test suite organization</td></tr>
+<tr><td><a href="web-rules.html">Web Rules</a></td><td>Active</td><td>Web development and aesthetic UI guidelines</td></tr>
+<tr><td><a href="file-tree.html">File Tree</a></td><td>Frozen</td><td>Historical snapshot of the Phase 7 repository tree</td></tr>
+<tr><td><a href="consumer-contracts.html">Consumer Contracts</a></td><td>Active</td><td>Interface boundaries and API guarantees for end users</td></tr>
+<tr><td><a href="fpga-targets-guide.html">FPGA Targets Guide</a></td><td>Active</td><td>FPGA toolchain, synthesis, and target configuration</td></tr>
+<tr><td><a href="mape-k-guide.html">MAPE-K Guide</a></td><td>Active</td><td>Autonomic feedback loop simulator and LTL monitoring</td></tr>
+<tr><td><a href="sexpr-guide.html">S-Expression Guide</a></td><td>Active</td><td>Homoiconic S-expression IR, round-trip invariant</td></tr>
+<tr><td><a href="ECS_MIGRATION_GUIDE.html">ECS Migration Guide</a></td><td>Active</td><td>Guide for migrating the compiler to the ECS architecture</td></tr>
+</tbody></table>
+<h2 id="architecture-references">Architecture References</h2>
+<table><thead><tr><th>Document</th><th>Status</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a></td><td>Active</td><td>R-SPU instruction set architecture v2 specification</td></tr>
+<tr><td><a href="migration-guide.html">Migration Guide</a></td><td>Active</td><td>Breaking changes per version</td></tr>
+<tr><td><a href="phase2_temporal_guard_compiler.html">Phase 2 Temporal Guard Compiler</a></td><td>Frozen</td><td>Original Phase 2 design notes</td></tr>
+</tbody></table>
+<h2 id="self-hosting">Self-Hosting</h2>
+<table><thead><tr><th>Document</th><th>Status</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="self_hosting_milestone.html">Self-Hosting Milestone</a></td><td>Frozen</td><td>MIRR-in-MIRR progress tracker</td></tr>
+<tr><td><a href="self_hosting_core_spec.html">Self-Hosting Core Spec</a></td><td>Frozen</td><td>Core language spec for self-hosting</td></tr>
+<tr><td><a href="self_hosting_ir_contract.html">Self-Hosting IR Contract</a></td><td>Frozen</td><td>IR contract for bootstrap pipeline</td></tr>
+</tbody></table>
+<h2 id="legacy">Legacy</h2>
+<table><thead><tr><th>Document</th><th>Status</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="mirr_spec.html">MIRR Spec</a></td><td>Deprecated</td><td>Phase 1 minimal core only. See Tutorial and Type System.</td></tr>
+</tbody></table>
+<h2 id="papers">Papers</h2>
+<table><thead><tr><th>Document</th><th>Status</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>paper/dac2027-mirr.tex</code></td><td>Frozen</td><td>DAC 2027 submission (tag: <code>dac2027-submission</code>)</td></tr>
+<tr><td><code>paper/living-doc/</code></td><td>Active</td><td>Living documentation (no page limit, updated every campaign)</td></tr>
+</tbody></table>
+<hr />
+<h2 id="proposal-archive">Proposal Archive</h2>
+<p>All proposals live in <code>proposals/</code> and follow the campaign workflow.</p>
+<table><thead><tr><th>#</th><th>Campaign</th><th>Date</th><th>Status</th></tr></thead><tbody>
+<tr><td>001</td><td>SEM-001</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>002</td><td>TYPE-001</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>003</td><td>TYPE-002</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>004</td><td>TYPE-003</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>005</td><td>TYPE-004</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>006</td><td>ROCQ-001</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>007</td><td>TYPE-005 + RSPU-001</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>008</td><td>DOC-001</td><td>2026-03-08</td><td>Executed</td></tr>
+<tr><td>009</td><td>SITE-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>010</td><td>SITE-002</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>011</td><td>SPAN-001 + LSP-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>012</td><td>ERR-001 + VSCODE-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>013</td><td>FPGA-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>014</td><td>FPGA-002</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>015</td><td>ERR-002</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>016</td><td>SAFE-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>017</td><td>DEBT-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>018</td><td>DEBT-002</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>019</td><td>DOC-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>020</td><td>DOC-002</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>021</td><td>SYNTH-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>022</td><td>PAPER-001</td><td>2026-03-09</td><td>Executed</td></tr>
+<tr><td>023</td><td>PHASE7-FOUNDATION</td><td>2026-03-10</td><td>Executed</td></tr>
+<tr><td>024</td><td>MEGA-1a</td><td>2026-03-10</td><td>Executed</td></tr>
+<tr><td>025</td><td>MEGA-1b</td><td>2026-03-11</td><td>Executed</td></tr>
+<tr><td>026</td><td>MEGA-2</td><td>2026-03-11</td><td>Executed</td></tr>
+<tr><td>027</td><td>MEGA-3</td><td>2026-03-11</td><td>Executed</td></tr>
+<tr><td>028</td><td>AUDIT-001</td><td>2026-03-11</td><td>Executed</td></tr>
+<tr><td>029</td><td>STD-001</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>030</td><td>LRA-001</td><td>2026-03-11</td><td>Executed</td></tr>
+<tr><td>031</td><td>LRA-002</td><td>2026-03-11</td><td>Executed</td></tr>
+<tr><td>032</td><td>STD-001-LRA</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>033</td><td>LRA-PHASE1</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>034</td><td>LRA-PHASE2</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>035</td><td>LRA-PHASE3-PHASE4</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>036</td><td>CIGREEN-001</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>037</td><td>HARDEN-001</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>038</td><td>PAPER-001</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>039</td><td>CIRUST-001</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>040</td><td>PAGES-001</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>041</td><td>ULTRA-FORMAL-001</td><td>2026-03-12</td><td>Executed</td></tr>
+<tr><td>042</td><td>PAPER-001</td><td>2026-03-13</td><td>Executed</td></tr>
+<tr><td>043</td><td>TITAN-CONVERGENCE</td><td>2026-03-13</td><td>Executed</td></tr>
+<tr><td>044</td><td>OUROBOROS-DESIGN</td><td>2026-03-13</td><td>Executed</td></tr>
+<tr><td>045</td><td>MEGA-CONVERGENCE</td><td>2026-03-14</td><td>Executed</td></tr>
+<tr><td>046</td><td>POLISH-AND-SHIP</td><td>2026-03-14</td><td>Executed</td></tr>
+<tr><td>047</td><td>POLISH-2</td><td>2026-03-14</td><td>Executed</td></tr>
+<tr><td>048</td><td>LRA-PHASE5</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>049</td><td>LRA-PHASE6</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>050</td><td>LRA-PHASE7</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>051</td><td>LRA-PHASE8</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>052</td><td>LRA-PHASE9</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>053</td><td>MEGA4-TOTALITY-ENGINE</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>054</td><td>MEGA5-SYMBOLIC-EVAL</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>055</td><td>MEGA-VERIFY</td><td>2026-03-15</td><td>Executed</td></tr>
+<tr><td>056</td><td>MEGA6-MAPE-K-SILICON</td><td>2026-03-16</td><td>Executed</td></tr>
+<tr><td>057</td><td>MEGA7-RUST-LEVEL-ERRORS</td><td>2026-03-17</td><td>Proposed</td></tr>
+<tr><td>058</td><td>MEGA10-BOUNDED-DATA</td><td>2026-03-17</td><td>Proposed</td></tr>
+<tr><td>059</td><td>MEGA11-14-UNIFIED</td><td>2026-03-17</td><td>Proposed</td></tr>
+<tr><td>060</td><td>MEGA12-BOUNDED-HLS</td><td>2026-03-19</td><td>Proposed</td></tr>
+<tr><td>061</td><td>MEGA12-DATAFLOW-OPT</td><td>2026-03-19</td><td>Proposed</td></tr>
+<tr><td>062</td><td>MEGA13-SELF-HOST</td><td>2026-03-19</td><td>Proposed</td></tr>
+<tr><td>063</td><td>WASM-BUILDER-AUDIT</td><td>2026-03-20</td><td>Executed</td></tr>
+<tr><td>064</td><td>MAJOR-REPO-HARDENING</td><td>2026-03-20</td><td>Proposed</td></tr>
+</tbody></table>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="index.html">Home</a> — Project landing page</li>
+<li><a href="roadmap.html">Roadmap</a> — Full project roadmap</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
