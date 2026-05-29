@@ -184,3 +184,6 @@ parser_patch.diff
 
 # ─── LanceDB & crates test DBs ───────────────────────────────────────────────
 crates/**/.kb-test-*/
+
+# Skills dev directory
+.skills-dev/
