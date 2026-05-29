@@ -96,7 +96,7 @@ fn test_cli_dump_expanded_flag() {
     let macro_test_path = std::fs::canonicalize("tests/macro_test.mirr")
         .expect("Failed to get absolute path for test file");
 
-    let output = std::process::Command::new(&binary_path)
+    let output = std::process::Command::new(binary_path)
         .args(["--dump-expanded"])
         .arg(&macro_test_path)
         .current_dir(temp_dir.path())
