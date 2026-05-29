@@ -5,12 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MIRR Compiler — Interactive Paper</title>
   <link rel="stylesheet" href="paper.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.css"
-        integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/theme/material-darker.min.css"
-        integrity="sha512-2OhXH4Il3n2tHKwLLSDPhrkgnLBC+6lHGGQzSFi3chgVB6DJ/v6+nbx+XYO9CugQyHVF/8D/0k3Hx1eaUK2K9g=="
-        crossorigin="anonymous" referrerpolicy="no-referrer">
+
   <link rel="icon" href="data:,">
   <link rel="canonical" href="https://brandonfromph.github.io/mirr-project/paper/">
   <meta name="description" content="MIRR: A safety-critical HDL compiler with formal width inference. Living Research Artifact — interactive paper with in-browser compiler.">
@@ -211,12 +206,7 @@
   <div class="split-pane">
     <div class="pane">
       <label for="mirr-source">MIRR Source</label>
-      <div class="editor-container">
-        <textarea id="mirr-source" rows="28"
-          spellcheck="false"
-          placeholder="module example {&#10;  signal clk: in bool;&#10;}">
-        </textarea>
-      </div>
+      <div id="monaco-container" class="editor-container"></div>
     </div>
     <div class="pane">
       <span class="pane-label">Output <span id="output-label"></span></span>
@@ -2978,9 +2968,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
   </p>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"
-        integrity="sha512-tXHFLFVaasTvIEFYN8K6UlGvb6Sh1ealAA8YxjpezWMio6u0vU9KfGFzKVth49xh2affuBfmLGY8t2G5pZH+zg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.46.0/min/vs/loader.min.js"></script>
 <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
         integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>

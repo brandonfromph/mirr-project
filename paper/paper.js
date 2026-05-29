@@ -221,92 +221,17 @@ const EXAMPLES = {
 }`
 };
 
-// ── CodeMirror MIRR mode + editor init ────────────────────────────────
+// ── Monaco Editor MIRR Mode + Init ────────────────────────────────
 
-var cmEditor = null;
+var monacoEditor = null;
+var editorInitialValue = EXAMPLES.tmr; // default
 
 function getSource() {
-  if (cmEditor) return cmEditor.getValue();
-  var ta = document.getElementById('mirr-source');
-  return ta ? ta.value : '';
+  if (monacoEditor) return monacoEditor.getValue();
+  return editorInitialValue;
 }
 
 function setSource(text) {
-  if (cmEditor) { cmEditor.setValue(text); return; }
-  var ta = document.getElementById('mirr-source');
-  if (ta) ta.value = text;
-}
-
-(function initCodeMirror() {
-  if (typeof CodeMirror === 'undefined') return;
-
-  // Define MIRR language mode
-  CodeMirror.defineMode('mirr', function() {
-    var signalKw = /^(signal|input|output|wire|reg|assign)\b/;
-    var guardKw  = /^(guard|when|cycles|for)\b/;
-    var reflexKw = /^(reflex|on)\b/;
-    var generalKw = /^(module|always|temporal|require|ensure|if|else|let|fn|struct|enum|match|return|property|pattern|prev|use)\b/;
-    var dirs     = /^(in|out|internal)\b/;
-    var types    = /^(u[0-9]+|i[0-9]+|bool|bit|clock|reset)\b/;
-    var bools    = /^(true|false)\b/;
-
-    return {
-      startState: function() { return {}; },
-      token: function(stream) {
-        // Comments
-        if (stream.match('//')) { stream.skipToEnd(); return 'comment'; }
-        // Whitespace
-        if (stream.eatSpace()) return null;
-        // Annotations
-        if (stream.match(/@[a-zA-Z_]\w*/)) return 'meta';
-        // Tags
-        if (stream.match(/#[a-zA-Z_]\w*/)) return 'tag';
-        // Numbers
-        if (stream.match(/0x[0-9a-fA-F_]+/) || stream.match(/0b[01_]+/) || stream.match(/0o[0-7_]+/) || stream.match(/[0-9][0-9_]*/)) return 'number';
-        // Identifiers and keywords
-        if (stream.match(/[a-zA-Z_]\w*/)) {
-          var w = stream.current();
-          if (signalKw.test(w))  return 'keyword';
-          if (guardKw.test(w))   return 'def';
-          if (reflexKw.test(w))  return 'builtin';
-          if (generalKw.test(w)) return 'keyword';
-          if (dirs.test(w))      return 'qualifier';
-          if (types.test(w))     return 'type';
-          if (bools.test(w))     return 'atom';
-          return 'variable';
-        }
-        // Operators
-        if (stream.match(/[+\-*=<>!&|^~%]+/)) return 'operator';
-        // Braces / parens
-        if (stream.match(/[{}()\[\];:,]/)) return 'punctuation';
-        // Advance one char if nothing matched
-        stream.next();
-        return null;
-      }
-    };
-  });
-
-  var textarea = document.getElementById('mirr-source');
-  if (!textarea) return;
-
-  cmEditor = CodeMirror.fromTextArea(textarea, {
-    mode: 'mirr',
-    theme: 'material-darker',
-    lineNumbers: true,
-    matchBrackets: false,
-    indentUnit: 4,
-    tabSize: 4,
-    indentWithTabs: false,
-    lineWrapping: true,
-    viewportMargin: Infinity,
-    extraKeys: {
-      'Ctrl-Enter': function() { compile(); },
-      'Cmd-Enter':  function() { compile(); }
-    }
-  });
-  cmEditor.setSize(null, 350);
-})();
-
 var compile_pipeline_stages, proof_status, simulate_rspu, simulate_mapek, mirr_version, simulate_waveform, compile_graph_data;
 
 function hasExport(mod, name) {
@@ -680,11 +605,7 @@ function showCompileTime(ms) {
 document.getElementById('compile-btn')
   .addEventListener('click', compile);
 
-// Hook real-time compilation to CodeMirror
-if (cmEditor) {
-  cmEditor.on('change', debounceCompile);
-}
-
+// Monaco handles 'change' internally in initMonaco()
 document.getElementById('example-select')
   .addEventListener('change', function(e) {
     var key = e.target.value;
@@ -843,16 +764,7 @@ document.getElementById('mapek-sim-btn')
     }
   });
 
-// Keyboard shortcut fallback: Ctrl+Enter (when CodeMirror is not active)
-if (!cmEditor) {
-  document.getElementById('mirr-source')
-    .addEventListener('keydown', function(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        compile();
-      }
-    });
-}
+// Monaco handles keyboard shortcuts internally in initMonaco()
 
 // Boot WASM (non-blocking — page works without it)
 initWasm();
