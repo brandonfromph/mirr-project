@@ -40,6 +40,6 @@ module heartbeat_monitor {
     }
 
     property alarm_on_missing {
-        always (!heartbeat for 32 cycles -> alarm);
+        always (heartbeat_missing -> alarm);
     }
 }

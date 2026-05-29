@@ -3,6 +3,6 @@
 #[path = "mirr-compile/main.rs"]
 mod mirr_compile_main;
 
-fn main() {
+pub fn main() {
     mirr_compile_main::main();
 }

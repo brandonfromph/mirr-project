@@ -52,7 +52,28 @@ fn sig_guard(name: &str, signal: &str, cycles: u64) -> Guard {
 }
 
 fn guard_src(name: &str, cond: &str, cycles: u64) -> String {
-    format!("module t {{\n    signal {cond}: in bool;\n    guard {name} {{\n        when {cond}\n        for {cycles} cycles;\n    }}\n}}\n")
+    format!(
+        "module t {{
+    signal a: in bool;
+    signal b: in bool;
+    signal c: in bool;
+    signal sensor: in u16;
+    signal temp: in u16;
+    signal status: in u16;
+    signal flags: in u16;
+    signal level: in u16;
+    signal count: in u16;
+    signal clk_en: in bool;
+    signal reset: in bool;
+    signal p: in u16;
+    signal x: in u16;
+    guard {name} {{
+        when {cond}
+        for {cycles} cycles;
+    }}
+}}
+"
+    )
 }
 
 fn expect_sr(netlist: &TemporalNetlist) -> ShiftRegisterGuard {
@@ -316,29 +337,20 @@ fn test_unsupported_condition_arithmetic() {
 }
 
 #[test]
-fn test_unsupported_condition_prev() {
-    let guard = Guard {
-        name: "g".into(),
-        condition: Expr::Prev { signal: "s".into(), delay: 1 },
-        cycles: 4,
-        origin: None,
-        span: None,
-    };
-    let module = Module {
-        name: "t".into(),
-        signals: Vec::new(),
-        guards: vec![guard],
-        reflexes: Vec::new(),
-        properties: Vec::new(),
-        pattern_calls: Vec::new(),
-        pattern_origins: Vec::new(),
-        span: None,
-    };
+fn test_supported_condition_prev() {
     let mut compiler = TemporalGuardCompiler::new();
-    assert!(
-        compiler.compile_temporal_guards(&module).is_err(),
-        "Prev condition should be rejected"
-    );
+    let src = r#"
+module test_prev {
+    signal x: in bool;
+    guard g {
+        when prev(x, 2)
+        for 1 cycles;
+    }
+}
+"#;
+    let module = parse_mirr(src).unwrap().module;
+    let result = compiler.compile_temporal_guards(&module);
+    assert!(result.is_ok(), "Prev condition should be supported now: {:?}", result.err());
 }
 
 #[test]

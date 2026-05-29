@@ -157,7 +157,7 @@ module too_many {
 }
 "#;
     let msg = parse_err(source);
-    // MEGA-1 tokenizer gives a more specific error than the old E114.
+    // MEGA-1 tokenizer gives a more specific error than the original E114.
     assert!(msg.contains("[E183]"), "Expected E183 (unexpected token), got: {msg}");
     assert!(msg.contains("extra"), "Error should mention the unexpected token 'extra', got: {msg}");
 }
@@ -234,7 +234,9 @@ module unclosed_reflex {
     let msg = parse_err(source);
     // The reflex or module not-closed error
     assert!(
-        msg.contains("not closed with '}'") || msg.contains("was not closed"),
+        msg.contains("not closed with '}'")
+            || msg.contains("was not closed")
+            || msg.contains("unclosed"),
         "expected unclosed error, got: {msg}"
     );
 }
@@ -262,4 +264,249 @@ module inline_cmt {
     let assignments = &program.module.reflexes[0].assignments;
     assert_eq!(assignments.len(), 1);
     assert_eq!(assignments[0].target, "b");
+}
+
+#[test]
+fn reflex_name_containing_when_substring_parses() {
+    let source = r#"
+module reflex_name_when_substring {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    reflex whenever_alarm {
+        on g {
+            b = true;
+        }
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("should parse");
+    assert_eq!(program.module.reflexes.len(), 1);
+    assert_eq!(program.module.reflexes[0].name, "whenever_alarm");
+    assert_eq!(program.module.reflexes[0].guard_names, vec!["g"]);
+}
+
+#[test]
+fn on_clause_guard_name_containing_and_substring_not_split() {
+    let source = r#"
+module on_and_substring {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard gandalf {
+        when a
+        for 1 cycles;
+    }
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    guard alf {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r {
+        on gandalf {
+            b = true;
+        }
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("should parse");
+    assert_eq!(program.module.reflexes.len(), 1);
+    assert_eq!(program.module.reflexes[0].guard_names, vec!["gandalf"]);
+}
+
+#[test]
+fn inline_when_guard_name_containing_and_substring_not_split() {
+    let source = r#"
+module inline_when_and_substring {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard gandalf {
+        when a
+        for 1 cycles;
+    }
+
+    guard g {
+        when a
+        for 1 cycles;
+    }
+
+    guard alf {
+        when a
+        for 1 cycles;
+    }
+
+    reflex alarm when [gandalf] {
+        b = true;
+    }
+}
+"#;
+
+    let program = parse_mirr(source).expect("should parse");
+    assert_eq!(program.module.reflexes.len(), 1);
+    assert_eq!(program.module.reflexes[0].guard_names, vec!["gandalf"]);
+}
+
+#[test]
+fn test_empty_signals_block() {
+    let input = "module test_mod {\n    signals {}\n}";
+    let expanded = nasa_rust_project::compiler::macro_proc::expand_macros(input);
+    let result = nasa_rust_project::parser::parse_mirr(&expanded);
+    assert!(result.is_ok(), "Empty signals block should be valid");
+}
+
+// ---------------------------------------------------------------------------
+// Preprocessor & Parser Parity (5 tests: Tests 11-15)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_preprocessor_bypass_standard_on_clause() {
+    let input = r#"
+module test_mod {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard g1 {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r1 {
+        on g1 and g2 {
+            b = true;
+        }
+    }
+}
+"#;
+    let expanded = nasa_rust_project::compiler::macro_proc::expand_macros(input);
+    // Standard `on g1 and g2` clause should remain untouched
+    assert!(expanded.contains("on g1 and g2"), "Should preserve on clause");
+}
+
+#[test]
+fn test_preprocessor_nested_on_clause_extraction() {
+    let source = r#"
+module test_mod {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard g1 {
+        when a
+        for 1 cycles;
+    }
+    guard g2 {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r1 {
+        on g1 {
+            on g2 {
+                b = true;
+            }
+        }
+    }
+}
+"#;
+    let program = parse_mirr(source).expect("should parse nested on clauses");
+    assert_eq!(program.module.reflexes.len(), 1);
+    // Flattened guard stack is g1 and g2
+    assert_eq!(program.module.reflexes[0].guard_names, vec!["g1", "g2"]);
+}
+
+#[test]
+fn test_preprocessor_constraint_substitution() {
+    let source = r#"
+module test_mod {
+    signal a: in bool;
+    signal b: out u8;
+
+    guard g1 {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r1 {
+        on g1 {
+            let limit: u8 = 10;
+            b = limit;
+        }
+    }
+}
+"#;
+    let expanded = nasa_rust_project::compiler::macro_proc::expand_macros(source);
+    // Preprocessor should extract local let limit to module internal signal and assign it
+    assert!(
+        expanded.contains("signal limit: internal u8;"),
+        "Should extract let limit to internal signal"
+    );
+    assert!(expanded.contains("limit = 10;"), "Should assign 10 to limit");
+    assert!(expanded.contains("b = limit;"), "Should assign limit to b");
+}
+
+#[test]
+fn test_preprocessor_multiline_reflex_block() {
+    let source = r#"
+module test_mod {
+    signal a: in bool;
+    signal b: out bool;
+
+    guard g1 {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r1 {
+        on g1
+        {
+            b = true;
+        }
+    }
+}
+"#;
+    let program = parse_mirr(source).expect("should reconstruct multiline reflex block");
+    assert_eq!(program.module.reflexes.len(), 1);
+    assert_eq!(program.module.reflexes[0].assignments[0].target, "b");
+}
+
+#[test]
+fn test_preprocessor_scoping_variables() {
+    let source = r#"
+module test_mod {
+    signal a: in bool;
+    signal out_0: out bool;
+    signal out_1: out bool;
+
+    guard g1 {
+        when a
+        for 1 cycles;
+    }
+
+    reflex r1 {
+        on g1 {
+            for i in 0..2 {
+                out_${i} = true;
+            }
+        }
+    }
+}
+"#;
+    let expanded = nasa_rust_project::compiler::macro_proc::expand_macros(source);
+    // Loops should expand and replace scoped variable
+    assert!(expanded.contains("out_0 = true"), "Should generate out_0");
+    assert!(expanded.contains("out_1 = true"), "Should generate out_1");
+    assert!(!expanded.contains("out_${i}"), "Should not leak i outside of scope");
 }

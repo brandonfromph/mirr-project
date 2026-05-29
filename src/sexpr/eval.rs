@@ -90,16 +90,24 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
     'main: loop {
         iter_count += 1;
         if iter_count > max_iters {
-            return Err(sexpr_err("[E812] Evaluation steps exceed MAX_EVAL_STEPS"));
+            return Err(sexpr_err(format!(
+                "{} Evaluation steps exceed MAX_EVAL_STEPS",
+                crate::error_codes::ec(812)
+            )));
         }
         if stack.len() + state.depth > MAX_EVAL_DEPTH {
-            return Err(sexpr_err("[E811] Evaluation depth exceeds MAX_EVAL_DEPTH"));
+            return Err(sexpr_err(format!(
+                "{} Evaluation depth exceeds MAX_EVAL_DEPTH",
+                crate::error_codes::ec(811)
+            )));
         }
 
-        state.steps_remaining = state
-            .steps_remaining
-            .checked_sub(1)
-            .ok_or_else(|| sexpr_err("[E812] Evaluation steps exceed MAX_EVAL_STEPS"))?;
+        state.steps_remaining = state.steps_remaining.checked_sub(1).ok_or_else(|| {
+            sexpr_err(format!(
+                "{} Evaluation steps exceed MAX_EVAL_STEPS",
+                crate::error_codes::ec(812)
+            ))
+        })?;
 
         // ── Evaluate `current` to produce a value ──────────────────
         let value = match &current {
@@ -107,7 +115,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
             SExpr::Symbol(name) => lookup(&state.env, name)?,
             SExpr::Quote(inner) => (**inner).clone(),
             SExpr::Unquote(_) => {
-                return Err(sexpr_err("[E805] Unquote outside quasiquote"));
+                return Err(sexpr_err(format!(
+                    "{} Unquote outside quasiquote",
+                    crate::error_codes::ec(805)
+                )));
             }
             SExpr::Quasiquote(inner) => {
                 // Quasiquote: evaluate unquotes, leave rest as-is.
@@ -132,13 +143,19 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                 match head {
                     Some("quote") => {
                         if items.len() < 2 {
-                            return Err(sexpr_err("[E806] quote requires one argument"));
+                            return Err(sexpr_err(format!(
+                                "{} quote requires one argument",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         items[1].clone()
                     }
                     Some("if") => {
                         if items.len() < 4 {
-                            return Err(sexpr_err("[E806] if requires condition, then, else"));
+                            return Err(sexpr_err(format!(
+                                "{} if requires condition, then, else",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::IfCond {
                             then_expr: items[2].clone(),
@@ -159,7 +176,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("car") => {
                         if items.len() < 2 {
-                            return Err(sexpr_err("[E806] car requires one argument"));
+                            return Err(sexpr_err(format!(
+                                "{} car requires one argument",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::Car);
                         current = items[1].clone();
@@ -167,7 +187,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("cdr") => {
                         if items.len() < 2 {
-                            return Err(sexpr_err("[E806] cdr requires one argument"));
+                            return Err(sexpr_err(format!(
+                                "{} cdr requires one argument",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::Cdr);
                         current = items[1].clone();
@@ -175,7 +198,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("cons") => {
                         if items.len() < 3 {
-                            return Err(sexpr_err("[E806] cons requires head and tail"));
+                            return Err(sexpr_err(format!(
+                                "{} cons requires head and tail",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::ConsHead { tail_expr: items[2].clone() });
                         current = items[1].clone();
@@ -183,7 +209,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("eq?") => {
                         if items.len() < 3 {
-                            return Err(sexpr_err("[E806] eq? requires two arguments"));
+                            return Err(sexpr_err(format!(
+                                "{} eq? requires two arguments",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::EqFirst { second_expr: items[2].clone() });
                         current = items[1].clone();
@@ -191,7 +220,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("symbol?") => {
                         if items.len() < 2 {
-                            return Err(sexpr_err("[E806] symbol? requires one argument"));
+                            return Err(sexpr_err(format!(
+                                "{} symbol? requires one argument",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::TypePred(TypePredKind::Symbol));
                         current = items[1].clone();
@@ -199,7 +231,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("list?") => {
                         if items.len() < 2 {
-                            return Err(sexpr_err("[E806] list? requires one argument"));
+                            return Err(sexpr_err(format!(
+                                "{} list? requires one argument",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::TypePred(TypePredKind::List));
                         current = items[1].clone();
@@ -207,7 +242,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("integer?") => {
                         if items.len() < 2 {
-                            return Err(sexpr_err("[E806] integer? requires one argument"));
+                            return Err(sexpr_err(format!(
+                                "{} integer? requires one argument",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::TypePred(TypePredKind::Integer));
                         current = items[1].clone();
@@ -215,7 +253,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("bool?") => {
                         if items.len() < 2 {
-                            return Err(sexpr_err("[E806] bool? requires one argument"));
+                            return Err(sexpr_err(format!(
+                                "{} bool? requires one argument",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::TypePred(TypePredKind::Bool));
                         current = items[1].clone();
@@ -223,7 +264,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     }
                     Some("match-type") => {
                         if items.len() < 3 {
-                            return Err(sexpr_err("[E806] match-type requires type and clauses"));
+                            return Err(sexpr_err(format!(
+                                "{} match-type requires type and clauses",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         stack.push(Cont::MatchType { clauses: items[2..].to_vec() });
                         current = items[1].clone();
@@ -273,7 +317,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                         val = l[0].clone();
                     }
                     _ => {
-                        return Err(sexpr_err("[E805] car requires a non-empty list"));
+                        return Err(sexpr_err(format!(
+                            "{} car requires a non-empty list",
+                            crate::error_codes::ec(805)
+                        )));
                     }
                 },
                 Cont::Cdr => match val {
@@ -281,7 +328,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                         val = SExpr::list(l[1..].to_vec());
                     }
                     _ => {
-                        return Err(sexpr_err("[E805] cdr requires a non-empty list"));
+                        return Err(sexpr_err(format!(
+                            "{} cdr requires a non-empty list",
+                            crate::error_codes::ec(805)
+                        )));
                     }
                 },
                 Cont::ConsHead { tail_expr } => {
@@ -321,15 +371,22 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     for clause in &clauses {
                         clause_iters += 1;
                         if clause_iters > MAX_SEXPR_NODES {
-                            return Err(sexpr_err("[E804] match-type exceeded iteration budget"));
+                            return Err(sexpr_err(format!(
+                                "{} match-type exceeded iteration budget",
+                                crate::error_codes::ec(804)
+                            )));
                         }
-                        let clause_items = clause
-                            .as_list()
-                            .ok_or_else(|| sexpr_err("[E806] match-type clause must be a list"))?;
+                        let clause_items = clause.as_list().ok_or_else(|| {
+                            sexpr_err(format!(
+                                "{} match-type clause must be a list",
+                                crate::error_codes::ec(806)
+                            ))
+                        })?;
                         if clause_items.len() < 2 {
-                            return Err(sexpr_err(
-                                "[E806] match-type clause requires pattern and body",
-                            ));
+                            return Err(sexpr_err(format!(
+                                "{} match-type clause requires pattern and body",
+                                crate::error_codes::ec(806)
+                            )));
                         }
                         let pattern = &clause_items[0];
                         let body = &clause_items[1];
@@ -344,7 +401,10 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                     if matched {
                         continue 'main;
                     }
-                    return Err(sexpr_err("[E805] No match-type clause matched"));
+                    return Err(sexpr_err(format!(
+                        "{} No match-type clause matched",
+                        crate::error_codes::ec(805)
+                    )));
                 }
                 Cont::MatchTypeRestore { env_depth } => {
                     state.env.truncate(env_depth);
@@ -411,9 +471,7 @@ fn match_type_pattern(
 
 /// Look up a symbol binding in the environment (most-recent first).
 fn lookup(env: &[(String, SExpr)], name: &str) -> Result<SExpr, MirrError> {
-    env.iter()
-        .rev()
-        .find(|(k, _)| k == name)
-        .map(|(_, v)| v.clone())
-        .ok_or_else(|| sexpr_err(format!("[E813] Undefined symbol: {name}")))
+    env.iter().rev().find(|(k, _)| k == name).map(|(_, v)| v.clone()).ok_or_else(|| {
+        sexpr_err(format!("{} Undefined symbol: {name}", crate::error_codes::ec(813)))
+    })
 }

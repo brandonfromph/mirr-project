@@ -19,9 +19,7 @@ use mirr_general::cache::{
 };
 use mirr_general::manifest::load_package_manifest;
 use mirr_general::migration::{build_script_inventory, migrate_script};
-use mirr_general::parity::{
-    run_consumer_parity, verify_cli_wasm_parity, verify_mcp_contract, verify_vscode_contract,
-};
+use mirr_general::parity::{run_consumer_parity, verify_cli_wasm_parity, verify_vscode_contract};
 use mirr_general::scheduler::{execute_all_waves, ExecutionPlan, TaskSpec, WaveKind, WaveSpec};
 
 // Compatibility markers retained for full-gate regression checks:
@@ -30,8 +28,6 @@ use mirr_general::scheduler::{execute_all_waves, ExecutionPlan, TaskSpec, WaveKi
 // cargo clippy --all-targets -- -D warnings
 // RUSTDOCFLAGS=-D warnings cargo doc --no-deps
 // cargo nextest run --workspace --no-fail-fast
-// npm --prefix mcp_server test
-// node mcp_server/tests/stdio_proxy_test.js
 // npm --prefix paper/demos pack --dry-run
 // npm --prefix vscode-mirr pack --dry-run
 // bash tests/eda/run_eda_tests.sh
@@ -139,9 +135,11 @@ const WORKSPACE_SELECTIVE_NEXTEST_ARGS: &[&str] = &[
     "--test",
     "semantic_validation_tests",
     "--test",
-    "mega10_composite_integration_tests",
+    "composite_type_integration_tests",
     "--test",
-    "mega11_meta_stage_tests",
+    "meta_stage_unroller_tests",
+    "--test",
+    "compiler_flexibility_tests",
     "--test",
     "orchestrator_scheduler_tests",
     "--test",
@@ -164,9 +162,11 @@ const WORKSPACE_SELECTIVE_CARGO_TEST_ARGS: &[&str] = &[
     "--test",
     "semantic_validation_tests",
     "--test",
-    "mega10_composite_integration_tests",
+    "composite_type_integration_tests",
     "--test",
-    "mega11_meta_stage_tests",
+    "meta_stage_unroller_tests",
+    "--test",
+    "compiler_flexibility_tests",
     "--test",
     "orchestrator_scheduler_tests",
     "--test",
@@ -289,7 +289,6 @@ fn build_ci_full_plan(use_nextest: bool) -> ExecutionPlan {
                 wave_index: 4,
                 kind: WaveKind::Parity,
                 tasks: vec![
-                    task(4, "mcp", npm_command_name(), &["--prefix", "mcp_server", "test"], true),
                     task(
                         4,
                         "vscode",
@@ -898,10 +897,11 @@ fn package_fingerprint_sources(package_name: &str) -> io::Result<Vec<PathBuf>> {
             collect_files_under(Path::new("tests/parser_composite_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/semantic_validation_tests.rs"), &mut files)?;
             collect_files_under(
-                Path::new("tests/mega10_composite_integration_tests.rs"),
+                Path::new("tests/composite_type_integration_tests.rs"),
                 &mut files,
             )?;
-            collect_files_under(Path::new("tests/mega11_meta_stage_tests.rs"), &mut files)?;
+            collect_files_under(Path::new("tests/meta_stage_unroller_tests.rs"), &mut files)?;
+            collect_files_under(Path::new("tests/compiler_flexibility_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/orchestrator_scheduler_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/orchestrator_cache_tests.rs"), &mut files)?;
             collect_files_under(Path::new("tests/orchestrator_migration_tests.rs"), &mut files)?;
@@ -939,12 +939,6 @@ fn package_fingerprint_sources(package_name: &str) -> io::Result<Vec<PathBuf>> {
             collect_files_under(Path::new("proofs/language"), &mut files)?;
             collect_files_under(Path::new("proofs/width"), &mut files)?;
             collect_files_under(Path::new("proofs/rspu"), &mut files)?;
-        }
-        "mcp" => {
-            collect_files_under(Path::new("mcp_server/src"), &mut files)?;
-            collect_files_under(Path::new("mcp_server/tests"), &mut files)?;
-            collect_files_under(Path::new("mcp_server/package.json"), &mut files)?;
-            collect_files_under(Path::new("mcp_server/package-lock.json"), &mut files)?;
         }
         "vscode" => {
             collect_files_under(Path::new("vscode-mirr/src"), &mut files)?;
@@ -1244,7 +1238,6 @@ fn run_ci(as_json: bool, requested_profile: Option<CiProfile>) -> io::Result<i32
 fn run_parity_all() -> io::Result<i32> {
     let records = vec![
         verify_cli_wasm_parity(Path::new("examples/neonatal_respirator.mirr"))?,
-        verify_mcp_contract()?,
         verify_vscode_contract()?,
     ];
 

@@ -16,8 +16,12 @@
 #![forbid(unsafe_code)]
 
 pub mod diff;
+pub mod fingerprint;
+pub mod integration;
 pub mod interval;
 pub mod pattern;
+pub mod rewrite;
+pub mod statistics;
 
 use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
@@ -33,6 +37,73 @@ pub const MAX_SYM_ITERATIONS: usize = 64;
 
 /// Maximum expression tree depth (work-stack bound for iterative evaluation).
 pub const MAX_SYM_DEPTH: usize = 32;
+
+/// Verifies that two temporal netlists are structurally equivalent.
+/// Used as a gate for the logic optimizer.
+///
+/// Performs conservative structural equivalence: checks that guard count,
+/// shift-register count, counter count, and logic gate count are identical
+/// between the original and optimized netlists. Returns `[E900]` if any
+/// structural property differs. This is a necessary (not sufficient) condition
+/// for full logical equivalence — it catches structural regressions without
+/// requiring a full SAT/BDD solver.
+pub fn verify_equivalence(
+    original: &crate::temporal::low_level_ir::TemporalNetlist,
+    optimized: &crate::temporal::low_level_ir::TemporalNetlist,
+) -> Result<(), crate::error::PipelineErrors> {
+    let mut errors: Vec<crate::error::MirrError> = Vec::new();
+
+    if original.guards.len() != optimized.guards.len() {
+        errors.push(crate::error::MirrError::SymbolicError {
+            message: format!(
+                "{} Equivalence check failed: guard count changed ({} → {})",
+                crate::error_codes::ec(900),
+                original.guards.len(),
+                optimized.guards.len()
+            ),
+            span: None,
+        });
+    }
+    if original.statistics.shift_registers_used != optimized.statistics.shift_registers_used {
+        errors.push(crate::error::MirrError::SymbolicError {
+            message: format!(
+                "{} Equivalence check failed: shift-register count changed ({} → {})",
+                crate::error_codes::ec(900),
+                original.statistics.shift_registers_used,
+                optimized.statistics.shift_registers_used
+            ),
+            span: None,
+        });
+    }
+    if original.statistics.counters_used != optimized.statistics.counters_used {
+        errors.push(crate::error::MirrError::SymbolicError {
+            message: format!(
+                "{} Equivalence check failed: counter count changed ({} → {})",
+                crate::error_codes::ec(900),
+                original.statistics.counters_used,
+                optimized.statistics.counters_used
+            ),
+            span: None,
+        });
+    }
+    if original.statistics.logic_gates_used != optimized.statistics.logic_gates_used {
+        errors.push(crate::error::MirrError::SymbolicError {
+            message: format!(
+                "{} Equivalence check failed: logic-gate count changed ({} → {})",
+                crate::error_codes::ec(900),
+                original.statistics.logic_gates_used,
+                optimized.statistics.logic_gates_used
+            ),
+            span: None,
+        });
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(crate::error::PipelineErrors { errors })
+    }
+}
 
 // ── Abstract domain ────────────────────────────────────────────────────────
 
@@ -226,8 +297,10 @@ pub fn sym_eval_binary(op: BinaryOp, lhs: SymValue, rhs: SymValue) -> SymValue {
         // Both concrete: compute exactly.
         (SymValue::Concrete(a), SymValue::Concrete(b)) => {
             let result = match op {
-                BinaryOp::And => u64::from(a != 0 && b != 0),
-                BinaryOp::Or => u64::from(a != 0 || b != 0),
+                BinaryOp::And => a & b,
+                BinaryOp::Or => a | b,
+                BinaryOp::BitwiseOr => a | b,
+                BinaryOp::BitwiseAnd => a & b,
                 BinaryOp::Xor => a ^ b,
                 BinaryOp::Lt => u64::from(a < b),
                 BinaryOp::Le => u64::from(a <= b),
@@ -301,13 +374,13 @@ pub fn sym_check_refinement(val: SymValue, lo: u64, hi: u64) -> bool {
 
 /// Widen two successive abstract values to ensure convergence.
 ///
-/// If `old == new`, the fixpoint is stable and `old` is returned.
+/// If `prev == next`, the fixpoint is stable and `prev` is returned.
 /// Otherwise the result climbs the lattice toward `Top`.
-pub fn sym_widen(old: SymValue, new: SymValue) -> SymValue {
-    if old == new {
-        return old;
+pub fn sym_widen(prev: SymValue, next: SymValue) -> SymValue {
+    if prev == next {
+        return prev;
     }
-    match (old, new) {
+    match (prev, next) {
         (SymValue::Concrete(a), SymValue::Concrete(b)) => {
             SymValue::Interval { lo: a.min(b), hi: a.max(b) }
         }
@@ -333,7 +406,8 @@ pub fn analyze_module(module: &crate::ast::program::Module) -> Result<SymbolicRe
     if module.signals.len() > MAX_SYM_SIGNALS {
         return Err(MirrError::SymbolicError {
             message: format!(
-                "[E1003] Symbolic analysis: {} signals exceed maximum ({})",
+                "{} Symbolic analysis: {} signals exceed maximum ({})",
+                crate::error_codes::ec(1003),
                 module.signals.len(),
                 MAX_SYM_SIGNALS
             ),
@@ -381,8 +455,10 @@ pub fn analyze_module(module: &crate::ast::program::Module) -> Result<SymbolicRe
                         expected: SymValue::Interval { lo: 0, hi: max_val },
                         actual: val,
                         message: format!(
-                            "[E1001] Signal '{}' may exceed {}-bit width bounds",
-                            assignment.target, sig_width
+                            "{} Signal '{}' may exceed {}-bit width bounds",
+                            crate::error_codes::ec(1001),
+                            assignment.target,
+                            sig_width
                         ),
                     });
                 }

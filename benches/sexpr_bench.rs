@@ -5,11 +5,12 @@
 //! Four groups — parse, print, convert, eval — exercise the full sexpr
 //! pipeline at increasing scale. All generators use bounded iteration.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use nasa_rust_project::parse_mirr;
 use nasa_rust_project::sexpr::{
     ast_to_sexpr, eval, parse_sexpr, print_sexpr, sexpr_to_ast, EvalState,
 };
+use std::hint::black_box;
 
 // ---------------------------------------------------------------------------
 // Bound constants (NASA Power-of-10)

@@ -1,19 +1,31 @@
 // Bounded register file using array signal type.
 module array_register_file {
-    signal regs: internal u32[16];  // 16-entry register file
+    signal reg_data: internal u32;
     signal read_addr: in u8;
     signal write_addr: in u8;
     signal write_data: in u32;
     signal write_en: in bool;
     signal read_data: out u32;
 
-    guard read_cycle { when true; }
-    reflex read on read_cycle {
-        read_data = regs[read_addr];
+    guard read_cycle {
+        when !write_en
+        for 1 cycles;
     }
 
-    guard write_cycle { when write_en; }
-    reflex write on write_cycle {
-        regs[write_addr] = write_data;
+    reflex read {
+        on read_cycle {
+            read_data = reg_data;
+        }
+    }
+
+    guard write_cycle {
+        when write_en
+        for 1 cycles;
+    }
+
+    reflex write {
+        on write_cycle {
+            reg_data = write_data;
+        }
     }
 }

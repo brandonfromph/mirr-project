@@ -33,7 +33,10 @@ module test {
 "#;
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
-    expand_patterns(&mut program).expect("expansion should succeed");
+    let mut registry = nasa_rust_project::ecs::Registry::new();
+    nasa_rust_project::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+        .expect("ingestion should succeed");
+    expand_patterns(&mut program, &registry).expect("expansion should succeed");
     assert!(!program.module.guards.is_empty(), "should have expanded guard");
     assert!(!program.module.reflexes.is_empty(), "should have expanded reflex");
 }
@@ -67,7 +70,10 @@ module test {
 "#;
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
-    expand_patterns(&mut program).expect("expansion should succeed");
+    let mut registry = nasa_rust_project::ecs::Registry::new();
+    nasa_rust_project::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+        .expect("ingestion should succeed");
+    expand_patterns(&mut program, &registry).expect("expansion should succeed");
     assert!(program.module.guards.len() >= 2, "should have at least 2 expanded guards");
 }
 
@@ -98,7 +104,10 @@ module test {
 "#;
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
-    expand_patterns(&mut program).expect("expansion should succeed");
+    let mut registry = nasa_rust_project::ecs::Registry::new();
+    nasa_rust_project::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+        .expect("ingestion should succeed");
+    expand_patterns(&mut program, &registry).expect("expansion should succeed");
     // Internal signals should be renamed to avoid conflicts
     assert!(!program.module.signals.is_empty());
 }
@@ -124,7 +133,10 @@ module test {
 "#;
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
-    let result = expand_patterns(&mut program);
+    let mut registry = nasa_rust_project::ecs::Registry::new();
+    nasa_rust_project::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+        .expect("ingestion should succeed");
+    let result = expand_patterns(&mut program, &registry);
     assert!(result.is_err(), "arity mismatch should be detected");
 }
 
@@ -154,7 +166,10 @@ module test {
 "#;
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
-    expand_patterns(&mut program).expect("expansion should succeed");
+    let mut registry = nasa_rust_project::ecs::Registry::new();
+    nasa_rust_project::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+        .expect("ingestion should succeed");
+    expand_patterns(&mut program, &registry).expect("expansion should succeed");
     assert!(!program.module.guards.is_empty());
     assert!(!program.module.reflexes.is_empty());
 }

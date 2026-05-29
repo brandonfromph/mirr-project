@@ -1,0 +1,30 @@
+// Non-blocking Crossbar Interconnect
+// Routes data from 16 inputs to 16 outputs
+module crossbar {
+    signals {
+        clk: in bool;
+
+        for i in 0..16 {
+            addr[i]: in u16;
+            data_in[i]: in u64;
+            data_out[i]: out u64;
+        }
+    }
+
+    guard always_on {
+        when clk
+        for 1 cycles;
+    }
+
+    reflex route {
+        on always_on {
+            // Demonstrate ergonomic let signal assignment inline
+            let temp_route_0: u64 = data_in_0;
+            data_out_0 = temp_route_0;
+            
+            for i in 1..16 {
+                data_out[i] = data_in[i];
+            }
+        }
+    }
+}

@@ -37,7 +37,10 @@ impl ReaderMacroRegistry {
     /// Returns error if the registry is full.
     pub fn register(&mut self, name: &str, f: ReaderMacroFn) -> Result<(), MirrError> {
         if self.macros.len() >= MAX_READER_MACROS {
-            return Err(sexpr_err("[E815] Too many reader macros"));
+            return Err(sexpr_err(format!(
+                "{} Too many reader macros",
+                crate::error_codes::ec(815)
+            )));
         }
         self.macros.push((name.to_string(), f));
         Ok(())
@@ -53,7 +56,7 @@ impl ReaderMacroRegistry {
                 return func(args);
             }
         }
-        Err(sexpr_err(format!("[E815] Unknown reader macro: #{name}")))
+        Err(sexpr_err(format!("{} Unknown reader macro: #{name}", crate::error_codes::ec(815))))
     }
 
     /// Number of registered macros.
@@ -92,24 +95,23 @@ fn reader_freq(args: &str) -> Result<SExpr, MirrError> {
         (s, 1u64)
     } else {
         return Err(sexpr_err(format!(
-            "[E808] Invalid frequency: '{args}'. Expected suffix: Hz, KHz, MHz, GHz"
+            "{} Invalid frequency: '{args}'. Expected suffix: Hz, KHz, MHz, GHz",
+            crate::error_codes::ec(808)
         )));
     };
 
-    let num: u64 = num_str
-        .trim()
-        .parse()
-        .map_err(|_| sexpr_err(format!("[E808] Invalid frequency number: '{num_str}'")))?;
+    let num: u64 = num_str.trim().parse().map_err(|_| {
+        sexpr_err(format!("{} Invalid frequency number: '{num_str}'", crate::error_codes::ec(808)))
+    })?;
 
     Ok(SExpr::list(vec![SExpr::sym("frequency"), SExpr::int(num * multiplier)]))
 }
 
 /// Parse a delay annotation into `(temporal-delay <cycles>)`.
 fn reader_delay(args: &str) -> Result<SExpr, MirrError> {
-    let cycles: u64 = args
-        .trim()
-        .parse()
-        .map_err(|_| sexpr_err(format!("[E808] Invalid delay value: '{args}'")))?;
+    let cycles: u64 = args.trim().parse().map_err(|_| {
+        sexpr_err(format!("{} Invalid delay value: '{args}'", crate::error_codes::ec(808)))
+    })?;
     Ok(SExpr::list(vec![SExpr::sym("temporal-delay"), SExpr::int(cycles)]))
 }
 
@@ -119,15 +121,24 @@ fn reader_delay(args: &str) -> Result<SExpr, MirrError> {
 fn reader_range(args: &str) -> Result<SExpr, MirrError> {
     let parts: Vec<&str> = args.trim().split("..").collect();
     if parts.len() != 2 {
-        return Err(sexpr_err(format!("[E808] Invalid range: '{args}'. Expected format: lo..hi")));
+        return Err(sexpr_err(format!(
+            "{} Invalid range: '{args}'. Expected format: lo..hi",
+            crate::error_codes::ec(808)
+        )));
     }
-    let lo: u64 = parts[0]
-        .trim()
-        .parse()
-        .map_err(|_| sexpr_err(format!("[E808] Invalid range lower bound: '{}'", parts[0])))?;
-    let hi: u64 = parts[1]
-        .trim()
-        .parse()
-        .map_err(|_| sexpr_err(format!("[E808] Invalid range upper bound: '{}'", parts[1])))?;
+    let lo: u64 = parts[0].trim().parse().map_err(|_| {
+        sexpr_err(format!(
+            "{} Invalid range lower bound: '{}'",
+            crate::error_codes::ec(808),
+            parts[0]
+        ))
+    })?;
+    let hi: u64 = parts[1].trim().parse().map_err(|_| {
+        sexpr_err(format!(
+            "{} Invalid range upper bound: '{}'",
+            crate::error_codes::ec(808),
+            parts[1]
+        ))
+    })?;
     Ok(SExpr::list(vec![SExpr::sym("refinement-range"), SExpr::int(lo), SExpr::int(hi)]))
 }

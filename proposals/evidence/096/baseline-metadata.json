@@ -1,9 +1,0 @@
-{
-  "commit_sha": "6fd49ce9c550aa7ae418723e410819a6d6987247",
-  "captured_at_utc": "2026-04-02T03:13:38Z",
-  "host_os": "Windows 10",
-  "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
-  "exact_command": "cargo test --all",
-  "exit_code": 0,
-  "test_count": 3350
-}

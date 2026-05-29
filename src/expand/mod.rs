@@ -12,24 +12,24 @@ mod scoping;
 mod substitution;
 
 use cycles::detect_pattern_cycles;
-use rename::{apply_name_prefixing, collect_fragment_names, set_origin_tags};
+use rename::{
+    apply_name_prefixing, apply_parameter_substitution, collect_fragment_names, set_origin_tags,
+};
 use scoping::validate_internal_signal_scoping;
 use substitution::{
     build_args_summary, build_substitution_map, parse_reflect_fragment, substitute_line,
     validate_fragment_signals,
 };
 
-use std::collections::HashMap;
-
-use crate::ast::pattern::{PatternCall, PatternDef, PatternOrigin};
-use crate::ast::program::{MirrProgram, Module};
+use crate::ast::pattern::{PatternCall, PatternOrigin};
+use crate::ast::program::MirrProgram;
 use crate::error::MirrError;
 
 /// Maximum nesting depth for pattern expansion (NASA P10 rule #1).
 const MAX_EXPANSION_DEPTH: usize = 4;
 
 /// Maximum total items (signals + guards + reflexes + properties) from all expansions.
-const MAX_EXPANDED_ITEMS: usize = 256;
+const MAX_EXPANDED_ITEMS: usize = 2048;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -41,175 +41,177 @@ const MAX_EXPANDED_ITEMS: usize = 256;
 /// - `module.pattern_calls` is empty.
 /// - `module.signals/guards/reflexes/properties` contain the expanded items.
 /// - `module.pattern_origins` contains provenance annotations for emitters.
-/// - `program.patterns` is retained for reference but not used downstream.
-///
-/// No-op if there are no pattern calls.
 ///
 /// Bounded: `MAX_EXPANSION_DEPTH` levels, `MAX_EXPANDED_ITEMS` total items.
-pub fn expand_patterns(program: &mut MirrProgram) -> Result<(), MirrError> {
+/// Iterative: Uses an explicit stack to satisfy NASA P10 Rule #1.
+pub fn expand_patterns(
+    program: &mut MirrProgram,
+    registry: &crate::ecs::Registry,
+) -> Result<(), MirrError> {
     if program.module.pattern_calls.is_empty() {
         return Ok(());
     }
 
-    // Build lookup map: pattern name -> &PatternDef (max 64 entries).
-    let pattern_map = build_pattern_map(&program.patterns)?;
-
     // Static cycle detection before any expansion (bounded DFS).
     detect_pattern_cycles(&program.patterns)?;
 
-    // Take ownership of pattern calls, leaving an empty vec in the module.
-    let calls = std::mem::take(&mut program.module.pattern_calls);
-
+    // Initial state for iterative expansion.
     let mut total_expanded = 0usize;
     let mut call_index = 0usize;
+    let mut telemetry_log: Vec<String> = Vec::new();
 
-    // Process each call at depth 0. Bounded by calls.len() (finite, parser-capped).
-    for call in &calls {
-        expand_single_call(
-            call,
-            &pattern_map,
-            &mut program.module,
-            0,
-            &mut total_expanded,
-            &mut call_index,
-        )?;
+    // The work stack stores (call, depth, parent_origin).
+    let mut stack: Vec<(PatternCall, usize, Option<String>)> =
+        std::mem::take(&mut program.module.pattern_calls)
+            .into_iter()
+            .map(|c| (c, 0, None))
+            .collect();
+
+    let mut parent_map: std::collections::HashMap<String, Option<String>> =
+        std::collections::HashMap::new();
+
+    // Bounded iteration: each loop processes one expansion.
+    // Total expansions are bounded by MAX_EXPANDED_ITEMS indirect limit.
+    while let Some((call, depth, parent_origin)) = stack.pop() {
+        if depth >= MAX_EXPANSION_DEPTH {
+            return Err(pattern_err(format!(
+                "expansion depth limit ({MAX_EXPANSION_DEPTH}) exceeded in '{}'",
+                call.pattern_name
+            )));
+        }
+
+        let entity_id = registry.get_entity_by_name(&call.pattern_name).ok_or_else(|| {
+            let is_namespaced = call.pattern_name.contains("::");
+            let hint = if is_namespaced {
+                format!(
+                    "\n  Hint: Pattern '{}' is namespaced. This usually indicates an import, alias, or workspace linker resolution failure at the compilation layer.",
+                    call.pattern_name
+                )
+            } else {
+                "".to_string()
+            };
+            MirrError::SemanticError {
+                message: format!(
+                    "{} Pattern call references undefined pattern '{}'.{}",
+                    crate::error_codes::ec(200),
+                    call.pattern_name,
+                    hint
+                ),
+                span: call.span,
+            }
+        })?;
+
+        let def_comp = registry.pattern_defs[entity_id.0 as usize].as_ref().ok_or_else(|| {
+            MirrError::SemanticError {
+                message: format!(
+                    "{} Entity '{}' is not a pattern definition.",
+                    crate::error_codes::ec(200),
+                    call.pattern_name
+                ),
+                span: call.span,
+            }
+        })?;
+
+        let def = &def_comp.0;
+
+        // Validate argument count.
+        if call.arguments.len() != def.params.len() {
+            return Err(pattern_err(format!(
+                "Pattern '{}' expects {} arguments, got {}.",
+                call.pattern_name,
+                def.params.len(),
+                call.arguments.len()
+            )));
+        }
+
+        // Build substitution map.
+        let subs = build_substitution_map(def, &call)?;
+        let args_summary = build_args_summary(&call.arguments);
+
+        // Substitute and parse fragment.
+        let substituted: Vec<String> =
+            def.body.raw_lines.iter().map(|line| substitute_line(line, &subs)).collect();
+        let mut fragment = parse_reflect_fragment(&substituted, &call.pattern_name)?;
+
+        // Validate signals.
+        validate_fragment_signals(&fragment, &call.pattern_name)?;
+
+        // Renaming and origin tagging.
+        let sanitized_pattern_name = call.pattern_name.replace("::", "_");
+        let origin_tag = format!("{}_{}", sanitized_pattern_name, call_index);
+        let prefix = format!("{}_{}", sanitized_pattern_name, call_index);
+        call_index += 1;
+
+        parent_map.insert(origin_tag.clone(), parent_origin);
+
+        let names = collect_fragment_names(&fragment);
+        let mut param_names = std::collections::HashSet::new();
+        for p in &def.params {
+            param_names.insert(p.name.clone());
+        }
+
+        apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
+        apply_parameter_substitution(&mut fragment, &subs);
+        set_origin_tags(&mut fragment, &origin_tag);
+
+        // Check total item bounds.
+        let item_count = fragment.signals.len()
+            + fragment.guards.len()
+            + fragment.reflexes.len()
+            + fragment.properties.len();
+        total_expanded += item_count;
+        if total_expanded > MAX_EXPANDED_ITEMS {
+            return Err(pattern_err(format!(
+                "Total expanded items ({}) exceeds maximum ({MAX_EXPANDED_ITEMS}).",
+                total_expanded
+            )));
+        }
+
+        // Push results to module.
+        program.module.signals.extend(fragment.signals);
+        program.module.guards.extend(fragment.guards);
+        // Prepended so that submodule reflexes are executed before parent reflexes.
+        // This ensures parent/coordinator reflexes take precedence over submodules.
+        let mut new_reflexes = fragment.reflexes;
+        new_reflexes.extend(std::mem::take(&mut program.module.reflexes));
+        program.module.reflexes = new_reflexes;
+        program.module.properties.extend(fragment.properties);
+        program.module.pattern_origins.push(PatternOrigin {
+            pattern_name: call.pattern_name.clone(),
+            call_args_summary: args_summary.clone(),
+        });
+
+        // Queue nested pattern calls for further expansion (preserving depth).
+        for nested_call in fragment.pattern_calls {
+            stack.push((nested_call, depth + 1, Some(origin_tag.clone())));
+        }
+
+        // Record telemetry (to be batched).
+        telemetry_log
+            .push(format!("Expanded pattern '{}' with args [{}]", call.pattern_name, args_summary));
+    }
+
+    // Batch Telemetry Stash: Save all successful pattern expansions in one shot (Phase 3 Integration).
+    if !telemetry_log.is_empty() {
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(parent) = exe.parent() {
+                let brain_bin = parent.join("mirr-brain");
+                let batch_value = telemetry_log.join("; ");
+                let _ = std::process::Command::new(brain_bin)
+                    .args([
+                        "store",
+                        "--key",
+                        "last_pattern_expansion_wave",
+                        "--value",
+                        &batch_value,
+                    ])
+                    .output();
+            }
+        }
     }
 
     // Post-expansion: validate internal signal scoping.
-    validate_internal_signal_scoping(&program.module)?;
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// Internal implementation
-// ---------------------------------------------------------------------------
-
-/// Build a lookup map from pattern name to definition.
-///
-/// Errors on duplicate pattern names.
-/// Bounded: iterates over patterns vec (max 64 from parser).
-fn build_pattern_map(patterns: &[PatternDef]) -> Result<HashMap<&str, &PatternDef>, MirrError> {
-    let mut map = HashMap::with_capacity(patterns.len());
-    for pat in patterns {
-        if map.insert(pat.name.as_str(), pat).is_some() {
-            return Err(pattern_err(format!("Duplicate pattern definition: '{}'.", pat.name)));
-        }
-    }
-    Ok(map)
-}
-
-/// Expand a single pattern call into the target module.
-///
-/// Steps:
-///   1. Look up the PatternDef by name.
-///   2. Validate argument count matches parameter count.
-///   3. Build substitution map: param_name -> replacement string.
-///   4. For each raw line in reflect body, apply text substitution.
-///   5. Wrap substituted lines in a synthetic module and re-parse.
-///   6. Validate only internal signals in expanded fragment.
-///   7. Apply name prefixing to all generated names.
-///   8. Set origin tag on every generated node.
-///   9. Append results to the target module.
-///  10. Record a PatternOrigin for emitter annotations.
-///
-/// Bounded: MAX_EXPANSION_DEPTH, MAX_EXPANDED_ITEMS.
-fn expand_single_call(
-    call: &PatternCall,
-    pattern_map: &HashMap<&str, &PatternDef>,
-    module: &mut Module,
-    depth: usize,
-    total_expanded: &mut usize,
-    call_index: &mut usize,
-) -> Result<(), MirrError> {
-    if depth >= MAX_EXPANSION_DEPTH {
-        return Err(pattern_err(format!(
-            "expansion depth limit ({MAX_EXPANSION_DEPTH}) exceeded in '{}'",
-            call.pattern_name
-        )));
-    }
-
-    let def = *pattern_map.get(call.pattern_name.as_str()).ok_or_else(|| {
-        pattern_err(format!("Pattern call references undefined pattern '{}'.", call.pattern_name))
-    })?;
-
-    // Validate argument count.
-    if call.arguments.len() != def.params.len() {
-        return Err(pattern_err(format!(
-            "Pattern '{}' expects {} arguments, got {}.",
-            call.pattern_name,
-            def.params.len(),
-            call.arguments.len()
-        )));
-    }
-
-    // Build substitution map.
-    let subs = build_substitution_map(def, call)?;
-
-    // Build human-readable args summary for annotations.
-    let args_summary = build_args_summary(&call.arguments);
-
-    // Substitute all raw lines in the reflect body.
-    let substituted: Vec<String> =
-        def.body.raw_lines.iter().map(|line| substitute_line(line, &subs)).collect();
-
-    // Parse the substituted lines as a module fragment.
-    let mut fragment = parse_reflect_fragment(&substituted, &call.pattern_name)?;
-
-    // Validate that signals from the fragment are only internal.
-    validate_fragment_signals(&fragment, &call.pattern_name)?;
-
-    // Compute origin tag and prefix for this call.
-    let current_index = *call_index;
-    *call_index += 1;
-    let origin_tag = format!("{}_{}", call.pattern_name, current_index);
-    let prefix = format!("{}_{}", call.pattern_name, current_index);
-
-    // Collect original names from fragment for renaming references.
-    let original_names = collect_fragment_names(&fragment);
-
-    // Apply name prefixing to all generated names.
-    apply_name_prefixing(&mut fragment, &prefix, &original_names);
-
-    // Set origin tag on every generated node.
-    set_origin_tags(&mut fragment, &origin_tag);
-
-    // Count expanded items and check bounds.
-    let item_count = fragment.signals.len()
-        + fragment.guards.len()
-        + fragment.reflexes.len()
-        + fragment.properties.len();
-    *total_expanded += item_count;
-    if *total_expanded > MAX_EXPANDED_ITEMS {
-        return Err(pattern_err(format!(
-            "Total expanded items ({}) exceeds maximum ({MAX_EXPANDED_ITEMS}).",
-            *total_expanded
-        )));
-    }
-
-    // Append expanded items to the module.
-    module.signals.extend(fragment.signals);
-    module.guards.extend(fragment.guards);
-    module.reflexes.extend(fragment.reflexes);
-    module.properties.extend(fragment.properties);
-
-    // Recursively expand any nested pattern calls from the fragment.
-    for nested_call in &fragment.pattern_calls {
-        expand_single_call(
-            nested_call,
-            pattern_map,
-            module,
-            depth + 1,
-            total_expanded,
-            call_index,
-        )?;
-    }
-
-    // Record provenance annotation.
-    module.pattern_origins.push(PatternOrigin {
-        pattern_name: call.pattern_name.clone(),
-        call_args_summary: args_summary,
-    });
+    validate_internal_signal_scoping(&program.module, &parent_map)?;
 
     Ok(())
 }

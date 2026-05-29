@@ -99,7 +99,8 @@ impl BootstrapRunner {
         // -------------------------------------------------------------------
         // Stage 2: Parse
         // -------------------------------------------------------------------
-        let program = match parse_mirr(&source) {
+        let processed_source = crate::compiler::macro_proc::expand_macros(&source);
+        let program = match parse_mirr(&processed_source) {
             Ok(p) => {
                 stages.push(StageResult {
                     name: "Parse".to_string(),

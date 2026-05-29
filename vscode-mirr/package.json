@@ -14,7 +14,7 @@
     "vscode": "^1.75.0"
   },
   "scripts": {
-    "rwfi2:compat": "node -e \"const fs=require('fs');const p='vscode-mirr/package.json';const d=JSON.parse(fs.readFileSync(p,'utf8'));if(!d.contributes||!Array.isArray(d.contributes.languages)){throw new Error('missing contributes.languages');}if(!d.contributes.languages.some(l=>l.id==='mirr')){throw new Error('missing mirr language contribution');}\"",
+    "rwfi2:compat": "node -e \"const fs=require('fs');const p='./package.json';const d=JSON.parse(fs.readFileSync(p,'utf8'));if(!d.contributes||!Array.isArray(d.contributes.languages)){throw new Error('missing contributes.languages');}if(!d.contributes.languages.some(l=>l.id==='mirr')){throw new Error('missing mirr language contribution');}\"",
     "test": "npm run rwfi2:compat"
   },
   "categories": [

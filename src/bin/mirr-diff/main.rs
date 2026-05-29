@@ -9,6 +9,8 @@
 use clap::Parser;
 use std::path::PathBuf;
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+
 /// Maximum AST nodes to compare (NASA P10 bounded iteration).
 const MAX_AST_NODES: usize = 10000;
 
@@ -34,12 +36,18 @@ fn main() {
     let args = Args::parse();
 
     let baseline = std::fs::read_to_string(&args.baseline).unwrap_or_else(|e| {
-        eprintln!("[E908] AST diff overflow: failed to read baseline: {e}");
-        std::process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error("failed to read baseline file")
+                .with_note(e.to_string())
+                .with_code("E908"),
+        );
     });
     let candidate = std::fs::read_to_string(&args.candidate).unwrap_or_else(|e| {
-        eprintln!("[E908] AST diff overflow: failed to read candidate: {e}");
-        std::process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error("failed to read candidate file")
+                .with_note(e.to_string())
+                .with_code("E908"),
+        );
     });
 
     let diffs = structural_diff(&baseline, &candidate, args.ignore_names);
@@ -75,6 +83,11 @@ fn main() {
     }
 }
 
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    std::process::exit(1);
+}
+
 struct AstDiff {
     path: String,
     baseline: String,
@@ -97,8 +110,10 @@ fn structural_diff(baseline: &str, candidate: &str, _ignore_names: bool) -> Vec<
             path: "/".to_string(),
             baseline: format!("{} lines", base_lines.len()),
             candidate: format!(
-                "[E908] AST diff overflow: {} lines > {} limit",
-                max_lines, MAX_AST_NODES
+                "{} AST diff overflow: {} lines > {} limit",
+                nasa_rust_project::error_codes::ec(908),
+                max_lines,
+                MAX_AST_NODES
             ),
         });
         return diffs;

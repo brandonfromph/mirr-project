@@ -5,7 +5,7 @@
 > Current MIRR includes signed types (`iN`), `property` declarations, `def`/`reflect`
 > pattern system, `prev()` temporal back-references, and 9 type error codes (E601–E609).
 
-This document specifies a **minimal MIRR core** designed for reflexive clinical hardware. The goal is to keep the surface language extremely small (3 primitives) while allowing powerful compiler passes (Cement2‑style timing, SmaRTLy‑style optimization, FIRWINE‑style width inference) underneath.This project is in the (EDA) Electronic Design Automation Domain.
+This document specifies a **minimal MIRR core** designed for reflexive clinical hardware. The goal is to keep the surface language extremely small (3 primitives) while allowing powerful compiler passes (Cement2‑style timing, SmaRTLy‑style optimization, FIRWINE‑style width inference) underneath. This project is in the (EDA) Electronic Design Automation Domain.
 
 ### 1. Design goals
 
@@ -50,10 +50,12 @@ Where:
 **Examples**:
 
 ```text
-signal respirator_enable: in bool;
-signal airway_pressure:   in u16;
-signal clamp_valve:       out bool;
-signal pressure_error:    internal u16;
+signals {
+    respirator_enable: in bool
+    airway_pressure:   in u16
+    clamp_valve:       out bool
+    pressure_error:    internal u16
+}
 ```
 
 #### 3.2 `guard`
@@ -146,12 +148,19 @@ At the top level, MIRR code is organized into **modules**:
 ```text
 module <name> {
     // 1. signal declarations
-    signal ...;
+    signals {
+        ...
+    }
 
-    // 2. guards
+    // 2. pattern calls
+    calls {
+        pattern_name(...)
+    }
+
+    // 3. guards
     guard ... { ... }
 
-    // 3. reflexes
+    // 4. reflexes
     reflex ... { ... }
 }
 ```
@@ -160,9 +169,11 @@ module <name> {
 
 ```text
 module neonatal_respirator {
-    signal respirator_enable: in bool;
-    signal airway_pressure:   in u16;
-    signal clamp_valve:       out bool;
+    signals {
+        respirator_enable: in bool
+        airway_pressure:   in u16
+        clamp_valve:       out bool
+    }
 
     guard sustained_pressure_drop {
         when airway_pressure < 50

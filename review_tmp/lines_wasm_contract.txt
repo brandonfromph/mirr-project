@@ -1,7 +1,0 @@
-﻿6:fn wasm_source() -> String {
-14:assert!(src.contains("pub fn compile_target"));
-15:assert!(src.contains("pub fn compile_verilog_with_options"));
-16:assert!(src.contains("pub fn compile_json_netlist"));
-22:assert!(src.contains("pub fn compile_mapek_rtl"));
-23:assert!(src.contains("pub fn compile_cert"));
-29:assert!(src.contains("Valid targets: verilog, firrtl, rspu, json, sexpr, dot"));

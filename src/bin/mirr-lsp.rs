@@ -10,16 +10,33 @@
 
 #![forbid(unsafe_code)]
 
+use clap::Parser;
 use std::io;
 
+#[derive(Parser, Debug)]
+#[command(name = "mirr-lsp", version, about = "MIRR LSP server entrypoint")]
+struct Args {
+    /// Output mode for startup/runtime errors.
+    #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+    format: String,
+}
+
 fn main() {
+    let args = Args::parse();
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut input = stdin.lock();
     let mut output = stdout.lock();
 
     if let Err(e) = nasa_rust_project::lsp::server::run(&mut input, &mut output) {
-        eprintln!("mirr-lsp: {e}");
+        if args.format == "json" {
+            println!(
+                "{{\"ok\":false,\"binary\":\"mirr-lsp\",\"error\":\"{}\"}}",
+                e.to_string().replace('"', "\\\"")
+            );
+        } else {
+            eprintln!("mirr-lsp: {e}");
+        }
         std::process::exit(1);
     }
 }

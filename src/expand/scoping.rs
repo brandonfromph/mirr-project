@@ -12,7 +12,24 @@ use crate::ast::MAX_EXPR_NODES;
 use crate::error::MirrError;
 use crate::span::Span;
 
-pub(super) fn validate_internal_signal_scoping(module: &Module) -> Result<(), MirrError> {
+fn is_descendant<'a>(
+    mut child: &'a str,
+    parent: &str,
+    parent_map: &'a HashMap<String, Option<String>>,
+) -> bool {
+    while let Some(Some(ref next_parent)) = parent_map.get(child) {
+        if next_parent == parent {
+            return true;
+        }
+        child = next_parent;
+    }
+    false
+}
+
+pub(super) fn validate_internal_signal_scoping(
+    module: &Module,
+    parent_map: &HashMap<String, Option<String>>,
+) -> Result<(), MirrError> {
     // Collect all pattern-internal signal names and their origin.
     let mut internal_signals: HashMap<&str, (&str, Option<Span>)> = HashMap::with_capacity(16);
     for sig in &module.signals {
@@ -41,9 +58,11 @@ pub(super) fn validate_internal_signal_scoping(module: &Module) -> Result<(), Mi
                 if let Some((origin, sig_span)) = internal_signals.get(assignment.target.as_str()) {
                     return Err(MirrError::SemanticError {
                         message: format!(
-                            "[E212] signal '{}' is internal to pattern '{}' \
+                            "{} signal '{}' is internal to pattern '{}' \
                              and cannot be referenced externally",
-                            assignment.target, origin
+                            crate::error_codes::ec(212),
+                            assignment.target,
+                            origin
                         ),
                         span: *sig_span,
                     });
@@ -64,7 +83,12 @@ pub(super) fn validate_internal_signal_scoping(module: &Module) -> Result<(), Mi
     // an internal signal from a DIFFERENT expansion.
     for guard in &module.guards {
         if let Some(ref guard_origin) = guard.origin {
-            check_expr_cross_expansion(&guard.condition, guard_origin, &internal_signals)?;
+            check_expr_cross_expansion(
+                &guard.condition,
+                guard_origin,
+                &internal_signals,
+                parent_map,
+            )?;
         }
     }
     for reflex in &module.reflexes {
@@ -74,18 +98,27 @@ pub(super) fn validate_internal_signal_scoping(module: &Module) -> Result<(), Mi
                 if let Some((sig_origin, sig_span)) =
                     internal_signals.get(assignment.target.as_str())
                 {
-                    if *sig_origin != reflex_origin.as_str() {
+                    if *sig_origin != reflex_origin.as_str()
+                        && !is_descendant(reflex_origin, sig_origin, parent_map)
+                    {
                         return Err(MirrError::SemanticError {
                             message: format!(
-                                "[E214] signal '{}' is internal to pattern '{}' \
+                                "{} signal '{}' is internal to pattern '{}' \
                                  and cannot be referenced externally",
-                                assignment.target, sig_origin
+                                crate::error_codes::ec(214),
+                                assignment.target,
+                                sig_origin
                             ),
                             span: *sig_span,
                         });
                     }
                 }
-                check_expr_cross_expansion(&assignment.value, reflex_origin, &internal_signals)?;
+                check_expr_cross_expansion(
+                    &assignment.value,
+                    reflex_origin,
+                    &internal_signals,
+                    parent_map,
+                )?;
             }
         }
     }
@@ -153,9 +186,11 @@ pub(super) fn check_expr_no_internal_refs(
             if let Some((origin, sig_span)) = internal_signals.get(sig_name) {
                 return Err(MirrError::SemanticError {
                     message: format!(
-                        "[E213] signal '{}' is internal to pattern '{}' \
+                        "{} signal '{}' is internal to pattern '{}' \
                          and cannot be referenced externally",
-                        sig_name, origin
+                        crate::error_codes::ec(213),
+                        sig_name,
+                        origin
                     ),
                     span: *sig_span,
                 });
@@ -171,6 +206,7 @@ pub(super) fn check_expr_cross_expansion(
     expr: &Expr,
     my_origin: &str,
     internal_signals: &HashMap<&str, (&str, Option<Span>)>,
+    parent_map: &HashMap<String, Option<String>>,
 ) -> Result<(), MirrError> {
     let mut stack: Vec<&Expr> = Vec::with_capacity(32);
     stack.push(expr);
@@ -223,12 +259,14 @@ pub(super) fn check_expr_cross_expansion(
         };
         if let Some(sig_name) = name {
             if let Some((sig_origin, sig_span)) = internal_signals.get(sig_name) {
-                if *sig_origin != my_origin {
+                if *sig_origin != my_origin && !is_descendant(my_origin, sig_origin, parent_map) {
                     return Err(MirrError::SemanticError {
                         message: format!(
-                            "[E215] signal '{}' is internal to pattern '{}' \
+                            "{} signal '{}' is internal to pattern '{}' \
                              and cannot be referenced externally",
-                            sig_name, sig_origin
+                            crate::error_codes::ec(215),
+                            sig_name,
+                            sig_origin
                         ),
                         span: *sig_span,
                     });

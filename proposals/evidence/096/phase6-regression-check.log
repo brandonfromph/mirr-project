@@ -1,3 +1,0 @@
-[0] cargo check --all-targets: PASS
-[0] cargo fmt --check: PASS
-[0] cargo clippy --all-targets: PASS

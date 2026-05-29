@@ -25,7 +25,7 @@ fn generate_mux_forest(size: usize) -> String {
     }
     writeln!(&mut s).unwrap();
     writeln!(&mut s, "    reflex r {{").unwrap();
-    writeln!(&mut s, "        on true {{").unwrap();
+    writeln!(&mut s, "        on always {{").unwrap();
     // create a simple chain of assignments so that signals depend on their
     // predecessor and the input; this gives a linear mux-like structure.
     if size > 0 {
@@ -68,7 +68,7 @@ fn generate_temporal_chain(size: usize) -> String {
     if size > 0 {
         writeln!(&mut s, "        on g{} {{", size - 1).unwrap();
     } else {
-        writeln!(&mut s, "        on true {{").unwrap();
+        writeln!(&mut s, "        on always {{").unwrap();
     }
     writeln!(&mut s, "            out_sig = in_sig;").unwrap();
     writeln!(&mut s, "        }}").unwrap();
@@ -92,7 +92,7 @@ fn generate_width_chain(size: usize) -> String {
     writeln!(&mut s).unwrap();
 
     writeln!(&mut s, "    reflex r {{").unwrap();
-    writeln!(&mut s, "        on true {{").unwrap();
+    writeln!(&mut s, "        on always {{").unwrap();
     if size > 0 {
         writeln!(&mut s, "            s0 = in_sig + 1;").unwrap();
         for i in 1..size {

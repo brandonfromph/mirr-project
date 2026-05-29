@@ -81,6 +81,8 @@ fn format_binary_op(op: crate::ast::types::BinaryOp) -> String {
         BinaryOp::Shr => ">>".to_string(),
         BinaryOp::And => "&".to_string(),
         BinaryOp::Or => "|".to_string(),
+        BinaryOp::BitwiseOr => "|".to_string(),
+        BinaryOp::BitwiseAnd => "&".to_string(),
         BinaryOp::Xor => "^".to_string(),
         BinaryOp::Lt => "<".to_string(),
         BinaryOp::Le => "<=".to_string(),

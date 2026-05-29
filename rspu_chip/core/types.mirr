@@ -1,0 +1,47 @@
+//! Phase 8a: R-SPU Core Type Definitions
+//!
+//! Defines the standard 64-bit tagged-word architecture for the R-SPU.
+//! All data words in the datapath and register file follow this format.
+
+// --- Word Bit-Fields (MEGA-3 / Phase 7e spec) ---
+// [63:40] reserved (24 bits)
+// [39:36] provenance (4 bits)
+// [35:32] type_tag (4 bits)
+// [31:0]  data (32 bits)
+
+// --- Type Tags (Constants for documentation) ---
+// TAG_BOOL         = 0
+// TAG_UNSIGNED     = 1
+// TAG_SIGNED       = 2
+// TAG_UNINIT       = 3
+
+// --- Extraction Patterns ---
+def extract_data(word: signal in u64) {
+    reflect {
+        let d: u64 = ${word} & 4294967295;
+        return d;
+    }
+}
+
+def extract_tag(word: signal in u64) {
+    reflect {
+        let t: u64 = (${word} >> 32) & 15;
+        return t;
+    }
+}
+
+def extract_provenance(word: signal in u64) {
+    reflect {
+        let p: u64 = (${word} >> 36) & 15;
+        return p;
+    }
+}
+
+def pack_word(data: u64, tag: u64, prov: u64) {
+    reflect {
+        let word: u64 = (prov << 36) | (tag << 32) | data;
+        return word;
+    }
+}
+
+module types {}

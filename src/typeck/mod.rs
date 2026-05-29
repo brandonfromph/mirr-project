@@ -34,11 +34,23 @@ use crate::span::Span;
 /// passes (e.g., width inference) can query signedness without re-walking.
 pub type TypeMap = HashMap<*const Expr, SignalType>;
 
+/// The type checking mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TypecheckMode {
+    /// Standard MIRR strict typechecking (strict type checking of bool/unsigned).
+    #[default]
+    Standard,
+    /// Bootstrap/hydration mode (allows bool in arithmetic and logical ops on unsigned).
+    Bootstrap,
+}
+
 /// Operator display name for error messages.
 fn op_symbol(op: BinaryOp) -> &'static str {
     match op {
         BinaryOp::And => "&&",
         BinaryOp::Or => "||",
+        BinaryOp::BitwiseOr => "|",
+        BinaryOp::BitwiseAnd => "&",
         BinaryOp::Xor => "^",
         BinaryOp::Lt => "<",
         BinaryOp::Le => "<=",
@@ -51,6 +63,26 @@ fn op_symbol(op: BinaryOp) -> &'static str {
         BinaryOp::Mul => "*",
         BinaryOp::Shl => "<<",
         BinaryOp::Shr => ">>",
+    }
+}
+
+fn expr_node_budget_error(context_span: Option<Span>) -> MirrError {
+    MirrError::TypeError {
+        message: format!("{} Expression type inference exceeded maximum expression node count (MAX_EXPR_NODES={}).", crate::error_codes::ec(607),
+            MAX_EXPR_NODES
+        ),
+        span: context_span,
+    }
+}
+
+fn expr_inference_incomplete_error(context_span: Option<Span>) -> MirrError {
+    MirrError::TypeError {
+        message: format!(
+            "{} Expression type inference did not produce a root type within MAX_EXPR_NODES={}.",
+            crate::error_codes::ec(607),
+            MAX_EXPR_NODES
+        ),
+        span: context_span,
     }
 }
 
@@ -73,11 +105,25 @@ fn op_symbol(op: BinaryOp) -> &'static str {
 /// but within a single expression tree, inference stops at the first error
 /// (intra-expression fail-fast) because parent node types depend on children.
 pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
+    typecheck_module_with_mode(module, TypecheckMode::Standard)
+}
+
+/// Run Stage 2 type checking on an AST module with an explicit `TypecheckMode`.
+pub fn typecheck_module_with_mode(
+    module: &Module,
+    mode: TypecheckMode,
+) -> Result<TypeMap, PipelineErrors> {
     // Build signal type lookup table.
     let mut signals: HashMap<&str, SignalType> = HashMap::with_capacity(module.signals.len());
     for sig in &module.signals {
         signals.insert(&sig.name, sig.ty.signal_type());
     }
+    // All guards are implicitly boolean signals.
+    for guard in &module.guards {
+        signals.insert(&guard.name, SignalType::Bool);
+    }
+    // The 'always' guard is a built-in boolean sentinel.
+    signals.insert("always", SignalType::Bool);
 
     let mut all_types: TypeMap = HashMap::new();
     let mut errors = PipelineErrors::new();
@@ -87,14 +133,16 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
         if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
             break;
         }
-        match infer_expr_type(&guard.condition, &signals, guard.span) {
+        match infer_expr_type(&guard.condition, &signals, guard.span, mode) {
             Ok((cond_ty, expr_types)) => {
                 all_types.extend(expr_types);
                 if cond_ty != SignalType::Bool {
                     errors.push(MirrError::TypeError {
                         message: format!(
-                            "[E601] Guard '{}' condition must be bool, got {}.",
-                            guard.name, cond_ty
+                            "{} Guard '{}' condition must be bool, got {}.",
+                            crate::error_codes::ec(601),
+                            guard.name,
+                            cond_ty
                         ),
                         span: guard.span,
                     });
@@ -116,14 +164,15 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
                 Some(ty) => ty.clone(),
                 None => continue, // Undeclared target — caught by semantic validation.
             };
-            match infer_expr_type(&assignment.value, &signals, assignment.span) {
+            match infer_expr_type(&assignment.value, &signals, assignment.span, mode) {
                 Ok((expr_ty, expr_types)) => {
                     all_types.extend(expr_types);
                     if !types_compatible(&target_ty, &expr_ty) {
+                        let code = crate::error_codes::ec(601); // TypeMismatch
                         errors.push(MirrError::TypeError {
                             message: format!(
-                                "[E602] Assignment to '{}' ({}): expression type {} is not compatible.",
-                                assignment.target, target_ty, expr_ty
+                                "{} Assignment to '{}' ({}): expression type {} is not compatible.",
+                                code, assignment.target, target_ty, expr_ty
                             ),
                             span: assignment.span,
                         });
@@ -137,7 +186,7 @@ pub fn typecheck_module(module: &Module) -> Result<TypeMap, PipelineErrors> {
     }
 
     // Type-check property formulas.
-    check_property_formulas(&module.properties, &signals, &mut all_types, &mut errors);
+    check_property_formulas(&module.properties, &signals, &mut all_types, &mut errors, mode);
 
     if errors.is_empty() {
         Ok(all_types)
@@ -178,6 +227,7 @@ fn infer_expr_type(
     expr: &Expr,
     signals: &HashMap<&str, SignalType>,
     context_span: Option<Span>,
+    mode: TypecheckMode,
 ) -> Result<(SignalType, TypeMap), MirrError> {
     // For bounded, non-recursive traversal we use a two-phase approach:
     // 1. Flatten the expression tree into a post-order work list.
@@ -191,7 +241,7 @@ fn infer_expr_type(
     while let Some(node) = work.pop() {
         visited += 1;
         if visited > MAX_EXPR_NODES {
-            break;
+            return Err(expr_node_budget_error(context_span));
         }
         order.push(node);
         match node {
@@ -211,15 +261,21 @@ fn infer_expr_type(
                 work.push(object);
             }
             Expr::ArrayLiteral(elems) => {
+                if elems.len() > MAX_EXPR_NODES {
+                    return Err(expr_node_budget_error(context_span));
+                }
                 let mut i = 0;
-                while i < elems.len().min(MAX_EXPR_NODES) {
+                while i < elems.len() {
                     work.push(&elems[i]);
                     i += 1;
                 }
             }
             Expr::StructLiteral { fields, .. } => {
+                if fields.len() > MAX_EXPR_NODES {
+                    return Err(expr_node_budget_error(context_span));
+                }
                 let mut i = 0;
-                while i < fields.len().min(MAX_EXPR_NODES) {
+                while i < fields.len() {
                     work.push(&fields[i].1);
                     i += 1;
                 }
@@ -267,7 +323,8 @@ fn infer_expr_type(
                         if operand_ty.is_composite() {
                             return Err(MirrError::TypeError {
                                 message: format!(
-                                    "[E226] Operator '!' cannot be applied to composite type '{}'.",
+                                    "{} Operator '!' cannot be applied to composite type '{}'.",
+                                    crate::error_codes::ec(226),
                                     operand_ty
                                 ),
                                 span: context_span,
@@ -292,7 +349,7 @@ fn infer_expr_type(
                     Some(ty) => ty,
                     None => continue,
                 };
-                infer_binary_type(*op, left_ty, right_ty, context_span)?
+                infer_binary_type(*op, left_ty, right_ty, context_span, mode)?
             }
             Expr::ArrayIndex { array, index } => {
                 let array_ptr = array.as_ref() as *const Expr;
@@ -370,7 +427,7 @@ fn infer_expr_type(
     let root_ptr = expr as *const Expr;
     match types.get(&root_ptr) {
         Some(ty) => Ok((ty.clone(), types)),
-        None => Ok((SignalType::Bool, types)), // Degenerate/empty — default to bool.
+        None => Err(expr_inference_incomplete_error(context_span)),
     }
 }
 
@@ -380,17 +437,19 @@ fn infer_binary_type(
     left: &SignalType,
     right: &SignalType,
     context_span: Option<Span>,
+    mode: TypecheckMode,
 ) -> Result<SignalType, MirrError> {
     match op {
-        // T2/T3/T4: Arithmetic and shift operators require numeric operands.
-        BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Shl | BinaryOp::Shr => {
-            let (left_w, left_signed) = require_numeric(op, left, right, context_span)?;
-            let (right_w, right_signed) = require_numeric(op, right, left, context_span)?;
+        // T2/T3: Arithmetic operators require numeric operands.
+        BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul => {
+            let (left_w, left_signed) = require_numeric(op, left, right, context_span, mode)?;
+            let (right_w, right_signed) = require_numeric(op, right, left, context_span, mode)?;
             // Cross-category: reject mixed signed/unsigned arithmetic.
             if left_signed != right_signed {
                 return Err(MirrError::TypeError {
                     message: format!(
-                        "[E608] Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
+                        "{} Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
+                        crate::error_codes::ec(608),
                         op_symbol(op),
                         left,
                         right
@@ -398,33 +457,96 @@ fn infer_binary_type(
                     span: context_span,
                 });
             }
-            match op {
-                // T4: Shift result width = left width, preserving signedness.
-                BinaryOp::Shl | BinaryOp::Shr => {
-                    if left_signed {
-                        Ok(SignalType::Signed(left_w))
-                    } else {
-                        Ok(SignalType::Unsigned(left_w))
-                    }
+            let max_w = left_w.max(right_w);
+            if left_signed {
+                Ok(SignalType::Signed(max_w))
+            } else {
+                Ok(SignalType::Unsigned(max_w))
+            }
+        }
+
+        // T4: Bitwise shifts. Left must be numeric (or bool-as-u1), right must be numeric.
+        BinaryOp::Shl | BinaryOp::Shr => {
+            let (left_w, left_signed) = match left {
+                SignalType::Bool => (1, false),
+                _ => require_numeric(op, left, right, context_span, mode)?,
+            };
+            let (_right_w, _right_signed) = match right {
+                SignalType::Bool => (1, false),
+                _ => require_numeric(op, right, left, context_span, mode)?,
+            };
+
+            if left_signed {
+                Ok(SignalType::Signed(left_w))
+            } else {
+                Ok(SignalType::Unsigned(left_w))
+            }
+        }
+
+        // T8/T9: Logical/Bitwise AND/OR.
+        BinaryOp::And | BinaryOp::Or => {
+            if left == &SignalType::Bool && right == &SignalType::Bool {
+                Ok(SignalType::Bool)
+            } else {
+                if mode != TypecheckMode::Bootstrap {
+                    return Err(MirrError::TypeError {
+                        message: format!(
+                            "{} Logical operator '{}' requires bool operands, got {} and {}.",
+                            crate::error_codes::ec(604),
+                            op_symbol(op),
+                            left,
+                            right
+                        ),
+                        span: context_span,
+                    });
                 }
-                // T2: Arithmetic result width = max(left, right), preserving signedness.
-                _ => {
-                    let max_w = left_w.max(right_w);
-                    if left_signed {
-                        Ok(SignalType::Signed(max_w))
-                    } else {
-                        Ok(SignalType::Unsigned(max_w))
-                    }
+
+                // Support bitwise AND/OR for numeric types, including bool-as-u1.
+                let (left_w, left_signed) = match left {
+                    SignalType::Bool => (1, false),
+                    _ => require_numeric(op, left, right, context_span, mode)?,
+                };
+                let (right_w, right_signed) = match right {
+                    SignalType::Bool => (1, false),
+                    _ => require_numeric(op, right, left, context_span, mode)?,
+                };
+                if left_signed != right_signed {
+                    return Err(MirrError::TypeError {
+                        message: format!(
+                            "{} Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
+                            crate::error_codes::ec(608),
+                            op_symbol(op),
+                            left,
+                            right
+                        ),
+                        span: context_span,
+                    });
+                }
+                let max_w = left_w.max(right_w);
+                if left_signed {
+                    Ok(SignalType::Signed(max_w))
+                } else {
+                    Ok(SignalType::Unsigned(max_w))
                 }
             }
         }
 
-        // T8/T9: Logical operators require bool operands.
-        BinaryOp::And | BinaryOp::Or => {
-            if left != &SignalType::Bool || right != &SignalType::Bool {
+        // Hardware bitwise integer operators: accept any numeric widths, return max-width.
+        // These are explicit RTL operators (`|` and `&`) distinct from logical And/Or.
+        BinaryOp::BitwiseOr | BinaryOp::BitwiseAnd => {
+            let (left_w, left_signed) = match left {
+                SignalType::Bool => (1, false),
+                _ => require_numeric(op, left, right, context_span, mode)?,
+            };
+            let (right_w, right_signed) = match right {
+                SignalType::Bool => (1, false),
+                _ => require_numeric(op, right, left, context_span, mode)?,
+            };
+            if left_signed != right_signed {
                 return Err(MirrError::TypeError {
                     message: format!(
-                        "[E604] Operator '{}' requires bool operands, got {} and {}.",
+                        "{} Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
+                        crate::error_codes::ec(608),
                         op_symbol(op),
                         left,
                         right
@@ -432,7 +554,12 @@ fn infer_binary_type(
                     span: context_span,
                 });
             }
-            Ok(SignalType::Bool)
+            let max_w = left_w.max(right_w);
+            if left_signed {
+                Ok(SignalType::Signed(max_w))
+            } else {
+                Ok(SignalType::Unsigned(max_w))
+            }
         }
 
         // T10: XOR requires matching types. Reject composites.
@@ -440,8 +567,10 @@ fn infer_binary_type(
             if left.is_composite() || right.is_composite() {
                 return Err(MirrError::TypeError {
                     message: format!(
-                        "[E226] Operator '^' cannot be applied to composite type '{}' and '{}'.",
-                        left, right
+                        "{} Operator '^' cannot be applied to composite type '{}' and '{}'.",
+                        crate::error_codes::ec(226),
+                        left,
+                        right
                     ),
                     span: context_span,
                 });
@@ -451,8 +580,10 @@ fn infer_binary_type(
                 if !types_compatible(left, right) {
                     return Err(MirrError::TypeError {
                         message: format!(
-                            "[E607] Operator '^' (xor) requires matching types, got {} and {}.",
-                            left, right
+                            "{} Operator '^' (xor) requires matching types, got {} and {}.",
+                            crate::error_codes::ec(607),
+                            left,
+                            right
                         ),
                         span: context_span,
                     });
@@ -467,7 +598,8 @@ fn infer_binary_type(
             if left.is_composite() || right.is_composite() {
                 return Err(MirrError::TypeError {
                     message: format!(
-                        "[E226] Ordering operator '{}' cannot compare composite types '{}' and '{}'.",
+                        "{} Ordering operator '{}' cannot compare composite types '{}' and '{}'.",
+                        crate::error_codes::ec(226),
                         op_symbol(op),
                         left,
                         right
@@ -479,7 +611,8 @@ fn infer_binary_type(
             if left == &SignalType::Bool || right == &SignalType::Bool {
                 return Err(MirrError::TypeError {
                     message: format!(
-                        "[E605] Ordering operator '{}' cannot compare {} and {}.",
+                        "{} Ordering operator '{}' cannot compare {} and {}.",
+                        crate::error_codes::ec(605),
                         op_symbol(op),
                         left,
                         right
@@ -492,8 +625,7 @@ fn infer_binary_type(
             let right_signed = matches!(right, SignalType::Signed(_));
             if left_signed != right_signed {
                 return Err(MirrError::TypeError {
-                    message: format!(
-                        "[E605] Ordering operator '{}' cannot compare {} and {} (signed/unsigned mismatch).",
+                    message: format!("{} Ordering operator '{}' cannot compare {} and {} (signed/unsigned mismatch).", crate::error_codes::ec(605),
                         op_symbol(op), left, right
                     ),
                     span: context_span,
@@ -508,7 +640,8 @@ fn infer_binary_type(
             if left.is_composite() || right.is_composite() {
                 return Err(MirrError::TypeError {
                     message: format!(
-                        "[E226] Equality operator '{}' cannot compare composite types '{}' and '{}'.",
+                        "{} Equality operator '{}' cannot compare composite types '{}' and '{}'.",
+                        crate::error_codes::ec(226),
                         op_symbol(op),
                         left,
                         right
@@ -526,7 +659,8 @@ fn infer_binary_type(
             if !same_category {
                 return Err(MirrError::TypeError {
                     message: format!(
-                        "[E606] Equality operator '{}' cannot compare {} and {}.",
+                        "{} Equality operator '{}' cannot compare {} and {}.",
+                        crate::error_codes::ec(606),
                         op_symbol(op),
                         left,
                         right
@@ -545,26 +679,35 @@ fn require_numeric(
     ty: &SignalType,
     other: &SignalType,
     context_span: Option<Span>,
+    mode: TypecheckMode,
 ) -> Result<(u32, bool), MirrError> {
     match ty {
         SignalType::Unsigned(w) => Ok((*w, false)),
         SignalType::Signed(w) => Ok((*w, true)),
-        SignalType::Bool => Err(MirrError::TypeError {
-            message: format!(
-                "[E603] Operator '{}' requires numeric operands, got {} and {}.",
-                op_symbol(op),
-                ty,
-                other
-            ),
-            span: context_span,
-        }),
+        SignalType::Bool => {
+            if mode == TypecheckMode::Bootstrap {
+                Ok((1, false))
+            } else {
+                Err(MirrError::TypeError {
+                    message: format!(
+                        "{} Operator '{}' requires numeric operands, got {} and {}.",
+                        crate::error_codes::ec(603),
+                        op_symbol(op),
+                        ty,
+                        other
+                    ),
+                    span: context_span,
+                })
+            }
+        }
         SignalType::Array { .. }
         | SignalType::Struct { .. }
         | SignalType::FixedPoint { .. }
         | SignalType::Bundle(_)
         | SignalType::Fifo { .. } => Err(MirrError::TypeError {
             message: format!(
-                "[E226] Operator '{}' cannot be applied to composite type '{}'.",
+                "{} Operator '{}' cannot be applied to composite type '{}'.",
+                crate::error_codes::ec(226),
                 op_symbol(op),
                 ty
             ),
@@ -585,9 +728,11 @@ fn infer_negate_type(
         SignalType::Signed(w) => Ok(SignalType::Signed(*w)),
         // Negating Bool is nonsensical — use `!` instead.
         SignalType::Bool => Err(MirrError::TypeError {
-            message:
-                "[E609] Operator '-' (negate) cannot be applied to bool. Use '!' for logical not."
-                    .to_string(),
+            message: format!(
+                "{} Operator '-' (negate) cannot be applied to bool. Use '!' for logical not.",
+                crate::error_codes::ec(609)
+            )
+            .to_string(),
             span: context_span,
         }),
         SignalType::Array { .. }
@@ -596,7 +741,8 @@ fn infer_negate_type(
         | SignalType::Bundle(_)
         | SignalType::Fifo { .. } => Err(MirrError::TypeError {
             message: format!(
-                "[E226] Operator '-' (negate) cannot be applied to composite type '{}'.",
+                "{} Operator '-' (negate) cannot be applied to composite type '{}'.",
+                crate::error_codes::ec(226),
                 operand
             ),
             span: context_span,
@@ -613,7 +759,11 @@ fn infer_array_index_type(
         SignalType::Unsigned(_) | SignalType::Signed(_) => {}
         _ => {
             return Err(MirrError::TypeError {
-                message: format!("[E603] Array index must be numeric, got {}.", index_ty),
+                message: format!(
+                    "{} Array index must be numeric, got {}.",
+                    crate::error_codes::ec(603),
+                    index_ty
+                ),
                 span: context_span,
             });
         }
@@ -621,8 +771,13 @@ fn infer_array_index_type(
 
     match array_ty {
         SignalType::Array { element, .. } => Ok(element.as_ref().clone()),
+        SignalType::Unsigned(_) | SignalType::Signed(_) => Ok(SignalType::Bool),
         _ => Err(MirrError::TypeError {
-            message: format!("[E607] Indexing requires an array operand, got {}.", array_ty),
+            message: format!(
+                "{} Indexing requires an indexable type (array, unsigned, or signed), got {}.",
+                crate::error_codes::ec(607),
+                array_ty
+            ),
             span: context_span,
         }),
     }
@@ -639,15 +794,21 @@ fn infer_field_access_type(
                 Some((_, ty)) => Ok(ty.clone()),
                 None => Err(MirrError::TypeError {
                     message: format!(
-                        "[E607] Struct field '{}' does not exist on type {}.",
-                        field_name, object_ty
+                        "{} Struct field '{}' does not exist on type {}.",
+                        crate::error_codes::ec(607),
+                        field_name,
+                        object_ty
                     ),
                     span: context_span,
                 }),
             }
         }
         _ => Err(MirrError::TypeError {
-            message: format!("[E607] Field access requires a struct operand, got {}.", object_ty),
+            message: format!(
+                "{} Field access requires a struct operand, got {}.",
+                crate::error_codes::ec(607),
+                object_ty
+            ),
             span: context_span,
         }),
     }
@@ -671,8 +832,10 @@ fn merge_array_element_types(
         | (SignalType::Unsigned(w), SignalType::Bool) => Ok(SignalType::Unsigned((*w).max(1))),
         _ => Err(MirrError::TypeError {
             message: format!(
-                "[E607] Array literal elements must have compatible types, got {} and {}.",
-                current, next
+                "{} Array literal elements must have compatible types, got {} and {}.",
+                crate::error_codes::ec(607),
+                current,
+                next
             ),
             span: context_span,
         }),
@@ -694,6 +857,7 @@ fn check_property_formulas(
     signals: &HashMap<&str, SignalType>,
     all_types: &mut TypeMap,
     errors: &mut PipelineErrors,
+    mode: TypecheckMode,
 ) {
     for prop in properties {
         if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
@@ -701,7 +865,7 @@ fn check_property_formulas(
         }
         for expr in prop.formula.exprs() {
             // Type-check the expression (operator errors caught here).
-            match infer_expr_type(expr, signals, prop.span) {
+            match infer_expr_type(expr, signals, prop.span, mode) {
                 Ok((_ty, expr_types)) => {
                     all_types.extend(expr_types);
                 }

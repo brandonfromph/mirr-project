@@ -12,6 +12,8 @@
 use clap::Parser;
 use std::path::PathBuf;
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+
 #[derive(Parser)]
 #[command(name = "mirr-explain", about = "Compilation trace tool for MIRR")]
 struct Args {
@@ -36,13 +38,19 @@ fn main() {
     let args = Args::parse();
 
     let source = std::fs::read_to_string(&args.source).unwrap_or_else(|e| {
-        eprintln!("[E907] Explain target not found: failed to read {}: {e}", args.source.display());
-        std::process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error(format!("failed to read {}", args.source.display()))
+                .with_note(e.to_string())
+                .with_code("E907"),
+        );
     });
 
     let program = nasa_rust_project::parse_mirr(&source).unwrap_or_else(|e| {
-        eprintln!("[E907] Explain target not found: parse error: {e}");
-        std::process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error("failed to parse MIRR source")
+                .with_note(e.to_string())
+                .with_code("E907"),
+        );
     });
 
     // Find the construct by name.
@@ -51,8 +59,11 @@ fn main() {
     let found_reflex = program.module.reflexes.iter().find(|r| r.name == args.name);
 
     if found_signal.is_none() && found_guard.is_none() && found_reflex.is_none() {
-        eprintln!("[E907] Explain target not found: {}", args.name);
-        std::process::exit(1);
+        fatal_diagnostic(
+            Diagnostic::error(format!("explain target not found: {}", args.name))
+                .with_help("Use a signal, guard, or reflex name from the input file.")
+                .with_code("E907"),
+        );
     }
 
     let mut output = String::new();
@@ -144,4 +155,9 @@ fn main() {
             print!("{output}");
         }
     }
+}
+
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    std::process::exit(1);
 }

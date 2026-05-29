@@ -12,7 +12,7 @@ fn run_case_from_path(path: &str) {
     // Smoke-test: verify the interpreter runs without panicking on real MIRR source
     // files and returns a valid (possibly empty) Vec<ObservedPush>.
     //
-    // TODO: Once lexer.mirr is extended to emit keyword-specific push signals and
+    // Note: Once lexer.mirr is extended to emit keyword-specific push signals and
     // preserve ident strings, restore full parity assertions against the emulator.
     // Parity currently cannot hold because lexer.mirr maps most identifiers to
     // emit_push_ident with no ident payload, while the emulator emits

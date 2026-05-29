@@ -16,6 +16,16 @@ const MAX_STATUS_ENTRIES: usize = 100;
 /// Maximum structural checks per entry.
 const MAX_CHECKS: usize = 10;
 
+fn to_hex_lower(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut encoded = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        encoded.push(HEX[(byte >> 4) as usize] as char);
+        encoded.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    encoded
+}
+
 pub fn run(registry_path: &str) -> i32 {
     let path = std::path::Path::new(registry_path);
     let json = util::bounded_read_to_string(path);
@@ -110,7 +120,8 @@ pub fn run(registry_path: &str) -> i32 {
         let mut hasher = Sha256::new();
         hasher.update(body.as_bytes());
         let hash_bytes = hasher.finalize();
-        let live_hash = format!("sha256:{:x}", hash_bytes);
+        let hash_hex = to_hex_lower(hash_bytes.as_ref());
+        let live_hash = format!("sha256:{hash_hex}");
 
         let hash_match = live_hash == entry.hash;
 

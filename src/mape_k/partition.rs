@@ -79,7 +79,7 @@ pub struct PartitionedComponent {
 }
 
 /// Configuration for MAPE-K partitioning.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PartitionConfig {
     /// Whether partitioning is enabled.
     pub enabled: bool,

@@ -3,7 +3,7 @@
 //! This file is part of the MIRR Runtime Tooling (MRT / Presidential Arsenal).
 //! All modifications MUST adhere to the following standards:
 //! 1. CDD LIFECYCLE: Audit → Propose → Sign → Execute → CI.
-//! 2. ZERO-DEBT INVARIANT: No wrappers (D1), no dead code (D3), no stale comments (D7).
+//! 2. ZERO-DEBT INVARIANT: No wrappers (D1), no dead code (D3), no misleading comments (D7).
 //! 3. KB STANDARD: All operational telemetry MUST be stashed in `mirr-brain`.
 //! 4. NO VIBE-CODING: Surgical edits via `mirr-wave` only.
 
@@ -27,6 +27,7 @@
 
 use clap::{Parser, Subcommand};
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use std::fs;
@@ -42,7 +43,11 @@ const ENTRY_SOURCE: &str = "mirr-brain";
 #[command(name = "mirr-brain", version, about = "MIRR Knowledge Core")]
 struct Args {
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
+
+    /// Export CLI schema as JSON for tool integration
+    #[arg(long, hide = true)]
+    help_json: bool,
 
     /// Root directory for KB-lite assets.
     #[arg(long, default_value = DEFAULT_KB_ROOT)]
@@ -121,6 +126,43 @@ fn open_kb(kb_root: &Path) -> anyhow::Result<(Connection, PathBuf)> {
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+
+    if args.help_json {
+        use clap::CommandFactory;
+        fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {
+            let mut args_list = Vec::new();
+            for arg in cmd.get_arguments() {
+                args_list.push(serde_json::json!({
+                    "id": arg.get_id().as_str(),
+                    "long": arg.get_long(),
+                    "short": arg.get_short(),
+                    "help": arg.get_help().map(|h| h.to_string()),
+                    "required": arg.is_required_set(),
+                }));
+            }
+            let mut subs = Vec::new();
+            for sub in cmd.get_subcommands() {
+                subs.push(get_cmd_manifest(sub));
+            }
+            serde_json::json!({
+                "name": cmd.get_name(),
+                "about": cmd.get_about().map(|a| a.to_string()),
+                "version": cmd.get_version().map(|v| v.to_string()),
+                "args": args_list,
+                "subcommands": subs,
+            })
+        }
+        let cmd = Args::command();
+        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
+        return Ok(());
+    }
+
+    let command = args.command.unwrap_or_else(|| {
+        fatal_diagnostic(
+            Diagnostic::error("no command specified").with_help("Run with --help for usage."),
+        );
+    });
+
     let kb_root_path = PathBuf::from(&args.kb_root);
     let (conn, graph_db_path) = open_kb(&kb_root_path)?;
     let knowledge_lance_path = kb_root_path.join("knowledge.lance");
@@ -138,7 +180,7 @@ fn main() -> anyhow::Result<()> {
         laws: None,
     };
 
-    match args.command {
+    match command {
         Commands::Store { key, value } => {
             let clipped_value = clip_to_max(&value);
             conn.execute(
@@ -211,4 +253,9 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    std::process::exit(1);
 }

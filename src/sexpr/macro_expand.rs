@@ -45,7 +45,10 @@ impl MacroExpander {
         depth: usize,
     ) -> Result<SExpr, MirrError> {
         if depth > self.max_depth {
-            return Err(sexpr_err("[E814] Macro expansion depth exceeded"));
+            return Err(sexpr_err(format!(
+                "{} Macro expansion depth exceeded",
+                crate::error_codes::ec(814)
+            )));
         }
         self.expansion_counter += 1;
         let expansion_id = self.expansion_counter;
@@ -67,7 +70,10 @@ impl MacroExpander {
         iters: usize,
     ) -> Result<SExpr, MirrError> {
         if iters > MAX_SEXPR_NODES {
-            return Err(sexpr_err("[E804] Macro expansion exceeded node budget"));
+            return Err(sexpr_err(format!(
+                "{} Macro expansion exceeded node budget",
+                crate::error_codes::ec(804)
+            )));
         }
 
         match expr {

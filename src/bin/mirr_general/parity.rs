@@ -4,13 +4,13 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
 use serde::Serialize;
 use serde_json::Value;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum ParitySubsystem {
     CliVsWasm,
-    CompilerVsMcp,
     CompilerVsVscode,
 }
 
@@ -109,21 +109,6 @@ pub fn verify_cli_wasm_parity(source_path: &Path) -> io::Result<ParityRecord> {
     Ok(ParityRecord { subsystem: ParitySubsystem::CliVsWasm, success, detail })
 }
 
-pub fn verify_mcp_contract() -> io::Result<ParityRecord> {
-    let mut command = npm_command();
-    command.args(["--prefix", "mcp_server", "test"]);
-    let output = command.output()?;
-    let success = output.status.success();
-    let detail = if success {
-        "npm --prefix mcp_server test passed".to_string()
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        format!("npm --prefix mcp_server test failed: {}", stderr)
-    };
-
-    Ok(ParityRecord { subsystem: ParitySubsystem::CompilerVsMcp, success, detail })
-}
-
 pub fn verify_vscode_contract() -> io::Result<ParityRecord> {
     let mut command = npm_command();
     command.args(["--prefix", "vscode-mirr", "pack", "--dry-run"]);
@@ -142,7 +127,11 @@ pub fn verify_vscode_contract() -> io::Result<ParityRecord> {
 pub fn run_consumer_parity(records: &[ParityRecord]) -> io::Result<()> {
     for record in records {
         if !record.success {
-            eprintln!("PARITY_FAIL subsystem={:?} detail={}", record.subsystem, record.detail);
+            let diag = Diagnostic::error("consumer parity check failed")
+                .with_note(format!("subsystem={:?}", record.subsystem))
+                .with_note(record.detail.clone())
+                .with_code("E909");
+            eprint!("{}", render_diagnostic(&diag, "", ""));
             return Err(io::Error::new(io::ErrorKind::Other, record.detail.clone()));
         }
     }

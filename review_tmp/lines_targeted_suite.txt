@@ -1,8 +1,0 @@
-﻿6:fn fixture_paths() -> [&'static str; 10] {
-30:fn targeted_suite_all_wave6_fixtures_exist() {
-37:fn targeted_suite_fixtures_have_required_top_level_keys() {
-40:assert_eq!(value["ir_version"], "2.0", "{path} must use IR 2.0");
-43:assert!(value["statistics"].is_object(), "{path} statistics must be object");
-48:fn targeted_suite_fixtures_have_statistics_contract_fields() {
-51:let stats = &value["statistics"];
-60:assert!(stats[key].is_number(), "{path} missing numeric statistics.{key}");

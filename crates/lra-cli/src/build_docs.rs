@@ -69,7 +69,7 @@ pub fn run(input_dir: &str, output_dir: &str, css_path: &str) -> i32 {
     }
     nav_entries.sort_by_key(|e| e.nav_order);
 
-    // Only show files with explicit nav_order in the nav (exclude legacy/hidden files)
+    // Only show files with explicit nav_order in the nav (exclude unlisted/hidden files)
     let visible_nav: Vec<&NavEntry> = nav_entries.iter().filter(|e| e.nav_order < 900).collect();
 
     // Build the nav HTML once
@@ -1934,19 +1934,13 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
             Err(_) => 0,
         };
         if depth > MAX_DEPTH {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "directory nesting too deep",
-            ));
+            return Err(std::io::Error::other("directory nesting too deep"));
         }
 
         for entry in fs::read_dir(&src_dir)? {
             total += 1;
             if total > MAX_TOTAL_ENTRIES {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "too many directory entries",
-                ));
+                return Err(std::io::Error::other("too many directory entries"));
             }
 
             let entry = entry?;

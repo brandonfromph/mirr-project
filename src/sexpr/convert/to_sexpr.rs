@@ -423,6 +423,8 @@ fn binop_to_symbol(op: BinaryOp) -> &'static str {
     match op {
         BinaryOp::And => "and",
         BinaryOp::Or => "or",
+        BinaryOp::BitwiseOr => "bitor",
+        BinaryOp::BitwiseAnd => "bitand",
         BinaryOp::Xor => "xor",
         BinaryOp::Lt => "<",
         BinaryOp::Le => "<=",

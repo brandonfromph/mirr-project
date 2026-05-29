@@ -211,7 +211,10 @@ pub mod syntax {
         // Placeholder: actual implementation will use the extended tokenizer.
         // For now, fall back to the base type parser.
         Err(crate::error::MirrError::ParseError {
-            message: "[E100] Extended type parsing not yet implemented.".to_string(),
+            message: format!(
+                "{} Extended type parsing not yet implemented.",
+                crate::error_codes::ec(100)
+            ),
             span: None,
         })
     }

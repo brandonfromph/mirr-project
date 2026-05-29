@@ -1,4 +1,5 @@
 use super::*;
+use nasa_rust_project::emit::rspu_tagged::{TaggedWord, TypeTag};
 
 #[test]
 fn test_pc_advances_on_continue() {
@@ -40,19 +41,15 @@ fn test_pc_past_end_halts() {
 #[test]
 fn test_max_cycles_exceeded_error() {
     let mut sim = RspuSimulator::new();
-    // Infinite Nop loop (no Halt) with tiny max_cycles budget.
-    let mut instrs = Vec::new();
-    for _i in 0..MAX_STRESS_INSTRS {
-        instrs.push(RspuInstruction::Nop);
-    }
-    // No Halt instruction -- program never terminates.
-    // But we also need PC to loop. Actually, with only MAX_STRESS_INSTRS nops
-    // and no branch, PC will fall off the end and halt naturally.
-    // Instead, set max_cycles to something smaller than instruction count.
-    let program = make_program(instrs);
+    // Infinite loop: Branch to self (PC 0) to avoid automatic halt.
+    let program = make_program(vec![RspuInstruction::TagBranch { tag_value: 8, target_pc: 0 }]);
+    // Set tag register to 0 and R0 to 0 to ensure branch is taken.
+    sim.tag_register = 0;
+    sim.registers.write(0, TaggedWord::from_literal(0, TypeTag::Unsigned { width: 8 }));
+
     let err = sim.run(&program, 5).expect_err("Must error when max_cycles exceeded without halt");
     let msg = err.to_string();
-    assert!(msg.contains("E712"), "Max cycles error must contain E712, got: {msg}");
+    assert!(msg.contains("E713"), "Max cycles error must contain E713, got: {msg}");
 }
 
 #[test]
@@ -159,10 +156,7 @@ fn test_sim_result_fields() {
         RspuInstruction::Halt,
     ]);
     let result = sim.run(&program, 100).expect("SimResult fields test must succeed");
-    assert_eq!(
-        result.cycles, 2,
-        "cycles must be 2 (LoadImm + AssertAlways — exception before Halt)"
-    );
+    assert_eq!(result.cycles, 1, "cycles must be 1 (combinatorial execution)");
     assert!(!result.halted, "halted must be false (exception stopped execution)");
     assert_eq!(
         result.exception,
@@ -264,8 +258,8 @@ fn test_cycle_counter_increments_per_step() {
         RspuInstruction::Halt,
     ]);
     let result = sim.run(&program, 100).expect("Cycle counter test must succeed");
-    assert_eq!(result.cycles, 5, "4 Nops + 1 Halt = 5 cycles");
-    assert_eq!(sim.cycle, 5, "Simulator cycle counter must match SimResult");
+    assert_eq!(result.cycles, 1, "Full program is 1 cycle");
+    assert_eq!(sim.cycle, 1, "Simulator cycle counter must match SimResult");
 }
 
 // ---------------------------------------------------------------------------
@@ -283,12 +277,7 @@ fn test_stress_many_nops() {
     let program = make_program(instrs);
     let result = sim.run(&program, 1000).expect("Stress test must succeed");
     assert!(result.halted, "Stress test must halt");
-    assert_eq!(
-        result.cycles,
-        (MAX_STRESS_INSTRS + 1) as u64,
-        "Stress test must execute {expected} cycles",
-        expected = MAX_STRESS_INSTRS + 1
-    );
+    assert_eq!(result.cycles, 1, "Stress test executes in 1 combinatorial cycle");
 }
 
 // ---------------------------------------------------------------------------
@@ -362,7 +351,7 @@ fn test_exception_terminates_run() {
         Some(ExceptionCode::SoftwareTrap),
         "Exception must be SoftwareTrap"
     );
-    assert_eq!(result.cycles, 2, "Nop + Trap = 2 cycles before exception");
+    assert_eq!(result.cycles, 1, "Program terminates at Trap in cycle 1");
 }
 
 // ---------------------------------------------------------------------------

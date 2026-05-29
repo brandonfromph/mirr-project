@@ -14,13 +14,13 @@ use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 
 /// Maximum number of parameters in a pattern definition.
-pub(crate) const MAX_PARAMS: usize = 32;
+pub(crate) const MAX_PARAMS: usize = 128;
 
 /// Maximum number of arguments in a pattern call.
-const MAX_ARGS: usize = 32;
+const MAX_ARGS: usize = 128;
 
 /// Maximum number of lines in a reflect body.
-pub(crate) const MAX_REFLECT_LINES: usize = 512;
+pub(crate) const MAX_REFLECT_LINES: usize = 8192;
 
 /// Maximum brace nesting depth inside a reflect body.
 const MAX_BRACE_DEPTH: usize = 16;
@@ -30,7 +30,7 @@ const KEYWORDS: &[&str] = &[
     "signal", "guard", "reflex", "property", "module", "def", "reflect", "when", "for", "on",
     "always", "never", "true", "false", "in", "out", "internal", "cycles", "bool", "and",
     // MEGA-1 type annotation keywords:
-    "linear", "stateful", "pure", "where",
+    "linear", "stateful", "pure", "where", "calls",
 ];
 
 // ---------------------------------------------------------------------------
@@ -54,29 +54,36 @@ const KEYWORDS: &[&str] = &[
 /// Bounded: body lines <= MAX_REFLECT_LINES, brace depth <= MAX_BRACE_DEPTH.
 pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef, MirrError> {
     if *index >= lines.len() {
-        return Err(pattern_err("[E401] Unexpected end of file in pattern definition."));
+        return Err(pattern_err(format!(
+            "{} Unexpected end of file in pattern definition.",
+            crate::error_codes::ec(401)
+        )));
     }
 
     // Collect the full header (may span multiple lines until we see `{` after `)`)
     let header = collect_def_header(lines, index)?;
 
     // Extract name and param string from header.
-    let after_def = header
-        .strip_prefix("def ")
-        .ok_or_else(|| pattern_err("[E402] Malformed pattern definition."))?;
+    let after_def = header.strip_prefix("def ").ok_or_else(|| {
+        pattern_err(format!("{} Malformed pattern definition.", crate::error_codes::ec(402)))
+    })?;
 
-    let open_paren =
-        after_def.find('(').ok_or_else(|| pattern_err("[E403] Pattern definition missing '('."))?;
+    let open_paren = after_def.find('(').ok_or_else(|| {
+        pattern_err(format!("{} Pattern definition missing '('.", crate::error_codes::ec(403)))
+    })?;
 
     let name = after_def[..open_paren].trim();
     if name.is_empty() {
-        return Err(pattern_err("[E404] Pattern name cannot be empty."));
+        return Err(pattern_err(format!(
+            "{} Pattern name cannot be empty.",
+            crate::error_codes::ec(404)
+        )));
     }
 
     // Find the matching close paren.
-    let close_paren = after_def
-        .rfind(')')
-        .ok_or_else(|| pattern_err(format!("[E405] Pattern '{name}' missing closing ')'")))?;
+    let close_paren = after_def.rfind(')').ok_or_else(|| {
+        pattern_err(format!("{} Pattern '{name}' missing closing ')'", crate::error_codes::ec(405)))
+    })?;
 
     let param_str = &after_def[open_paren + 1..close_paren];
     let params = parse_pattern_params(param_str, name)?;
@@ -85,13 +92,17 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     skip_empty_and_comments(lines, index);
 
     if *index >= lines.len() {
-        return Err(pattern_err(format!("[E406] Pattern '{name}' missing 'reflect' block.")));
+        return Err(pattern_err(format!(
+            "{} Pattern '{name}' missing 'reflect' block.",
+            crate::error_codes::ec(406)
+        )));
     }
 
     let reflect_line = lines[*index].trim();
     if !reflect_line.starts_with("reflect") {
         return Err(pattern_err(format!(
-            "[E407] Pattern '{name}' expected 'reflect' block, found: {reflect_line}"
+            "{} Pattern '{name}' expected 'reflect' block, found: {reflect_line}",
+            crate::error_codes::ec(407)
         )));
     }
 
@@ -101,7 +112,8 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
         skip_empty_and_comments(lines, index);
         if *index >= lines.len() || !lines[*index].trim().starts_with('{') {
             return Err(pattern_err(format!(
-                "[E408] Pattern '{name}' reflect block missing opening '{{'."
+                "{} Pattern '{name}' reflect block missing opening '{{'.",
+                crate::error_codes::ec(408)
             )));
         }
     }
@@ -139,12 +151,13 @@ fn collect_def_header(lines: &[&str], index: &mut usize) -> Result<String, MirrE
         }
 
         if !header.is_empty() {
-            header.push(' ');
+            header.push('\n');
         }
         header.push_str(line);
 
-        // Check if we've seen `) {` marking end of header.
-        if header.contains(") {") || header.contains("){") {
+        // Check if we've seen closing parenthesis followed by opening brace
+        let clean_check = header.replace(|c: char| c.is_whitespace(), "");
+        if clean_check.contains("){") {
             return Ok(header);
         }
     }
@@ -158,7 +171,10 @@ fn collect_def_header(lines: &[&str], index: &mut usize) -> Result<String, MirrE
         }
     }
 
-    Err(pattern_err("[E409] Pattern definition header not closed with ') {'."))
+    Err(pattern_err(format!(
+        "{} Pattern definition header not closed with ') {{'.",
+        crate::error_codes::ec(409)
+    )))
 }
 
 /// Parse the comma-separated parameter list.
@@ -174,10 +190,22 @@ fn parse_pattern_params(param_str: &str, name: &str) -> Result<Vec<PatternParam>
         return Ok(Vec::new());
     }
 
-    let parts: Vec<&str> = trimmed.split(',').collect();
+    let mut clean_param_str = String::with_capacity(param_str.len());
+    for line in param_str.lines() {
+        let mut line_part = line;
+        if let Some(pos) = line.find("//") {
+            line_part = &line[..pos];
+        }
+        clean_param_str.push_str(line_part);
+        clean_param_str.push(' ');
+    }
+    let trimmed_clean = clean_param_str.trim();
+
+    let parts: Vec<&str> = trimmed_clean.split(',').collect();
     if parts.len() > MAX_PARAMS {
         return Err(pattern_err(format!(
-            "[E410] Pattern '{name}' has too many parameters (max {MAX_PARAMS})."
+            "{} Pattern '{name}' has too many parameters (max {MAX_PARAMS}).",
+            crate::error_codes::ec(410)
         )));
     }
 
@@ -200,28 +228,32 @@ fn parse_pattern_params(param_str: &str, name: &str) -> Result<Vec<PatternParam>
 /// - `sensor: signal in linear u16 where 0..1023`
 /// - `low: u16 where 0..1023`
 fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, MirrError> {
-    let (name_part, type_part) = param_str.split_once(':').ok_or_else(|| {
-        pattern_err(format!("[E411] Pattern '{def_name}' parameter missing ':': {param_str}"))
-    })?;
+    let (pname, type_part) = match param_str.split_once(':') {
+        Some((n, t)) => (n.trim(), Some(t.trim())),
+        None => (param_str.trim(), None),
+    };
 
-    let pname = name_part.trim();
     if pname.is_empty() {
         return Err(pattern_err(format!(
-            "[E412] Pattern '{def_name}' has parameter with empty name."
+            "{} Pattern '{def_name}' has parameter with empty name.",
+            crate::error_codes::ec(412)
         )));
     }
 
-    let type_str = type_part.trim();
+    let type_str = type_part.unwrap_or("signal bool");
 
     // Check if it's a signal parameter (starts with "signal").
     if let Some(after_signal) = type_str.strip_prefix("signal") {
         let rest = after_signal.trim();
+        // Special case: if it was untyped, we've defaulted it to "signal bool".
+        // If it was typed "name: signal", rest is empty. Default to bool.
+        let rest = if rest.is_empty() { "bool" } else { rest };
 
-        // Delegate to the shared MEGA-1 tokenizer which handles:
-        //   <kind> [linear] [stateful|pure] <base_type> [where <refinement>] [@clock] [#phantom]
+        // Delegate to the shared MEGA-1 tokenizer.
         let parsed = crate::parser::tokenize_signal_decl(rest).map_err(|e| {
             pattern_err(format!(
-                "[E413] Pattern '{def_name}' signal parameter '{pname}': {}",
+                "{} Pattern '{def_name}' signal parameter '{pname}': {}",
+                crate::error_codes::ec(413),
                 e.message()
             ))
         })?;
@@ -239,11 +271,11 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
         Ok(PatternParam { name: pname.to_string(), kind: PatternParamKind::Pattern })
     } else {
         // Constant parameter — delegate to shared type parser.
-        // Handles: [qualifiers] <base_type> [where <refinement>] [@clock] [#phantom]
         let (ty, annotations) =
             crate::parser::parse_type_with_annotations(type_str).map_err(|e| {
                 pattern_err(format!(
-                    "[E417] Pattern '{def_name}' parameter '{pname}': {}",
+                    "{} Pattern '{def_name}' constant parameter '{pname}': {}",
+                    crate::error_codes::ec(414),
                     e.message()
                 ))
             })?;
@@ -272,15 +304,25 @@ fn collect_reflect_body(
         let line = lines[*index];
         let trimmed = line.trim();
 
-        // Count braces in this line.
-        for ch in trimmed.chars() {
+        // Count braces in this line, skipping ${…} template substitution expressions
+        // so that `${n}` does not disturb the brace depth counter.
+        let mut chars = trimmed.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if ch == '$' && chars.peek() == Some(&'{') {
+                // Consume the entire ${…} block without counting its braces.
+                chars.next(); // consume '{'
+                for inner in chars.by_ref() {
+                    if inner == '}' {
+                        break;
+                    }
+                }
+                continue;
+            }
             match ch {
                 '{' => {
                     depth = depth.saturating_add(1);
                     if depth > MAX_BRACE_DEPTH {
-                        return Err(pattern_err(format!(
-                            "[E418] Pattern '{name}' reflect body exceeds maximum brace depth ({MAX_BRACE_DEPTH})."
-                        )));
+                        return Err(pattern_err(format!("{} Pattern '{name}' reflect body exceeds maximum brace depth ({MAX_BRACE_DEPTH}).", crate::error_codes::ec(418))));
                     }
                 }
                 '}' => {
@@ -304,21 +346,22 @@ fn collect_reflect_body(
         line_count += 1;
     }
 
-    Err(pattern_err(format!("[E419] Pattern '{name}' reflect block not closed with '}}'.")))
+    Err(pattern_err(format!(
+        "{} Pattern '{name}' reflect block not closed with '}}'.",
+        crate::error_codes::ec(419)
+    )))
 }
 
 // ---------------------------------------------------------------------------
 // Pattern call parser
 // ---------------------------------------------------------------------------
 
-/// Check if a line looks like a pattern call: `identifier(args);`
+/// Check if a line looks like the start of a pattern call: `identifier(`
 ///
-/// Returns true if the line matches the pattern and the identifier is not a MIRR keyword.
-pub fn is_pattern_call_line(line: &str) -> bool {
+/// Returns true if the line starts with an identifier followed by '(' and is not a keyword.
+pub fn is_pattern_call_start(line: &str) -> bool {
     let trimmed = line.trim();
-
-    // Must end with ");".
-    if !trimmed.ends_with(");") {
+    if trimmed.is_empty() {
         return false;
     }
 
@@ -334,45 +377,122 @@ pub fn is_pattern_call_line(line: &str) -> bool {
         return false;
     }
 
-    // Check it's a valid identifier (alphanumeric + underscore).
-    if !ident.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-        return false;
+    // Check it's a valid identifier (alphanumeric + underscore + colon).
+    for c in ident.chars() {
+        if !(c.is_ascii_alphanumeric() || c == '_' || c == ':') {
+            return false;
+        }
     }
 
     // Must not be a MIRR keyword.
-    !KEYWORDS.contains(&ident)
+    let is_kw = KEYWORDS.contains(&ident);
+    if is_kw {
+        return false;
+    }
+
+    true
 }
 
-/// Parse a pattern call line: `name(arg1, arg2, ...);`
+/// Check if a line looks like a single-line pattern call: `identifier(args);`
 ///
-/// Bounded: MAX_ARGS arguments.
-pub fn parse_pattern_call(line: &str) -> Result<PatternCall, MirrError> {
+/// Returns true if the line matches the pattern and the identifier is not a MIRR keyword.
+pub fn is_pattern_call_line(line: &str) -> bool {
     let trimmed = line.trim();
+
+    // Must end with ");".
+    if !trimmed.ends_with(");") {
+        return false;
+    }
+
+    is_pattern_call_start(line)
+}
+
+/// Parse a pattern call (may span multiple lines): `name(arg1, arg2, ...);`
+///
+/// Bounded: MAX_ARGS arguments, MAX_HEADER_LINES lines.
+pub fn parse_pattern_call(lines: &[&str], index: &mut usize) -> Result<PatternCall, MirrError> {
+    // Collect the full call (may span multiple lines until we see `);`)
+    let full_call = collect_call_header(lines, index)?;
+    parse_pattern_call_str(&full_call)
+}
+
+/// Parse a pattern call from a single-line string.
+pub fn parse_pattern_call_single(line: &str) -> Result<PatternCall, MirrError> {
+    parse_pattern_call_str(line)
+}
+
+/// Internal helper: parse a pattern call from a joined string.
+fn parse_pattern_call_str(full_call: &str) -> Result<PatternCall, MirrError> {
+    let trimmed = full_call.trim();
 
     // Strip trailing ";".
     let without_semi = trimmed
         .strip_suffix(';')
-        .ok_or_else(|| pattern_err("[E420] Pattern call must end with ';'."))?
+        .ok_or_else(|| {
+            pattern_err(format!("{} Pattern call must end with ';'.", crate::error_codes::ec(420)))
+        })?
         .trim();
 
     // Find the opening paren.
-    let open =
-        without_semi.find('(').ok_or_else(|| pattern_err("[E421] Pattern call missing '('."))?;
+    let open = without_semi.find('(').ok_or_else(|| {
+        pattern_err(format!("{} Pattern call missing '('.", crate::error_codes::ec(421)))
+    })?;
 
     let pattern_name = without_semi[..open].trim();
     if pattern_name.is_empty() {
-        return Err(pattern_err("[E422] Pattern call has empty name."));
+        return Err(pattern_err(format!(
+            "{} Pattern call has empty name.",
+            crate::error_codes::ec(422)
+        )));
     }
 
     // Find the closing paren.
     let close = without_semi.rfind(')').ok_or_else(|| {
-        pattern_err(format!("[E423] Pattern call '{pattern_name}' missing closing ')'."))
+        pattern_err(format!(
+            "{} Pattern call '{pattern_name}' missing closing ')'.",
+            crate::error_codes::ec(423)
+        ))
     })?;
 
     let args_str = &without_semi[open + 1..close];
     let arguments = parse_call_args(args_str, pattern_name)?;
 
     Ok(PatternCall { pattern_name: pattern_name.to_string(), arguments, span: None })
+}
+
+/// Collect a pattern call header, which may span multiple lines.
+///
+/// Joins lines until we see `);`. Returns the joined string.
+/// Bounded: at most 64 lines.
+fn collect_call_header(lines: &[&str], index: &mut usize) -> Result<String, MirrError> {
+    let mut header = String::new();
+    let max_header_lines = 64usize;
+    let mut count = 0usize;
+
+    while *index < lines.len() && count < max_header_lines {
+        let line = lines[*index].trim();
+        *index += 1;
+        count += 1;
+
+        if line.is_empty() || line.starts_with("//") {
+            continue;
+        }
+
+        if !header.is_empty() {
+            header.push(' ');
+        }
+        header.push_str(line);
+
+        // Check if we've seen `);` marking end of call.
+        if header.ends_with(");") || header.contains(");") {
+            return Ok(header);
+        }
+    }
+
+    Err(pattern_err(format!(
+        "{} Pattern call header not closed with ');'.",
+        crate::error_codes::ec(420)
+    )))
 }
 
 /// Parse comma-separated call arguments.
@@ -392,7 +512,8 @@ fn parse_call_args(args_str: &str, call_name: &str) -> Result<Vec<PatternArg>, M
     let parts: Vec<&str> = trimmed.split(',').collect();
     if parts.len() > MAX_ARGS {
         return Err(pattern_err(format!(
-            "[E424] Pattern call '{call_name}' has too many arguments (max {MAX_ARGS})."
+            "{} Pattern call '{call_name}' has too many arguments (max {MAX_ARGS}).",
+            crate::error_codes::ec(424)
         )));
     }
 
@@ -401,7 +522,8 @@ fn parse_call_args(args_str: &str, call_name: &str) -> Result<Vec<PatternArg>, M
         let arg_str = part.trim();
         if arg_str.is_empty() {
             return Err(pattern_err(format!(
-                "[E425] Pattern call '{call_name}' has empty argument."
+                "{} Pattern call '{call_name}' has empty argument.",
+                crate::error_codes::ec(425)
             )));
         }
 

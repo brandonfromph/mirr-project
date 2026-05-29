@@ -8,11 +8,22 @@ use sha2::{Digest, Sha256};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 
+fn to_hex_upper(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let mut encoded = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        encoded.push(HEX[(byte >> 4) as usize] as char);
+        encoded.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    encoded
+}
+
 /// Calculate the SHA-256 hash of a byte slice.
 pub fn hash_content(content: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(content);
-    format!("{:X}", hasher.finalize())
+    let digest = hasher.finalize();
+    to_hex_upper(digest.as_ref())
 }
 
 /// Generate a new Ed25519 keypair for the Arsenal.

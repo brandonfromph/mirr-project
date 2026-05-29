@@ -16,6 +16,16 @@ const MAX_TIMEOUT_SECS: u64 = 10;
 /// Maximum number of verification checks.
 const MAX_CHECKS: usize = 20;
 
+fn to_hex_lower(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut encoded = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        encoded.push(HEX[(byte >> 4) as usize] as char);
+        encoded.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    encoded
+}
+
 pub fn run(target: &str, registry_path: &str, receipt_path: Option<&str>) -> i32 {
     println!("LRA Verify — {}\n", target);
 
@@ -72,7 +82,8 @@ pub fn run(target: &str, registry_path: &str, receipt_path: Option<&str>) -> i32
     let mut hasher = Sha256::new();
     hasher.update(body.as_bytes());
     let hash_bytes = hasher.finalize();
-    let live_hash = format!("sha256:{:x}", hash_bytes);
+    let hash_hex = to_hex_lower(hash_bytes.as_ref());
+    let live_hash = format!("sha256:{hash_hex}");
 
     let mut pass_count = 0;
     let mut check_count = 0;
@@ -277,7 +288,12 @@ fn chrono_iso8601() -> String {
     let max_years = 200;
     let mut year_iter = 0;
     while year_iter < max_years {
-        let days_in_year = if y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) { 366 } else { 365 };
+        let days_in_year =
+            if y.is_multiple_of(4) && (!y.is_multiple_of(100) || y.is_multiple_of(400)) {
+                366
+            } else {
+                365
+            };
         if remaining_days < days_in_year {
             break;
         }
@@ -285,11 +301,12 @@ fn chrono_iso8601() -> String {
         y += 1;
         year_iter += 1;
     }
-    let month_days: [u64; 12] = if y % 4 == 0 && (y % 100 != 0 || y % 400 == 0) {
-        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    } else {
-        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    };
+    let month_days: [u64; 12] =
+        if y.is_multiple_of(4) && (!y.is_multiple_of(100) || y.is_multiple_of(400)) {
+            [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        } else {
+            [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        };
     let mut m = 0usize;
     while m < 12 {
         if remaining_days < month_days[m] {

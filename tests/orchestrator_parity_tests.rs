@@ -26,7 +26,7 @@ fn run_consumer_parity_returns_ok_when_all_records_have_success_true() {
             detail: "ok-1".to_string(),
         },
         ParityRecord {
-            subsystem: ParitySubsystem::CompilerVsMcp,
+            subsystem: ParitySubsystem::CompilerVsVscode,
             success: true,
             detail: "ok-2".to_string(),
         },
@@ -50,16 +50,12 @@ fn parity_record_carries_detail_string_verbatim() {
 #[test]
 fn parity_subsystem_variants_are_distinct_when_debug_formatted() {
     let _ = parity::verify_cli_wasm_parity as fn(&std::path::Path) -> std::io::Result<ParityRecord>;
-    let _ = parity::verify_mcp_contract as fn() -> std::io::Result<ParityRecord>;
     let _ = parity::verify_vscode_contract as fn() -> std::io::Result<ParityRecord>;
 
     let cli = format!("{:?}", ParitySubsystem::CliVsWasm);
-    let mcp = format!("{:?}", ParitySubsystem::CompilerVsMcp);
     let vscode = format!("{:?}", ParitySubsystem::CompilerVsVscode);
 
-    assert_ne!(cli, mcp);
     assert_ne!(cli, vscode);
-    assert_ne!(mcp, vscode);
 }
 
 #[test]
@@ -71,7 +67,7 @@ fn single_failing_record_in_list_causes_err_regardless_of_position() {
             detail: "first".to_string(),
         },
         ParityRecord {
-            subsystem: ParitySubsystem::CompilerVsMcp,
+            subsystem: ParitySubsystem::CompilerVsVscode,
             success: true,
             detail: "second".to_string(),
         },
@@ -83,7 +79,7 @@ fn single_failing_record_in_list_causes_err_regardless_of_position() {
             detail: "first".to_string(),
         },
         ParityRecord {
-            subsystem: ParitySubsystem::CompilerVsMcp,
+            subsystem: ParitySubsystem::CompilerVsVscode,
             success: false,
             detail: "second".to_string(),
         },

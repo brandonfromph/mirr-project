@@ -573,7 +573,7 @@ module patient_monitor {
     let prog = pipeline_with_rspu(source);
 
     assert!(prog.registers_used >= 4, "should have at least 4 signals");
-    assert_eq!(prog.guards_used, 2, "should have 2 guards");
+    assert_eq!(prog.guards_used, 3, "should have 3 guards (including 'always')");
     assert!(prog.instructions.len() > 10, "should have substantial instruction count");
 
     let load_count =

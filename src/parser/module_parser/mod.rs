@@ -17,12 +17,17 @@ pub(crate) use super::parse_signal_type_str;
 pub(crate) use super::skip_empty_and_comments;
 pub(crate) use super::tokenize_signal_decl;
 
-use super::pattern_parser::{is_pattern_call_line, parse_pattern_call, parse_pattern_def};
+use super::pattern_parser::{
+    is_pattern_call_line, is_pattern_call_start, parse_pattern_call, parse_pattern_call_single,
+    parse_pattern_def,
+};
 use crate::ast::pattern::PatternDef;
 use crate::ast::program::{ImportDecl, MirrProgram, Module, SignalDecl};
 use crate::ast::types::ExtendedType;
 use crate::ast::types::{SignalType, MAX_STRUCT_FIELDS};
+use crate::diagnostic_builder::emit_at;
 use crate::error::MirrError;
+use crate::error_codes::ErrorCode;
 use crate::span::Span;
 
 /// Maximum number of top-level `def` blocks allowed.
@@ -38,7 +43,56 @@ const MAX_STRUCT_DEFS: usize = 64;
 ///
 /// Handles zero or more top-level `import` and `def` blocks before the `module` declaration.
 pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
-    let lines: Vec<&str> = source.lines().collect();
+    // Stage 0: Text-level macro expansion (loop unrolling, let-bindings, match blocks)
+    let processed_source = crate::compiler::macro_proc::expand_macros(source);
+    let _ = std::fs::write(
+        "/Users/brandonc.blay/projects/mirr-private/DEBUG_EXPANDED.mirr",
+        &processed_source,
+    );
+
+    // Normalization: Ensure single-line sources (common in tests) are expanded
+    // so the line-based parser can process them. We split by ';' and '{'/'}',
+    // taking care NOT to split inside quotes (paths), comments, or
+    // pattern interpolations (${param}).
+    let mut expanded = String::with_capacity(processed_source.len() * 2);
+    let mut in_quotes = false;
+    let mut in_comment = false;
+    let mut in_interpolation = false;
+    let mut chars = processed_source.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if !in_comment && ch == '"' {
+            in_quotes = !in_quotes;
+        }
+        if !in_quotes && ch == '/' && chars.peek() == Some(&'/') {
+            in_comment = true;
+        }
+        if ch == '\n' {
+            in_comment = false;
+        }
+
+        // Pattern interpolation: ${name}
+        if !in_comment && !in_quotes && ch == '$' && chars.peek() == Some(&'{') {
+            in_interpolation = true;
+        }
+
+        expanded.push(ch);
+
+        if !in_quotes
+            && !in_comment
+            && !in_interpolation
+            && (ch == ';' || ch == '{' || ch == '}')
+            && chars.peek() != Some(&'\n')
+        {
+            expanded.push('\n');
+        }
+
+        if in_interpolation && ch == '}' {
+            in_interpolation = false;
+        }
+    }
+
+    let lines: Vec<&str> = expanded.lines().map(|s| s.trim()).collect();
     let mut index = 0usize;
 
     // Parse top-level `import` declarations (bounded by MAX_IMPORTS).
@@ -53,9 +107,11 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
         let line = lines[index].trim();
         if line.starts_with("import ") {
             if import_count >= MAX_IMPORTS {
-                return Err(MirrError::parse_error(format!(
-                    "[E802] Too many import declarations (max {MAX_IMPORTS})."
-                )));
+                return Err(emit_at(
+                    ErrorCode::SExprUnexpectedToken,
+                    format!("Too many import declarations (max {MAX_IMPORTS})."),
+                    Span::full_line(index as u32),
+                ));
             }
             let import = parse_import(line, index)?;
             imports.push(import);
@@ -80,9 +136,10 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
             if def_count >= MAX_PATTERN_DEFS {
                 return Err(MirrError::PatternError {
                     message: format!(
-                        "[E400] Too many pattern definitions (max {MAX_PATTERN_DEFS})."
+                        "{} Too many pattern definitions (max {MAX_PATTERN_DEFS}).",
+                        crate::error_codes::ErrorCode::PatternFallback.bracketed()
                     ),
-                    span: None,
+                    span: Some(Span::full_line(index as u32)),
                 });
             }
             let pat = parse_pattern_def(&lines, &mut index)?;
@@ -101,9 +158,11 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
         if line.starts_with("struct ") {
             if struct_defs.len() >= MAX_STRUCT_DEFS {
-                return Err(MirrError::parse_error(format!(
-                    "[E804] Too many top-level struct declarations (max {MAX_STRUCT_DEFS})."
-                )));
+                return Err(emit_at(
+                    ErrorCode::SExprInvalidAtom,
+                    format!("Too many top-level struct declarations (max {MAX_STRUCT_DEFS})."),
+                    Span::full_line(index as u32),
+                ));
             }
             let (name, fields) = parse_top_level_struct(&lines, &mut index)?;
             struct_defs.insert(name, fields);
@@ -120,11 +179,35 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
     }
 
     if index >= lines.len() {
-        return Err(MirrError::parse_error("[E101] MIRR source is empty."));
+        if lines.is_empty() {
+            return Err(emit_at(
+                ErrorCode::MirrSourceEmpty,
+                "MIRR source is empty.",
+                Span::full_line(0),
+            ));
+        } else {
+            return Err(emit_at(
+                ErrorCode::ExpectedModuleEof,
+                "Expected 'module' declaration but found end of file (source is otherwise empty).",
+                Span::full_line(index.saturating_sub(1) as u32),
+            ));
+        }
     }
 
     let mut module = parse_module(&lines, &mut index)?;
     hydrate_struct_signal_fields(&mut module, &struct_defs);
+
+    skip_empty_and_comments(&lines, &mut index);
+    if index < lines.len() {
+        return Err(emit_at(
+            ErrorCode::ExpectedModuleFound,
+            format!(
+                "Unexpected content after module: '{}'. Only one module per file is supported.",
+                lines[index]
+            ),
+            Span::full_line(index as u32),
+        ));
+    }
 
     Ok(MirrProgram { patterns, imports, module })
 }
@@ -134,13 +217,21 @@ fn parse_top_level_struct(
     index: &mut usize,
 ) -> Result<(String, Vec<(String, SignalType)>), MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::parse_error("[E805] Expected struct declaration header."));
+        return Err(emit_at(
+            ErrorCode::StructHeaderExpected,
+            "Expected struct declaration header.",
+            Span::full_line(*index as u32),
+        ));
     }
 
     let header = lines[*index].trim();
-    let after_struct = header
-        .strip_prefix("struct ")
-        .ok_or_else(|| MirrError::parse_error("[E805] Malformed struct declaration."))?;
+    let after_struct = header.strip_prefix("struct ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::StructHeaderExpected,
+            "Malformed struct declaration.",
+            Span::full_line(*index as u32),
+        )
+    })?;
 
     let (name_raw, has_open_brace) = if let Some((name_part, _)) = after_struct.split_once('{') {
         (name_part.trim(), true)
@@ -149,7 +240,11 @@ fn parse_top_level_struct(
     };
 
     if name_raw.is_empty() {
-        return Err(MirrError::parse_error("[E806] Struct name cannot be empty."));
+        return Err(emit_at(
+            ErrorCode::StructNameEmpty,
+            "Struct name cannot be empty.",
+            Span::full_line(*index as u32),
+        ));
     }
     *index += 1;
     if !has_open_brace {
@@ -163,10 +258,14 @@ fn parse_top_level_struct(
                 *index += 1;
                 break;
             }
-            return Err(MirrError::parse_error(format!(
-                "[E807] Struct '{}' declaration must include '{{' before field declarations.",
-                name_raw
-            )));
+            return Err(emit_at(
+                ErrorCode::StructOpenBrace,
+                format!(
+                    "Struct '{}' declaration must include '{{' before field declarations.",
+                    name_raw
+                ),
+                Span::full_line(*index as u32),
+            ));
         }
     }
 
@@ -185,63 +284,101 @@ fn parse_top_level_struct(
         }
 
         if fields.len() >= MAX_STRUCT_FIELDS {
-            return Err(MirrError::parse_error(format!(
-                "[E808] Struct '{}' exceeds maximum field count ({}).",
-                name_raw, MAX_STRUCT_FIELDS
-            )));
+            return Err(emit_at(
+                ErrorCode::StructMaxFields,
+                format!(
+                    "Struct '{}' exceeds maximum field count ({}).",
+                    name_raw, MAX_STRUCT_FIELDS
+                ),
+                Span::full_line(*index as u32),
+            ));
         }
 
         let without_semicolon = line.strip_suffix(';').ok_or_else(|| {
-            MirrError::parse_error(format!(
-                "[E809] Struct '{}' field declaration must end with ';'.",
-                name_raw
-            ))
+            emit_at(
+                ErrorCode::StructFieldSemicolon,
+                format!("Struct '{}' field declaration must end with ';'.", name_raw),
+                Span::full_line(*index as u32),
+            )
         })?;
 
         let (field_name_raw, field_ty_raw) =
             without_semicolon.split_once(':').ok_or_else(|| {
-                MirrError::parse_error(format!(
-                    "[E810] Struct '{}' field declaration must contain ':'.",
-                    name_raw
-                ))
+                emit_at(
+                    ErrorCode::StructFieldColon,
+                    format!("Struct '{}' field declaration must contain ':'.", name_raw),
+                    Span::full_line(*index as u32),
+                )
             })?;
 
         let field_name = field_name_raw.trim();
         let field_ty_text = field_ty_raw.trim();
 
         if field_name.is_empty() {
-            return Err(MirrError::parse_error(format!(
-                "[E811] Struct '{}' field name cannot be empty.",
-                name_raw
-            )));
+            return Err(emit_at(
+                ErrorCode::StructFieldNameEmpty,
+                format!("Struct '{}' field name cannot be empty.", name_raw),
+                Span::full_line(*index as u32),
+            ));
         }
 
         let field_ty = parse_signal_type_str(field_ty_text).ok_or_else(|| {
-            MirrError::parse_error(format!(
-                "[E812] Unknown struct field type '{}' in struct '{}'.",
-                field_ty_text, name_raw
-            ))
+            emit_at(
+                ErrorCode::StructFieldTypeBad,
+                format!("Unknown struct field type '{}' in struct '{}'.", field_ty_text, name_raw),
+                Span::full_line(*index as u32),
+            )
         })?;
 
         fields.push((field_name.to_string(), field_ty));
         *index += 1;
     }
 
-    Err(MirrError::parse_error(format!("[E813] Struct '{}' was not closed with '}}'.", name_raw)))
+    Err(emit_at(
+        ErrorCode::SExprTooDeep,
+        format!("Struct '{}' was not closed with '}}'.", name_raw),
+        Span::full_line(*index as u32),
+    ))
+}
+
+fn hydrate_type(ty: &mut SignalType, struct_defs: &HashMap<String, Vec<(String, SignalType)>>) {
+    match ty {
+        SignalType::Struct { name, fields } => {
+            if fields.is_empty() {
+                if let Some(def_fields) = struct_defs.get(name) {
+                    *fields = def_fields.clone();
+                }
+            }
+            for (_, field_ty) in fields.iter_mut() {
+                hydrate_type(field_ty, struct_defs);
+            }
+        }
+        SignalType::Array { element, .. } => {
+            hydrate_type(element.as_mut(), struct_defs);
+        }
+        SignalType::Fifo { element, .. } => {
+            hydrate_type(element.as_mut(), struct_defs);
+        }
+        _ => {}
+    }
 }
 
 fn hydrate_struct_signal_fields(
     module: &mut Module,
     struct_defs: &HashMap<String, Vec<(String, SignalType)>>,
 ) {
-    for sig in &mut module.signals {
-        if let SignalType::Struct { name, fields } = &mut sig.ty.core {
-            if fields.is_empty() {
-                if let Some(def_fields) = struct_defs.get(name) {
-                    *fields = def_fields.clone();
-                }
+    let mut resolved_defs = struct_defs.clone();
+    for _ in 0..8 {
+        let current_defs = resolved_defs.clone();
+        for fields in resolved_defs.values_mut() {
+            for (_, field_ty) in fields.iter_mut() {
+                hydrate_type(field_ty, &current_defs);
             }
         }
+    }
+
+    for sig in &mut module.signals {
+        hydrate_type(&mut sig.ty.core, &resolved_defs);
     }
 }
 
@@ -254,12 +391,20 @@ fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> 
 
     // Strip trailing semicolon.
     let without_semicolon = trimmed.strip_suffix(';').ok_or_else(|| {
-        MirrError::parse_error("[E801] Import declaration must end with ';'.").with_span(span)
+        emit_at(
+            ErrorCode::SExprParseError,
+            "Import declaration must end with ';'.",
+            Span::full_line(line_index as u32),
+        )
     })?;
 
     // Parse: import "path" as alias
     let after_import = without_semicolon.strip_prefix("import ").ok_or_else(|| {
-        MirrError::parse_error("[E801] Malformed import declaration.").with_span(span)
+        emit_at(
+            ErrorCode::SExprParseError,
+            "Malformed import declaration.",
+            Span::full_line(line_index as u32),
+        )
     })?;
 
     let trimmed_after = after_import.trim();
@@ -272,31 +417,54 @@ fn parse_import(line: &str, line_index: usize) -> Result<ImportDecl, MirrError> 
             let rest = after_quote[end + 1..].trim();
             (path.to_string(), rest)
         } else {
-            return Err(MirrError::parse_error("[E801] Unterminated string in import path.")
-                .with_span(span));
+            return Err(emit_at(
+                ErrorCode::SExprParseError,
+                "Unterminated string in import path.",
+                Span::full_line(line_index as u32),
+            ));
         }
     } else {
-        return Err(
-            MirrError::parse_error("[E801] Import path must be a quoted string.").with_span(span)
-        );
+        return Err(emit_at(
+            ErrorCode::SExprParseError,
+            "Import path must be a quoted string.",
+            Span::full_line(line_index as u32),
+        ));
     };
 
     // Parse: as alias
     let alias = if rest.starts_with("as ") {
-        let alias_part = rest.strip_prefix("as ").unwrap().trim();
+        let alias_part = rest
+            .strip_prefix("as ")
+            .ok_or_else(|| {
+                emit_at(
+                    ErrorCode::SExprParseError,
+                    "Import alias must follow 'as'.",
+                    Span::full_line(line_index as u32),
+                )
+            })?
+            .trim();
         if alias_part.is_empty() {
-            return Err(
-                MirrError::parse_error("[E801] Import alias cannot be empty.").with_span(span)
-            );
+            return Err(emit_at(
+                ErrorCode::SExprParseError,
+                "Import alias cannot be empty.",
+                Span::full_line(line_index as u32),
+            ));
         }
         alias_part.to_string()
     } else {
-        return Err(MirrError::parse_error("[E801] Import must specify an alias with 'as'.")
-            .with_span(span));
+        return Err(emit_at(
+            ErrorCode::SExprParseError,
+            "Import must specify an alias with 'as'.",
+            Span::full_line(line_index as u32),
+        ));
     };
 
     if path_part.is_empty() {
-        return Err(MirrError::parse_error("[E803] Import path cannot be empty.").with_span(span));
+        return Err(emit_at(
+            ErrorCode::SExprUnclosedParen,
+            "Import path cannot be empty.",
+            Span::full_line(line_index as u32),
+        ));
     }
 
     Ok(ImportDecl { path: path_part, alias, span })
@@ -376,25 +544,45 @@ fn skip_top_level_block(lines: &[&str], index: &mut usize) -> Result<(), MirrErr
             return Ok(());
         }
     }
-    Err(MirrError::parse_error("[E106] Unclosed block declaration."))
+    Err(emit_at(
+        ErrorCode::ModuleNotClosed,
+        "Unclosed block declaration.",
+        Span::full_line(index.saturating_sub(1) as u32),
+    ))
 }
 
 fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrError> {
     let trimmed = stmt.trim();
-    let after_guard = trimmed
-        .strip_prefix("guard ")
-        .ok_or_else(|| MirrError::parse_error("[E120] Malformed inline guard declaration."))?;
+    let after_guard = trimmed.strip_prefix("guard ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::GuardMalformed,
+            "Malformed inline guard declaration.",
+            Span::full_line(0),
+        )
+    })?;
 
     let open = after_guard.find('{').ok_or_else(|| {
-        MirrError::parse_error("[E120] Malformed inline guard declaration: missing '{'.")
+        emit_at(
+            ErrorCode::GuardMalformed,
+            "Malformed inline guard declaration: missing '{'.",
+            Span::full_line(0),
+        )
     })?;
     let close = after_guard.rfind('}').ok_or_else(|| {
-        MirrError::parse_error("[E132] Malformed inline guard declaration: missing '}'.")
+        emit_at(
+            ErrorCode::GuardExpectedClose,
+            "Malformed inline guard declaration: missing '}'.",
+            Span::full_line(0),
+        )
     })?;
 
     let name = after_guard[..open].trim();
     if name.is_empty() {
-        return Err(MirrError::parse_error("[E121] Guard name cannot be empty."));
+        return Err(emit_at(
+            ErrorCode::GuardNameEmpty,
+            "Guard name cannot be empty.",
+            Span::full_line(0),
+        ));
     }
 
     let body = after_guard[open + 1..close].trim();
@@ -405,22 +593,31 @@ fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrErro
     let cycles_suffix = " cycles";
 
     if !body.starts_with(when_prefix) || !body.contains(for_keyword) {
-        return Err(MirrError::parse_error("[E123] Invalid inline guard body."));
+        return Err(emit_at(
+            ErrorCode::GuardExpectedWhen,
+            "Invalid inline guard body.",
+            Span::full_line(0),
+        ));
     }
 
     let after_when = &body[when_prefix.len()..];
     let for_pos = after_when.find(for_keyword).ok_or_else(|| {
-        MirrError::parse_error("[E123] Invalid inline guard body: missing 'for'.")
+        emit_at(
+            ErrorCode::GuardExpectedFor,
+            "Invalid inline guard body: missing 'for'.",
+            Span::full_line(0),
+        )
     })?;
 
     let condition = after_when[..for_pos].trim();
     let after_for = after_when[for_pos + for_keyword.len()..].trim();
     let cycles_text = after_for.strip_suffix(cycles_suffix).unwrap_or(after_for).trim();
     let cycles: u64 = cycles_text.parse().map_err(|_| {
-        MirrError::parse_error(format!(
-            "[E130] Invalid cycle count in guard '{}': {}",
-            name, cycles_text
-        ))
+        emit_at(
+            ErrorCode::GuardInvalidCycleCount,
+            format!("Invalid cycle count in guard '{}': {}", name, cycles_text),
+            Span::full_line(0),
+        )
     })?;
 
     let lines = [
@@ -436,15 +633,27 @@ fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrErro
 
 fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrError> {
     let trimmed = stmt.trim();
-    let after_reflex = trimmed
-        .strip_prefix("reflex ")
-        .ok_or_else(|| MirrError::parse_error("[E138] Malformed inline reflex declaration."))?;
+    let after_reflex = trimmed.strip_prefix("reflex ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::ReflexMalformed,
+            "Malformed inline reflex declaration.",
+            Span::full_line(0),
+        )
+    })?;
 
     let open = after_reflex.find('{').ok_or_else(|| {
-        MirrError::parse_error("[E138] Malformed inline reflex declaration: missing '{'.")
+        emit_at(
+            ErrorCode::ReflexMalformed,
+            "Malformed inline reflex declaration: missing '{'.",
+            Span::full_line(0),
+        )
     })?;
     let close = after_reflex.rfind('}').ok_or_else(|| {
-        MirrError::parse_error("[E145] Malformed inline reflex declaration: missing '}'.")
+        emit_at(
+            ErrorCode::ReflexNotClosed,
+            "Malformed inline reflex declaration: missing '}'.",
+            Span::full_line(0),
+        )
     })?;
 
     let header = after_reflex[..open].trim();
@@ -460,10 +669,18 @@ fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrEr
 
         if top_stmt.starts_with("on ") {
             let on_open = top_stmt.find('{').ok_or_else(|| {
-                MirrError::parse_error("[E140] Malformed on clause in inline reflex.")
+                emit_at(
+                    ErrorCode::ReflexMissingOn,
+                    "Malformed on clause in inline reflex.",
+                    Span::full_line(0),
+                )
             })?;
             let on_close = top_stmt.rfind('}').ok_or_else(|| {
-                MirrError::parse_error("[E140] Malformed on clause in inline reflex: missing '}'.")
+                emit_at(
+                    ErrorCode::ReflexMissingOn,
+                    "Malformed on clause in inline reflex: missing '}'.",
+                    Span::full_line(0),
+                )
             })?;
 
             let on_header = top_stmt[..on_open].trim();
@@ -479,8 +696,10 @@ fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrEr
             }
             lines.push("}".to_string());
         } else {
-            return Err(MirrError::parse_error(
-                "[E140] Inline reflex must contain an 'on' clause.",
+            return Err(emit_at(
+                ErrorCode::ReflexMissingOn,
+                "Inline reflex must contain an 'on' clause.",
+                Span::full_line(0),
             ));
         }
     }
@@ -494,8 +713,10 @@ fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrEr
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {
     if *index >= lines.len() {
-        return Err(MirrError::parse_error(
-            "[E102] Expected 'module' declaration but found end of file.",
+        return Err(emit_at(
+            ErrorCode::ExpectedModuleEof,
+            "Expected 'module' declaration but found end of file.",
+            Span::full_line(index.saturating_sub(1) as u32),
         ));
     }
 
@@ -503,15 +724,20 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
     let header = lines[*index].trim();
 
     if !header.starts_with("module ") {
-        return Err(MirrError::parse_error(format!(
-            "[E103] Expected 'module' declaration, found: {header}"
-        ))
-        .with_span(Some(Span::full_line(*index as u32))));
+        return Err(emit_at(
+            ErrorCode::ExpectedModuleFound,
+            format!("Expected 'module' declaration, found: '{header}'"),
+            Span::full_line(*index as u32),
+        ));
     }
 
-    let after_keyword = header
-        .strip_prefix("module ")
-        .ok_or_else(|| MirrError::parse_error("[E104] Malformed module declaration."))?;
+    let after_keyword = header.strip_prefix("module ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::MalformedModule,
+            "Malformed module declaration.",
+            Span::full_line(*index as u32),
+        )
+    })?;
 
     let (name_part, inline_body) = match after_keyword.split_once('{') {
         Some(parts) => parts,
@@ -520,8 +746,11 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 
     let name = name_part.trim();
     if name.is_empty() {
-        return Err(MirrError::parse_error("[E105] Module name cannot be empty.")
-            .with_span(Some(Span::full_line(*index as u32))));
+        return Err(emit_at(
+            ErrorCode::ModuleNameEmpty,
+            "Module name cannot be empty.",
+            Span::full_line(*index as u32),
+        ));
     }
 
     let mut module = Module {
@@ -560,15 +789,18 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                     let reflex = parse_inline_reflex(stmt_trimmed)?;
                     module.reflexes.push(reflex);
                 } else if is_pattern_call_line(stmt_trimmed) {
-                    let mut call = parse_pattern_call(stmt_trimmed)?;
+                    let mut call = parse_pattern_call_single(stmt_trimmed)?;
                     call.span = Some(Span::full_line(module_start as u32));
                     module.pattern_calls.push(call);
                 } else {
-                    return Err(MirrError::parse_error(format!(
-                        "[E107] Unexpected statement inside module '{}': {stmt_trimmed}",
-                        module.name
-                    ))
-                    .with_span(Some(Span::full_line(module_start as u32))));
+                    return Err(emit_at(
+                        ErrorCode::UnexpectedModuleLine,
+                        format!(
+                            "Unexpected statement inside module '{}': {stmt_trimmed}",
+                            module.name
+                        ),
+                        Span::full_line(module_start as u32),
+                    ));
                 }
             }
         }
@@ -585,78 +817,210 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
             break;
         }
 
-        let line = lines[*index].trim();
+        let line = lines[*index];
+        let trimmed = line.trim();
 
-        if line == "}" {
-            // End of module.
-            module.span = Some(Span::multi_line(module_start as u32, *index as u32));
+        if trimmed.is_empty() || trimmed.starts_with("//") {
             *index += 1;
-            return Ok(module);
-        } else if line.starts_with("signal ") {
-            let signal = parse_signal(line, *index)?;
-            module.signals.push(signal);
-            *index += 1;
-        } else if line.starts_with("guard ") {
-            let guard = guard_reflex::parse_guard(lines, index)?;
-            module.guards.push(guard);
-        } else if line.starts_with("reflex ") {
-            let reflex = guard_reflex::parse_reflex(lines, index)?;
-            module.reflexes.push(reflex);
-        } else if line.starts_with("property ") {
-            let prop = formula_parser::parse_property(lines, index)?;
-            module.properties.push(prop);
-        } else if is_pattern_call_line(line) {
-            let mut call = parse_pattern_call(line)?;
-            call.span = Some(Span::full_line(*index as u32));
-            module.pattern_calls.push(call);
-            *index += 1;
-        } else {
-            return Err(MirrError::parse_error(format!(
-                "[E107] Unexpected line inside module '{}': {}",
-                module.name, line
-            ))
-            .with_span(Some(Span::full_line(*index as u32))));
+            continue;
+        }
+
+        let first_token = trimmed.split_whitespace().next().unwrap_or("");
+
+        match first_token {
+            "}" | "endmodule" | "end" => {
+                // End of module.
+                module.span = Some(Span::multi_line(module_start as u32, *index as u32));
+                *index += 1;
+                return Ok(module);
+            }
+            "signal" | "in" | "out" | "internal" => {
+                let signal = parse_signal(line, *index)?;
+                module.signals.push(signal);
+                *index += 1;
+            }
+            "signals" => {
+                *index += 1; // consume "signals"
+                             // Expect opening brace
+                skip_empty_and_comments(lines, index);
+                if *index < lines.len() && lines[*index].trim() == "{" {
+                    *index += 1;
+                }
+                // Now parse the block.
+                // Lines inside a `signals {}` block may omit the trailing ';'
+                // (ergonomic syntax). Normalise here so parse_signal always
+                // receives a semicolon-terminated line, preserving strict grammar.
+                while *index < lines.len() {
+                    skip_empty_and_comments(lines, index);
+                    if *index < lines.len() && lines[*index].trim() == "}" {
+                        *index += 1;
+                        break;
+                    }
+                    let raw = lines[*index];
+                    let normalised: String;
+                    let line_to_parse = if raw.trim().ends_with(';') {
+                        raw
+                    } else {
+                        normalised = format!("{};", raw.trim_end());
+                        &normalised
+                    };
+                    let signal = parse_signal(line_to_parse, *index)?;
+                    module.signals.push(signal);
+                    *index += 1;
+                }
+            }
+            "calls" => {
+                *index += 1; // consume "calls"
+                             // Expect opening brace (may be on same line or next).
+                skip_empty_and_comments(lines, index);
+                if *index < lines.len() && lines[*index].trim() == "{" {
+                    *index += 1;
+                }
+                // Each non-empty line inside the block is a pattern call.
+                // Trailing semicolons are optional (ergonomic syntax); normalise
+                // by ensuring each line ends with ';' so the existing call parser
+                // invariants (requires ");") are satisfied.
+                while *index < lines.len() {
+                    skip_empty_and_comments(lines, index);
+                    if *index < lines.len() && lines[*index].trim() == "}" {
+                        *index += 1;
+                        break;
+                    }
+                    let raw = lines[*index].trim();
+                    if !raw.is_empty() {
+                        let normalised_call: String;
+                        let call_line = if raw.ends_with(';') {
+                            raw
+                        } else {
+                            normalised_call = format!("{};", raw);
+                            &normalised_call
+                        };
+                        if is_pattern_call_line(call_line) {
+                            let mut call = parse_pattern_call_single(call_line)?;
+                            call.span = Some(Span::full_line(*index as u32));
+                            module.pattern_calls.push(call);
+                        } else {
+                            return Err(emit_at(
+                                ErrorCode::UnexpectedModuleLine,
+                                format!(
+                                    "Unexpected line inside 'calls' block in module '{}': {}",
+                                    module.name, raw
+                                ),
+                                Span::full_line(*index as u32),
+                            ));
+                        }
+                    }
+                    *index += 1;
+                }
+            }
+            "guard" => {
+                let guard = guard_reflex::parse_guard(lines, index)?;
+                module.guards.push(guard);
+            }
+            "reflex" => {
+                let new_reflexes = guard_reflex::parse_reflexes(lines, index)?;
+                module.reflexes.extend(new_reflexes);
+            }
+            "property" => {
+                let prop = formula_parser::parse_property(lines, index)?;
+                module.properties.push(prop);
+            }
+            _ => {
+                // Heuristic: if it looks like the start of a pattern call (ident + '(')
+                // but didn't start with a known keyword, try parsing it as a call.
+                if is_pattern_call_start(trimmed) {
+                    let start_line = *index as u32;
+                    let mut call = parse_pattern_call(lines, index)?;
+                    call.span = Some(Span::full_line(start_line));
+                    module.pattern_calls.push(call);
+                    // *index is already incremented by parse_pattern_call
+                } else if trimmed.contains(':')
+                    && !trimmed.starts_with('{')
+                    && !trimmed.contains(',')
+                    && !trimmed.contains('=')
+                    && !trimmed.contains("::")
+                {
+                    let signal = parse_signal(line, *index)?;
+                    module.signals.push(signal);
+                    *index += 1;
+                } else {
+                    return Err(emit_at(
+                        ErrorCode::UnexpectedModuleLine,
+                        format!("Unexpected line inside module '{}': {}", module.name, line),
+                        Span::full_line(*index as u32),
+                    ));
+                }
+            }
         }
     }
 
-    Err(MirrError::parse_error(format!(
-        "[E106] Module '{}' was not closed with '}}'.",
-        module.name
-    )))
+    Err(emit_at(
+        ErrorCode::ModuleNotClosed,
+        format!("Module '{}' was not closed with '}}'.", module.name),
+        Span::full_line(index.saturating_sub(1) as u32),
+    ))
 }
 
 fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> {
-    let span = Some(Span::full_line(line_index as u32));
-    let after_keyword = line.strip_prefix("signal ").ok_or_else(|| {
-        MirrError::parse_error("[E108] Malformed signal declaration.").with_span(span)
-    })?;
+    let span = Span::full_line(line_index as u32);
+    let trimmed_line = line.trim();
+
+    // Support either "signal name: type;" or "name: type;"
+    let after_keyword = if let Some(stripped) = trimmed_line.strip_prefix("signal ") {
+        stripped
+    } else {
+        trimmed_line
+    };
 
     let trimmed = after_keyword.trim();
-    let without_semicolon = trimmed
-        .strip_suffix(';')
-        .ok_or_else(|| MirrError::parse_error("[E109] Signal declaration must end with ';'."))?;
+    let without_semicolon = trimmed.strip_suffix(';').ok_or_else(|| {
+        emit_at(ErrorCode::SignalMissingSemicolon, "Signal declaration must end with ';'.", span)
+    })?;
 
-    let (name_part, rest) = without_semicolon
-        .split_once(':')
-        .ok_or_else(|| MirrError::parse_error("[E110] Signal declaration must contain ':'."))?;
+    let (name_part, rest) = without_semicolon.split_once(':').ok_or_else(|| {
+        emit_at(ErrorCode::SignalMissingColon, "Signal declaration must contain ':'.", span)
+    })?;
 
-    let name = name_part.trim();
-    if name.is_empty() {
-        return Err(MirrError::parse_error("[E111] Signal name cannot be empty."));
+    let name_part = name_part.trim();
+    if name_part.is_empty() {
+        return Err(emit_at(ErrorCode::SignalNameEmpty, "Signal name cannot be empty.", span));
     }
+
+    // Ensure name_part is either a single identifier or a valid kind+name pair.
+    // If it's something like "unknown s1", we should have caught "unknown" as a kind.
+    let name_tokens: Vec<&str> = name_part.split_whitespace().collect();
+    let name = if name_tokens.len() == 1 {
+        name_tokens[0]
+    } else if name_tokens.len() == 2 {
+        let kind_token = name_tokens[0];
+        if !matches!(kind_token, "in" | "out" | "internal" | "signal") {
+            return Err(emit_at(
+                ErrorCode::SignalUnknownKind,
+                format!("Unknown signal kind '{}'", kind_token),
+                span,
+            ));
+        }
+        name_tokens[1]
+    } else {
+        return Err(emit_at(
+            ErrorCode::SignalTooManyTokens,
+            format!("Malformed signal header: '{}'", name_part),
+            span,
+        ));
+    };
 
     let rest = rest.trim();
 
     // Delegate to the shared MEGA-1 tokenizer which handles:
     //   <kind> [linear] [stateful|pure] <base_type> [where <refinement>] [@clock] [#phantom]
     // Backward compatible: plain `<kind> <type>` produces default annotations.
-    let parsed = tokenize_signal_decl(rest).map_err(|e| e.with_span(span))?;
+    let parsed = tokenize_signal_decl(rest).map_err(|e| e.with_span(Some(span)))?;
 
     Ok(SignalDecl {
         name: name.to_string(),
         kind: parsed.kind,
         ty: ExtendedType::new(parsed.ty, parsed.annotations),
         origin: None,
-        span,
+        span: Some(span),
     })
 }

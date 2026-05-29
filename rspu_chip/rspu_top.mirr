@@ -1,0 +1,49 @@
+import "core/core_top.mirr" as core;
+import "interconnect/noc_router.mirr" as fabric;
+
+//! Phase 8b: 16-Core R-SPU Fabric Top-Level
+//!
+//! Multi-core processor fabric with integrated 64-bit NoC router
+//! and high-assurance TMR clustering support.
+
+module rspu_top {
+    signal sys_clk:   in bool;
+    signal sys_rst_n: in bool;
+
+    // --- 1. 16-Core Cluster Instantiation ---
+    for i in 0..16 {
+        // Internal bus signals for NoC connection
+        signal tx_valid[i]: internal bool;
+        signal tx_data[i]:  internal u64;
+        signal rx_valid[i]: internal bool;
+        signal rx_data[i]:  internal u64;
+
+        // Core I/O
+        signal pc[i]:    internal u32;
+        signal instr[i]: in u32;
+
+        // Core Instance
+        core::core_top(
+            sys_clk, sys_rst_n,
+            instr[i], pc[i],
+            rx_valid[i], rx_data[i],
+            tx_valid[i], tx_data[i]
+        );
+
+
+    }
+
+    // --- 2. NoC Interconnect Instance ---
+    // Expanded via unroll loop for 16 ports
+    fabric::noc_router(
+        sys_clk, sys_rst_n,
+        tx_valid_0, tx_data_0, tx_valid_1, tx_data_1, tx_valid_2, tx_data_2, tx_valid_3, tx_data_3,
+        tx_valid_4, tx_data_4, tx_valid_5, tx_data_5, tx_valid_6, tx_data_6, tx_valid_7, tx_data_7,
+        tx_valid_8, tx_data_8, tx_valid_9, tx_data_9, tx_valid_10, tx_data_10, tx_valid_11, tx_data_11,
+        tx_valid_12, tx_data_12, tx_valid_13, tx_data_13, tx_valid_14, tx_data_14, tx_valid_15, tx_data_15,
+        rx_valid_0, rx_data_0, rx_valid_1, rx_data_1, rx_valid_2, rx_data_2, rx_valid_3, rx_data_3,
+        rx_valid_4, rx_data_4, rx_valid_5, rx_data_5, rx_valid_6, rx_data_6, rx_valid_7, rx_data_7,
+        rx_valid_8, rx_data_8, rx_valid_9, rx_data_9, rx_valid_10, rx_data_10, rx_valid_11, rx_data_11,
+        rx_valid_12, rx_data_12, rx_valid_13, rx_data_13, rx_valid_14, rx_data_14, rx_valid_15, rx_data_15
+    );
+}

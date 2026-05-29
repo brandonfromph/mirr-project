@@ -79,7 +79,21 @@ Definition apply_constraints_length_preserved cs st :
 Proof.
   induction cs as [|c rest IHcs] in st |- *.
   - simpl. reflexivity.
-  - simpl. apply IHcs.
+  - simpl.
+    destruct (eval_constraint c st) as [[n w]|] eqn:Heval; simpl.
+    + destruct (lookup st n <? w) eqn:Hlt; simpl.
+      * rewrite IHcs.
+        assert (Hupdate_len : forall st0 i0 w0,
+          length (update st0 i0 w0) = length st0).
+        { intros st0.
+          induction st0 as [|hd tl IHtl].
+          - intros i0 w0. destruct i0; simpl; reflexivity.
+          - intros i0 w0. destruct i0; simpl; [reflexivity |].
+            rewrite IHtl. reflexivity.
+        }
+        rewrite Hupdate_len. reflexivity.
+      * apply IHcs.
+    + apply IHcs.
 Qed.
 
 (** If st1 ⊑ st2, then sum_state st1 <= sum_state st2 (same length). *)
@@ -142,6 +156,7 @@ Proof.
     assert (Hh : h <= MAX_WIDTH) by (specialize (Hb 0); simpl in Hb; exact Hb).
     assert (Ht : sum_state t <= MAX_WIDTH * length t) by
       (apply IHt; intros i; specialize (Hb (S i)); simpl in Hb; exact Hb).
+    unfold MAX_WIDTH in *.
     lia.
 Qed.
 
@@ -160,43 +175,58 @@ Theorem solver_terminates : forall cs st,
   is_fixpoint cs (iterate cs st (solver_budget (length st))).
 Proof.
   intros cs st Hwf Hbound.
-  unfold is_fixpoint.
-  remember (solver_budget (length st)) as fuel eqn:Hfuel.
-  generalize dependent st.
-  induction fuel as [|fuel' IH].
-  - (* fuel = 0 → length st = 0 → st = [] → fixpoint *)
-    intros st Hbound Hfuel.
-    unfold solver_budget in Hfuel.
-    assert (length st = 0) by lia.
-    destruct st; [simpl; reflexivity | simpl in H; lia].
-  - intros st Hbound Hfuel.
-    simpl.
-    destruct (list_eq_dec Nat.eq_dec st (solver_round cs st)) as [Heq|Hneq].
-    + (* Already a fixpoint *)
-      symmetry. exact Heq.
-    + (* Not a fixpoint; apply IH *)
-      apply IH.
-      * (* Bound preserved: wf_constraints gives us this *)
-        unfold solver_round. apply Hwf. exact Hbound.
-      * (* solver_budget(length new_st) = fuel' *)
-        unfold solver_budget in *.
-        assert (Hlen : length (solver_round cs st) = length st).
+  assert (Hgen : forall fuel st0,
+    (forall i, lookup st0 i <= MAX_WIDTH) ->
+    fuel + sum_state st0 >= MAX_WIDTH * length st0 ->
+    is_fixpoint cs (iterate cs st0 fuel)).
+  {
+    induction fuel as [|fuel' IH].
+    - intros st0 Hbound0 Hfuel.
+      simpl in Hfuel.
+      unfold is_fixpoint.
+      destruct (list_eq_dec Nat.eq_dec st0 (solver_round cs st0)) as [Heq|Hneq].
+      + symmetry. exact Heq.
+      + assert (Hlen : length (solver_round cs st0) = length st0).
         { unfold solver_round. apply apply_constraints_length_preserved. }
-        assert (Hle : st ⊑ solver_round cs st).
+        assert (Hle : st0 ⊑ solver_round cs st0).
         { unfold solver_round. apply evaluate_monotone. }
-        assert (Hlt : sum_state st < sum_state (solver_round cs st)).
+        assert (Hlt : sum_state st0 < sum_state (solver_round cs st0)).
         { apply state_lt_sum_lt.
-          - exact Hlen.
+          - exact (eq_sym Hlen).
           - exact Hle.
-          - exact Hneq. }
-        assert (Hbound' : forall i, lookup (solver_round cs st) i <= MAX_WIDTH).
-        { unfold solver_round. apply Hwf. exact Hbound. }
-        assert (Hsum' : sum_state (solver_round cs st) <= MAX_WIDTH * length (solver_round cs st)).
+          - exact Hneq.
+        }
+        assert (Hbound' : forall i, lookup (solver_round cs st0) i <= MAX_WIDTH).
+        { unfold solver_round. apply Hwf. exact Hbound0. }
+        assert (Hsum : sum_state st0 <= MAX_WIDTH * length st0).
+        { apply sum_state_bounded. exact Hbound0. }
+        assert (Hsum' : sum_state (solver_round cs st0) <= MAX_WIDTH * length (solver_round cs st0)).
         { apply sum_state_bounded. exact Hbound'. }
         rewrite Hlen in Hsum'.
-        assert (Hsum : sum_state st <= MAX_WIDTH * length st).
-        { apply sum_state_bounded. exact Hbound. }
-        rewrite Hlen. lia.
+        unfold MAX_WIDTH in *.
+        lia.
+    - intros st0 Hbound0 Hfuel.
+      simpl.
+      destruct (list_eq_dec Nat.eq_dec st0 (solver_round cs st0)) as [Heq|Hneq].
+      + symmetry. exact Heq.
+      + apply IH.
+        * unfold solver_round. apply Hwf. exact Hbound0.
+        * assert (Hlen : length (solver_round cs st0) = length st0).
+          { unfold solver_round. apply apply_constraints_length_preserved. }
+          assert (Hle : st0 ⊑ solver_round cs st0).
+          { unfold solver_round. apply evaluate_monotone. }
+          assert (Hlt : sum_state st0 < sum_state (solver_round cs st0)).
+          { apply state_lt_sum_lt.
+            - exact (eq_sym Hlen).
+            - exact Hle.
+            - exact Hneq.
+          }
+          rewrite Hlen.
+          lia.
+  }
+  apply Hgen.
+  - exact Hbound.
+  - unfold solver_budget. lia.
 Qed.
 
 (** ** T9: fixpoint_least
@@ -363,11 +393,32 @@ Proof.
   - (* Boolean: never returns None *) discriminate.
 Qed.
 
+Lemma step_one_length_preserved : forall c st,
+  length (step_one c st) = length st.
+Proof.
+  intros c st.
+  unfold step_one.
+  destruct (eval_constraint c st) as [[n w]|] eqn:Heval.
+  - destruct (lookup st n <? w) eqn:Hlt; simpl.
+    + assert (Hupdate_len : forall st0 i0 w0,
+        length (update st0 i0 w0) = length st0).
+      { intros st0.
+        induction st0 as [|hd tl IHtl].
+        - intros i0 w0. destruct i0; simpl; reflexivity.
+        - intros i0 w0. destruct i0; simpl; [reflexivity |].
+          rewrite IHtl. reflexivity.
+      }
+      rewrite Hupdate_len. reflexivity.
+    + reflexivity.
+  - reflexivity.
+Qed.
+
 Lemma step_one_monotone : forall c st1 st2,
   st1 ⊑ st2 ->
+  length st1 = length st2 ->
   step_one c st1 ⊑ step_one c st2.
 Proof.
-  intros c st1 st2 Hle12.
+  intros c st1 st2 Hle12 Hlen12.
   unfold step_one.
   destruct (eval_constraint c st1) as [[n1 w1]|] eqn:Heval1;
   destruct (eval_constraint c st2) as [[n2 w2]|] eqn:Heval2.
@@ -381,27 +432,7 @@ Proof.
       apply update_both_monotone.
       * exact Hle12.
       * exact Hw.
-      * (* length st1 = length st2:
-           In the solver context, states maintain fixed dimensions.
-           We establish this from monotonicity structure. *)
-        (* If st1 ⊑ st2 and evaluating the same constraint yields the
-           same target index n on both, then n must be valid (in bounds)
-           on both states, implying the states have comparable structure.
-           In particular, for a constraint that fires on st2, firing on
-           st1 with the same target means st1 is not "too short". *)
-        assert (Hlen : forall i j, i < length st1 -> j >= length st1 ->
-                lookup st1 i <= lookup st1 j) by (
-          intros. destruct (lookup st1 i); destruct (lookup st1 j); lia
-        ).
-        (* Since both states satisfy state_le transitively through the
-           monotone constraint evaluation, their lengths are equal. *)
-        induction st1 as [|_ tl1 IHtl1] generalizing st2.
-        - simpl. reflexivity.
-        - destruct st2 as [|_ tl2].
-          + (* st2 is empty but st1 is not - contradicts monotonicity *)
-            specialize (Hle12 0). simpl in Hle12. discriminate.
-          + simpl. congr. apply IHtl1.
-            intros k Hle_k. exact (Hle12 (S k)).
+      * exact Hlen12.
     + (* st1 updates, st2 doesn't — w2 <= lookup st2 n1 *)
       apply Nat.ltb_lt in Hlt1. apply Nat.ltb_ge in Hlt2.
       apply update_le_preserves.
@@ -430,48 +461,65 @@ Qed.
 (** apply_constraints is monotone in its state argument. *)
 Lemma apply_constraints_state_monotone : forall cs st1 st2,
   st1 ⊑ st2 ->
+  length st1 = length st2 ->
   apply_constraints cs st1 ⊑ apply_constraints cs st2.
 Proof.
   induction cs as [|c rest IHrest].
-  - simpl. auto.
-  - intros st1 st2 Hle. simpl.
+  - intros st1 st2 Hle _. simpl. exact Hle.
+  - intros st1 st2 Hle Hlen. simpl.
+    change (apply_constraints rest (step_one c st1) ⊑
+            apply_constraints rest (step_one c st2)).
     apply IHrest.
-    apply step_one_monotone. exact Hle.
+    + apply step_one_monotone; assumption.
+    + rewrite !step_one_length_preserved. exact Hlen.
 Qed.
 
 (** Main fixpoint transfer: if st1 ⊑ st2 and st2 is a fixpoint,
     then apply_constraints cs st1 ⊑ st2. *)
 Lemma apply_constraints_monotone_fixpoint : forall cs st1 st2,
   st1 ⊑ st2 ->
+  length st1 = length st2 ->
   apply_constraints cs st2 = st2 ->
   apply_constraints cs st1 ⊑ st2.
 Proof.
-  intros cs st1 st2 Hle Hfix.
+  intros cs st1 st2 Hle Hlen Hfix.
   rewrite <- Hfix.
-  apply apply_constraints_state_monotone. exact Hle.
+  apply apply_constraints_state_monotone; assumption.
 Qed.
 
 Theorem fixpoint_least : forall cs st st_fix,
   (forall i, lookup st i = 0) ->
   is_fixpoint cs st_fix ->
   st ⊑ st_fix ->
+  length st = length st_fix ->
   iterate cs st (solver_budget (length st)) ⊑ st_fix.
 Proof.
-  intros cs st st_fix Hzero Hfix Hle.
+  intros cs st st_fix Hzero Hfix Hle Hlen.
   unfold solver_budget.
   (* We only need st ⊑ st_fix for the induction, not Hzero.
      Prove a stronger statement: for any fuel and any st with st ⊑ st_fix,
      iterate cs st fuel ⊑ st_fix. *)
-  assert (Hgen : forall fuel s, s ⊑ st_fix -> iterate cs s fuel ⊑ st_fix).
+  assert (Hgen : forall fuel s,
+    s ⊑ st_fix ->
+    length s = length st_fix ->
+    iterate cs s fuel ⊑ st_fix).
   { induction fuel as [|fuel' IHfuel'].
-    - intros. simpl. exact H.
-    - intros s Hle'.
+    - intros s Hle' _. simpl. exact Hle'.
+    - intros s Hle' Hlen'.
       simpl.
       destruct (list_eq_dec Nat.eq_dec s (solver_round cs s)) as [Heq|Hneq].
       + exact Hle'.
       + apply IHfuel'.
-        unfold solver_round. unfold is_fixpoint in Hfix.
-        apply apply_constraints_monotone_fixpoint; assumption.
+        * unfold solver_round. unfold is_fixpoint in Hfix.
+          apply apply_constraints_monotone_fixpoint.
+          -- exact Hle'.
+          -- exact Hlen'.
+          -- exact Hfix.
+        * unfold solver_round.
+          rewrite apply_constraints_length_preserved.
+          exact Hlen'.
   }
-  apply Hgen. exact Hle.
+  apply Hgen.
+  - exact Hle.
+  - exact Hlen.
 Qed.

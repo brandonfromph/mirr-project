@@ -81,7 +81,8 @@ pub(super) fn detect_pattern_cycles(patterns: &[PatternDef]) -> Result<(), MirrE
                         .collect::<Vec<_>>()
                         .join(" -> ");
                     return Err(pattern_err(format!(
-                        "[E428] Circular pattern reference detected: {cycle_str}."
+                        "{} Circular pattern reference detected: {cycle_str}.",
+                        crate::error_codes::ec(428)
                     )));
                 }
                 _ => {} // Already done, skip.

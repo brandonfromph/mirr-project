@@ -53,6 +53,9 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
     if ty_str == "bool" {
         return Some(SignalType::Bool);
     }
+    if ty_str == "u16" {
+        return Some(SignalType::Unsigned(16));
+    }
 
     if let Some(name) = ty_str.strip_prefix("struct ") {
         let name = name.trim();
@@ -65,6 +68,28 @@ pub(crate) fn parse_signal_type_str(ty_str: &str) -> Option<crate::ast::types::S
         let name = name.trim();
         if !name.is_empty() {
             return Some(SignalType::Bundle(name.to_string()));
+        }
+    }
+
+    // Support standard uN/iN syntax
+    if ty_str.starts_with('u') && ty_str[1..].chars().all(|c| c.is_ascii_digit()) {
+        if let Ok(width) = ty_str[1..].parse::<u32>() {
+            if width == 0 || width > 1024 {
+                // Return None here, letting the caller (parse_qualified_type)
+                // handle the error reporting using the E116/E117 codes.
+                // Actually, parse_signal_type_str returns Option, so let's
+                // just return None for invalid widths.
+                return None;
+            }
+            return Some(SignalType::Unsigned(width));
+        }
+    }
+    if ty_str.starts_with('i') && ty_str[1..].chars().all(|c| c.is_ascii_digit()) {
+        if let Ok(width) = ty_str[1..].parse::<u32>() {
+            if width == 0 || width > 1024 {
+                return None;
+            }
+            return Some(SignalType::Signed(width));
         }
     }
 
@@ -151,7 +176,7 @@ use crate::typeck::extended::MAX_TYPE_NAT;
 
 /// Maximum whitespace tokens examined in a signal type declaration.
 /// NASA Power-of-10 rule: all loops bounded.
-const MAX_SIGNAL_DECL_TOKENS: usize = 64;
+const MAX_SIGNAL_DECL_TOKENS: usize = 16;
 
 /// Parsed result of [`tokenize_signal_decl`].
 ///
@@ -227,19 +252,53 @@ pub(crate) fn tokenize_signal_decl(rest: &str) -> Result<TokenizedSignalDecl, Mi
     let tokens = rejoin_generic_tokens(raw);
 
     if tokens.len() > MAX_SIGNAL_DECL_TOKENS {
-        return Err(MirrError::parse_error(
-            "[E183] Signal declaration exceeds maximum token count.",
-        ));
+        return Err(MirrError::parse_error(format!(
+            "{} Signal declaration exceeds maximum token count.",
+            crate::error_codes::ec(114)
+        )));
     }
     if tokens.is_empty() {
-        return Err(MirrError::parse_error("[E112] Signal kind (in/out/internal) is missing."));
+        return Err(MirrError::parse_error(format!(
+            "{} Signal type is missing after ':'.",
+            crate::error_codes::ec(113)
+        )));
     }
 
-    // 1. Parse kind (required, first token).
-    let kind = parse_signal_kind(&tokens[0])?;
+    // 1. Determine kind. If the first token is not a known kind, default to Internal
+    // and treat the first token as part of the type declaration.
+    let token0 = tokens[0].as_str();
+    let is_type_token =
+        matches!(token0, "linear" | "stateful" | "pure" | "struct" | "interface" | "bool")
+            || (token0.starts_with('u')
+                && token0[1..].chars().next().is_some_and(|c| c.is_ascii_digit()))
+            || (token0.starts_with('i')
+                && token0[1..].chars().next().is_some_and(|c| c.is_ascii_digit()))
+            || token0.starts_with("unsigned")
+            || token0.starts_with("signed")
+            || token0.starts_with("fixed")
+            || token0.contains('[');
+
+    let (kind, start_idx) = match token0 {
+        "in" => (crate::ast::types::SignalKind::Input, 1),
+        "out" => (crate::ast::types::SignalKind::Output, 1),
+        "internal" => (crate::ast::types::SignalKind::Internal, 1),
+        _ => {
+            if is_type_token {
+                (crate::ast::types::SignalKind::Internal, 0)
+            } else {
+                // If it doesn't match a known kind AND doesn't look like a type,
+                // it's an unknown type if it's the start of the type block.
+                return Err(MirrError::parse_error(format!(
+                    "{} Unknown signal kind or type: '{}'. Expected 'in', 'out', 'internal', 'bool', 'uN', or 'iN'.",
+                    crate::error_codes::ec(118),
+                    token0
+                )));
+            }
+        }
+    };
 
     // 2. Parse qualifiers + base type + suffixes from remaining tokens.
-    let (ty, annotations) = parse_qualified_type(&tokens, 1)?;
+    let (ty, annotations) = parse_qualified_type(&tokens, start_idx)?;
 
     Ok(TokenizedSignalDecl { kind, ty, annotations })
 }
@@ -266,25 +325,17 @@ pub(crate) fn parse_type_with_annotations(
     let tokens = rejoin_generic_tokens(raw);
 
     if tokens.len() > MAX_SIGNAL_DECL_TOKENS {
-        return Err(MirrError::parse_error("[E183] Type annotation exceeds maximum token count."));
+        return Err(MirrError::parse_error(format!(
+            "{} Type annotation exceeds maximum token count.",
+            crate::error_codes::ec(183)
+        )));
     }
 
     parse_qualified_type(&tokens, 0)
 }
 
 /// Parse a signal kind string into a [`SignalKind`].
-fn parse_signal_kind(s: &str) -> Result<SignalKind, MirrError> {
-    match s {
-        "in" => Ok(SignalKind::Input),
-        "out" => Ok(SignalKind::Output),
-        "internal" => Ok(SignalKind::Internal),
-        other => Err(MirrError::parse_error(format!(
-            "[E115] Unknown signal kind: {other}. Expected 'in', 'out', or 'internal'.",
-        ))),
-    }
-}
-
-/// Internal: parse `[qualifiers] <base_type> [suffixes]` from a token slice.
+// 310: /// Internal: parse `[qualifiers] <base_type> [suffixes]` from a token slice.
 ///
 /// `tokens[start..]` is examined. Iteration is bounded by the slice length
 /// (which is capped at [`MAX_SIGNAL_DECL_TOKENS`] by the callers).
@@ -310,9 +361,10 @@ fn parse_qualified_type(
         match tokens[pos].as_str() {
             "linear" => {
                 if annotations.linearity == Linearity::Linear {
-                    return Err(MirrError::parse_error(
-                        "[E190] Duplicate 'linear' qualifier in signal declaration.",
-                    ));
+                    return Err(MirrError::parse_error(format!(
+                        "{} Duplicate 'linear' qualifier in signal declaration.",
+                        crate::error_codes::ec(190)
+                    )));
                 }
                 annotations.linearity = Linearity::Linear;
                 pos += 1;
@@ -320,9 +372,7 @@ fn parse_qualified_type(
             }
             "stateful" => {
                 if annotations.effect != EffectQualifier::Unspecified {
-                    return Err(MirrError::parse_error(
-                        "[E191] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
-                    ));
+                    return Err(MirrError::parse_error(format!("{} Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.", crate::error_codes::ec(191))));
                 }
                 annotations.effect = EffectQualifier::Stateful;
                 pos += 1;
@@ -330,9 +380,7 @@ fn parse_qualified_type(
             }
             "pure" => {
                 if annotations.effect != EffectQualifier::Unspecified {
-                    return Err(MirrError::parse_error(
-                        "[E191] Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.",
-                    ));
+                    return Err(MirrError::parse_error(format!("{} Conflicting effect qualifiers: only one of 'stateful' or 'pure' is allowed.", crate::error_codes::ec(191))));
                 }
                 annotations.effect = EffectQualifier::Pure;
                 pos += 1;
@@ -344,38 +392,66 @@ fn parse_qualified_type(
 
     // --- Phase 2: Base type (required) ---
     if pos >= tokens.len() {
-        return Err(MirrError::parse_error(
-            "[E192] Missing base type after qualifiers. Expected 'bool', 'uN', or 'iN'.",
-        ));
+        return Err(MirrError::parse_error(format!(
+            "{} Missing base type after qualifiers. Expected 'bool', 'uN', or 'iN'.",
+            crate::error_codes::ec(192)
+        )));
     }
 
     let ty = if tokens[pos] == "struct" {
         pos += 1;
         if pos >= tokens.len() {
-            return Err(MirrError::parse_error("[E118] Missing struct name after 'struct'."));
+            return Err(MirrError::parse_error(format!(
+                "{} Missing struct name after 'struct'.",
+                crate::error_codes::ec(118)
+            )));
         }
         let struct_name = tokens[pos].trim();
         if struct_name.is_empty() {
-            return Err(MirrError::parse_error("[E118] Struct name cannot be empty."));
+            return Err(MirrError::parse_error(format!(
+                "{} Struct name cannot be empty.",
+                crate::error_codes::ec(118)
+            )));
         }
         pos += 1;
         crate::ast::types::SignalType::Struct { name: struct_name.to_string(), fields: Vec::new() }
     } else if tokens[pos] == "interface" {
         pos += 1;
         if pos >= tokens.len() {
-            return Err(MirrError::parse_error("[E118] Missing interface name after 'interface'."));
+            return Err(MirrError::parse_error(format!(
+                "{} Missing interface name after 'interface'.",
+                crate::error_codes::ec(118)
+            )));
         }
         let interface_name = tokens[pos].trim();
         if interface_name.is_empty() {
-            return Err(MirrError::parse_error("[E118] Interface name cannot be empty."));
+            return Err(MirrError::parse_error(format!(
+                "{} Interface name cannot be empty.",
+                crate::error_codes::ec(118)
+            )));
         }
         pos += 1;
         crate::ast::types::SignalType::Bundle(interface_name.to_string())
     } else {
         let ty_str = &tokens[pos];
         let ty = parse_signal_type_str(ty_str).ok_or_else(|| {
+            if ty_str.starts_with('u') {
+                return MirrError::parse_error(format!(
+                    "{} Invalid unsigned width: {}. Must be 1-1024.",
+                    crate::error_codes::ec(116),
+                    ty_str
+                ));
+            }
+            if ty_str.starts_with('i') {
+                return MirrError::parse_error(format!(
+                    "{} Invalid signed width: {}. Must be 1-1024.",
+                    crate::error_codes::ec(117),
+                    ty_str
+                ));
+            }
             MirrError::parse_error(format!(
-                "[E118] Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'.",
+                "{} Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'.",
+                crate::error_codes::ec(118),
             ))
         })?;
         pos += 1;
@@ -391,9 +467,10 @@ fn parse_qualified_type(
         if token == "where" {
             // --- Refinement clause ---
             if annotations.refinement.is_some() {
-                return Err(MirrError::parse_error(
-                    "[E196] Duplicate 'where' clause in signal declaration.",
-                ));
+                return Err(MirrError::parse_error(format!(
+                    "{} Duplicate 'where' clause in signal declaration.",
+                    crate::error_codes::ec(196)
+                )));
             }
             pos += 1;
 
@@ -407,9 +484,10 @@ fn parse_qualified_type(
             }
 
             if pos == ref_start {
-                return Err(MirrError::parse_error(
-                    "[E193] Empty refinement clause after 'where'. Expected range 'N..M' or predicate.",
-                ));
+                return Err(MirrError::parse_error(format!(
+                    "{} Empty refinement clause after 'where'. Expected range 'N..M' or predicate.",
+                    crate::error_codes::ec(193)
+                )));
             }
 
             let ref_str: String = tokens[ref_start..pos].join(" ");
@@ -417,18 +495,19 @@ fn parse_qualified_type(
         } else if let Some(domain) = token.strip_prefix('@') {
             // --- Clock domain ---
             if annotations.clock_domain.is_some() {
-                return Err(MirrError::parse_error(
-                    "[E197] Duplicate clock domain annotation in signal declaration.",
-                ));
+                return Err(MirrError::parse_error(format!(
+                    "{} Duplicate clock domain annotation in signal declaration.",
+                    crate::error_codes::ec(197)
+                )));
             }
             if domain.is_empty() {
-                return Err(MirrError::parse_error(
-                    "[E195] Empty clock domain: expected identifier after '@'.",
-                ));
+                return Err(MirrError::parse_error(format!(
+                    "{} Empty clock domain: expected identifier after '@'.",
+                    crate::error_codes::ec(195)
+                )));
             }
             if !is_valid_identifier(domain) {
-                return Err(MirrError::parse_error(format!(
-                    "[E177] Invalid clock domain name '{domain}': must be alphanumeric/underscore identifier.",
+                return Err(MirrError::parse_error(format!("{} Invalid clock domain name '{domain}': must be alphanumeric/underscore identifier.", crate::error_codes::ec(177),
                 )));
             }
             annotations.clock_domain = Some(domain.to_string());
@@ -436,30 +515,69 @@ fn parse_qualified_type(
         } else if let Some(tag) = token.strip_prefix('#') {
             // --- Phantom tag ---
             if annotations.phantom_tag.is_some() {
-                return Err(MirrError::parse_error(
-                    "[E182] Duplicate phantom tag annotation in signal declaration.",
-                ));
+                return Err(MirrError::parse_error(format!(
+                    "{} Duplicate phantom tag annotation in signal declaration.",
+                    crate::error_codes::ec(182)
+                )));
             }
             if tag.is_empty() {
-                return Err(MirrError::parse_error(
-                    "[E178] Empty phantom tag: expected identifier after '#'.",
-                ));
+                return Err(MirrError::parse_error(format!(
+                    "{} Empty phantom tag: expected identifier after '#'.",
+                    crate::error_codes::ec(178)
+                )));
             }
             if !tag.starts_with(|c: char| c.is_ascii_uppercase()) {
                 return Err(MirrError::parse_error(format!(
-                    "[E179] Invalid phantom tag '{tag}': must start with uppercase letter.",
+                    "{} Invalid phantom tag '{tag}': must start with uppercase letter.",
+                    crate::error_codes::ec(179),
                 )));
             }
             if !is_valid_identifier(tag) {
-                return Err(MirrError::parse_error(format!(
-                    "[E179] Invalid phantom tag '{tag}': must be alphanumeric/underscore identifier starting with uppercase.",
+                return Err(MirrError::parse_error(format!("{} Invalid phantom tag '{tag}': must be alphanumeric/underscore identifier starting with uppercase.", crate::error_codes::ec(179),
                 )));
             }
             annotations.phantom_tag = Some(tag.to_string());
             pos += 1;
+        } else if token == "session" || token.starts_with("session(") {
+            // --- Session type ---
+            if annotations.session.is_some() {
+                return Err(MirrError::parse_error(format!(
+                    "{} Duplicate 'session' annotation in signal declaration.",
+                    crate::error_codes::ec(198)
+                )));
+            }
+
+            let session_content = if token.starts_with("session(") {
+                let content = token.strip_prefix("session(").unwrap_or(token).trim_end_matches(')');
+                pos += 1;
+                content.to_string()
+            } else {
+                pos += 1;
+                if pos >= tokens.len() {
+                    return Err(MirrError::parse_error(format!(
+                        "{} Missing session reference after 'session'. Expected 'Protocol::State'.",
+                        crate::error_codes::ec(199)
+                    )));
+                }
+                let next = &tokens[pos];
+                pos += 1;
+                next.clone()
+            };
+
+            if let Some((proto, state)) = session_content.split_once("::") {
+                annotations.session = Some(crate::ast::types::SessionTypeRef {
+                    protocol: proto.trim().to_string(),
+                    state: state.trim().to_string(),
+                });
+            } else {
+                return Err(MirrError::parse_error(format!(
+                    "{} Invalid session reference '{}': expected 'Protocol::State'.",
+                    crate::error_codes::ec(199),
+                    session_content
+                )));
+            }
         } else {
-            return Err(MirrError::parse_error(format!(
-                "[E183] Unexpected token '{token}' after signal type. Expected 'where', '@clock', or '#Tag'.",
+            return Err(MirrError::parse_error(format!("{} Unexpected token '{token}' after signal type. Expected 'where', '@clock', '#Tag', or 'session'.", crate::error_codes::ec(183),
             )));
         }
     }
@@ -481,17 +599,20 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
     if let Some((lo_str, hi_str)) = trimmed.split_once("..=") {
         let lo = lo_str.trim().parse::<u64>().map_err(|_| {
             MirrError::parse_error(format!(
-                "[E193] Malformed range refinement: '{lo_str}' is not a valid integer.",
+                "{} Malformed range refinement: '{lo_str}' is not a valid integer.",
+                crate::error_codes::ec(193),
             ))
         })?;
         let hi = hi_str.trim().parse::<u64>().map_err(|_| {
             MirrError::parse_error(format!(
-                "[E193] Malformed range refinement: '{hi_str}' is not a valid integer.",
+                "{} Malformed range refinement: '{hi_str}' is not a valid integer.",
+                crate::error_codes::ec(193),
             ))
         })?;
         if lo > hi {
             return Err(MirrError::parse_error(format!(
-                "[E194] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
+                "{} Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
+                crate::error_codes::ec(194),
             )));
         }
         return Ok(Refinement::Range { lo, hi });
@@ -501,17 +622,20 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
     if let Some((lo_str, hi_str)) = trimmed.split_once("..") {
         let lo = lo_str.trim().parse::<u64>().map_err(|_| {
             MirrError::parse_error(format!(
-                "[E193] Malformed range refinement: '{lo_str}' is not a valid integer.",
+                "{} Malformed range refinement: '{lo_str}' is not a valid integer.",
+                crate::error_codes::ec(193),
             ))
         })?;
         let hi = hi_str.trim().parse::<u64>().map_err(|_| {
             MirrError::parse_error(format!(
-                "[E193] Malformed range refinement: '{hi_str}' is not a valid integer.",
+                "{} Malformed range refinement: '{hi_str}' is not a valid integer.",
+                crate::error_codes::ec(193),
             ))
         })?;
         if lo > hi {
             return Err(MirrError::parse_error(format!(
-                "[E194] Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
+                "{} Invalid range in refinement: lo ({lo}) must be <= hi ({hi}).",
+                crate::error_codes::ec(194),
             )));
         }
         return Ok(Refinement::Range { lo, hi });
@@ -519,9 +643,10 @@ fn parse_refinement_clause(ref_str: &str) -> Result<Refinement, MirrError> {
 
     // Predicate form: store the raw expression string.
     if trimmed.is_empty() {
-        return Err(MirrError::parse_error(
-            "[E193] Empty refinement clause. Expected range 'N..M' or predicate expression.",
-        ));
+        return Err(MirrError::parse_error(format!(
+            "{} Empty refinement clause. Expected range 'N..M' or predicate expression.",
+            crate::error_codes::ec(193)
+        )));
     }
 
     Ok(Refinement::Predicate(trimmed.to_string()))

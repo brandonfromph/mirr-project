@@ -121,8 +121,8 @@ fn length_error(msg: String) -> String {
 
 fn default_config() -> PipelineConfig {
     PipelineConfig {
-        hls: false,
         typecheck: true,
+        bootstrap_mode: false,
         simplify: true,
         sat_simplify: false,
         width: true,
@@ -137,6 +137,9 @@ fn default_config() -> PipelineConfig {
         totality: false,
         symbolic: false,
         emit_mape_k_rtl: false,
+        hls: false,
+        logic_optimize: false,
+        base_dir: None,
     }
 }
 
@@ -351,15 +354,9 @@ pub fn compile_verilog_with_options(
         Ok(result) => {
             let fpga_target =
                 nasa_rust_project::emit::fpga_target::FpgaTarget::from_str_name(target);
-            let t = if let Some(fpga_t) = fpga_target {
-                if fpga_t == nasa_rust_project::emit::fpga_target::FpgaTarget::Generic {
-                    None
-                } else {
-                    Some(fpga_t)
-                }
-            } else {
-                None
-            };
+            let t = fpga_target.filter(|&fpga_t| {
+                fpga_t != nasa_rust_project::emit::fpga_target::FpgaTarget::Generic
+            });
             let sv = if strip_sva {
                 nasa_rust_project::emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
             } else {
@@ -598,7 +595,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 if is_bool {
                     let period = (si as u32 + 2).min(64);
                     let values: Vec<u8> = (0..capped_cycles)
-                        .map(|c| if (c / period) % 2 == 0 { 1u8 } else { 0u8 })
+                        .map(|c| if (c / period).is_multiple_of(2) { 1u8 } else { 0u8 })
                         .collect();
                     signals.push(serde_json::json!({
                         "name": sig.name,

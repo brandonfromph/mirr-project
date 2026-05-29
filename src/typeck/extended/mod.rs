@@ -37,10 +37,10 @@
 #![forbid(unsafe_code)]
 
 mod checks;
-mod domain_checks;
+pub mod domain_checks;
 mod emit;
 mod qualifiers;
-mod types;
+pub mod types;
 
 // Re-export everything so external code sees no change.
 pub use checks::*;
@@ -183,7 +183,7 @@ mod tests {
             origin: None,
             span: None,
         };
-        let ext = ExtendedSignalDecl::from_legacy(&legacy);
+        let ext = ExtendedSignalDecl::from_ast(&legacy);
         assert_eq!(ext.ty, SignalType::Unsigned(16));
         assert!(ext.extended_ty.is_base_only());
     }

@@ -34,18 +34,31 @@ module multi_guard_mod {
 "#;
 
     let program = nasa_rust_project::parser::parse_mirr(src).expect("parse failed");
-    println!(
-        "signals={} guards={} reflexes={}",
-        program.module.signals.len(),
-        program.module.guards.len(),
-        program.module.reflexes.len()
-    );
-    for r in &program.module.reflexes {
-        println!(
-            "reflex '{}' guards={:?} assignments={}",
-            r.name,
-            r.guard_names,
-            r.assignments.len()
-        );
-    }
+
+    // Assert structural element counts.
+    assert_eq!(program.module.signals.len(), 4, "Expected exactly 4 signals");
+    assert_eq!(program.module.guards.len(), 2, "Expected exactly 2 guards");
+    assert_eq!(program.module.reflexes.len(), 2, "Expected exactly 2 reflexes");
+
+    // Assert details of the guards.
+    let high_temp_guard = &program.module.guards[0];
+    assert_eq!(high_temp_guard.name, "high_temp");
+    assert_eq!(high_temp_guard.cycles, 5);
+
+    let low_pressure_guard = &program.module.guards[1];
+    assert_eq!(low_pressure_guard.name, "low_pressure");
+    assert_eq!(low_pressure_guard.cycles, 10);
+
+    // Assert details of the reflexes.
+    let reflex_temp = &program.module.reflexes[0];
+    assert_eq!(reflex_temp.name, "temp_alarm");
+    assert_eq!(reflex_temp.guard_names, vec!["high_temp"]);
+    assert_eq!(reflex_temp.assignments.len(), 1);
+    assert_eq!(reflex_temp.assignments[0].target, "alarm_a");
+
+    let reflex_pressure = &program.module.reflexes[1];
+    assert_eq!(reflex_pressure.name, "pressure_alarm");
+    assert_eq!(reflex_pressure.guard_names, vec!["low_pressure"]);
+    assert_eq!(reflex_pressure.assignments.len(), 1);
+    assert_eq!(reflex_pressure.assignments[0].target, "alarm_b");
 }

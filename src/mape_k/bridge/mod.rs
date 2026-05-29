@@ -24,11 +24,41 @@ mod sensors;
 
 use properties::extract_properties;
 use sensors::extract_sensors;
+use serde::{Deserialize, Serialize};
 
+use crate::mape_k::error::MapeKError;
 use crate::mape_k::ltl::TemporalProperty;
 use crate::mape_k::planner::{ActionEntry, AdaptationAction, TriggerCondition};
 use crate::mape_k::SimConfig;
 use crate::pipeline::PipelineResult;
+
+// ---------------------------------------------------------------------------
+// Bridge types — resolving E801 refinement gaps
+// ---------------------------------------------------------------------------
+
+/// A BridgeSignal represents a telemetry channel from a specific core.
+///
+/// Proposed in Proposal 045 for cross-core coordination.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BridgeSignal {
+    /// Canonical signal name.
+    pub name: String,
+    /// Core identifier (0..15 for RS-16).
+    pub core_id: u32,
+    /// Bit-width of the signal.
+    pub width: u32,
+}
+
+/// The Bridge manages the collection of signals across the multi-core fabric.
+///
+/// Proposed in Proposal 045 for aggregating telemetry into MAPE-K.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Bridge {
+    /// Registered telemetry signals.
+    pub signals: Vec<BridgeSignal>,
+    /// Maximum capacity of the bridge (bounded resource).
+    pub capacity: usize,
+}
 
 // ---------------------------------------------------------------------------
 // Constants — bounded resource limits (NASA P10)
@@ -47,37 +77,6 @@ pub const DEFAULT_WINDOW_SIZE: usize = 64;
 pub const DEFAULT_KNOWLEDGE_CAPACITY: usize = 4096;
 
 // ---------------------------------------------------------------------------
-// Bridge errors
-// ---------------------------------------------------------------------------
-
-/// Errors produced during the pipeline-to-SimConfig conversion.
-#[derive(Debug, Clone)]
-pub enum BridgeError {
-    /// The module declares more signals than the bridge can process.
-    TooManySignals { count: usize },
-    /// The module declares more assert-properties than the bridge can process.
-    TooManyProperties { count: usize },
-    /// A property formula cannot be lowered to a single `SignalPredicate`.
-    UnsupportedFormula { description: String },
-}
-
-impl std::fmt::Display for BridgeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::TooManySignals { count } => {
-                write!(f, "too many signals for bridge: {count} > {MAX_BRIDGE_SIGNALS}")
-            }
-            Self::TooManyProperties { count } => {
-                write!(f, "too many properties for bridge: {count} > {MAX_BRIDGE_PROPERTIES}")
-            }
-            Self::UnsupportedFormula { description } => {
-                write!(f, "unsupported formula: {description}")
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
 
@@ -90,8 +89,8 @@ impl std::fmt::Display for BridgeError {
 /// 3. Generate a graduated action table: `Always`/`Persists` → `EmergencyStop`
 ///    (priority 200); `EventuallyWithin` → `Throttle` (priority 128).
 /// 4. Apply default `window_size` and `knowledge_capacity`.
-pub fn bridge_from_pipeline(result: &PipelineResult) -> Result<SimConfig, Vec<BridgeError>> {
-    let mut errors: Vec<BridgeError> = Vec::new();
+pub fn bridge_from_pipeline(result: &PipelineResult) -> Result<SimConfig, Vec<MapeKError>> {
+    let mut errors: Vec<MapeKError> = Vec::new();
 
     let sensors = extract_sensors(result, &mut errors);
     let properties = extract_properties(result, &mut errors);
@@ -402,7 +401,7 @@ mod tests {
             .collect();
         let result = stub_pipeline(signals, Vec::new());
         let err = bridge_from_pipeline(&result).expect_err("should fail");
-        assert!(err.iter().any(|e| matches!(e, BridgeError::TooManySignals { .. })));
+        assert!(err.iter().any(|e| matches!(e, MapeKError::BridgeConfigError(_))));
     }
 
     #[test]

@@ -4,8 +4,9 @@
 //! Three tiers — small, medium, large — exercise parse_mirr() and run_pipeline()
 //! with increasing input complexity. All input generators use bounded iteration.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use nasa_rust_project::{parse_mirr, run_pipeline, PipelineConfig};
+use std::hint::black_box;
 
 // ---------------------------------------------------------------------------
 // Input generators (bounded iteration, NASA-compliant)

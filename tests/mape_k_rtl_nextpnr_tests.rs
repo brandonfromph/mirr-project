@@ -174,11 +174,10 @@ fn nextpnr_ice40_utilization_nonzero() {
         String::from_utf8_lossy(&out.stdout),
         String::from_utf8_lossy(&out.stderr)
     );
-    // nextpnr reports "LUT: N" in its utilisation summary.
-    let has_lut = combined.contains("LUT:");
+    let has_lut = combined.contains("LUT:") || combined.contains("LCs used as LUT4");
     assert!(
         has_lut,
-        "E6.5: nextpnr output missing 'LUT:' utilisation line:\n{}",
+        "E6.5: nextpnr output missing LUT utilisation summary:\n{}",
         &combined[..combined.len().min(2000)]
     );
 }

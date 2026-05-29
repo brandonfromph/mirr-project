@@ -20,8 +20,11 @@ use crate::error::MirrError;
 use helpers::*;
 
 // ---------------------------------------------------------------------------
-// RspuSimulator
+// Constants (NASA P10 bounded-resource model)
 // ---------------------------------------------------------------------------
+
+/// Maximum number of cycles of register history to track for `Prev`.
+pub const MAX_REG_HISTORY: usize = 64;
 
 /// Cycle-accurate simulator for R-SPU programs.
 ///
@@ -31,8 +34,8 @@ use helpers::*;
 pub struct RspuSimulator {
     /// Tagged register file (256 entries).
     pub registers: RegisterFile,
-    /// Guard state array (`MAX_GUARDS` entries, initialized to false).
-    pub guards: Vec<bool>,
+    /// Double-buffered guard state array (`MAX_GUARDS` entries).
+    pub guards: Vec<DoubleBufferedGuard>,
     /// Program counter (index into instruction vector).
     pub pc: usize,
     /// Current cycle count.
@@ -42,16 +45,22 @@ pub struct RspuSimulator {
     /// Property assertion tracking.
     pub properties: PropertyState,
     /// Optional hard real-time deadline (absolute cycle count).
-    /// When set, the simulator raises `DeadlineMiss` if the cycle counter
-    /// reaches this value.
     pub deadline: Option<u32>,
     /// Whether the simulator has been halted.
     pub halted: bool,
-    /// Whether the last VERIFY instruction succeeded (MEGA-4 totality).
+    /// Whether the last VERIFY instruction succeeded.
     pub cert_verified: bool,
-    /// Shadow interval register file for MEGA-5 symbolic reasoning.
-    /// Each register has (lo, hi) bounds — default = (0, u64::MAX).
+    /// Shadow interval register file.
     pub interval_shadow: Vec<(u64, u64)>,
+    /// Current active type tag register.
+    pub tag_register: RegId,
+    /// Circular buffer for register history `[cycle][reg]`.
+    /// Size: MAX_REGISTERS * MAX_REG_HISTORY
+    pub history: Vec<TaggedWord>,
+    /// Index of the most recent cycle in the history buffer.
+    pub history_cursor: usize,
+    /// Number of valid cycles currently in the history buffer.
+    pub history_valid_count: usize,
 }
 
 impl RspuSimulator {
@@ -62,9 +71,8 @@ impl RspuSimulator {
     /// - PC is 0, cycle is 0, no deadline.
     pub fn new() -> Self {
         let mut guards = Vec::with_capacity(MAX_GUARDS);
-        // Bounded: exactly MAX_GUARDS iterations.
         for _i in 0..MAX_GUARDS {
-            guards.push(false);
+            guards.push(DoubleBufferedGuard::default());
         }
         // MEGA-5: Initialize interval shadow with full range for every register.
         // Bounded: exactly MAX_REGISTERS iterations.
@@ -72,7 +80,7 @@ impl RspuSimulator {
         for _i in 0..MAX_REGISTERS {
             interval_shadow.push((0, u64::MAX));
         }
-        Self {
+        let mut sim = Self {
             registers: RegisterFile::new(),
             guards,
             pc: 0,
@@ -83,7 +91,14 @@ impl RspuSimulator {
             halted: false,
             cert_verified: false,
             interval_shadow,
-        }
+            tag_register: 0,
+            history: vec![TaggedWord::uninitialized(); MAX_REGISTERS * MAX_REG_HISTORY],
+            history_cursor: 0,
+            history_valid_count: 0,
+        };
+        // MEGA-4: Record Cycle 0 state into history immediately.
+        sim.push_history();
+        sim
     }
 
     /// Write an input value to the register file at the input partition.
@@ -117,38 +132,76 @@ impl RspuSimulator {
     /// the PC has run past the end of the program.
     ///
     /// Bounded: each call executes exactly one instruction.
+    /// Execute exactly one instruction from the program.
+    ///
+    /// This advances the program counter (PC) and updates register state.
+    /// Returns StepResult to indicate if execution should continue or halt.
     pub fn step(&mut self, program: &RspuProgram) -> Result<StepResult, MirrError> {
-        // Already halted?
         if self.halted {
             return Ok(StepResult::Halted);
         }
-
-        // PC past end of program?
         if self.pc >= program.instructions.len() {
             self.halted = true;
             return Ok(StepResult::Halted);
         }
 
-        // Fetch instruction.
-        let instr = program.instructions[self.pc].clone();
+        let instr = &program.instructions[self.pc];
+        let old_pc = self.pc;
+        self.pc += 1;
 
-        // Execute.
-        let result = self.execute_instruction(&instr)?;
+        let result = self.execute_instruction(instr)?;
 
-        // If the instruction did not halt or raise an exception, advance PC.
+        // If it halted or faulted, leave PC at the instruction that caused it.
         match result {
-            StepResult::Continue => {
-                self.pc += 1;
-            }
             StepResult::Halted | StepResult::EmergencyStop | StepResult::Exception(_) => {
-                // PC stays at the halting/faulting instruction.
+                self.pc = old_pc;
+            }
+            _ => {}
+        }
+
+        Ok(result)
+    }
+
+    /// Run a single combinatorial cycle (one full program execution until halt).
+    ///
+    /// This represents one "clock tick" in the hardware model.
+    pub fn run_cycle(&mut self, program: &RspuProgram) -> Result<StepResult, MirrError> {
+        // 1. Prepare "next" state for the new cycle.
+        for g in &mut self.guards {
+            g.next = g.current;
+        }
+
+        // 2. Reset PC for the start of the combinatorial cycle.
+        self.pc = 0;
+        self.halted = false;
+        let mut inst_count = 0;
+        let mut last_result: StepResult;
+
+        // 3. Execute instructions until termination for this cycle.
+        loop {
+            inst_count += 1;
+            if inst_count > MAX_PROGRAM_ITERATIONS {
+                return Err(rspu_err(format!(
+                    "{} cycle execution exceeded iteration limit",
+                    crate::error_codes::ec(713)
+                )));
+            }
+
+            let result = self.step(program)?;
+            last_result = result.clone();
+            match result {
+                StepResult::Continue => {}
+                _ => break,
             }
         }
 
-        // Advance cycle counter.
+        // 4. Commit state changes at the "clock edge" (end of program).
+        for g in &mut self.guards {
+            g.commit();
+        }
         self.cycle += 1;
 
-        // Check deadline expiry (after incrementing cycle).
+        // Check deadline expiry.
         if let Some(deadline_cycles) = self.deadline {
             if self.cycle >= deadline_cycles as u64 {
                 self.deadline = None;
@@ -156,7 +209,10 @@ impl RspuSimulator {
             }
         }
 
-        Ok(result)
+        // 5. Update register history for future Prev queries.
+        self.push_history();
+
+        Ok(last_result)
     }
 
     /// Execute a single instruction, updating simulator state.
@@ -219,81 +275,174 @@ impl RspuSimulator {
             RspuInstruction::AluUnary { op, dst, src } => {
                 let word = self.registers.read(*src).clone();
                 if word.tag == TypeTag::Uninitialized {
-                    return Err(rspu_err("[E708] tag violation: unary operand is uninitialized"));
+                    return Err(rspu_err(format!(
+                        "{} tag violation: unary operand is uninitialized",
+                        crate::error_codes::ec(708)
+                    )));
                 }
-                let result_val = execute_alu_unary(*op, word.value);
+                let result_val = execute_alu_unary(*op, word.value, word.tag);
                 self.registers.write(*dst, TaggedWord::from_computed(result_val, word.tag));
                 Ok(StepResult::Continue)
             }
 
             // -- Temporal tier (shift register) -------------------------
-            RspuInstruction::SrInit { guard, length: _, cond } => {
-                // Simplified simulation: set the guard to true if the
-                // condition register is nonzero.
-                let cond_val = self.registers.read(*cond).value;
-                self.set_guard(*guard, cond_val != 0);
+            RspuInstruction::SrInit { guard, length, cond } => {
+                let idx = *guard as usize;
+                if idx < self.guards.len() {
+                    let val = self.registers.read(*cond).value != 0;
+                    if *length == 1 {
+                        // Combinatorial guard (immediate)
+                        let unit = GuardUnit::ShiftRegister {
+                            data: if val { 1 } else { 0 },
+                            length: *length,
+                            input_reg: *cond,
+                        };
+                        self.guards[idx].current = unit;
+                        self.guards[idx].next = unit;
+                    } else {
+                        // Sequential guard (delayed)
+                        let prev_guard = self.guards[idx].current;
+                        let unit = match prev_guard {
+                            GuardUnit::ShiftRegister { data, .. } => {
+                                if !val {
+                                    // Reset on false
+                                    GuardUnit::ShiftRegister {
+                                        data: 0,
+                                        length: *length,
+                                        input_reg: *cond,
+                                    }
+                                } else {
+                                    // Preserve on true
+                                    GuardUnit::ShiftRegister {
+                                        data,
+                                        length: *length,
+                                        input_reg: *cond,
+                                    }
+                                }
+                            }
+                            _ => {
+                                // Initialize to 0 on startup
+                                GuardUnit::ShiftRegister {
+                                    data: 0,
+                                    length: *length,
+                                    input_reg: *cond,
+                                }
+                            }
+                        };
+                        self.guards[idx].current = unit;
+                        self.guards[idx].next = unit;
+                    }
+                }
                 Ok(StepResult::Continue)
             }
 
-            RspuInstruction::SrTick { guard: _ } => {
-                // In the single-tick simulation model, SR tick is a no-op.
+            RspuInstruction::SrTick { guard } => {
+                let idx = *guard as usize;
+                if idx < self.guards.len() {
+                    if let GuardUnit::ShiftRegister { data, length, input_reg } =
+                        self.guards[idx].current
+                    {
+                        let val = self.registers.read(input_reg).value;
+                        let next_bit = if val != 0 { 1u64 } else { 0u64 };
+                        let next_data = ((data << 1) | next_bit) & ((1 << length) - 1);
+                        self.guards[idx].next =
+                            GuardUnit::ShiftRegister { data: next_data, length, input_reg };
+                    }
+                }
                 Ok(StepResult::Continue)
             }
 
             RspuInstruction::SrQuery { dst, guard } => {
-                let active = self.read_guard(*guard);
-                let val = u64::from(active);
+                let val = if self.read_guard_current_bool(*guard) { 1u64 } else { 0u64 };
                 self.registers.write(*dst, TaggedWord::from_computed(val, TypeTag::Bool));
                 Ok(StepResult::Continue)
             }
 
             // -- Temporal tier (counter) --------------------------------
-            RspuInstruction::CtrInit { guard, target: _, cond } => {
-                // Simplified: set guard active if condition is nonzero.
-                let cond_val = self.registers.read(*cond).value;
-                self.set_guard(*guard, cond_val != 0);
+            RspuInstruction::CtrInit { guard, target, cond } => {
+                let val = self.registers.read(*cond).value;
+                let idx = *guard as usize;
+                if idx < self.guards.len() {
+                    let prev_guard = self.guards[idx].current;
+                    let unit = match prev_guard {
+                        GuardUnit::Counter { current, .. } => {
+                            if val == 0 {
+                                // If condition is false, reset count to 0
+                                GuardUnit::Counter { current: 0, target: *target, input_reg: *cond }
+                            } else {
+                                // If condition is true, preserve existing count!
+                                GuardUnit::Counter { current, target: *target, input_reg: *cond }
+                            }
+                        }
+                        _ => {
+                            // If uninitialized or other type, initialize to 0
+                            GuardUnit::Counter { current: 0, target: *target, input_reg: *cond }
+                        }
+                    };
+                    self.guards[idx].current = unit;
+                    self.guards[idx].next = unit;
+                }
                 Ok(StepResult::Continue)
             }
 
-            RspuInstruction::CtrTick { guard: _ } => {
-                // Counter tick is a no-op in the single-tick model.
+            RspuInstruction::CtrTick { guard } => {
+                let idx = *guard as usize;
+                if idx < self.guards.len() {
+                    if let GuardUnit::Counter { current, target, input_reg } =
+                        self.guards[idx].current
+                    {
+                        let val = self.registers.read(input_reg).value;
+                        let next_count = if val != 0 {
+                            if current < target {
+                                current + 1
+                            } else {
+                                current
+                            }
+                        } else {
+                            0
+                        };
+                        self.guards[idx].next =
+                            GuardUnit::Counter { current: next_count, target, input_reg };
+                    }
+                }
                 Ok(StepResult::Continue)
             }
 
             RspuInstruction::CtrQuery { dst, guard } => {
-                let active = self.read_guard(*guard);
-                let val = u64::from(active);
+                let val = if self.read_guard_current_bool(*guard) { 1u64 } else { 0u64 };
                 self.registers.write(*dst, TaggedWord::from_computed(val, TypeTag::Bool));
                 Ok(StepResult::Continue)
             }
 
             // -- Guard combinators --------------------------------------
             RspuInstruction::GuardAnd { dst, a, b } => {
-                let result = self.read_guard(*a) && self.read_guard(*b);
-                self.set_guard(*dst, result);
+                let result = self.read_guard_current_bool(*a) && self.read_guard_current_bool(*b);
+                self.set_guard_bool(*dst, result);
                 Ok(StepResult::Continue)
             }
 
             RspuInstruction::GuardOr { dst, a, b } => {
-                let result = self.read_guard(*a) || self.read_guard(*b);
-                self.set_guard(*dst, result);
+                let result = self.read_guard_current_bool(*a) || self.read_guard_current_bool(*b);
+                self.set_guard_bool(*dst, result);
                 Ok(StepResult::Continue)
             }
 
             // -- Reflex tier --------------------------------------------
             RspuInstruction::ReflexIf { guard, dst, src } => {
-                if self.read_guard(*guard) {
+                if self.read_guard_current_bool(*guard) {
                     let word = self.registers.read(*src).clone();
                     self.registers.write(*dst, word);
                 }
                 Ok(StepResult::Continue)
             }
 
-            RspuInstruction::Prev { dst, signal, delay: _ } => {
-                // Simplified single-tick model: copy signal to dst.
-                // Full delay tracking requires multi-cycle state not modeled here.
-                let word = self.registers.read(*signal).clone();
-                self.registers.write(*dst, word);
+            RspuInstruction::Prev { dst, signal, delay } => {
+                let val = self.get_prev_value(*signal, *delay)?;
+                println!(
+                    "DEBUG: Prev cycle={} signal={} delay={} val={:?}",
+                    self.cycle, signal, delay, val
+                );
+                self.registers.write(*dst, val);
                 Ok(StepResult::Continue)
             }
 
@@ -310,6 +459,8 @@ impl RspuSimulator {
                     self.properties.record_violation(*property_id);
                     let _action = self.exceptions.raise_exception(ExceptionCode::PropertyFail)?;
                     return Ok(StepResult::Exception(ExceptionCode::PropertyFail));
+                } else {
+                    self.properties.record_satisfaction(*property_id);
                 }
                 Ok(StepResult::Continue)
             }
@@ -320,6 +471,8 @@ impl RspuSimulator {
                     self.properties.record_violation(*property_id);
                     let _action = self.exceptions.raise_exception(ExceptionCode::PropertyFail)?;
                     return Ok(StepResult::Exception(ExceptionCode::PropertyFail));
+                } else {
+                    self.properties.record_satisfaction(*property_id);
                 }
                 Ok(StepResult::Continue)
             }
@@ -351,7 +504,10 @@ impl RspuSimulator {
                     0 => ExecMode::Reflex,
                     1 => ExecMode::Host,
                     other => {
-                        return Err(rspu_err(format!("[E714] invalid mode value: {other}",)));
+                        return Err(rspu_err(format!(
+                            "{} invalid mode value: {other}",
+                            crate::error_codes::ec(714),
+                        )));
                     }
                 };
                 // Tolerate same-mode switch in simulation by silently
@@ -398,6 +554,16 @@ impl RspuSimulator {
                 Ok(StepResult::Continue)
             }
 
+            RspuInstruction::TagBranch { tag_value, target_pc } => {
+                let current_tag = self.registers.read_tag(self.tag_register);
+                let current_tag_val = type_tag_to_u8(&current_tag);
+                println!("DEBUG: TagBranch tag_reg={} tag_val={} current_tag={:?} current_val={} match={} target={}", self.tag_register, tag_value, current_tag, current_tag_val, current_tag_val == *tag_value, target_pc);
+                if current_tag_val == *tag_value {
+                    self.pc = *target_pc as usize;
+                }
+                Ok(StepResult::Continue)
+            }
+
             // -- ISA v2: Temporal extension -----------------------------
             RspuInstruction::DeadlineSet { cycles } => {
                 // Set the absolute deadline.
@@ -423,11 +589,14 @@ impl RspuSimulator {
             }
 
             RspuInstruction::TotalCheck { expected_properties } => {
-                // Count verified properties (those NOT in the violations list).
-                // If fewer than expected passed, raise PropertyFail.
-                let verified = (*expected_properties as usize)
-                    .saturating_sub(self.properties.violations.len());
-                if verified < *expected_properties as usize {
+                // Count satisfied properties.
+                let satisfied = self
+                    .properties
+                    .statuses
+                    .values()
+                    .filter(|s| **s == PropertyStatus::Satisfied)
+                    .count();
+                if satisfied < *expected_properties as usize {
                     let _action = self.exceptions.raise_exception(ExceptionCode::PropertyFail)?;
                     return Ok(StepResult::Exception(ExceptionCode::PropertyFail));
                 }
@@ -492,22 +661,96 @@ impl RspuSimulator {
     // Guard helpers (bounded by MAX_GUARDS)
     // -----------------------------------------------------------------------
 
-    /// Read a guard value, returning false if the index is out of bounds.
-    fn read_guard(&self, id: GuardId) -> bool {
+    /// Read a guard boolean value, returning false if the index is out of bounds.
+    pub fn read_guard_bool(&self, id: GuardId) -> bool {
         let idx = id as usize;
-        if idx < self.guards.len() {
-            self.guards[idx]
-        } else {
-            false
+        if idx >= self.guards.len() {
+            return false;
+        }
+        match self.guards[idx].current {
+            GuardUnit::ShiftRegister { data, length, .. } => {
+                if length == 0 {
+                    return true;
+                }
+                let mask = if length >= 64 { !0u64 } else { (1u64 << length) - 1 };
+                (data & mask) == mask
+            }
+            GuardUnit::Counter { current, target, .. } => current >= target,
+            GuardUnit::Combinatorial(b) => b,
+            GuardUnit::Uninitialized => false,
         }
     }
 
-    /// Set a guard value.  No-op if the index is out of bounds.
-    fn set_guard(&mut self, id: GuardId, value: bool) {
+    /// Set a combinatorial guard value in the next-state buffer.
+    /// Read a guard boolean value from the CURRENT state (beginning of cycle).
+    fn read_guard_current_bool(&self, id: GuardId) -> bool {
+        let idx = id as usize;
+        if idx >= self.guards.len() {
+            return false;
+        }
+        match self.guards[idx].current {
+            GuardUnit::ShiftRegister { data, length, .. } => {
+                if length == 0 {
+                    return true;
+                }
+                let mask = if length >= 64 { !0u64 } else { (1u64 << length) - 1 };
+                (data & mask) == mask
+            }
+            GuardUnit::Counter { current, target, .. } => current >= target,
+            GuardUnit::Combinatorial(b) => b,
+            GuardUnit::Uninitialized => false,
+        }
+    }
+
+    fn set_guard_bool(&mut self, id: GuardId, value: bool) {
         let idx = id as usize;
         if idx < self.guards.len() {
-            self.guards[idx] = value;
+            let unit = GuardUnit::Combinatorial(value);
+            self.guards[idx].current = unit;
+            self.guards[idx].next = unit;
         }
+    }
+
+    /// Snapshot all registers into the history buffer.
+    fn push_history(&mut self) {
+        let values = self.registers.get_all_values();
+        // If history_valid_count > 0, move cursor to next slot.
+        if self.history_valid_count > 0 {
+            self.history_cursor = (self.history_cursor + 1) % MAX_REG_HISTORY;
+        } else {
+            self.history_cursor = 0;
+        }
+
+        let start = self.history_cursor * MAX_REGISTERS;
+        for (i, val) in values.iter().enumerate() {
+            self.history[start + i] = val.clone();
+        }
+
+        if self.history_valid_count < MAX_REG_HISTORY {
+            self.history_valid_count += 1;
+        }
+    }
+
+    /// Retrieve a historical register value.
+    fn get_prev_value(&self, reg: RegId, delay: u32) -> Result<TaggedWord, MirrError> {
+        if delay == 0 {
+            return Ok(self.registers.read(reg).clone());
+        }
+        if delay as usize > self.history_valid_count {
+            return Err(rspu_err(format!(
+                "{} Prev delay {} exceeds available history {}",
+                crate::error_codes::ec(716),
+                delay,
+                self.history_valid_count
+            )));
+        }
+        // delay=1 is the most recent (last finished cycle).
+        // That is at self.history_cursor.
+        let offset = (delay - 1) as usize;
+        let index = (self.history_cursor + MAX_REG_HISTORY - offset) % MAX_REG_HISTORY;
+        // println!("DEBUG: get_prev_value delay={} cursor={} index={}", delay, self.history_cursor, index);
+        let start = index * MAX_REGISTERS;
+        Ok(self.history[start + reg as usize].clone())
     }
 
     // -----------------------------------------------------------------------
@@ -527,15 +770,26 @@ impl RspuSimulator {
         let mut terminating_exception: Option<ExceptionCode> = None;
 
         // Bounded loop: at most effective_max iterations.
-        let mut steps: u64 = 0;
-        while steps < effective_max {
-            let result = self.step(program)?;
-            steps += 1;
+        let mut cycles_executed: u64 = 0;
+
+        self.halted = false;
+        let mut final_halted = false;
+        while cycles_executed < effective_max && !self.halted && terminating_exception.is_none() {
+            let result = self.run_cycle(program)?;
+            cycles_executed += 1;
 
             match result {
-                StepResult::Continue => {}
-                StepResult::Halted => break,
-                StepResult::EmergencyStop => break,
+                StepResult::Continue => {
+                    final_halted = false;
+                }
+                StepResult::Halted => {
+                    final_halted = true;
+                }
+                StepResult::EmergencyStop => {
+                    self.halted = true;
+                    final_halted = true;
+                    break;
+                }
                 StepResult::Exception(code) => {
                     terminating_exception = Some(code);
                     break;
@@ -543,12 +797,8 @@ impl RspuSimulator {
             }
         }
 
-        // If we exhausted the cycle budget without terminating, report error.
-        if steps >= effective_max && !self.halted && terminating_exception.is_none() {
-            return Err(rspu_err(format!(
-                "[E712] simulation exceeded {effective_max} cycles without halting",
-            )));
-        }
+        // If an exception occurred, we still return the result but with the exception field set.
+        // We only return Err for internal simulator errors (like budget exceeded).
 
         // Collect outputs by scanning the output register partition (R64-R127).
         let mut outputs = HashMap::new();
@@ -567,11 +817,11 @@ impl RspuSimulator {
         }
 
         Ok(SimResult {
-            cycles: self.cycle,
+            cycles: cycles_executed,
             outputs,
-            property_violations: self.properties.violations.clone(),
+            property_violations: self.properties.get_violations(),
             exception: terminating_exception,
-            halted: self.halted,
+            halted: final_halted,
         })
     }
 }

@@ -2,10 +2,10 @@
 // Compile: cargo run --bin mirr-compile -- --emit verilog examples/thermal_management.mirr
 
 module thermal_management {
-    signal temp_zone_1:     in i16;
-    signal temp_zone_2:     in i16;
-    signal temp_zone_3:     in i16;
-    signal temp_zone_4:     in i16;
+    signal temp_zone_1:     in u16;
+    signal temp_zone_2:     in u16;
+    signal temp_zone_3:     in u16;
+    signal temp_zone_4:     in u16;
     signal fan_speed_1:     out u8;
     signal fan_speed_2:     out u8;
     signal fan_speed_3:     out u8;

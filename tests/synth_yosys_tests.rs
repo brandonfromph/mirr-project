@@ -82,8 +82,8 @@ fn synth_bind_file_empty_for_no_properties() {
 const COMPILABLE_EXAMPLES: &[(&str, &str)] = &[
     ("autonomous_vehicle", include_str!("../examples/autonomous_vehicle.mirr")),
     ("fir_filter", include_str!("../examples/fir_filter.mirr")),
-    // flight_controller.mirr excluded: guard uses unsupported temporal form
-    // flight_controller_signed.mirr excluded: guard 'nose_down' uses unsupported temporal form
+    ("flight_controller", include_str!("../examples/flight_controller.mirr")),
+    // flight_controller_signed.mirr excluded: guard 'nose_down' uses non-literal right-hand side comparison
     ("icu_monitor", include_str!("../examples/icu_monitor.mirr")),
     ("industrial_safety", include_str!("../examples/industrial_safety.mirr")),
     ("multi_guard_monitor", include_str!("../examples/multi_guard_monitor.mirr")),

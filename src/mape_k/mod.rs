@@ -28,6 +28,7 @@
 
 pub mod analyzer;
 pub mod bridge;
+pub mod error;
 pub mod executor;
 pub mod knowledge;
 pub mod ltl;

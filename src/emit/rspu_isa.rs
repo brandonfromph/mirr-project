@@ -25,6 +25,14 @@ use serde::{Deserialize, Serialize};
 pub const MAX_REGISTERS: usize = 256;
 
 /// Maximum temporal guard hardware units.
+///
+/// **Architectural Verification & Formal Proof Invariant:**
+/// Enforced strictly at `64` to align with the DFA state-space bounds and formal proof constraints
+/// in Rocq/Coq specifications (cf. `proofs/language/DFA.v` and `proofs/language/Semantics.v` where
+/// `MAX_GUARDS = 64` bounds the total Mealy state-space of verified controllers).
+/// Changing this constant violates the decidability proofs and is safety-critical.
+/// Exhaustion issues MUST be resolved by macro preprocessor optimization and temporal sub-guard
+/// deterministic deduplication in `src/temporal/compiler.rs`.
 pub const MAX_GUARDS: usize = 64;
 
 /// Maximum instructions in a single R-SPU program.
@@ -241,6 +249,8 @@ pub enum RspuInstruction {
     IntervalHi { dst: RegId, src: RegId },
     /// Trap if R\[src\] is outside interval bounds stored in R\[bounds\]'s shadow.
     IntervalCheck { src: RegId, bounds: RegId },
+    /// Branch on tag match: jump to target_pc if active tag matches expected_tag.
+    TagBranch { tag_value: u8, target_pc: u32 },
 }
 
 impl RspuInstruction {
@@ -274,6 +284,7 @@ impl RspuInstruction {
             Self::TagLoad { .. } => "TAG_LOAD",
             Self::TagCheck { .. } => "TAG_CHECK",
             Self::TagRead { .. } => "TAG_READ",
+            Self::TagBranch { .. } => "TAG_BRANCH",
             Self::Nop => "NOP",
             Self::Fence => "FENCE",
             Self::DeadlineSet { .. } => "DEADLINE_SET",
@@ -345,6 +356,9 @@ impl RspuProgram {
 /// Format a single instruction as R-SPU assembly text.
 fn format_instruction(instr: &RspuInstruction) -> String {
     match instr {
+        RspuInstruction::TagBranch { tag_value, target_pc } => {
+            format!("TAG_BRANCH  {}, {}", tag_value, target_pc)
+        }
         RspuInstruction::LoadInput { dst, port } => {
             format!("LOAD_INPUT  R{dst}, P{port}")
         }

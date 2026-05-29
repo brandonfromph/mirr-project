@@ -1,6 +1,9 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use nasa_rust_project::{parse_mirr, sexpr::{ast_to_sexpr, sexpr_to_ast, printer::print_sexpr, parser::parse_sexpr}};
+use nasa_rust_project::{
+    parse_mirr,
+    sexpr::{ast_to_sexpr, parser::parse_sexpr, printer::print_sexpr, sexpr_to_ast},
+};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {

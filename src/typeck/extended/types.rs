@@ -128,7 +128,7 @@ impl ExtendedType {
     }
 
     /// Returns true if this type has no extensions beyond the base `SignalType`.
-    /// Used to fast-path the type checker for legacy programs.
+    /// Used to fast-path the type checker for programs without type extensions.
     pub fn is_base_only(&self) -> bool {
         self.refinements.is_empty()
             && self.qualifiers.is_empty()

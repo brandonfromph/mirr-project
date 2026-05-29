@@ -6,19 +6,32 @@ authors:
   - given-names: Brandon
     alias: brandonfromph
 repository-code: "https://github.com/brandonfromph/mirr-project"
+url: "https://brandonfromph.github.io/mirr-project/paper/"
 license: GPL-3.0
 version: "0.3.0"
 date-released: "2026-03-12"
 keywords:
   - compiler
   - hardware
+  - hdl
   - safety-critical
   - verilog
+  - systemverilog
+  - firrtl
+  - ecs
+  - entity-component-system
+  - temporal-logic
+  - formal-verification
   - dsl
   - living-research-artifact
+  - rust
 abstract: >-
   MIRR is a safety-critical domain-specific language compiler that transforms
   temporal behavioral specifications into synthesizable SystemVerilog RTL,
-  FIRRTL, R-SPU assembly, and S-expression intermediate representations.
-  The project follows NASA Power-of-10 coding rules and includes formal
-  verification via Rocq proofs.
+  FIRRTL, R-SPU assembly, S-expression IR, and SystemVerilog Assertions (SVA).
+  The compiler uses a hand-rolled Entity Component System (ECS) as its IR,
+  eliminating pointer-chained AST traversal in favour of cache-local flat Vec
+  arrays. Temporal guard semantics compile to deterministic shift-register chains
+  in hardware. The project follows NASA Power-of-10 coding rules, enforces zero
+  unsafe code across all crates, and includes 80+ formal Rocq proofs covering
+  width inference and temporal guard correctness.

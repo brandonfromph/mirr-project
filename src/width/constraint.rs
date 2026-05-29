@@ -8,6 +8,8 @@
 use crate::ast::types::BinaryOp;
 use crate::width::types::{FlatNode, WidthDiag};
 use serde::Serialize;
+use std::borrow::Borrow;
+use std::hash::Hash;
 
 // ---------------------------------------------------------------------------
 // Constraint types
@@ -68,6 +70,16 @@ pub fn generate_constraints(
     nodes: &[FlatNode],
     signals: &std::collections::HashMap<String, u32>,
 ) -> ConstraintSet {
+    generate_constraints_with_index(nodes, signals)
+}
+
+pub(crate) fn generate_constraints_with_index<K>(
+    nodes: &[FlatNode],
+    signals: &std::collections::HashMap<K, u32>,
+) -> ConstraintSet
+where
+    K: Eq + Hash + Borrow<str>,
+{
     let mut constraints = Vec::new();
     let mut diagnostics = Vec::new();
 
@@ -83,9 +95,13 @@ pub fn generate_constraints(
                     constraints.push(WidthConstraint::Fixed { node: node_id, width });
                 } else {
                     diagnostics.push(
-                        WidthDiag::error(format!("[E501] undeclared signal reference: '{}'", name))
-                            .with_code("E501")
-                            .with_signal(name),
+                        WidthDiag::error(format!(
+                            "{} undeclared signal reference: '{}'",
+                            crate::error_codes::ec(501),
+                            name
+                        ))
+                        .with_code("E501")
+                        .with_signal(name),
                     );
                     // Fallback to width 1 to allow solver to continue.
                     constraints.push(WidthConstraint::Fixed { node: node_id, width: 1 });
@@ -154,7 +170,12 @@ pub fn generate_constraints(
                             right: *right,
                         });
                     }
-                    BinaryOp::Sub | BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
+                    BinaryOp::Sub
+                    | BinaryOp::And
+                    | BinaryOp::Or
+                    | BinaryOp::BitwiseOr
+                    | BinaryOp::BitwiseAnd
+                    | BinaryOp::Xor => {
                         constraints.push(WidthConstraint::MaxOf {
                             node: node_id,
                             left: *left,
@@ -229,7 +250,8 @@ pub fn generate_constraints(
                 // If it reaches constraint generation, emit a semantic-width diagnostic.
                 diagnostics.push(
                     WidthDiag::error(format!(
-                        "[E506] unresolved UnfoldIndex '{}' reached width constraints",
+                        "{} unresolved UnfoldIndex '{}' reached width constraints",
+                        crate::error_codes::ec(506),
                         name
                     ))
                     .with_code("E506"),

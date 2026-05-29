@@ -144,6 +144,20 @@ fn typecheck_err(module: &Module) -> String {
     errs.errors[0].to_string()
 }
 
+fn deep_add_expression(depth: usize) -> Expr {
+    let mut expr = Expr::Signal("n".to_string());
+    let mut i = 0usize;
+    while i < depth {
+        expr = Expr::Binary {
+            op: BinaryOp::Add,
+            left: Box::new(expr),
+            right: Box::new(Expr::Literal(LiteralValue::Integer(1))),
+        };
+        i += 1;
+    }
+    expr
+}
+
 // ---------------------------------------------------------------------------
 // T14: Guard conditions must be Bool
 // ---------------------------------------------------------------------------
@@ -204,7 +218,7 @@ fn assignment_type_mismatch_rejected_e602() {
     // y (bool) = n (u16) — mismatch
     let m = module_with_assignment("y", SignalType::Bool, Expr::Signal("n".to_string()));
     let msg = typecheck_err(&m);
-    assert!(msg.contains("[E602]"), "Expected E602, got: {}", msg);
+    assert!(msg.contains("[E601]"), "Expected E601, got: {}", msg);
 }
 
 #[test]
@@ -212,7 +226,7 @@ fn assignment_unsigned_to_bool_rejected_e602() {
     // y (bool) = 42 (u6) — mismatch
     let m = module_with_assignment("y", SignalType::Bool, Expr::Literal(LiteralValue::Integer(42)));
     let msg = typecheck_err(&m);
-    assert!(msg.contains("[E602]"), "Expected E602, got: {}", msg);
+    assert!(msg.contains("[E601]"), "Expected E601, got: {}", msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -644,5 +658,59 @@ fn unsigned_narrowing_u16_to_u8_rejected() {
     validate_module(&m).unwrap();
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E602]"), "Expected E602, got: {}", err);
+    assert!(err.to_string().contains("[E601]"), "Expected E601, got: {err}");
+}
+
+// ---------------------------------------------------------------------------
+// Expression inference bounds
+// ---------------------------------------------------------------------------
+
+#[test]
+fn deep_guard_expression_exceeding_bounds_returns_explicit_type_error() {
+    let m = module_with_guard_condition(deep_add_expression(2048));
+    validate_module(&m).expect("semantic validation should succeed");
+    let errs = typecheck_module(&m)
+        .expect_err("bound-exceeding guard expression should fail type checking explicitly");
+    let msg = errs.errors[0].to_string();
+    assert!(msg.contains("[E607]"), "expected E607, got: {}", msg);
+    assert!(
+        msg.contains("exceeded maximum expression node count"),
+        "expected explicit bounds error, got: {}",
+        msg
+    );
+    assert!(msg.contains("MAX_EXPR_NODES"), "expected bound name in error: {}", msg);
+}
+
+#[test]
+fn deep_assignment_expression_exceeding_bounds_returns_explicit_type_error() {
+    let m = module_with_assignment("out_u16", SignalType::Unsigned(16), deep_add_expression(2048));
+    validate_module(&m).expect("semantic validation should succeed");
+    let errs = typecheck_module(&m)
+        .expect_err("bound-exceeding assignment expression should fail type checking explicitly");
+    let msg = errs.errors[0].to_string();
+    assert!(msg.contains("[E607]"), "expected E607, got: {}", msg);
+    assert!(
+        msg.contains("exceeded maximum expression node count"),
+        "expected explicit bounds error, got: {}",
+        msg
+    );
+    assert!(msg.contains("MAX_EXPR_NODES"), "expected bound name in error: {}", msg);
+}
+
+#[test]
+fn missing_root_type_returns_explicit_type_error_instead_of_bool_fallback() {
+    let mut m = module_with_guard_condition(Expr::Signal("missing_signal".to_string()));
+    m.reflexes.clear();
+
+    let errs =
+        typecheck_module(&m).expect_err("missing root type must produce explicit type-check error");
+    let msg = errs.errors[0].to_string();
+
+    assert!(msg.contains("[E607]"), "expected E607, got: {}", msg);
+    assert!(
+        msg.contains("did not produce a root type"),
+        "expected explicit missing-root diagnostic, got: {}",
+        msg
+    );
+    assert!(msg.contains("MAX_EXPR_NODES"), "expected bound name in error: {}", msg);
 }

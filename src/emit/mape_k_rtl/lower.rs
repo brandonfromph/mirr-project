@@ -27,8 +27,8 @@ pub(super) fn emit_monitor_block(config: &SimConfig) -> String {
     sv.push_str(") (\n");
     sv.push_str("  input  logic clk,\n");
     sv.push_str("  input  logic rst_n,\n");
-    sv.push_str("  input  logic [31:0] sensor_in [0:N_SIGNALS-1],\n");
-    sv.push_str("  output logic [31:0] shadow    [0:N_SIGNALS-1],\n");
+    sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] sensor_in,\n");
+    sv.push_str("  output logic [N_SIGNALS-1:0][31:0] shadow,\n");
     sv.push_str("  output logic        sample_valid\n");
     sv.push_str(");\n\n");
 
@@ -55,7 +55,7 @@ pub(super) fn emit_monitor_block(config: &SimConfig) -> String {
     }
 
     sv.push_str(&format!(
-        "      wr_ptr <= (wr_ptr == TRACE_DEPTH-1) ? {addr_w}'d0 : wr_ptr + 1;\n"
+        "      wr_ptr <= (32'(wr_ptr) == TRACE_DEPTH-1) ? {addr_w}'d0 : wr_ptr + 1;\n"
     ));
     sv.push_str("    end\n");
     sv.push_str("  end\n\n");
@@ -80,7 +80,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
     sv.push_str(") (\n");
     sv.push_str("  input  logic clk,\n");
     sv.push_str("  input  logic rst_n,\n");
-    sv.push_str("  input  logic [31:0] shadow [0:N_SIGNALS-1],\n");
+    sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] shadow,\n");
     sv.push_str("  input  logic        sample_valid,\n");
     sv.push_str(&format!(
         "  output logic [{}:0] violation_vec,\n",
@@ -88,7 +88,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
     ));
     sv.push_str(&format!(
         "  output logic [{}:0] top_violation_idx\n",
-        bit_width(n_prop).saturating_sub(1).max(0)
+        bit_width(n_prop).saturating_sub(1)
     ));
     sv.push_str(");\n\n");
 

@@ -27,6 +27,9 @@ fn main() {
     let mut selfhost_compile = false;
     let mut selfhost_json = false;
     let mut selfhost_verilog = false;
+    let mut dump_expanded = false;
+    let mut run_rspu = false;
+    let mut run_bootstrap = false;
     let mut input_path = None;
 
     for arg in args {
@@ -35,6 +38,12 @@ fn main() {
             "--json" | "-j" => emit_json = true,
             "--dot" | "-d" => emit_dot = true,
             "--verilog" => emit_verilog = true,
+            "--dump-expanded" => dump_expanded = true,
+            "--rspu" => {
+                run_rspu = true;
+                run_bootstrap = true; // R-SPU requires bootstrap mode for relaxed type checking
+            }
+            "--bootstrap" => run_bootstrap = true,
             "--selfhost-compile" => selfhost_compile = true,
             "--selfhost-compile-json" => {
                 selfhost_compile = true;
@@ -131,8 +140,16 @@ fn main() {
         source = stripped.to_string();
     }
 
+    // MEGA-10: Pre-process with ergonomic macro processor before parsing
+    let processed_source = nasa_rust_project::compiler::macro_proc::expand_macros(&source);
+
+    if dump_expanded {
+        println!("{}", processed_source);
+        process::exit(0);
+    }
+
     // Parse the MIRR file
-    let program = match parse_mirr(&source) {
+    let program = match parse_mirr(&processed_source) {
         Ok(program) => program,
         Err(error) => {
             eprintln!("Parse error: {}", error);
@@ -146,18 +163,41 @@ fn main() {
         return;
     }
 
-    // Compile temporal guards
-    let mut compiler = TemporalGuardCompiler::new();
-    let netlist = match compiler.compile_temporal_guards(&program.module) {
-        Ok(netlist) => netlist,
-        Err(error) => {
-            eprintln!("Temporal compilation error: {}", error);
+    let config = nasa_rust_project::pipeline::PipelineConfig {
+        temporal: true,
+        rspu: run_rspu,
+        bootstrap_mode: run_bootstrap,
+        base_dir: Some(
+            std::path::PathBuf::from(&input_path)
+                .parent()
+                .unwrap_or(std::path::Path::new(""))
+                .to_path_buf(),
+        ),
+        ..Default::default()
+    };
+
+    let pipeline_result =
+        match nasa_rust_project::pipeline::run_pipeline_on_program(program, &config) {
+            Ok(result) => result,
+            Err(errors) => {
+                for err in errors.errors {
+                    eprintln!("Pipeline error: {}", err);
+                }
+                process::exit(1);
+            }
+        };
+
+    let netlist = match pipeline_result.temporal_netlist {
+        Some(netlist) => netlist,
+        None => {
+            eprintln!("Temporal compilation was skipped");
             process::exit(1);
         }
     };
 
     // Output results
     // support multiple output formats; if none requested show summary
+    let compiler = TemporalGuardCompiler::new();
     if emit_json {
         match compiler.emit_netlist_json(&netlist) {
             Ok(json) => println!("{}", json),
@@ -216,6 +256,7 @@ fn print_help() {
     println!(
         "      --verilog              Emit netlist as simple Verilog module (requires --compile)"
     );
+    println!("      --dump-expanded        Print preprocessor expanded MIRR source code and exit");
     println!("      --selfhost-compile     Run full self-hosting bootstrap pipeline");
     println!("      --selfhost-compile-json  Same as above, also emit netlist JSON");
     println!("      --selfhost-compile-verilog  Same as above, also emit Verilog");

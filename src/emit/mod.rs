@@ -18,6 +18,7 @@ pub mod riscv;
 pub mod rspu;
 pub mod rspu_encoding;
 pub mod rspu_exceptions;
+pub mod rspu_helpers;
 pub mod rspu_isa;
 pub mod rspu_opt;
 pub mod rspu_regalloc;
@@ -60,6 +61,8 @@ pub(crate) fn expr_text_bounded(expr: &Expr, iters: &mut usize) -> String {
             let op_str = match op {
                 BinaryOp::And => "&&",
                 BinaryOp::Or => "||",
+                BinaryOp::BitwiseOr => "|",
+                BinaryOp::BitwiseAnd => "&",
                 BinaryOp::Xor => "^",
                 BinaryOp::Lt => "<",
                 BinaryOp::Le => "<=",

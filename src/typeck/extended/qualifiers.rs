@@ -405,8 +405,6 @@ pub mod error_codes {
 /// This parallels the existing `SignalDecl` but replaces the `ty: SignalType`
 /// field with `extended_ty: ExtendedType`. For backward compatibility, the
 /// original `ty` field is still populated (from `extended_ty.base`).
-///
-/// New code should read from `extended_ty`; legacy code continues reading `ty`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExtendedSignalDecl {
     /// Signal identifier (unique within the module).
@@ -433,9 +431,9 @@ fn default_extended_type() -> ExtendedType {
 }
 
 impl ExtendedSignalDecl {
-    /// Upgrade a legacy `SignalDecl` to an `ExtendedSignalDecl`.
+    /// Elevate a parsed `SignalDecl` to an `ExtendedSignalDecl`.
     /// Propagates MEGA-1 annotations from the AST-level `ExtendedType`.
-    pub fn from_legacy(decl: &crate::ast::program::SignalDecl) -> Self {
+    pub fn from_ast(decl: &crate::ast::program::SignalDecl) -> Self {
         use crate::ast::types::{EffectQualifier, Linearity, Refinement};
 
         let base = decl.ty.signal_type();

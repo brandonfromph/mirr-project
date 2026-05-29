@@ -166,16 +166,24 @@ fn validate_widths(widths: &[u32], nodes: &[FlatNode], diagnostics: &mut Vec<Wid
         if w == 0 {
             let desc = node_description(i, nodes);
             diagnostics.push(
-                WidthDiag::error(format!("[E503] node {} ({}) has unresolved width", i, desc))
-                    .with_code("E503"),
+                WidthDiag::error(format!(
+                    "{} node {} ({}) has unresolved width",
+                    crate::error_codes::ec(503),
+                    i,
+                    desc
+                ))
+                .with_code("E503"),
             );
         }
         if w > Width::MAX.0 {
             let desc = node_description(i, nodes);
             diagnostics.push(
                 WidthDiag::error(format!(
-                    "[E504] node {} ({}) requires {} bits, exceeding maximum of 64",
-                    i, desc, w
+                    "{} node {} ({}) requires {} bits, exceeding maximum of 64",
+                    crate::error_codes::ec(504),
+                    i,
+                    desc,
+                    w
                 ))
                 .with_code("E504"),
             );
@@ -218,8 +226,12 @@ pub fn check_truncation(
         let category = if target_signed { "signed" } else { "unsigned" };
         diags.push(
             WidthDiag::error(format!(
-                "[E505] assignment to '{}' truncates {} {} bits to {} bits",
-                target_name, category, expr_width.0, target_width
+                "{} assignment to '{}' truncates {} {} bits to {} bits",
+                crate::error_codes::ec(505),
+                target_name,
+                category,
+                expr_width.0,
+                target_width
             ))
             .with_code("E505")
             .with_signal(target_name),

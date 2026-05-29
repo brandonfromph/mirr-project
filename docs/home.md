@@ -50,8 +50,10 @@ them in hardware, with nanosecond response times.
 
 ```mirr
 module neonatal_respirator {
-    signal airway_pressure: in u16;
-    signal clamp_valve:     out bool;
+    signals {
+        airway_pressure: in u16
+        clamp_valve:     out bool
+    }
 
     guard sustained_pressure_drop {
         when airway_pressure < 50 

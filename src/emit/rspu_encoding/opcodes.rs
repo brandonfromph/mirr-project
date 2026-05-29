@@ -48,9 +48,10 @@ pub const OP_MATCH: u8 = 33;
 pub const OP_INTERVAL_LO: u8 = 34;
 pub const OP_INTERVAL_HI: u8 = 35;
 pub const OP_INTERVAL_CHECK: u8 = 36;
+pub const OP_TAG_BRANCH: u8 = 37;
 
 /// Total number of assigned opcodes (used + reserved).
-pub const TOTAL_OPCODES: usize = 37;
+pub const TOTAL_OPCODES: usize = 38;
 
 /// Maximum value for a 10-bit immediate field.
 pub(super) const IMM10_MAX: u64 = 0x3FF;

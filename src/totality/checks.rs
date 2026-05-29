@@ -191,10 +191,8 @@ pub(super) fn max_prev_in_expr(expr: &crate::ast::Expr) -> u64 {
             break;
         }
         match e {
-            crate::ast::Expr::Prev { delay, .. } => {
-                if *delay > max_delay {
-                    max_delay = *delay;
-                }
+            crate::ast::Expr::Prev { delay, .. } if *delay > max_delay => {
+                max_delay = *delay;
             }
             crate::ast::Expr::Unary { operand, .. } => {
                 stack.push(operand);

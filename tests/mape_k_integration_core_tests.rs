@@ -18,8 +18,9 @@ use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, Property
 use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
 use nasa_rust_project::ast::Expr;
 use nasa_rust_project::mape_k::bridge::{
-    bridge_from_pipeline, BridgeError, MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS,
+    bridge_from_pipeline, MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS,
 };
+use nasa_rust_project::mape_k::error::MapeKError;
 use nasa_rust_project::mape_k::{
     AdaptationAction, SignalPredicate, TemporalProperty, TriggerCondition,
 };
@@ -40,8 +41,6 @@ const MAX_TEST_PROPERTIES: usize = 128;
 // =========================================================================
 
 /// Build a minimal `PipelineResult` with the given signals and properties.
-/// All optional pipeline stages are `None` (only the program AST matters
-/// for bridge conversion).
 fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> PipelineResult {
     let module = Module {
         name: "test_mod".to_string(),
@@ -111,7 +110,6 @@ fn assert_property(name: &str, formula: PropertyFormula) -> PropertyDecl {
 
 #[test]
 fn bridge_generates_sim_config_from_safety_property() {
-    // Build a PipelineResult with one Assert(Always(IsTrue("alarm"))) property.
     let props = vec![assert_property(
         "alarm_always_on",
         PropertyFormula::Always(Expr::Signal("alarm".to_string())),
@@ -120,7 +118,6 @@ fn bridge_generates_sim_config_from_safety_property() {
 
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
 
-    // Exactly one temporal property, lowered to Always(IsTrue("alarm")).
     assert_eq!(config.properties.len(), 1, "expected exactly one temporal property");
     assert_eq!(
         config.properties[0],
@@ -134,7 +131,6 @@ fn bridge_generates_sim_config_from_safety_property() {
 
 #[test]
 fn bridge_generates_sim_config_from_neonatal() {
-    // Mimic neonatal_respirator.mirr: 4 input sensors + 2 outputs + 3 properties.
     let signals = vec![
         input_signal("pressure", SignalType::Unsigned(8)),
         input_signal("flow_rate", SignalType::Unsigned(16)),
@@ -164,7 +160,6 @@ fn bridge_generates_sim_config_from_neonatal() {
 
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
 
-    // All 6 signals become sensors (MEGA-14: all signals, not just inputs).
     assert_eq!(config.sensors.len(), 6, "all signals become sensors");
     assert_eq!(config.sensors[0].name, "pressure");
     assert_eq!(config.sensors[1].name, "flow_rate");
@@ -173,10 +168,7 @@ fn bridge_generates_sim_config_from_neonatal() {
     assert_eq!(config.sensors[4].name, "alarm");
     assert_eq!(config.sensors[5].name, "valve_pos");
 
-    // All 3 assert properties are lowered.
     assert_eq!(config.properties.len(), 3, "all assert properties should be lowered");
-
-    // Action table matches properties 1:1.
     assert_eq!(config.action_table.len(), 3, "action table should match property count");
 }
 
@@ -186,7 +178,6 @@ fn bridge_generates_sim_config_from_neonatal() {
 
 #[test]
 fn bridge_rejects_too_many_signals() {
-    // Build PipelineResult with MAX_BRIDGE_SIGNALS + 1 input signals (257).
     let count = (MAX_BRIDGE_SIGNALS + 1).min(MAX_TEST_SIGNALS);
     let signals: Vec<SignalDecl> =
         (0..count).map(|i| input_signal(&format!("s{i}"), SignalType::Unsigned(8))).collect();
@@ -195,8 +186,8 @@ fn bridge_rejects_too_many_signals() {
     let err = bridge_from_pipeline(&result).expect_err("should fail with too many signals");
 
     assert!(
-        err.iter().any(|e| matches!(e, BridgeError::TooManySignals { .. })),
-        "expected TooManySignals error, got: {err:?}"
+        err.iter().any(|e| matches!(e, MapeKError::BridgeConfigError(_))),
+        "expected BridgeConfigError error, got: {err:?}"
     );
 }
 
@@ -206,7 +197,6 @@ fn bridge_rejects_too_many_signals() {
 
 #[test]
 fn bridge_rejects_too_many_properties() {
-    // Build PipelineResult with MAX_BRIDGE_PROPERTIES + 1 assert properties (65).
     let count = (MAX_BRIDGE_PROPERTIES + 1).min(MAX_TEST_PROPERTIES);
     let props: Vec<PropertyDecl> = (0..count)
         .map(|i| {
@@ -221,8 +211,8 @@ fn bridge_rejects_too_many_properties() {
     let err = bridge_from_pipeline(&result).expect_err("should fail with too many properties");
 
     assert!(
-        err.iter().any(|e| matches!(e, BridgeError::TooManyProperties { .. })),
-        "expected TooManyProperties error, got: {err:?}"
+        err.iter().any(|e| matches!(e, MapeKError::BridgeConfigError(_))),
+        "expected BridgeConfigError error, got: {err:?}"
     );
 }
 
@@ -232,8 +222,6 @@ fn bridge_rejects_too_many_properties() {
 
 #[test]
 fn bridge_extracts_always_property() {
-    // Assert(Always(Signal("engine_running"))) should lower to
-    // TemporalProperty::Always(SignalPredicate::IsTrue("engine_running")).
     let props = vec![assert_property(
         "p_always",
         PropertyFormula::Always(Expr::Signal("engine_running".to_string())),
@@ -248,7 +236,6 @@ fn bridge_extracts_always_property() {
         TemporalProperty::Always(SignalPredicate::IsTrue("engine_running".to_string()))
     );
 
-    // Verify signal name is accessible through the TemporalProperty API.
     assert_eq!(config.properties[0].signal_name(), "engine_running");
 }
 
@@ -258,8 +245,6 @@ fn bridge_extracts_always_property() {
 
 #[test]
 fn bridge_extracts_eventually_property() {
-    // Assert(EventuallyWithin { expr: Signal("ready"), cycles: 10 }) should
-    // lower to TemporalProperty::EventuallyWithin(IsTrue("ready"), 10).
     let props = vec![assert_property(
         "p_eventually",
         PropertyFormula::EventuallyWithin { expr: Expr::Signal("ready".to_string()), cycles: 10 },
@@ -274,7 +259,6 @@ fn bridge_extracts_eventually_property() {
         TemporalProperty::EventuallyWithin(SignalPredicate::IsTrue("ready".to_string()), 10)
     );
 
-    // The deadline should be preserved exactly (u64 from u32 input).
     match &config.properties[0] {
         TemporalProperty::EventuallyWithin(_, deadline) => {
             assert_eq!(*deadline, 10, "deadline should be 10 ticks");
@@ -289,8 +273,6 @@ fn bridge_extracts_eventually_property() {
 
 #[test]
 fn bridge_generates_emergency_stop_actions() {
-    // Build 3 properties and verify each gets an action entry with graduated
-    // priorities (MEGA-14): Always=200, EventuallyWithin=128.
     let props = vec![
         assert_property("p1", PropertyFormula::Always(Expr::Signal("a".to_string()))),
         assert_property("p2", PropertyFormula::Always(Expr::Signal("b".to_string()))),
@@ -309,7 +291,6 @@ fn bridge_generates_emergency_stop_actions() {
         "action table must have one entry per property"
     );
 
-    // Check graduated priorities: Always=200, EventuallyWithin=128
     let expected_priorities = [200_u8, 200, 128];
     for (i, entry) in config.action_table.iter().enumerate() {
         assert_eq!(entry.trigger_property_idx, i, "entry {i} should reference property {i}");
@@ -331,8 +312,6 @@ fn bridge_generates_emergency_stop_actions() {
 
 #[test]
 fn bridge_skips_cover_and_assume_properties() {
-    // Build a mix of Cover, Assume, and Assert properties.
-    // Only the Assert property should appear in the lowered SimConfig.
     let props = vec![
         PropertyDecl {
             name: "cover_prop".to_string(),
@@ -354,14 +333,12 @@ fn bridge_skips_cover_and_assume_properties() {
 
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
 
-    // Only the Assert property should be lowered.
     assert_eq!(config.properties.len(), 1, "only Assert properties should be lowered");
     assert_eq!(
         config.properties[0],
         TemporalProperty::Always(SignalPredicate::IsTrue("z".to_string()))
     );
 
-    // Action table should match: exactly 1 entry for the 1 Assert property.
     assert_eq!(config.action_table.len(), 1, "action table should match property count");
     assert_eq!(config.action_table[0].trigger_property_idx, 0);
     assert_eq!(config.action_table[0].action, AdaptationAction::EmergencyStop);

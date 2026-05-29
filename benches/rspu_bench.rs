@@ -2,13 +2,14 @@
 //! Criterion benchmarks for the R-SPU subsystem — encode, decode, emit_binary,
 //! simulate, and tagged-register operations. All loops bounded (NASA Power-of-10).
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use nasa_rust_project::emit::rspu_isa::{AluOp, AluUnaryOp, MAX_SIM_CYCLES};
 use nasa_rust_project::emit::rspu_tagged::check_alu_tags;
 use nasa_rust_project::{
     decode, emit_binary, encode, RegisterFile, RspuInstruction, RspuProgram, RspuSimulator,
     TaggedWord, TypeTag,
 };
+use std::hint::black_box;
 
 // --- Bounded-iteration constants (NASA Power-of-10) ---
 

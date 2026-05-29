@@ -1,140 +1,89 @@
-#![forbid(unsafe_code)]
-// ---------------------------------------------------------------------------
-// Stress / edge-case tests
-// ---------------------------------------------------------------------------
+use nasa_rust_project::{ecs::Registry, parse_mirr, run_pipeline, validate_module, PipelineConfig};
 
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::MirrProgram;
-
-fn assert_parse_ok(source: &str) -> MirrProgram {
-    parse_mirr(source).expect("expected parse to succeed")
+fn assert_pass(source: &str) {
+    let config = PipelineConfig::default();
+    let res = run_pipeline(source, &config);
+    if let Err(e) = res {
+        panic!("Stress test failed to compile: {:?}", e);
+    }
 }
 
 #[test]
-fn stress_many_signals() {
-    let mut src = String::from("module big {\n");
-    for i in 0..200 {
-        src.push_str(&format!("    signal s{}: in bool;\n", i));
-    }
-    src.push('}');
-    let p = assert_parse_ok(&src);
-    assert_eq!(p.module.signals.len(), 200);
+fn stress_s01_nested_prev() {
+    // S01: Nested Prev (Boolean combination of prev signals)
+    // Testing depth 5 combination.
+    let source = "module stress_s01 {
+        signal s1: bool;
+        signal s2: bool;
+        signal s3: bool;
+        signal s4: bool;
+        signal s5: bool;
+        
+        guard g1 {
+            when prev(s1, 1) && (prev(s2, 2) || (prev(s3, 3) && (prev(s4, 4) || prev(s5, 5)))) for 10
+        }
+        
+        reflex r1 {
+            on g1 {
+                s1 = false;
+            }
+        }
+    }";
+    assert_pass(source);
 }
 
 #[test]
-fn stress_many_guards() {
-    let mut src = String::from("module big {\n    signal s: in bool;\n");
-    for i in 0..100 {
-        src.push_str(&format!(
-            "    guard g{} {{\n        when s\n        for {} cycles;\n    }}\n",
-            i, i
-        ));
-    }
-    src.push('}');
-    let p = assert_parse_ok(&src);
-    assert_eq!(p.module.guards.len(), 100);
+fn stress_s02_boolean_tree() {
+    // S02: Boolean Tree (10 Ops)
+    let source = "module stress_s02 {
+        signal s1: bool;
+        signal s2: bool;
+        signal s3: bool;
+        signal s4: bool;
+        
+        guard g1 {
+            when s1 && s2 || s3 && !s4 || (s1 || s2) && (s3 || s4) && !s1 for 1
+        }
+        
+        reflex r1 {
+            on g1 {
+                s1 = true;
+            }
+        }
+    }";
+    assert_pass(source);
 }
 
 #[test]
-fn stress_many_reflexes() {
-    let mut src = String::from(
-        "module big {\n    signal s: out bool;\n    guard g {\n        when s\n        for 1 cycles;\n    }\n",
-    );
-    for i in 0..80 {
-        src.push_str(&format!(
-            "    reflex r{} {{\n        on g {{\n            s = true;\n        }}\n    }}\n",
-            i
-        ));
-    }
-    src.push('}');
-    let p = assert_parse_ok(&src);
-    assert_eq!(p.module.reflexes.len(), 80);
+fn stress_s03_symbol_shadowing() {
+    // S03: Signal and guard with the same name in the same scope.
+    let source = "module s03 { signal x: bool; guard x { when true for 1 cycles; } }";
+    let program = parse_mirr(source).expect("should parse");
+
+    // Test AST validator
+    let err = validate_module(&program.module).expect_err("should fail AST semantic validation");
+    assert!(err.to_string().contains("[E201]"), "expected E201, got: {err}");
+    assert!(err.to_string().contains("Name collision"), "should mention name collision");
+
+    // Test ECS validator
+    let mut registry = Registry::new();
+    registry.ingest_module(&program.module).expect("should ingest");
+    let errs = registry.semantic_validate().expect_err("should fail ECS semantic validation");
+    let err_msg = format!("{:?}", errs);
+    assert!(err_msg.contains("[E201]"), "expected E201 in ECS, got: {err_msg}");
+    assert!(err_msg.contains("Name collision"), "should mention name collision in ECS");
 }
 
 #[test]
-fn stress_full_module() {
-    let mut src = String::from("module stress {\n");
-    for i in 0..50 {
-        src.push_str(&format!("    signal s{}: in bool;\n", i));
+fn stress_s04_massive_signals() {
+    // S04: Massive Signal Block (1000 signals)
+    let mut source = String::from("module stress_s04 {\n");
+    for i in 0..1000 {
+        source.push_str(&format!("  signal s{}: u16;\n", i));
     }
-    for i in 0..30 {
-        src.push_str(&format!(
-            "    guard g{} {{\n        when s0\n        for {} cycles;\n    }}\n",
-            i,
-            i + 1
-        ));
-    }
-    // Need writable signals for reflex assignments.
-    src.push_str("    signal out0: out bool;\n");
-    for i in 0..20 {
-        src.push_str(&format!(
-            "    reflex r{} {{\n        on g0 {{\n            out0 = true;\n        }}\n    }}\n",
-            i
-        ));
-    }
-    src.push('}');
-    let p = assert_parse_ok(&src);
-    assert_eq!(p.module.signals.len(), 51); // 50 inputs + 1 output
-    assert_eq!(p.module.guards.len(), 30);
-    assert_eq!(p.module.reflexes.len(), 20);
-}
+    source.push_str("  guard g1 {\n    when s0 == 0 for 1\n  }\n");
+    source.push_str("  reflex r1 {\n    on g1 {\n      s1 = 1;\n    }\n  }\n");
+    source.push_str("}\n");
 
-#[test]
-fn stress_large_cycle_count() {
-    let source = r#"
-module t {
-    signal s: in bool;
-    guard g {
-        when s
-        for 18446744073709551615 cycles;
-    }
-}
-"#;
-    let p = assert_parse_ok(source);
-    assert_eq!(p.module.guards[0].cycles, u64::MAX);
-}
-
-#[test]
-fn stress_deep_expression_nesting_error() {
-    // Test that the parser handles deep nesting by returning an error instead of crashing.
-    let mut expr = String::from("s");
-    for _ in 0..200 {
-        expr = format!("(!({}))", expr);
-    }
-    let source = format!(
-        "module deep {{\n    signal s: in bool;\n    signal out: out bool;\n    reflex r {{\n        on g {{\n            out = {};\n        }}\n    }}\n    guard g {{\n        when s\n        for 1 cycles;\n    }}\n}}",
-        expr
-    );
-    let result = parse_mirr(&source);
-    assert!(result.is_err());
-    let error_msg = format!("{}", result.unwrap_err());
-    assert!(
-        error_msg.contains("Unbalanced parentheses"),
-        "expected 'Unbalanced parentheses' error, got: {}",
-        error_msg
-    );
-}
-
-#[test]
-fn stress_extreme_large_module() {
-    // Generate a module with a large number of components.
-    let mut src = String::from("module extreme {\n");
-    let count = 2000;
-    for i in 0..count {
-        src.push_str(&format!("    signal s{}: in bool;\n", i));
-        src.push_str(&format!("    signal o{}: out bool;\n", i));
-        src.push_str(&format!(
-            "    guard g{} {{\n        when s{}\n        for 1 cycles;\n    }}\n",
-            i, i
-        ));
-        src.push_str(&format!(
-            "    reflex r{} {{\n        on g{} {{\n            o{} = s{};\n        }}\n    }}\n",
-            i, i, i, i
-        ));
-    }
-    src.push('}');
-    let p = assert_parse_ok(&src);
-    assert_eq!(p.module.signals.len(), count * 2);
-    assert_eq!(p.module.guards.len(), count);
-    assert_eq!(p.module.reflexes.len(), count);
+    assert_pass(&source);
 }

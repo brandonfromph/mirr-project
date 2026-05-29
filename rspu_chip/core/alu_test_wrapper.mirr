@@ -1,0 +1,32 @@
+import "alu.mirr" as alu_mod;
+import "types.mirr" as types;
+
+module alu_test_wrapper {
+    signals {
+        clk: in bool;
+        instr: in u16;
+        addr: in u64;
+        data_in: in u64;
+        data_out: out u64;
+        trap: out bool;
+    }
+
+    signal raw_out: internal u64;
+    signal raw_in1: internal u64;
+    signal raw_in2: internal u64;
+
+    reflex prepare {
+        on always {
+            raw_in1 = addr;
+            raw_in2 = data_in;
+        }
+    }
+
+    alu_mod::alu_core(clk, instr, raw_in1, raw_in2, raw_out, trap);
+
+    reflex post {
+        on always {
+            data_out = raw_out;
+        }
+    }
+}

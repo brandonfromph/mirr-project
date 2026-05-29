@@ -13,21 +13,25 @@ rust-version = "1.70"
 
 [dependencies]
 anyhow = "1.0.102"
-clap = { version = "4.4.0", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive", "env"] }
 ed25519-dalek = { version = "2.1.1", features = ["rand_core"] }
 glob = "0.3.3"
-rand = "0.8"
+rand = "0.10.0"
 regex = "1.12.3"
-rusqlite = { version = "0.32", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.10"
+sha2 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
 num_cpus = "1.16"
+walkdir = "2"
+rayon = "1.10.0"
+futures = "0.3.32"
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-tempfile = "3"
+criterion = { version = "0.8.2", features = ["html_reports"] }
+tempfile = "3.27.0"
+proptest = "1.4.0"
+proptest-derive = "0.4.0"
 
 [profile.dev]
 incremental = true
@@ -36,6 +40,8 @@ opt-level = 0
 [profile.test]
 incremental = true
 opt-level = 0
+debug = 1
+overflow-checks = true
 
 [profile.release]
 codegen-units = 1
@@ -57,6 +63,14 @@ path = "src/bin/mirrc.rs"
 name = "mirr-lsp"
 path = "src/bin/mirr-lsp.rs"
 
+[[bin]]
+name = "mirr-hydrate"
+path = "src/bin/mirr-hydrate.rs"
+
+[[bin]]
+name = "mirr-proof-audit"
+path = "src/bin/mirr-proof-audit.rs"
+
 [[bench]]
 name = "pipeline_bench"
 harness = false
@@ -74,7 +88,7 @@ name = "emit_analysis_bench"
 harness = false
 
 [workspace]
-members = [".", "crates/mirr-wasm", "crates/lra-cli", "crates/mirr-arsenal-wasm"]
+members = [".", "crates/mirr-wasm", "crates/lra-cli", "crates/mirr-arsenal-wasm", "crates/mirr-mcp-control-plane", "crates/mirr-kb-native"]
 
 [workspace.metadata.mirr.fuzz]
 targets = [
@@ -89,4 +103,42 @@ required_seed_files_per_target = 1
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+mirr-kb-native = { path = "crates/mirr-kb-native", version = "0.1.0" }
+rusqlite = { version = "0.39.0", features = ["bundled"] }
+tokio = { version = "1", features = ["time", "sync", "rt", "macros", "full"] }
+
+[[test]]
+name = "cycles_tests"
+path = "tests/expand/cycles_tests.rs"
+
+[[test]]
+name = "substitution_tests"
+path = "tests/expand/substitution_tests.rs"
+
+[[test]]
+name = "renaming_tests"
+path = "tests/expand/renaming_tests.rs"
+
+[[test]]
+name = "scoping_tests"
+path = "tests/expand/scoping_tests.rs"
+
+[[test]]
+name = "registry_core_tests"
+path = "tests/ecs/registry_core_tests.rs"
+
+[[test]]
+name = "hydration_tests"
+path = "tests/ecs/hydration_tests.rs"
+
+[[test]]
+name = "systems_execution_tests"
+path = "tests/ecs/systems_execution_tests.rs"
+
+[[test]]
+name = "temporal_synthesis_tests"
+path = "tests/ecs/temporal_synthesis_tests.rs"

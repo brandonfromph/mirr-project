@@ -22,8 +22,12 @@ pub enum Token {
     Bang,
     /// `&&` — logical AND.
     AmpAmp,
+    /// `&` — bitwise AND.
+    Amp,
     /// `||` — logical OR.
     PipePipe,
+    /// `|` — bitwise OR.
+    Pipe,
     /// `^` — bitwise XOR.
     Caret,
     /// `+` — addition.
@@ -108,13 +112,36 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         // Integer literal with bounds checking.
         if b.is_ascii_digit() {
             let start = pos;
-            while pos < len && bytes[pos].is_ascii_digit() {
-                pos += 1;
+            let mut is_hex = false;
+
+            if b == b'0' && pos + 1 < len && (bytes[pos + 1] == b'x' || bytes[pos + 1] == b'X') {
+                is_hex = true;
+                pos += 2;
+                while pos < len && bytes[pos].is_ascii_hexdigit() {
+                    pos += 1;
+                }
+            } else {
+                while pos < len && bytes[pos].is_ascii_digit() {
+                    pos += 1;
+                }
             }
+
             let num_str = &input[start..pos];
-            let value: u64 = num_str.parse().map_err(|_| {
-                MirrError::parse_error(format!("[E180] Integer literal too large: '{num_str}'."))
-            })?;
+            let value: u64 = if is_hex {
+                u64::from_str_radix(&num_str[2..], 16).map_err(|_| {
+                    MirrError::parse_error(format!(
+                        "{} Hex literal too large or invalid: '{num_str}'.",
+                        crate::error_codes::ec(180)
+                    ))
+                })?
+            } else {
+                num_str.parse().map_err(|_| {
+                    MirrError::parse_error(format!(
+                        "{} Integer literal too large: '{num_str}'.",
+                        crate::error_codes::ec(180)
+                    ))
+                })?
+            };
             tokens.push(Token::Integer(value));
             continue;
         }
@@ -141,7 +168,8 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         let ch_display =
             if b.is_ascii() { (b as char).to_string() } else { format!("0x{:02X}", b) };
         return Err(MirrError::parse_error(format!(
-            "[E181] Unexpected character '{}' in expression.",
+            "{} Unexpected character '{}' in expression.",
+            crate::error_codes::ec(181),
             ch_display
         )));
     }
@@ -189,6 +217,8 @@ fn match_two_char_operator(pair: &str) -> Option<Token> {
 fn match_single_char_operator(b: u8) -> Option<Token> {
     match b {
         b'!' => Some(Token::Bang),
+        b'|' => Some(Token::Pipe),
+        b'&' => Some(Token::Amp),
         b'^' => Some(Token::Caret),
         b'+' => Some(Token::Plus),
         b'-' => Some(Token::Minus),

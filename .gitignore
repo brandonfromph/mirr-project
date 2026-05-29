@@ -10,6 +10,7 @@ target/
 
 # Root-local generated files
 /package-lock.json
+/package.json
 
 # Editor / IDE
 .vscode/
@@ -35,6 +36,7 @@ mcp_server/node_modules/
 mcp_server/dist/
 mcp_server/.tsbuildinfo
 mcp_server/*.bak
+mcp_server/config.json
 
 # Local MCP / tool state
 .mcp_*
@@ -106,3 +108,79 @@ demos/*.js
 demos/*.d.ts
 demos/package.json
 !demos/.gitkeep
+
+# ─── AI Agent & Internal Tooling ──────────────────────────────────────────────
+# These files are exclusively for local AI-assisted development workflows.
+# They contain internal binary references, audit data, and agent instructions.
+AGENT.md
+GEMINI.md
+.mirr_brain.json
+.presidential_journal.json
+.gemini/
+memories/
+scratch/
+mirr-ci-optimization.skill
+mirr-debt-remediation.skill
+# run_wave_gates.sh
+# run_wave_gates.bat
+# run_wave_gates.ps1
+
+# ─── Python Scripts (project rule: no Python) ─────────────────────────────────
+*.py
+
+# ─── PowerShell Scripts (internal CI helpers) ─────────────────────────────────
+scripts/*.ps1
+scripts/*.py
+
+# ─── Knowledge Base Stores (local build artifacts, can be regenerated) ────────
+.kb/
+.kb-data/
+
+# ─── Debug Binary Artifacts & Bug Hunt Snapshots ─────────────────────────────
+bug_hunt_*
+!tests/stress_audit/
+!tests/stress_audit/bug_hunt_*
+debug_proc
+debug_proc.rs
+test_replace
+test_replace.rs
+
+# ─── Large Log & Audit Files (internal only, not useful to contributors) ──────
+# Note: *.log is already covered above; these are .txt variants that slip through
+ubuntu_test_log.txt
+clippy_err.txt
+clippy_log.txt
+audit_results.txt
+audit_summary.txt
+audit_report.json
+audit_report_full.txt
+CODE_AUDIT_SUMMARY.txt
+ARCHITECTURAL_AUDIT.md
+AUDIT_INDEX.md
+CODE_LEVEL_AUDIT.md
+DAMAGE_ASSESSMENT.md
+debt_report.txt
+system_audit.json
+kb_audit.txt
+kb_audit_truth.json
+kb_ecs_queries.json
+tensor_keys.txt
+repo_map_results.json
+compilation_log.txt
+ergonomic_log.txt
+ergonomic_log.txt
+
+# ─── Root-Level Temp/Scratch MIRR & Verilog Files ────────────────────────────
+# Actual examples belong in examples/, not root
+crossbar_ergonomic.mirr
+crossbar_good.mirr
+crossbar_good.v
+out.v
+test_macro.rs
+test_parser_grammar.mirr
+test_parser_grammar.v
+test_parser_grammar_fail.mirr
+parser_patch.diff
+
+# ─── LanceDB & crates test DBs ───────────────────────────────────────────────
+crates/**/.kb-test-*/

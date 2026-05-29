@@ -365,6 +365,7 @@ fn emit_condition_firrtl(ck: &crate::temporal::low_level_ir::ConditionKind) -> S
     match ck {
         ConditionKind::SimpleSignal(s) => s.clone(),
         ConditionKind::NegatedSignal(s) => format!("not({})", s),
+        ConditionKind::PrevSignal { signal, .. } => signal.clone(),
         ConditionKind::Comparison { signal, op, value } => {
             let op_fn = match op {
                 BinaryOp::Eq => "eq",
@@ -382,6 +383,7 @@ fn emit_condition_firrtl(ck: &crate::temporal::low_level_ir::ConditionKind) -> S
             };
             format!("{}({}, {})", op_fn, signal, val)
         }
+        ConditionKind::AlwaysTrue => "UInt<1>(1)".to_string(),
     }
 }
 
@@ -419,6 +421,8 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
             let op_fn = match op {
                 BinaryOp::And => "and",
                 BinaryOp::Or => "or",
+                BinaryOp::BitwiseOr => "or",
+                BinaryOp::BitwiseAnd => "and",
                 BinaryOp::Xor => "xor",
                 BinaryOp::Lt => "lt",
                 BinaryOp::Le => "leq",

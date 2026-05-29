@@ -47,6 +47,10 @@ impl RegAllocResult {
     /// Allocate the next temporary register. Returns `None` if exhausted.
     pub fn alloc_temp(&mut self) -> Option<RegId> {
         if self.next_temp > REG_TEMP_MAX as u16 {
+            println!(
+                "DEBUG alloc_temp EXHAUSTED: next_temp={} map={:#?}",
+                self.next_temp, self.map
+            );
             return None;
         }
         let r = self.next_temp as RegId;
@@ -73,8 +77,9 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
             SignalKind::Input => {
                 if next_input > REG_INPUT_MAX {
                     return Err(rspu_err(format!(
-                        "[E701] R-SPU register allocation failed: too many input signals \
+                        "{} R-SPU register allocation failed: too many input signals \
                          ({} > {}).",
+                        crate::error_codes::ec(701),
                         (next_input as usize - REG_INPUT_BASE as usize) + 1,
                         (REG_INPUT_MAX as usize - REG_INPUT_BASE as usize) + 1,
                     )));
@@ -86,8 +91,9 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
             SignalKind::Output => {
                 if next_output > REG_OUTPUT_MAX {
                     return Err(rspu_err(format!(
-                        "[E701] R-SPU register allocation failed: too many output signals \
+                        "{} R-SPU register allocation failed: too many output signals \
                          ({} > {}).",
+                        crate::error_codes::ec(701),
                         (next_output as usize - REG_OUTPUT_BASE as usize) + 1,
                         (REG_OUTPUT_MAX as usize - REG_OUTPUT_BASE as usize) + 1,
                     )));
@@ -99,8 +105,9 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
             SignalKind::Internal => {
                 if next_internal > REG_INTERNAL_MAX {
                     return Err(rspu_err(format!(
-                        "[E701] R-SPU register allocation failed: too many internal signals \
+                        "{} R-SPU register allocation failed: too many internal signals \
                          ({} > {}).",
+                        crate::error_codes::ec(701),
                         (next_internal as usize - REG_INTERNAL_BASE as usize) + 1,
                         (REG_INTERNAL_MAX as usize - REG_INTERNAL_BASE as usize) + 1,
                     )));
@@ -114,9 +121,16 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
         entries.push((sig.name.clone(), reg));
     }
 
+    // Add constant-0 and constant-1 registers for guard logic.
+    // Map "true" to a temporary register initialized to 1.
+    // Map "false" to R0 (which is always 0 in the simulation model).
+    map.insert("false".to_string(), 0);
+    map.insert("true".to_string(), REG_TEMP_BASE); // We'll reserve the first temp for 'true'
+
     let total_used = (next_input - REG_INPUT_BASE) as usize
         + (next_output - REG_OUTPUT_BASE) as usize
-        + (next_internal - REG_INTERNAL_BASE) as usize;
+        + (next_internal - REG_INTERNAL_BASE) as usize
+        + 1; // +1 for the 'true' register
 
-    Ok(RegAllocResult { map, entries, total_used, next_temp: REG_TEMP_BASE as u16 })
+    Ok(RegAllocResult { map, entries, total_used, next_temp: (REG_TEMP_BASE + 1) as u16 })
 }

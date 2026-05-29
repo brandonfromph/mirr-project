@@ -156,8 +156,8 @@ fn bridge_bool_literal_in_never_formula() {
         .expect_err("bridge should fail for never(literal) with no signal");
 
     assert!(
-        err.iter().any(|e| matches!(e, BridgeError::UnsupportedFormula { .. })),
-        "should produce UnsupportedFormula error for never(literal)"
+        err.iter().any(|e| matches!(e, MapeKError::LoweringError(_))),
+        "should produce LoweringError error for never(literal)"
     );
 }
 
@@ -172,8 +172,8 @@ fn bridge_literal_only_formula_produces_error() {
         bridge_from_pipeline(&result).expect_err("bridge should fail for always(bare_literal)");
 
     assert!(
-        err.iter().any(|e| matches!(e, BridgeError::UnsupportedFormula { .. })),
-        "should produce UnsupportedFormula error for bare literal in always()"
+        err.iter().any(|e| matches!(e, MapeKError::LoweringError(_))),
+        "should produce LoweringError error for bare literal in always()"
     );
 }
 
@@ -193,8 +193,8 @@ fn bridge_binary_with_no_signal_falls_back_to_error() {
         .expect_err("bridge should fail for binary with no signal reference");
 
     assert!(
-        err.iter().any(|e| matches!(e, BridgeError::UnsupportedFormula { .. })),
-        "should produce UnsupportedFormula when no signal found"
+        err.iter().any(|e| matches!(e, MapeKError::LoweringError(_))),
+        "should produce LoweringError when no signal found"
     );
 }
 
@@ -283,13 +283,8 @@ fn bridge_too_many_signals_produces_error() {
     let result = stub_pipeline(signals, Vec::new());
     let err = bridge_from_pipeline(&result).expect_err("bridge should fail with too many signals");
 
-    let has_too_many = err
-        .iter()
-        .any(|e| matches!(e, BridgeError::TooManySignals { count } if *count > MAX_BRIDGE_SIGNALS));
-    assert!(
-        has_too_many,
-        "error list should contain TooManySignals with count > MAX_BRIDGE_SIGNALS"
-    );
+    let has_too_many = err.iter().any(|e| matches!(e, MapeKError::BridgeConfigError(_)));
+    assert!(has_too_many, "error list should contain BridgeConfigError for too many signals");
 }
 
 #[test]
@@ -305,13 +300,8 @@ fn bridge_too_many_properties_produces_error() {
     let err =
         bridge_from_pipeline(&result).expect_err("bridge should fail with too many properties");
 
-    let has_too_many = err.iter().any(
-        |e| matches!(e, BridgeError::TooManyProperties { count } if *count > MAX_BRIDGE_PROPERTIES),
-    );
-    assert!(
-        has_too_many,
-        "error list should contain TooManyProperties with count > MAX_BRIDGE_PROPERTIES"
-    );
+    let has_too_many = err.iter().any(|e| matches!(e, MapeKError::BridgeConfigError(_)));
+    assert!(has_too_many, "error list should contain BridgeConfigError for too many properties");
 }
 
 #[test]
@@ -417,32 +407,6 @@ fn bridge_multiple_advanced_formulas_now_supported() {
     assert_eq!(config.action_table[0].priority, 100, "AlwaysImplies priority");
     assert_eq!(config.action_table[1].priority, 100, "NeverImplies priority");
     assert_eq!(config.action_table[2].priority, 64, "AlwaysFollowedBy priority");
-}
-
-#[test]
-fn bridge_error_display_too_many_signals() {
-    let err = BridgeError::TooManySignals { count: 300 };
-    let msg = format!("{err}");
-    assert!(msg.contains("300"), "TooManySignals Display should include the count");
-    assert!(msg.contains("256"), "TooManySignals Display should include the limit");
-}
-
-#[test]
-fn bridge_error_display_too_many_properties() {
-    let err = BridgeError::TooManyProperties { count: 100 };
-    let msg = format!("{err}");
-    assert!(msg.contains("100"), "TooManyProperties Display should include the count");
-    assert!(msg.contains("64"), "TooManyProperties Display should include the limit");
-}
-
-#[test]
-fn bridge_error_display_unsupported_formula() {
-    let err = BridgeError::UnsupportedFormula { description: "test formula error".to_string() };
-    let msg = format!("{err}");
-    assert!(
-        msg.contains("test formula error"),
-        "UnsupportedFormula Display should include the description"
-    );
 }
 
 // ---------------------------------------------------------------------------

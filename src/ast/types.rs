@@ -26,6 +26,38 @@ pub const MAX_FIXED_POINT_BITS: u32 = 64;
 /// Maximum number of signals in an interface bundle.
 pub const MAX_INTERFACE_SIGNALS: usize = 64;
 
+// =========================================================================
+// Standard RS-16 Structs — resolving E801 refinement gaps.
+// =========================================================================
+
+/// Returns the standard RS-16 Interconnect Packet type.
+///
+/// Proposed in Proposal 094 for the 16-core fabric interconnect.
+pub fn packet_type() -> SignalType {
+    SignalType::Struct {
+        name: "Packet".to_string(),
+        fields: vec![
+            ("source".to_string(), SignalType::Unsigned(4)),
+            ("dest".to_string(), SignalType::Unsigned(4)),
+            ("payload".to_string(), SignalType::Unsigned(8)),
+        ],
+    }
+}
+
+/// Returns the standard LRA Paper surface type.
+///
+/// Proposed in Proposal 031 for interactive paper visualizations.
+pub fn surface_type() -> SignalType {
+    SignalType::Struct {
+        name: "surface".to_string(),
+        fields: vec![
+            ("x".to_string(), SignalType::Unsigned(16)),
+            ("y".to_string(), SignalType::Unsigned(16)),
+            ("z".to_string(), SignalType::Unsigned(16)),
+        ],
+    }
+}
+
 /// Kind of signal in a MIRR module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignalKind {
@@ -159,12 +191,16 @@ impl SignalType {
 }
 
 /// Binary operator in an expression.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum BinaryOp {
     /// Logical AND (`&&`). Requires bool operands.
     And,
     /// Logical OR (`||`). Requires bool operands.
     Or,
+    /// Bitwise OR (`|`). Requires unsigned/signed integer operands.
+    BitwiseOr,
+    /// Bitwise AND (`&`). Requires unsigned/signed integer operands.
+    BitwiseAnd,
     /// Bitwise XOR (`^`). Requires matching types.
     Xor,
     /// Less than (`<`). Returns bool.
@@ -192,7 +228,7 @@ pub enum BinaryOp {
 }
 
 /// Unary operator in an expression.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UnaryOp {
     /// Logical/bitwise NOT (`!`). Works on bool, unsigned, and signed.
     Not,
@@ -201,7 +237,7 @@ pub enum UnaryOp {
 }
 
 /// Literal value in an expression.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LiteralValue {
     /// Boolean constant (`true` or `false`).
     Bool(bool),
@@ -278,6 +314,13 @@ pub enum Refinement {
     Predicate(String),
 }
 
+/// A reference to a session type protocol and its current state.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SessionTypeRef {
+    pub protocol: String,
+    pub state: String,
+}
+
 /// Collected MEGA-1 type annotations beyond the base signal type.
 ///
 /// All fields default to their zero/none values for backward compatibility.
@@ -300,6 +343,9 @@ pub struct TypeAnnotations {
     /// Phantom type tag: `#<Tag>` after the base type.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phantom_tag: Option<String>,
+    /// Session type state: `session Protocol::State`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session: Option<SessionTypeRef>,
 }
 
 impl TypeAnnotations {
@@ -310,6 +356,7 @@ impl TypeAnnotations {
             && self.refinement.is_none()
             && self.clock_domain.is_none()
             && self.phantom_tag.is_none()
+            && self.session.is_none()
     }
 }
 

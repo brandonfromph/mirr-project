@@ -1,0 +1,115 @@
+//! Phase 8a: R-SPU 5-Stage Pipeline
+//!
+//! Wires together the IF, ID, EX, MEM, and WB stages with
+//! integrated PCC verification and hardware type dispatch.
+
+import "types.mirr" as types;
+import "alu.mirr" as alu;
+import "regfile.mirr" as reg;
+import "ram.mirr" as ram;
+import "../verification/pcc_verifier.mirr" as pcc;
+
+def rspu_pipeline(
+    clk: signal in bool,
+    rst_n: signal in bool,
+    instr_in: signal in u32,
+    pc_out: signal out u32,
+    trap_out: signal out bool
+) {
+    reflect {
+        // --- 1. Fetch Stage (IF) ---
+        signal pc: internal u32;
+        signal if_instr: internal u32;
+        
+        // PCC Verifier Integration
+        signal pcc_valid: internal bool;
+        signal pcc_fault: internal bool;
+
+        signal cert_i: internal u16;
+        signal cert_r: internal u16;
+        signal cert_g: internal u16;
+        signal cert_h: internal bool;
+        signal cert_v: internal bool;
+
+        reflex init_cert {
+            on always {
+                cert_i = 0;
+                cert_r = 0;
+                cert_g = 0;
+                cert_h = true;
+                cert_v = true;
+            }
+        }
+
+        pcc::pcc_verifier(${clk}, ${rst_n}, 
+            cert_i, cert_r, cert_g, cert_h, cert_v,
+            pcc_valid, pcc_fault
+        );
+
+        // Guards for fetch-stage control flow.
+        guard fetch_active(pcc_valid) for 1 cycles;
+        guard fetch_fault(pcc_fault) for 1 cycles;
+
+        reflex fetch_normal {
+            on fetch_active {
+                if_instr = ${instr_in};
+                pc = pc + 1;
+                ${pc_out} = pc;
+            }
+        }
+
+        reflex fetch_on_fault {
+            on fetch_fault {
+                if_instr = 0;
+                ${trap_out} = pcc_fault;
+            }
+        }
+
+        // --- 2. Decode Stage (ID) ---
+        signal id_rs1: internal u8;
+        signal id_rs2: internal u8;
+        signal id_rd:  internal u8;
+        signal id_val1: internal u64;
+        signal id_val2: internal u64;
+        signal reg_we: internal bool;
+        signal reg_din: internal u64;
+        reflex init_reg_ports {
+            on always {
+                reg_we = false;
+                reg_din = 0;
+            }
+        }
+        
+        reg::regfile(${clk}, id_rs1, id_rs2, id_rd, reg_we, reg_din, id_val1, id_val2);
+
+        // --- 3. Execute Stage (EX) ---
+        signal ex_out: internal u64;
+        signal ex_trap: internal bool;
+        signal alu_op: internal u16;
+        reflex init_alu_op {
+            on always {
+                alu_op = 0;
+            }
+        }
+        alu::alu_core(${clk}, alu_op, id_val1, id_val2, ex_out, ex_trap);
+
+        // --- 4. Memory Stage (MEM) ---
+        signal mem_out: internal u64;
+        signal ram_addr: internal u16;
+        reflex init_ram_addr {
+            on always {
+                ram_addr = 0;
+            }
+        }
+        ram::ram(${clk}, ram_addr, ex_out, mem_out);
+
+        // --- 5. Writeback Stage (WB) ---
+        reflex writeback {
+            on always {
+                id_rd = 0;
+            }
+        }
+    }
+}
+
+module pipeline {}

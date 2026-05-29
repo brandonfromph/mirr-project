@@ -1,0 +1,53 @@
+//! Phase 7f: Hardware Proof Verification Unit (PCC)
+//!
+//! Trusted gatekeeper for the R-SPU. Validates certificate bounds
+//! and program hash before enabling execution.
+
+def pcc_verifier(
+    sys_clk: signal in bool,
+    sys_rst_n: signal in bool,
+
+    // Certificate metadata (latched from cert stream)
+    cert_instr_count: signal in u16,
+    cert_reg_count:   signal in u16,
+    cert_guard_count: signal in u16,
+    cert_hash_match:  signal in bool, // Result of external SHA256 comparator
+    cert_valid_sig:   signal in bool, // Result of external signature check
+
+    // Outputs
+    code_valid:   signal out bool,
+    verify_fault: signal out bool
+) {
+    reflect {
+        // Capacity constants matching proofs/cert/Verifier.v
+        signal MAX_INSTRUCTIONS: internal u16;
+        signal MAX_REGISTERS: internal u16;
+        signal MAX_GUARDS: internal u16;
+
+        // Bounds checking
+        signal bounds_ok: internal bool;
+
+        reflex update_bounds {
+            on always {
+                MAX_INSTRUCTIONS = 1024;
+                MAX_REGISTERS = 256;
+                MAX_GUARDS = 32;
+
+                bounds_ok = (${cert_instr_count} <= MAX_INSTRUCTIONS) && (${cert_reg_count} <= MAX_REGISTERS) && (${cert_guard_count} <= MAX_GUARDS);
+            }
+        }
+
+        // Main verification latch
+        // code_valid asserts only when all checks pass simultaneously.
+        reflex update_verification {
+            on always {
+                ${code_valid} = ${sys_rst_n} && bounds_ok && ${cert_hash_match} && ${cert_valid_sig};
+                
+                // Fault if we have a valid signature but bounds are exceeded.
+                ${verify_fault} = ${sys_rst_n} && ${cert_valid_sig} && (!bounds_ok || !${cert_hash_match});
+            }
+        }
+    }
+}
+
+module pcc_verifier {}

@@ -1,0 +1,45 @@
+//! Phase 8b: Triple-Modular Redundancy (TMR) Voter
+//!
+//! Majority consensus voter for high-assurance R-SPU clusters.
+//! Masks single-core failures and reports anomalies.
+
+def tmr_voter(
+    clk: signal in bool,
+    core_in_0: signal in u64,
+    core_in_1: signal in u64,
+    core_in_2: signal in u64,
+    voted_out: signal out u64,
+    anomaly:   signal out bool
+) {
+    reflect {
+        signal match_01: internal bool;
+        signal match_12: internal bool;
+        signal match_02: internal bool;
+
+        reflex vote {
+            on always {
+                let m01: bool = (${core_in_0} == ${core_in_1});
+                let m12: bool = (${core_in_1} == ${core_in_2});
+                let m02: bool = (${core_in_0} == ${core_in_2});
+
+                // Majority Logic — reads local let bindings, never internal signals in same cycle
+                if m01 {
+                    ${voted_out} = ${core_in_0};
+                    ${anomaly}   = !m12; // Anomaly if 2 differs from 0/1
+                } else if m12 {
+                    ${voted_out} = ${core_in_1};
+                    ${anomaly}   = true;      // Anomaly because 0 differs
+                } else if m02 {
+                    ${voted_out} = ${core_in_0};
+                    ${anomaly}   = true;      // Anomaly because 1 differs
+                } else {
+                    // Total Divergence
+                    ${voted_out} = 0;
+                    ${anomaly}   = true;
+                }
+            }
+        }
+    }
+}
+
+module tmr_voter {}

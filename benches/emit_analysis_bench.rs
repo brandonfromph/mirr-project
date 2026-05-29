@@ -6,11 +6,12 @@
 
 #![forbid(unsafe_code)]
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use nasa_rust_project::emit::firrtl::emit_firrtl;
 use nasa_rust_project::emit::verilog::emit_sv;
 use nasa_rust_project::width::infer_program_widths_with_scc;
 use nasa_rust_project::{parse_mirr, run_pipeline, typecheck_module, PipelineConfig};
+use std::hint::black_box;
 
 // ---------------------------------------------------------------------------
 // Input sources (real example files, compile-time embedded)

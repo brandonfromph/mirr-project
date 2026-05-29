@@ -32,10 +32,29 @@ pub(super) fn execute_alu(op: AluOp, a: u64, b: u64) -> u64 {
 }
 
 /// Execute a unary ALU operation on a raw 64-bit value.
-pub(super) fn execute_alu_unary(op: AluUnaryOp, a: u64) -> u64 {
+pub(super) fn execute_alu_unary(op: AluUnaryOp, a: u64, tag: TypeTag) -> u64 {
     match op {
-        AluUnaryOp::Not => !a,
-        AluUnaryOp::Negate => (a as i64).wrapping_neg() as u64,
+        AluUnaryOp::Not => match tag {
+            TypeTag::Bool => {
+                if a == 0 {
+                    1
+                } else {
+                    0
+                }
+            }
+            TypeTag::Unsigned { width } | TypeTag::Signed { width } => {
+                let mask = if width >= 64 { u64::MAX } else { (1u64 << width) - 1 };
+                (!a) & mask
+            }
+            _ => !a,
+        },
+        AluUnaryOp::Negate => match tag {
+            TypeTag::Unsigned { width } | TypeTag::Signed { width } => {
+                let mask = if width >= 64 { u64::MAX } else { (1u64 << width) - 1 };
+                ((a as i64).wrapping_neg() as u64) & mask
+            }
+            _ => (a as i64).wrapping_neg() as u64,
+        },
     }
 }
 

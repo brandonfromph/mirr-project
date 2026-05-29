@@ -14,6 +14,8 @@ use std::fs;
 use std::process;
 
 use nasa_rust_project::ast::Expr;
+use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+use nasa_rust_project::error::MirrError;
 use nasa_rust_project::parse_mirr;
 use nasa_rust_project::simplify::{simplify_expr_with_stats, SimplifyStats};
 
@@ -21,14 +23,7 @@ fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
 
     if args.is_empty() || args.iter().any(|a| a == "--help" || a == "-h") {
-        eprintln!("Usage: mirr-simplify <expr.json | program.mirr> [--stats]");
-        eprintln!();
-        eprintln!("Modes:");
-        eprintln!("  .json file  — simplify a bare Expr JSON and print the result");
-        eprintln!("  .mirr file  — simplify all guard/reflex expressions, print summary");
-        eprintln!();
-        eprintln!("Flags:");
-        eprintln!("  --stats     Print before/after node counts and rules applied");
+        print_usage(args.is_empty());
         process::exit(if args.is_empty() { 1 } else { 0 });
     }
 
@@ -38,21 +33,26 @@ fn main() {
     let input_path = match input_path {
         Some(p) => p.clone(),
         None => {
-            eprintln!("Error: no input file specified");
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error("no input file specified")
+                    .with_help("Pass a .json or .mirr file, or run with --help."),
+            );
         }
     };
 
     let content = match fs::read_to_string(&input_path) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("Error: cannot read '{}': {}", input_path, e);
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error(format!("cannot read '{}'", input_path))
+                    .with_note(e.to_string())
+                    .with_help("Check the file path and permissions."),
+            );
         }
     };
 
     if input_path.ends_with(".mirr") {
-        run_mirr_mode(&content, show_stats);
+        run_mirr_mode(&content, show_stats, &input_path);
     } else {
         run_json_mode(&content, show_stats);
     }
@@ -62,8 +62,11 @@ fn run_json_mode(content: &str, show_stats: bool) {
     let expr: Expr = match serde_json::from_str(content) {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("Error: invalid Expr JSON: {}", e);
-            process::exit(1);
+            fatal_diagnostic(
+                Diagnostic::error("invalid Expr JSON")
+                    .with_note(e.to_string())
+                    .with_help("Ensure the input file contains a serialized Expr value."),
+            );
         }
     };
 
@@ -77,12 +80,11 @@ fn run_json_mode(content: &str, show_stats: bool) {
     }
 }
 
-fn run_mirr_mode(content: &str, show_stats: bool) {
+fn run_mirr_mode(content: &str, show_stats: bool, input_path: &str) {
     let program = match parse_mirr(content) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Parse error: {}", e);
-            process::exit(1);
+            fatal_rendered_error(&e, content, input_path);
         }
     };
 
@@ -131,4 +133,32 @@ fn print_stats(label: &str, stats: &SimplifyStats) {
         "[stats:{}] rules={} nodes_before={} nodes_after={}",
         label, stats.rules_applied, stats.nodes_before, stats.nodes_after,
     );
+}
+
+fn print_usage(is_error: bool) {
+    if is_error {
+        let diag = Diagnostic::error("invalid CLI invocation")
+            .with_help("Usage: mirr-simplify <expr.json | program.mirr> [--stats]")
+            .with_note(
+                "Modes: .json simplifies a bare Expr JSON; .mirr simplifies guard/reflex expressions.",
+            )
+            .with_note("Flags: --stats prints before/after node counts and rules applied.");
+        eprint!("{}", render_diagnostic(&diag, "", ""));
+        process::exit(1);
+    } else {
+        eprintln!("Usage: mirr-simplify <expr.json | program.mirr> [--stats]");
+        eprintln!("  .json file  — simplify a bare Expr JSON and print the result");
+        eprintln!("  .mirr file  — simplify all guard/reflex expressions, print summary");
+        eprintln!("  --stats     Print before/after node counts and rules applied");
+    }
+}
+
+fn fatal_rendered_error(error: &MirrError, source: &str, file_path: &str) -> ! {
+    eprint!("{}", render_diagnostic(&error.to_diagnostic(), source, file_path));
+    process::exit(1);
+}
+
+fn fatal_diagnostic(diag: Diagnostic) -> ! {
+    eprint!("{}", render_diagnostic(&diag, "", ""));
+    process::exit(1);
 }

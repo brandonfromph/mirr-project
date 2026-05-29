@@ -23,14 +23,18 @@ fn test_sr_init_activates_guard_on_nonzero_cond() {
     let program = make_program(vec![
         RspuInstruction::LoadImm { dst: 192, value: 1, width: 8 },
         RspuInstruction::SrInit { guard: 0, length: 4, cond: 192 },
+        RspuInstruction::SrTick { guard: 0 },
         RspuInstruction::SrQuery { dst: 193, guard: 0 },
         RspuInstruction::Halt,
     ]);
-    let _result = sim.run(&program, 100).expect("SrInit must succeed");
+    // Run for 5 cycles (Cycle 0: init & shift 1 -> current=1. Cycle 1: current=3. Cycle 2: current=7. Cycle 3: current=15. Cycle 4: query reads 15 -> satisfied)
+    for _ in 0..5 {
+        sim.run_cycle(&program).expect("SrInit must succeed");
+    }
     assert_eq!(
         sim.registers.read(193).value,
         1,
-        "Guard 0 must be active after SrInit with nonzero cond"
+        "Guard 0 must be active after 5 cycles of nonzero cond"
     );
 }
 
@@ -61,12 +65,14 @@ fn test_sr_tick_is_noop() {
         RspuInstruction::SrQuery { dst: 193, guard: 0 },
         RspuInstruction::Halt,
     ]);
-    let _result = sim.run(&program, 100).expect("SrTick must succeed");
-    assert_eq!(
-        sim.registers.read(193).value,
-        1,
-        "Guard remains active after SrTick (no-op in single-tick model)"
-    );
+    // Run for 5 cycles to activate the guard
+    for _ in 0..5 {
+        sim.run_cycle(&program).expect("SrTick must succeed");
+    }
+    assert_eq!(sim.registers.read(193).value, 1, "Guard becomes active after 5 cycles");
+    // Run for one more cycle to verify it remains active
+    sim.run_cycle(&program).expect("SrTick must succeed");
+    assert_eq!(sim.registers.read(193).value, 1, "Guard remains active after another cycle");
 }
 
 // ---------------------------------------------------------------------------
@@ -79,14 +85,18 @@ fn test_ctr_init_activates_guard_on_nonzero_cond() {
     let program = make_program(vec![
         RspuInstruction::LoadImm { dst: 192, value: 5, width: 8 },
         RspuInstruction::CtrInit { guard: 1, target: 10, cond: 192 },
+        RspuInstruction::CtrTick { guard: 1 },
         RspuInstruction::CtrQuery { dst: 193, guard: 1 },
         RspuInstruction::Halt,
     ]);
-    let _result = sim.run(&program, 100).expect("CtrInit must succeed");
+    // Run 11 cycles to activate the counter guard (target is 10)
+    for _ in 0..11 {
+        sim.run_cycle(&program).expect("CtrInit must succeed");
+    }
     assert_eq!(
         sim.registers.read(193).value,
         1,
-        "Guard 1 must be active after CtrInit with nonzero cond"
+        "Guard 1 must be active after 11 cycles of nonzero cond"
     );
 }
 
@@ -100,12 +110,14 @@ fn test_ctr_tick_is_noop() {
         RspuInstruction::CtrQuery { dst: 193, guard: 2 },
         RspuInstruction::Halt,
     ]);
-    let _result = sim.run(&program, 100).expect("CtrTick must succeed");
-    assert_eq!(
-        sim.registers.read(193).value,
-        1,
-        "Guard remains active after CtrTick (no-op in single-tick model)"
-    );
+    // Run 6 cycles to activate the counter guard (target is 5)
+    for _ in 0..6 {
+        sim.run_cycle(&program).expect("CtrTick must succeed");
+    }
+    assert_eq!(sim.registers.read(193).value, 1, "Guard becomes active after 6 cycles");
+    // Run one more cycle to verify it remains active
+    sim.run_cycle(&program).expect("CtrTick must succeed");
+    assert_eq!(sim.registers.read(193).value, 1, "Guard remains active after another cycle");
 }
 
 // ---------------------------------------------------------------------------
@@ -222,12 +234,13 @@ fn test_prev_copies_signal() {
         RspuInstruction::Prev { dst: 193, signal: 192, delay: 1 },
         RspuInstruction::Halt,
     ]);
-    let _result = sim.run(&program, 100).expect("Prev must succeed");
-    assert_eq!(
-        sim.registers.read(193).value,
-        77,
-        "Prev must copy signal to dst in single-tick model"
-    );
+    // Run for 2 cycles: first to store 77, second for Prev to see it.
+    let _ = sim.run(&program, 1).expect("Cycle 1 must succeed");
+    let result = sim.run(&program, 1).expect("Cycle 2 must succeed");
+    assert!(result.halted, "Program must halt after Prev in Cycle 2");
+
+    let word = sim.registers.read(193);
+    assert_eq!(word.value, 77, "Prev must copy signal to dst from Cycle 1 state");
 }
 
 // ---------------------------------------------------------------------------
@@ -472,19 +485,16 @@ fn test_deadline_set_no_miss() {
 #[test]
 fn test_deadline_miss() {
     let mut sim = RspuSimulator::new();
-    // Deadline at cycle 2; we execute 3 Nops before Halt so cycle will reach 2.
-    let program = make_program(vec![
-        RspuInstruction::DeadlineSet { cycles: 2 },
-        RspuInstruction::Nop,
-        RspuInstruction::Nop, // After this step, cycle=3 >= deadline(2)
-        RspuInstruction::Halt,
-    ]);
+    // Deadline at cycle 0; even a 1-cycle program will miss it.
+    let program =
+        make_program(vec![RspuInstruction::DeadlineSet { cycles: 0 }, RspuInstruction::Halt]);
     let result = sim.run(&program, 100).expect("Deadline miss must succeed (returns exception)");
     assert_eq!(
         result.exception,
         Some(ExceptionCode::DeadlineMiss),
         "Must report DeadlineMiss when cycle reaches deadline"
     );
+    assert_eq!(result.cycles, 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -497,9 +507,82 @@ fn test_fence_is_noop() {
     let program = make_program(vec![RspuInstruction::Fence, RspuInstruction::Halt]);
     let result = sim.run(&program, 100).expect("Fence must succeed");
     assert!(result.halted, "Fence must not prevent program from halting");
-    assert_eq!(result.cycles, 2, "Fence + Halt = 2 cycles");
+    assert_eq!(result.cycles, 1, "Fence + Halt = 1 cycle (combinatorial)");
+}
+
+#[test]
+fn test_sr_reset_on_false_cond() {
+    let mut sim = RspuSimulator::new();
+    let program = make_program(vec![
+        RspuInstruction::LoadInput { dst: 192, port: 0 },
+        RspuInstruction::SrInit { guard: 0, length: 4, cond: 192 },
+        RspuInstruction::SrTick { guard: 0 },
+        RspuInstruction::SrQuery { dst: 193, guard: 0 },
+        RspuInstruction::Halt,
+    ]);
+
+    // 1. Tick for 5 cycles with input = 1 -> should activate the guard
+    sim.set_input(0, 1, TypeTag::Bool);
+    for _ in 0..5 {
+        sim.run_cycle(&program).expect("Cycle must succeed");
+    }
+    assert_eq!(sim.registers.read(193).value, 1, "Guard must be active");
+
+    // 2. Run 1 cycle with input = 0 -> should reset the guard
+    sim.set_input(0, 0, TypeTag::Bool);
+    sim.run_cycle(&program).expect("Cycle must succeed");
+    assert_eq!(sim.registers.read(193).value, 0, "Guard must reset to inactive");
+}
+
+#[test]
+fn test_ctr_reset_on_false_cond() {
+    let mut sim = RspuSimulator::new();
+    let program = make_program(vec![
+        RspuInstruction::LoadInput { dst: 192, port: 0 },
+        RspuInstruction::CtrInit { guard: 1, target: 5, cond: 192 },
+        RspuInstruction::CtrTick { guard: 1 },
+        RspuInstruction::CtrQuery { dst: 193, guard: 1 },
+        RspuInstruction::Halt,
+    ]);
+
+    // 1. Tick for 6 cycles with input = 1 -> should activate the guard
+    sim.set_input(0, 1, TypeTag::Bool);
+    for _ in 0..6 {
+        sim.run_cycle(&program).expect("Cycle must succeed");
+    }
+    assert_eq!(sim.registers.read(193).value, 1, "Guard must be active");
+
+    // 2. Run 1 cycle with input = 0 -> should reset the guard
+    sim.set_input(0, 0, TypeTag::Bool);
+    sim.run_cycle(&program).expect("Cycle must succeed");
+    assert_eq!(sim.registers.read(193).value, 0, "Guard must reset to inactive");
 }
 
 // ---------------------------------------------------------------------------
-// 22. Program counter behavior
+// 22. Program counter behavior & Error Codes
 // ---------------------------------------------------------------------------
+
+#[test]
+fn test_loop_iteration_limit_exceeded_error_e713() {
+    let mut sim = RspuSimulator::new();
+    let program = make_program(vec![
+        RspuInstruction::LoadImm { dst: 0, value: 0, width: 1 },
+        RspuInstruction::TagBranch { tag_value: 1, target_pc: 1 },
+        RspuInstruction::Halt,
+    ]);
+    let err = sim.run_cycle(&program).expect_err("Infinite loop must error");
+    let msg = err.to_string();
+    assert!(msg.contains("E713"), "Error must contain E713, got: {msg}");
+}
+
+#[test]
+fn test_prev_history_exhaustion_error_e716() {
+    let mut sim = RspuSimulator::new();
+    let program = make_program(vec![
+        RspuInstruction::Prev { dst: 193, signal: 192, delay: 5 },
+        RspuInstruction::Halt,
+    ]);
+    let err = sim.run_cycle(&program).expect_err("Prev exceeding history must error");
+    let msg = err.to_string();
+    assert!(msg.contains("E716"), "Error must contain E716, got: {msg}");
+}

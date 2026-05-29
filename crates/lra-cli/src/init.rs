@@ -3,6 +3,8 @@
 use std::fs;
 use std::path::Path;
 
+const MAX_PROJECT_NAME_BYTES: usize = 64;
+
 const TEMPLATE_INDEX: &str = include_str!("../template/index.html");
 const TEMPLATE_CSS: &str = include_str!("../template/paper.css");
 const TEMPLATE_JS: &str = include_str!("../template/paper.js");
@@ -23,8 +25,36 @@ const TEMPLATE_LICENSE: &str = "\
  of this license document, but changing it is not allowed.\n\n\
  See https://www.gnu.org/licenses/gpl-3.0.txt for the full license text.\n";
 
+fn validate_project_name(name: &str) -> Result<(), &'static str> {
+    if name.is_empty() {
+        return Err("project name must not be empty");
+    }
+    if name.len() > MAX_PROJECT_NAME_BYTES {
+        return Err("project name is too long");
+    }
+    if name == "." || name == ".." {
+        return Err("project name must not be relative path markers");
+    }
+    if name.starts_with('.') {
+        return Err("project name must not start with '.'");
+    }
+    if name.contains('/') || name.contains('\\') || name.contains(':') {
+        return Err("project name must not contain path separators");
+    }
+    if !name.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_') {
+        return Err("project name must use only [A-Za-z0-9_-]");
+    }
+
+    Ok(())
+}
+
 /// Scaffold a new LRA project. Returns exit code.
 pub fn run(name: &str) -> i32 {
+    if let Err(message) = validate_project_name(name) {
+        eprintln!("Error: {}", message);
+        return 1;
+    }
+
     let root = Path::new(name);
 
     if root.exists() {
@@ -75,4 +105,31 @@ fn scaffold(root: &Path) -> std::io::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_project_name;
+
+    #[test]
+    fn validate_project_name_accepts_safe_values() {
+        assert!(validate_project_name("paper_2026").is_ok());
+        assert!(validate_project_name("paper-2026").is_ok());
+    }
+
+    #[test]
+    fn validate_project_name_rejects_path_like_values() {
+        assert!(validate_project_name("../outside").is_err());
+        assert!(validate_project_name("nested/project").is_err());
+        assert!(validate_project_name("nested\\project").is_err());
+        assert!(validate_project_name("C:drive").is_err());
+        assert!(validate_project_name(".hidden").is_err());
+    }
+
+    #[test]
+    fn validate_project_name_rejects_unsafe_symbols() {
+        assert!(validate_project_name("paper name").is_err());
+        assert!(validate_project_name("paper.name").is_err());
+        assert!(validate_project_name("").is_err());
+    }
 }

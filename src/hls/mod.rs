@@ -176,6 +176,9 @@ pub struct HlsResult {
     pub resource_count: Vec<(ResourceKind, u32)>,
 }
 
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
+
 /// Run the full HLS pass on an operation DAG.
 ///
 /// Steps:
@@ -185,9 +188,9 @@ pub struct HlsResult {
 /// 4. Operation binding (assign to physical resources)
 ///
 /// Returns HlsResult with all optimization data.
-pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, &'static str> {
+pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, MirrError> {
     if dag.ops.is_empty() {
-        return Err("Empty operation DAG");
+        return Err(mirrcode(ErrorCode::HlsSchedulingFailed, "Empty operation DAG"));
     }
 
     // Step 1: ASAP scheduling.

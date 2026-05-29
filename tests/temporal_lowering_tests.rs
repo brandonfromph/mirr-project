@@ -316,7 +316,7 @@ module test_module {
             assert_eq!(cx.sub_guards.len(), 2);
             assert_eq!(cx.output_signal, "combo_out");
             let combo_text = format!("{:?}", cx.combination_logic);
-            assert!(combo_text.contains("combo_sub"));
+            assert!(combo_text.contains("sub_g_"));
         }
         other => panic!("expected ComplexGuard, got {:?}", other),
     }

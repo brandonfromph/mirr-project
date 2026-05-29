@@ -140,7 +140,7 @@ impl CrossModuleResolver {
 
         // First resolve all imports
         let base_dir = main_path.parent().ok_or_else(|| MirrError::SymbolError {
-            message: "[E918] Cannot determine base directory for import resolution.".to_string(),
+            message: format!("{} Cannot determine base directory for import resolution.", crate::error_codes::ec(918)),
             span: None,
         })?;
 
@@ -211,14 +211,14 @@ impl CrossModuleResolver {
         if let Ok(symbol) = self.symbol_table.resolve_local(symbol_name) {
             let current_module =
                 self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-                    message: "[E911] No current module set for symbol resolution.".to_string(),
+                    message: format!("{} No current module set for symbol resolution.", crate::error_codes::ec(911)),
                     span,
                 })?;
 
             return Ok(ResolvedSymbol::local(symbol.clone(), current_module.path.clone()));
         }
 
-        // Try qualified resolution (alias.symbol)
+        // Try qualified resolution (alias::symbol)
         if let Some((alias, name)) = self.parse_qualified_name(symbol_name) {
             self.resolve_qualified_symbol(&alias, &name, span)
         } else {
@@ -227,8 +227,7 @@ impl CrossModuleResolver {
             let current = self.symbol_table.current_module().map(|m| &m.name).unwrap_or(&unknown);
 
             Err(MirrError::SymbolError {
-                message: format!(
-                    "[E912] Symbol '{}' not found in current module '{}' or any imported modules.",
+                message: format!("{} Symbol '{}' not found in current module '{}' or any imported modules.", crate::error_codes::ec(912),
                     symbol_name, current
                 ),
                 span,
@@ -236,14 +235,14 @@ impl CrossModuleResolver {
         }
     }
 
-    /// Resolve a qualified symbol name (alias.symbol).
+    /// Resolve a qualified symbol name (alias::symbol).
     pub fn resolve_qualified_symbol(
         &mut self,
         alias: &str,
         symbol_name: &str,
         span: Option<Span>,
     ) -> Result<ResolvedSymbol, MirrError> {
-        let qualified_name = format!("{}.{}", alias, symbol_name);
+        let qualified_name = format!("{}::{}", alias, symbol_name);
 
         // Check cache first
         if let Some(cached) = self.qualified_cache.get(&qualified_name) {
@@ -278,7 +277,7 @@ impl CrossModuleResolver {
     /// Get all available symbols in the current module.
     pub fn list_local_symbols(&self) -> Result<Vec<&SymbolInfo>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: "[E913] No current module set for symbol listing.".to_string(),
+            message: format!("{} No current module set for symbol listing.", crate::error_codes::ec(913)),
             span: None,
         })?;
 
@@ -288,7 +287,7 @@ impl CrossModuleResolver {
     /// Get all available imports in the current module.
     pub fn list_available_imports(&self) -> Result<Vec<String>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: "[E914] No current module set for import listing.".to_string(),
+            message: format!("{} No current module set for import listing.", crate::error_codes::ec(914)),
             span: None,
         })?;
 
@@ -324,8 +323,7 @@ impl CrossModuleResolver {
             Ok(symbol.ty.clone())
         } else {
             Err(MirrError::SymbolError {
-                message: format!(
-                    "[E915] Cannot determine type of unknown symbol '{}'.",
+                message: format!("{} Cannot determine type of unknown symbol '{}'.", crate::error_codes::ec(915),
                     symbol_name
                 ),
                 span: None,
@@ -377,7 +375,7 @@ impl CrossModuleResolver {
     /// Get all symbols visible from the current module.
     pub fn get_visible_symbols(&self) -> Result<Vec<ResolvedSymbol>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: "[E919] No current module set for visibility check.".to_string(),
+            message: format!("{} No current module set for visibility check.", crate::error_codes::ec(919)),
             span: None,
         })?;
 
@@ -393,7 +391,7 @@ impl CrossModuleResolver {
         for (alias, module_path) in &import_scope.aliases {
             if let Some(imported_module) = self.symbol_table.get_module(module_path) {
                 for symbol in imported_module.symbols.values() {
-                    let qualified_name = format!("{}.{}", alias, symbol.name);
+                    let qualified_name = format!("{}::{}", alias, symbol.name);
                     visible_symbols.push(ResolvedSymbol::cross_module(
                         symbol.clone(),
                         module_path.clone(),
@@ -409,15 +407,14 @@ impl CrossModuleResolver {
     /// Get symbols by namespace (module alias).
     pub fn get_symbols_in_namespace(&self, alias: &str) -> Result<Vec<ResolvedSymbol>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: "[E920] No current module set for namespace query.".to_string(),
+            message: format!("{} No current module set for namespace query.", crate::error_codes::ec(920)),
             span: None,
         })?;
 
         let import_scope = current.import_scope();
         let module_path =
             import_scope.resolve_alias(alias).ok_or_else(|| MirrError::SymbolError {
-                message: format!(
-                    "[E907] Unknown import alias '{}' in module '{}'.",
+                message: format!("{} Unknown import alias '{}' in module '{}'.", crate::error_codes::ec(907),
                     alias, current.name
                 ),
                 span: None,
@@ -425,8 +422,7 @@ impl CrossModuleResolver {
 
         let target_module =
             self.symbol_table.get_module(module_path).ok_or_else(|| MirrError::SymbolError {
-                message: format!(
-                    "[E908] Imported module '{}' (alias '{}') not found in symbol table.",
+                message: format!("{} Imported module '{}' (alias '{}') not found in symbol table.", crate::error_codes::ec(908),
                     module_path.display(),
                     alias
                 ),
@@ -435,7 +431,7 @@ impl CrossModuleResolver {
 
         let mut namespace_symbols = Vec::new();
         for symbol in target_module.symbols.values() {
-            let qualified_name = format!("{}.{}", alias, symbol.name);
+            let qualified_name = format!("{}::{}", alias, symbol.name);
             namespace_symbols.push(ResolvedSymbol::cross_module(
                 symbol.clone(),
                 module_path.clone(),
@@ -484,7 +480,7 @@ impl CrossModuleResolver {
     /// Validate that all imported modules are properly loaded.
     pub fn validate_imports(&self) -> Result<(), MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: "[E916] No current module set for import validation.".to_string(),
+            message: format!("{} No current module set for import validation.", crate::error_codes::ec(916)),
             span: None,
         })?;
 
@@ -493,8 +489,7 @@ impl CrossModuleResolver {
 
             if self.symbol_table.get_module(&import_path).is_none() {
                 return Err(MirrError::SymbolError {
-                    message: format!(
-                        "[E917] Imported module '{}' (alias '{}') is not loaded in symbol table.",
+                    message: format!("{} Imported module '{}' (alias '{}') is not loaded in symbol table.", crate::error_codes::ec(917),
                         import.path, import.alias
                     ),
                     span: import.span,
@@ -531,6 +526,9 @@ impl CrossModuleResolver {
 
     /// Parse a qualified name into (alias, symbol) parts.
     fn parse_qualified_name(&self, name: &str) -> Option<(String, String)> {
+        if let Some((alias, symbol)) = name.split_once("::") {
+            return Some((alias.to_string(), symbol.to_string()));
+        }
         let parts: Vec<&str> = name.splitn(2, '.').collect();
         if parts.len() == 2 {
             Some((parts[0].to_string(), parts[1].to_string()))
@@ -700,7 +698,11 @@ mod tests {
         let import_context = ImportContext::new();
         let resolver = CrossModuleResolver::new(symbol_table, import_context);
 
-        // Test valid qualified name
+        // Test valid Rust-style qualified name
+        let result = resolver.parse_qualified_name("alias::symbol");
+        assert_eq!(result, Some(("alias".to_string(), "symbol".to_string())));
+
+        // Legacy dotted qualification still works.
         let result = resolver.parse_qualified_name("alias.symbol");
         assert_eq!(result, Some(("alias".to_string(), "symbol".to_string())));
 

@@ -1,0 +1,16 @@
+// ISA Opcode Mapping Table
+module isa_map {
+    signal ADD: internal u16;
+    signal SUB: internal u16;
+    signal MOV: internal u16;
+    signal NOP: internal u16;
+
+    reflex init {
+        on always {
+            ADD = 0;
+            SUB = 1;
+            MOV = 2;
+            NOP = 6;
+        }
+    }
+}

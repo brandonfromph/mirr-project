@@ -249,7 +249,7 @@ fn signed_narrowing_i16_to_i8_rejected() {
     validate_module(&m).unwrap();
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E602]"), "Expected E602, got: {}", err);
+    assert!(err.to_string().contains("[E601]"), "Expected E601, got: {}", err);
 }
 
 #[test]
@@ -262,7 +262,7 @@ fn signed_to_unsigned_cross_assign_rejected() {
     validate_module(&m).unwrap();
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E602]"), "Expected E602 for cross-category, got: {}", err);
+    assert!(err.to_string().contains("[E601]"), "Expected E601 for cross-category, got: {}", err);
 }
 
 #[test]
@@ -275,7 +275,7 @@ fn unsigned_to_signed_cross_assign_rejected() {
     validate_module(&m).unwrap();
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E602]"), "Expected E602 for cross-category, got: {}", err);
+    assert!(err.to_string().contains("[E601]"), "Expected E601 for cross-category, got: {}", err);
 }
 
 // ---------------------------------------------------------------------------
