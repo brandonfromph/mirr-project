@@ -90,17 +90,7 @@ fn test_namespaced_pattern_error_hint() {
 
 #[test]
 fn test_cli_dump_expanded_flag() {
-    let target_dir = std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "./target".to_string());
-    let binary_path = std::path::PathBuf::from(target_dir).join("debug").join("nasa-rust-project");
-
-    if !binary_path.exists() {
-        // Build the binary if not present
-        let status = std::process::Command::new("cargo")
-            .args(["build", "--bin", "nasa-rust-project"])
-            .status()
-            .expect("Failed to build nasa-rust-project");
-        assert!(status.success(), "Failed to compile nasa-rust-project");
-    }
+    let binary_path = env!("CARGO_BIN_EXE_nasa-rust-project");
 
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let macro_test_path = std::fs::canonicalize("tests/macro_test.mirr")

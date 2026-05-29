@@ -3,14 +3,9 @@ use std::process::Command;
 
 #[test]
 fn generator_runs_and_outputs_text_rust() {
-    // use the Rust binary we just added
-    let output = Command::new("cargo")
+    let generator_bin = env!("CARGO_BIN_EXE_generate_mirr_stress");
+    let output = Command::new(generator_bin)
         .args([
-            "run",
-            "--quiet",
-            "--bin",
-            "generate_mirr_stress",
-            "--",
             "--type",
             "mux_forest",
             "--size",
@@ -31,8 +26,9 @@ fn compile_mirr(code: &str) {
     let mut file = tempfile::NamedTempFile::new().expect("tempfile");
     write!(file, "{}", code).expect("write");
     let path = file.path().to_str().unwrap();
-    let status = Command::new("cargo")
-        .args(["run", "--quiet", "--bin", "nasa-rust-project", "--", "--compile", path])
+    let compiler_bin = env!("CARGO_BIN_EXE_nasa-rust-project");
+    let status = Command::new(compiler_bin)
+        .args(["--compile", path])
         .status()
         .expect("failed to invoke compiler");
     assert!(status.success(), "compilation failed for generated MIRR");
@@ -43,13 +39,9 @@ fn generated_templates_compile() {
     // small sizes just to validate syntax
     let types = ["mux_forest", "temporal_chain", "width_chain"];
     for typ in types {
-        let output = Command::new("cargo")
+        let generator_bin = env!("CARGO_BIN_EXE_generate_mirr_stress");
+        let output = Command::new(generator_bin)
             .args([
-                "run",
-                "--quiet",
-                "--bin",
-                "generate_mirr_stress",
-                "--",
                 "--type",
                 typ,
                 "--size",
