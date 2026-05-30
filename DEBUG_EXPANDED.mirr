@@ -1,86 +1,275 @@
 
-module autonomous_flight_controller {
-    signal alt_sensor_a:     in u16;
-    signal alt_sensor_b:     in u16;
-    signal alt_sensor_c:     in u16;
-    
-    signal alt_a_ok:         in bool;
-    signal alt_b_ok:         in bool;
-    signal alt_c_ok:         in bool;
-    
-    signal pitch_angle:      in u16;
-    signal roll_angle:       in u16;
-    signal radio_heartbeat:  in bool;
-    
-    signal throttle_cut:     out bool;
-    signal parachute_deploy: out bool;
-    signal stabilise_mode:   out bool;
-    signal safe_altitude:    out u16;
+module comprehensive_test {
+    signal input_byte_is_digit: in bool;
+    signal input_byte_is_whitespace: in bool;
+    signal input_two_eq: in bool;
+    signal input_two_ne: in bool;
+    signal input_two_le: in bool;
+    signal input_two_ge: in bool;
+    signal input_arrow: in bool;
+    signal input_dotdot: in bool;
+    signal input_ident_len5: in bool;
+    signal input_ident_len6: in bool;
+    signal input_ident_len8: in bool;
+    signal input_ident_guard: in bool;
+    signal input_ident_false: in bool;
+    signal input_ident_break: in bool;
+    signal input_ident_while: in bool;
+    signal input_ident_match: in bool;
+    signal input_ident_const: in bool;
+    signal input_ident_module: in bool;
+    signal input_ident_signal: in bool;
+    signal input_ident_reflex: in bool;
+    signal input_ident_return: in bool;
+    signal input_ident_struct: in bool;
+    signal input_ident_cycles: in bool;
+    signal input_ident_internal: in bool;
 
-    guard radio_lost {
-        when !radio_heartbeat
-        for 50 cycles;
+    signal emit_push_integer: out bool;
+    signal emit_push_ident: out bool;
+    signal emit_push_eq_eq: out bool;
+    signal emit_push_excl_eq: out bool;
+    signal emit_push_le: out bool;
+    signal emit_push_ge: out bool;
+    signal emit_push_arrow: out bool;
+    signal emit_push_dot_dot: out bool;
+    signal emit_push_kw_when: out bool;
+    signal emit_push_kw_bool: out bool;
+    signal emit_push_tok_true: out bool;
+    signal emit_push_kw_else: out bool;
+    signal emit_push_kw_loop: out bool;
+    signal emit_push_kw_enum: out bool;
+    signal emit_push_kw_guard: out bool;
+    signal emit_push_tok_false: out bool;
+    signal emit_push_kw_break: out bool;
+    signal emit_push_kw_while: out bool;
+    signal emit_push_kw_match: out bool;
+    signal emit_push_kw_const: out bool;
+    signal emit_push_kw_module: out bool;
+    signal emit_push_kw_signal: out bool;
+    signal emit_push_kw_reflex: out bool;
+    signal emit_push_kw_return: out bool;
+    signal emit_push_kw_struct: out bool;
+    signal emit_push_kw_cycles: out bool;
+    signal emit_push_kw_internal: out bool;
+
+    guard digit_guard {
+        when input_byte_is_digit
+        for 1 cycles;
     }
 
-    guard radio_stable {
-        when radio_heartbeat
-        for 5 cycles;
+    guard eq_guard {
+        when input_two_eq
+        for 1 cycles;
     }
 
-    guard excessive_pitch_dive {
-        when pitch_angle > 45
-        for 10 cycles;
+    guard ne_guard {
+        when input_two_ne
+        for 1 cycles;
     }
 
-    guard ground_proximity {
-        when (alt_a_ok && alt_sensor_a < 100) || (alt_b_ok && alt_sensor_b < 100) || (alt_c_ok && alt_sensor_c < 100)
-        for 5 cycles;
+    guard le_guard {
+        when input_two_le
+        for 1 cycles;
     }
 
-    guard total_sensor_failure {
-        when !alt_a_ok && !alt_b_ok && !alt_c_ok
-        for 2 cycles;
+    guard ge_guard {
+        when input_two_ge
+        for 1 cycles;
     }
 
-    reflex alt_vote_a {
-        on radio_stable {
-            safe_altitude = alt_sensor_a;
+    guard arrow_guard {
+        when input_arrow
+        for 1 cycles;
+    }
+
+    guard dotdot_guard {
+        when input_dotdot
+        for 1 cycles;
+    }
+
+    guard kw_guard_guard {
+        when input_ident_guard
+        for 1 cycles;
+    }
+
+    guard kw_false_guard {
+        when input_ident_false
+        for 1 cycles;
+    }
+
+    guard kw_break_guard {
+        when input_ident_break
+        for 1 cycles;
+    }
+
+    guard kw_while_guard {
+        when input_ident_while
+        for 1 cycles;
+    }
+
+    guard kw_match_guard {
+        when input_ident_match
+        for 1 cycles;
+    }
+
+    guard kw_const_guard {
+        when input_ident_const
+        for 1 cycles;
+    }
+
+    guard kw_module_guard {
+        when input_ident_module
+        for 1 cycles;
+    }
+
+    guard kw_signal_guard {
+        when input_ident_signal
+        for 1 cycles;
+    }
+
+    guard kw_reflex_guard {
+        when input_ident_reflex
+        for 1 cycles;
+    }
+
+    guard kw_return_guard {
+        when input_ident_return
+        for 1 cycles;
+    }
+
+    guard kw_struct_guard {
+        when input_ident_struct
+        for 1 cycles;
+    }
+
+    guard kw_cycles_guard {
+        when input_ident_cycles
+        for 1 cycles;
+    }
+
+    guard kw_internal_guard {
+        when input_ident_internal
+        for 1 cycles;
+    }
+
+    reflex push_integer {
+        on digit_guard {
+            emit_push_integer = true;
         }
     }
 
-    reflex auto_stabilise {
-        on excessive_pitch_dive {
-            stabilise_mode = true;
+    reflex push_eq_eq {
+        on eq_guard {
+            emit_push_eq_eq = true;
         }
     }
 
-    reflex emergency_parachute {
-        on total_sensor_failure {
-            parachute_deploy = true;
-            throttle_cut = true;
-        }
-    }
-    
-    reflex failsafe_descent {
-        on radio_lost {
-            stabilise_mode = true;
+    reflex push_excl_eq {
+        on ne_guard {
+            emit_push_excl_eq = true;
         }
     }
 
-    property deploy_on_total_failure {
-        always (total_sensor_failure -> parachute_deploy);
+    reflex push_le {
+        on le_guard {
+            emit_push_le = true;
+        }
     }
 
-    property no_throttle_with_parachute {
-        always (parachute_deploy -> throttle_cut);
+    reflex push_ge {
+        on ge_guard {
+            emit_push_ge = true;
+        }
     }
 
-    property auto_stabilize_on_radio_loss {
-        always (radio_lost -> stabilise_mode);
+    reflex push_arrow {
+        on arrow_guard {
+            emit_push_arrow = true;
+        }
     }
-    
-    property radio_state_mutually_exclusive {
-        always (!(radio_lost && radio_stable));
+
+    reflex push_dot_dot {
+        on dotdot_guard {
+            emit_push_dot_dot = true;
+        }
+    }
+
+    reflex push_kw_guard {
+        on kw_guard_guard {
+            emit_push_kw_guard = true;
+        }
+    }
+
+    reflex push_tok_false {
+        on kw_false_guard {
+            emit_push_tok_false = true;
+        }
+    }
+
+    reflex push_kw_break {
+        on kw_break_guard {
+            emit_push_kw_break = true;
+        }
+    }
+
+    reflex push_kw_while {
+        on kw_while_guard {
+            emit_push_kw_while = true;
+        }
+    }
+
+    reflex push_kw_match {
+        on kw_match_guard {
+            emit_push_kw_match = true;
+        }
+    }
+
+    reflex push_kw_const {
+        on kw_const_guard {
+            emit_push_kw_const = true;
+        }
+    }
+
+    reflex push_kw_module {
+        on kw_module_guard {
+            emit_push_kw_module = true;
+        }
+    }
+
+    reflex push_kw_signal {
+        on kw_signal_guard {
+            emit_push_kw_signal = true;
+        }
+    }
+
+    reflex push_kw_reflex {
+        on kw_reflex_guard {
+            emit_push_kw_reflex = true;
+        }
+    }
+
+    reflex push_kw_return {
+        on kw_return_guard {
+            emit_push_kw_return = true;
+        }
+    }
+
+    reflex push_kw_struct {
+        on kw_struct_guard {
+            emit_push_kw_struct = true;
+        }
+    }
+
+    reflex push_kw_cycles {
+        on kw_cycles_guard {
+            emit_push_kw_cycles = true;
+        }
+    }
+
+    reflex push_kw_internal {
+        on kw_internal_guard {
+            emit_push_kw_internal = true;
+        }
     }
 }
-        
