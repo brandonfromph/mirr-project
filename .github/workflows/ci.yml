@@ -360,27 +360,27 @@ jobs:
 
       - name: Build proofs (width)
         working-directory: proofs/width
-        run: make
+        run: opam exec -- make
 
       - name: Build proofs (language)
         working-directory: proofs/language
-        run: make
+        run: opam exec -- make
 
       - name: Build proofs (rspu)
         working-directory: proofs/rspu
-        run: make
+        run: opam exec -- make
 
       - name: Build proofs (compiler)
         working-directory: proofs/compiler
-        run: make
+        run: opam exec -- make
 
       - name: Build proofs (mape_k)
         working-directory: proofs/mape_k
-        run: make
+        run: opam exec -- make
 
       - name: Build proofs (cert)
         working-directory: proofs/cert
-        run: make
+        run: opam exec -- make
 
   lra-cli:
     name: LRA CLI
