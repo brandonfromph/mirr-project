@@ -351,38 +351,38 @@ jobs:
   rocq-proofs:
     name: Rocq Proofs
     runs-on: ubuntu-latest
-    container:
-      image: rocq/rocq-prover:9.0
-      options: --user root
-    env:
-      OPAMROOT: /home/coq/.opam
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Build proofs (width)
-        working-directory: proofs/width
-        run: opam exec -- make
-
-      - name: Build proofs (language)
-        working-directory: proofs/language
-        run: opam exec -- make
-
-      - name: Build proofs (rspu)
-        working-directory: proofs/rspu
-        run: opam exec -- make
-
-      - name: Build proofs (compiler)
-        working-directory: proofs/compiler
-        run: opam exec -- make
-
-      - name: Build proofs (mape_k)
-        working-directory: proofs/mape_k
-        run: opam exec -- make
-
-      - name: Build proofs (cert)
-        working-directory: proofs/cert
-        run: opam exec -- make
+      - name: Build proofs
+        uses: coq-community/docker-coq-action@v1
+        with:
+          custom_image: rocq/rocq-prover:9.0
+          custom_script: |
+            echo "::group::Build proofs (width)"
+            cd proofs/width && make
+            echo "::endgroup::"
+            
+            echo "::group::Build proofs (language)"
+            cd ../language && make
+            echo "::endgroup::"
+            
+            echo "::group::Build proofs (rspu)"
+            cd ../rspu && make
+            echo "::endgroup::"
+            
+            echo "::group::Build proofs (compiler)"
+            cd ../compiler && make
+            echo "::endgroup::"
+            
+            echo "::group::Build proofs (mape_k)"
+            cd ../mape_k && make
+            echo "::endgroup::"
+            
+            echo "::group::Build proofs (cert)"
+            cd ../cert && make
+            echo "::endgroup::"
 
   lra-cli:
     name: LRA CLI
