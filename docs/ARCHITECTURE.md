@@ -14,8 +14,7 @@ A clear tree breakdown explaining the directory structure of the repository:
 ```text
 mirr-private/
 ├── src/                      # Core Compiler Pipeline
-│   ├── ast/                  # Abstract Syntax Tree definitions
-│   ├── parser/               # Front-end parsing (Lexer & Parser)
+│   ├── parser/               # Front-end parsing (Lexer & Parser) into flat-data arrays
 │   ├── expand/               # Compile-time pattern expansion & macro engine
 │   ├── ecs/                  # Entity Component System (ECS) architecture (Registry)
 │   ├── cert/                 # MEGA-4 Proof certificate format & MEGA-16 PCC verifier
@@ -37,7 +36,7 @@ mirr-private/
 │   └── mirr-mcp-control-plane/ # Model Context Protocol bridge & governance
 ├── tests/                    # Integration & Parity Test Matrix
 ├── fuzz/                     # Fuzzing harnesses for robustness
-├── proofs/                   # Formal verification (Coq/Rocq)
+├── proofs/                   # Formal verification (Rocq 9.0)
 ├── docs/                     # Documentation and Architecture definitions
 ├── proposals/                # Architectural proposals and RFCs
 ├── rspu_chip/                # Primary hardware project (16-core R-SPU processor)
@@ -64,10 +63,10 @@ MIRR is a safety-critical compiler platform with three kinds of surfaces:
 The following statements describe how services and subsystems interact within the MIRR ecosystem:
 
 1. **Compiler Pipeline Flow:** 
-   - Source code is ingested by the [Lexer/Parser](../src/parser/module_parser/mod.rs), generating an AST.
-   - The AST is hydrated into the [ECS Registry](../src/ecs/registry.rs), where all hardware declarations become entities.
+   - Source code is ingested by the [Lexer/Parser](../src/parser/module_parser/mod.rs), generating contiguous entities and flat-data arrays directly.
+   - The raw entity data is populated into the [ECS Registry](../src/ecs/registry.rs), where all hardware declarations become entities.
    - [Semantic Validation](../src/ecs/semantic_validate.rs) ensures entity integrity (Name and Kind constraints).
-   - [Width Solver](../src/width/solver.rs) infers missing signal widths using SCC propagation. Note: The ECS-native width inference system is currently a mock; the AST-based solver remains the primary engine.
+   - [Width Solver](../src/width/solver.rs) infers missing signal widths using SCC propagation. The ECS-native width inference system is the primary fully-functional engine.
    - [Temporal Lowering](../src/temporal/mod.rs) translates hardware guards into deterministic netlist primitives.
  This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes `TemporalNodeComponent` metadata for each guard entity, closing the "Temporal Seam".
    - [Symbolic Evaluation Engine](../src/symbolic/mod.rs) provides abstract interpretation, discrete calculus approximations, anomaly signature fingerprinting, and a term rewriting engine for runtime logic optimization.
@@ -93,7 +92,7 @@ The following statements describe how services and subsystems interact within th
 ```mermaid
 flowchart TD
     subgraph Core[Core Compiler Pipeline]
-        A[Lexer & Parser] -->|AST| B[ECS Hydration & Validation]
+        A[Lexer & Parser] -->|Flat Arrays| B[ECS Hydration & Validation]
         B -->|Entities| C[Type Checking & Width Inference]
         C -->|Typed Netlist| D[Temporal Lowering]
         D -->|Deterministic IR| E[Emit Backends]
@@ -148,7 +147,7 @@ flowchart LR
 
 The repository maintains rigorous formal verification infrastructure in the `proofs/` directory:
 
-- **`proofs/compiler/`**: Coq/Rocq verification of AST simplification passes.
+- **`proofs/compiler/`**: Rocq 9.0 verification of ECS simplification passes.
   - `ConstFold.v`: Proves semantic preservation of constant folding on arithmetic expressions.
   - `Simplify.v`: Equivalence proofs for logic simplification rules.
 - **`proofs/cert/`**: Formal specification and totality proofs of Proof-Carrying Code (PCC) boundary conditions.
@@ -159,7 +158,7 @@ The repository maintains rigorous formal verification infrastructure in the `pro
 - **`proofs/rspu/`**: R-SPU ISA instruction set encoding bijectivity and behavioral proofs.
 - **`proofs/width/`**: FIRWINE width inference uniqueness and optimality theorems.
 - **Tooling (`src/bin/mirr-proof-audit.rs`)**:
-  - Automatically maps and audits Rocq proof coverage against compiled AST nodes, reporting proof densities and gaps for formal CI gates.
+  - Automatically maps and audits Rocq proof coverage against compiled ECS entities and emission nodes, reporting proof densities and gaps for formal CI gates.
 
 ## 4.6 R-SPU 16-Core Architecture (rspu_chip/)
 
@@ -187,7 +186,7 @@ The `rspu_chip/` directory houses the complete structural hardware layout of the
 |---|---|---|---|
 | [`src`](../src) / core compiler | The compiler engine | Front-end -> semantic validation -> type/width solving -> temporal lowering -> emit backends | Phases 0-7h complete; 7i+ in progress |
 | [`src/bin/mirr-hydrate.rs`](../src/bin/mirr-hydrate.rs) | MIRR Hydrator | Converts Yosys JSON technology-mapped netlists to structured MIRR files | Core component; complete and verified |
-| [`src/bin/mirr-proof-audit.rs`](../src/bin/mirr-proof-audit.rs) | Proof Auditor | Audits coverage of formal proofs across compiler AST and emission nodes | Phase 7i tool; initialized |
+| [`src/bin/mirr-proof-audit.rs`](../src/bin/mirr-proof-audit.rs) | Proof Auditor | Audits coverage of formal proofs across compiler ECS entities and emission nodes | Phase 7i tool; initialized |
 | [`compiler_mirr`](../compiler_mirr) | Self-hosting compiler subset | MIRR-written bootstrap implementation | Stage-1 hosted self-hosting, in progress |
 
 ### Control Plane Layer
@@ -240,5 +239,6 @@ The `rspu_chip/` directory houses the complete structural hardware layout of the
 ## 8. Practical Pitfalls In This Workspace
 
 - **Environment Note:** `cargo run --bin <name> -- <args>` is broken in this environment due to a rustup home-dir error. Always invoke compiled binaries directly (`./target/debug/<name>`).
+- **Strict File Size Cap:** All source code files must strictly adhere to a maximum length of 600 lines to enforce modularity and fast recompiles.
 - Do not trust stale status docs/logs over source and tests.
 - Self-hosting is active but still evolving; parity tests are a better truth source than narrative status files.
