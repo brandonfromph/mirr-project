@@ -274,8 +274,12 @@
 
         <div class="split-pane">
           <div class="pane">
-            <label for="mirr-source">MIRR Source</label>
-            <div id="monaco-container" class="editor-container"></div>
+            <span id="mirr-source-label" class="pane-label">MIRR Source</span>
+            <div
+              id="monaco-container"
+              class="editor-container"
+              aria-labelledby="mirr-source-label"
+            ></div>
           </div>
           <div class="pane">
             <span class="pane-label"
@@ -6970,7 +6974,6 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
       </p>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.46.0/min/vs/loader.min.js"></script>
     <script
       src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
       integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
@@ -6983,6 +6986,7 @@ STORE_OUTPUT R64, P0     ; emit clamp_valve</code></pre>
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.46.0/min/vs/loader.min.js"></script>
     <script type="module" src="paper.js"></script>
     <script>
       // Auto-sync metrics from metrics.json

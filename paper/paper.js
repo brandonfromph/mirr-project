@@ -224,14 +224,127 @@ const EXAMPLES = {
 // ── Monaco Editor MIRR Mode + Init ────────────────────────────────
 
 var monacoEditor = null;
+var fallbackTextarea = null;
 var editorInitialValue = EXAMPLES.tmr; // default
 
 function getSource() {
   if (monacoEditor) return monacoEditor.getValue();
+  if (fallbackTextarea) return fallbackTextarea.value;
   return editorInitialValue;
 }
 
 function setSource(text) {
+  editorInitialValue = text;
+  if (monacoEditor) {
+    monacoEditor.setValue(text);
+    return;
+  }
+  if (fallbackTextarea) fallbackTextarea.value = text;
+}
+
+(function initMonaco() {
+  var container = document.getElementById('monaco-container');
+  if (!container) return;
+
+  function installFallbackEditor() {
+    if (fallbackTextarea) return;
+    container.textContent = '';
+    fallbackTextarea = document.createElement('textarea');
+    fallbackTextarea.id = 'mirr-source';
+    fallbackTextarea.className = 'mirr-fallback-editor';
+    fallbackTextarea.setAttribute('spellcheck', 'false');
+    fallbackTextarea.setAttribute('aria-label', 'MIRR Source');
+    fallbackTextarea.value = editorInitialValue;
+    fallbackTextarea.addEventListener('input', function() {
+      editorInitialValue = fallbackTextarea.value;
+      debounceCompile();
+    });
+    fallbackTextarea.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        compile();
+      }
+    });
+    container.appendChild(fallbackTextarea);
+  }
+
+  if (typeof window.require !== 'function') {
+    installFallbackEditor();
+    return;
+  }
+
+  window.require.config({
+    paths: {
+      vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.46.0/min/vs'
+    }
+  });
+
+  window.require(['vs/editor/editor.main'], function() {
+    try {
+      monaco.languages.register({ id: 'mirr' });
+      monaco.languages.setMonarchTokensProvider('mirr', {
+        tokenizer: {
+          root: [
+            [/\/\/.*$/, 'comment'],
+            [/@[a-zA-Z_]\w*/, 'meta'],
+            [/#[a-zA-Z_]\w*/, 'tag'],
+            [/\b(module|always|temporal|require|ensure|if|else|let|fn|struct|enum|match|return|property|pattern|prev|use)\b/, 'keyword'],
+            [/\b(signal|input|output|wire|reg|assign)\b/, 'keyword'],
+            [/\b(guard|when|cycles|for)\b/, 'type.identifier'],
+            [/\b(reflex|on)\b/, 'predefined'],
+            [/\b(in|out|internal)\b/, 'attribute.name'],
+            [/\b(u[0-9]+|i[0-9]+|bool|bit|clock|reset)\b/, 'type'],
+            [/\b(true|false)\b/, 'constant'],
+            [/0x[0-9a-fA-F_]+|0b[01_]+|0o[0-7_]+|[0-9][0-9_]*/, 'number'],
+            [/[+\-*=<>!&|^~%]+/, 'operator'],
+            [/[{}()[\];:,]/, 'delimiter']
+          ]
+        }
+      });
+
+      monaco.editor.defineTheme('mirr-dark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: 'comment', foreground: '64748b' },
+          { token: 'keyword', foreground: '00e5ff' },
+          { token: 'type', foreground: '22c55e' },
+          { token: 'type.identifier', foreground: 'f59e0b' },
+          { token: 'predefined', foreground: '8b5cf6' },
+          { token: 'number', foreground: 'fbbf24' }
+        ],
+        colors: {
+          'editor.background': '#1A1B1E',
+          'editorLineNumber.foreground': '#475569',
+          'editor.lineHighlightBackground': '#162040'
+        }
+      });
+
+      monacoEditor = monaco.editor.create(container, {
+        value: editorInitialValue,
+        language: 'mirr',
+        theme: 'mirr-dark',
+        automaticLayout: true,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        fontFamily: 'JetBrains Mono, Fira Code, Cascadia Code, monospace',
+        fontSize: 13,
+        tabSize: 4,
+        insertSpaces: true,
+        wordWrap: 'on',
+        scrollBeyondLastLine: false
+      });
+      monacoEditor.onDidChangeModelContent(function() {
+        editorInitialValue = monacoEditor.getValue();
+        debounceCompile();
+      });
+      monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, compile);
+    } catch (_) {
+      installFallbackEditor();
+    }
+  }, installFallbackEditor);
+})();
+
 var compile_pipeline_stages, proof_status, simulate_rspu, simulate_mapek, mirr_version, simulate_waveform, compile_graph_data;
 
 function hasExport(mod, name) {
