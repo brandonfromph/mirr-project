@@ -91,11 +91,13 @@ module autonomous_flight_controller {
 }
         "#;
 
-        let mut config = PipelineConfig::default();
-        config.typecheck = true;
-        config.temporal = true;
-        config.width = true;
-        config.simplify = true;
+        let config = PipelineConfig {
+            typecheck: true,
+            temporal: true,
+            width: true,
+            simplify: true,
+            ..Default::default()
+        };
 
         let result = run_pipeline(src, &config);
 
