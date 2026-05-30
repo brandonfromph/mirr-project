@@ -183,7 +183,9 @@ Lemma update_signal_length : forall sigs name value,
 Proof.
   induction sigs as [| s rest IH]; intros; simpl.
   - reflexivity.
-  - destruct (Nat.eqb (sig_name s) name); simpl; rewrite IH; reflexivity.
+  - destruct (Nat.eqb (sig_name s) name); simpl.
+    + reflexivity.
+    + rewrite IH. reflexivity.
 Qed.
 
 (** Lemma: Signal update preserves bounded widths. *)
@@ -193,14 +195,23 @@ Lemma update_signal_bounded : forall sigs name value,
 Proof.
   induction sigs as [| s rest IH]; intros; simpl.
   - apply Forall_nil.
-  - inversion H; subst.
+  - inversion H as [| ? ? Hs Hrest ]; subst.
     destruct (Nat.eqb (sig_name s) name).
     + apply Forall_cons.
-      * unfold signal_bounded. simpl. apply H3.
-      * apply H4.
+      * unfold signal_bounded. simpl. apply Hs.
+      * apply Hrest.
     + apply Forall_cons.
-      * apply H3.
-      * apply IH; apply H4.
+      * apply Hs.
+      * apply IH; apply Hrest.
+Qed.
+
+(** Lemma: Fold over reflexes preserves signal count. *)
+Lemma fold_left_fire_reflex_length : forall reflexes sigs,
+  length (fold_left (fun s r => fire_reflex r s) reflexes sigs) = length sigs.
+Proof.
+  induction reflexes as [| r rest IH]; intros sigs.
+  - reflexivity.
+  - simpl. rewrite IH. unfold fire_reflex. apply update_signal_length.
 Qed.
 
 (** Lemma: State transition preserves signal count. *)
@@ -211,24 +222,22 @@ Proof.
   intros m s s' Hstep.
   inversion Hstep; subst.
   - (* StepFire *)
-    reflexivity.
+    simpl. apply fold_left_fire_reflex_length.
   - (* StepIdle *)
     reflexivity.
 Qed.
 
 (** Theorem: State space is always finite. *)
-Theorem state_space_finite : forall m s,
-  module_signals_bounded m ->
-  module_guards_bounded m ->
+Theorem state_space_finite : forall s,
+  length (state_signals s) <= MAX_SIGNALS ->
+  length (state_guard_counters s) <= MAX_GUARDS ->
   state_signals_bounded s ->
   state_counters_bounded s ->
   state_finite s.
 Proof.
-  intros m s Hsig Hguard Hsbound Hcbound.
+  intros s Hsig Hguard Hsbound Hcbound.
   unfold state_finite.
   unfold state_space_bits.
-  unfold module_signals_bounded in Hsig.
-  unfold module_guards_bounded in Hguard.
   (* Signal bits: length * MAX_WIDTH <= MAX_SIGNALS * MAX_WIDTH *)
   (* Guard bits: length * MAX_DYNAMIC_DELAY <= MAX_GUARDS * MAX_DYNAMIC_DELAY *)
   (* Combined: bounded by MAX_SIGNALS * MAX_WIDTH + MAX_GUARDS * MAX_DYNAMIC_DELAY *)

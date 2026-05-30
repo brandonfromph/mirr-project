@@ -249,10 +249,10 @@ guard seizure_pattern {
 <p>While MIRR exposes only <code>signal</code>, <code>guard</code>, and <code>reflex</code>, the Rust compiler will implement multiple internal passes:</p>
 <ol>
 <li>
-<p><strong>Parsing &amp; AST / IR construction (Phase 1)</strong></p>
+<p><strong>Parsing &amp; ECS Flat Array construction (Phase 1)</strong></p>
 <ul>
 <li>Recognize modules, signals, guards, reflexes.</li>
-<li>Build a typed IR with explicit temporal guard nodes.</li>
+<li>Populate pure flat-data arrays directly in the ECS registry.</li>
 </ul>
 </li>
 <li>
@@ -301,32 +301,6 @@ guard seizure_pattern {
 </li>
 </ul>
 <p>Later phases will extend the spec (e.g., meta‑programming, multiple modules, parameterization), but this document defines the <strong>minimal, implementable MIRR core</strong> to start coding immediately.</p>
-<p>src/
-├── main.rs                    # Entry point — CLI only
-├── lib.rs                     # Public API re-exports
-├── error.rs                   # Centralized error authority
-├── ast/
-│   ├── mod.rs                 # Re-exports all AST types
-│   ├── types.rs               # SignalKind, SignalType, BinaryOp, UnaryOp, LiteralValue
-│   ├── expr.rs                # Expr enum (expression tree)
-│   └── program.rs             # SignalDecl, Guard, Assignment, Reflex, Module, MirrProgram
-├── lexer/
-│   ├── mod.rs                 # Re-exports
-│   └── tokenizer.rs           # Token enum + tokenize_expr() with performance optimizations
-├── parser/
-│   ├── mod.rs                 # Re-exports parse_mirr + parse_expression
-│   ├── expr_parser.rs         # Pratt parser (precedence-climbing) with early validation
-│   |── module_parser.rs       # Line-based module/signal/guard/reflex parser
-|   └── temporal
-|<br />
-└── validation/
-├── mod.rs                 # Re-exports
-└── semantic.rs            # validate_module + collect_signal_refs with pre-allocated collections</p>
-<p>tests/
-├── expr_tests.rs              # 17 expression parser tests
-├── module_tests.rs            # 23 module parser + error tests
-├── validation_tests.rs        # 9 semantic validation tests
-└── stress_tests.rs            # 5 stress/edge-case tests</p>
 
   </main>
   </div>

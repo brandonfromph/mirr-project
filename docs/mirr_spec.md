@@ -192,9 +192,9 @@ module neonatal_respirator {
 
 While MIRR exposes only `signal`, `guard`, and `reflex`, the Rust compiler will implement multiple internal passes:
 
-1. **Parsing & AST / IR construction (Phase 1)**  
+1. **Parsing & ECS Flat Array construction (Phase 1)**  
    - Recognize modules, signals, guards, reflexes.  
-   - Build a typed IR with explicit temporal guard nodes.
+   - Populate pure flat-data arrays directly in the ECS registry.
 
 2. **Temporal lowering (Cement2‑inspired, Phase 2)**  
    - Convert `guard` nodes into concrete timing hardware (shift registers vs counters).
@@ -226,30 +226,3 @@ For Phase 1 of the project, the spec is intentionally simplified:
 Later phases will extend the spec (e.g., meta‑programming, multiple modules, parameterization), but this document defines the **minimal, implementable MIRR core** to start coding immediately.
 
 
-src/
-├── main.rs                    # Entry point — CLI only
-├── lib.rs                     # Public API re-exports
-├── error.rs                   # Centralized error authority
-├── ast/
-│   ├── mod.rs                 # Re-exports all AST types
-│   ├── types.rs               # SignalKind, SignalType, BinaryOp, UnaryOp, LiteralValue
-│   ├── expr.rs                # Expr enum (expression tree)
-│   └── program.rs             # SignalDecl, Guard, Assignment, Reflex, Module, MirrProgram
-├── lexer/
-│   ├── mod.rs                 # Re-exports
-│   └── tokenizer.rs           # Token enum + tokenize_expr() with performance optimizations
-├── parser/
-│   ├── mod.rs                 # Re-exports parse_mirr + parse_expression
-│   ├── expr_parser.rs         # Pratt parser (precedence-climbing) with early validation
-│   |── module_parser.rs       # Line-based module/signal/guard/reflex parser
-|   └── temporal
-|   
-└── validation/
-    ├── mod.rs                 # Re-exports
-    └── semantic.rs            # validate_module + collect_signal_refs with pre-allocated collections
-
-tests/
-├── expr_tests.rs              # 17 expression parser tests
-├── module_tests.rs            # 23 module parser + error tests
-├── validation_tests.rs        # 9 semantic validation tests
-└── stress_tests.rs            # 5 stress/edge-case tests

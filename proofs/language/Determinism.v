@@ -78,6 +78,7 @@ Proof.
       apply Htrans; assumption.
   - (* uniqueness *)
     intros next [Heq Hbound].
+    symmetry.
     apply Heq.
 Qed.
 
@@ -99,6 +100,7 @@ Proof.
       apply Hout; assumption.
   - (* uniqueness *)
     intros out [Heq Hbound].
+    symmetry.
     apply Heq.
 Qed.
 
@@ -120,6 +122,16 @@ Proof.
     apply Heq.
 Qed.
 
+Lemma eval_trace_length : forall mm state inputs,
+  length (eval_trace mm state inputs) = length inputs.
+Proof.
+  intros mm state inputs.
+  revert state.
+  induction inputs as [| a rest IH]; intros state.
+  - reflexivity.
+  - simpl. f_equal. apply IH.
+Qed.
+
 (** Theorem: mealy_total.
     For any input sequence within the alphabet, the Mealy machine
     produces an output sequence. The transition function is total
@@ -135,14 +147,7 @@ Proof.
   split.
   - reflexivity.
   - (* length preservation *)
-    revert Hall.
-    induction inputs as [| a rest IH]; intros Hall.
-    + simpl. reflexivity.
-    + simpl.
-      inversion Hall; subst.
-      f_equal.
-      apply IH.
-      apply H3.
+    unfold run_mm. apply eval_trace_length.
 Qed.
 
 (** Corollary: Composition of deterministic steps is deterministic.

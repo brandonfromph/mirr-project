@@ -98,8 +98,7 @@
 <p>A clear tree breakdown explaining the directory structure of the repository:</p>
 <pre><code class="language-text">mirr-private/
 ├── src/                      # Core Compiler Pipeline
-│   ├── ast/                  # Abstract Syntax Tree definitions
-│   ├── parser/               # Front-end parsing (Lexer &amp; Parser)
+│   ├── parser/               # Front-end parsing (Lexer &amp; Parser) into flat-data arrays
 │   ├── expand/               # Compile-time pattern expansion &amp; macro engine
 │   ├── ecs/                  # Entity Component System (ECS) architecture (Registry)
 │   ├── cert/                 # MEGA-4 Proof certificate format &amp; MEGA-16 PCC verifier
@@ -121,7 +120,7 @@
 │   └── mirr-mcp-control-plane/ # Model Context Protocol bridge &amp; governance
 ├── tests/                    # Integration &amp; Parity Test Matrix
 ├── fuzz/                     # Fuzzing harnesses for robustness
-├── proofs/                   # Formal verification (Coq/Rocq)
+├── proofs/                   # Formal verification (Rocq 9.0)
 ├── docs/                     # Documentation and Architecture definitions
 ├── proposals/                # Architectural proposals and RFCs
 ├── rspu_chip/                # Primary hardware project (16-core R-SPU processor)
@@ -149,10 +148,10 @@
 <li>
 <p><strong>Compiler Pipeline Flow:</strong></p>
 <ul>
-<li>Source code is ingested by the <a href="../src/parser/module_parser/mod.rs">Lexer/Parser</a>, generating an AST.</li>
-<li>The AST is hydrated into the <a href="../src/ecs/registry.rs">ECS Registry</a>, where all hardware declarations become entities.</li>
+<li>Source code is ingested by the <a href="../src/parser/module_parser/mod.rs">Lexer/Parser</a>, generating contiguous entities and flat-data arrays directly.</li>
+<li>The raw entity data is populated into the <a href="../src/ecs/registry.rs">ECS Registry</a>, where all hardware declarations become entities.</li>
 <li><a href="../src/ecs/semantic_validate.rs">Semantic Validation</a> ensures entity integrity (Name and Kind constraints).</li>
-<li><a href="../src/width/solver.rs">Width Solver</a> infers missing signal widths using SCC propagation. Note: The ECS-native width inference system is currently a mock; the AST-based solver remains the primary engine.</li>
+<li><a href="../src/width/solver.rs">Width Solver</a> infers missing signal widths using SCC propagation. The ECS-native width inference system is the primary fully-functional engine.</li>
 <li><a href="../src/temporal/mod.rs">Temporal Lowering</a> translates hardware guards into deterministic netlist primitives.
 This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes <code>TemporalNodeComponent</code> metadata for each guard entity, closing the "Temporal Seam".</li>
 <li><a href="../src/symbolic/mod.rs">Symbolic Evaluation Engine</a> provides abstract interpretation, discrete calculus approximations, anomaly signature fingerprinting, and a term rewriting engine for runtime logic optimization.</li>
@@ -186,7 +185,7 @@ This pass is fully ECS-native (Phase 3 transition complete), using the ECS Regis
 <h3 id="core-pipeline-architecture">Core Pipeline Architecture</h3>
 <pre><code class="language-mermaid">flowchart TD
     subgraph Core[Core Compiler Pipeline]
-        A[Lexer &amp; Parser] --&gt;|AST| B[ECS Hydration &amp; Validation]
+        A[Lexer &amp; Parser] --&gt;|Flat Arrays| B[ECS Hydration &amp; Validation]
         B --&gt;|Entities| C[Type Checking &amp; Width Inference]
         C --&gt;|Typed Netlist| D[Temporal Lowering]
         D --&gt;|Deterministic IR| E[Emit Backends]
@@ -236,7 +235,7 @@ This pass is fully ECS-native (Phase 3 transition complete), using the ECS Regis
 <h2 id="45-formal-proofs-topology-proofs">4.5 Formal Proofs Topology (proofs/)</h2>
 <p>The repository maintains rigorous formal verification infrastructure in the <code>proofs/</code> directory:</p>
 <ul>
-<li><strong><code>proofs/compiler/</code></strong>: Coq/Rocq verification of AST simplification passes.
+<li><strong><code>proofs/compiler/</code></strong>: Rocq 9.0 verification of ECS simplification passes.
 <ul>
 <li><code>ConstFold.v</code>: Proves semantic preservation of constant folding on arithmetic expressions.</li>
 <li><code>Simplify.v</code>: Equivalence proofs for logic simplification rules.</li>
@@ -257,7 +256,7 @@ This pass is fully ECS-native (Phase 3 transition complete), using the ECS Regis
 <li><strong><code>proofs/width/</code></strong>: FIRWINE width inference uniqueness and optimality theorems.</li>
 <li><strong>Tooling (<code>src/bin/mirr-proof-audit.rs</code>)</strong>:
 <ul>
-<li>Automatically maps and audits Rocq proof coverage against compiled AST nodes, reporting proof densities and gaps for formal CI gates.</li>
+<li>Automatically maps and audits Rocq proof coverage against compiled ECS entities and emission nodes, reporting proof densities and gaps for formal CI gates.</li>
 </ul>
 </li>
 </ul>
@@ -295,7 +294,7 @@ This pass is fully ECS-native (Phase 3 transition complete), using the ECS Regis
 <table><thead><tr><th>Project</th><th>What it is</th><th>Architecture overview</th><th>Current phase/status</th></tr></thead><tbody>
 <tr><td><a href="../src"><code>src</code></a> / core compiler</td><td>The compiler engine</td><td>Front-end -&gt; semantic validation -&gt; type/width solving -&gt; temporal lowering -&gt; emit backends</td><td>Phases 0-7h complete; 7i+ in progress</td></tr>
 <tr><td><a href="../src/bin/mirr-hydrate.rs"><code>src/bin/mirr-hydrate.rs</code></a></td><td>MIRR Hydrator</td><td>Converts Yosys JSON technology-mapped netlists to structured MIRR files</td><td>Core component; complete and verified</td></tr>
-<tr><td><a href="../src/bin/mirr-proof-audit.rs"><code>src/bin/mirr-proof-audit.rs</code></a></td><td>Proof Auditor</td><td>Audits coverage of formal proofs across compiler AST and emission nodes</td><td>Phase 7i tool; initialized</td></tr>
+<tr><td><a href="../src/bin/mirr-proof-audit.rs"><code>src/bin/mirr-proof-audit.rs</code></a></td><td>Proof Auditor</td><td>Audits coverage of formal proofs across compiler ECS entities and emission nodes</td><td>Phase 7i tool; initialized</td></tr>
 <tr><td><a href="../compiler_mirr"><code>compiler_mirr</code></a></td><td>Self-hosting compiler subset</td><td>MIRR-written bootstrap implementation</td><td>Stage-1 hosted self-hosting, in progress</td></tr>
 </tbody></table>
 <h3 id="control-plane-layer">Control Plane Layer</h3>
@@ -354,6 +353,7 @@ This pass is fully ECS-native (Phase 3 transition complete), using the ECS Regis
 <h2 id="8-practical-pitfalls-in-this-workspace">8. Practical Pitfalls In This Workspace</h2>
 <ul>
 <li><strong>Environment Note:</strong> <code>cargo run --bin &lt;name&gt; -- &lt;args&gt;</code> is broken in this environment due to a rustup home-dir error. Always invoke compiled binaries directly (<code>./target/debug/&lt;name&gt;</code>).</li>
+<li><strong>Strict File Size Cap:</strong> All source code files must strictly adhere to a maximum length of 600 lines to enforce modularity and fast recompiles.</li>
 <li>Do not trust stale status docs/logs over source and tests.</li>
 <li>Self-hosting is active but still evolving; parity tests are a better truth source than narrative status files.</li>
 </ul>

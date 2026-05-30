@@ -337,7 +337,7 @@ real chip.</p>
 <pre><code class="language-bash"><span class="hl-cmt"># SystemVerilog Assertions — formal verification checks</span>
 <span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit sva my_respirator.mirr
 
-<span class="hl-cmt"># JSON — machine-readable AST for tools</span>
+<span class="hl-cmt"># JSON — machine-readable output for tools</span>
 <span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit json my_respirator.mirr
 
 <span class="hl-cmt"># DOT — graph visualization (open with Graphviz)</span>
@@ -669,7 +669,7 @@ analyze the compiled output.
 The JSON output includes:
 - `schema_version` — version of the JSON schema (currently `"0.2.0"`)
 - `ir_version` — version of the IR contract (currently `"1.0"`)
-- `program` — the full AST (abstract syntax tree) of your module
+- `program` — the full ECS entity graph of your module
 - `simplify_stats` — how many logic simplifications were applied
 - `width_stats` — bit-width inference results
 - `temporal` — the lowered temporal guard netlist
