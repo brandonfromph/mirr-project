@@ -188,6 +188,7 @@ pub fn parse_unexpanded_reflex(
     lines: &[&str],
     index: &mut usize,
 ) -> Result<UnexpandedReflex, MirrError> {
+    let start_line = *index as u32;
     let (name, inline_guards) = reflex_parse_header(lines, index)?;
     *index += 1; // Consume header
 
@@ -196,8 +197,14 @@ pub fn parse_unexpanded_reflex(
     if *index < lines.len() && lines[*index].trim().starts_with('}') {
         *index += 1;
     }
+    let end_line = (*index - 1) as u32;
 
-    Ok(UnexpandedReflex { name, guard_names: inline_guards, statements })
+    Ok(UnexpandedReflex {
+        name,
+        guard_names: inline_guards,
+        statements,
+        span: Some(Span::multi_line(start_line, end_line)),
+    })
 }
 
 pub fn parse_reflex_macro_stmts(

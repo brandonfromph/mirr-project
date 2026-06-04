@@ -167,6 +167,7 @@ fn expand_reflex_internal(
     ctx: &mut ExpansionCtx,
     global_guards: &mut Vec<Guard>,
 ) -> Result<Vec<Reflex>, MirrError> {
+    let reflex_span = unexp.span;
     let base_name = expand_string(&unexp.name, env);
     let initial_guards: Vec<String> =
         unexp.guard_names.iter().map(|n| expand_string(n, env)).collect();
@@ -187,7 +188,7 @@ fn expand_reflex_internal(
         if iterations > MAX_EXPANSION_ITERATIONS * 10 {
             return Err(MirrError::SemanticError {
                 message: "Reflex AST expansion exceeded iteration limit.".into(),
-                span: None,
+                span: reflex_span,
             });
         }
 
@@ -213,7 +214,7 @@ fn expand_reflex_internal(
                     },
                     assignments: vec![assign],
                     origin: None,
-                    span: None,
+                    span: reflex_span,
                 };
                 result.push(reflex);
             }
@@ -287,6 +288,13 @@ fn expand_reflex_internal(
                 }
             }
         }
+    }
+
+    if result.is_empty() {
+        return Err(MirrError::SemanticError {
+            message: format!("Reflex '{}' must contain at least one assignment.", base_name),
+            span: reflex_span,
+        });
     }
 
     // MEGA-10: Preserve original name if no splitting occurred.

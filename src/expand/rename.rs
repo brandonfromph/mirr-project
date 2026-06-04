@@ -149,40 +149,53 @@ pub(super) fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, Stri
         if visited > MAX_EXPR_NODES {
             break;
         }
-        match node {
-            Expr::Signal(name) => {
-                apply_template_substitution(name, rename);
+        if let Expr::Signal(name) = node {
+            apply_template_substitution(name, rename);
+            let mut replacement = None;
+            if name == "true" {
+                replacement = Some(Expr::Literal(crate::ast::types::LiteralValue::Bool(true)));
+            } else if name == "false" {
+                replacement = Some(Expr::Literal(crate::ast::types::LiteralValue::Bool(false)));
+            } else if let Ok(val) = name.parse::<u64>() {
+                replacement = Some(Expr::Literal(crate::ast::types::LiteralValue::Integer(val)));
             }
-            Expr::Prev { signal, .. } => {
-                apply_template_substitution(signal, rename);
+            if let Some(new_expr) = replacement {
+                *node = new_expr;
             }
-            Expr::Literal(_) => {}
-            Expr::Unary { operand, .. } => stack.push(operand),
-            Expr::Binary { left, right, .. } => {
-                stack.push(left);
-                stack.push(right);
-            }
-            Expr::ArrayIndex { array, index } => {
-                stack.push(array);
-                stack.push(index);
-            }
-            Expr::FieldAccess { object, .. } => {
-                stack.push(object);
-            }
-            Expr::ArrayLiteral(elems) => {
-                for e in elems.iter_mut() {
-                    stack.push(e);
+        } else {
+            match node {
+                Expr::Prev { signal, .. } => {
+                    apply_template_substitution(signal, rename);
                 }
-            }
-            Expr::StructLiteral { fields, .. } => {
-                for (_, v) in fields.iter_mut() {
-                    stack.push(v);
+                Expr::Literal(_) => {}
+                Expr::Unary { operand, .. } => stack.push(operand),
+                Expr::Binary { left, right, .. } => {
+                    stack.push(left);
+                    stack.push(right);
                 }
-            }
-            Expr::UnfoldIndex(name) => {
-                if let Some(new_name) = rename.get(name.as_str()) {
-                    *name = new_name.clone();
+                Expr::ArrayIndex { array, index } => {
+                    stack.push(array);
+                    stack.push(index);
                 }
+                Expr::FieldAccess { object, .. } => {
+                    stack.push(object);
+                }
+                Expr::ArrayLiteral(elems) => {
+                    for e in elems.iter_mut() {
+                        stack.push(e);
+                    }
+                }
+                Expr::StructLiteral { fields, .. } => {
+                    for (_, v) in fields.iter_mut() {
+                        stack.push(v);
+                    }
+                }
+                Expr::UnfoldIndex(name) => {
+                    if let Some(new_name) = rename.get(name.as_str()) {
+                        *name = new_name.clone();
+                    }
+                }
+                Expr::Signal(_) => unreachable!(),
             }
         }
     }

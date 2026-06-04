@@ -27,6 +27,8 @@ pub struct UnexpandedReflex {
     pub name: String,
     pub guard_names: Vec<String>,
     pub statements: Vec<ReflexMacroStmt>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<crate::span::Span>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

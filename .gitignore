@@ -92,6 +92,11 @@ paper/dac2027-mirr.tex
 
 # Coq scratch files
 proofs/width/scratch.v
+*.vo
+*.vok
+*.vos
+*.glob
+.lia.cache
 
 # Catch-all for future private planning documents
 *-private*

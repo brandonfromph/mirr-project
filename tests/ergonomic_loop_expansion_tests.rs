@@ -2,6 +2,20 @@
 //! This test enforces that the compiler correctly expands 'for' loops within
 //! signal blocks, ensuring index-based signal generation works as expected.
 
+pub mod ast {
+    pub use nasa_rust_project::ast::*;
+}
+pub mod parser {
+    pub use nasa_rust_project::parser::*;
+}
+pub mod simplify {
+    pub use nasa_rust_project::simplify::*;
+}
+
+#[path = "../src/compiler/mod.rs"]
+mod compiler;
+
+use compiler::macro_proc::expand_macros;
 use nasa_rust_project::parser::parse_mirr;
 
 #[test]
@@ -15,7 +29,8 @@ module test_mod {
     }
 }"#;
 
-    let program = parse_mirr(input).unwrap();
+    let expanded = expand_macros(input);
+    let program = parse_mirr(&expanded).unwrap();
     assert!(program.module.signals.iter().any(|s| s.name == "s_0"));
     assert!(program.module.signals.iter().any(|s| s.name == "s_1"));
 }

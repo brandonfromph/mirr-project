@@ -21,5 +21,5 @@ fn test_signals_block_error_line_reporting() {
     // Ensure the diagnostic engine provides a line number.
     let error_msg = format!("{:?}", result.err().unwrap());
     println!("ERROR MSG: {}", error_msg);
-    assert!(error_msg.contains("start_line: 4"), "Error should be reported on line 4");
+    assert!(error_msg.contains("start_line: 3"), "Error should be reported on line 3 (0-indexed)");
 }

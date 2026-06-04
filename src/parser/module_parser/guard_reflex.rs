@@ -180,9 +180,9 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
             let condition = guard_parse_when(&name, lines, index)?;
             *index += 1;
             skip_empty_and_comments(lines, index);
-            let cycles = guard_parse_for(&name, lines, index)?;
+            let (cycles, template_cycles) = guard_parse_for(&name, lines, index)?;
             *index += 1;
-            (condition, cycles, None)
+            (condition, cycles, template_cycles)
         };
 
     skip_empty_and_comments(lines, index);
@@ -273,7 +273,11 @@ fn guard_parse_when(
     })
 }
 
-fn guard_parse_for(name: &str, lines: &[&str], index: &mut usize) -> Result<u64, MirrError> {
+fn guard_parse_for(
+    name: &str,
+    lines: &[&str],
+    index: &mut usize,
+) -> Result<(u64, Option<String>), MirrError> {
     guard_check_eof(lines, *index, &format!("guard '{name}' for clause"))?;
 
     let for_line = lines[*index].trim();
@@ -301,11 +305,16 @@ fn guard_parse_for(name: &str, lines: &[&str], index: &mut usize) -> Result<u64,
             .with_span(Some(Span::full_line(*index as u32)))
         })?;
 
-    // NASA W5: bounded by u64::MAX — no overflow possible via parse.
-    cycles_str.trim().parse::<u64>().map_err(|_| {
-        MirrError::parse_error(format!("Invalid cycle count in guard '{name}': {cycles_str}"))
-            .with_span(Some(Span::full_line(*index as u32)))
-    })
+    if cycles_str.starts_with("${") && cycles_str.ends_with('}') {
+        Ok((0, Some(cycles_str.to_string())))
+    } else {
+        // NASA W5: bounded by u64::MAX — no overflow possible via parse.
+        let cycles = cycles_str.trim().parse::<u64>().map_err(|_| {
+            MirrError::parse_error(format!("Invalid cycle count in guard '{name}': {cycles_str}"))
+                .with_span(Some(Span::full_line(*index as u32)))
+        })?;
+        Ok((cycles, None))
+    }
 }
 
 fn guard_expect_close(name: &str, lines: &[&str], index: &mut usize) -> Result<(), MirrError> {
