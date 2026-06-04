@@ -4,6 +4,8 @@
 //! Verifies that the compiler reports multiple errors per compilation
 //! instead of stopping at the first.
 
+use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+use nasa_rust_project::ast::{PatternDef, ReflectBlock, SignalDecl};
 use nasa_rust_project::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
 use nasa_rust_project::parser::parse_mirr;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
@@ -329,7 +331,13 @@ fn pattern_errors_accumulate() {
             name: "dup".to_string(),
             params: vec![],
             body: ReflectBlock {
-                signals: vec![],
+                signals: vec![SignalDecl {
+                    name: "dummy".to_string(),
+                    kind: SignalKind::Internal,
+                    ty: ExtendedType::new(SignalType::Bool, Default::default()),
+                    origin: None,
+                    span: None,
+                }],
                 guards: vec![],
                 reflexes: vec![],
                 properties: vec![],
@@ -341,7 +349,13 @@ fn pattern_errors_accumulate() {
             name: "dup".to_string(),
             params: vec![],
             body: ReflectBlock {
-                signals: vec![],
+                signals: vec![SignalDecl {
+                    name: "dummy".to_string(),
+                    kind: SignalKind::Internal,
+                    ty: ExtendedType::new(SignalType::Bool, Default::default()),
+                    origin: None,
+                    span: None,
+                }],
                 guards: vec![],
                 reflexes: vec![],
                 properties: vec![],

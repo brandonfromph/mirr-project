@@ -173,9 +173,29 @@ pub(super) fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, Stri
                     stack.push(left);
                     stack.push(right);
                 }
-                Expr::ArrayIndex { array, index } => {
-                    stack.push(array);
-                    stack.push(index);
+                Expr::ArrayIndex { ref array, ref index } => {
+                    // BUG-4: Handle unrolled signals like data_in[i] -> data_in_0
+                    // If index is a signal that's in the rename map, and [index] is also in the map,
+                    // it means we're in a structural macro loop.
+                    let mut collapsed_name = None;
+                    if let Expr::Signal(ref a_name) = **array {
+                        if let Expr::Signal(ref i_name) = **index {
+                            let template_key = format!("[{}]", i_name);
+                            if let Some(val_suffix) = rename.get(&template_key) {
+                                collapsed_name = Some(format!("{}{}", a_name, val_suffix));
+                            }
+                        }
+                    }
+
+                    if let Some(new_name) = collapsed_name {
+                        *node = Expr::Signal(new_name);
+                    } else {
+                        // Use a non-ref borrow for the stack push
+                        if let Expr::ArrayIndex { array, index } = node {
+                            stack.push(array);
+                            stack.push(index);
+                        }
+                    }
                 }
                 Expr::FieldAccess { object, .. } => {
                     stack.push(object);

@@ -229,6 +229,20 @@ impl ExprParser {
             Token::False => Ok(Expr::Literal(LiteralValue::Bool(false))),
             Token::Integer(n) => Ok(Expr::Literal(LiteralValue::Integer(n))),
             Token::Ident(name) => {
+                let mut full_name = name;
+                while let Some(Token::ColonColon) = self.peek() {
+                    self.advance();
+                    if let Some(Token::Ident(next)) = self.advance() {
+                        full_name.push_str("::");
+                        full_name.push_str(next);
+                    } else {
+                        return Err(MirrError::parse_error(format!(
+                            "{} Expected identifier after '::'.",
+                            crate::error_codes::ec(181)
+                        )));
+                    }
+                }
+
                 if let Some(Token::LParen) = self.peek() {
                     self.advance(); // consume '('
                     let mut args: Vec<Expr> = Vec::with_capacity(2);
@@ -256,7 +270,7 @@ impl ExprParser {
                         }
                     }
 
-                    match name.as_str() {
+                    match full_name.as_str() {
                         "prev" => {
                             if args.len() != 2 {
                                 return Err(MirrError::parse_error(format!(
@@ -287,10 +301,91 @@ impl ExprParser {
 
                             Ok(Expr::Prev { signal, delay })
                         }
+                        "types::extract_data" => {
+                            if args.len() != 1 {
+                                return Err(MirrError::parse_error(
+                                    "extract_data expects 1 argument".to_string(),
+                                ));
+                            }
+                            // Lower to ((arg) & 0xFFFFFFFF)
+                            Ok(Expr::Binary {
+                                op: BinaryOp::BitwiseAnd,
+                                left: Box::new(args[0].clone()),
+                                right: Box::new(Expr::Literal(LiteralValue::Integer(4294967295))),
+                            })
+                        }
+                        "types::extract_tag" => {
+                            if args.len() != 1 {
+                                return Err(MirrError::parse_error(
+                                    "extract_tag expects 1 argument".to_string(),
+                                ));
+                            }
+                            // Lower to (((arg) >> 32) & 0xF)
+                            let shr = Expr::Binary {
+                                op: BinaryOp::Shr,
+                                left: Box::new(args[0].clone()),
+                                right: Box::new(Expr::Literal(LiteralValue::Integer(32))),
+                            };
+                            Ok(Expr::Binary {
+                                op: BinaryOp::BitwiseAnd,
+                                left: Box::new(shr),
+                                right: Box::new(Expr::Literal(LiteralValue::Integer(15))),
+                            })
+                        }
+                        "types::extract_provenance" => {
+                            if args.len() != 1 {
+                                return Err(MirrError::parse_error(
+                                    "extract_provenance expects 1 argument".to_string(),
+                                ));
+                            }
+                            // Lower to (((arg) >> 36) & 0xF)
+                            let shr = Expr::Binary {
+                                op: BinaryOp::Shr,
+                                left: Box::new(args[0].clone()),
+                                right: Box::new(Expr::Literal(LiteralValue::Integer(36))),
+                            };
+                            Ok(Expr::Binary {
+                                op: BinaryOp::BitwiseAnd,
+                                left: Box::new(shr),
+                                right: Box::new(Expr::Literal(LiteralValue::Integer(15))),
+                            })
+                        }
+                        "types::pack_word" => {
+                            if args.len() != 3 {
+                                return Err(MirrError::parse_error(
+                                    "pack_word expects 3 arguments".to_string(),
+                                ));
+                            }
+                            // ((((P) << 36) | ((T) << 32)) | (D))
+                            let d = args[0].clone();
+                            let t = args[1].clone();
+                            let p = args[2].clone();
+
+                            let p_shl = Expr::Binary {
+                                op: BinaryOp::Shl,
+                                left: Box::new(p),
+                                right: Box::new(Expr::Literal(LiteralValue::Integer(36))),
+                            };
+                            let t_shl = Expr::Binary {
+                                op: BinaryOp::Shl,
+                                left: Box::new(t),
+                                right: Box::new(Expr::Literal(LiteralValue::Integer(32))),
+                            };
+                            let combined_pt = Expr::Binary {
+                                op: BinaryOp::BitwiseOr,
+                                left: Box::new(p_shl),
+                                right: Box::new(t_shl),
+                            };
+                            Ok(Expr::Binary {
+                                op: BinaryOp::BitwiseOr,
+                                left: Box::new(combined_pt),
+                                right: Box::new(d),
+                            })
+                        }
                         _ => Err(MirrError::parse_error(format!(
                             "{} Unknown function call '{}'.",
                             crate::error_codes::ec(186),
-                            name
+                            full_name
                         ))),
                     }
                 } else if let Some(Token::LBrace) = self.peek() {
@@ -357,9 +452,9 @@ impl ExprParser {
                             }
                         }
                     }
-                    Ok(Expr::StructLiteral { name: name.to_string(), fields })
+                    Ok(Expr::StructLiteral { name: full_name, fields })
                 } else {
-                    Ok(Expr::Signal(name.to_string()))
+                    Ok(Expr::Signal(full_name))
                 }
             }
             Token::Bang => {

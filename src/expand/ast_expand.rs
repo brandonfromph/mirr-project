@@ -28,6 +28,14 @@ struct ExpansionCtx {
     auto_guard_counter: usize,
 }
 
+type ModuleStackItem = (ModuleMacroStmt, HashMap<String, i32>, HashMap<String, String>);
+type ReflexStackItem = (
+    ReflexMacroStmt,
+    Vec<String>,
+    HashMap<String, i32>,
+    HashMap<String, String>,
+);
+
 pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> {
     let mut module = Module {
         name: unexpanded.name,
@@ -59,11 +67,15 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
         }
     }
 
-    let mut stmts_to_process: Vec<(ModuleMacroStmt, HashMap<String, i32>)> =
-        unexpanded.statements.into_iter().map(|s| (s, HashMap::new())).rev().collect(); // stack pops from end, so rev()
+    let mut stmts_to_process: Vec<ModuleStackItem> = unexpanded
+        .statements
+        .into_iter()
+        .map(|s| (s, HashMap::new(), HashMap::new()))
+        .rev()
+        .collect(); // stack pops from end, so rev()
 
     let mut iterations = 0;
-    while let Some((stmt, env)) = stmts_to_process.pop() {
+    while let Some((stmt, env, signal_env)) = stmts_to_process.pop() {
         iterations += 1;
         if iterations > MAX_EXPANSION_ITERATIONS * 10 {
             return Err(MirrError::SemanticError {
@@ -74,27 +86,27 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
 
         match stmt {
             ModuleMacroStmt::Signal(mut sig) => {
-                expand_signal_template(&mut sig, &env);
+                expand_signal_template(&mut sig, &env, &signal_env);
                 module.signals.push(sig);
             }
             ModuleMacroStmt::Guard(mut guard) => {
-                expand_guard_template(&mut guard, &env);
+                expand_guard_template(&mut guard, &env, &signal_env);
                 module.guards.push(guard);
             }
             ModuleMacroStmt::Property(mut prop) => {
-                prop.name = expand_string(&prop.name, &env);
+                prop.name = expand_string(&prop.name, &env, &signal_env);
                 for expr in prop.formula.exprs_mut() {
-                    *expr = expand_expr(expr, &env);
+                    *expr = expand_expr(expr, &env, &signal_env);
                 }
                 module.properties.push(prop);
             }
             ModuleMacroStmt::PatternCall(mut call) => {
-                call.pattern_name = expand_string(&call.pattern_name, &env);
+                call.pattern_name = expand_string(&call.pattern_name, &env, &signal_env);
                 for arg in &mut call.arguments {
                     match arg {
                         crate::ast::pattern::PatternArg::SignalRef(name)
                         | crate::ast::pattern::PatternArg::PatternRef(name) => {
-                            *name = expand_string(name, &env);
+                            *name = expand_string(name, &env, &signal_env);
                         }
                         _ => {}
                     }
@@ -102,7 +114,7 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
                 module.pattern_calls.push(call);
             }
             ModuleMacroStmt::LetBinding { name, ty, value } => {
-                let expanded_name = expand_string(&name, &env);
+                let expanded_name = expand_string(&name, &env, &signal_env);
                 let sig = SignalDecl {
                     name: expanded_name.clone(),
                     kind: crate::ast::types::SignalKind::Internal,
@@ -123,7 +135,7 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
                 // Create a reflex for the let binding assignment
                 let assign = Assignment {
                     target: expanded_name.clone(),
-                    value: expand_expr(&value, &env),
+                    value: expand_expr(&value, &env, &signal_env),
                     span: None,
                 };
                 let reflex = Reflex {
@@ -146,13 +158,19 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
                     let mut new_env = env.clone();
                     new_env.insert(var.clone(), i);
                     for b in body.iter().rev() {
-                        stmts_to_process.push((b.clone(), new_env.clone()));
+                        stmts_to_process.push((b.clone(), new_env.clone(), signal_env.clone()));
                     }
                 }
             }
             ModuleMacroStmt::Reflex(unexp_reflex) => {
-                let expanded_reflexes =
-                    expand_reflex_internal(unexp_reflex, &env, &mut ctx, &mut module.guards)?;
+                let expanded_reflexes = expand_reflex_internal(
+                    unexp_reflex,
+                    &env,
+                    &signal_env,
+                    &mut ctx,
+                    &mut module.guards,
+                    &mut module.signals,
+                )?;
                 module.reflexes.extend(expanded_reflexes);
             }
         }
@@ -164,26 +182,28 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
 fn expand_reflex_internal(
     unexp: UnexpandedReflex,
     env: &HashMap<String, i32>,
+    signal_env: &HashMap<String, String>,
     ctx: &mut ExpansionCtx,
     global_guards: &mut Vec<Guard>,
+    global_signals: &mut Vec<SignalDecl>,
 ) -> Result<Vec<Reflex>, MirrError> {
     let reflex_span = unexp.span;
-    let base_name = expand_string(&unexp.name, env);
+    let base_name = expand_string(&unexp.name, env, signal_env);
     let initial_guards: Vec<String> =
-        unexp.guard_names.iter().map(|n| expand_string(n, env)).collect();
+        unexp.guard_names.iter().map(|n| expand_string(n, env, signal_env)).collect();
 
     let mut result: Vec<Reflex> = Vec::new();
 
     // A stack item pairs a ReflexMacroStmt with its active guard context and loop environment
-    let mut stmts_to_process: Vec<(ReflexMacroStmt, Vec<String>, HashMap<String, i32>)> = unexp
+    let mut stmts_to_process: Vec<ReflexStackItem> = unexp
         .statements
         .into_iter()
-        .map(|s| (s, initial_guards.clone(), env.clone()))
+        .map(|s| (s, initial_guards.clone(), env.clone(), signal_env.clone()))
         .rev()
         .collect();
 
     let mut iterations = 0;
-    while let Some((stmt, active_guards, cur_env)) = stmts_to_process.pop() {
+    while let Some((stmt, active_guards, cur_env, cur_signal_env)) = stmts_to_process.pop() {
         iterations += 1;
         if iterations > MAX_EXPANSION_ITERATIONS * 10 {
             return Err(MirrError::SemanticError {
@@ -194,8 +214,8 @@ fn expand_reflex_internal(
 
         match stmt {
             ReflexMacroStmt::Assignment(mut assign) => {
-                assign.target = expand_string(&assign.target, &cur_env);
-                assign.value = expand_expr(&assign.value, &cur_env);
+                assign.target = expand_string(&assign.target, &cur_env, &cur_signal_env);
+                assign.value = expand_expr(&assign.value, &cur_env, &cur_signal_env);
 
                 // Group assignments into a Reflex by guard context
                 if let Some(last) = result.last_mut() {
@@ -218,13 +238,93 @@ fn expand_reflex_internal(
                 };
                 result.push(reflex);
             }
+            ReflexMacroStmt::LetBinding { name, ty, value, span } => {
+                let expanded_name = expand_string(&name, &cur_env, &cur_signal_env);
+
+                // Optimization: Signal deduplication.
+                // If a signal with this name already exists at the global level,
+                // don't create a new one. This restores the behavior expected by
+                // NoC Router where 'let dest_id' is used in multiple non-overlapping blocks.
+                let mut exists = false;
+                for sig in global_signals.iter() {
+                    if sig.name == expanded_name {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if !exists {
+                    // 1. Create the internal signal
+                    let sig = SignalDecl {
+                        name: expanded_name.clone(),
+                        kind: crate::ast::types::SignalKind::Internal,
+                        ty: crate::ast::types::ExtendedType::new(
+                            crate::parser::parse_signal_type_str(&ty).ok_or_else(|| {
+                                MirrError::SemanticError {
+                                    message: format!("Invalid type '{}' in let binding.", ty),
+                                    span,
+                                }
+                            })?,
+                            crate::ast::types::TypeAnnotations::default(),
+                        ),
+                        origin: None,
+                        span,
+                    };
+                    global_signals.push(sig);
+                }
+
+                // 2. Add an assignment to the current reflex
+                let assign = Assignment {
+                    target: expanded_name,
+                    value: expand_expr(&value, &cur_env, &cur_signal_env),
+                    span,
+                };
+
+                // Group assignments into a Reflex by guard context
+                if let Some(last) = result.last_mut() {
+                    if last.guard_names == active_guards {
+                        last.assignments.push(assign);
+                    } else {
+                        let reflex = Reflex {
+                            name: format!("{}_c{}", base_name, result.len()),
+                            guard_names: if active_guards.is_empty() {
+                                vec!["always".to_string()]
+                            } else {
+                                active_guards.clone()
+                            },
+                            assignments: vec![assign],
+                            origin: None,
+                            span: reflex_span,
+                        };
+                        result.push(reflex);
+                    }
+                } else {
+                    let reflex = Reflex {
+                        name: format!("{}_c{}", base_name, result.len()),
+                        guard_names: if active_guards.is_empty() {
+                            vec!["always".to_string()]
+                        } else {
+                            active_guards.clone()
+                        },
+                        assignments: vec![assign],
+                        origin: None,
+                        span: reflex_span,
+                    };
+                    result.push(reflex);
+                }
+            }
             ReflexMacroStmt::OnBlock { guard_names, body } => {
                 let mut nested_guards = active_guards.clone();
                 for g in guard_names {
-                    nested_guards.push(expand_string(&g, &cur_env));
+                    nested_guards.push(expand_string(&g, &cur_env, &cur_signal_env));
                 }
                 for s in body.into_iter().rev() {
-                    stmts_to_process.push((s, nested_guards.clone(), cur_env.clone()));
+                    stmts_to_process.push((
+                        s,
+                        nested_guards.clone(),
+                        cur_env.clone(),
+                        cur_signal_env.clone(),
+                    ));
                 }
             }
             ReflexMacroStmt::ForLoop { var, start, end, body } => {
@@ -232,19 +332,29 @@ fn expand_reflex_internal(
                     let mut new_env = cur_env.clone();
                     new_env.insert(var.clone(), i);
                     for b in body.iter().rev() {
-                        stmts_to_process.push((b.clone(), active_guards.clone(), new_env.clone()));
+                        stmts_to_process.push((
+                            b.clone(),
+                            active_guards.clone(),
+                            new_env.clone(),
+                            cur_signal_env.clone(),
+                        ));
                     }
                 }
             }
             ReflexMacroStmt::IfElse { condition, true_branch, false_branch } => {
-                let cond_expr = expand_expr(&condition, &cur_env);
+                let cond_expr = expand_expr(&condition, &cur_env, &cur_signal_env);
 
                 // True branch
                 let true_guard_name = synthesize_guard(&cond_expr, ctx, global_guards)?;
                 let mut true_guards = active_guards.clone();
                 true_guards.push(true_guard_name);
                 for b in true_branch.into_iter().rev() {
-                    stmts_to_process.push((b, true_guards.clone(), cur_env.clone()));
+                    stmts_to_process.push((
+                        b,
+                        true_guards.clone(),
+                        cur_env.clone(),
+                        cur_signal_env.clone(),
+                    ));
                 }
 
                 // False branch (negated condition)
@@ -257,12 +367,17 @@ fn expand_reflex_internal(
                     let mut false_guards = active_guards.clone();
                     false_guards.push(false_guard_name);
                     for b in false_branch.into_iter().rev() {
-                        stmts_to_process.push((b, false_guards.clone(), cur_env.clone()));
+                        stmts_to_process.push((
+                            b,
+                            false_guards.clone(),
+                            cur_env.clone(),
+                            cur_signal_env.clone(),
+                        ));
                     }
                 }
             }
             ReflexMacroStmt::Match { expr, arms } => {
-                let match_expr = expand_expr(&expr, &cur_env);
+                let match_expr = expand_expr(&expr, &cur_env, &cur_signal_env);
                 for arm in arms.into_iter().rev() {
                     let arm_cond = if arm.pattern == "_" {
                         Expr::Literal(crate::ast::types::LiteralValue::Bool(true))
@@ -283,7 +398,12 @@ fn expand_reflex_internal(
                     let mut arm_guards = active_guards.clone();
                     arm_guards.push(arm_guard_name);
                     for b in arm.body.into_iter().rev() {
-                        stmts_to_process.push((b, arm_guards.clone(), cur_env.clone()));
+                        stmts_to_process.push((
+                            b,
+                            arm_guards.clone(),
+                            cur_env.clone(),
+                            cur_signal_env.clone(),
+                        ));
                     }
                 }
             }
@@ -310,6 +430,13 @@ fn synthesize_guard(
     ctx: &mut ExpansionCtx,
     global_guards: &mut Vec<Guard>,
 ) -> Result<String, MirrError> {
+    // BUG-4: Deduplicate identical synthesized conditions to minimize token usage and RTL bloat.
+    for g in global_guards.iter() {
+        if g.name.starts_with("auto_g_") && &g.condition == cond && g.cycles == 1 {
+            return Ok(g.name.clone());
+        }
+    }
+
     let name = format!("auto_g_{}", ctx.auto_guard_counter);
     ctx.auto_guard_counter += 1;
     global_guards.push(Guard {
@@ -323,7 +450,11 @@ fn synthesize_guard(
     Ok(name)
 }
 
-fn expand_string(s: &str, env: &HashMap<String, i32>) -> String {
+fn expand_string(
+    s: &str,
+    env: &HashMap<String, i32>,
+    signal_env: &HashMap<String, String>,
+) -> String {
     let mut res = s.to_string();
 
     // Sort keys by length descending to prevent partial match collisions (e.g. ${x} vs ${xx})
@@ -335,27 +466,58 @@ fn expand_string(s: &str, env: &HashMap<String, i32>) -> String {
         res = res.replace(&format!("[{var}]"), &format!("_{val}"));
         res = res.replace(&format!("${{{var}}}"), &val.to_string());
     }
+
+    // Apply signal renames
+    // SAFETY: We must NOT replace core keywords or literals like "true"/"false"
+    // unless they are explicitly wrapped in ${...} or are the ONLY thing in the string.
+    for (k, v) in signal_env {
+        res = res.replace(&format!("${{{k}}}"), v);
+        // ONLY replace exact identifier match if it's NOT a reserved literal/keyword
+        if &res == k && !matches!(k.as_str(), "true" | "false" | "clk" | "rst_n") {
+            res = v.clone();
+        }
+    }
+
     res
 }
 
-fn expand_signal_template(sig: &mut SignalDecl, env: &HashMap<String, i32>) {
-    sig.name = expand_string(&sig.name, env);
+fn expand_signal_template(
+    sig: &mut SignalDecl,
+    env: &HashMap<String, i32>,
+    signal_env: &HashMap<String, String>,
+) {
+    sig.name = expand_string(&sig.name, env, signal_env);
 }
 
-fn expand_guard_template(guard: &mut Guard, env: &HashMap<String, i32>) {
-    guard.name = expand_string(&guard.name, env);
+fn expand_guard_template(
+    guard: &mut Guard,
+    env: &HashMap<String, i32>,
+    signal_env: &HashMap<String, String>,
+) {
+    guard.name = expand_string(&guard.name, env, signal_env);
     if let Some(ref mut tc) = guard.template_cycles {
-        *tc = expand_string(tc, env);
+        *tc = expand_string(tc, env, signal_env);
     }
-    guard.condition = expand_expr(&guard.condition, env);
+    guard.condition = expand_expr(&guard.condition, env, signal_env);
 }
 
-fn expand_expr(expr: &Expr, env: &HashMap<String, i32>) -> Expr {
+fn expand_expr(
+    expr: &Expr,
+    env: &HashMap<String, i32>,
+    signal_env: &HashMap<String, String>,
+) -> Expr {
     let mut new_expr = expr.clone();
     let mut rename_map = HashMap::new();
     for (k, v) in env {
         rename_map.insert(format!("${{{}}}", k), v.to_string());
+        rename_map.insert(format!("[{}]", k), format!("_{}", v));
         rename_map.insert(k.clone(), v.to_string());
+    }
+    for (k, v) in signal_env {
+        // ONLY insert into rename map if NOT a reserved literal
+        if !matches!(k.as_str(), "true" | "false") {
+            rename_map.insert(k.clone(), v.clone());
+        }
     }
     crate::expand::rename::rename_expr_signals(&mut new_expr, &rename_map);
     new_expr

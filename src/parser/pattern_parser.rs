@@ -132,8 +132,17 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     }
     source.push_str("}\n");
 
+    let prev = crate::parser::module_parser::macro_parser::IN_PATTERN_REFLECT.with(|flag| {
+        let p = flag.get();
+        flag.set(true);
+        p
+    });
     let program = crate::parser::parse_mirr(&source)
-        .map_err(|e| pattern_err(format!("In pattern '{name}' reflect body: {e}")))?;
+        .map_err(|e| pattern_err(format!("In pattern '{name}' reflect body: {e}")));
+    crate::parser::module_parser::macro_parser::IN_PATTERN_REFLECT.with(|flag| {
+        flag.set(prev);
+    });
+    let program = program?;
 
     // Skip past the closing brace of the reflect block.
     // Now skip to the closing brace of the def block.
@@ -398,10 +407,12 @@ pub fn is_pattern_call_start(line: &str) -> bool {
         return false;
     }
 
-    // Check it's a valid identifier (alphanumeric + underscore + colon).
-    for c in ident.chars() {
-        if !(c.is_ascii_alphanumeric() || c == '_' || c == ':') {
-            return false;
+    // Check it's a valid identifier (alphanumeric + underscore + colon) or template (${...}).
+    if !ident.starts_with("${") {
+        for c in ident.chars() {
+            if !(c.is_ascii_alphanumeric() || c == '_' || c == ':') {
+                return false;
+            }
         }
     }
 

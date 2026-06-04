@@ -66,6 +66,8 @@ pub enum Token {
     RBracket,
     /// `,` — element separator.
     Comma,
+    /// `::` — namespace separator.
+    ColonColon,
     /// `:` — key/value separator in struct literals.
     Colon,
     /// `.` — field access separator.
@@ -224,6 +226,7 @@ fn match_two_char_operator(pair: &str) -> Option<Token> {
         ">=" => Some(Token::Ge),
         "==" => Some(Token::EqEq),
         "!=" => Some(Token::BangEq),
+        "::" => Some(Token::ColonColon),
         _ => None,
     }
 }

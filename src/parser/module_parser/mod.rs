@@ -72,13 +72,12 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
         expanded.push(ch);
 
-        if !in_quotes
-            && !in_comment
-            && !in_interpolation
-            && (ch == ';' || ch == '{' || ch == '}')
-            && chars.peek() != Some(&'\n')
-        {
-            expanded.push('\n');
+        if !in_quotes && !in_comment && !in_interpolation && (ch == ';' || ch == '{' || ch == '}') {
+            // Only add newline if NOT at the very end and NOT already followed by newline
+            match chars.peek() {
+                Some(&'\n') | None => {}
+                _ => expanded.push('\n'),
+            }
         }
 
         if in_interpolation && ch == '}' {
@@ -190,21 +189,6 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
     let mut module = parse_module(&lines, &mut index)?;
     hydrate_struct_signal_fields(&mut module, &struct_defs);
-
-    skip_empty_and_comments(&lines, &mut index);
-    if index < lines.len() {
-        let remaining = lines[index].trim();
-        if !remaining.is_empty() {
-            return Err(emit_at(
-                ErrorCode::ExpectedModuleFound,
-                format!(
-                    "Unexpected content after module: '{}'. Only one module per file is supported.",
-                    remaining
-                ),
-                Span::full_line(index as u32),
-            ));
-        }
-    }
 
     Ok(MirrProgram { patterns, imports, module })
 }
@@ -671,6 +655,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                 let mut expanded = crate::expand::ast_expand::expand_module(unexpanded)?;
                 expanded.span = Some(Span::multi_line(module_start as u32, *index as u32));
                 *index += 1;
+                skip_empty_and_comments(lines, index);
                 return Ok(expanded);
             }
             "property" => {

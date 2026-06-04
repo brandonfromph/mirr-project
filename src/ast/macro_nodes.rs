@@ -34,6 +34,12 @@ pub struct UnexpandedReflex {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReflexMacroStmt {
     Assignment(Assignment),
+    LetBinding {
+        name: String,
+        ty: String,
+        value: Expr,
+        span: Option<crate::span::Span>,
+    },
     OnBlock {
         guard_names: Vec<String>,
         body: Vec<ReflexMacroStmt>,

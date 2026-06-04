@@ -1,6 +1,7 @@
 use super::guard_reflex::{parse_assignment, parse_guard, reflex_parse_header};
 use super::parse_signal;
 use super::skip_empty_and_comments;
+use crate::ast::expr::Expr;
 use crate::ast::macro_nodes::{MatchArm, ModuleMacroStmt, ReflexMacroStmt, UnexpandedReflex};
 use crate::diagnostic_builder::emit_at;
 use crate::error::MirrError;
@@ -10,6 +11,10 @@ use crate::parser::pattern_parser::{
     is_pattern_call_start, parse_pattern_call, parse_pattern_call_single,
 };
 use crate::span::Span;
+
+thread_local! {
+    pub(crate) static IN_PATTERN_REFLECT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
 
 pub fn parse_module_macro_stmts(
     lines: &[&str],
@@ -51,27 +56,44 @@ pub fn parse_module_macro_stmts(
             continue;
         }
 
-        if line == "signals {" {
-            *index += 1;
-            while *index < lines.len() {
-                skip_empty_and_comments(lines, index);
-                if *index < lines.len() && lines[*index].trim() == "}" {
+        if line.starts_with("signals") {
+            let next_is_brace = line.ends_with('{')
+                || (*index + 1 < lines.len() && lines[*index + 1].trim() == "{");
+
+            if next_is_brace {
+                if line.ends_with('{') {
                     *index += 1;
-                    break;
-                }
-                let raw = lines[*index];
-                let normalised: String;
-                let line_to_parse = if raw.trim().ends_with(';') {
-                    raw
                 } else {
-                    normalised = format!("{};", raw.trim_end());
-                    &normalised
-                };
-                let sig = parse_signal(line_to_parse, *index)?;
-                stmts.push(ModuleMacroStmt::Signal(sig));
-                *index += 1;
+                    *index += 2;
+                }
+
+                while *index < lines.len() {
+                    skip_empty_and_comments(lines, index);
+                    if *index < lines.len() && lines[*index].trim() == "}" {
+                        *index += 1;
+                        break;
+                    }
+                    let line = lines[*index].trim();
+                    if line.starts_with("for ") {
+                        let stmt = parse_for_loop(lines, index)?;
+                        stmts.push(stmt);
+                        continue;
+                    }
+
+                    let raw = lines[*index];
+                    let normalised: String;
+                    let line_to_parse = if raw.trim().ends_with(';') {
+                        raw
+                    } else {
+                        normalised = format!("{};", raw.trim_end());
+                        &normalised
+                    };
+                    let sig = parse_signal(line_to_parse, *index)?;
+                    stmts.push(ModuleMacroStmt::Signal(sig));
+                    *index += 1;
+                }
+                continue;
             }
-            continue;
         }
 
         if line == "calls {" {
@@ -134,9 +156,18 @@ pub fn parse_module_macro_stmts(
     Ok(stmts)
 }
 
-fn parse_let_binding(line: &str, line_index: usize) -> Result<ModuleMacroStmt, MirrError> {
+fn parse_let_binding_raw(
+    line: &str,
+    line_index: usize,
+) -> Result<(String, String, Expr), MirrError> {
     let trimmed = line.trim().trim_end_matches(';');
-    let rest = trimmed.strip_prefix("let ").unwrap();
+    let rest = trimmed.strip_prefix("let ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::SExprParseError,
+            "Expected 'let' binding",
+            Span::full_line(line_index as u32),
+        )
+    })?;
     let (lhs, rhs) = rest.split_once('=').ok_or_else(|| {
         emit_at(
             ErrorCode::SExprParseError,
@@ -157,7 +188,22 @@ fn parse_let_binding(line: &str, line_index: usize) -> Result<ModuleMacroStmt, M
             Span::full_line(line_index as u32),
         )
     })?;
+    Ok((name, ty, value))
+}
+
+fn parse_let_binding(line: &str, line_index: usize) -> Result<ModuleMacroStmt, MirrError> {
+    let (name, ty, value) = parse_let_binding_raw(line, line_index)?;
     Ok(ModuleMacroStmt::LetBinding { name, ty, value })
+}
+
+fn parse_reflex_let_binding(line: &str, line_index: usize) -> Result<ReflexMacroStmt, MirrError> {
+    let (name, ty, value) = parse_let_binding_raw(line, line_index)?;
+    Ok(ReflexMacroStmt::LetBinding {
+        name,
+        ty,
+        value,
+        span: Some(Span::full_line(line_index as u32)),
+    })
 }
 
 fn parse_for_loop(lines: &[&str], index: &mut usize) -> Result<ModuleMacroStmt, MirrError> {
@@ -223,8 +269,19 @@ pub fn parse_reflex_macro_stmts(
             break;
         }
 
-        if line.starts_with("on ") {
-            let (guards, body) = parse_on_block(lines, index)?;
+        if line.starts_with("on ") || line.starts_with("always {") {
+            let (guards, body) = if line.starts_with("always {") {
+                // Support shorthand 'always {' -> 'on always {'
+                let guards = vec!["always".to_string()];
+                *index += 1;
+                let body = parse_reflex_macro_stmts(lines, index)?;
+                if *index < lines.len() && lines[*index].trim().starts_with('}') {
+                    *index += 1;
+                }
+                (guards, body)
+            } else {
+                parse_on_block(lines, index)?
+            };
             stmts.push(ReflexMacroStmt::OnBlock { guard_names: guards, body });
             continue;
         }
@@ -247,7 +304,16 @@ pub fn parse_reflex_macro_stmts(
             continue;
         }
 
+        if line.starts_with("let ") {
+            let stmt = parse_reflex_let_binding(line, *index)?;
+            stmts.push(stmt);
+            *index += 1;
+            continue;
+        }
+
         if line.contains('=') {
+            // ALLOW top-level assignments in reflexes to support the "Rust-like" sugar contract.
+            // This is LOWERED into an "on always" block by the expander.
             let assign = parse_assignment(line, *index)?;
             stmts.push(ReflexMacroStmt::Assignment(assign));
             *index += 1;
@@ -274,6 +340,14 @@ fn parse_on_block(
         .filter(|s| *s != "and")
         .map(|s| s.trim_start_matches('[').trim_end_matches(']').to_string())
         .collect();
+
+    if guards.is_empty() {
+        return Err(crate::error_codes::mirrcode(
+            crate::error_codes::ErrorCode::ReflexMissingOn,
+            "on block must specify at least one guard name",
+        )
+        .with_span(Some(Span::full_line(*index as u32))));
+    }
 
     *index += 1;
     let body = parse_reflex_macro_stmts(lines, index)?;

@@ -40,11 +40,26 @@ pub(super) fn build_substitution_map(
                     "false".to_string()
                 }
             }
-            (crate::ast::pattern::PatternParamKind::Constant { .. }, PatternArg::SignalRef(_)) => {
-                return Err(pattern_err(format!(
-                    "Pattern '{}' parameter '{}' expects a constant, got a signal reference.",
-                    def.name, param.name
-                )));
+            (
+                crate::ast::pattern::PatternParamKind::Constant { .. },
+                PatternArg::SignalRef(name),
+            ) => {
+                // BUG-4: If we have a composed pattern call like ${m}(${s}, ${t}, ${out}),
+                // '${t}' is parsed as a SignalRef, but it might be substituted with a constant later.
+                // However, at this point, if it starts with '${', we should allow it.
+                // ALSO, if it's a numeric literal string, treat it as a constant.
+                if name.starts_with("${")
+                    || name.parse::<u64>().is_ok()
+                    || name == "true"
+                    || name == "false"
+                {
+                    name.clone()
+                } else {
+                    return Err(pattern_err(format!(
+                        "Pattern '{}' parameter '{}' expects a constant, got a signal reference '{}'.",
+                        def.name, param.name, name
+                    )));
+                }
             }
             // Higher-order: pattern parameter accepts a pattern name.
             // PatternRef is produced when the parser explicitly resolves it;
