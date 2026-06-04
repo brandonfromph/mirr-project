@@ -23,6 +23,7 @@ fn make_guard(name: &str, cycles: u64) -> Guard {
         cycles,
         condition: Expr::Literal(LiteralValue::Bool(true)),
         span: None,
+        template_cycles: None,
         origin: None,
     }
 }

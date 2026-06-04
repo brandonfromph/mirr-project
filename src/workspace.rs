@@ -198,8 +198,7 @@ impl Workspace {
         }
 
         // 3. Linking (Program Merging)
-        let expanded = crate::compiler::macro_proc::expand_macros(&root_source);
-        let mut merged_program = parse_mirr(&expanded)
+        let mut merged_program = parse_mirr(&root_source)
             .map_err(|error| WorkspaceError::Parse { path: root_path.clone(), error })?;
 
         // Merge patterns from all imported files
@@ -281,8 +280,7 @@ impl Workspace {
             return Ok(());
         }
 
-        let expanded = crate::compiler::macro_proc::expand_macros(source);
-        let parsed = parse_mirr(&expanded)
+        let parsed = parse_mirr(source)
             .map_err(|error| WorkspaceError::Parse { path: current_path.to_path_buf(), error })?;
 
         state.files.insert(current_path.to_path_buf(), parsed.clone());

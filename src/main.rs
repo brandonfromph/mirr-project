@@ -141,7 +141,7 @@ fn main() {
     }
 
     // MEGA-10: Pre-process with ergonomic macro processor before parsing
-    let processed_source = nasa_rust_project::compiler::macro_proc::expand_macros(&source);
+    let processed_source = source.clone(); // Legacy macro processor removed
 
     if dump_expanded {
         println!("{}", processed_source);

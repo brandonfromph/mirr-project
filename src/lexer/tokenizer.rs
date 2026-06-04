@@ -146,16 +146,32 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
             continue;
         }
 
-        // Identifier or keyword (true/false).
-        if is_identifier_start_byte(b) {
+        // Identifier or keyword (true/false), including template interpolation markers ${...}.
+        if is_identifier_start_byte(b) || b == b'$' {
             let start = pos;
-            while pos < len && is_identifier_byte(bytes[pos]) {
-                pos += 1;
+            while pos < len {
+                let current_byte = bytes[pos];
+                if is_identifier_byte(current_byte) {
+                    pos += 1;
+                } else if current_byte == b'$' && pos + 1 < len && bytes[pos + 1] == b'{' {
+                    pos += 2;
+                    while pos < len && bytes[pos] != b'}' {
+                        pos += 1;
+                    }
+                    if pos < len {
+                        pos += 1; // consume '}'
+                    }
+                } else {
+                    break;
+                }
             }
             let word = &input[start..pos];
             let tok = match word {
                 "true" => Token::True,
                 "false" => Token::False,
+                "and" => Token::AmpAmp,
+                "or" => Token::PipePipe,
+                "not" => Token::Bang,
                 _ => Token::Ident(word.to_string()),
             };
             tokens.push(tok);
@@ -235,5 +251,32 @@ fn match_single_char_operator(b: u8) -> Option<Token> {
         b':' => Some(Token::Colon),
         b'.' => Some(Token::Dot),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tokenize_template() {
+        let input = "${s}";
+        let tokens = tokenize_expr(input).unwrap();
+        assert_eq!(tokens.len(), 1);
+        match &tokens[0] {
+            Token::Ident(s) => assert_eq!(s, "${s}"),
+            _ => panic!("Expected identifier token"),
+        }
+    }
+
+    #[test]
+    fn test_tokenize_template_prefixed() {
+        let input = "r_${s}";
+        let tokens = tokenize_expr(input).unwrap();
+        assert_eq!(tokens.len(), 1);
+        match &tokens[0] {
+            Token::Ident(s) => assert_eq!(s, "r_${s}"),
+            _ => panic!("Expected identifier token"),
+        }
     }
 }

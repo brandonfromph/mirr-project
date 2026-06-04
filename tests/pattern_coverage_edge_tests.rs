@@ -43,8 +43,14 @@ fn edge_param_kind_signal() {
 }
 #[test]
 fn edge_empty_reflect_block() {
-    let rb = ReflectBlock { raw_lines: Vec::new() };
-    assert!(rb.raw_lines.is_empty());
+    let rb = ReflectBlock {
+        signals: vec![],
+        guards: vec![],
+        reflexes: vec![],
+        properties: vec![],
+        pattern_calls: vec![],
+    };
+    assert!(rb.signals.is_empty());
 }
 #[test]
 fn edge_no_pattern_calls() {

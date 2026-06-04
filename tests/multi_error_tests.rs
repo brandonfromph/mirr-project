@@ -328,13 +328,25 @@ fn pattern_errors_accumulate() {
         PatternDef {
             name: "dup".to_string(),
             params: vec![],
-            body: ReflectBlock { raw_lines: vec!["x = 1;".to_string()] },
+            body: ReflectBlock {
+                signals: vec![],
+                guards: vec![],
+                reflexes: vec![],
+                properties: vec![],
+                pattern_calls: vec![],
+            },
             span: None,
         },
         PatternDef {
             name: "dup".to_string(),
             params: vec![],
-            body: ReflectBlock { raw_lines: vec!["y = 1;".to_string()] },
+            body: ReflectBlock {
+                signals: vec![],
+                guards: vec![],
+                reflexes: vec![],
+                properties: vec![],
+                pattern_calls: vec![],
+            },
             span: None,
         },
     ];

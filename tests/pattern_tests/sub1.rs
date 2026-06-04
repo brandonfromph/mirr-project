@@ -74,8 +74,8 @@ fn parse_def_reflect_body_all_decl_types() {
         monitor = monitor_sensor_source()
     );
     let prog = parse_ok(&src);
-    let body_lines = &prog.patterns[0].body.raw_lines;
-    assert!(!body_lines.is_empty(), "reflect body should have lines");
+    let body_guards = &prog.patterns[0].body.guards;
+    assert!(!body_guards.is_empty(), "reflect body should have guards");
 }
 
 #[test]

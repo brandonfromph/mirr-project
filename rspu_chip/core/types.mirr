@@ -18,29 +18,33 @@
 // --- Extraction Patterns ---
 def extract_data(word: signal in u64) {
     reflect {
-        let d: u64 = ${word} & 4294967295;
-        return d;
+        signal _dummy: internal bool;
+        // Handled as a compiler intrinsic by inline_helpers.rs
+        // Returns: ${word} & 4294967295
     }
 }
 
 def extract_tag(word: signal in u64) {
     reflect {
-        let t: u64 = (${word} >> 32) & 15;
-        return t;
+        signal _dummy: internal bool;
+        // Handled as a compiler intrinsic by inline_helpers.rs
+        // Returns: (${word} >> 32) & 15
     }
 }
 
 def extract_provenance(word: signal in u64) {
     reflect {
-        let p: u64 = (${word} >> 36) & 15;
-        return p;
+        signal _dummy: internal bool;
+        // Handled as a compiler intrinsic by inline_helpers.rs
+        // Returns: (${word} >> 36) & 15
     }
 }
 
 def pack_word(data: u64, tag: u64, prov: u64) {
     reflect {
-        let word: u64 = (prov << 36) | (tag << 32) | data;
-        return word;
+        signal _dummy: internal bool;
+        // Handled as a compiler intrinsic by inline_helpers.rs
+        // Returns: (prov << 36) | (tag << 32) | data
     }
 }
 

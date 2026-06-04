@@ -94,6 +94,7 @@ fn test_width_chaos_overflowing_inference() {
             nasa_rust_project::ast::types::LiteralValue::Bool(true),
         ),
         span: None,
+        template_cycles: None,
         origin: None,
     };
 

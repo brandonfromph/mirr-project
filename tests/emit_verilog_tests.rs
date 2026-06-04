@@ -139,6 +139,7 @@ fn prev_in_reflex_result() -> PipelineResult {
                 right: Box::new(Expr::Literal(LiteralValue::Integer(0))),
             },
             cycles: 1,
+            template_cycles: None,
             origin: None,
             span: None,
         }],

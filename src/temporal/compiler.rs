@@ -352,6 +352,7 @@ impl TemporalCompiler {
                             name: left_name,
                             condition: (*left.clone()),
                             cycles: g.cycles,
+                            template_cycles: None,
                             origin: None,
                             span: None,
                         };
@@ -359,6 +360,7 @@ impl TemporalCompiler {
                             name: right_name,
                             condition: (*right.clone()),
                             cycles: g.cycles,
+                            template_cycles: None,
                             origin: None,
                             span: None,
                         };
@@ -895,6 +897,7 @@ mod tests {
             name: name.to_string(),
             condition: crate::ast::Expr::Signal(signal.to_string()),
             cycles,
+            template_cycles: None,
             origin: None,
             span: None,
         }
@@ -1011,6 +1014,7 @@ mod tests {
             name: "overloaded".to_string(),
             condition: expr,
             cycles: 1,
+            template_cycles: None,
             origin: None,
             span: None,
         };

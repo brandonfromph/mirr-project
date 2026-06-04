@@ -56,8 +56,7 @@ fn ingest_import_recursive(
         ),
         span: import.span,
     })?;
-    let processed = crate::compiler::macro_proc::expand_macros(&source);
-    let imported_prog = crate::parser::module_parser::parse_mirr(&processed)?;
+    let imported_prog = crate::parser::module_parser::parse_mirr(&source)?;
 
     for pat in imported_prog.patterns {
         let entity = registry.create_entity(&pat.name, KindComponent::PATTERN);

@@ -33,6 +33,7 @@ fn ring_program() -> MirrProgram {
                 name: "g".to_string(),
                 condition: Expr::Literal(LiteralValue::Bool(true)),
                 cycles: 1,
+                template_cycles: None,
                 origin: None,
                 span: None,
             }],

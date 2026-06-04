@@ -11,7 +11,17 @@ fn test_pattern_chaos_recursion_depth_limit() {
     let patterns = vec![PatternDef {
         name: "A".to_string(),
         params: vec![],
-        body: ReflectBlock { raw_lines: vec!["A();".to_string()] },
+        body: ReflectBlock {
+            signals: vec![],
+            guards: vec![],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![nasa_rust_project::ast::pattern::PatternCall {
+                pattern_name: "A".to_string(),
+                arguments: vec![],
+                span: None,
+            }],
+        },
         span: None,
     }];
 
@@ -54,12 +64,11 @@ fn test_pattern_chaos_recursion_depth_limit() {
 }
 
 #[test]
-fn test_pattern_chaos_exponential_expansion_fork_bomb() {
+fn test_pattern_chaos_exponential_expansion_stress() {
     // Pattern A calls Pattern B twice.
-    // Pattern B calls Pattern C twice.
+    // ...
     // Pattern C calls Pattern D twice.
     // This creates 1 + 2 + 4 + 8 = 15 expansions.
-    // Each expansion spawns an OS process to call 'mirr-brain'.
 
     let mut patterns = Vec::new();
     let pat_names = ["A", "B", "C", "D"];
@@ -68,9 +77,21 @@ fn test_pattern_chaos_exponential_expansion_fork_bomb() {
             name: pat_names[i].to_string(),
             params: vec![],
             body: ReflectBlock {
-                raw_lines: vec![
-                    format!("{}();", pat_names[i + 1]),
-                    format!("{}();", pat_names[i + 1]),
+                signals: vec![],
+                guards: vec![],
+                reflexes: vec![],
+                properties: vec![],
+                pattern_calls: vec![
+                    nasa_rust_project::ast::pattern::PatternCall {
+                        pattern_name: pat_names[i + 1].to_string(),
+                        arguments: vec![],
+                        span: None,
+                    },
+                    nasa_rust_project::ast::pattern::PatternCall {
+                        pattern_name: pat_names[i + 1].to_string(),
+                        arguments: vec![],
+                        span: None,
+                    },
                 ],
             },
             span: None,
@@ -79,7 +100,21 @@ fn test_pattern_chaos_exponential_expansion_fork_bomb() {
     patterns.push(PatternDef {
         name: "D".to_string(),
         params: vec![],
-        body: ReflectBlock { raw_lines: vec!["signal s: bool;".to_string()] },
+        body: ReflectBlock {
+            signals: vec![nasa_rust_project::ast::program::SignalDecl {
+                name: "s".to_string(),
+                kind: nasa_rust_project::ast::types::SignalKind::Internal,
+                ty: nasa_rust_project::ast::types::ExtendedType::from_core(
+                    nasa_rust_project::ast::types::SignalType::Bool,
+                ),
+                origin: None,
+                span: None,
+            }],
+            guards: vec![],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+        },
         span: None,
     });
 
@@ -110,7 +145,21 @@ fn test_pattern_chaos_exponential_expansion_fork_bomb() {
             Some(nasa_rust_project::ecs::components::PatternDefComponent(pat.clone()));
     }
 
-    // Run the expansion. Even with 15 expansions, it should be safe but might be slow.
+    // Run the expansion.
     let result = expand_patterns(&mut program, &registry);
     assert!(result.is_ok(), "Expansion failed: {:?}", result.err());
+
+    // There should be 8 signals named 's' (from 8 calls to D)
+    assert_eq!(program.module.signals.len(), 8);
+
+    let mut names: Vec<String> = program.module.signals.iter().map(|s| s.name.clone()).collect();
+    names.sort();
+    let old_len = names.len();
+    names.dedup();
+    assert_eq!(names.len(), old_len, "Generated signals are not unique!");
+
+    for name in names {
+        // Names should contain pattern name and index
+        assert!(name.contains("D_"), "Name {} does not contain pattern D namespace", name);
+    }
 }

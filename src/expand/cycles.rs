@@ -10,8 +10,6 @@ use crate::error::MirrError;
 use super::pattern_err;
 
 pub(super) fn detect_pattern_cycles(patterns: &[PatternDef]) -> Result<(), MirrError> {
-    use crate::parser::pattern_parser::is_pattern_call_line;
-
     // Build name set for quick lookup.
     let pattern_names: HashSet<&str> = patterns.iter().map(|p| p.name.as_str()).collect();
 
@@ -19,16 +17,10 @@ pub(super) fn detect_pattern_cycles(patterns: &[PatternDef]) -> Result<(), MirrE
     let mut adj: HashMap<&str, Vec<&str>> = HashMap::with_capacity(patterns.len());
     for pat in patterns {
         let mut callees = Vec::new();
-        for line in &pat.body.raw_lines {
-            let trimmed = line.trim();
-            if is_pattern_call_line(trimmed) {
-                // Extract callee name (before the '(').
-                if let Some(paren) = trimmed.find('(') {
-                    let callee = trimmed[..paren].trim();
-                    if pattern_names.contains(callee) {
-                        callees.push(callee);
-                    }
-                }
+        for call in &pat.body.pattern_calls {
+            let callee = call.pattern_name.as_str();
+            if pattern_names.contains(callee) {
+                callees.push(callee);
             }
         }
         adj.insert(pat.name.as_str(), callees);

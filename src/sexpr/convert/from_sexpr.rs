@@ -160,17 +160,49 @@ fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
         sexpr_err(format!("{} Expected reflect list", crate::error_codes::ec(805)))
     })?;
     expect_head(items, "reflect")?;
-    let mut raw_lines = Vec::new();
+    let mut signals = Vec::new();
+    let mut guards = Vec::new();
+    let mut reflexes = Vec::new();
+    let mut properties = Vec::new();
+    let mut pattern_calls = Vec::new();
+
     for item in &items[1..] {
-        let line = item
-            .as_str_val()
-            .ok_or_else(|| {
-                sexpr_err(format!("{} reflect line must be a string", crate::error_codes::ec(806)))
-            })?
-            .to_string();
-        raw_lines.push(line);
+        let inner = item.as_list().ok_or_else(|| {
+            sexpr_err(format!("{} Expected reflect section list", crate::error_codes::ec(805)))
+        })?;
+        if inner.is_empty() {
+            continue;
+        }
+        match inner[0].as_symbol() {
+            Some("signals") => {
+                for s in &inner[1..] {
+                    signals.push(parse_signal_decl(s)?);
+                }
+            }
+            Some("guards") => {
+                for g in &inner[1..] {
+                    guards.push(parse_guard(g)?);
+                }
+            }
+            Some("reflexes") => {
+                for r in &inner[1..] {
+                    reflexes.push(parse_reflex(r)?);
+                }
+            }
+            Some("properties") => {
+                for p in &inner[1..] {
+                    properties.push(parse_property(p)?);
+                }
+            }
+            Some("pattern-calls") => {
+                for c in &inner[1..] {
+                    pattern_calls.push(parse_pattern_call(c)?);
+                }
+            }
+            _ => {}
+        }
     }
-    Ok(ReflectBlock { raw_lines })
+    Ok(ReflectBlock { signals, guards, reflexes, properties, pattern_calls })
 }
 
 fn parse_module_section(sexpr: &SExpr) -> Result<Module, MirrError> {
@@ -556,10 +588,18 @@ fn parse_guard(sexpr: &SExpr) -> Result<Guard, MirrError> {
         })?
         .to_string();
     let condition = parse_expr(&items[2])?;
-    let cycles = items[3].as_integer().ok_or_else(|| {
-        sexpr_err(format!("{} Guard cycles must be an integer", crate::error_codes::ec(806)))
-    })?;
-    Ok(Guard { name, condition, cycles, origin: None, span: None })
+    let cycles_item = &items[3];
+    let (cycles, template_cycles) = if let Some(s) = cycles_item.as_str_val() {
+        (0, Some(s.to_string()))
+    } else if let Some(i) = cycles_item.as_integer() {
+        (i, None)
+    } else {
+        return Err(sexpr_err(format!(
+            "{} Guard cycles must be an integer or string",
+            crate::error_codes::ec(806)
+        )));
+    };
+    Ok(Guard { name, condition, cycles, template_cycles, origin: None, span: None })
 }
 
 fn parse_reflex(sexpr: &SExpr) -> Result<Reflex, MirrError> {

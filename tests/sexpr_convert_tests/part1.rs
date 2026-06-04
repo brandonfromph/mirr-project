@@ -273,6 +273,7 @@ fn ast_to_sexpr_guard_with_bool_literal() {
         name: "g_true".to_string(),
         condition: Expr::Literal(LiteralValue::Bool(true)),
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -295,6 +296,7 @@ fn ast_to_sexpr_guard_with_integer_literal() {
         name: "g_num".to_string(),
         condition: Expr::Literal(LiteralValue::Integer(42)),
         cycles: 5,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -312,6 +314,7 @@ fn ast_to_sexpr_guard_with_signal_expr() {
         name: "g_sig".to_string(),
         condition: Expr::Signal("enable".to_string()),
         cycles: 3,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -330,6 +333,7 @@ fn ast_to_sexpr_guard_with_prev_expr() {
         name: "g_prev".to_string(),
         condition: Expr::Prev { signal: "temp".to_string(), delay: 2 },
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -352,6 +356,7 @@ fn ast_to_sexpr_guard_with_unary_not() {
             operand: Box::new(Expr::Literal(LiteralValue::Bool(false))),
         },
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -373,6 +378,7 @@ fn ast_to_sexpr_guard_with_unary_negate() {
             operand: Box::new(Expr::Literal(LiteralValue::Integer(7))),
         },
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -412,6 +418,7 @@ fn ast_to_sexpr_all_binary_operators() {
                 right: Box::new(Expr::Literal(LiteralValue::Integer(2))),
             },
             cycles: 1,
+            template_cycles: None,
             origin: None,
             span: None,
         });
@@ -440,6 +447,7 @@ fn ast_to_sexpr_binary_shr_operator() {
             right: Box::new(Expr::Literal(LiteralValue::Integer(1))),
         },
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -466,6 +474,7 @@ fn ast_to_sexpr_nested_binary_expression() {
             right: Box::new(Expr::Literal(LiteralValue::Integer(10))),
         },
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });

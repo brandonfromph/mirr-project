@@ -21,20 +21,29 @@ pub(super) fn parse_property(lines: &[&str], index: &mut usize) -> Result<Proper
 
     let start_line = *index;
     let header = lines[*index].trim();
-    let after_keyword = header.strip_prefix("property ").ok_or_else(|| {
-        emit_at(
-            ErrorCode::PropertyMalformed,
-            "Malformed property declaration.",
-            Span::full_line(*index as u32),
-        )
-    })?;
-
-    let (name_part, _) = match after_keyword.split_once('{') {
-        Some(parts) => parts,
-        None => (after_keyword, ""),
+    let after_keyword = if let Some(stripped) = header.strip_prefix("property ") {
+        stripped
+    } else {
+        header.strip_prefix("assert ").ok_or_else(|| {
+            emit_at(
+                ErrorCode::PropertyMalformed,
+                "Malformed property declaration.",
+                Span::full_line(*index as u32),
+            )
+        })?
     };
 
-    let name = name_part.trim();
+    let (name_part, has_block) = if let Some(pos) = find_structural_brace(after_keyword) {
+        (&after_keyword[..pos], true)
+    } else {
+        (after_keyword, false)
+    };
+
+    let (name, inline_formula) = match name_part.split_once(':') {
+        Some((n, f)) => (n.trim(), f.trim()),
+        _ => (name_part.trim(), ""),
+    };
+
     if name.is_empty() {
         return Err(emit_at(
             ErrorCode::PropertyNameEmpty,
@@ -43,41 +52,57 @@ pub(super) fn parse_property(lines: &[&str], index: &mut usize) -> Result<Proper
         ));
     }
 
-    *index += 1;
-    skip_empty_and_comments(lines, index);
+    let (directive, formula) = if !inline_formula.is_empty() {
+        parse_property_formula(inline_formula, name)?
+    } else if has_block {
+        *index += 1;
+        skip_empty_and_comments(lines, index);
 
-    if *index >= lines.len() {
+        if *index >= lines.len() {
+            return Err(emit_at(
+                ErrorCode::PropertyMissingFormula,
+                format!("Property '{name}' missing formula (always/never)."),
+                Span::full_line((*index).saturating_sub(1) as u32),
+            ));
+        }
+
+        let formula_line = lines[*index].trim();
+        parse_property_formula(formula_line, name)?
+    } else {
         return Err(emit_at(
-            ErrorCode::PropertyMissingFormula,
-            format!("Property '{name}' missing formula (always/never)."),
-            Span::full_line((*index).saturating_sub(1) as u32),
-        ));
-    }
-
-    let formula_line = lines[*index].trim();
-    let (directive, formula) = parse_property_formula(formula_line, name)?;
-
-    *index += 1;
-    skip_empty_and_comments(lines, index);
-
-    if *index >= lines.len() {
-        return Err(emit_at(
-            ErrorCode::PropertyNotClosed,
-            format!("Property '{name}' not closed with '}}'."),
-            Span::full_line((*index).saturating_sub(1) as u32),
-        ));
-    }
-
-    let closing = lines[*index].trim();
-    if closing != "}" {
-        return Err(emit_at(
-            ErrorCode::PropertyExpectedClose,
-            format!("Property '{name}' expected closing '}}', found: {closing}"),
+            ErrorCode::PropertyMalformed,
+            format!("Property '{name}' expected formula after ':' or a '{{' block."),
             Span::full_line(*index as u32),
         ));
-    }
+    };
 
-    *index += 1;
+    if has_block {
+        *index += 1;
+        skip_empty_and_comments(lines, index);
+
+        if *index >= lines.len() {
+            return Err(emit_at(
+                ErrorCode::PropertyNotClosed,
+                format!("Property '{name}' not closed with '}}'."),
+                Span::full_line((*index).saturating_sub(1) as u32),
+            ));
+        }
+
+        let closing = lines[*index].trim();
+        if closing != "}" {
+            return Err(emit_at(
+                ErrorCode::PropertyExpectedClose,
+                format!("Property '{name}' expected closing '}}', found: {closing}"),
+                Span::full_line(*index as u32),
+            ));
+        }
+        *index += 1;
+    } else {
+        // Compact form: assert name: formula;
+        // The formula parser might have consumed a semicolon.
+        // We just need to move to the next line.
+        *index += 1;
+    }
 
     Ok(PropertyDecl {
         name: name.to_string(),
@@ -86,6 +111,26 @@ pub(super) fn parse_property(lines: &[&str], index: &mut usize) -> Result<Proper
         origin: None,
         span: Some(Span::multi_line(start_line as u32, (*index - 1) as u32)),
     })
+}
+
+fn find_structural_brace(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let mut pos = 0;
+    while pos < bytes.len() {
+        if bytes[pos] == b'$' && pos + 1 < bytes.len() && bytes[pos + 1] == b'{' {
+            pos += 2;
+            while pos < bytes.len() && bytes[pos] != b'}' {
+                pos += 1;
+            }
+            pos += 1;
+            continue;
+        }
+        if bytes[pos] == b'{' {
+            return Some(pos);
+        }
+        pos += 1;
+    }
+    None
 }
 
 fn parse_property_formula(
@@ -331,14 +376,11 @@ fn try_parse_followed_by(inner: &str, name: &str) -> Result<Option<PropertyFormu
     Ok(Some(PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles }))
 }
 
-fn unwrap_parens<'a>(body: &'a str, name: &str, keyword: &str) -> Result<&'a str, MirrError> {
+fn unwrap_parens<'a>(body: &'a str, _name: &str, _keyword: &str) -> Result<&'a str, MirrError> {
     let trimmed = body.trim();
-    if !trimmed.starts_with('(') || !trimmed.ends_with(')') {
-        return Err(emit_at(
-            ErrorCode::PropertyNeedsParens,
-            format!("Property '{name}': {keyword} formula must be wrapped in parentheses."),
-            Span::full_line(0),
-        ));
+    if trimmed.starts_with('(') && trimmed.ends_with(')') {
+        return Ok(&trimmed[1..trimmed.len() - 1]);
     }
-    Ok(&trimmed[1..trimmed.len() - 1])
+    // MEGA-10: Relaxed - parentheses are now optional for top-level formulas.
+    Ok(trimmed)
 }

@@ -110,7 +110,21 @@ pub fn check_dependency_acyclicity(module: &Module) -> AcyclicityResult {
             let target = &module.reflexes[ri].assignments[asgn_i].target;
             let target_idx = find_signal_index(&names, target);
             if let Some(ti) = target_idx {
-                let deps = collect_signal_deps(&module.reflexes[ri].assignments[asgn_i].value);
+                let mut deps = collect_signal_deps(&module.reflexes[ri].assignments[asgn_i].value);
+
+                // MEGA-10: Guard dependencies. If a reflex triggers on a guard,
+                // the assigned signal combinationally depends on the signals in that guard.
+                for g_name in &module.reflexes[ri].guard_names {
+                    // Note: 'always' and 'never' have no signal dependencies.
+                    if g_name == "always" || g_name == "never" {
+                        continue;
+                    }
+
+                    if let Some(guard) = module.guards.iter().find(|g| g.name == *g_name) {
+                        deps.extend(collect_signal_deps(&guard.condition));
+                    }
+                }
+
                 let mut di = 0;
                 while di < deps.len() && di < MAX_DEP_NODES {
                     if let Some(dep_idx) = find_signal_index(&names, &deps[di]) {
@@ -286,6 +300,7 @@ mod tests {
             name: name.to_string(),
             condition: Expr::Literal(LiteralValue::Bool(true)),
             cycles,
+            template_cycles: None,
             origin: None,
             span: None,
         }

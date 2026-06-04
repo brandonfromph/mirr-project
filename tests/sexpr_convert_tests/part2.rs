@@ -219,7 +219,22 @@ fn ast_to_sexpr_pattern_def_with_params() {
             PatternParam { name: "handler".to_string(), kind: PatternParamKind::Pattern },
         ],
         body: ReflectBlock {
-            raw_lines: vec!["guard g_${sensor} when ${sensor} > ${threshold} for 3;".to_string()],
+            signals: vec![],
+            guards: vec![Guard {
+                name: "g_${sensor}".to_string(),
+                condition: Expr::Binary {
+                    op: BinaryOp::Gt,
+                    left: Box::new(Expr::Signal("${sensor}".to_string())),
+                    right: Box::new(Expr::Signal("${threshold}".to_string())),
+                },
+                cycles: 3,
+                template_cycles: None,
+                origin: None,
+                span: None,
+            }],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
         },
         span: None,
     });
@@ -254,9 +269,12 @@ fn ast_to_sexpr_pattern_def_with_params() {
     // Reflect body
     let reflect = pattern_def[3].as_list().expect("reflect must be a list");
     assert_eq!(reflect[0].as_symbol(), Some("reflect"), "reflect head must be 'reflect'");
-    assert_eq!(reflect.len(), 2, "reflect must have head + 1 line");
-    assert!(
-        reflect[1].as_str_val().unwrap().contains("${sensor}"),
+    assert_eq!(reflect.len(), 6, "reflect must have head + 5 sections");
+    let guards = reflect[2].as_list().expect("guards must be a list");
+    let guard = guards[1].as_list().expect("guard must be a list");
+    assert_eq!(
+        guard[1].as_str_val(),
+        Some("g_${sensor}"),
         "reflect line must contain template markers"
     );
 }
@@ -425,6 +443,7 @@ fn sexpr_to_ast_roundtrip_guards() {
             right: Box::new(Expr::Literal(LiteralValue::Integer(100))),
         },
         cycles: 3,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -603,7 +622,16 @@ fn sexpr_to_ast_roundtrip_pattern_def() {
                 },
             },
         ],
-        body: ReflectBlock { raw_lines: vec!["line1".to_string(), "line2".to_string()] },
+        body: ReflectBlock {
+            signals: vec![
+                make_signal("sig1", SignalKind::Input, SignalType::Bool),
+                make_signal("sig2", SignalKind::Output, SignalType::Bool),
+            ],
+            guards: vec![],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+        },
         span: None,
     });
     let sexpr = ast_to_sexpr(&program);
@@ -614,8 +642,8 @@ fn sexpr_to_ast_roundtrip_pattern_def() {
     assert_eq!(p.params.len(), 2, "must have 2 params");
     assert_eq!(p.params[0].name, "sig", "first param name must be 'sig'");
     assert_eq!(p.params[1].name, "limit", "second param name must be 'limit'");
-    assert_eq!(p.body.raw_lines.len(), 2, "reflect body must have 2 lines");
-    assert_eq!(p.body.raw_lines[0], "line1", "first reflect line must be 'line1'");
+    assert_eq!(p.body.signals.len(), 2, "reflect body must have 2 signals");
+    assert_eq!(p.body.signals[0].name, "sig1", "first reflect signal must be 'sig1'");
 }
 
 #[test]
@@ -680,6 +708,7 @@ fn roundtrip_expr(expr: Expr) -> Expr {
         name: "g_test".to_string(),
         condition: expr,
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });

@@ -54,6 +54,7 @@ fn bool_guard(name: &str, signal_name: &str) -> Guard {
             right: Box::new(Expr::Literal(LiteralValue::Integer(0))),
         },
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     }
@@ -275,6 +276,7 @@ fn bool_output_two_writers_e216() {
             name: "g".to_string(),
             condition: Expr::Signal("trigger".to_string()),
             cycles: 1,
+            template_cycles: None,
             origin: None,
             span: None,
         }],

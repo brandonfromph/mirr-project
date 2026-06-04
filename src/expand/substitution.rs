@@ -2,11 +2,11 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::pattern::{PatternArg, PatternCall, PatternDef};
+use crate::ast::pattern::{PatternArg, PatternCall, PatternDef, ReflectBlock};
 use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 
-use super::{pattern_err, ExpandedFragment};
+use super::pattern_err;
 
 pub(super) fn build_substitution_map(
     def: &PatternDef,
@@ -75,72 +75,12 @@ pub(super) fn build_substitution_map(
     Ok(subs)
 }
 
-/// Apply parameter substitution to a single line.
-///
-/// Replaces all occurrences of `${param_name}` with the corresponding value.
-/// Iterates over all substitution pairs (max 32) for the line.
-/// No re-expansion of substituted text (prevents injection).
-pub(super) fn substitute_line(line: &str, subs: &[(String, String)]) -> String {
-    let mut result = line.to_string();
-    for (key, value) in subs {
-        let marker = format!("${{{key}}}");
-        // Use iterative replacement bounded by marker count.
-        // In practice, each marker appears at most a few times per line.
-        let mut search_from = 0usize;
-        let mut max_replacements = 64usize;
-        while max_replacements > 0 {
-            if let Some(pos) = result[search_from..].find(&marker) {
-                let abs_pos = search_from + pos;
-                result.replace_range(abs_pos..abs_pos + marker.len(), value);
-                search_from = abs_pos + value.len();
-                max_replacements -= 1;
-            } else {
-                break;
-            }
-        }
-    }
-    result
-}
-
-/// Parse substituted lines as a module fragment.
-///
-/// Wraps lines in a synthetic `module __expand__ { ... }` and calls
-/// the existing `parse_mirr()` to reuse 100% of parser infrastructure.
-///
-/// Returns the extracted signals, guards, reflexes, and properties.
-pub(super) fn parse_reflect_fragment(
-    lines: &[String],
-    pattern_name: &str,
-) -> Result<ExpandedFragment, MirrError> {
-    // Build synthetic source.
-    let mut source = String::with_capacity(lines.len() * 80 + 64);
-    source.push_str("module __expand__ {\n");
-    for line in lines {
-        source.push_str("    ");
-        source.push_str(line);
-        source.push('\n');
-    }
-    source.push_str("}\n");
-
-    // Parse using existing parser.
-    let program = crate::parser::parse_mirr(&source)
-        .map_err(|e| pattern_err(format!("In pattern '{}' reflect body: {}", pattern_name, e)))?;
-
-    Ok(ExpandedFragment {
-        signals: program.module.signals,
-        guards: program.module.guards,
-        reflexes: program.module.reflexes,
-        properties: program.module.properties,
-        pattern_calls: program.module.pattern_calls,
-    })
-}
-
 /// Validate that all signals in the expanded fragment are internal.
 ///
 /// Input/output signals must be passed as parameters, not declared inside
 /// the reflect block. This enforces the explicit-external-references rule.
 pub(super) fn validate_fragment_signals(
-    fragment: &ExpandedFragment,
+    fragment: &ReflectBlock,
     pattern_name: &str,
 ) -> Result<(), MirrError> {
     for sig in &fragment.signals {

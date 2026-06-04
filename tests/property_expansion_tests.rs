@@ -53,6 +53,7 @@ fn module_with_properties(properties: Vec<PropertyDecl>) -> Module {
             name: "g".to_string(),
             condition: gt(sig("sensor"), 100),
             cycles: 1,
+            template_cycles: None,
             origin: None,
             span: None,
         }],

@@ -36,6 +36,7 @@ mod tests {
                 name: "g1".to_string(),
                 condition: Expr::Literal(LiteralValue::Bool(true)),
                 cycles: 10,
+                template_cycles: None,
                 origin: None,
                 span: None,
             }],

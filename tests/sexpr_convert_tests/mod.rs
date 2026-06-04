@@ -62,6 +62,7 @@ fn roundtrip_expr(expr: Expr) -> Expr {
         name: "g_test".to_string(),
         condition: expr,
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });

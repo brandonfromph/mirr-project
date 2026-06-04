@@ -2,7 +2,6 @@
 //! This test enforces that signals defined in ergonomic 'signals { ... }' blocks
 //! are correctly ingested into the ECS Registry as first-class entities.
 
-use nasa_rust_project::compiler::macro_proc::expand_macros;
 use nasa_rust_project::ecs::{adapter::ingest_program, components::*, Registry};
 use nasa_rust_project::parser::parse_mirr;
 
@@ -15,11 +14,8 @@ module test_mod {
     }
 }"#;
 
-    // 1. Expand macro
-    let expanded = expand_macros(input);
-
     // 2. Parse into AST
-    let program = parse_mirr(&expanded).expect("Parser should accept expanded signals");
+    let program = parse_mirr(input).expect("Parser should accept expanded signals");
 
     // 3. Ingest into ECS Registry
     let mut registry = Registry::new();

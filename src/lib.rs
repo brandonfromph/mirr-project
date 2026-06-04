@@ -28,7 +28,6 @@
 pub mod ast;
 pub mod bootstrap_runner;
 pub mod cert;
-pub mod compiler;
 pub mod cross_surface_stress;
 pub mod diagnostic;
 pub mod diagnostic_builder;

@@ -817,7 +817,13 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
             });
         }
 
-        if pat.body.raw_lines.is_empty() {
+        let item_count = pat.body.signals.len()
+            + pat.body.guards.len()
+            + pat.body.reflexes.len()
+            + pat.body.properties.len()
+            + pat.body.pattern_calls.len();
+
+        if item_count == 0 {
             errors.push(MirrError::PatternError {
                 message: format!(
                     "{} Pattern '{}' has empty reflect body.",
@@ -828,13 +834,13 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
             });
         }
 
-        if pat.body.raw_lines.len() > MAX_REFLECT_LINES {
+        if item_count > MAX_REFLECT_LINES {
             errors.push(MirrError::PatternError {
                 message: format!(
-                    "{} Pattern '{}' reflect body has {} lines (max {MAX_REFLECT_LINES}).",
+                    "{} Pattern '{}' reflect body has {} items (max {MAX_REFLECT_LINES}).",
                     crate::error_codes::ec(421),
                     pat.name,
-                    pat.body.raw_lines.len()
+                    item_count
                 ),
                 span: pat.span,
             });

@@ -474,8 +474,7 @@ fn load_imports_recursive_for_pipeline(
             }
         })?;
 
-        let processed = crate::compiler::macro_proc::expand_macros(&source);
-        let imported_prog = crate::parser::parse_mirr(&processed).map_err(|e| {
+        let imported_prog = crate::parser::parse_mirr(&source).map_err(|e| {
             crate::error::MirrError::ImportError {
                 message: format!("Failed to parse imported file {:?}: {}", import_path, e),
                 span: import.span,

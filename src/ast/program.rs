@@ -42,6 +42,9 @@ pub struct Guard {
     pub condition: Expr,
     /// Number of consecutive cycles the condition must hold before firing.
     pub cycles: u64,
+    /// Template string for cycles in pattern bodies (e.g., "${cycles}").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template_cycles: Option<String>,
     /// Pattern origin tag for DO-178C traceability (`None` for hand-written guards).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,

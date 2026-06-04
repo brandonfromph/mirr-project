@@ -36,6 +36,7 @@ fn test_guard_counter_lifetime() {
                 name: "digit_guard".to_string(),
                 condition: Expr::Signal("input_byte_is_digit".to_string()),
                 cycles: 3,
+                template_cycles: None,
                 origin: None,
                 span: None,
             }],

@@ -42,9 +42,11 @@ fn convert_pattern_def(p: &PatternDef) -> SExpr {
     items.push(SExpr::list(param_items));
     // Reflect body
     let mut reflect_items = vec![SExpr::sym("reflect")];
-    for line in &p.body.raw_lines {
-        reflect_items.push(SExpr::str_val(line));
-    }
+    reflect_items.push(convert_signals(&p.body.signals));
+    reflect_items.push(convert_guards(&p.body.guards));
+    reflect_items.push(convert_reflexes(&p.body.reflexes));
+    reflect_items.push(convert_properties(&p.body.properties));
+    reflect_items.push(convert_pattern_calls(&p.body.pattern_calls));
     items.push(SExpr::list(reflect_items));
     SExpr::list(items)
 }
@@ -191,12 +193,14 @@ fn convert_annotations(ann: &TypeAnnotations) -> SExpr {
 fn convert_guards(guards: &[Guard]) -> SExpr {
     let mut items = vec![SExpr::sym("guards")];
     for g in guards {
-        items.push(SExpr::list(vec![
-            SExpr::sym("guard"),
-            SExpr::str_val(&g.name),
-            convert_expr(&g.condition),
-            SExpr::int(g.cycles),
-        ]));
+        let mut g_list =
+            vec![SExpr::sym("guard"), SExpr::str_val(&g.name), convert_expr(&g.condition)];
+        if let Some(ref tc) = g.template_cycles {
+            g_list.push(SExpr::str_val(tc));
+        } else {
+            g_list.push(SExpr::int(g.cycles));
+        }
+        items.push(SExpr::list(g_list));
     }
     SExpr::list(items)
 }

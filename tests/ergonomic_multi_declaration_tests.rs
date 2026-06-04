@@ -2,7 +2,6 @@
 //! This test enforces that the compiler correctly handles mixed signal syntax:
 //! individual signal declarations existing alongside new 'signals { ... }' blocks.
 
-use nasa_rust_project::compiler::macro_proc::expand_macros;
 use nasa_rust_project::parser::parse_mirr;
 
 #[test]
@@ -17,14 +16,10 @@ module test_mod {
     }
 }"#;
 
-    let expanded = expand_macros(input);
-
-    // Check expansion output
-    assert!(expanded.contains("signal legacy: in bool;"));
-    assert!(expanded.contains("signal a: in bool;"));
-    assert!(expanded.contains("signal b: out u8;"));
-
     // Verify parser acceptance
-    let program = parse_mirr(&expanded).expect("Parser should accept mixed signal declarations");
+    let program = parse_mirr(input).expect("Parser should accept mixed signal declarations");
     assert_eq!(program.module.signals.len(), 3);
+    assert!(program.module.signals.iter().any(|s| s.name == "legacy"));
+    assert!(program.module.signals.iter().any(|s| s.name == "a"));
+    assert!(program.module.signals.iter().any(|s| s.name == "b"));
 }

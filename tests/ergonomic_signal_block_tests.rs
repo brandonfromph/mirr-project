@@ -2,7 +2,6 @@
 //! This test enforces that the compiler correctly handles ergonomic 'signals { ... }' blocks,
 //! ensuring they are expanded into the standard syntax expected by the formal parser.
 
-use nasa_rust_project::compiler::macro_proc::expand_macros;
 use nasa_rust_project::parser::parse_mirr;
 
 #[test]
@@ -15,15 +14,9 @@ module test_mod {
     }
 }"#;
 
-    // The expansion must result in standard declarations that the parser accepts
-    let expanded = expand_macros(input);
-
-    // Check expansion output
-    assert!(expanded.contains("signal a: in bool;"));
-    assert!(expanded.contains("signal b: out u8;"));
-    assert!(!expanded.contains("signals {"));
-
     // Verify parser acceptance
-    let program = parse_mirr(&expanded).expect("Parser should accept expanded signals");
+    let program = parse_mirr(input).expect("Parser should accept expanded signals");
     assert_eq!(program.module.signals.len(), 2);
+    assert!(program.module.signals.iter().any(|s| s.name == "a"));
+    assert!(program.module.signals.iter().any(|s| s.name == "b"));
 }

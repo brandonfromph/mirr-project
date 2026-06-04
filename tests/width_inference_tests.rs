@@ -731,6 +731,7 @@ fn program_width_inference_basic() {
                 name: "g1".to_string(),
                 condition: binary(BinaryOp::Lt, signal("in_a"), lit(100)),
                 cycles: 1,
+                template_cycles: None,
                 origin: None,
                 span: None,
             }],

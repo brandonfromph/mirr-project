@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod ast_expand;
 mod cycles;
 mod rename;
 mod scoping;
@@ -16,10 +17,7 @@ use rename::{
     apply_name_prefixing, apply_parameter_substitution, collect_fragment_names, set_origin_tags,
 };
 use scoping::validate_internal_signal_scoping;
-use substitution::{
-    build_args_summary, build_substitution_map, parse_reflect_fragment, substitute_line,
-    validate_fragment_signals,
-};
+use substitution::{build_args_summary, build_substitution_map, validate_fragment_signals};
 
 use crate::ast::pattern::{PatternCall, PatternOrigin};
 use crate::ast::program::MirrProgram;
@@ -128,10 +126,8 @@ pub fn expand_patterns(
         let subs = build_substitution_map(def, &call)?;
         let args_summary = build_args_summary(&call.arguments);
 
-        // Substitute and parse fragment.
-        let substituted: Vec<String> =
-            def.body.raw_lines.iter().map(|line| substitute_line(line, &subs)).collect();
-        let mut fragment = parse_reflect_fragment(&substituted, &call.pattern_name)?;
+        // Deep-clone the pre-parsed AST fragment.
+        let mut fragment = def.body.clone();
 
         // Validate signals.
         validate_fragment_signals(&fragment, &call.pattern_name)?;
@@ -144,14 +140,15 @@ pub fn expand_patterns(
 
         parent_map.insert(origin_tag.clone(), parent_origin);
 
-        let names = collect_fragment_names(&fragment);
         let mut param_names = std::collections::HashSet::new();
         for p in &def.params {
             param_names.insert(p.name.clone());
         }
 
-        apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
         apply_parameter_substitution(&mut fragment, &subs);
+
+        let names = collect_fragment_names(&fragment);
+        apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
         set_origin_tags(&mut fragment, &origin_tag);
 
         // Check total item bounds.
@@ -214,19 +211,6 @@ pub fn expand_patterns(
     validate_internal_signal_scoping(&program.module, &parent_map)?;
 
     Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
-
-/// A parsed fragment extracted from a reflect body after substitution.
-struct ExpandedFragment {
-    signals: Vec<crate::ast::program::SignalDecl>,
-    guards: Vec<crate::ast::program::Guard>,
-    reflexes: Vec<crate::ast::program::Reflex>,
-    properties: Vec<crate::ast::property::PropertyDecl>,
-    pattern_calls: Vec<PatternCall>,
 }
 
 // ---------------------------------------------------------------------------

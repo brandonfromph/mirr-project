@@ -46,6 +46,7 @@ fn budget_module_with_guard(condition: Expr) -> Module {
             name: "g".to_string(),
             condition,
             cycles: 1,
+            template_cycles: None,
             origin: None,
             span: None,
         }],

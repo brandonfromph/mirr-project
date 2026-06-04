@@ -2,7 +2,7 @@
 //! This test enforces that the compiler correctly expands 'for' loops within
 //! signal blocks, ensuring index-based signal generation works as expected.
 
-use nasa_rust_project::compiler::macro_proc::expand_macros;
+use nasa_rust_project::parser::parse_mirr;
 
 #[test]
 fn test_macro_expansion_loop_generation() {
@@ -15,12 +15,7 @@ module test_mod {
     }
 }"#;
 
-    // The macro expansion should replace [i] with _0, _1, etc.
-    // The parser expects 'signal <name>: <kind> <type>;'
-    let expanded = expand_macros(input);
-
-    assert!(expanded.contains("signal s_0: in bool;"));
-    assert!(expanded.contains("signal s_1: in bool;"));
-    assert!(!expanded.contains("for i in"));
-    assert!(!expanded.contains("s[i]"));
+    let program = parse_mirr(input).unwrap();
+    assert!(program.module.signals.iter().any(|s| s.name == "s_0"));
+    assert!(program.module.signals.iter().any(|s| s.name == "s_1"));
 }

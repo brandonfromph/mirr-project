@@ -122,6 +122,19 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     // Collect raw lines until matching closing brace of reflect.
     let raw_lines = collect_reflect_body(lines, index, name)?;
 
+    // Build synthetic source to parse the fragment.
+    let mut source = String::with_capacity(raw_lines.len() * 80 + 64);
+    source.push_str("module __expand__ {\n");
+    for line in &raw_lines {
+        source.push_str("    ");
+        source.push_str(line);
+        source.push('\n');
+    }
+    source.push_str("}\n");
+
+    let program = crate::parser::parse_mirr(&source)
+        .map_err(|e| pattern_err(format!("In pattern '{name}' reflect body: {e}")))?;
+
     // Skip past the closing brace of the reflect block.
     // Now skip to the closing brace of the def block.
     skip_empty_and_comments(lines, index);
@@ -129,7 +142,15 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
         *index += 1;
     }
 
-    Ok(PatternDef { name: name.to_string(), params, body: ReflectBlock { raw_lines }, span: None })
+    let body = ReflectBlock {
+        signals: program.module.signals,
+        guards: program.module.guards,
+        reflexes: program.module.reflexes,
+        properties: program.module.properties,
+        pattern_calls: program.module.pattern_calls,
+    };
+
+    Ok(PatternDef { name: name.to_string(), params, body, span: None })
 }
 
 /// Collect the full `def` header, which may span multiple lines.

@@ -67,6 +67,7 @@ fn make_guard(name: &str, cycles: u64) -> Guard {
         name: name.to_string(),
         condition: Expr::Literal(LiteralValue::Bool(true)),
         cycles,
+        template_cycles: None,
         origin: None,
         span: None,
     }
@@ -77,6 +78,7 @@ fn _make_guard_on_signal(name: &str, signal: &str, cycles: u64) -> Guard {
         name: name.to_string(),
         condition: Expr::Signal(signal.to_string()),
         cycles,
+        template_cycles: None,
         origin: None,
         span: None,
     }

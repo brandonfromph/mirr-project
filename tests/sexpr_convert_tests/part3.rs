@@ -190,6 +190,7 @@ fn bounded_multiple_guards_roundtrip() {
             name: format!("g_{i}"),
             condition: Expr::Literal(LiteralValue::Bool(true)),
             cycles: (i as u64) + 1,
+            template_cycles: None,
             origin: None,
             span: None,
         });
@@ -299,7 +300,13 @@ fn roundtrip_pattern_param_signal_with_annotations() {
                 annotations: ann,
             },
         }],
-        body: ReflectBlock { raw_lines: vec!["body".to_string()] },
+        body: ReflectBlock {
+            signals: vec![],
+            guards: vec![],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+        },
         span: None,
     });
     let sexpr = ast_to_sexpr(&program);
@@ -327,7 +334,13 @@ fn roundtrip_pattern_param_constant_with_annotations() {
             name: "n".to_string(),
             kind: PatternParamKind::Constant { ty: SignalType::Unsigned(16), annotations: ann },
         }],
-        body: ReflectBlock { raw_lines: vec!["body".to_string()] },
+        body: ReflectBlock {
+            signals: vec![],
+            guards: vec![],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+        },
         span: None,
     });
     let sexpr = ast_to_sexpr(&program);
@@ -374,13 +387,19 @@ fn roundtrip_pattern_no_params() {
     program.patterns.push(PatternDef {
         name: "noop".to_string(),
         params: Vec::new(),
-        body: ReflectBlock { raw_lines: Vec::new() },
+        body: ReflectBlock {
+            signals: vec![],
+            guards: vec![],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+        },
         span: None,
     });
     let sexpr = ast_to_sexpr(&program);
     let restored = sexpr_to_ast(&sexpr).expect("pattern with no params must round-trip");
     assert!(restored.patterns[0].params.is_empty(), "params must remain empty");
-    assert!(restored.patterns[0].body.raw_lines.is_empty(), "body must remain empty");
+    assert!(restored.patterns[0].body.signals.is_empty(), "body must remain empty");
 }
 
 #[test]
@@ -392,7 +411,17 @@ fn roundtrip_multiple_patterns() {
         program.patterns.push(PatternDef {
             name: format!("pat_{i}"),
             params: vec![PatternParam { name: "p".to_string(), kind: PatternParamKind::Pattern }],
-            body: ReflectBlock { raw_lines: vec![format!("line_{i}")] },
+            body: ReflectBlock {
+                signals: vec![make_signal(
+                    &format!("sig_{i}"),
+                    SignalKind::Input,
+                    SignalType::Bool,
+                )],
+                guards: vec![],
+                reflexes: vec![],
+                properties: vec![],
+                pattern_calls: vec![],
+            },
             span: None,
         });
     }

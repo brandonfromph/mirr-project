@@ -8,7 +8,10 @@ fn test_signals_block_with_comments() {
         }
     }
     "#;
-    let expanded = nasa_rust_project::compiler::macro_proc::expand_macros(input);
-    let result = parse_mirr(&expanded);
-    assert!(result.is_ok(), "Comments inside signals block should be parsed successfully by stripping them in expand_macros, got: {:?}", result.err());
+    let result = parse_mirr(input);
+    assert!(
+        result.is_ok(),
+        "Comments inside signals block should be parsed successfully, got: {:?}",
+        result.err()
+    );
 }

@@ -8,9 +8,9 @@ use crate::ast::expr::Expr;
 use crate::ast::property::PropertyFormula;
 use crate::ast::MAX_EXPR_NODES;
 
-use super::ExpandedFragment;
-
-pub(super) fn collect_fragment_names(fragment: &ExpandedFragment) -> HashSet<String> {
+pub(super) fn collect_fragment_names(
+    fragment: &crate::ast::pattern::ReflectBlock,
+) -> HashSet<String> {
     let mut names = HashSet::with_capacity(32);
     for s in &fragment.signals {
         names.insert(s.name.clone());
@@ -54,7 +54,7 @@ fn rename_target(target: &mut String, rename: &HashMap<String, String>) {
 /// reflex assignment targets (only if they reference internal signals from
 /// this fragment), and property formula signal refs.
 pub(super) fn apply_name_prefixing(
-    fragment: &mut ExpandedFragment,
+    fragment: &mut crate::ast::pattern::ReflectBlock,
     prefix: &str,
     original_names: &HashSet<String>,
     param_names: &HashSet<String>,
@@ -151,14 +151,10 @@ pub(super) fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, Stri
         }
         match node {
             Expr::Signal(name) => {
-                if let Some(new_name) = rename.get(name.as_str()) {
-                    *name = new_name.clone();
-                }
+                apply_template_substitution(name, rename);
             }
             Expr::Prev { signal, .. } => {
-                if let Some(new_name) = rename.get(signal.as_str()) {
-                    *signal = new_name.clone();
-                }
+                apply_template_substitution(signal, rename);
             }
             Expr::Literal(_) => {}
             Expr::Unary { operand, .. } => stack.push(operand),
@@ -203,7 +199,7 @@ pub(super) fn rename_property_signals(
 }
 
 /// Set origin tags on all nodes in the fragment.
-pub(super) fn set_origin_tags(fragment: &mut ExpandedFragment, origin: &str) {
+pub(super) fn set_origin_tags(fragment: &mut crate::ast::pattern::ReflectBlock, origin: &str) {
     for sig in &mut fragment.signals {
         sig.origin = Some(origin.to_string());
     }
@@ -218,48 +214,73 @@ pub(super) fn set_origin_tags(fragment: &mut ExpandedFragment, origin: &str) {
     }
 }
 
+fn apply_template_substitution(target: &mut String, rename: &HashMap<String, String>) {
+    // 1. Exact match (for parameters)
+    if let Some(new_name) = rename.get(target) {
+        *target = new_name.clone();
+        return;
+    }
+
+    // 2. Substring substitution for ${var} and [var]
+    // We sort keys by length descending to prevent partial match collisions.
+    let mut keys: Vec<&String> =
+        rename.keys().filter(|k| k.starts_with("${") || k.starts_with('[')).collect();
+    keys.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
+
+    for key in keys {
+        if target.contains(key) {
+            *target = target.replace(key, &rename[key]);
+        }
+    }
+}
+
 pub(super) fn apply_parameter_substitution(
-    fragment: &mut ExpandedFragment,
+    fragment: &mut crate::ast::pattern::ReflectBlock,
     subs: &[(String, String)],
 ) {
-    let mut rename: HashMap<String, String> = HashMap::with_capacity(subs.len());
+    let mut rename: HashMap<String, String> = HashMap::with_capacity(subs.len() * 2);
     for (param, arg) in subs {
+        rename.insert(format!("${{{}}}", param), arg.clone());
+        rename.insert(format!("[{}]", param), format!("_{}", arg));
         rename.insert(param.clone(), arg.clone());
     }
 
-    // Rename guard names in reflex triggers
-    for reflex in &mut fragment.reflexes {
-        for gname in &mut reflex.guard_names {
-            if let Some(new_name) = rename.get(gname.as_str()) {
-                *gname = new_name.clone();
-            }
+    for sig in &mut fragment.signals {
+        apply_template_substitution(&mut sig.name, &rename);
+    }
+
+    for guard in &mut fragment.guards {
+        apply_template_substitution(&mut guard.name, &rename);
+        if let Some(ref mut tc) = guard.template_cycles {
+            apply_template_substitution(tc, &rename);
         }
-        // Rename assignments
+        rename_expr_signals(&mut guard.condition, &rename);
+    }
+
+    for reflex in &mut fragment.reflexes {
+        apply_template_substitution(&mut reflex.name, &rename);
+        for gname in &mut reflex.guard_names {
+            apply_template_substitution(gname, &rename);
+        }
         for assignment in &mut reflex.assignments {
-            rename_target(&mut assignment.target, &rename);
+            // Target may contain array index [i]
+            apply_template_substitution(&mut assignment.target, &rename);
             rename_expr_signals(&mut assignment.value, &rename);
         }
     }
 
-    // Rename guard conditions
-    for guard in &mut fragment.guards {
-        rename_expr_signals(&mut guard.condition, &rename);
-    }
-
-    // Rename property formulas
     for prop in &mut fragment.properties {
+        apply_template_substitution(&mut prop.name, &rename);
         rename_property_signals(&mut prop.formula, &rename);
     }
 
-    // Rename nested pattern call arguments
     for call in &mut fragment.pattern_calls {
+        apply_template_substitution(&mut call.pattern_name, &rename);
         for arg in &mut call.arguments {
             match arg {
                 crate::ast::pattern::PatternArg::SignalRef(name)
                 | crate::ast::pattern::PatternArg::PatternRef(name) => {
-                    if let Some(new_name) = rename.get(name.as_str()) {
-                        *name = new_name.clone();
-                    }
+                    apply_template_substitution(name, &rename);
                 }
                 _ => {}
             }

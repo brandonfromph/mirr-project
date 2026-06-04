@@ -35,7 +35,14 @@ fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
 }
 
 fn guard(name: &str, cond: Expr, cycles: u64) -> Guard {
-    Guard { name: name.to_string(), condition: cond, cycles, origin: None, span: None }
+    Guard {
+        name: name.to_string(),
+        condition: cond,
+        cycles,
+        template_cycles: None,
+        origin: None,
+        span: None,
+    }
 }
 
 fn reflex(name: &str, guard_names: &[&str], assignments: Vec<Assignment>) -> Reflex {

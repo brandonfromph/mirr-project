@@ -95,7 +95,7 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
                 crate::error_codes::ec(812)
             )));
         }
-        if stack.len() + state.depth > MAX_EVAL_DEPTH {
+        if stack.len() + state.depth >= MAX_EVAL_DEPTH {
             return Err(sexpr_err(format!(
                 "{} Evaluation depth exceeds MAX_EVAL_DEPTH",
                 crate::error_codes::ec(811)
@@ -287,10 +287,11 @@ pub fn eval(expr: &SExpr, state: &mut EvalState) -> Result<SExpr, MirrError> {
         // ── Apply continuations to value ───────────────────────────
         let mut val = value;
         loop {
-            if stack.is_empty() {
-                return Ok(val);
-            }
-            match stack.pop().unwrap() {
+            let cont = match stack.pop() {
+                Some(c) => c,
+                None => return Ok(val),
+            };
+            match cont {
                 Cont::IfCond { then_expr, else_expr } => {
                     let is_true = match &val {
                         SExpr::Bool(b) => *b,

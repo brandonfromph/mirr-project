@@ -10,6 +10,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::types::{SignalKind, SignalType, TypeAnnotations};
+use crate::ast::program::{Guard, Reflex, SignalDecl};
+use crate::ast::property::PropertyDecl;
 use crate::span::Span;
 
 /// The kind of a pattern parameter.
@@ -45,15 +47,17 @@ pub struct PatternParam {
     pub kind: PatternParamKind,
 }
 
-/// The body of a `reflect` block, stored as raw text lines.
+/// The pre-parsed body of a `reflect` block.
 ///
-/// Lines contain `${param}` interpolation markers that are substituted
-/// at compile time during pattern evaluation. The raw text is re-parsed
-/// by the existing parser after substitution.
+/// Instead of raw lines, this directly stores the AST fragments.
+/// Parameters are preserved as `${param}` identifiers in the AST.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReflectBlock {
-    /// Raw template lines with `${param}` interpolation markers.
-    pub raw_lines: Vec<String>,
+    pub signals: Vec<SignalDecl>,
+    pub guards: Vec<Guard>,
+    pub reflexes: Vec<Reflex>,
+    pub properties: Vec<PropertyDecl>,
+    pub pattern_calls: Vec<PatternCall>,
 }
 
 /// A top-level pattern definition: `def name(params) { reflect { ... } }`.

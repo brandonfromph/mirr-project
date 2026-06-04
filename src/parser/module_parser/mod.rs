@@ -8,6 +8,7 @@
 
 mod formula_parser;
 mod guard_reflex;
+pub mod macro_parser;
 
 use std::collections::HashMap;
 
@@ -43,22 +44,15 @@ const MAX_STRUCT_DEFS: usize = 64;
 ///
 /// Handles zero or more top-level `import` and `def` blocks before the `module` declaration.
 pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
-    // Stage 0: Text-level macro expansion (loop unrolling, let-bindings, match blocks)
-    let processed_source = crate::compiler::macro_proc::expand_macros(source);
-    let _ = std::fs::write(
-        "/Users/brandonc.blay/projects/mirr-private/DEBUG_EXPANDED.mirr",
-        &processed_source,
-    );
-
     // Normalization: Ensure single-line sources (common in tests) are expanded
     // so the line-based parser can process them. We split by ';' and '{'/'}',
     // taking care NOT to split inside quotes (paths), comments, or
     // pattern interpolations (${param}).
-    let mut expanded = String::with_capacity(processed_source.len() * 2);
+    let mut expanded = String::with_capacity(source.len() * 2);
     let mut in_quotes = false;
     let mut in_comment = false;
     let mut in_interpolation = false;
-    let mut chars = processed_source.chars().peekable();
+    let mut chars = source.chars().peekable();
 
     while let Some(ch) = chars.next() {
         if !in_comment && ch == '"' {
@@ -199,14 +193,17 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
     skip_empty_and_comments(&lines, &mut index);
     if index < lines.len() {
-        return Err(emit_at(
-            ErrorCode::ExpectedModuleFound,
-            format!(
-                "Unexpected content after module: '{}'. Only one module per file is supported.",
-                lines[index]
-            ),
-            Span::full_line(index as u32),
-        ));
+        let remaining = lines[index].trim();
+        if !remaining.is_empty() {
+            return Err(emit_at(
+                ErrorCode::ExpectedModuleFound,
+                format!(
+                    "Unexpected content after module: '{}'. Only one module per file is supported.",
+                    remaining
+                ),
+                Span::full_line(index as u32),
+            ));
+        }
     }
 
     Ok(MirrProgram { patterns, imports, module })
@@ -551,166 +548,6 @@ fn skip_top_level_block(lines: &[&str], index: &mut usize) -> Result<(), MirrErr
     ))
 }
 
-fn parse_inline_guard(stmt: &str) -> Result<crate::ast::program::Guard, MirrError> {
-    let trimmed = stmt.trim();
-    let after_guard = trimmed.strip_prefix("guard ").ok_or_else(|| {
-        emit_at(
-            ErrorCode::GuardMalformed,
-            "Malformed inline guard declaration.",
-            Span::full_line(0),
-        )
-    })?;
-
-    let open = after_guard.find('{').ok_or_else(|| {
-        emit_at(
-            ErrorCode::GuardMalformed,
-            "Malformed inline guard declaration: missing '{'.",
-            Span::full_line(0),
-        )
-    })?;
-    let close = after_guard.rfind('}').ok_or_else(|| {
-        emit_at(
-            ErrorCode::GuardExpectedClose,
-            "Malformed inline guard declaration: missing '}'.",
-            Span::full_line(0),
-        )
-    })?;
-
-    let name = after_guard[..open].trim();
-    if name.is_empty() {
-        return Err(emit_at(
-            ErrorCode::GuardNameEmpty,
-            "Guard name cannot be empty.",
-            Span::full_line(0),
-        ));
-    }
-
-    let body = after_guard[open + 1..close].trim();
-    let body = body.strip_suffix(';').unwrap_or(body).trim();
-
-    let when_prefix = "when ";
-    let for_keyword = " for ";
-    let cycles_suffix = " cycles";
-
-    if !body.starts_with(when_prefix) || !body.contains(for_keyword) {
-        return Err(emit_at(
-            ErrorCode::GuardExpectedWhen,
-            "Invalid inline guard body.",
-            Span::full_line(0),
-        ));
-    }
-
-    let after_when = &body[when_prefix.len()..];
-    let for_pos = after_when.find(for_keyword).ok_or_else(|| {
-        emit_at(
-            ErrorCode::GuardExpectedFor,
-            "Invalid inline guard body: missing 'for'.",
-            Span::full_line(0),
-        )
-    })?;
-
-    let condition = after_when[..for_pos].trim();
-    let after_for = after_when[for_pos + for_keyword.len()..].trim();
-    let cycles_text = after_for.strip_suffix(cycles_suffix).unwrap_or(after_for).trim();
-    let cycles: u64 = cycles_text.parse().map_err(|_| {
-        emit_at(
-            ErrorCode::GuardInvalidCycleCount,
-            format!("Invalid cycle count in guard '{}': {}", name, cycles_text),
-            Span::full_line(0),
-        )
-    })?;
-
-    let lines = [
-        format!("guard {name} {{"),
-        format!("when {condition}"),
-        format!("for {cycles} cycles"),
-        "}".to_string(),
-    ];
-    let line_refs: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
-    let mut idx = 0;
-    guard_reflex::parse_guard(&line_refs, &mut idx)
-}
-
-fn parse_inline_reflex(stmt: &str) -> Result<crate::ast::program::Reflex, MirrError> {
-    let trimmed = stmt.trim();
-    let after_reflex = trimmed.strip_prefix("reflex ").ok_or_else(|| {
-        emit_at(
-            ErrorCode::ReflexMalformed,
-            "Malformed inline reflex declaration.",
-            Span::full_line(0),
-        )
-    })?;
-
-    let open = after_reflex.find('{').ok_or_else(|| {
-        emit_at(
-            ErrorCode::ReflexMalformed,
-            "Malformed inline reflex declaration: missing '{'.",
-            Span::full_line(0),
-        )
-    })?;
-    let close = after_reflex.rfind('}').ok_or_else(|| {
-        emit_at(
-            ErrorCode::ReflexNotClosed,
-            "Malformed inline reflex declaration: missing '}'.",
-            Span::full_line(0),
-        )
-    })?;
-
-    let header = after_reflex[..open].trim();
-    let body = after_reflex[open + 1..close].trim();
-
-    let mut lines = vec![format!("reflex {header} {{")];
-
-    for top_stmt in split_top_level_statements(body) {
-        let top_stmt = top_stmt.trim();
-        if top_stmt.is_empty() {
-            continue;
-        }
-
-        if top_stmt.starts_with("on ") {
-            let on_open = top_stmt.find('{').ok_or_else(|| {
-                emit_at(
-                    ErrorCode::ReflexMissingOn,
-                    "Malformed on clause in inline reflex.",
-                    Span::full_line(0),
-                )
-            })?;
-            let on_close = top_stmt.rfind('}').ok_or_else(|| {
-                emit_at(
-                    ErrorCode::ReflexMissingOn,
-                    "Malformed on clause in inline reflex: missing '}'.",
-                    Span::full_line(0),
-                )
-            })?;
-
-            let on_header = top_stmt[..on_open].trim();
-            let on_body = top_stmt[on_open + 1..on_close].trim();
-
-            lines.push(format!("{on_header} {{"));
-            for assign in split_top_level_statements(on_body) {
-                let assign = assign.trim();
-                if assign.is_empty() {
-                    continue;
-                }
-                lines.push(format!("{assign};"));
-            }
-            lines.push("}".to_string());
-        } else {
-            return Err(emit_at(
-                ErrorCode::ReflexMissingOn,
-                "Inline reflex must contain an 'on' clause.",
-                Span::full_line(0),
-            ));
-        }
-    }
-
-    lines.push("}".to_string());
-
-    let line_refs: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
-    let mut idx = 0;
-    guard_reflex::parse_reflex(&line_refs, &mut idx)
-}
-
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {
     if *index >= lines.len() {
         return Err(emit_at(
@@ -753,15 +590,11 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
         ));
     }
 
-    let mut module = Module {
+    let mut unexpanded = crate::ast::macro_nodes::UnexpandedModule {
         name: name.to_string(),
-        signals: Vec::new(),
-        guards: Vec::new(),
-        reflexes: Vec::new(),
+        statements: Vec::new(),
         properties: Vec::new(),
         pattern_calls: Vec::new(),
-        pattern_origins: Vec::new(),
-        span: None,
     };
 
     *index += 1;
@@ -778,38 +611,43 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                 if stmt_trimmed.is_empty() {
                     continue;
                 }
-                if stmt_trimmed.starts_with("signal ") {
-                    let full_stmt = format!("{stmt_trimmed};");
-                    let signal = parse_signal(&full_stmt, module_start)?;
-                    module.signals.push(signal);
-                } else if stmt_trimmed.starts_with("guard ") {
-                    let guard = parse_inline_guard(stmt_trimmed)?;
-                    module.guards.push(guard);
-                } else if stmt_trimmed.starts_with("reflex ") {
-                    let reflex = parse_inline_reflex(stmt_trimmed)?;
-                    module.reflexes.push(reflex);
-                } else if is_pattern_call_line(stmt_trimmed) {
-                    let mut call = parse_pattern_call_single(stmt_trimmed)?;
-                    call.span = Some(Span::full_line(module_start as u32));
-                    module.pattern_calls.push(call);
-                } else {
-                    return Err(emit_at(
-                        ErrorCode::UnexpectedModuleLine,
-                        format!(
-                            "Unexpected statement inside module '{}': {stmt_trimmed}",
-                            module.name
-                        ),
-                        Span::full_line(module_start as u32),
-                    ));
+                let dummy_lines_vec =
+                    if !stmt_trimmed.ends_with(';') && !stmt_trimmed.ends_with('}') {
+                        vec![format!("{stmt_trimmed};")]
+                    } else {
+                        vec![stmt_trimmed.to_string()]
+                    };
+                let dummy_lines_refs: Vec<&str> =
+                    dummy_lines_vec.iter().map(|s| s.as_str()).collect();
+                let mut local_index = 0;
+                let parsed_stmts =
+                    crate::parser::module_parser::macro_parser::parse_module_macro_stmts(
+                        &dummy_lines_refs,
+                        &mut local_index,
+                    )?;
+                unexpanded.statements.extend(parsed_stmts);
+
+                if local_index < dummy_lines_refs.len() {
+                    let remaining = dummy_lines_refs[local_index].trim();
+                    if is_pattern_call_line(remaining) {
+                        let mut call = parse_pattern_call_single(remaining)?;
+                        call.span = Some(Span::full_line(module_start as u32));
+                        unexpanded.pattern_calls.push(call);
+                    }
                 }
             }
         }
         // If the inline body ends with '}', the module is complete.
         if inline_body.ends_with('}') {
-            module.span = Some(Span::multi_line(module_start as u32, *index as u32));
-            return Ok(module);
+            let mut expanded = crate::expand::ast_expand::expand_module(unexpanded)?;
+            expanded.span = Some(Span::multi_line(module_start as u32, *index as u32));
+            return Ok(expanded);
         }
     }
+
+    let parsed_stmts =
+        crate::parser::module_parser::macro_parser::parse_module_macro_stmts(lines, index)?;
+    unexpanded.statements.extend(parsed_stmts);
 
     while *index < lines.len() {
         skip_empty_and_comments(lines, index);
@@ -830,100 +668,14 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
         match first_token {
             "}" | "endmodule" | "end" => {
                 // End of module.
-                module.span = Some(Span::multi_line(module_start as u32, *index as u32));
+                let mut expanded = crate::expand::ast_expand::expand_module(unexpanded)?;
+                expanded.span = Some(Span::multi_line(module_start as u32, *index as u32));
                 *index += 1;
-                return Ok(module);
-            }
-            "signal" | "in" | "out" | "internal" => {
-                let signal = parse_signal(line, *index)?;
-                module.signals.push(signal);
-                *index += 1;
-            }
-            "signals" => {
-                *index += 1; // consume "signals"
-                             // Expect opening brace
-                skip_empty_and_comments(lines, index);
-                if *index < lines.len() && lines[*index].trim() == "{" {
-                    *index += 1;
-                }
-                // Now parse the block.
-                // Lines inside a `signals {}` block may omit the trailing ';'
-                // (ergonomic syntax). Normalise here so parse_signal always
-                // receives a semicolon-terminated line, preserving strict grammar.
-                while *index < lines.len() {
-                    skip_empty_and_comments(lines, index);
-                    if *index < lines.len() && lines[*index].trim() == "}" {
-                        *index += 1;
-                        break;
-                    }
-                    let raw = lines[*index];
-                    let normalised: String;
-                    let line_to_parse = if raw.trim().ends_with(';') {
-                        raw
-                    } else {
-                        normalised = format!("{};", raw.trim_end());
-                        &normalised
-                    };
-                    let signal = parse_signal(line_to_parse, *index)?;
-                    module.signals.push(signal);
-                    *index += 1;
-                }
-            }
-            "calls" => {
-                *index += 1; // consume "calls"
-                             // Expect opening brace (may be on same line or next).
-                skip_empty_and_comments(lines, index);
-                if *index < lines.len() && lines[*index].trim() == "{" {
-                    *index += 1;
-                }
-                // Each non-empty line inside the block is a pattern call.
-                // Trailing semicolons are optional (ergonomic syntax); normalise
-                // by ensuring each line ends with ';' so the existing call parser
-                // invariants (requires ");") are satisfied.
-                while *index < lines.len() {
-                    skip_empty_and_comments(lines, index);
-                    if *index < lines.len() && lines[*index].trim() == "}" {
-                        *index += 1;
-                        break;
-                    }
-                    let raw = lines[*index].trim();
-                    if !raw.is_empty() {
-                        let normalised_call: String;
-                        let call_line = if raw.ends_with(';') {
-                            raw
-                        } else {
-                            normalised_call = format!("{};", raw);
-                            &normalised_call
-                        };
-                        if is_pattern_call_line(call_line) {
-                            let mut call = parse_pattern_call_single(call_line)?;
-                            call.span = Some(Span::full_line(*index as u32));
-                            module.pattern_calls.push(call);
-                        } else {
-                            return Err(emit_at(
-                                ErrorCode::UnexpectedModuleLine,
-                                format!(
-                                    "Unexpected line inside 'calls' block in module '{}': {}",
-                                    module.name, raw
-                                ),
-                                Span::full_line(*index as u32),
-                            ));
-                        }
-                    }
-                    *index += 1;
-                }
-            }
-            "guard" => {
-                let guard = guard_reflex::parse_guard(lines, index)?;
-                module.guards.push(guard);
-            }
-            "reflex" => {
-                let new_reflexes = guard_reflex::parse_reflexes(lines, index)?;
-                module.reflexes.extend(new_reflexes);
+                return Ok(expanded);
             }
             "property" => {
                 let prop = formula_parser::parse_property(lines, index)?;
-                module.properties.push(prop);
+                unexpanded.properties.push(prop);
             }
             _ => {
                 // Heuristic: if it looks like the start of a pattern call (ident + '(')
@@ -932,21 +684,12 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                     let start_line = *index as u32;
                     let mut call = parse_pattern_call(lines, index)?;
                     call.span = Some(Span::full_line(start_line));
-                    module.pattern_calls.push(call);
+                    unexpanded.pattern_calls.push(call);
                     // *index is already incremented by parse_pattern_call
-                } else if trimmed.contains(':')
-                    && !trimmed.starts_with('{')
-                    && !trimmed.contains(',')
-                    && !trimmed.contains('=')
-                    && !trimmed.contains("::")
-                {
-                    let signal = parse_signal(line, *index)?;
-                    module.signals.push(signal);
-                    *index += 1;
                 } else {
                     return Err(emit_at(
                         ErrorCode::UnexpectedModuleLine,
-                        format!("Unexpected line inside module '{}': {}", module.name, line),
+                        format!("Unexpected line inside module '{}': {}", unexpanded.name, line),
                         Span::full_line(*index as u32),
                     ));
                 }
@@ -956,12 +699,12 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 
     Err(emit_at(
         ErrorCode::ModuleNotClosed,
-        format!("Module '{}' was not closed with '}}'.", module.name),
+        format!("Module '{}' was not closed with '}}'.", unexpanded.name),
         Span::full_line(index.saturating_sub(1) as u32),
     ))
 }
 
-fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> {
+pub fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> {
     let span = Span::full_line(line_index as u32);
     let trimmed_line = line.trim();
 
@@ -1012,7 +755,7 @@ fn parse_signal(line: &str, line_index: usize) -> Result<SignalDecl, MirrError> 
     let rest = rest.trim();
 
     // Delegate to the shared MEGA-1 tokenizer which handles:
-    //   <kind> [linear] [stateful|pure] <base_type> [where <refinement>] [@clock] [#phantom]
+    //   <kind> [linear] [stateful|pure] <base_type> [where <refinement>] @clock [#phantom]
     // Backward compatible: plain `<kind> <type>` produces default annotations.
     let parsed = tokenize_signal_decl(rest).map_err(|e| e.with_span(Some(span)))?;
 

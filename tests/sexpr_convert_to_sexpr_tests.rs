@@ -115,6 +115,7 @@ fn guard_name_appears() {
         name: "g_watchdog".to_string(),
         condition: Expr::Signal("sensor".to_string()),
         cycles: 3,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -131,6 +132,7 @@ fn integer_literal_appears() {
         name: "g".to_string(),
         condition: Expr::Literal(LiteralValue::Bool(true)),
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -176,6 +178,7 @@ fn binary_gt_in_guard() {
             right: Box::new(Expr::Literal(LiteralValue::Integer(200))),
         },
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });

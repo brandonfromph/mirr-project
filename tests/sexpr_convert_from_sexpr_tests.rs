@@ -148,6 +148,7 @@ fn roundtrip_guard_count() {
         name: "g1".to_string(),
         condition: Expr::Literal(LiteralValue::Bool(true)),
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });
@@ -155,6 +156,7 @@ fn roundtrip_guard_count() {
         name: "g2".to_string(),
         condition: Expr::Literal(LiteralValue::Bool(false)),
         cycles: 2,
+        template_cycles: None,
         origin: None,
         span: None,
     });

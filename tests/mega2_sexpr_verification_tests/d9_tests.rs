@@ -271,6 +271,7 @@ fn test_d9_convert_prev() {
                 right: Box::new(Expr::Literal(LiteralValue::Integer(0))),
             },
             cycles: 1,
+            template_cycles: None,
             origin: None,
             span: None,
         }],

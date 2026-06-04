@@ -91,6 +91,7 @@ fn prev_guard_result() -> PipelineResult {
                 right: Box::new(Expr::Literal(LiteralValue::Integer(10))),
             },
             cycles: 5,
+            template_cycles: None,
             origin: None,
             span: None,
         }],

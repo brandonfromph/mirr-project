@@ -1,3 +1,4 @@
+use nasa_rust_project::parser::parse_mirr;
 #[test]
 fn test_empty_guards_reflexes_blocks() {
     let input = r#"
@@ -9,8 +10,7 @@ fn test_empty_guards_reflexes_blocks() {
         reflex r {}
     }
     "#;
-    let expanded = nasa_rust_project::compiler::macro_proc::expand_macros(input);
-    let result = nasa_rust_project::parser::parse_mirr(&expanded);
+    let result = parse_mirr(input);
     // Verify that the parser either succeeds or fails cleanly without panic/segfault.
     assert!(
         result.is_ok() || result.is_err(),

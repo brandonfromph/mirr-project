@@ -658,6 +658,19 @@ fn is_valid_identifier(s: &str) -> bool {
     if s.is_empty() {
         return false;
     }
+    // Accept ${param} as a valid identifier.
+    if s.starts_with("${") && s.ends_with('}') {
+        let inner = &s[2..s.len() - 1];
+        if inner.is_empty() {
+            return false;
+        }
+        let mut chars = inner.chars();
+        match chars.next() {
+            Some(c) if c.is_ascii_alphabetic() || c == '_' => {}
+            _ => return false,
+        }
+        return chars.all(|c| c.is_ascii_alphanumeric() || c == '_');
+    }
     let mut chars = s.chars();
     match chars.next() {
         Some(c) if c.is_ascii_alphabetic() || c == '_' => {}

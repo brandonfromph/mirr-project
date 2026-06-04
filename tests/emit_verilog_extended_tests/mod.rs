@@ -102,7 +102,14 @@ fn signal_decl(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
 }
 
 fn make_guard(name: &str, condition: Expr, cycles: u64) -> Guard {
-    Guard { name: name.to_string(), condition, cycles, origin: None, span: None }
+    Guard {
+        name: name.to_string(),
+        condition,
+        cycles,
+        template_cycles: None,
+        origin: None,
+        span: None,
+    }
 }
 
 fn make_reflex(name: &str, guard_names: Vec<&str>, assignments: Vec<Assignment>) -> Reflex {

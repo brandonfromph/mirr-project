@@ -56,6 +56,7 @@ fn module_with_assignment(target_name: &str, target_ty: SignalType, value: Expr)
         name: "g".to_string(),
         condition: Expr::Signal("x".to_string()),
         cycles: 1,
+        template_cycles: None,
         origin: None,
         span: None,
     });

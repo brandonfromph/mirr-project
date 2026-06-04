@@ -12,7 +12,6 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::compiler::macro_proc::expand_macros;
 use nasa_rust_project::ecs::components::{EntityKind, KindComponent, NameComponent};
 use nasa_rust_project::ecs::systems::parallel_width_inference_system;
 use nasa_rust_project::ecs::Registry;
@@ -212,14 +211,15 @@ fn bug4_cond_to_guard_dedup_fires_for_repeated_simple_identifier_condition() {
             }
         }
     "#;
-    let expanded = expand_macros(src);
+    let program = parse_mirr(src).unwrap();
 
     // Count how many `auto_g_` guards are declared for the condition `ready`.
-    let auto_guard_decl_count = expanded.matches("guard auto_g_").count();
+    let auto_guard_decl_count =
+        program.module.guards.iter().filter(|g| g.name.starts_with("auto_g_")).count();
     assert_eq!(
         auto_guard_decl_count, 1,
         "BUG-4: Two identical `if ready` conditions should deduplicate to a single auto guard, \
-         but found {auto_guard_decl_count} guard declarations in:\n{expanded}"
+         but found {auto_guard_decl_count} guard declarations"
     );
 }
 
@@ -254,16 +254,16 @@ fn bug5_collect_reflect_body_handles_template_substitution_braces() {
     let program = result.expect("already checked");
     assert_eq!(program.patterns.len(), 1, "BUG-5: Should have parsed 1 pattern def");
 
-    let body = &program.patterns[0].body.raw_lines;
+    let body_guards = &program.patterns[0].body.guards;
     // The reflect body should contain the guard line, not be empty from premature termination.
     assert!(
-        !body.is_empty(),
+        !body_guards.is_empty(),
         "BUG-5: Reflect body should not be empty — `${{n}}` braces were mistakenly counted"
     );
     assert!(
-        body.iter().any(|l| l.contains("g_")),
+        body_guards.iter().any(|g| g.name.contains("g_")),
         "BUG-5: Reflect body should contain the guard line, but got: {:?}",
-        body
+        body_guards
     );
 }
 
@@ -287,10 +287,12 @@ fn bug5_multiple_template_substitutions_on_same_line_do_not_corrupt_depth() {
         result.unwrap_err()
     );
     let program = result.expect("already checked");
-    let body = &program.patterns[0].body.raw_lines;
+    let body_guards = &program.patterns[0].body.guards;
+    let body_reflexes = &program.patterns[0].body.reflexes;
     assert!(
-        body.len() >= 2,
-        "BUG-5-B: Reflect body should have at least 2 lines (guard + reflex), got: {:?}",
-        body
+        body_guards.len() + body_reflexes.len() >= 2,
+        "BUG-5-B: Reflect body should have at least 2 lines (guard + reflex), got: {} guards, {} reflexes",
+        body_guards.len(),
+        body_reflexes.len()
     );
 }

@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 pub mod expr;
+pub mod macro_nodes;
 pub mod pattern;
 pub mod program;
 pub mod property;
