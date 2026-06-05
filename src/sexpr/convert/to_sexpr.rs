@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 use crate::ast::expr::Expr;
+use crate::ast::macro_nodes::{ModuleMacroStmt, ReflexMacroStmt};
 use crate::ast::pattern::{
     PatternArg, PatternCall, PatternDef, PatternOrigin, PatternParam, PatternParamKind,
 };
@@ -40,14 +41,49 @@ fn convert_pattern_def(p: &PatternDef) -> SExpr {
         param_items.push(convert_pattern_param(param));
     }
     items.push(SExpr::list(param_items));
+
     // Reflect body
+    let mut signals = Vec::new();
+    let mut guards = Vec::new();
+    let mut reflexes = Vec::new();
+    let mut properties = Vec::new();
+    let mut pattern_calls = Vec::new();
+
+    for stmt in &p.body.statements {
+        match stmt {
+            ModuleMacroStmt::Signal(s) => signals.push(s.clone()),
+            ModuleMacroStmt::Guard(g) => guards.push(g.clone()),
+            ModuleMacroStmt::Reflex(r) => {
+                // Convert UnexpandedReflex to Reflex (flat-ish for legacy S-Expr)
+                reflexes.push(Reflex {
+                    name: r.name.clone(),
+                    guard_names: r.guard_names.clone(),
+                    assignments: r
+                        .statements
+                        .iter()
+                        .filter_map(|s| match s {
+                            ReflexMacroStmt::Assignment(a) => Some(a.clone()),
+                            _ => None,
+                        })
+                        .collect(),
+                    origin: None,
+                    span: r.span,
+                });
+            }
+            ModuleMacroStmt::Property(p) => properties.push(p.clone()),
+            ModuleMacroStmt::PatternCall(c) => pattern_calls.push(c.clone()),
+            _ => {} // Skip complex macros in legacy S-Expr output
+        }
+    }
+
     let mut reflect_items = vec![SExpr::sym("reflect")];
-    reflect_items.push(convert_signals(&p.body.signals));
-    reflect_items.push(convert_guards(&p.body.guards));
-    reflect_items.push(convert_reflexes(&p.body.reflexes));
-    reflect_items.push(convert_properties(&p.body.properties));
-    reflect_items.push(convert_pattern_calls(&p.body.pattern_calls));
+    reflect_items.push(convert_signals(&signals));
+    reflect_items.push(convert_guards(&guards));
+    reflect_items.push(convert_reflexes(&reflexes));
+    reflect_items.push(convert_properties(&properties));
+    reflect_items.push(convert_pattern_calls(&pattern_calls));
     items.push(SExpr::list(reflect_items));
+
     SExpr::list(items)
 }
 

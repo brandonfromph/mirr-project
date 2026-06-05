@@ -300,13 +300,7 @@ fn roundtrip_pattern_param_signal_with_annotations() {
                 annotations: ann,
             },
         }],
-        body: ReflectBlock {
-            signals: vec![],
-            guards: vec![],
-            reflexes: vec![],
-            properties: vec![],
-            pattern_calls: vec![],
-        },
+        body: ReflectBlock { statements: vec![] },
         span: None,
     });
     let sexpr = ast_to_sexpr(&program);
@@ -334,13 +328,7 @@ fn roundtrip_pattern_param_constant_with_annotations() {
             name: "n".to_string(),
             kind: PatternParamKind::Constant { ty: SignalType::Unsigned(16), annotations: ann },
         }],
-        body: ReflectBlock {
-            signals: vec![],
-            guards: vec![],
-            reflexes: vec![],
-            properties: vec![],
-            pattern_calls: vec![],
-        },
+        body: ReflectBlock { statements: vec![] },
         span: None,
     });
     let sexpr = ast_to_sexpr(&program);
@@ -387,19 +375,13 @@ fn roundtrip_pattern_no_params() {
     program.patterns.push(PatternDef {
         name: "noop".to_string(),
         params: Vec::new(),
-        body: ReflectBlock {
-            signals: vec![],
-            guards: vec![],
-            reflexes: vec![],
-            properties: vec![],
-            pattern_calls: vec![],
-        },
+        body: ReflectBlock { statements: vec![] },
         span: None,
     });
     let sexpr = ast_to_sexpr(&program);
     let restored = sexpr_to_ast(&sexpr).expect("pattern with no params must round-trip");
     assert!(restored.patterns[0].params.is_empty(), "params must remain empty");
-    assert!(restored.patterns[0].body.signals.is_empty(), "body must remain empty");
+    assert!(restored.patterns[0].body.statements.is_empty(), "body must remain empty");
 }
 
 #[test]
@@ -412,15 +394,11 @@ fn roundtrip_multiple_patterns() {
             name: format!("pat_{i}"),
             params: vec![PatternParam { name: "p".to_string(), kind: PatternParamKind::Pattern }],
             body: ReflectBlock {
-                signals: vec![make_signal(
+                statements: vec![ModuleMacroStmt::Signal(make_signal(
                     &format!("sig_{i}"),
                     SignalKind::Input,
                     SignalType::Bool,
-                )],
-                guards: vec![],
-                reflexes: vec![],
-                properties: vec![],
-                pattern_calls: vec![],
+                ))],
             },
             span: None,
         });

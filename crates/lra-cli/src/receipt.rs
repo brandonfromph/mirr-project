@@ -38,7 +38,7 @@ pub struct BuildReceipt {
     /// Ed25519 signature (hex-encoded, added by signing step).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
-    /// Signer public key (ed25519:<hex>).
+    /// Signer public key (`ed25519:<hex>`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signer_pubkey: Option<String>,
 }

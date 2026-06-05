@@ -74,8 +74,12 @@ fn parse_def_reflect_body_all_decl_types() {
         monitor = monitor_sensor_source()
     );
     let prog = parse_ok(&src);
-    let body_guards = &prog.patterns[0].body.guards;
-    assert!(!body_guards.is_empty(), "reflect body should have guards");
+    let body = &prog.patterns[0].body;
+    let has_guards = body
+        .statements
+        .iter()
+        .any(|s| matches!(s, nasa_rust_project::ast::macro_nodes::ModuleMacroStmt::Guard(_)));
+    assert!(has_guards, "reflect body should have guards");
 }
 
 #[test]

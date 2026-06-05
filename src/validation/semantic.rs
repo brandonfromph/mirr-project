@@ -817,11 +817,7 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
             });
         }
 
-        let item_count = pat.body.signals.len()
-            + pat.body.guards.len()
-            + pat.body.reflexes.len()
-            + pat.body.properties.len()
-            + pat.body.pattern_calls.len();
+        let item_count = count_statements(&pat.body.statements);
 
         if item_count == 0 {
             errors.push(MirrError::PatternError {
@@ -851,4 +847,22 @@ pub fn validate_pattern_defs(patterns: &[PatternDef]) -> Result<(), PipelineErro
     } else {
         Err(errors)
     }
+}
+
+fn count_statements(stmts: &[crate::ast::macro_nodes::ModuleMacroStmt]) -> usize {
+    use crate::ast::macro_nodes::ModuleMacroStmt;
+    let mut total = 0;
+    for s in stmts {
+        total += 1;
+        match s {
+            ModuleMacroStmt::ForLoop { body, .. } => {
+                total += count_statements(body);
+            }
+            ModuleMacroStmt::Reflex(r) => {
+                total += r.statements.len(); // Simple count for reflex internal statements
+            }
+            _ => {}
+        }
+    }
+    total
 }

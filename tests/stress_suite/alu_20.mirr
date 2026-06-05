@@ -1,0 +1,6 @@
+module alu_20 {
+    signal a: in u32;
+    signal b: in u32;
+    signal out: out u32;
+    reflex r { on always { out = (a + b) << 5; } }
+}

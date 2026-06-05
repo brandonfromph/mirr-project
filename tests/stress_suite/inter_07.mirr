@@ -1,0 +1,13 @@
+def pat_07(s: signal out bool) {
+    reflect {
+        reflex r {
+            on always {
+                ${s} = true;
+            }
+        }
+    }
+}
+module inter_mod_07 {
+    signal s_out: out bool;
+    pat_07(s_out);
+}

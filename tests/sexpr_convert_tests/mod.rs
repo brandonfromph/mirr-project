@@ -5,6 +5,7 @@
 //! NASA Power-of-10 compliant: bounded iteration, no recursion, descriptive asserts.
 
 use nasa_rust_project::ast::expr::Expr;
+use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
 use nasa_rust_project::ast::pattern::{
     PatternArg, PatternCall, PatternDef, PatternOrigin, PatternParam, PatternParamKind,
     ReflectBlock,

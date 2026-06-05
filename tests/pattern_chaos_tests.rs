@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
 use nasa_rust_project::ast::pattern::{PatternDef, ReflectBlock};
 use nasa_rust_project::ast::program::{MirrProgram, Module};
 use nasa_rust_project::ecs::Registry;
@@ -12,15 +13,13 @@ fn test_pattern_chaos_recursion_depth_limit() {
         name: "A".to_string(),
         params: vec![],
         body: ReflectBlock {
-            signals: vec![],
-            guards: vec![],
-            reflexes: vec![],
-            properties: vec![],
-            pattern_calls: vec![nasa_rust_project::ast::pattern::PatternCall {
-                pattern_name: "A".to_string(),
-                arguments: vec![],
-                span: None,
-            }],
+            statements: vec![ModuleMacroStmt::PatternCall(
+                nasa_rust_project::ast::pattern::PatternCall {
+                    pattern_name: "A".to_string(),
+                    arguments: vec![],
+                    span: None,
+                },
+            )],
         },
         span: None,
     }];
@@ -77,21 +76,17 @@ fn test_pattern_chaos_exponential_expansion_stress() {
             name: pat_names[i].to_string(),
             params: vec![],
             body: ReflectBlock {
-                signals: vec![],
-                guards: vec![],
-                reflexes: vec![],
-                properties: vec![],
-                pattern_calls: vec![
-                    nasa_rust_project::ast::pattern::PatternCall {
+                statements: vec![
+                    ModuleMacroStmt::PatternCall(nasa_rust_project::ast::pattern::PatternCall {
                         pattern_name: pat_names[i + 1].to_string(),
                         arguments: vec![],
                         span: None,
-                    },
-                    nasa_rust_project::ast::pattern::PatternCall {
+                    }),
+                    ModuleMacroStmt::PatternCall(nasa_rust_project::ast::pattern::PatternCall {
                         pattern_name: pat_names[i + 1].to_string(),
                         arguments: vec![],
                         span: None,
-                    },
+                    }),
                 ],
             },
             span: None,
@@ -101,19 +96,17 @@ fn test_pattern_chaos_exponential_expansion_stress() {
         name: "D".to_string(),
         params: vec![],
         body: ReflectBlock {
-            signals: vec![nasa_rust_project::ast::program::SignalDecl {
-                name: "s".to_string(),
-                kind: nasa_rust_project::ast::types::SignalKind::Internal,
-                ty: nasa_rust_project::ast::types::ExtendedType::from_core(
-                    nasa_rust_project::ast::types::SignalType::Bool,
-                ),
-                origin: None,
-                span: None,
-            }],
-            guards: vec![],
-            reflexes: vec![],
-            properties: vec![],
-            pattern_calls: vec![],
+            statements: vec![ModuleMacroStmt::Signal(
+                nasa_rust_project::ast::program::SignalDecl {
+                    name: "s".to_string(),
+                    kind: nasa_rust_project::ast::types::SignalKind::Internal,
+                    ty: nasa_rust_project::ast::types::ExtendedType::from_core(
+                        nasa_rust_project::ast::types::SignalType::Bool,
+                    ),
+                    origin: None,
+                    span: None,
+                },
+            )],
         },
         span: None,
     });

@@ -91,7 +91,7 @@ mod e2e_tests {
         // Verify that mirr-brain is invoked (would need to mock or check side effects)
         // For now, just ensure it doesn't crash during expansion.
         let source =
-            "def p(a) { reflect { reflex r1 { on { ${a} = true; } } } } module top; p(s1); signal s1: bool; endmodule";
+            "def p(a) { reflect { reflex r1 { on always { ${a} = true; } } } } module top; p(s1); signal s1: bool; endmodule";
         let config = PipelineConfig::default();
         let result = run_pipeline(source, &config);
         if let Err(ref e) = result {

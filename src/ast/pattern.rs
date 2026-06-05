@@ -9,9 +9,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::macro_nodes::ModuleMacroStmt;
 use super::types::{SignalKind, SignalType, TypeAnnotations};
-use crate::ast::program::{Guard, Reflex, SignalDecl};
-use crate::ast::property::PropertyDecl;
 use crate::span::Span;
 
 /// The kind of a pattern parameter.
@@ -53,11 +52,7 @@ pub struct PatternParam {
 /// Parameters are preserved as `${param}` identifiers in the AST.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReflectBlock {
-    pub signals: Vec<SignalDecl>,
-    pub guards: Vec<Guard>,
-    pub reflexes: Vec<Reflex>,
-    pub properties: Vec<PropertyDecl>,
-    pub pattern_calls: Vec<PatternCall>,
+    pub statements: Vec<ModuleMacroStmt>,
 }
 
 /// A top-level pattern definition: `def name(params) { reflect { ... } }`.

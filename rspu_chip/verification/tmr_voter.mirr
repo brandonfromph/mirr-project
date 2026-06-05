@@ -26,13 +26,16 @@ def tmr_voter(
                 if m01 {
                     ${voted_out} = ${core_in_0};
                     ${anomaly}   = !m12; // Anomaly if 2 differs from 0/1
-                } else if m12 {
+                }
+                if !m01 && m12 {
                     ${voted_out} = ${core_in_1};
                     ${anomaly}   = true;      // Anomaly because 0 differs
-                } else if m02 {
+                }
+                if !m01 && !m12 && m02 {
                     ${voted_out} = ${core_in_0};
                     ${anomaly}   = true;      // Anomaly because 1 differs
-                } else {
+                }
+                if !m01 && !m12 && !m02 {
                     // Total Divergence
                     ${voted_out} = 0;
                     ${anomaly}   = true;

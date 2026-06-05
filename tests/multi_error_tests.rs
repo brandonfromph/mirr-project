@@ -5,7 +5,7 @@
 //! instead of stopping at the first.
 
 use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ast::{PatternDef, ReflectBlock, SignalDecl};
+use nasa_rust_project::ast::SignalDecl;
 use nasa_rust_project::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
 use nasa_rust_project::parser::parse_mirr;
 use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
@@ -323,6 +323,7 @@ fn pipeline_errors_from_single() {
 
 #[test]
 fn pattern_errors_accumulate() {
+    use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
     use nasa_rust_project::ast::pattern::{PatternDef, ReflectBlock};
     use nasa_rust_project::validation::validate_pattern_defs;
 
@@ -331,17 +332,13 @@ fn pattern_errors_accumulate() {
             name: "dup".to_string(),
             params: vec![],
             body: ReflectBlock {
-                signals: vec![SignalDecl {
+                statements: vec![ModuleMacroStmt::Signal(SignalDecl {
                     name: "dummy".to_string(),
                     kind: SignalKind::Internal,
                     ty: ExtendedType::new(SignalType::Bool, Default::default()),
                     origin: None,
                     span: None,
-                }],
-                guards: vec![],
-                reflexes: vec![],
-                properties: vec![],
-                pattern_calls: vec![],
+                })],
             },
             span: None,
         },
@@ -349,17 +346,13 @@ fn pattern_errors_accumulate() {
             name: "dup".to_string(),
             params: vec![],
             body: ReflectBlock {
-                signals: vec![SignalDecl {
+                statements: vec![ModuleMacroStmt::Signal(SignalDecl {
                     name: "dummy".to_string(),
                     kind: SignalKind::Internal,
                     ty: ExtendedType::new(SignalType::Bool, Default::default()),
                     origin: None,
                     span: None,
-                }],
-                guards: vec![],
-                reflexes: vec![],
-                properties: vec![],
-                pattern_calls: vec![],
+                })],
             },
             span: None,
         },

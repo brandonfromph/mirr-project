@@ -23,7 +23,9 @@ fn empty_pattern_list_validates() {
 fn parse_simple_pattern() {
     let src = r#"def pat(s: signal in bool) {
     reflect {
-        s = true;
+        reflex r {
+            on always { s = true; }
+        }
     }
 }
 module m { signal x: in bool; }"#;
@@ -31,7 +33,7 @@ module m { signal x: in bool; }"#;
 }
 #[test]
 fn pattern_name_preserved() {
-    let src = r#"def my_pat(s: signal in bool) { reflect { s = true; } }
+    let src = r#"def my_pat(s: signal in bool) { reflect { reflex r { on always { s = true; } } } }
 module m { signal x: in bool; }"#;
     if let Ok(prog) = parse_mirr(src) {
         assert!(!prog.patterns.is_empty());

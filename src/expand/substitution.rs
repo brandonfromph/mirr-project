@@ -2,6 +2,7 @@
 
 #![forbid(unsafe_code)]
 
+use crate::ast::macro_nodes::ModuleMacroStmt;
 use crate::ast::pattern::{PatternArg, PatternCall, PatternDef, ReflectBlock};
 use crate::ast::types::SignalKind;
 use crate::error::MirrError;
@@ -98,21 +99,36 @@ pub(super) fn validate_fragment_signals(
     fragment: &ReflectBlock,
     pattern_name: &str,
 ) -> Result<(), MirrError> {
-    for sig in &fragment.signals {
-        if sig.kind != SignalKind::Internal {
-            return Err(pattern_err(format!(
-                "Pattern '{}' reflect block declares {} signal '{}'. \
-                 Only internal signals may be declared inside reflect. \
-                 Use signal parameters for inputs and outputs.",
-                pattern_name,
-                match sig.kind {
-                    SignalKind::Input => "input",
-                    SignalKind::Output => "output",
-                    SignalKind::Internal => "internal",
-                },
-                sig.name,
-            )));
+    for stmt in &fragment.statements {
+        validate_stmt_signals(stmt, pattern_name)?;
+    }
+    Ok(())
+}
+
+fn validate_stmt_signals(stmt: &ModuleMacroStmt, pattern_name: &str) -> Result<(), MirrError> {
+    match stmt {
+        ModuleMacroStmt::Signal(sig) => {
+            if sig.kind != SignalKind::Internal {
+                return Err(pattern_err(format!(
+                    "Pattern '{}' reflect block declares {} signal '{}'. \
+                     Only internal signals may be declared inside reflect. \
+                     Use signal parameters for inputs and outputs.",
+                    pattern_name,
+                    match sig.kind {
+                        SignalKind::Input => "input",
+                        SignalKind::Output => "output",
+                        SignalKind::Internal => "internal",
+                    },
+                    sig.name,
+                )));
+            }
         }
+        ModuleMacroStmt::ForLoop { body, .. } => {
+            for s in body {
+                validate_stmt_signals(s, pattern_name)?;
+            }
+        }
+        _ => {}
     }
     Ok(())
 }

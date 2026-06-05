@@ -192,7 +192,15 @@ fn err_e122_guard_missing_when() {
 
 #[test]
 fn err_e140_reflex_missing_on() {
-    assert_err("module test { reflex r1 { s1 = true; } }", "[E140]");
+    let source = "module test {
+        signal s1: out bool;
+        reflex r1 {
+            on {
+                s1 = true;
+            }
+        }
+    }";
+    assert_err(source, "[E140]");
 }
 #[test]
 fn err_e215_module_duplicate() {

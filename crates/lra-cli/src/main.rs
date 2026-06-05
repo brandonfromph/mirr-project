@@ -103,7 +103,7 @@ enum Command {
     },
     /// Check headless status of a deployed LRA paper
     Health {
-        /// URL of the deployed paper (e.g., https://example.github.io/paper/)
+        /// URL of the deployed paper (e.g., <https://example.github.io/paper/>)
         url: String,
     },
     /// Compile MIRR source to target format

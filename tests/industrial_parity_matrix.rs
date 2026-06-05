@@ -142,7 +142,7 @@ fn test_industrial_mux_matrix() {
             for i in 0..entries {
                 logic.push_str(&format!("                {} => out = in_{};\n", i, i));
             }
-            logic.push_str("                default => out = 0;\n            }\n");
+            logic.push_str("                _ => out = 0;\n            }\n");
 
             let source = format!(
                 r#"
@@ -150,11 +150,12 @@ fn test_industrial_mux_matrix() {
                     signals {{
                         sel: in u8;
                         out: out u{width};
+                        default: internal bool;
 {signals}
                     }}
                     
                     guard g {{ when true for 1 cycles; }}
-                    reflex r {{
+                    reflex r_split_ {{
                         on g {{
 {logic}
                         }}

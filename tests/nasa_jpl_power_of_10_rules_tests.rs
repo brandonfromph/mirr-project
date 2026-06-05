@@ -103,19 +103,6 @@ fn test_nasa_rule_5_assertion_density_and_depth_limits() {
 #[test]
 fn test_nasa_rule_6_scope_isolation_and_smallest_variable_bounds() {
     let source = r#"
-        module sub_system {
-            signals {
-                in_val: in u8;
-                out_val: out u8;
-            }
-            guard local_g { when in_val > 0 for 1 cycles; }
-            reflex local_r {
-                on local_g {
-                    out_val = in_val;
-                }
-            }
-        }
-
         module top {
             signals {
                 sys_in: in u8;
@@ -125,6 +112,19 @@ fn test_nasa_rule_6_scope_isolation_and_smallest_variable_bounds() {
             reflex illegal_leak {
                 on local_g {
                     sys_out = sys_in;
+                }
+            }
+        }
+
+        module sub_system {
+            signals {
+                in_val: in u8;
+                out_val: out u8;
+            }
+            guard local_g { when in_val > 0 for 1 cycles; }
+            reflex local_r {
+                on local_g {
+                    out_val = in_val;
                 }
             }
         }

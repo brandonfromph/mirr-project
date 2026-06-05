@@ -4,6 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::ast::macro_nodes::ModuleMacroStmt;
 use crate::ast::pattern::PatternDef;
 use crate::error::MirrError;
 
@@ -17,12 +18,7 @@ pub(super) fn detect_pattern_cycles(patterns: &[PatternDef]) -> Result<(), MirrE
     let mut adj: HashMap<&str, Vec<&str>> = HashMap::with_capacity(patterns.len());
     for pat in patterns {
         let mut callees = Vec::new();
-        for call in &pat.body.pattern_calls {
-            let callee = call.pattern_name.as_str();
-            if pattern_names.contains(callee) {
-                callees.push(callee);
-            }
-        }
+        collect_callees(&pat.body.statements, &pattern_names, &mut callees);
         adj.insert(pat.name.as_str(), callees);
     }
 
@@ -83,4 +79,30 @@ pub(super) fn detect_pattern_cycles(patterns: &[PatternDef]) -> Result<(), MirrE
     }
 
     Ok(())
+}
+
+fn collect_callees<'a>(
+    stmts: &'a [ModuleMacroStmt],
+    pattern_names: &HashSet<&'a str>,
+    callees: &mut Vec<&'a str>,
+) {
+    for s in stmts {
+        match s {
+            ModuleMacroStmt::PatternCall(c) => {
+                if !c.pattern_name.contains("${") {
+                    let name = c.pattern_name.as_str();
+                    for &pname in pattern_names {
+                        if pname == name {
+                            callees.push(pname);
+                            break;
+                        }
+                    }
+                }
+            }
+            ModuleMacroStmt::ForLoop { body, .. } => {
+                collect_callees(body, pattern_names, callees);
+            }
+            _ => {}
+        }
+    }
 }

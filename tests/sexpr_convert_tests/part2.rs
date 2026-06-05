@@ -219,8 +219,7 @@ fn ast_to_sexpr_pattern_def_with_params() {
             PatternParam { name: "handler".to_string(), kind: PatternParamKind::Pattern },
         ],
         body: ReflectBlock {
-            signals: vec![],
-            guards: vec![Guard {
+            statements: vec![ModuleMacroStmt::Guard(Guard {
                 name: "g_${sensor}".to_string(),
                 condition: Expr::Binary {
                     op: BinaryOp::Gt,
@@ -231,10 +230,7 @@ fn ast_to_sexpr_pattern_def_with_params() {
                 template_cycles: None,
                 origin: None,
                 span: None,
-            }],
-            reflexes: vec![],
-            properties: vec![],
-            pattern_calls: vec![],
+            })],
         },
         span: None,
     });
@@ -623,14 +619,10 @@ fn sexpr_to_ast_roundtrip_pattern_def() {
             },
         ],
         body: ReflectBlock {
-            signals: vec![
-                make_signal("sig1", SignalKind::Input, SignalType::Bool),
-                make_signal("sig2", SignalKind::Output, SignalType::Bool),
+            statements: vec![
+                ModuleMacroStmt::Signal(make_signal("sig1", SignalKind::Input, SignalType::Bool)),
+                ModuleMacroStmt::Signal(make_signal("sig2", SignalKind::Output, SignalType::Bool)),
             ],
-            guards: vec![],
-            reflexes: vec![],
-            properties: vec![],
-            pattern_calls: vec![],
         },
         span: None,
     });
@@ -642,8 +634,13 @@ fn sexpr_to_ast_roundtrip_pattern_def() {
     assert_eq!(p.params.len(), 2, "must have 2 params");
     assert_eq!(p.params[0].name, "sig", "first param name must be 'sig'");
     assert_eq!(p.params[1].name, "limit", "second param name must be 'limit'");
-    assert_eq!(p.body.signals.len(), 2, "reflect body must have 2 signals");
-    assert_eq!(p.body.signals[0].name, "sig1", "first reflect signal must be 'sig1'");
+    assert_eq!(p.body.statements.len(), 2, "reflect body must have 2 signals");
+    match &p.body.statements[0] {
+        ModuleMacroStmt::Signal(s) => {
+            assert_eq!(s.name, "sig1", "first reflect signal must be 'sig1'")
+        }
+        _ => panic!("Expected signal statement"),
+    }
 }
 
 #[test]

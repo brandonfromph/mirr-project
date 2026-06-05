@@ -1,0 +1,9 @@
+module cond_25 {
+    signal cond: in bool;
+    signal out: out u32;
+    reflex r {
+        on cond {
+            out = 25;
+        }
+    }
+}

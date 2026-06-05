@@ -22,9 +22,6 @@ const MAX_ARGS: usize = 128;
 /// Maximum number of lines in a reflect body.
 pub(crate) const MAX_REFLECT_LINES: usize = 8192;
 
-/// Maximum brace nesting depth inside a reflect body.
-const MAX_BRACE_DEPTH: usize = 16;
-
 /// MIRR keywords that cannot be pattern call names.
 const KEYWORDS: &[&str] = &[
     "signal", "guard", "reflex", "property", "module", "def", "reflect", "when", "for", "on",
@@ -119,45 +116,36 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     }
     *index += 1;
 
-    // Collect raw lines until matching closing brace of reflect.
-    let raw_lines = collect_reflect_body(lines, index, name)?;
-
-    // Build synthetic source to parse the fragment.
-    let mut source = String::with_capacity(raw_lines.len() * 80 + 64);
-    source.push_str("module __expand__ {\n");
-    for line in &raw_lines {
-        source.push_str("    ");
-        source.push_str(line);
-        source.push('\n');
-    }
-    source.push_str("}\n");
-
     let prev = crate::parser::module_parser::macro_parser::IN_PATTERN_REFLECT.with(|flag| {
         let p = flag.get();
         flag.set(true);
         p
     });
-    let program = crate::parser::parse_mirr(&source)
-        .map_err(|e| pattern_err(format!("In pattern '{name}' reflect body: {e}")));
+    let statements =
+        crate::parser::module_parser::macro_parser::parse_module_macro_stmts(lines, index)
+            .map_err(|e| {
+                let span = e.span();
+                MirrError::PatternError {
+                    message: format!("In pattern '{name}' reflect body: {e}"),
+                    span,
+                }
+            })?;
     crate::parser::module_parser::macro_parser::IN_PATTERN_REFLECT.with(|flag| {
         flag.set(prev);
     });
-    let program = program?;
 
     // Skip past the closing brace of the reflect block.
+    if *index < lines.len() && lines[*index].trim().starts_with('}') {
+        *index += 1;
+    }
+
     // Now skip to the closing brace of the def block.
     skip_empty_and_comments(lines, index);
     if *index < lines.len() && lines[*index].trim() == "}" {
         *index += 1;
     }
 
-    let body = ReflectBlock {
-        signals: program.module.signals,
-        guards: program.module.guards,
-        reflexes: program.module.reflexes,
-        properties: program.module.properties,
-        pattern_calls: program.module.pattern_calls,
-    };
+    let body = ReflectBlock { statements };
 
     Ok(PatternDef { name: name.to_string(), params, body, span: None })
 }
@@ -315,71 +303,6 @@ fn parse_single_param(param_str: &str, def_name: &str) -> Result<PatternParam, M
             kind: PatternParamKind::Constant { ty, annotations },
         })
     }
-}
-
-/// Collect the raw lines of a reflect body (between opening and closing braces).
-///
-/// Tracks brace depth to handle nested blocks (guards, reflexes, properties).
-/// Bounded: MAX_REFLECT_LINES lines, MAX_BRACE_DEPTH depth.
-fn collect_reflect_body(
-    lines: &[&str],
-    index: &mut usize,
-    name: &str,
-) -> Result<Vec<String>, MirrError> {
-    let mut raw_lines = Vec::with_capacity(64);
-    let mut depth: usize = 1; // We're already inside the reflect `{`.
-    let mut line_count = 0usize;
-
-    while *index < lines.len() && line_count < MAX_REFLECT_LINES {
-        let line = lines[*index];
-        let trimmed = line.trim();
-
-        // Count braces in this line, skipping ${…} template substitution expressions
-        // so that `${n}` does not disturb the brace depth counter.
-        let mut chars = trimmed.chars().peekable();
-        while let Some(ch) = chars.next() {
-            if ch == '$' && chars.peek() == Some(&'{') {
-                // Consume the entire ${…} block without counting its braces.
-                chars.next(); // consume '{'
-                for inner in chars.by_ref() {
-                    if inner == '}' {
-                        break;
-                    }
-                }
-                continue;
-            }
-            match ch {
-                '{' => {
-                    depth = depth.saturating_add(1);
-                    if depth > MAX_BRACE_DEPTH {
-                        return Err(pattern_err(format!("{} Pattern '{name}' reflect body exceeds maximum brace depth ({MAX_BRACE_DEPTH}).", crate::error_codes::ec(418))));
-                    }
-                }
-                '}' => {
-                    depth = depth.saturating_sub(1);
-                    if depth == 0 {
-                        // End of reflect block.
-                        *index += 1;
-                        return Ok(raw_lines);
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        // Store the trimmed line (skip empty lines and comments for cleaner body).
-        if !trimmed.is_empty() && !trimmed.starts_with("//") {
-            raw_lines.push(trimmed.to_string());
-        }
-
-        *index += 1;
-        line_count += 1;
-    }
-
-    Err(pattern_err(format!(
-        "{} Pattern '{name}' reflect block not closed with '}}'.",
-        crate::error_codes::ec(419)
-    )))
 }
 
 // ---------------------------------------------------------------------------

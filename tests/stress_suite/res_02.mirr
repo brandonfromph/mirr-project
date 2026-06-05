@@ -1,0 +1,7 @@
+module res_02 {
+    signals {
+        for j in 0..32 {
+            s[j]: in bool;
+        }
+    }
+}

@@ -64,7 +64,7 @@ test_grammar! {
     invalid_guard_missing_keyword, "module Guard { signal a: in bool; g { when a for 1 cycles; } }", false;
     invalid_guard_missing_when, "module Guard { signal a: in bool; guard g { a for 1 cycles; } }", false;
     invalid_guard_missing_cycles, "module Guard { signal a: in bool; guard g { when a; } }", false;
-    invalid_reflex_missing_on, "module Reflex { signal b: out bool; reflex r { b = true; } }", false;
+    invalid_reflex_missing_on, "module Reflex { signal b: out bool; reflex r { on { b = true; } } }", false;
     invalid_reflex_missing_target, "module Reflex { reflex r { on always { = true; } } }", false;
     invalid_reflex_missing_semicolon, "module Reflex { signal b: out bool; reflex r { on always { b = true } } }", false;
     invalid_property_missing_formula, "module Prop { property p { a; } }", false;
@@ -72,7 +72,7 @@ test_grammar! {
     invalid_invalid_literal, "module Lit { signal a: in u8; guard g { when a == 12a for 1 cycles; } }", false;
     invalid_double_semicolon, "module Semi { signal a: in bool;; }", false;
     invalid_dangling_operator, "module Op { signal a: in bool; guard g { when a && for 1 cycles; } }", false;
-    invalid_unmatched_brace, "module Brace { signal a: in bool; } }", false;
+    invalid_unmatched_brace, "module Brace { signal a: in bool; reflex r { on always { a = true; } }", false;
     invalid_unmatched_bracket, "module Bracket { signal a: in u8[10; }", false;
     invalid_pattern_no_reflect, "def pat(s: signal in bool) { signal x: internal bool; }", false;
     invalid_invalid_token, "module Token { @#$% }", false;

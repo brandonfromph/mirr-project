@@ -254,16 +254,17 @@ fn bug5_collect_reflect_body_handles_template_substitution_braces() {
     let program = result.expect("already checked");
     assert_eq!(program.patterns.len(), 1, "BUG-5: Should have parsed 1 pattern def");
 
-    let body_guards = &program.patterns[0].body.guards;
+    let statements = &program.patterns[0].body.statements;
     // The reflect body should contain the guard line, not be empty from premature termination.
     assert!(
-        !body_guards.is_empty(),
+        !statements.is_empty(),
         "BUG-5: Reflect body should not be empty — `${{n}}` braces were mistakenly counted"
     );
+    use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
     assert!(
-        body_guards.iter().any(|g| g.name.contains("g_")),
+        statements.iter().any(|s| matches!(s, ModuleMacroStmt::Guard(g) if g.name.contains("g_"))),
         "BUG-5: Reflect body should contain the guard line, but got: {:?}",
-        body_guards
+        statements
     );
 }
 
@@ -287,12 +288,10 @@ fn bug5_multiple_template_substitutions_on_same_line_do_not_corrupt_depth() {
         result.unwrap_err()
     );
     let program = result.expect("already checked");
-    let body_guards = &program.patterns[0].body.guards;
-    let body_reflexes = &program.patterns[0].body.reflexes;
+    let statements = &program.patterns[0].body.statements;
     assert!(
-        body_guards.len() + body_reflexes.len() >= 2,
-        "BUG-5-B: Reflect body should have at least 2 lines (guard + reflex), got: {} guards, {} reflexes",
-        body_guards.len(),
-        body_reflexes.len()
+        statements.len() >= 2,
+        "BUG-5-B: Reflect body should have at least 2 statements (guard + reflex), got: {}",
+        statements.len()
     );
 }

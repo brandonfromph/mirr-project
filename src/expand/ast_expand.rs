@@ -22,19 +22,20 @@ use crate::error::MirrError;
 
 const MAX_EXPANSION_ITERATIONS: usize = 1024;
 
+/// Context maintained during AST expansion to ensure generated hardware
+/// maintains structural integrity.
 struct ExpansionCtx {
+    /// Tracks guards to ensure names remain unique after expansion.
     declared_guards: HashSet<String>,
+    /// Tracks signals inferred to be boolean (used for condition synthesis).
     bool_signals: HashSet<String>,
+    /// Counter for synthesizing unique guard names for `if` and `match` constructs.
     auto_guard_counter: usize,
 }
 
 type ModuleStackItem = (ModuleMacroStmt, HashMap<String, i32>, HashMap<String, String>);
-type ReflexStackItem = (
-    ReflexMacroStmt,
-    Vec<String>,
-    HashMap<String, i32>,
-    HashMap<String, String>,
-);
+type ReflexStackItem =
+    (ReflexMacroStmt, Vec<String>, HashMap<String, i32>, HashMap<String, String>);
 
 pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> {
     let mut module = Module {
@@ -48,6 +49,39 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
         span: None,
     };
 
+    expand_statements_inplace(
+        &mut module,
+        unexpanded.statements,
+        HashMap::new(),
+        HashMap::new(),
+        None,
+    )?;
+
+    Ok(module)
+}
+
+/// Iteratively expands macro fragments (`ForLoop`, `Match`, etc.) into a flat `Module`.
+///
+/// This is the core expansion engine, fulfilling NASA P10 constraints by using an
+/// explicit work stack instead of recursion. It handles:
+/// 1. Signal/Guard/Reflex generation.
+/// 2. Iterative loop unrolling.
+/// 3. Conditional guard synthesis (for `if`/`match` blocks).
+/// 4. Origin tag propagation.
+///
+/// # Arguments
+/// - `module`: The flat module to populate with expanded statements.
+/// - `statements`: The AST macro fragments to expand.
+/// - `env`: Current loop-variable bindings (e.g., for `${i}` in `for` loops).
+/// - `signal_env`: Template substitution map for signal names.
+/// - `origin`: Optional origin tag for DO-178C traceability.
+pub fn expand_statements_inplace(
+    module: &mut Module,
+    statements: Vec<ModuleMacroStmt>,
+    env: HashMap<String, i32>,
+    signal_env: HashMap<String, String>,
+    origin: Option<String>,
+) -> Result<(), MirrError> {
     let mut ctx = ExpansionCtx {
         declared_guards: HashSet::new(),
         bool_signals: HashSet::new(),
@@ -55,7 +89,7 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
     };
 
     // Pre-pass: Collect manually declared guards and bool signals
-    for stmt in &unexpanded.statements {
+    for stmt in &statements {
         match stmt {
             ModuleMacroStmt::Guard(g) => {
                 ctx.declared_guards.insert(g.name.clone());
@@ -67,15 +101,11 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
         }
     }
 
-    let mut stmts_to_process: Vec<ModuleStackItem> = unexpanded
-        .statements
-        .into_iter()
-        .map(|s| (s, HashMap::new(), HashMap::new()))
-        .rev()
-        .collect(); // stack pops from end, so rev()
+    let mut stmts_to_process: Vec<ModuleStackItem> =
+        statements.into_iter().map(|s| (s, env.clone(), signal_env.clone())).rev().collect();
 
     let mut iterations = 0;
-    while let Some((stmt, env, signal_env)) = stmts_to_process.pop() {
+    while let Some((stmt, cur_env, cur_signal_env)) = stmts_to_process.pop() {
         iterations += 1;
         if iterations > MAX_EXPANSION_ITERATIONS * 10 {
             return Err(MirrError::SemanticError {
@@ -86,27 +116,36 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
 
         match stmt {
             ModuleMacroStmt::Signal(mut sig) => {
-                expand_signal_template(&mut sig, &env, &signal_env);
+                expand_signal_template(&mut sig, &cur_env, &cur_signal_env);
+                if origin.is_some() {
+                    sig.origin = origin.clone();
+                }
                 module.signals.push(sig);
             }
             ModuleMacroStmt::Guard(mut guard) => {
-                expand_guard_template(&mut guard, &env, &signal_env);
+                expand_guard_template(&mut guard, &cur_env, &cur_signal_env);
+                if origin.is_some() {
+                    guard.origin = origin.clone();
+                }
                 module.guards.push(guard);
             }
             ModuleMacroStmt::Property(mut prop) => {
-                prop.name = expand_string(&prop.name, &env, &signal_env);
+                prop.name = expand_string(&prop.name, &cur_env, &cur_signal_env);
                 for expr in prop.formula.exprs_mut() {
-                    *expr = expand_expr(expr, &env, &signal_env);
+                    *expr = expand_expr(expr, &cur_env, &cur_signal_env);
+                }
+                if origin.is_some() {
+                    prop.origin = origin.clone();
                 }
                 module.properties.push(prop);
             }
             ModuleMacroStmt::PatternCall(mut call) => {
-                call.pattern_name = expand_string(&call.pattern_name, &env, &signal_env);
+                call.pattern_name = expand_string(&call.pattern_name, &cur_env, &cur_signal_env);
                 for arg in &mut call.arguments {
                     match arg {
                         crate::ast::pattern::PatternArg::SignalRef(name)
                         | crate::ast::pattern::PatternArg::PatternRef(name) => {
-                            *name = expand_string(name, &env, &signal_env);
+                            *name = expand_string(name, &cur_env, &cur_signal_env);
                         }
                         _ => {}
                     }
@@ -114,7 +153,7 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
                 module.pattern_calls.push(call);
             }
             ModuleMacroStmt::LetBinding { name, ty, value } => {
-                let expanded_name = expand_string(&name, &env, &signal_env);
+                let expanded_name = expand_string(&name, &cur_env, &cur_signal_env);
                 let sig = SignalDecl {
                     name: expanded_name.clone(),
                     kind: crate::ast::types::SignalKind::Internal,
@@ -127,7 +166,7 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
                         })?,
                         crate::ast::types::TypeAnnotations::default(),
                     ),
-                    origin: None,
+                    origin: origin.clone(),
                     span: None,
                 };
                 module.signals.push(sig);
@@ -135,14 +174,14 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
                 // Create a reflex for the let binding assignment
                 let assign = Assignment {
                     target: expanded_name.clone(),
-                    value: expand_expr(&value, &env, &signal_env),
+                    value: expand_expr(&value, &cur_env, &cur_signal_env),
                     span: None,
                 };
                 let reflex = Reflex {
                     name: format!("{}_bind", expanded_name),
                     guard_names: vec!["always".to_string()],
                     assignments: vec![assign],
-                    origin: None,
+                    origin: origin.clone(),
                     span: None,
                 };
                 module.reflexes.push(reflex);
@@ -155,28 +194,33 @@ pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> 
                     });
                 }
                 for i in (start..end).rev() {
-                    let mut new_env = env.clone();
+                    let mut new_env = cur_env.clone();
                     new_env.insert(var.clone(), i);
                     for b in body.iter().rev() {
-                        stmts_to_process.push((b.clone(), new_env.clone(), signal_env.clone()));
+                        stmts_to_process.push((b.clone(), new_env.clone(), cur_signal_env.clone()));
                     }
                 }
             }
             ModuleMacroStmt::Reflex(unexp_reflex) => {
-                let expanded_reflexes = expand_reflex_internal(
+                let mut expanded_reflexes = expand_reflex_internal(
                     unexp_reflex,
-                    &env,
-                    &signal_env,
+                    &cur_env,
+                    &cur_signal_env,
                     &mut ctx,
                     &mut module.guards,
                     &mut module.signals,
                 )?;
+                if let Some(ref o) = origin {
+                    for r in &mut expanded_reflexes {
+                        r.origin = Some(o.clone());
+                    }
+                }
                 module.reflexes.extend(expanded_reflexes);
             }
         }
     }
 
-    Ok(module)
+    Ok(())
 }
 
 fn expand_reflex_internal(

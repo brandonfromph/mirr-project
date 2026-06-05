@@ -33,7 +33,7 @@ fn test_noc_router_priority_scheduling() {
     // Default all inputs
     sim.set_input(0, 1, TypeTag::Bool); // clk = 1
     sim.set_input(1, 1, TypeTag::Bool); // rst_n = 1
-    for i in 0..16 {
+    for i in 0..15 {
         sim.set_input(2 + 2 * i, 0, TypeTag::Bool); // port_tx_valid_i = false
         sim.set_input(3 + 2 * i, 0, TypeTag::Unsigned { width: 64 }); // port_tx_data_i = 0
     }

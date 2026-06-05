@@ -2,6 +2,7 @@
 
 #![forbid(unsafe_code)]
 
+use crate::ast::macro_nodes::{ModuleMacroStmt, ReflexMacroStmt, UnexpandedReflex};
 use crate::ast::pattern::{PatternDef, PatternParam, PatternParamKind, ReflectBlock};
 use crate::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
 use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
@@ -160,11 +161,7 @@ fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
         sexpr_err(format!("{} Expected reflect list", crate::error_codes::ec(805)))
     })?;
     expect_head(items, "reflect")?;
-    let mut signals = Vec::new();
-    let mut guards = Vec::new();
-    let mut reflexes = Vec::new();
-    let mut properties = Vec::new();
-    let mut pattern_calls = Vec::new();
+    let mut statements = Vec::new();
 
     for item in &items[1..] {
         let inner = item.as_list().ok_or_else(|| {
@@ -176,33 +173,44 @@ fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
         match inner[0].as_symbol() {
             Some("signals") => {
                 for s in &inner[1..] {
-                    signals.push(parse_signal_decl(s)?);
+                    statements.push(ModuleMacroStmt::Signal(parse_signal_decl(s)?));
                 }
             }
             Some("guards") => {
                 for g in &inner[1..] {
-                    guards.push(parse_guard(g)?);
+                    statements.push(ModuleMacroStmt::Guard(parse_guard(g)?));
                 }
             }
             Some("reflexes") => {
                 for r in &inner[1..] {
-                    reflexes.push(parse_reflex(r)?);
+                    let flat = parse_reflex(r)?;
+                    let unexp = UnexpandedReflex {
+                        name: flat.name,
+                        guard_names: flat.guard_names,
+                        statements: flat
+                            .assignments
+                            .into_iter()
+                            .map(ReflexMacroStmt::Assignment)
+                            .collect(),
+                        span: flat.span,
+                    };
+                    statements.push(ModuleMacroStmt::Reflex(unexp));
                 }
             }
             Some("properties") => {
                 for p in &inner[1..] {
-                    properties.push(parse_property(p)?);
+                    statements.push(ModuleMacroStmt::Property(parse_property(p)?));
                 }
             }
             Some("pattern-calls") => {
                 for c in &inner[1..] {
-                    pattern_calls.push(parse_pattern_call(c)?);
+                    statements.push(ModuleMacroStmt::PatternCall(parse_pattern_call(c)?));
                 }
             }
             _ => {}
         }
     }
-    Ok(ReflectBlock { signals, guards, reflexes, properties, pattern_calls })
+    Ok(ReflectBlock { statements })
 }
 
 fn parse_module_section(sexpr: &SExpr) -> Result<Module, MirrError> {

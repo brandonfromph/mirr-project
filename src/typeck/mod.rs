@@ -32,15 +32,22 @@ use crate::span::Span;
 /// Expression type map: maps each expression (by pointer identity) to its
 /// inferred `SignalType`. Returned by `typecheck_module` so downstream
 /// passes (e.g., width inference) can query signedness without re-walking.
+///
+/// # Note on Pointer Identity
+/// The key `*const Expr` relies on the fact that expression nodes are not
+/// cloned during the type checking pass, maintaining stable memory addresses.
 pub type TypeMap = HashMap<*const Expr, SignalType>;
 
 /// The type checking mode.
+///
+/// Determines the strictness of type rules applied to expressions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TypecheckMode {
     /// Standard MIRR strict typechecking (strict type checking of bool/unsigned).
     #[default]
     Standard,
-    /// Bootstrap/hydration mode (allows bool in arithmetic and logical ops on unsigned).
+    /// Bootstrap/hydration mode (allows bool in arithmetic and logical ops on unsigned,
+    /// used during initial IR loading or interop with raw gate-level netlists).
     Bootstrap,
 }
 
@@ -221,8 +228,27 @@ fn types_compatible(target: &SignalType, expr: &SignalType) -> bool {
 
 /// Infer the type of an expression, reporting type errors.
 ///
-/// Uses an explicit stack to avoid recursion (NASA P10 compliance).
-/// Bounded: at most MAX_EXPR_NODES iterations.
+/// This function performs type inference in two phases to satisfy the NASA P10 constraint
+/// of avoiding recursion in tree traversals:
+///
+/// 1. **Flattening**: Performs a post-order traversal to build an iterative work list (`order`)
+///    of all expression nodes.
+/// 2. **Evaluation**: Iterates through the work list in reverse order (bottom-up),
+///    evaluating the type of each expression node based on its children's already-computed
+///    types, which are stored in the `types` map.
+///
+/// # Arguments
+/// * `expr` - The root expression to infer.
+/// * `signals` - A map from signal/guard names to their declared types.
+/// * `context_span` - The span of the construct containing this expression (for error reporting).
+/// * `mode` - The `TypecheckMode` (e.g., Strict or Bootstrap).
+///
+/// # Returns
+/// - `Ok((SignalType, TypeMap))` - The inferred type of the root expression and a map of
+///   all inferred node types for downstream passes.
+/// - `Err(MirrError)` - If type mismatch or structural errors are detected.
+///
+/// Bounded: at most `MAX_EXPR_NODES` iterations (enforced iteratively).
 fn infer_expr_type(
     expr: &Expr,
     signals: &HashMap<&str, SignalType>,

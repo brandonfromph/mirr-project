@@ -45,22 +45,52 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
     if header_line.starts_with("guard ") || header_line.starts_with("let guard ") {
         let is_let = header_line.starts_with("let ");
         let after_keyword = if is_let {
-            header_line.strip_prefix("let guard ").unwrap()
+            header_line.strip_prefix("let guard ").ok_or_else(|| {
+                emit_at(
+                    ErrorCode::GuardMalformed,
+                    "Expected 'let guard' declaration",
+                    Span::full_line(start_line as u32),
+                )
+            })?
         } else {
-            header_line.strip_prefix("guard ").unwrap()
+            header_line.strip_prefix("guard ").ok_or_else(|| {
+                emit_at(
+                    ErrorCode::GuardMalformed,
+                    "Expected 'guard' declaration",
+                    Span::full_line(start_line as u32),
+                )
+            })?
         };
 
         let trimmed = after_keyword.trim();
 
         // Handle 'name = when ...' or 'name when ...'
         let (name, remaining) = if is_let && trimmed.contains('=') {
-            let (n, r) = trimmed.split_once('=').unwrap();
+            let (n, r) = trimmed.split_once('=').ok_or_else(|| {
+                emit_at(
+                    ErrorCode::GuardMalformed,
+                    "Expected '=' in let guard binding",
+                    Span::full_line(start_line as u32),
+                )
+            })?;
             (n.trim(), r.trim().to_string())
         } else if trimmed.contains(" when ") {
-            let (n, r) = trimmed.split_once(" when ").unwrap();
+            let (n, r) = trimmed.split_once(" when ").ok_or_else(|| {
+                emit_at(
+                    ErrorCode::GuardMalformed,
+                    "Expected 'when' clause in guard",
+                    Span::full_line(start_line as u32),
+                )
+            })?;
             (n.trim(), format!("when {r}"))
         } else if trimmed.contains('(') && trimmed.contains(" for ") {
-            let (n, r) = trimmed.split_once('(').unwrap();
+            let (n, r) = trimmed.split_once('(').ok_or_else(|| {
+                emit_at(
+                    ErrorCode::GuardMalformed,
+                    "Expected '(' in guard list",
+                    Span::full_line(start_line as u32),
+                )
+            })?;
             (n.trim(), format!("({r}"))
         } else {
             // Probably block form
@@ -72,14 +102,30 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
             && (remaining.contains("when ") || remaining.starts_with('('))
         {
             let (cond_part, for_part) = if remaining.contains(" for ") {
-                let (c, f) = remaining.rsplit_once(" for ").unwrap();
+                let (c, f) = remaining.rsplit_once(" for ").ok_or_else(|| {
+                    emit_at(
+                        ErrorCode::GuardMalformed,
+                        "Expected 'for' in guard",
+                        Span::full_line(start_line as u32),
+                    )
+                })?;
                 (c.trim(), f.trim())
             } else {
                 (remaining.trim(), "1 cycles")
             };
 
             let cond_str = if cond_part.starts_with("when ") {
-                cond_part.strip_prefix("when ").unwrap().trim().trim_end_matches(';')
+                cond_part
+                    .strip_prefix("when ")
+                    .ok_or_else(|| {
+                        emit_at(
+                            ErrorCode::GuardMalformed,
+                            "Expected 'when' condition",
+                            Span::full_line(start_line as u32),
+                        )
+                    })?
+                    .trim()
+                    .trim_end_matches(';')
             } else if cond_part.starts_with('(') && cond_part.ends_with(')') {
                 cond_part[1..cond_part.len() - 1].trim().trim_end_matches(';')
             } else {

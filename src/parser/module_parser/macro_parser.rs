@@ -176,7 +176,13 @@ fn parse_let_binding_raw(
         )
     })?;
     let (name, ty) = if lhs.contains(':') {
-        let (n, t) = lhs.split_once(':').unwrap();
+        let (n, t) = lhs.split_once(':').ok_or_else(|| {
+            emit_at(
+                ErrorCode::SExprParseError,
+                "Malformed let binding type annotation",
+                Span::full_line(line_index as u32),
+            )
+        })?;
         (n.trim().to_string(), t.trim().to_string())
     } else {
         (lhs.trim().to_string(), "auto".to_string())
@@ -208,7 +214,13 @@ fn parse_reflex_let_binding(line: &str, line_index: usize) -> Result<ReflexMacro
 
 fn parse_for_loop(lines: &[&str], index: &mut usize) -> Result<ModuleMacroStmt, MirrError> {
     let header = lines[*index].trim();
-    let after_for = header.strip_prefix("for ").unwrap();
+    let after_for = header.strip_prefix("for ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::ForLoopRangeMalformed,
+            "Expected 'for' loop header",
+            Span::full_line(*index as u32),
+        )
+    })?;
     let (var, rest) = after_for.split_once(" in ").ok_or_else(|| {
         emit_at(ErrorCode::ForLoopRangeMalformed, "Expected 'in'", Span::full_line(*index as u32))
     })?;
@@ -331,7 +343,13 @@ fn parse_on_block(
     index: &mut usize,
 ) -> Result<(Vec<String>, Vec<ReflexMacroStmt>), MirrError> {
     let header = lines[*index].trim();
-    let after_on = header.strip_prefix("on ").unwrap();
+    let after_on = header.strip_prefix("on ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::ReflexMissingOn,
+            "Expected 'on' block header",
+            Span::full_line(*index as u32),
+        )
+    })?;
     let guards_part = after_on.trim_end_matches('{').trim();
 
     // Simple space-separated guards for now
@@ -359,10 +377,28 @@ fn parse_on_block(
 
 fn parse_reflex_for_loop(lines: &[&str], index: &mut usize) -> Result<ReflexMacroStmt, MirrError> {
     let header = lines[*index].trim();
-    let after_for = header.strip_prefix("for ").unwrap();
-    let (var, rest) = after_for.split_once(" in ").unwrap();
+    let after_for = header.strip_prefix("for ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::ForLoopRangeMalformed,
+            "Expected 'for' loop header",
+            Span::full_line(*index as u32),
+        )
+    })?;
+    let (var, rest) = after_for.split_once(" in ").ok_or_else(|| {
+        emit_at(
+            ErrorCode::ForLoopRangeMalformed,
+            "Expected 'in' keyword in loop header",
+            Span::full_line(*index as u32),
+        )
+    })?;
     let range_part = rest.trim_end_matches('{').trim();
-    let (start_str, end_str) = range_part.split_once("..").unwrap();
+    let (start_str, end_str) = range_part.split_once("..").ok_or_else(|| {
+        emit_at(
+            ErrorCode::ForLoopRangeMalformed,
+            "Expected '..' range operator in loop header",
+            Span::full_line(*index as u32),
+        )
+    })?;
     let start = start_str.trim().parse::<i32>().unwrap_or(0);
     let end = end_str.trim().parse::<i32>().unwrap_or(0);
 
@@ -377,7 +413,17 @@ fn parse_reflex_for_loop(lines: &[&str], index: &mut usize) -> Result<ReflexMacr
 
 fn parse_if_else(lines: &[&str], index: &mut usize) -> Result<ReflexMacroStmt, MirrError> {
     let header = lines[*index].trim();
-    let cond_part = header.strip_prefix("if ").unwrap().trim_end_matches('{').trim();
+    let cond_part = header
+        .strip_prefix("if ")
+        .ok_or_else(|| {
+            emit_at(
+                ErrorCode::SExprParseError,
+                "Expected 'if' block header",
+                Span::full_line(*index as u32),
+            )
+        })?
+        .trim_end_matches('{')
+        .trim();
     let condition = parse_expression(cond_part).map_err(|e| {
         emit_at(
             ErrorCode::SExprParseError,
@@ -400,7 +446,16 @@ fn parse_if_else(lines: &[&str], index: &mut usize) -> Result<ReflexMacroStmt, M
             }
         } else if line.starts_with("} else if") {
             // Support 'else if' by recursing with a virtual 'if' line
-            let cond_after_else = line.strip_prefix("} else if ").unwrap().trim();
+            let cond_after_else = line
+                .strip_prefix("} else if ")
+                .ok_or_else(|| {
+                    emit_at(
+                        ErrorCode::SExprParseError,
+                        "Malformed 'else if' condition",
+                        Span::full_line(*index as u32),
+                    )
+                })?
+                .trim();
             // We need a dummy line for parse_if_else to consume
             let dummy = format!("if {cond_after_else}");
             let mut virtual_lines = lines.to_vec();
@@ -417,7 +472,17 @@ fn parse_if_else(lines: &[&str], index: &mut usize) -> Result<ReflexMacroStmt, M
 
 fn parse_match(lines: &[&str], index: &mut usize) -> Result<ReflexMacroStmt, MirrError> {
     let header = lines[*index].trim();
-    let expr_part = header.strip_prefix("match ").unwrap().trim_end_matches('{').trim();
+    let expr_part = header
+        .strip_prefix("match ")
+        .ok_or_else(|| {
+            emit_at(
+                ErrorCode::SExprParseError,
+                "Expected 'match' block header",
+                Span::full_line(*index as u32),
+            )
+        })?
+        .trim_end_matches('{')
+        .trim();
     let expr = parse_expression(expr_part).map_err(|e| {
         emit_at(
             ErrorCode::SExprParseError,

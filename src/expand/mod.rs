@@ -56,7 +56,6 @@ pub fn expand_patterns(
     // Initial state for iterative expansion.
     let mut total_expanded = 0usize;
     let mut call_index = 0usize;
-    let mut telemetry_log: Vec<String> = Vec::new();
 
     // The work stack stores (call, depth, parent_origin).
     let mut stack: Vec<(PatternCall, usize, Option<String>)> =
@@ -151,11 +150,31 @@ pub fn expand_patterns(
         apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
         set_origin_tags(&mut fragment, &origin_tag);
 
+        // Expand the macro fragments into a temporary flat module.
+        let mut temp_module = crate::ast::program::Module {
+            name: format!("{}_temp", call.pattern_name),
+            signals: Vec::new(),
+            guards: Vec::new(),
+            reflexes: Vec::new(),
+            properties: Vec::new(),
+            pattern_calls: Vec::new(),
+            pattern_origins: Vec::new(),
+            span: None,
+        };
+
+        crate::expand::ast_expand::expand_statements_inplace(
+            &mut temp_module,
+            fragment.statements,
+            std::collections::HashMap::new(),
+            std::collections::HashMap::new(),
+            Some(origin_tag.clone()),
+        )?;
+
         // Check total item bounds.
-        let item_count = fragment.signals.len()
-            + fragment.guards.len()
-            + fragment.reflexes.len()
-            + fragment.properties.len();
+        let item_count = temp_module.signals.len()
+            + temp_module.guards.len()
+            + temp_module.reflexes.len()
+            + temp_module.properties.len();
         total_expanded += item_count;
         if total_expanded > MAX_EXPANDED_ITEMS {
             return Err(pattern_err(format!(
@@ -165,45 +184,22 @@ pub fn expand_patterns(
         }
 
         // Push results to module.
-        program.module.signals.extend(fragment.signals);
-        program.module.guards.extend(fragment.guards);
+        program.module.signals.extend(temp_module.signals);
+        program.module.guards.extend(temp_module.guards);
         // Prepended so that submodule reflexes are executed before parent reflexes.
         // This ensures parent/coordinator reflexes take precedence over submodules.
-        let mut new_reflexes = fragment.reflexes;
+        let mut new_reflexes = temp_module.reflexes;
         new_reflexes.extend(std::mem::take(&mut program.module.reflexes));
         program.module.reflexes = new_reflexes;
-        program.module.properties.extend(fragment.properties);
+        program.module.properties.extend(temp_module.properties);
         program.module.pattern_origins.push(PatternOrigin {
             pattern_name: call.pattern_name.clone(),
             call_args_summary: args_summary.clone(),
         });
 
         // Queue nested pattern calls for further expansion (preserving depth).
-        for nested_call in fragment.pattern_calls {
+        for nested_call in temp_module.pattern_calls {
             stack.push((nested_call, depth + 1, Some(origin_tag.clone())));
-        }
-
-        // Record telemetry (to be batched).
-        telemetry_log
-            .push(format!("Expanded pattern '{}' with args [{}]", call.pattern_name, args_summary));
-    }
-
-    // Batch Telemetry Stash: Save all successful pattern expansions in one shot (Phase 3 Integration).
-    if !telemetry_log.is_empty() {
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(parent) = exe.parent() {
-                let brain_bin = parent.join("mirr-brain");
-                let batch_value = telemetry_log.join("; ");
-                let _ = std::process::Command::new(brain_bin)
-                    .args([
-                        "store",
-                        "--key",
-                        "last_pattern_expansion_wave",
-                        "--value",
-                        &batch_value,
-                    ])
-                    .output();
-            }
         }
     }
 
