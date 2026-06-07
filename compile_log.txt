@@ -1,0 +1,231 @@
+MIRR Compile: rspu_top
+  Signals: 802  Guards: 152  Reflexes: 641
+  Simplify: 30 rules applied, 3300 -> 3240 nodes
+  Width: 165 diagnostics, 15 SCCs
+  Temporal: 153 guards, 362 signals
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_172_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_172_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_172_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_172_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_170_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_170_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_170_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_170_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_160_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_160_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_160_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_160_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_158_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_158_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_158_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_158_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_148_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_148_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_148_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_148_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_146_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_146_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_146_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_146_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_136_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_136_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_136_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_136_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_134_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_134_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_134_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_134_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_124_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_124_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_124_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_124_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_122_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_122_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_122_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_122_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_112_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_112_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_112_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_112_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_110_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_110_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_110_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_110_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_100_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_100_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_100_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_100_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_98_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_98_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_98_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_98_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_88_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_88_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_88_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_88_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_86_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_86_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_86_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_86_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_76_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_76_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_76_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_76_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_74_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_74_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_74_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_74_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_64_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_64_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_64_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_64_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_62_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_62_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_62_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_62_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_52_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_52_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_52_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_52_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_50_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_50_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_50_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_50_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_40_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_40_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_40_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_40_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_38_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_38_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_38_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_38_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_28_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_28_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_28_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_28_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_26_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_26_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_26_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_26_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_16_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_16_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_16_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_16_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_14_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_14_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_14_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_14_ex_packed'
+error[E504]: [E504] node 6 (Add) requires 65 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_4_res_data' truncates unsigned 65 bits to 64 bits
+  = note: in signal 'alu_alu_core_4_res_data'
+error[E504]: [E504] node 2 (Mul) requires 128 bits, exceeding maximum of 64
+error[E504]: [E504] node 4 (Shr) requires 124 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'alu_alu_core_4_res_data' truncates unsigned 124 bits to 64 bits
+  = note: in signal 'alu_alu_core_4_res_data'
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_2_pc' truncates unsigned 33 bits to 32 bits
+  = note: in signal 'pipe_rspu_pipeline_2_pc'
+error[E504]: [E504] node 4 (Shl) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 9 (Shl) requires 96 bits, exceeding maximum of 64
+error[E504]: [E504] node 10 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E504]: [E504] node 14 (BitwiseOr) requires 100 bits, exceeding maximum of 64
+error[E505]: [E505] assignment to 'pipe_rspu_pipeline_2_ex_packed' truncates unsigned 100 bits to 64 bits
+  = note: in signal 'pipe_rspu_pipeline_2_ex_packed'
+Width errors detected — output may be incomplete.

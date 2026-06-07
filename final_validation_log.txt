@@ -1,0 +1,7 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.59s
+     Running `/Users/brandonc.blay/.cargo_target_cache/debug/mirr-compile rspu_chip/rspu_top.mirr --emit verilog`
+MIRR Compile: rspu_top
+  Signals: 802  Guards: 152  Reflexes: 641
+  Simplify: 30 rules applied, 3360 -> 3300 nodes
+  Width: 0 diagnostics, 15 SCCs
+  Temporal: 153 guards, 362 signals
