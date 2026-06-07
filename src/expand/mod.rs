@@ -19,6 +19,7 @@ use rename::{
 use scoping::validate_internal_signal_scoping;
 use substitution::{build_args_summary, build_substitution_map, validate_fragment_signals};
 
+use crate::ast::macro_nodes::ModuleMacroStmt;
 use crate::ast::pattern::{PatternCall, PatternOrigin};
 use crate::ast::program::MirrProgram;
 use crate::error::MirrError;
@@ -27,7 +28,7 @@ use crate::error::MirrError;
 const MAX_EXPANSION_DEPTH: usize = 4;
 
 /// Maximum total items (signals + guards + reflexes + properties) from all expansions.
-const MAX_EXPANDED_ITEMS: usize = 2048;
+const MAX_EXPANDED_ITEMS: usize = 4096;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -144,13 +145,39 @@ pub fn expand_patterns(
             param_names.insert(p.name.clone());
         }
 
+        // Check if this is an "Interface Pattern" (contains no logic).
+        // Interface patterns are preserved for structural module instantiation.
+        let is_interface = fragment.statements.iter().all(|s| matches!(s, ModuleMacroStmt::Signal(_)));
+        if is_interface {
+            let mut preserved_call = call.clone();
+            // Apply parameter substitution to the call arguments themselves.
+            for arg in &mut preserved_call.arguments {
+                match arg {
+                    crate::ast::pattern::PatternArg::SignalRef(name) => {
+                        if let Some((_, sub)) = subs.iter().find(|(p, _)| p == name) {
+                            *name = sub.clone();
+                        }
+                    }
+                    crate::ast::pattern::PatternArg::PatternRef(name) => {
+                        if let Some((_, sub)) = subs.iter().find(|(p, _)| p == name) {
+                            *name = sub.clone();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            program.module.pattern_calls.push(preserved_call);
+            program.module.pattern_origins.push(PatternOrigin {
+                pattern_name: call.pattern_name.clone(),
+                call_args_summary: args_summary.clone(),
+            });
+            continue;
+        }
+
         apply_parameter_substitution(&mut fragment, &subs);
 
-        let names = collect_fragment_names(&fragment);
-        apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
-        set_origin_tags(&mut fragment, &origin_tag);
-
-        // Expand the macro fragments into a temporary flat module.
+        // Add pattern parameters to the expanded fragment's scope.
+        // This ensures the validator can resolve signals passed as arguments.
         let mut temp_module = crate::ast::program::Module {
             name: format!("{}_temp", call.pattern_name),
             signals: Vec::new(),
@@ -161,6 +188,22 @@ pub fn expand_patterns(
             pattern_origins: Vec::new(),
             span: None,
         };
+
+        for param in &def.params {
+            if let crate::ast::pattern::PatternParamKind::Signal { kind, ty, annotations } = &param.kind {
+                temp_module.signals.push(crate::ast::program::SignalDecl {
+                    name: param.name.clone(),
+                    kind: *kind,
+                    ty: crate::ast::types::ExtendedType::new(ty.clone(), annotations.clone()),
+                    origin: Some(origin_tag.clone()),
+                    span: None,
+                });
+            }
+        }
+
+        let names = collect_fragment_names(&fragment);
+        apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
+        set_origin_tags(&mut fragment, &origin_tag);
 
         crate::expand::ast_expand::expand_statements_inplace(
             &mut temp_module,
@@ -184,7 +227,11 @@ pub fn expand_patterns(
         }
 
         // Push results to module.
-        program.module.signals.extend(temp_module.signals);
+        // Filter out formal parameters that were only added for internal validation.
+        let mut expanded_signals = temp_module.signals;
+        expanded_signals.retain(|s| !param_names.contains(&s.name));
+        program.module.signals.extend(expanded_signals);
+
         program.module.guards.extend(temp_module.guards);
         // Prepended so that submodule reflexes are executed before parent reflexes.
         // This ensures parent/coordinator reflexes take precedence over submodules.

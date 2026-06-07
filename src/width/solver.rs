@@ -72,9 +72,19 @@ pub fn solve(nodes: &[FlatNode], constraints: &[WidthConstraint]) -> SolveResult
         for c in constraints {
             let new_w = evaluate_constraint(c, &widths);
             if let Some((idx, w)) = new_w {
-                if idx < widths.len() && w > widths[idx] {
-                    widths[idx] = w;
-                    changed = true;
+                if idx < widths.len() {
+                    // Standard constraints (Add, Mul, etc.) only increase width.
+                    // Narrowed constraints (BitwiseAnd) can decrease width.
+                    let is_narrowing = matches!(c, WidthConstraint::Narrowed { .. });
+                    if is_narrowing {
+                        if w != widths[idx] {
+                            widths[idx] = w;
+                            changed = true;
+                        }
+                    } else if w > widths[idx] {
+                        widths[idx] = w;
+                        changed = true;
+                    }
                 }
             }
         }
@@ -146,6 +156,16 @@ fn evaluate_constraint(c: &WidthConstraint, widths: &[u32]) -> Option<(usize, u3
         WidthConstraint::SameAsPlusOne { node, source } => {
             let sw = get_w(widths, *source);
             Some((*node as usize, sw.saturating_add(1)))
+        }
+        WidthConstraint::Narrowed { node, source, narrow_width } => {
+            let sw = get_w(widths, *source);
+            // If source is not yet resolved (0), we can't narrow it yet.
+            // But literals and fixed signals are seeded, so this should resolve.
+            if sw == 0 {
+                Some((*node as usize, *narrow_width))
+            } else {
+                Some((*node as usize, sw.min(*narrow_width)))
+            }
         }
     }
 }

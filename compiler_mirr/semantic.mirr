@@ -1,4 +1,9 @@
 module mirr_semantic {
+    // TODO: Implement UnfoldIndex in ECS system
+    // TODO: Re-implement template cycle tracking fixes
+    // TODO: Verify fix for structural brace parsing errors
+    // TODO: FIX: Resolve SExpr conversion panics during macro expansion
+
     // ── AST node inputs ──
     signal ast_kind:     in u8;
     signal ast_value:    in u32;

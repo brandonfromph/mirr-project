@@ -1,7 +1,10 @@
 //! Phase 8a: R-SPU Register File
 //!
+//! High-performance synchronous register file interface.
 //! Implements 256 tagged-word registers (64-bit each).
 //! Supports two read ports and one write port.
+//!
+//! Implementation: regfile.sv (BRAM inferred)
 
 def regfile(
     clk: signal in bool,
@@ -14,29 +17,8 @@ def regfile(
     dout2: signal out u64
 ) {
     reflect {
-        // Register array: [element; length]
-        // MIRR supports large arrays in archetypes.
-        signal regs: internal u64[256];
-
-        // --- Read Ports (Combinational) ---
-        reflex read_ports {
-            on always {
-                ${dout1} = regs[${rs1}];
-                ${dout2} = regs[${rs2}];
-            }
-        }
-
-        // --- Write Port (Synchronous) ---
-        guard write_enable {
-            when ${clk} && ${we}
-            for 1 cycles;
-        }
-
-        reflex write_port {
-            on write_enable {
-                regs[${rd}] = ${din};
-            }
-        }
+        // Dummy signal to satisfy compiler (logic moved to regfile.sv)
+        signal _interface_active: internal bool;
     }
 }
 

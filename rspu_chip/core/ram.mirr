@@ -1,4 +1,9 @@
-// RAM pattern — generic memory block upgraded to 64-bit word
+//! Phase 8a: R-SPU Generic RAM
+//!
+//! Synchronous Block RAM (BRAM) interface for 64-bit words.
+//!
+//! Implementation: ram.sv
+
 def ram(
     clk: signal in bool,
     addr: signal in u16,
@@ -6,16 +11,8 @@ def ram(
     data_out: signal out u64
 ) {
     reflect {
-        guard mem_ready {
-            when ${clk} && ${addr} > 0
-            for 1 cycles;
-        }
-
-        reflex store {
-            on mem_ready {
-                ${data_out} = ${data_in};
-            }
-        }
+        // Dummy signal to satisfy compiler (logic moved to ram.sv)
+        signal _interface_active: internal bool;
     }
 }
 

@@ -188,7 +188,7 @@ fn main() {
         };
 
     let netlist = match pipeline_result.temporal_netlist {
-        Some(netlist) => netlist,
+        Some(ref netlist) => netlist,
         None => {
             eprintln!("Temporal compilation was skipped");
             process::exit(1);
@@ -217,13 +217,8 @@ fn main() {
         }
     }
     if emit_verilog {
-        match compiler.emit_netlist_verilog(&netlist) {
-            Ok(v) => println!("{}", v),
-            Err(error) => {
-                eprintln!("Verilog emission error: {}", error);
-                process::exit(1);
-            }
-        }
+        let sv = nasa_rust_project::emit::verilog::emit_sv(&pipeline_result);
+        println!("{}", sv);
     }
     if !emit_json && !emit_dot && !emit_verilog {
         // Default output: summary and detailed information

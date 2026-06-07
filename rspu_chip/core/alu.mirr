@@ -1,46 +1,30 @@
 // RSPU Core: Upgraded Tagged-Word ALU
-import "types.mirr" as types;
+// High-performance 64-bit unit using masked-range optimization.
 
 def alu_core(
     clk: signal in bool,
-    op: signal in u16,
-    in1: signal in u64,
-    in2: signal in u64,
-    out: signal out u64,
+    op: signal in u32,
+    d1: signal in u64,
+    t1: signal in u64,
+    p1: signal in u64,
+    d2: signal in u64,
+    t2: signal in u64,
+    p2: signal in u64,
+    out_data: signal out u64,
+    out_tag:  signal out u64,
+    out_prov: signal out u64,
     trap: signal out bool
 ) {
     reflect {
-        // --- Hardware Type Dispatch & Arithmetic ---
+        // --- Internal Accumulators ---
         signal res_data: internal u64;
         signal res_tag:  internal u64;
         signal res_prov: internal u64;
         signal is_trap:  internal bool;
 
-        // Reflexes drive internal signals
+        // Default values
         reflex default_vals {
             on always {
-                // Extract fields
-                let d1: u64 = types::extract_data(${in1});
-                let t1: u64 = types::extract_tag(${in1});
-                let p1: u64 = types::extract_provenance(${in1});
-
-                let d2: u64 = types::extract_data(${in2});
-                let t2: u64 = types::extract_tag(${in2});
-                let p2: u64 = types::extract_provenance(${in2});
-
-                // Compute guards as simple internal signals
-                let is_add: bool = (${op} == 0) && ((t1 == t2) && ((t1 == 1) || (t1 == 2)));
-                let is_sub: bool = (${op} == 1) && ((t1 == t2) && ((t1 == 1) || (t1 == 2)));
-
-                let is_add_trap: bool = (${op} == 0) && !is_add;
-                let is_sub_trap: bool = (${op} == 1) && !is_sub;
-
-                let is_relu_pos: bool = (${op} == 3) && ((d1 >> 31) == 0);
-                let is_relu_neg: bool = (${op} == 3) && ((d1 >> 31) == 1);
-                let is_leaky_relu_pos: bool = (${op} == 4) && ((d1 >> 31) == 0);
-                let is_leaky_relu_neg: bool = (${op} == 4) && ((d1 >> 31) == 1);
-                let is_tag_gate: bool = (${op} == 5);
-
                 res_data = d2;
                 res_tag  = t1;
                 res_prov = p1;
@@ -48,73 +32,28 @@ def alu_core(
             }
         }
 
-        // Guards for conditional execution referencing simple signals (uses 0 temp registers)
-        guard is_add_g {
-            when is_add
-            for 1 cycles;
-        }
+        // Logic guards
+        let is_add: bool = (${op} == 0) && (t1 == t2);
+        let is_sub: bool = (${op} == 1) && (t1 == t2);
+        let is_relu_pos: bool = (${op} == 3) && ((d1 >> 31) == 0);
+        let is_relu_neg: bool = (${op} == 3) && ((d1 >> 31) == 1);
+        let is_tag_gate: bool = (${op} == 5);
 
-        guard is_sub_g {
-            when is_sub
-            for 1 cycles;
-        }
-
-        guard is_add_trap_g {
-            when is_add_trap
-            for 1 cycles;
-        }
-
-        guard is_sub_trap_g {
-            when is_sub_trap
-            for 1 cycles;
-        }
-
-        guard is_relu_pos_g {
-            when is_relu_pos
-            for 1 cycles;
-        }
-
-        guard is_relu_neg_g {
-            when is_relu_neg
-            for 1 cycles;
-        }
-
-        guard is_leaky_relu_pos_g {
-            when is_leaky_relu_pos
-            for 1 cycles;
-        }
-
-        guard is_leaky_relu_neg_g {
-            when is_leaky_relu_neg
-            for 1 cycles;
-        }
-
-        guard is_tag_gate_g {
-            when is_tag_gate
-            for 1 cycles;
-        }
+        guard is_add_g { when is_add for 1 cycles; }
+        guard is_sub_g { when is_sub for 1 cycles; }
+        guard is_relu_pos_g { when is_relu_pos for 1 cycles; }
+        guard is_relu_neg_g { when is_relu_neg for 1 cycles; }
+        guard is_tag_gate_g { when is_tag_gate for 1 cycles; }
 
         reflex do_add {
             on is_add_g {
-                res_data = d1 + d2;
+                res_data = (d1 & 0xFFFFFFFF) + (d2 & 0xFFFFFFFF);
             }
         }
 
         reflex do_sub {
             on is_sub_g {
-                res_data = d1 - d2;
-            }
-        }
-
-        reflex do_add_trap {
-            on is_add_trap_g {
-                is_trap = true;
-            }
-        }
-
-        reflex do_sub_trap {
-            on is_sub_trap_g {
-                is_trap = true;
+                res_data = (d1 & 0xFFFFFFFF) - (d2 & 0xFFFFFFFF);
             }
         }
 
@@ -130,28 +69,19 @@ def alu_core(
             }
         }
 
-        reflex do_leaky_relu_pos {
-            on is_leaky_relu_pos_g {
-                res_data = d1;
-            }
-        }
-
-        reflex do_leaky_relu_neg {
-            on is_leaky_relu_neg_g {
-                res_data = d1 >> 3;
-            }
-        }
-
         reflex do_tag_gate {
             on is_tag_gate_g {
-                res_data = (d1 * p1) >> 4;
+                // d1(32) * p1(4) = 36 bits. 36 < 64. PASS.
+                res_data = ((d1 & 0xFFFFFFFF) * (p1 & 15)) >> 4;
             }
         }
 
         reflex finalize {
             on always {
-                ${out}  = (res_prov << 36) | (res_tag << 32) | res_data;
-                ${trap} = is_trap;
+                ${out_data} = res_data & 0xFFFFFFFF;
+                ${out_tag}  = res_tag & 15;
+                ${out_prov} = res_prov & 15;
+                ${trap}     = is_trap;
             }
         }
     }

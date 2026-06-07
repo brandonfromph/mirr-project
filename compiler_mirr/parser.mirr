@@ -1,4 +1,11 @@
 module mirr_parser {
+    // TODO: Finalize ECS migration for ArrayLiteral expressions
+    // TODO: Complete StructLiteral ECS integration
+    // TODO: Restore ergonomic hardware language syntax
+    // TODO: Resolve remaining AST-based macro parser collisions
+    // TODO: FIX: Prevent OOM crashes under heavy load
+    // TODO: FIX: Ensure structural brace parsing handles nested blocks correctly
+
     // ── Token buffer inputs (from lexer) ──
     signal tok_kind:    in u8;
     signal tok_start:   in u16;

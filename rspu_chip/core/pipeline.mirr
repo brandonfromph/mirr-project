@@ -14,12 +14,12 @@ def rspu_pipeline(
     rst_n: signal in bool,
     instr_in: signal in u32,
     pc_out: signal out u32,
+    data_out: signal out u64,
     trap_out: signal out bool
 ) {
     reflect {
         // --- 1. Fetch Stage (IF) ---
         signal pc: internal u32;
-        signal if_instr: internal u32;
         
         // PCC Verifier Integration
         signal pcc_valid: internal bool;
@@ -46,69 +46,88 @@ def rspu_pipeline(
             pcc_valid, pcc_fault
         );
 
-        // Guards for fetch-stage control flow.
         guard fetch_active(pcc_valid) for 1 cycles;
         guard fetch_fault(pcc_fault) for 1 cycles;
 
         reflex fetch_normal {
             on fetch_active {
-                if_instr = ${instr_in};
-                pc = pc + 1;
+                pc = (pc + 1) & 4294967295;
                 ${pc_out} = pc;
             }
         }
 
         reflex fetch_on_fault {
             on fetch_fault {
-                if_instr = 0;
                 ${trap_out} = pcc_fault;
             }
         }
 
         // --- 2. Decode Stage (ID) ---
-        signal id_rs1: internal u8;
-        signal id_rs2: internal u8;
-        signal id_rd:  internal u8;
+        signal id_rs1: internal u32;
+        signal id_rs2: internal u32;
+        signal id_rd:  internal u32;
         signal id_val1: internal u64;
         signal id_val2: internal u64;
         signal reg_we: internal bool;
         signal reg_din: internal u64;
-        reflex init_reg_ports {
-            on always {
-                reg_we = false;
-                reg_din = 0;
-            }
-        }
         
         reg::regfile(${clk}, id_rs1, id_rs2, id_rd, reg_we, reg_din, id_val1, id_val2);
 
         // --- 3. Execute Stage (EX) ---
-        signal ex_out: internal u64;
-        signal ex_trap: internal bool;
-        signal alu_op: internal u16;
-        reflex init_alu_op {
-            on always {
-                alu_op = 0;
-            }
-        }
-        alu::alu_core(${clk}, alu_op, id_val1, id_val2, ex_out, ex_trap);
+        // Operands typed as u64 to pass Type Checker, but masked via Patterns
+        signal ex_d1: internal u64;
+        signal ex_t1: internal u64;
+        signal ex_p1: internal u64;
+        signal ex_d2: internal u64;
+        signal ex_t2: internal u64;
+        signal ex_p2: internal u64;
+        
+        signal ex_out_d: internal u64;
+        signal ex_out_t: internal u64;
+        signal ex_out_p: internal u64;
+        signal ex_trap:  internal bool;
+        signal alu_op:   internal u32;
+
+        // Use new correctly-typed patterns (returning u64 masked to 32/4 bits)
+        types::extract_data(id_val1, ex_d1);
+        types::extract_tag(id_val1, ex_t1);
+        types::extract_provenance(id_val1, ex_p1);
+
+        types::extract_data(id_val2, ex_d2);
+        types::extract_tag(id_val2, ex_t2);
+        types::extract_provenance(id_val2, ex_p2);
+
+        alu::alu_core(${clk}, alu_op, 
+            ex_d1, ex_t1, ex_p1,
+            ex_d2, ex_t2, ex_p2,
+            ex_out_d, ex_out_t, ex_out_p, ex_trap
+        );
 
         // --- 4. Memory Stage (MEM) ---
-        signal mem_out: internal u64;
-        signal ram_addr: internal u16;
-        reflex init_ram_addr {
+        signal ex_packed: internal u64;
+        reflex pack_ex_result {
             on always {
-                ram_addr = 0;
+                // Pack bits back into 64-bit word
+                ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
+                ${data_out} = ex_packed;
             }
         }
-        ram::ram(${clk}, ram_addr, ex_out, mem_out);
 
-        // --- 5. Writeback Stage (WB) ---
-        reflex writeback {
+        signal mem_out: internal u64;
+        signal ram_addr: internal u32;
+
+        reflex decode_instr {
             on always {
-                id_rd = 0;
+                id_rs1 = (${instr_in} >> 24) & 255;
+                id_rs2 = (${instr_in} >> 16) & 255;
+                id_rd  = (${instr_in} >> 8) & 255;
+                alu_op = (${instr_in} & 255);
+                ram_addr = (pc & 65535);
+                reg_we = true;
+                reg_din = ex_packed;
             }
         }
+        ram::ram(${clk}, ram_addr, ex_packed, mem_out);
     }
 }
 

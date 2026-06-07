@@ -41,11 +41,11 @@ fn emit_shift_register_guard(
     out: &mut String,
 ) {
     let cond_desc = sr.condition_kind.describe();
-    // Special case: 1-cycle guard is purely combinational.
-    if sr.delay_cycles == 1 {
+    // Special case: 0 or 1-cycle guard is purely combinational.
+    if sr.delay_cycles <= 1 {
         out.push_str(&format!(
-            "  // Guard: {} — {} for 1 cycle (combinational)\n",
-            sr.name, cond_desc
+            "  // Guard: {} — {} for {} cycle (combinational)\n",
+            sr.name, cond_desc, sr.delay_cycles
         ));
         out.push_str(&format!("  logic {}_cond;\n", sr.name));
         out.push_str(&format!(
@@ -197,36 +197,59 @@ pub(super) fn emit_reflex_logic(
     }
     out.push('\n');
 
+    // Group reflexes by their target signals to prevent multiple-driver conflicts.
+    let mut signal_to_reflexes: std::collections::HashMap<String, Vec<&crate::ast::program::Reflex>> =
+        std::collections::HashMap::new();
+    
     for r in &module.reflexes {
-        if let Some(ref origin) = r.origin {
-            out.push_str(&format!("  // Pattern: {origin}\n"));
+        for a in &r.assignments {
+            signal_to_reflexes.entry(a.target.clone()).or_default().push(r);
         }
-        out.push_str(&format!("  // Reflex: {}\n", r.name));
-        // Emit DSP synthesis attribute if this reflex contains a multiply.
+    }
+
+    // Sort signals by name for deterministic emission.
+    let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
+    signals.sort();
+
+    for sig in signals {
+        let refs = &signal_to_reflexes[&sig];
+        
+        // Emit DSP synthesis attribute if ANY reflex for this signal contains a multiply.
         if let Some(attr) = dsp_attr {
-            if dsp_reflexes.contains(&r.name) {
+            let has_dsp = refs.iter().any(|r| dsp_reflexes.contains(&r.name));
+            if has_dsp {
                 out.push_str(&format!("  {attr}\n"));
             }
         }
-        out.push_str("  always_comb begin\n");
-        // Default assignments to prevent latch inference.
-        for a in &r.assignments {
-            out.push_str(&format!("    {} = '0;\n", a.target));
-        }
-        for a in &r.assignments {
+
+        out.push_str(&format!("  // Unified Reflex Block for: {sig}\n"));
+        out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+        out.push_str("    if (!rst_n) begin\n");
+        out.push_str(&format!("      {} <= '0;\n", sig));
+        out.push_str("    end else begin\n");
+        
+        // Priority-ordered assignments: later reflexes in the module override earlier ones.
+        for r in refs {
             let guard_cond = if r.guard_names.len() == 1 {
                 format!("{}_out", r.guard_names[0])
             } else {
                 let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
                 parts.join(" && ")
             };
-            out.push_str(&format!(
-                "    if ({}) {} = {};\n",
-                guard_cond,
-                a.target,
-                super::emit_expr_inline(&a.value),
-            ));
+            
+            // Find the assignment to THIS signal in this reflex.
+            for a in &r.assignments {
+                if a.target == sig {
+                    out.push_str(&format!(
+                        "      if ({}) {} <= {};\n",
+                        guard_cond,
+                        sig,
+                        super::emit_expr_inline(&a.value),
+                    ));
+                }
+            }
         }
+        out.push_str("    end\n");
         out.push_str("  end\n\n");
     }
 }

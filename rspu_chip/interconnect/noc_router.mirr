@@ -1,899 +1,137 @@
-//! Phase 8b: 16-Core Network-on-Chip (NoC) Router
+//! Phase 2b: R-SPU NoC Interconnect Router (16-Core Liquid Architecture)
 //!
-//! Packet-switched 64-bit interconnect for the R-SPU fabric.
-//! Uses a simplified Star topology for initial integration.
+//! Implements a high-throughput priority-based router for 16 processor cores.
+//! Dynamically routes tagged-word packets based on dest_id.
 
 def noc_router(
     clk: signal in bool,
     rst_n: signal in bool,
 
-    // TX Signals
-    port_tx_valid_0: signal in bool, port_tx_data_0: signal in u64,
-    port_tx_valid_1: signal in bool, port_tx_data_1: signal in u64,
-    port_tx_valid_2: signal in bool, port_tx_data_2: signal in u64,
-    port_tx_valid_3: signal in bool, port_tx_data_3: signal in u64,
-    port_tx_valid_4: signal in bool, port_tx_data_4: signal in u64,
-    port_tx_valid_5: signal in bool, port_tx_data_5: signal in u64,
-    port_tx_valid_6: signal in bool, port_tx_data_6: signal in u64,
-    port_tx_valid_7: signal in bool, port_tx_data_7: signal in u64,
-    port_tx_valid_8: signal in bool, port_tx_data_8: signal in u64,
-    port_tx_valid_9: signal in bool, port_tx_data_9: signal in u64,
-    port_tx_valid_10: signal in bool, port_tx_data_10: signal in u64,
-    port_tx_valid_11: signal in bool, port_tx_data_11: signal in u64,
-    port_tx_valid_12: signal in bool, port_tx_data_12: signal in u64,
-    port_tx_valid_13: signal in bool, port_tx_data_13: signal in u64,
-    port_tx_valid_14: signal in bool, port_tx_data_14: signal in u64,
+    tx_valid_0: signal in bool, tx_data_0: signal in u64,
+    tx_valid_1: signal in bool, tx_data_1: signal in u64,
+    tx_valid_2: signal in bool, tx_data_2: signal in u64,
+    tx_valid_3: signal in bool, tx_data_3: signal in u64,
+    tx_valid_4: signal in bool, tx_data_4: signal in u64,
+    tx_valid_5: signal in bool, tx_data_5: signal in u64,
+    tx_valid_6: signal in bool, tx_data_6: signal in u64,
+    tx_valid_7: signal in bool, tx_data_7: signal in u64,
+    tx_valid_8: signal in bool, tx_data_8: signal in u64,
+    tx_valid_9: signal in bool, tx_data_9: signal in u64,
+    tx_valid_10: signal in bool, tx_data_10: signal in u64,
+    tx_valid_11: signal in bool, tx_data_11: signal in u64,
+    tx_valid_12: signal in bool, tx_data_12: signal in u64,
+    tx_valid_13: signal in bool, tx_data_13: signal in u64,
+    tx_valid_14: signal in bool, tx_data_14: signal in u64,
+    tx_valid_15: signal in bool, tx_data_15: signal in u64,
 
-    // RX Signals
-    port_rx_valid_0: signal out bool, port_rx_data_0: signal out u64,
-    port_rx_valid_1: signal out bool, port_rx_data_1: signal out u64,
-    port_rx_valid_2: signal out bool, port_rx_data_2: signal out u64,
-    port_rx_valid_3: signal out bool, port_rx_data_3: signal out u64,
-    port_rx_valid_4: signal out bool, port_rx_data_4: signal out u64,
-    port_rx_valid_5: signal out bool, port_rx_data_5: signal out u64,
-    port_rx_valid_6: signal out bool, port_rx_data_6: signal out u64,
-    port_rx_valid_7: signal out bool, port_rx_data_7: signal out u64,
-    port_rx_valid_8: signal out bool, port_rx_data_8: signal out u64,
-    port_rx_valid_9: signal out bool, port_rx_data_9: signal out u64,
-    port_rx_valid_10: signal out bool, port_rx_data_10: signal out u64,
-    port_rx_valid_11: signal out bool, port_rx_data_11: signal out u64,
-    port_rx_valid_12: signal out bool, port_rx_data_12: signal out u64,
-    port_rx_valid_13: signal out bool, port_rx_data_13: signal out u64,
-    port_rx_valid_14: signal out bool, port_rx_data_14: signal out u64
+    rx_valid_0: signal out bool, rx_data_0: signal out u64,
+    rx_valid_1: signal out bool, rx_data_1: signal out u64,
+    rx_valid_2: signal out bool, rx_data_2: signal out u64,
+    rx_valid_3: signal out bool, rx_data_3: signal out u64,
+    rx_valid_4: signal out bool, rx_data_4: signal out u64,
+    rx_valid_5: signal out bool, rx_data_5: signal out u64,
+    rx_valid_6: signal out bool, rx_data_6: signal out u64,
+    rx_valid_7: signal out bool, rx_data_7: signal out u64,
+    rx_valid_8: signal out bool, rx_data_8: signal out u64,
+    rx_valid_9: signal out bool, rx_data_9: signal out u64,
+    rx_valid_10: signal out bool, rx_data_10: signal out u64,
+    rx_valid_11: signal out bool, rx_data_11: signal out u64,
+    rx_valid_12: signal out bool, rx_data_12: signal out u64,
+    rx_valid_13: signal out bool, rx_data_13: signal out u64,
+    rx_valid_14: signal out bool, rx_data_14: signal out u64,
+    rx_valid_15: signal out bool, rx_data_15: signal out u64
 ) {
     reflect {
-        // Star Topology Dispatch with Reflexive Priority Routing
-        reflex simple_switch_split_ {
-            let rx_has_priority_0: bool = false;
-            let rx_has_priority_1: bool = false;
-            let rx_has_priority_2: bool = false;
-            let rx_has_priority_3: bool = false;
-            let rx_has_priority_4: bool = false;
-            let rx_has_priority_5: bool = false;
-            let rx_has_priority_6: bool = false;
-            let rx_has_priority_7: bool = false;
-            let rx_has_priority_8: bool = false;
-            let rx_has_priority_9: bool = false;
-            let rx_has_priority_10: bool = false;
-            let rx_has_priority_11: bool = false;
-            let rx_has_priority_12: bool = false;
-            let rx_has_priority_13: bool = false;
-            let rx_has_priority_14: bool = false;
+        signal sv0: internal bool; signal sd0: internal u64;
+        signal sv1: internal bool; signal sd1: internal u64;
+        signal sv2: internal bool; signal sd2: internal u64;
+        signal sv3: internal bool; signal sd3: internal u64;
+        signal sv4: internal bool; signal sd4: internal u64;
+        signal sv5: internal bool; signal sd5: internal u64;
+        signal sv6: internal bool; signal sd6: internal u64;
+        signal sv7: internal bool; signal sd7: internal u64;
+        signal sv8: internal bool; signal sd8: internal u64;
+        signal sv9: internal bool; signal sd9: internal u64;
+        signal sv10: internal bool; signal sd10: internal u64;
+        signal sv11: internal bool; signal sd11: internal u64;
+        signal sv12: internal bool; signal sd12: internal u64;
+        signal sv13: internal bool; signal sd13: internal u64;
+        signal sv14: internal bool; signal sd14: internal u64;
+        signal sv15: internal bool; signal sd15: internal u64;
 
-            // Default: Idle all outputs
-            ${port_rx_valid_0} = false;
-            ${port_rx_data_0}  = 0;
-            ${port_rx_valid_1} = false;
-            ${port_rx_data_1}  = 0;
-            ${port_rx_valid_2} = false;
-            ${port_rx_data_2}  = 0;
-            ${port_rx_valid_3} = false;
-            ${port_rx_data_3}  = 0;
-            ${port_rx_valid_4} = false;
-            ${port_rx_data_4}  = 0;
-            ${port_rx_valid_5} = false;
-            ${port_rx_data_5}  = 0;
-            ${port_rx_valid_6} = false;
-            ${port_rx_data_6}  = 0;
-            ${port_rx_valid_7} = false;
-            ${port_rx_data_7}  = 0;
-            ${port_rx_valid_8} = false;
-            ${port_rx_data_8}  = 0;
-            ${port_rx_valid_9} = false;
-            ${port_rx_data_9}  = 0;
-            ${port_rx_valid_10} = false;
-            ${port_rx_data_10}  = 0;
-            ${port_rx_valid_11} = false;
-            ${port_rx_data_11}  = 0;
-            ${port_rx_valid_12} = false;
-            ${port_rx_data_12}  = 0;
-            ${port_rx_valid_13} = false;
-            ${port_rx_data_13}  = 0;
-            ${port_rx_valid_14} = false;
-            ${port_rx_data_14}  = 0;
+        reflex r0 { on always { sv0 = ${tx_valid_0}; sd0 = ${tx_data_0}; } }
 
-            // Route Logic
-            on ${port_tx_valid_0} {
-                let dest_id: u64 = (${port_tx_data_0} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_0};
-                let priority: u64 = (payload >> 59) && 1;
-                let is_reflexive: bool = (priority == 1) || (dest_id == 14);
+        // Cascade with explicitly negated guards for each core
+        guard n1(!${tx_valid_1}) for 1 cycles;
+        reflex r1 { on ${tx_valid_1} { sv1 = true; sd1 = ${tx_data_1}; } on n1 { sv1 = sv0; sd1 = sd0; } }
 
-                match dest_id {
-                    0  => {
-                        if is_reflexive || !rx_has_priority_0 {
-                            ${port_rx_valid_0} = true;
-                            ${port_rx_data_0}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_0 = true;
-                            }
-                        }
-                    }
-                    1  => {
-                        if is_reflexive || !rx_has_priority_1 {
-                            ${port_rx_valid_1} = true;
-                            ${port_rx_data_1}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_1 = true;
-                            }
-                        }
-                    }
-                    2  => {
-                        if is_reflexive || !rx_has_priority_2 {
-                            ${port_rx_valid_2} = true;
-                            ${port_rx_data_2}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_2 = true;
-                            }
-                        }
-                    }
-                    3  => {
-                        if is_reflexive || !rx_has_priority_3 {
-                            ${port_rx_valid_3} = true;
-                            ${port_rx_data_3}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_3 = true;
-                            }
-                        }
-                    }
-                    4  => {
-                        if is_reflexive || !rx_has_priority_4 {
-                            ${port_rx_valid_4} = true;
-                            ${port_rx_data_4}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_4 = true;
-                            }
-                        }
-                    }
-                    5  => {
-                        if is_reflexive || !rx_has_priority_5 {
-                            ${port_rx_valid_5} = true;
-                            ${port_rx_data_5}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_5 = true;
-                            }
-                        }
-                    }
-                    6  => {
-                        if is_reflexive || !rx_has_priority_6 {
-                            ${port_rx_valid_6} = true;
-                            ${port_rx_data_6}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_6 = true;
-                            }
-                        }
-                    }
-                    7  => {
-                        if is_reflexive || !rx_has_priority_7 {
-                            ${port_rx_valid_7} = true;
-                            ${port_rx_data_7}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_7 = true;
-                            }
-                        }
-                    }
-                    8  => {
-                        if is_reflexive || !rx_has_priority_8 {
-                            ${port_rx_valid_8} = true;
-                            ${port_rx_data_8}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_8 = true;
-                            }
-                        }
-                    }
-                    9  => {
-                        if is_reflexive || !rx_has_priority_9 {
-                            ${port_rx_valid_9} = true;
-                            ${port_rx_data_9}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_9 = true;
-                            }
-                        }
-                    }
-                    10  => {
-                        if is_reflexive || !rx_has_priority_10 {
-                            ${port_rx_valid_10} = true;
-                            ${port_rx_data_10}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_10 = true;
-                            }
-                        }
-                    }
-                    11  => {
-                        if is_reflexive || !rx_has_priority_11 {
-                            ${port_rx_valid_11} = true;
-                            ${port_rx_data_11}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_11 = true;
-                            }
-                        }
-                    }
-                    12  => {
-                        if is_reflexive || !rx_has_priority_12 {
-                            ${port_rx_valid_12} = true;
-                            ${port_rx_data_12}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_12 = true;
-                            }
-                        }
-                    }
-                    13  => {
-                        if is_reflexive || !rx_has_priority_13 {
-                            ${port_rx_valid_13} = true;
-                            ${port_rx_data_13}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_13 = true;
-                            }
-                        }
-                    }
-                    14  => {
-                        if is_reflexive || !rx_has_priority_14 {
-                            ${port_rx_valid_14} = true;
-                            ${port_rx_data_14}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_14 = true;
-                            }
-                        }
-                    }
-                }
-            }
-            on ${port_tx_valid_1} {
-                let dest_id: u64 = (${port_tx_data_1} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_1};
-                let priority: u64 = (payload >> 59) && 1;
-                let is_reflexive: bool = (priority == 1) || (dest_id == 14);
+        guard n2(!${tx_valid_2}) for 1 cycles;
+        reflex r2 { on ${tx_valid_2} { sv2 = true; sd2 = ${tx_data_2}; } on n2 { sv2 = sv1; sd2 = sd1; } }
 
-                match dest_id {
-                    0  => {
-                        if is_reflexive || !rx_has_priority_0 {
-                            ${port_rx_valid_0} = true;
-                            ${port_rx_data_0}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_0 = true;
-                            }
-                        }
-                    }
-                    1  => {
-                        if is_reflexive || !rx_has_priority_1 {
-                            ${port_rx_valid_1} = true;
-                            ${port_rx_data_1}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_1 = true;
-                            }
-                        }
-                    }
-                    2  => {
-                        if is_reflexive || !rx_has_priority_2 {
-                            ${port_rx_valid_2} = true;
-                            ${port_rx_data_2}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_2 = true;
-                            }
-                        }
-                    }
-                    3  => {
-                        if is_reflexive || !rx_has_priority_3 {
-                            ${port_rx_valid_3} = true;
-                            ${port_rx_data_3}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_3 = true;
-                            }
-                        }
-                    }
-                    4  => {
-                        if is_reflexive || !rx_has_priority_4 {
-                            ${port_rx_valid_4} = true;
-                            ${port_rx_data_4}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_4 = true;
-                            }
-                        }
-                    }
-                    5  => {
-                        if is_reflexive || !rx_has_priority_5 {
-                            ${port_rx_valid_5} = true;
-                            ${port_rx_data_5}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_5 = true;
-                            }
-                        }
-                    }
-                    6  => {
-                        if is_reflexive || !rx_has_priority_6 {
-                            ${port_rx_valid_6} = true;
-                            ${port_rx_data_6}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_6 = true;
-                            }
-                        }
-                    }
-                    7  => {
-                        if is_reflexive || !rx_has_priority_7 {
-                            ${port_rx_valid_7} = true;
-                            ${port_rx_data_7}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_7 = true;
-                            }
-                        }
-                    }
-                    8  => {
-                        if is_reflexive || !rx_has_priority_8 {
-                            ${port_rx_valid_8} = true;
-                            ${port_rx_data_8}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_8 = true;
-                            }
-                        }
-                    }
-                    9  => {
-                        if is_reflexive || !rx_has_priority_9 {
-                            ${port_rx_valid_9} = true;
-                            ${port_rx_data_9}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_9 = true;
-                            }
-                        }
-                    }
-                    10  => {
-                        if is_reflexive || !rx_has_priority_10 {
-                            ${port_rx_valid_10} = true;
-                            ${port_rx_data_10}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_10 = true;
-                            }
-                        }
-                    }
-                    11  => {
-                        if is_reflexive || !rx_has_priority_11 {
-                            ${port_rx_valid_11} = true;
-                            ${port_rx_data_11}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_11 = true;
-                            }
-                        }
-                    }
-                    12  => {
-                        if is_reflexive || !rx_has_priority_12 {
-                            ${port_rx_valid_12} = true;
-                            ${port_rx_data_12}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_12 = true;
-                            }
-                        }
-                    }
-                    13  => {
-                        if is_reflexive || !rx_has_priority_13 {
-                            ${port_rx_valid_13} = true;
-                            ${port_rx_data_13}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_13 = true;
-                            }
-                        }
-                    }
-                    14  => {
-                        if is_reflexive || !rx_has_priority_14 {
-                            ${port_rx_valid_14} = true;
-                            ${port_rx_data_14}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_14 = true;
-                            }
-                        }
-                    }
-                }
-            }
-            on ${port_tx_valid_2} {
-                let dest_id: u64 = (${port_tx_data_2} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_2};
-                let priority: u64 = (payload >> 59) && 1;
-                let is_reflexive: bool = (priority == 1) || (dest_id == 14);
+        guard n3(!${tx_valid_3}) for 1 cycles;
+        reflex r3 { on ${tx_valid_3} { sv3 = true; sd3 = ${tx_data_3}; } on n3 { sv3 = sv2; sd3 = sd2; } }
 
-                match dest_id {
-                    0  => {
-                        if is_reflexive || !rx_has_priority_0 {
-                            ${port_rx_valid_0} = true;
-                            ${port_rx_data_0}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_0 = true;
-                            }
-                        }
-                    }
-                    1  => {
-                        if is_reflexive || !rx_has_priority_1 {
-                            ${port_rx_valid_1} = true;
-                            ${port_rx_data_1}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_1 = true;
-                            }
-                        }
-                    }
-                    2  => {
-                        if is_reflexive || !rx_has_priority_2 {
-                            ${port_rx_valid_2} = true;
-                            ${port_rx_data_2}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_2 = true;
-                            }
-                        }
-                    }
-                    3  => {
-                        if is_reflexive || !rx_has_priority_3 {
-                            ${port_rx_valid_3} = true;
-                            ${port_rx_data_3}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_3 = true;
-                            }
-                        }
-                    }
-                    4  => {
-                        if is_reflexive || !rx_has_priority_4 {
-                            ${port_rx_valid_4} = true;
-                            ${port_rx_data_4}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_4 = true;
-                            }
-                        }
-                    }
-                    5  => {
-                        if is_reflexive || !rx_has_priority_5 {
-                            ${port_rx_valid_5} = true;
-                            ${port_rx_data_5}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_5 = true;
-                            }
-                        }
-                    }
-                    6  => {
-                        if is_reflexive || !rx_has_priority_6 {
-                            ${port_rx_valid_6} = true;
-                            ${port_rx_data_6}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_6 = true;
-                            }
-                        }
-                    }
-                    7  => {
-                        if is_reflexive || !rx_has_priority_7 {
-                            ${port_rx_valid_7} = true;
-                            ${port_rx_data_7}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_7 = true;
-                            }
-                        }
-                    }
-                    8  => {
-                        if is_reflexive || !rx_has_priority_8 {
-                            ${port_rx_valid_8} = true;
-                            ${port_rx_data_8}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_8 = true;
-                            }
-                        }
-                    }
-                    9  => {
-                        if is_reflexive || !rx_has_priority_9 {
-                            ${port_rx_valid_9} = true;
-                            ${port_rx_data_9}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_9 = true;
-                            }
-                        }
-                    }
-                    10  => {
-                        if is_reflexive || !rx_has_priority_10 {
-                            ${port_rx_valid_10} = true;
-                            ${port_rx_data_10}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_10 = true;
-                            }
-                        }
-                    }
-                    11  => {
-                        if is_reflexive || !rx_has_priority_11 {
-                            ${port_rx_valid_11} = true;
-                            ${port_rx_data_11}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_11 = true;
-                            }
-                        }
-                    }
-                    12  => {
-                        if is_reflexive || !rx_has_priority_12 {
-                            ${port_rx_valid_12} = true;
-                            ${port_rx_data_12}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_12 = true;
-                            }
-                        }
-                    }
-                    13  => {
-                        if is_reflexive || !rx_has_priority_13 {
-                            ${port_rx_valid_13} = true;
-                            ${port_rx_data_13}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_13 = true;
-                            }
-                        }
-                    }
-                    14  => {
-                        if is_reflexive || !rx_has_priority_14 {
-                            ${port_rx_valid_14} = true;
-                            ${port_rx_data_14}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_14 = true;
-                            }
-                        }
-                    }
-                }
-            }
-            on ${port_tx_valid_3} {
-                let dest_id: u64 = (${port_tx_data_3} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_3};
-                let priority: u64 = (payload >> 59) && 1;
-                let is_reflexive: bool = (priority == 1) || (dest_id == 14);
+        guard n4(!${tx_valid_4}) for 1 cycles;
+        reflex r4 { on ${tx_valid_4} { sv4 = true; sd4 = ${tx_data_4}; } on n4 { sv4 = sv3; sd4 = sd3; } }
 
-                match dest_id {
-                    0  => {
-                        if is_reflexive || !rx_has_priority_0 {
-                            ${port_rx_valid_0} = true;
-                            ${port_rx_data_0}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_0 = true;
-                            }
-                        }
-                    }
-                    1  => {
-                        if is_reflexive || !rx_has_priority_1 {
-                            ${port_rx_valid_1} = true;
-                            ${port_rx_data_1}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_1 = true;
-                            }
-                        }
-                    }
-                    2  => {
-                        if is_reflexive || !rx_has_priority_2 {
-                            ${port_rx_valid_2} = true;
-                            ${port_rx_data_2}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_2 = true;
-                            }
-                        }
-                    }
-                    3  => {
-                        if is_reflexive || !rx_has_priority_3 {
-                            ${port_rx_valid_3} = true;
-                            ${port_rx_data_3}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_3 = true;
-                            }
-                        }
-                    }
-                    4  => {
-                        if is_reflexive || !rx_has_priority_4 {
-                            ${port_rx_valid_4} = true;
-                            ${port_rx_data_4}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_4 = true;
-                            }
-                        }
-                    }
-                    5  => {
-                        if is_reflexive || !rx_has_priority_5 {
-                            ${port_rx_valid_5} = true;
-                            ${port_rx_data_5}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_5 = true;
-                            }
-                        }
-                    }
-                    6  => {
-                        if is_reflexive || !rx_has_priority_6 {
-                            ${port_rx_valid_6} = true;
-                            ${port_rx_data_6}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_6 = true;
-                            }
-                        }
-                    }
-                    7  => {
-                        if is_reflexive || !rx_has_priority_7 {
-                            ${port_rx_valid_7} = true;
-                            ${port_rx_data_7}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_7 = true;
-                            }
-                        }
-                    }
-                    8  => {
-                        if is_reflexive || !rx_has_priority_8 {
-                            ${port_rx_valid_8} = true;
-                            ${port_rx_data_8}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_8 = true;
-                            }
-                        }
-                    }
-                    9  => {
-                        if is_reflexive || !rx_has_priority_9 {
-                            ${port_rx_valid_9} = true;
-                            ${port_rx_data_9}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_9 = true;
-                            }
-                        }
-                    }
-                    10  => {
-                        if is_reflexive || !rx_has_priority_10 {
-                            ${port_rx_valid_10} = true;
-                            ${port_rx_data_10}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_10 = true;
-                            }
-                        }
-                    }
-                    11  => {
-                        if is_reflexive || !rx_has_priority_11 {
-                            ${port_rx_valid_11} = true;
-                            ${port_rx_data_11}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_11 = true;
-                            }
-                        }
-                    }
-                    12  => {
-                        if is_reflexive || !rx_has_priority_12 {
-                            ${port_rx_valid_12} = true;
-                            ${port_rx_data_12}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_12 = true;
-                            }
-                        }
-                    }
-                    13  => {
-                        if is_reflexive || !rx_has_priority_13 {
-                            ${port_rx_valid_13} = true;
-                            ${port_rx_data_13}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_13 = true;
-                            }
-                        }
-                    }
-                    14  => {
-                        if is_reflexive || !rx_has_priority_14 {
-                            ${port_rx_valid_14} = true;
-                            ${port_rx_data_14}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_14 = true;
-                            }
-                        }
-                    }
-                }
-            }
-            on ${port_tx_valid_4} {
-                let dest_id: u64 = (${port_tx_data_4} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_4};
-                if dest_id == 4 {
-                    ${port_rx_valid_4} = true;
-                    ${port_rx_data_4}  = payload;
-                }
-            }
-            on ${port_tx_valid_5} {
-                let dest_id: u64 = (${port_tx_data_5} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_5};
-                if dest_id == 5 {
-                    ${port_rx_valid_5} = true;
-                    ${port_rx_data_5}  = payload;
-                }
-            }
-            on ${port_tx_valid_6} {
-                let dest_id: u64 = (${port_tx_data_6} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_6};
-                if dest_id == 6 {
-                    ${port_rx_valid_6} = true;
-                    ${port_rx_data_6}  = payload;
-                }
-            }
-            on ${port_tx_valid_7} {
-                let dest_id: u64 = (${port_tx_data_7} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_7};
-                if dest_id == 7 {
-                    ${port_rx_valid_7} = true;
-                    ${port_rx_data_7}  = payload;
-                }
-            }
-            on ${port_tx_valid_8} {
-                let dest_id: u64 = (${port_tx_data_8} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_8};
-                if dest_id == 8 {
-                    ${port_rx_valid_8} = true;
-                    ${port_rx_data_8}  = payload;
-                }
-            }
-            on ${port_tx_valid_9} {
-                let dest_id: u64 = (${port_tx_data_9} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_9};
-                if dest_id == 9 {
-                    ${port_rx_valid_9} = true;
-                    ${port_rx_data_9}  = payload;
-                }
-            }
-            on ${port_tx_valid_10} {
-                let dest_id: u64 = (${port_tx_data_10} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_10};
-                if dest_id == 10 {
-                    ${port_rx_valid_10} = true;
-                    ${port_rx_data_10}  = payload;
-                }
-            }
-            on ${port_tx_valid_11} {
-                let dest_id: u64 = (${port_tx_data_11} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_11};
-                if dest_id == 11 {
-                    ${port_rx_valid_11} = true;
-                    ${port_rx_data_11}  = payload;
-                }
-            }
-            on ${port_tx_valid_12} {
-                let dest_id: u64 = (${port_tx_data_12} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_12};
-                if dest_id == 12 {
-                    ${port_rx_valid_12} = true;
-                    ${port_rx_data_12}  = payload;
-                }
-            }
-            on ${port_tx_valid_13} {
-                let dest_id: u64 = (${port_tx_data_13} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_13};
-                if dest_id == 13 {
-                    ${port_rx_valid_13} = true;
-                    ${port_rx_data_13}  = payload;
-                }
-            }
-            on ${port_tx_valid_14} {
-                let dest_id: u64 = (${port_tx_data_14} >> 60) && 15;
-                let payload: u64 = ${port_tx_data_14};
-                let priority: u64 = (payload >> 59) && 1;
-                let is_reflexive: bool = true;
+        guard n5(!${tx_valid_5}) for 1 cycles;
+        reflex r5 { on ${tx_valid_5} { sv5 = true; sd5 = ${tx_data_5}; } on n5 { sv5 = sv4; sd5 = sd4; } }
 
-                match dest_id {
-                    0  => {
-                        if is_reflexive || !rx_has_priority_0 {
-                            ${port_rx_valid_0} = true;
-                            ${port_rx_data_0}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_0 = true;
-                            }
-                        }
-                    }
-                    1  => {
-                        if is_reflexive || !rx_has_priority_1 {
-                            ${port_rx_valid_1} = true;
-                            ${port_rx_data_1}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_1 = true;
-                            }
-                        }
-                    }
-                    2  => {
-                        if is_reflexive || !rx_has_priority_2 {
-                            ${port_rx_valid_2} = true;
-                            ${port_rx_data_2}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_2 = true;
-                            }
-                        }
-                    }
-                    3  => {
-                        if is_reflexive || !rx_has_priority_3 {
-                            ${port_rx_valid_3} = true;
-                            ${port_rx_data_3}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_3 = true;
-                            }
-                        }
-                    }
-                    4  => {
-                        if is_reflexive || !rx_has_priority_4 {
-                            ${port_rx_valid_4} = true;
-                            ${port_rx_data_4}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_4 = true;
-                            }
-                        }
-                    }
-                    5  => {
-                        if is_reflexive || !rx_has_priority_5 {
-                            ${port_rx_valid_5} = true;
-                            ${port_rx_data_5}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_5 = true;
-                            }
-                        }
-                    }
-                    6  => {
-                        if is_reflexive || !rx_has_priority_6 {
-                            ${port_rx_valid_6} = true;
-                            ${port_rx_data_6}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_6 = true;
-                            }
-                        }
-                    }
-                    7  => {
-                        if is_reflexive || !rx_has_priority_7 {
-                            ${port_rx_valid_7} = true;
-                            ${port_rx_data_7}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_7 = true;
-                            }
-                        }
-                    }
-                    8  => {
-                        if is_reflexive || !rx_has_priority_8 {
-                            ${port_rx_valid_8} = true;
-                            ${port_rx_data_8}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_8 = true;
-                            }
-                        }
-                    }
-                    9  => {
-                        if is_reflexive || !rx_has_priority_9 {
-                            ${port_rx_valid_9} = true;
-                            ${port_rx_data_9}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_9 = true;
-                            }
-                        }
-                    }
-                    10  => {
-                        if is_reflexive || !rx_has_priority_10 {
-                            ${port_rx_valid_10} = true;
-                            ${port_rx_data_10}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_10 = true;
-                            }
-                        }
-                    }
-                    11  => {
-                        if is_reflexive || !rx_has_priority_11 {
-                            ${port_rx_valid_11} = true;
-                            ${port_rx_data_11}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_11 = true;
-                            }
-                        }
-                    }
-                    12  => {
-                        if is_reflexive || !rx_has_priority_12 {
-                            ${port_rx_valid_12} = true;
-                            ${port_rx_data_12}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_12 = true;
-                            }
-                        }
-                    }
-                    13  => {
-                        if is_reflexive || !rx_has_priority_13 {
-                            ${port_rx_valid_13} = true;
-                            ${port_rx_data_13}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_13 = true;
-                            }
-                        }
-                    }
-                    14  => {
-                        if is_reflexive || !rx_has_priority_14 {
-                            ${port_rx_valid_14} = true;
-                            ${port_rx_data_14}  = payload;
-                            if is_reflexive {
-                                rx_has_priority_14 = true;
-                            }
-                        }
-                    }
-                }
+        guard n6(!${tx_valid_6}) for 1 cycles;
+        reflex r6 { on ${tx_valid_6} { sv6 = true; sd6 = ${tx_data_6}; } on n6 { sv6 = sv5; sd6 = sd5; } }
+
+        guard n7(!${tx_valid_7}) for 1 cycles;
+        reflex r7 { on ${tx_valid_7} { sv7 = true; sd7 = ${tx_data_7}; } on n7 { sv7 = sv6; sd7 = sd6; } }
+
+        guard n8(!${tx_valid_8}) for 1 cycles;
+        reflex r8 { on ${tx_valid_8} { sv8 = true; sd8 = ${tx_data_8}; } on n8 { sv8 = sv7; sd8 = sd7; } }
+
+        guard n9(!${tx_valid_9}) for 1 cycles;
+        reflex r9 { on ${tx_valid_9} { sv9 = true; sd9 = ${tx_data_9}; } on n9 { sv9 = sv8; sd9 = sd8; } }
+
+        guard n10(!${tx_valid_10}) for 1 cycles;
+        reflex r10 { on ${tx_valid_10} { sv10 = true; sd10 = ${tx_data_10}; } on n10 { sv10 = sv9; sd10 = sd9; } }
+
+        guard n11(!${tx_valid_11}) for 1 cycles;
+        reflex r11 { on ${tx_valid_11} { sv11 = true; sd11 = ${tx_data_11}; } on n11 { sv11 = sv10; sd11 = sd10; } }
+
+        guard n12(!${tx_valid_12}) for 1 cycles;
+        reflex r12 { on ${tx_valid_12} { sv12 = true; sd12 = ${tx_data_12}; } on n12 { sv12 = sv11; sd12 = sd11; } }
+
+        guard n13(!${tx_valid_13}) for 1 cycles;
+        reflex r13 { on ${tx_valid_13} { sv13 = true; sd13 = ${tx_data_13}; } on n13 { sv13 = sv12; sd13 = sd12; } }
+
+        guard n14(!${tx_valid_14}) for 1 cycles;
+        reflex r14 { on ${tx_valid_14} { sv14 = true; sd14 = ${tx_data_14}; } on n14 { sv14 = sv13; sd14 = sd13; } }
+
+        guard n15(!${tx_valid_15}) for 1 cycles;
+        reflex r15 { on ${tx_valid_15} { sv15 = true; sd15 = ${tx_data_15}; } on n15 { sv15 = sv14; sd15 = sd14; } }
+
+        signal dest_id: internal u16;
+        signal payload: internal u64;
+        reflex extract {
+            on always {
+                dest_id = (sv15 >> 48) & 4095;
+                payload = sv15 & 281474976710655;
             }
         }
+
+        reflex out0 { on always { ${rx_valid_0} = sv15 && (dest_id == 0); ${rx_data_0} = payload; } }
+        reflex out1 { on always { ${rx_valid_1} = sv15 && (dest_id == 1); ${rx_data_1} = payload; } }
+        reflex out2 { on always { ${rx_valid_2} = sv15 && (dest_id == 2); ${rx_data_2} = payload; } }
+        reflex out3 { on always { ${rx_valid_3} = sv15 && (dest_id == 3); ${rx_data_3} = payload; } }
+        reflex out4 { on always { ${rx_valid_4} = sv15 && (dest_id == 4); ${rx_data_4} = payload; } }
+        reflex out5 { on always { ${rx_valid_5} = sv15 && (dest_id == 5); ${rx_data_5} = payload; } }
+        reflex out6 { on always { ${rx_valid_6} = sv15 && (dest_id == 6); ${rx_data_6} = payload; } }
+        reflex out7 { on always { ${rx_valid_7} = sv15 && (dest_id == 7); ${rx_data_7} = payload; } }
+        reflex out8 { on always { ${rx_valid_8} = sv15 && (dest_id == 8); ${rx_data_8} = payload; } }
+        reflex out9 { on always { ${rx_valid_9} = sv15 && (dest_id == 9); ${rx_data_9} = payload; } }
+        reflex out10 { on always { ${rx_valid_10} = sv15 && (dest_id == 10); ${rx_data_10} = payload; } }
+        reflex out11 { on always { ${rx_valid_11} = sv15 && (dest_id == 11); ${rx_data_11} = payload; } }
+        reflex out12 { on always { ${rx_valid_12} = sv15 && (dest_id == 12); ${rx_data_12} = payload; } }
+        reflex out13 { on always { ${rx_valid_13} = sv15 && (dest_id == 13); ${rx_data_13} = payload; } }
+        reflex out14 { on always { ${rx_valid_14} = sv15 && (dest_id == 14); ${rx_data_14} = payload; } }
+        reflex out15 { on always { ${rx_valid_15} = sv15 && (dest_id == 15); ${rx_data_15} = payload; } }
     }
 }
 

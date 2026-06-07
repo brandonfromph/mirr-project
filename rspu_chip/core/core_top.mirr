@@ -13,6 +13,7 @@ def core_top(
     // Instruction Memory Interface
     instr_in: signal in u32,
     pc_out:   signal out u32,
+    data_out: signal out u64,
     
     // NoC Packet Interface
     noc_rx_valid: signal in bool,
@@ -23,7 +24,7 @@ def core_top(
     reflect {
         // --- 1. 5-Stage Pipeline Instance ---
         signal trap_signal: internal bool;
-        pipe::rspu_pipeline(${clk}, ${rst_n}, ${instr_in}, ${pc_out}, trap_signal);
+        pipe::rspu_pipeline(${clk}, ${rst_n}, ${instr_in}, ${pc_out}, ${data_out}, trap_signal);
 
         // --- 2. Exception Controller Logic ---
         // trap_active fires when the pipeline asserts a trap.

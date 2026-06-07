@@ -46,6 +46,9 @@ pub enum WidthConstraint {
     /// Node width = source_width + 1  (for unsigned-to-signed negate).
     SameAsPlusOne { node: u32, source: u32 },
 
+    /// Node width = sw.min(narrow_width) (for BitwiseAnd with literal).
+    Narrowed { node: u32, source: u32, narrow_width: u32 },
+
     /// Node width = 1  (for comparison operators and boolean literals).
     Boolean { node: u32 },
 
@@ -170,11 +173,36 @@ where
                             right: *right,
                         });
                     }
+                    BinaryOp::BitwiseAnd => {
+                        // Intelligent width narrowing: if either side is a literal,
+                        // we constrain the result to the minimum of the source and the literal.
+                        let left_node = nodes.get(*left as usize);
+                        let right_node = nodes.get(*right as usize);
+
+                        if let Some(FlatNode::Literal { value }) = left_node {
+                            constraints.push(WidthConstraint::Narrowed {
+                                node: node_id,
+                                source: *right,
+                                narrow_width: min_bits_for(*value),
+                            });
+                        } else if let Some(FlatNode::Literal { value }) = right_node {
+                            constraints.push(WidthConstraint::Narrowed {
+                                node: node_id,
+                                source: *left,
+                                narrow_width: min_bits_for(*value),
+                            });
+                        } else {
+                            constraints.push(WidthConstraint::MaxOf {
+                                node: node_id,
+                                left: *left,
+                                right: *right,
+                            });
+                        }
+                    }
                     BinaryOp::Sub
                     | BinaryOp::And
                     | BinaryOp::Or
                     | BinaryOp::BitwiseOr
-                    | BinaryOp::BitwiseAnd
                     | BinaryOp::Xor => {
                         constraints.push(WidthConstraint::MaxOf {
                             node: node_id,

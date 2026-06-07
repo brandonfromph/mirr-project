@@ -73,10 +73,42 @@ fn emit_sv_full(
     sva::emit_internal_signals(module, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
+        if !netlist.signals.is_empty() {
+            out.push_str("  // Temporal signals\n");
+            for s in &netlist.signals {
+                let type_str = super::sv_type(&s.ty);
+                out.push_str(&format!("  {type_str} {};\n", s.name));
+            }
+            out.push('\n');
+        }
         temporal::emit_temporal_logic(netlist, &mut out);
     }
 
     temporal::emit_reflex_logic(module, &dsp_reflexes, dsp_attr, &mut out);
+
+    if !module.pattern_calls.is_empty() {
+        out.push_str("  // ── Structural Module Instantiations ──\n\n");
+        for (i, call) in module.pattern_calls.iter().enumerate() {
+            // Use the unqualified name for the module instantiation (e.g. 'ram' from 'ram::ram')
+            let mod_name = call.pattern_name.split("::").last().unwrap_or(&call.pattern_name);
+            let inst_name = format!("{}_{}", mod_name, i);
+            out.push_str(&format!("  {mod_name} {inst_name} (\n"));
+            let arg_count = call.arguments.len();
+            for (j, arg) in call.arguments.iter().enumerate() {
+                let comma = if j + 1 < arg_count { "," } else { "" };
+                let val = match arg {
+                    crate::ast::pattern::PatternArg::SignalRef(name) => name.clone(),
+                    crate::ast::pattern::PatternArg::ConstInt(n) => format!("{n}"),
+                    crate::ast::pattern::PatternArg::ConstBool(b) => {
+                        if *b { "1'b1".to_string() } else { "1'b0".to_string() }
+                    }
+                    crate::ast::pattern::PatternArg::PatternRef(p) => p.clone(),
+                };
+                out.push_str(&format!("    {}{}\n", val, comma));
+            }
+            out.push_str("  );\n\n");
+        }
+    }
 
     if !strip_sva {
         let has_rst_n = sva::module_has_rst_n(module);
