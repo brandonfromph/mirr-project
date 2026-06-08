@@ -20,7 +20,7 @@ fn f2_example_tmr_sensor_fusion_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = nasa_rust_project::cert::deserialize_certificate(cert_bytes)
+        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
             .expect("certificate must deserialize");
     }
 }
@@ -45,7 +45,7 @@ fn f2_example_tmr_sensor_fusion_cert_generation() {
 
 #[test]
 fn f8_adversarial_empty_input() {
-    let result = nasa_rust_project::cert::deserialize_certificate(&[]);
+    let result = mirrc::cert::deserialize_certificate(&[]);
     assert!(result.is_err(), "Empty input must fail deserialization");
     let msg = result.unwrap_err().to_string();
     assert!(msg.contains("too short"), "Error should mention 'too short', got: {}", msg);
@@ -54,8 +54,8 @@ fn f8_adversarial_empty_input() {
 #[test]
 fn f8_adversarial_truncated_cert() {
     // Build a valid cert, then take only the first 20 bytes.
-    use nasa_rust_project::cert;
-    use nasa_rust_project::totality::ResourceBound;
+    use mirrc::cert;
+    use mirrc::totality::ResourceBound;
 
     let valid_cert = ProofCertificate {
         version: 1,
@@ -90,7 +90,7 @@ fn f8_adversarial_wrong_magic_valid_length() {
     // Write wrong magic.
     data[0..8].copy_from_slice(b"BADMAGIC");
     // Fill rest with zeros (structurally plausible body).
-    let result = nasa_rust_project::cert::deserialize_certificate(&data);
+    let result = mirrc::cert::deserialize_certificate(&data);
     assert!(result.is_err(), "Wrong magic must fail deserialization");
     let msg = result.unwrap_err().to_string();
     assert!(
@@ -120,7 +120,7 @@ fn f8_adversarial_unknown_strategy_tag() {
                                                        // Strategy tag at position 61: set to 255 (unknown).
     data[61] = 255;
 
-    let result = nasa_rust_project::cert::deserialize_certificate(&data);
+    let result = mirrc::cert::deserialize_certificate(&data);
     assert!(result.is_err(), "Unknown strategy tag must fail deserialization");
     let msg = result.unwrap_err().to_string();
     assert!(
@@ -134,8 +134,8 @@ fn f8_adversarial_unknown_strategy_tag() {
 fn f8_adversarial_excessive_type_witness_count() {
     // Build a valid header through strategy + termination_bound,
     // then claim type_witness_count = 99999 which exceeds MAX_TYPE_WITNESSES (4096).
-    use nasa_rust_project::cert;
-    use nasa_rust_project::totality::ResourceBound;
+    use mirrc::cert;
+    use mirrc::totality::ResourceBound;
 
     // Start from a valid minimal cert and hand-craft the witness count.
     let valid_cert = ProofCertificate {
@@ -181,8 +181,8 @@ fn f8_adversarial_version_zero() {
     // reject it — it simply stores whatever version byte it finds. This test
     // verifies that behavior: a cert with version=0 deserializes successfully
     // and the version field reads back as 0.
-    use nasa_rust_project::cert;
-    use nasa_rust_project::totality::ResourceBound;
+    use mirrc::cert;
+    use mirrc::totality::ResourceBound;
 
     let cert = ProofCertificate {
         version: 0, // non-standard version
@@ -225,7 +225,7 @@ fn f8_adversarial_truncated_after_strategy() {
     data[61] = 0;
     // No more data — termination_bound read should fail.
 
-    let result = nasa_rust_project::cert::deserialize_certificate(&data);
+    let result = mirrc::cert::deserialize_certificate(&data);
     assert!(result.is_err(), "Truncated cert after strategy must fail");
     let msg = result.unwrap_err().to_string();
     assert!(msg.contains("Unexpected end"), "Error should mention unexpected end, got: {}", msg);
@@ -235,8 +235,8 @@ fn f8_adversarial_truncated_after_strategy() {
 fn f8_adversarial_excessive_property_verdict_count() {
     // Build a valid cert with 0 type witnesses, then set property_verdict_count
     // to a huge value (99999) exceeding MAX_PROPERTY_VERDICTS (4096).
-    use nasa_rust_project::cert;
-    use nasa_rust_project::totality::ResourceBound;
+    use mirrc::cert;
+    use mirrc::totality::ResourceBound;
 
     let valid_cert = ProofCertificate {
         version: 1,
@@ -277,8 +277,8 @@ fn f8_adversarial_excessive_property_verdict_count() {
 
 #[test]
 fn f12_full_chain_cert_generate_verify_accept() {
-    use nasa_rust_project::emit::rspu_isa::RspuInstruction;
-    use nasa_rust_project::emit::rspu_sim::RspuSimulator;
+    use mirrc::emit::rspu_isa::RspuInstruction;
+    use mirrc::emit::rspu_sim::RspuSimulator;
 
     // Step 1: Compile a .mirr source to R-SPU with totality=true.
     let src = include_str!("../../examples/neonatal_respirator.mirr");
@@ -305,7 +305,7 @@ fn f12_full_chain_cert_generate_verify_accept() {
     assert!(!sim.cert_verified, "cert_verified must start as false");
 
     // Build a minimal program with VERIFY + CERTIFY + HALT to test the chain.
-    let verify_program = nasa_rust_project::emit::rspu_isa::RspuProgram {
+    let verify_program = mirrc::emit::rspu_isa::RspuProgram {
         instructions: vec![
             RspuInstruction::Verify { cert_offset: 0 },
             RspuInstruction::Certify { dst: 192 },
@@ -332,13 +332,13 @@ fn f12_full_chain_cert_generate_verify_accept() {
 
 #[test]
 fn f12_full_chain_certify_without_verify_returns_zero() {
-    use nasa_rust_project::emit::rspu_isa::RspuInstruction;
-    use nasa_rust_project::emit::rspu_sim::RspuSimulator;
+    use mirrc::emit::rspu_isa::RspuInstruction;
+    use mirrc::emit::rspu_sim::RspuSimulator;
 
     // CERTIFY without preceding VERIFY should write 0 (cert_verified starts false).
     let mut sim = RspuSimulator::new();
 
-    let program = nasa_rust_project::emit::rspu_isa::RspuProgram {
+    let program = mirrc::emit::rspu_isa::RspuProgram {
         instructions: vec![RspuInstruction::Certify { dst: 192 }, RspuInstruction::Halt],
         registers_used: 1,
         guards_used: 0,
@@ -357,13 +357,13 @@ fn f12_full_chain_certify_without_verify_returns_zero() {
 
 #[test]
 fn f12_full_chain_total_check_with_no_violations() {
-    use nasa_rust_project::emit::rspu_isa::RspuInstruction;
-    use nasa_rust_project::emit::rspu_sim::RspuSimulator;
+    use mirrc::emit::rspu_isa::RspuInstruction;
+    use mirrc::emit::rspu_sim::RspuSimulator;
 
     // TotalCheck with expected_properties=0 and no violations should succeed.
     let mut sim = RspuSimulator::new();
 
-    let program = nasa_rust_project::emit::rspu_isa::RspuProgram {
+    let program = mirrc::emit::rspu_isa::RspuProgram {
         instructions: vec![
             RspuInstruction::TotalCheck { expected_properties: 0 },
             RspuInstruction::Halt,
@@ -382,8 +382,8 @@ fn f12_full_chain_total_check_with_no_violations() {
 
 #[test]
 fn f12_full_chain_verify_certify_total_check_sequence() {
-    use nasa_rust_project::emit::rspu_isa::RspuInstruction;
-    use nasa_rust_project::emit::rspu_sim::RspuSimulator;
+    use mirrc::emit::rspu_isa::RspuInstruction;
+    use mirrc::emit::rspu_sim::RspuSimulator;
 
     // Full MEGA-4 instruction sequence: VERIFY -> CERTIFY -> TOTAL_CHECK -> HALT.
     // Compile a real .mirr to get a genuine certificate, then inject all 3 instructions.
@@ -406,7 +406,7 @@ fn f12_full_chain_verify_certify_total_check_sequence() {
     if let Some(ref _cert_bytes) = rspu.certificate {
         let mut sim = RspuSimulator::new();
 
-        let program = nasa_rust_project::emit::rspu_isa::RspuProgram {
+        let program = mirrc::emit::rspu_isa::RspuProgram {
             instructions: vec![
                 RspuInstruction::Verify { cert_offset: 0 },
                 RspuInstruction::Certify { dst: 192 },

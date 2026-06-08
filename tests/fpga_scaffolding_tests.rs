@@ -3,7 +3,7 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::emit::fpga_target::FpgaTarget;
+use mirrc::emit::fpga_target::FpgaTarget;
 
 #[test]
 fn fpga_target_parse_all() {

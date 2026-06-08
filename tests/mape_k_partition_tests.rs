@@ -9,7 +9,7 @@
 
 use std::collections::HashSet;
 
-use nasa_rust_project::mape_k::partition::{
+use mirrc::mape_k::partition::{
     partition_components, total_components, ComponentTag, PartitionConfig, PartitionResult,
     PartitionTarget, PartitionedComponent, MAX_PARTITION_COMPONENTS,
 };

@@ -1,10 +1,10 @@
 [package]
-name = "nasa-rust-project"
+name = "mirrc"
 version = "0.3.0"
 edition = "2021"
 description = "MIRR compiler — a safety-critical DSL for hardware-software co-design targeting SystemVerilog RTL"
 authors = ["Brandon <brandonfromph@users.noreply.github.com>"]
-license = "GPL-3.0"
+license = "Apache-2.0"
 repository = "https://github.com/brandonfromph/mirr-project"
 readme = "README.md"
 keywords = ["compiler", "hardware", "safety-critical", "verilog", "dsl"]

@@ -14,13 +14,13 @@ use std::env;
 use std::fs;
 use std::process;
 
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
-use nasa_rust_project::error::MirrError;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::simplify::simplify_expr;
-use nasa_rust_project::width;
-use nasa_rust_project::width::types::DiagSeverity;
+use mirrc::ast::Expr;
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::error::MirrError;
+use mirrc::parse_mirr;
+use mirrc::simplify::simplify_expr;
+use mirrc::width;
+use mirrc::width::types::DiagSeverity;
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -207,7 +207,7 @@ fn run_scc_mode(content: &str, show_stats: bool, input_path: &str) {
 /// Run Phase 3 simplification on all expressions in the program.
 ///
 /// Bounded: iterates over guards + reflexes (finite, from parsed program).
-fn simplify_program(program: &mut nasa_rust_project::MirrProgram) {
+fn simplify_program(program: &mut mirrc::MirrProgram) {
     for g in &mut program.module.guards {
         let simplified = simplify_expr(g.condition.clone());
         g.condition = simplified;

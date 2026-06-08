@@ -5,9 +5,9 @@
 //! compiles a .mirr example and asserts that specific structural patterns
 //! appear in the generated Verilog, FIRRTL, or S-expression output.
 
-use nasa_rust_project::emit::firrtl::emit_firrtl;
-use nasa_rust_project::emit::verilog::emit_sv;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::firrtl::emit_firrtl;
+use mirrc::emit::verilog::emit_sv;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// Helper: compile MIRR source to Verilog with full pipeline.
 fn compile_to_verilog(source: &str) -> String {

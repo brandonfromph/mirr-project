@@ -5,7 +5,7 @@
 //! with increasing input complexity. All input generators use bounded iteration.
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use nasa_rust_project::{parse_mirr, run_pipeline, PipelineConfig};
+use mirrc::{parse_mirr, run_pipeline, PipelineConfig};
 use std::hint::black_box;
 
 // ---------------------------------------------------------------------------

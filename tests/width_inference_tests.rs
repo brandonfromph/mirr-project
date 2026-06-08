@@ -16,12 +16,12 @@
 //! - Edge cases (zero, max, single node, deep tree)
 //! - Diagnostic message pinning
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::SignalDecl;
-use nasa_rust_project::ast::types::*;
-use nasa_rust_project::width;
-use nasa_rust_project::width::types::*;
-use nasa_rust_project::width::WidthInferenceResult;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::SignalDecl;
+use mirrc::ast::types::*;
+use mirrc::width;
+use mirrc::width::types::*;
+use mirrc::width::WidthInferenceResult;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -486,7 +486,7 @@ fn not_bool_stays_1_bit() {
 
 #[test]
 fn truncation_u16_to_u8_error() {
-    use nasa_rust_project::ast::program::Assignment;
+    use mirrc::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(16)), sig("dst", SignalType::Unsigned(8))];
     let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
     let diags = width::check_assignment(&a, &sigs);
@@ -498,7 +498,7 @@ fn truncation_u16_to_u8_error() {
 
 #[test]
 fn truncation_exact_text() {
-    use nasa_rust_project::ast::program::Assignment;
+    use mirrc::ast::program::Assignment;
     let sigs = [sig("wide", SignalType::Unsigned(32)), sig("narrow", SignalType::Unsigned(16))];
     let a = Assignment { target: "narrow".to_string(), value: signal("wide"), span: None };
     let diags = width::check_assignment(&a, &sigs);
@@ -513,7 +513,7 @@ fn truncation_exact_text() {
 
 #[test]
 fn no_truncation_when_widths_match() {
-    use nasa_rust_project::ast::program::Assignment;
+    use mirrc::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(8))];
     let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
     let diags = width::check_assignment(&a, &sigs);
@@ -524,7 +524,7 @@ fn no_truncation_when_widths_match() {
 
 #[test]
 fn no_truncation_when_target_wider() {
-    use nasa_rust_project::ast::program::Assignment;
+    use mirrc::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(16))];
     let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
     let diags = width::check_assignment(&a, &sigs);
@@ -535,7 +535,7 @@ fn no_truncation_when_target_wider() {
 
 #[test]
 fn truncation_add_overflow_to_narrow_target() {
-    use nasa_rust_project::ast::program::Assignment;
+    use mirrc::ast::program::Assignment;
     let sigs = [
         sig("a", SignalType::Unsigned(8)),
         sig("b", SignalType::Unsigned(8)),
@@ -560,7 +560,7 @@ fn truncation_add_overflow_to_narrow_target() {
 
 #[test]
 fn simplifier_reduces_constant_then_width_inferred() {
-    use nasa_rust_project::simplify::simplify_expr;
+    use mirrc::simplify::simplify_expr;
     // (5 + 3) should simplify to 8, which needs 4 bits.
     let e = binary(BinaryOp::Add, lit(5), lit(3));
     let simplified = simplify_expr(e);
@@ -571,7 +571,7 @@ fn simplifier_reduces_constant_then_width_inferred() {
 
 #[test]
 fn simplifier_folds_zero_add_then_width_correct() {
-    use nasa_rust_project::simplify::simplify_expr;
+    use mirrc::simplify::simplify_expr;
     // x + 0 simplifies to x
     let sigs = [sig("x", SignalType::Unsigned(16))];
     let e = binary(BinaryOp::Add, signal("x"), lit(0));
@@ -582,7 +582,7 @@ fn simplifier_folds_zero_add_then_width_correct() {
 
 #[test]
 fn simplifier_folds_mul_by_one_then_width_correct() {
-    use nasa_rust_project::simplify::simplify_expr;
+    use mirrc::simplify::simplify_expr;
     // x * 1 simplifies to x
     let sigs = [sig("x", SignalType::Unsigned(32))];
     let e = binary(BinaryOp::Mul, signal("x"), lit(1));
@@ -593,7 +593,7 @@ fn simplifier_folds_mul_by_one_then_width_correct() {
 
 #[test]
 fn simplifier_folds_double_negation_width() {
-    use nasa_rust_project::simplify::simplify_expr;
+    use mirrc::simplify::simplify_expr;
     // !!x simplifies to x
     let sigs = [sig("x", SignalType::Unsigned(8))];
     let e = unary(UnaryOp::Not, unary(UnaryOp::Not, signal("x")));
@@ -716,9 +716,9 @@ fn width_diagnostic_info_display_format() {
 
 #[test]
 fn program_width_inference_basic() {
-    use nasa_rust_project::ast::program::*;
+    use mirrc::ast::program::*;
 
-    let program = nasa_rust_project::MirrProgram {
+    let program = mirrc::MirrProgram {
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {
@@ -761,9 +761,9 @@ fn program_width_inference_basic() {
 
 #[test]
 fn program_detects_truncation_in_reflex() {
-    use nasa_rust_project::ast::program::*;
+    use mirrc::ast::program::*;
 
-    let program = nasa_rust_project::MirrProgram {
+    let program = mirrc::MirrProgram {
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {

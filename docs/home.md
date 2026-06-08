@@ -105,4 +105,4 @@ cargo run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr
 
 ## License
 
-Distributed under the GPL-3.0 License. See [LICENSE](https://github.com/brandonfromph/mirr-project/blob/main/LICENSE) for details.
+Distributed under the Apache-2.0 License. See [LICENSE](https://github.com/brandonfromph/mirr-project/blob/main/LICENSE) for details.

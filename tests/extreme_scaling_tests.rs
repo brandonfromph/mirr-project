@@ -6,10 +6,10 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue};
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ecs::registry::MAX_ENTITIES;
-use nasa_rust_project::ecs::Registry;
+use mirrc::ast::types::{BinaryOp, LiteralValue};
+use mirrc::ast::Expr;
+use mirrc::ecs::registry::MAX_ENTITIES;
+use mirrc::ecs::Registry;
 
 #[test]
 #[ignore]

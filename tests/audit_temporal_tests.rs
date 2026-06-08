@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::temporal::compiler::{ImplementationStrategy, ResourceEstimator};
+use mirrc::temporal::compiler::{ImplementationStrategy, ResourceEstimator};
 
 #[test]
 fn test_21_22_23_temporal_shift_register_thresholds() {
@@ -32,7 +32,7 @@ fn test_21_22_23_temporal_shift_register_thresholds() {
 fn test_24_25_temporal_double_buffering_cycle_safety() {
     // This test would ideally verify no combinatorial loops in Verilog emission.
     // For now, we simulate the synthesis switch.
-    use nasa_rust_project::temporal::compiler::ResourceEstimator;
+    use mirrc::temporal::compiler::ResourceEstimator;
 
     let est_sr = ResourceEstimator::estimate_shift_register_resources(16);
     assert_eq!(est_sr.logic_gates, 1, "Shift register should have exactly one output gate");
@@ -43,7 +43,7 @@ fn test_24_25_temporal_double_buffering_cycle_safety() {
 
 #[test]
 fn test_26_emit_firrtl_bitwise_exhaustive() {
-    use nasa_rust_project::ast::types::BinaryOp;
+    use mirrc::ast::types::BinaryOp;
 
     // Check that we can represent 256-bit operations (as specified in plan)
     // In our current AST, widths are often inferred.

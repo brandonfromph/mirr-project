@@ -3,8 +3,8 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::sexpr::types::SExpr;
-use nasa_rust_project::sexpr::{
+use mirrc::sexpr::types::SExpr;
+use mirrc::sexpr::{
     eval, parse_sexpr, print_sexpr, EvalState, MacroExpander, MAX_EVAL_DEPTH,
 };
 

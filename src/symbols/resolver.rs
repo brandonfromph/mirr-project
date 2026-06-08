@@ -1,3 +1,5 @@
+//! ARCHITECTURAL SUB-ENGINE: CROSS-MODULE SYMBOL RESOLVER
+//!
 //! Cross-module symbol resolution and namespace management.
 //!
 //! This module provides high-level symbol resolution functionality that integrates

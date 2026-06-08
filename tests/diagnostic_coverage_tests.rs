@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
 fn assert_err(source: &str, expected_code: &str) {
-    let config = nasa_rust_project::PipelineConfig::default();
-    let res = nasa_rust_project::run_pipeline(source, &config);
+    let config = mirrc::PipelineConfig::default();
+    let res = mirrc::run_pipeline(source, &config);
 
     match res {
         Ok(_) => panic!("Expected error {}, but got success.", expected_code),
@@ -204,7 +204,7 @@ fn err_e140_reflex_missing_on() {
 }
 #[test]
 fn err_e215_module_duplicate() {
-    use nasa_rust_project::ecs::{KindComponent, Registry};
+    use mirrc::ecs::{KindComponent, Registry};
     let mut registry = Registry::new();
 
     // Manually create two modules with the same name
@@ -248,7 +248,7 @@ fn err_e204_prev_undeclared_signal() {
 
 #[test]
 fn err_e214_property_manual_duplicate() {
-    use nasa_rust_project::ecs::{KindComponent, Registry};
+    use mirrc::ecs::{KindComponent, Registry};
     let mut registry = Registry::new();
     let _p1 = registry.create_entity("P1", KindComponent::PROPERTY);
     let _p2 = registry.create_entity("P1", KindComponent::PROPERTY);
@@ -258,7 +258,7 @@ fn err_e214_property_manual_duplicate() {
 
 #[test]
 fn err_e213_guard_manual_duplicate() {
-    use nasa_rust_project::ecs::{KindComponent, Registry};
+    use mirrc::ecs::{KindComponent, Registry};
     let mut registry = Registry::new();
     let _g1 = registry.create_entity("G1", KindComponent::GUARD);
     let _g2 = registry.create_entity("G1", KindComponent::GUARD);
@@ -268,7 +268,7 @@ fn err_e213_guard_manual_duplicate() {
 
 #[test]
 fn err_e212_reflex_manual_duplicate() {
-    use nasa_rust_project::ecs::{KindComponent, Registry};
+    use mirrc::ecs::{KindComponent, Registry};
     let mut registry = Registry::new();
     let _r1 = registry.create_entity("R1", KindComponent::REFLEX);
     let _r2 = registry.create_entity("R1", KindComponent::REFLEX);
@@ -337,8 +337,8 @@ fn err_e205_reflex_on_undeclared_guard() {
 
 #[test]
 fn err_e201_mixed_collision_signal_guard() {
-    use nasa_rust_project::ast::types::SignalKind;
-    use nasa_rust_project::ecs::{EntityKind, KindComponent, Registry};
+    use mirrc::ast::types::SignalKind;
+    use mirrc::ecs::{EntityKind, KindComponent, Registry};
     let mut registry = Registry::new();
     let _s1 =
         registry.create_entity("COLLISION", KindComponent(EntityKind::SIGNAL(SignalKind::Input)));

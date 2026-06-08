@@ -2,8 +2,8 @@
 #![deny(warnings)]
 
 use clap::{Parser, Subcommand};
-use nasa_rust_project::emit;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 mod badge;
 mod build;
@@ -281,7 +281,7 @@ fn compile_via_library(source: &str, target: &str, output: Option<&str>) -> i32 
         Err(errors) => {
             for err in &errors.errors {
                 let diagnostic = err.to_diagnostic();
-                let rendered = nasa_rust_project::diagnostic::render_diagnostic(
+                let rendered = mirrc::diagnostic::render_diagnostic(
                     &diagnostic,
                     &source_text,
                     source,

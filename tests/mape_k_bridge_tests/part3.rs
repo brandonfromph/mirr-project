@@ -444,7 +444,7 @@ fn bridge_config_from_module_with_all_signal_types() {
 
 #[test]
 fn bridge_full_pipeline_with_mape_k_enabled() {
-    use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+    use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
     let source = "\
 module m {
@@ -487,7 +487,7 @@ module m {
 
 #[test]
 fn bridge_full_pipeline_without_mape_k_disabled() {
-    use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+    use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
     let source = "\
 module m {

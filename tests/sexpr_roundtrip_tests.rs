@@ -3,9 +3,9 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::sexpr::parser::parse_sexpr;
-use nasa_rust_project::sexpr::printer::print_sexpr;
-use nasa_rust_project::sexpr::types::SExpr;
+use mirrc::sexpr::parser::parse_sexpr;
+use mirrc::sexpr::printer::print_sexpr;
+use mirrc::sexpr::types::SExpr;
 
 fn roundtrip(input: &str) {
     let parsed = parse_sexpr(input).expect("parse should succeed");

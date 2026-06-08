@@ -6,12 +6,12 @@
 //! guards, reflexes, properties (all formula + directive variants), pattern defs,
 //! error recovery, and edge cases.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::property::{PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::property::{PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{
     BinaryOp, EffectQualifier, Linearity, LiteralValue, SignalKind, SignalType, UnaryOp,
 };
-use nasa_rust_project::parse_mirr;
+use mirrc::parse_mirr;
 
 // =========================================================================
 // Bounded iteration constants (NASA Power-of-10)
@@ -39,7 +39,7 @@ const MAX_PATTERNS: usize = 64;
 // Helpers (no recursion, all bounded)
 // =========================================================================
 
-fn assert_parse_ok(source: &str) -> nasa_rust_project::MirrProgram {
+fn assert_parse_ok(source: &str) -> mirrc::MirrProgram {
     parse_mirr(source).expect("expected parse to succeed")
 }
 

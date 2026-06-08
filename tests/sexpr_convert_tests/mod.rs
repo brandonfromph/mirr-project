@@ -4,20 +4,20 @@
 //!
 //! NASA Power-of-10 compliant: bounded iteration, no recursion, descriptive asserts.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
-use nasa_rust_project::ast::pattern::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::macro_nodes::ModuleMacroStmt;
+use mirrc::ast::pattern::{
     PatternArg, PatternCall, PatternDef, PatternOrigin, PatternParam, PatternParamKind,
     ReflectBlock,
 };
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{
     BinaryOp, EffectQualifier, ExtendedType, Linearity, LiteralValue, Refinement, SignalKind,
     SignalType, TypeAnnotations, UnaryOp,
 };
-use nasa_rust_project::sexpr::convert::{ast_to_sexpr, sexpr_to_ast};
-use nasa_rust_project::sexpr::types::SExpr;
+use mirrc::sexpr::convert::{ast_to_sexpr, sexpr_to_ast};
+use mirrc::sexpr::types::SExpr;
 
 /// Maximum test iterations for bounded loops (NASA Power-of-10).
 const MAX_TEST_ITEMS: usize = 64;

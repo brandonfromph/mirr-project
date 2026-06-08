@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
 //! Width SCC iteration-budget and classification tests.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::width;
-use nasa_rust_project::width::scc_solver::solve_nonexpansive;
-use nasa_rust_project::width::types::{SccInfo, SccKind};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::width;
+use mirrc::width::scc_solver::solve_nonexpansive;
+use mirrc::width::types::{SccInfo, SccKind};
 
 fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
     SignalDecl {

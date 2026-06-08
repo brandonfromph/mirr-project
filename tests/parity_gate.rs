@@ -3,8 +3,8 @@
 //! Verifies that synthesized RSPU bytecode exactly matches the
 //! logical behavior of the MIRR source across 16 parallel cores.
 
-use nasa_rust_project::emit::rspu_sim::RspuSimulator;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::rspu_sim::RspuSimulator;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_rspu_16_core_parity_gate() {

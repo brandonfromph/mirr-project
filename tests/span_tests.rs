@@ -4,8 +4,8 @@
 //! Verifies that parsed AST nodes carry correct line-level spans and
 //! that parse errors include span information.
 
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::span::Span;
+use mirrc::parse_mirr;
+use mirrc::span::Span;
 
 #[test]
 fn signal_decl_has_full_line_span() {
@@ -147,7 +147,7 @@ module m {
 }
 ";
     let program = parse_mirr(src).unwrap();
-    let errs = nasa_rust_project::validate_module(&program.module).unwrap_err();
+    let errs = mirrc::validate_module(&program.module).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
     let msg = err.to_string();
     assert!(msg.contains("E201"), "expected E201 duplicate signal error, got: {msg}");

@@ -2,7 +2,7 @@
 //! This test enforces that the compiler correctly handles ergonomic 'signals { ... }' blocks,
 //! ensuring they are expanded into the standard syntax expected by the formal parser.
 
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 
 #[test]
 fn test_signals_block_to_standard_syntax() {

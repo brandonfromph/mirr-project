@@ -8,11 +8,11 @@
 //!
 //! 51 tests total.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::{run_pipeline, validate_module, PipelineConfig};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::{run_pipeline, validate_module, PipelineConfig};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -105,7 +105,7 @@ fn pipeline_config() -> PipelineConfig {
 }
 
 /// Helper: run pipeline expecting an error (avoids needing Debug on PipelineResult).
-fn run_pipeline_expect_err(src: &str) -> nasa_rust_project::error::MirrError {
+fn run_pipeline_expect_err(src: &str) -> mirrc::error::MirrError {
     match run_pipeline(src, &pipeline_config()) {
         Err(errs) => errs.errors.into_iter().next().expect("should have at least one error"),
         Ok(_) => panic!("Expected pipeline error, but pipeline succeeded"),
@@ -510,7 +510,7 @@ fn followed_by_validation_passes() {
 fn sva_assert_always_keyword() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(sv.contains("assert property"), "Expected 'assert property' in SVA: {sv}");
 }
 
@@ -518,7 +518,7 @@ fn sva_assert_always_keyword() {
 fn sva_cover_keyword() {
     let src = mirr_with_property("cover always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(sv.contains("cover property"), "Expected 'cover property' in SVA: {sv}");
 }
 
@@ -526,7 +526,7 @@ fn sva_cover_keyword() {
 fn sva_assume_keyword() {
     let src = mirr_with_property("assume always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(sv.contains("assume property"), "Expected 'assume property' in SVA: {sv}");
 }
 
@@ -534,7 +534,7 @@ fn sva_assume_keyword() {
 fn sva_never_implies_output() {
     let src = mirr_with_property("never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(sv.contains("|->"), "Expected '|->' in SVA never implies: {sv}");
     assert!(sv.contains("!("), "Expected negation in SVA never implies: {sv}");
 }
@@ -543,7 +543,7 @@ fn sva_never_implies_output() {
 fn sva_eventually_within_output() {
     let src = mirr_with_property("eventually within 10 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(sv.contains("##[1:10]"), "Expected '##[1:10]' in SVA: {sv}");
 }
 
@@ -551,7 +551,7 @@ fn sva_eventually_within_output() {
 fn sva_followed_by_output() {
     let src = mirr_with_property("always (x > 100 followed_by 5 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(sv.contains("|-> ##5"), "Expected '|-> ##5' in SVA: {sv}");
 }
 
@@ -559,7 +559,7 @@ fn sva_followed_by_output() {
 fn sva_cover_never_implies_combined() {
     let src = mirr_with_property("cover never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(sv.contains("cover property"), "Expected 'cover property': {sv}");
     assert!(sv.contains("|->"), "Expected '|->' in SVA: {sv}");
 }
@@ -572,7 +572,7 @@ fn sva_cover_never_implies_combined() {
 fn json_directive_field_present() {
     let src = mirr_with_property("cover always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let json = nasa_rust_project::emit::json_netlist::emit_json(&result).unwrap();
+    let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
     assert!(json.contains("\"directive\""), "Expected directive in JSON: {json}");
     assert!(json.contains("\"cover\""), "Expected 'cover' directive: {json}");
 }
@@ -581,7 +581,7 @@ fn json_directive_field_present() {
 fn json_never_implies_kind() {
     let src = mirr_with_property("never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let json = nasa_rust_project::emit::json_netlist::emit_json(&result).unwrap();
+    let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
     assert!(json.contains("\"never_implies\""), "Expected 'never_implies' kind in JSON: {json}");
 }
 
@@ -589,7 +589,7 @@ fn json_never_implies_kind() {
 fn json_eventually_within_kind() {
     let src = mirr_with_property("eventually within 7 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let json = nasa_rust_project::emit::json_netlist::emit_json(&result).unwrap();
+    let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
     assert!(json.contains("\"eventually_within\""), "Expected 'eventually_within' kind: {json}");
 }
 
@@ -597,7 +597,7 @@ fn json_eventually_within_kind() {
 fn json_always_followed_by_kind() {
     let src = mirr_with_property("always (x > 100 followed_by 3 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let json = nasa_rust_project::emit::json_netlist::emit_json(&result).unwrap();
+    let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
     assert!(json.contains("\"always_followed_by\""), "Expected 'always_followed_by' kind: {json}");
 }
 
@@ -609,7 +609,7 @@ fn json_always_followed_by_kind() {
 fn firrtl_property_comment_assert() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
     assert!(firrtl.contains("; property p:"), "Expected FIRRTL property comment: {firrtl}");
 }
 
@@ -617,7 +617,7 @@ fn firrtl_property_comment_assert() {
 fn firrtl_property_comment_cover_prefix() {
     let src = mirr_with_property("cover always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
     assert!(
         firrtl.contains("; cover property p:"),
         "Expected 'cover property' in FIRRTL comment: {firrtl}"
@@ -628,7 +628,7 @@ fn firrtl_property_comment_cover_prefix() {
 fn firrtl_eventually_within_comment() {
     let src = mirr_with_property("eventually within 5 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
     assert!(
         firrtl.contains("eventually within 5"),
         "Expected 'eventually within 5' in FIRRTL: {firrtl}"
@@ -643,7 +643,7 @@ fn firrtl_eventually_within_comment() {
 fn dot_assert_property_fillcolor() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let dot = nasa_rust_project::emit::dot::emit_module_dot(&result);
+    let dot = mirrc::emit::dot::emit_module_dot(&result);
     assert!(dot.contains("fillcolor=lightblue"), "Expected lightblue for assert property: {dot}");
 }
 
@@ -651,7 +651,7 @@ fn dot_assert_property_fillcolor() {
 fn dot_cover_property_fillcolor() {
     let src = mirr_with_property("cover always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let dot = nasa_rust_project::emit::dot::emit_module_dot(&result);
+    let dot = mirrc::emit::dot::emit_module_dot(&result);
     assert!(
         dot.contains("fillcolor=lightyellow"),
         "Expected lightyellow for cover property: {dot}"

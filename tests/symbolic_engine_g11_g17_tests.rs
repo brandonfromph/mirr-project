@@ -2,10 +2,10 @@
 //! MEGA-5 symbolic engine tests — G11 through G17.
 //! Pipeline integration, stress tests, widening stability.
 
-use nasa_rust_project::ast::program::{Module, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::symbolic::{analyze_module, sym_eval_binary, sym_widen, SymValue};
+use mirrc::ast::program::{Module, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, SignalKind, SignalType};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::symbolic::{analyze_module, sym_eval_binary, sym_widen, SymValue};
 
 const MAX_STRESS: usize = 16;
 
@@ -20,7 +20,7 @@ fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
 }
 fn run_sym(
     src: &str,
-) -> Result<nasa_rust_project::pipeline::PipelineResult, nasa_rust_project::error::PipelineErrors> {
+) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     let cfg = PipelineConfig { symbolic: true, ..PipelineConfig::default() };
     run_pipeline(src, &cfg)
 }

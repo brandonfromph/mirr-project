@@ -376,7 +376,7 @@ fn e8_sim_trap_raises_exception() {
         StepResult::Exception(code) => {
             assert_eq!(
                 code,
-                nasa_rust_project::emit::rspu_exceptions::ExceptionCode::SoftwareTrap,
+                mirrc::emit::rspu_exceptions::ExceptionCode::SoftwareTrap,
                 "TRAP must raise SoftwareTrap exception"
             );
         }

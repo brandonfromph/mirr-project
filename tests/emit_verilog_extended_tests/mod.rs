@@ -20,13 +20,13 @@
 //! - No recursion in test helpers
 //! - All `assert!` with descriptive messages
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::emit::verilog;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
-use nasa_rust_project::temporal::low_level_ir::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::emit::verilog;
+use mirrc::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
+use mirrc::temporal::low_level_ir::{
     CompiledGuard, ComplexGuard, ConditionKind, ShiftRegisterGuard, TemporalNetlist,
 };
 
@@ -84,7 +84,7 @@ fn mul_expr(lhs: Expr, rhs: Expr) -> Expr {
 }
 
 fn not_expr(operand: Expr) -> Expr {
-    Expr::Unary { op: nasa_rust_project::ast::types::UnaryOp::Not, operand: Box::new(operand) }
+    Expr::Unary { op: mirrc::ast::types::UnaryOp::Not, operand: Box::new(operand) }
 }
 
 fn prev_expr(signal: &str, delay: u64) -> Expr {

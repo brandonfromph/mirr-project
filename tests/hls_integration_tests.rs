@@ -3,7 +3,7 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::hls::{HlsConfig, OpDag, ResourceKind, MAX_HLS_OPERATIONS};
+use mirrc::hls::{HlsConfig, OpDag, ResourceKind, MAX_HLS_OPERATIONS};
 
 #[test]
 fn hls_single_operation_schedule() {
@@ -11,7 +11,7 @@ fn hls_single_operation_schedule() {
     dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
 
     let config = HlsConfig { latency: 1, ..Default::default() };
-    let result = nasa_rust_project::hls::run_hls_pass(&dag, &config);
+    let result = mirrc::hls::run_hls_pass(&dag, &config);
     assert!(result.is_ok(), "[E1203] HLS scheduling failed: {:?}", result.err());
 
     let hls = result.unwrap();
@@ -29,7 +29,7 @@ fn hls_chain_schedule() {
     dag.add_edge(b, c);
 
     let config = HlsConfig { latency: 3, ..Default::default() };
-    let result = nasa_rust_project::hls::run_hls_pass(&dag, &config);
+    let result = mirrc::hls::run_hls_pass(&dag, &config);
     assert!(result.is_ok(), "[E1203] HLS scheduling failed: {:?}", result.err());
 
     let hls = result.unwrap();
@@ -47,7 +47,7 @@ fn hls_parallel_schedule() {
     dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
 
     let config = HlsConfig { latency: 1, ..Default::default() };
-    let result = nasa_rust_project::hls::run_hls_pass(&dag, &config);
+    let result = mirrc::hls::run_hls_pass(&dag, &config);
     assert!(result.is_ok(), "[E1203] HLS scheduling failed: {:?}", result.err());
 
     let hls = result.unwrap();
@@ -70,7 +70,7 @@ fn hls_max_operations_reject() {
 fn hls_empty_dag_rejected() {
     let dag = OpDag::new();
     let config = HlsConfig::default();
-    let result = nasa_rust_project::hls::run_hls_pass(&dag, &config);
+    let result = mirrc::hls::run_hls_pass(&dag, &config);
     assert!(result.is_err(), "Empty DAG should be rejected");
 }
 
@@ -84,7 +84,7 @@ fn hls_full_pipeline() {
     dag.add_edge(a, c);
 
     let config = HlsConfig { latency: 3, sharing: true, binding: true, fifo: true };
-    let result = nasa_rust_project::hls::run_hls_pass(&dag, &config);
+    let result = mirrc::hls::run_hls_pass(&dag, &config);
     assert!(result.is_ok(), "[E1203] HLS scheduling failed: {:?}", result.err());
 
     let hls = result.unwrap();

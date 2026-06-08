@@ -15,12 +15,12 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_range_loop)]
 
-use nasa_rust_project::emit::rspu_exceptions::{ExceptionCode, ExecMode};
-use nasa_rust_project::emit::rspu_isa::{
+use mirrc::emit::rspu_exceptions::{ExceptionCode, ExecMode};
+use mirrc::emit::rspu_isa::{
     AluOp, AluUnaryOp, RspuInstruction, RspuProgram, MAX_GUARDS, MAX_SIM_CYCLES, REG_OUTPUT_BASE,
 };
-use nasa_rust_project::emit::rspu_sim::{RspuSimulator, StepResult};
-use nasa_rust_project::emit::rspu_tagged::TypeTag;
+use mirrc::emit::rspu_sim::{RspuSimulator, StepResult};
+use mirrc::emit::rspu_tagged::TypeTag;
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA Power-of-10)

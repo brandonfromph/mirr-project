@@ -15,7 +15,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use nasa_rust_project::{BootstrapOpts, BootstrapResult, BootstrapRunner};
+use mirrc::{BootstrapOpts, BootstrapResult, BootstrapRunner};
 
 // ---------------------------------------------------------------------------
 // Helpers

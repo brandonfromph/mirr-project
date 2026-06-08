@@ -3,8 +3,8 @@
 //! Verifies that long-delay temporal guards (synthesized as Counters)
 //! correctly track time and trigger actions after the specified delay.
 
-use nasa_rust_project::emit::rspu_sim::RspuSimulator;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::rspu_sim::RspuSimulator;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_rspu_counter_parity() {
@@ -36,7 +36,7 @@ module counter_parity {{
 
     // 2. Simulate with Cycle-by-Cycle Inputs
     let mut sim = RspuSimulator::new();
-    use nasa_rust_project::emit::rspu_tagged::TypeTag;
+    use mirrc::emit::rspu_tagged::TypeTag;
 
     // Cycle 0: Set trigger to true
     sim.set_input(0, 1, TypeTag::Bool); // trigger is P0

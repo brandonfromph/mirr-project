@@ -103,7 +103,7 @@ fn negate_expr_renders_correctly() {
             vec![make_assignment(
                 "y",
                 Expr::Unary {
-                    op: nasa_rust_project::ast::types::UnaryOp::Negate,
+                    op: mirrc::ast::types::UnaryOp::Negate,
                     operand: Box::new(sig("x")),
                 },
             )],

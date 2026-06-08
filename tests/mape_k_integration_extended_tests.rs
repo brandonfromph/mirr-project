@@ -12,9 +12,9 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_range_loop)]
 
-use nasa_rust_project::mape_k::partition::{partition_components, ComponentTag, PartitionTarget};
-use nasa_rust_project::mape_k::MAX_TICKS;
-use nasa_rust_project::mape_k::{
+use mirrc::mape_k::partition::{partition_components, ComponentTag, PartitionTarget};
+use mirrc::mape_k::MAX_TICKS;
+use mirrc::mape_k::{
     ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
     TemporalProperty, TriggerCondition,
 };

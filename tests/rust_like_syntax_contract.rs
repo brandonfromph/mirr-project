@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 
 /// CONTRACT: The MIRR compiler should support "Rust-like" syntactic sugar
 /// for its core primitives (Signal, Guard, Reflex) to improve ergonomics

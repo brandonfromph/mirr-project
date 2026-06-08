@@ -12,7 +12,7 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::mape_k::{
+use mirrc::mape_k::{
     ActionEntry, AdaptationAction, Analyzer, Executor, KnowledgeBase, MapeKSimulator, Monitor,
     Planner, PropertyResult, RingBuffer, SensorConfig, SensorModel, SignalPredicate, SimConfig,
     TemporalProperty, TriggerCondition,
@@ -310,7 +310,7 @@ fn executor_unknown_signal_fails_gracefully() {
 #[test]
 fn knowledge_base_records_and_retrieves() {
     let mut kb = KnowledgeBase::new(100);
-    let rec = nasa_rust_project::mape_k::knowledge::AdaptationRecord {
+    let rec = mirrc::mape_k::knowledge::AdaptationRecord {
         tick: 42,
         trigger_property_idx: 0,
         trigger_description: "test".into(),
@@ -328,7 +328,7 @@ fn knowledge_base_records_and_retrieves() {
 fn knowledge_base_evicts_oldest_at_capacity() {
     let mut kb = KnowledgeBase::new(3);
     for i in 0..5 {
-        let rec = nasa_rust_project::mape_k::knowledge::AdaptationRecord {
+        let rec = mirrc::mape_k::knowledge::AdaptationRecord {
             tick: i,
             trigger_property_idx: 0,
             trigger_description: "test".into(),
@@ -347,7 +347,7 @@ fn knowledge_base_evicts_oldest_at_capacity() {
 #[test]
 fn knowledge_base_serializes_to_json() {
     let mut kb = KnowledgeBase::new(10);
-    let rec = nasa_rust_project::mape_k::knowledge::AdaptationRecord {
+    let rec = mirrc::mape_k::knowledge::AdaptationRecord {
         tick: 7,
         trigger_property_idx: 0,
         trigger_description: "pressure drop".into(),

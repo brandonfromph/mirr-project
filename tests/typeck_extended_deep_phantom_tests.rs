@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 //! Deep extended type-check tests for phantom type tags.
 
-use nasa_rust_project::ast::program::Module;
-use nasa_rust_project::ast::types::{ExtendedType as AstExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ast::SignalDecl;
-use nasa_rust_project::typeck::extended::{
+use mirrc::ast::program::Module;
+use mirrc::ast::types::{ExtendedType as AstExtendedType, SignalKind, SignalType};
+use mirrc::ast::SignalDecl;
+use mirrc::typeck::extended::{
     typecheck_extended, ExtendedSignalDecl, ExtendedType as TypeckExtendedType, PhantomTag,
 };
 

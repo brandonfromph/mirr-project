@@ -78,7 +78,7 @@ fn parse_def_reflect_body_all_decl_types() {
     let has_guards = body
         .statements
         .iter()
-        .any(|s| matches!(s, nasa_rust_project::ast::macro_nodes::ModuleMacroStmt::Guard(_)));
+        .any(|s| matches!(s, mirrc::ast::macro_nodes::ModuleMacroStmt::Guard(_)));
     assert!(has_guards, "reflect body should have guards");
 }
 

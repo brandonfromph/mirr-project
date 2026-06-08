@@ -1,4 +1,4 @@
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 #[test]
 fn test_macro_expansion_preserves_standard_signals() {
     let input = r#"

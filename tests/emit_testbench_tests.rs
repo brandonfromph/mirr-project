@@ -4,8 +4,8 @@
 //! Verifies the auto-generated testbench contains all required elements:
 //! DUT instantiation, clock generation, reset sequence, and stimulus.
 
-use nasa_rust_project::emit::testbench::emit_testbench;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::testbench::emit_testbench;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 const TB_MODULE: &str = r#"
 module tb_target {

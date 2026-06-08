@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::types::BinaryOp;
-use nasa_rust_project::ecs::components::*;
-use nasa_rust_project::ecs::registry::Registry;
-use nasa_rust_project::temporal::compiler::TemporalCompiler;
-use nasa_rust_project::temporal::low_level_ir::CompiledGuard;
+use mirrc::ast::types::BinaryOp;
+use mirrc::ecs::components::*;
+use mirrc::ecs::registry::Registry;
+use mirrc::temporal::compiler::TemporalCompiler;
+use mirrc::temporal::low_level_ir::CompiledGuard;
 
 #[test]
 fn test_stress_nesting_depth_limit() {
@@ -13,7 +13,7 @@ fn test_stress_nesting_depth_limit() {
     // Create a deeply nested AND tree: A && (A && (A && ...))
     let _sig_a = registry.create_entity("sig_a", KindComponent::SIGNAL);
     let expr_a =
-        registry.ingest_expr(&nasa_rust_project::ast::Expr::Signal("sig_a".to_string())).unwrap();
+        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut current_expr = expr_a;
     // Nest 70 times (exceeds 64 limit)
@@ -41,7 +41,7 @@ fn test_stress_adaptive_strategy_selection() {
     let mut registry = Registry::new();
     let sig_a = registry.create_entity("sig_a", KindComponent::SIGNAL);
     let expr_a =
-        registry.ingest_expr(&nasa_rust_project::ast::Expr::Signal("sig_a".to_string())).unwrap();
+        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut compiler = TemporalCompiler::new();
 
@@ -96,7 +96,7 @@ fn test_stress_large_breadth_synthesis() {
     let mut registry = Registry::new();
     let _sig_a = registry.create_entity("sig_a", KindComponent::SIGNAL);
     let expr_a =
-        registry.ingest_expr(&nasa_rust_project::ast::Expr::Signal("sig_a".to_string())).unwrap();
+        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut compiler = TemporalCompiler::new();
 

@@ -1,4 +1,4 @@
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 #[test]
 fn test_multiple_sequential_compilations() {
     let m1 = "module mod1 { signals {} }";

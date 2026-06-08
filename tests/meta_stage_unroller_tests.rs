@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::width::constraint::{generate_constraints, WidthConstraint};
-use nasa_rust_project::width::types::FlatNode;
+use mirrc::ast::expr::Expr;
+use mirrc::width::constraint::{generate_constraints, WidthConstraint};
+use mirrc::width::types::FlatNode;
 
 #[test]
 fn unfold_index_parsing_placeholder() {

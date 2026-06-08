@@ -1,10 +1,10 @@
 # Living Research Artifact Template
 
 > Your paper runs in the browser. Every claim is verifiable.
-> Every fork carries GPL-3.0. The format spreads.
+> Every fork carries Apache-2.0. The format spreads.
 
 [![LRA-1.0](https://img.shields.io/badge/standard-LRA--1.0-gold)](spec/LRA-1.0.md)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 ## 30-Second Demo
 
@@ -173,13 +173,13 @@ There is nothing to build.
 | `spec/LRA-1.0.md` | The formal LRA specification |
 | `CITATION.cff` | Citation metadata — edit with your details |
 | `CONTRIBUTING.md` | How to contribute to the LRA standard |
-| `LICENSE` | GPL-3.0 full text |
+| `LICENSE` | Apache-2.0 full text |
 
 ## Compliance Tiers
 
 | Tier | Requirements | Badge |
 |------|-------------|-------|
-| Bronze | Static paper with Claims + References + GPL-3.0 | `LRA-1.0-bronze` |
+| Bronze | Static paper with Claims + References + Apache-2.0 | `LRA-1.0-bronze` |
 | Silver | Bronze + at least one interactive demo | `LRA-1.0-silver` |
 | Gold | Silver + WASM-powered tool execution in-browser | `LRA-1.0-gold` |
 
@@ -220,28 +220,28 @@ A Living Research Artifact inverts all three failures:
 
 | Traditional | LRA |
 |------------|-----|
-| Paper behind paywall | GPL-3.0: free forever, copyleft protects it |
+| Paper behind paywall | Apache-2.0: free forever, copyleft protects it |
 | Code in a separate repo (if at all) | Paper IS the repo |
 | Claims reviewed by reading | Claims verified by executing |
 | Static PDF, frozen at submission | Interactive HTML, updated by commit |
 | Reviewer installs nothing | Reviewer runs your tool in-browser |
 
-The format is designed to spread. Every fork inherits GPL-3.0.
+The format is designed to spread. Every fork inherits Apache-2.0.
 Every derivative work must remain open. The template is the vector;
 the license is the mechanism.
 
 ## License
 
-**GPL-3.0.** See [LICENSE](LICENSE).
+**Apache-2.0.** See [LICENSE](LICENSE).
 
 This means:
 - **You CAN** use this template for any research paper, commercial or academic
 - **You CAN** modify the HTML, CSS, and JS to fit your needs
-- **You MUST** keep GPL-3.0 on derivative works of the template
+- **You MUST** keep Apache-2.0 on derivative works of the template
 - **You MUST** share your modifications to the template under the same terms
 
 Your paper content (the research text you write, your figures, your data)
-is yours. The GPL applies to the template code — the HTML structure, CSS, JS,
+is yours. The Apache applies to the template code — the HTML structure, CSS, JS,
 and build workflow — not to the intellectual content you put inside it.
 
 That distinction matters: you own your research. The template ensures

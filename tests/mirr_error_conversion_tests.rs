@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 //! Unit tests for the central MirrError authority (50 distinct tests).
 
-use nasa_rust_project::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
-use nasa_rust_project::span::Span;
+use mirrc::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
+use mirrc::span::Span;
 
 macro_rules! test_err_code {
     ($($name:ident, $err:expr, $expected_code:expr);* $(;)?) => {
@@ -124,7 +124,7 @@ fn test_edge_to_string_contains_line() {
 fn test_edge_to_diagnostic_severity() {
     let err = MirrError::ParseError { message: "msg".to_string(), span: None };
     let diag = err.to_diagnostic();
-    assert_eq!(diag.severity, nasa_rust_project::diagnostic::Severity::Error);
+    assert_eq!(diag.severity, mirrc::diagnostic::Severity::Error);
 }
 
 #[test]

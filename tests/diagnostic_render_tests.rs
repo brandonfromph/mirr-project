@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
 // Integration tests for the MIRR diagnostic rendering engine.
 //
-// These tests exercise the public API of `nasa_rust_project::diagnostic`
+// These tests exercise the public API of `mirrc::diagnostic`
 // end-to-end, verifying that rendered output matches the expected
 // rustc-style format with headers, source snippets, carets, and labels.
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic, Severity};
-use nasa_rust_project::span::Span;
+use mirrc::diagnostic::{render_diagnostic, Diagnostic, Severity};
+use mirrc::span::Span;
 
 // ---------------------------------------------------------------------------
 // Helper: multi-line MIRR sample sources

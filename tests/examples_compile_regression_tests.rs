@@ -2,7 +2,7 @@
 
 use std::fs;
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 const REGRESSION_EXAMPLES: &[&str] = &[
     "examples/aerospace_flight_ctrl.mirr",
@@ -37,7 +37,7 @@ fn compile_regression_examples_through_pipeline() {
         match run_pipeline(&source, &PipelineConfig::default()) {
             Ok(result) => {
                 if let Err(err) =
-                    nasa_rust_project::validation::validate_module(&result.program.module)
+                    mirrc::validation::validate_module(&result.program.module)
                 {
                     failures.push(format!("{example_path} (validation): {err}"));
                 }

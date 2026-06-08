@@ -9,7 +9,7 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::{BootstrapOpts, BootstrapRunner};
+use mirrc::{BootstrapOpts, BootstrapRunner};
 
 // ---------------------------------------------------------------------------
 // Helpers

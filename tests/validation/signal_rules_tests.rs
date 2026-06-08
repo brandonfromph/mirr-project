@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::validate_module;
+use mirrc::parse_mirr;
+use mirrc::validate_module;
 
 fn check_ok(src: &str) {
     let p = parse_mirr(src).expect("Parse failed");

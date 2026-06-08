@@ -8,11 +8,11 @@
 //! 2. Zero-crash execution under structural rewrite oscillations.
 //! 3. Parity of fixpoint truncation across 50 distinct topological variants.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::SignalDecl;
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::symbolic::rewrite::RewriteEngine;
-use nasa_rust_project::symbolic::{SymState, SymValue};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::SignalDecl;
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::symbolic::rewrite::RewriteEngine;
+use mirrc::symbolic::{SymState, SymValue};
 
 fn make_decl(name: &str, ty: SignalType) -> SignalDecl {
     SignalDecl {

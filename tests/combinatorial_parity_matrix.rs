@@ -5,7 +5,7 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_combinatorial_alu_matrix() {

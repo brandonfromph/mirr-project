@@ -4,13 +4,13 @@
 //! Tests property parsing, validation, SVA emission, JSON emission,
 //! DOT emission, and pipeline integration.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue};
-use nasa_rust_project::emit;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::validate_module;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::property::{PropertyDecl, PropertyFormula};
+use mirrc::ast::types::{BinaryOp, LiteralValue};
+use mirrc::emit;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::validate_module;
 
 // =========================================================================
 // Helper: parse then return first property

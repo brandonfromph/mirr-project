@@ -13,11 +13,11 @@ use std::env;
 use std::fs;
 use std::process;
 
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
-use nasa_rust_project::error::MirrError;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::simplify::{simplify_expr_with_stats, SimplifyStats};
+use mirrc::ast::Expr;
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::error::MirrError;
+use mirrc::parse_mirr;
+use mirrc::simplify::{simplify_expr_with_stats, SimplifyStats};
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();

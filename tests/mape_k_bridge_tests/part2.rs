@@ -123,7 +123,7 @@ fn bridge_prev_expression_treated_as_signal_check() {
 
 #[test]
 fn bridge_unary_not_extracts_signal_name() {
-    use nasa_rust_project::ast::types::UnaryOp;
+    use mirrc::ast::types::UnaryOp;
 
     let props = vec![assert_property(
         "p_not",

@@ -25,7 +25,7 @@ to compute abstract values for signals without executing the hardware.
 ## Usage
 
 ```rust
-use nasa_rust_project::symbolic::{sym_eval_expr, SymState, SymValue};
+use mirrc::symbolic::{sym_eval_expr, SymState, SymValue};
 
 let mut state = SymState::new();
 state.signals.push(("x".to_string(), SymValue::Concrete(42)));
@@ -56,7 +56,7 @@ The widening operator ensures convergence of fixpoint iterations:
 ## Refinement Checking
 
 ```rust
-use nasa_rust_project::symbolic::sym_check_refinement;
+use mirrc::symbolic::sym_check_refinement;
 
 // Check if value provably fits in [0, 255]
 let fits = sym_check_refinement(SymValue::Concrete(100), 0, 255); // true

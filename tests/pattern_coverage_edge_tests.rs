@@ -1,15 +1,15 @@
 #![forbid(unsafe_code)]
 //! Edge case tests for pattern definitions and expansion.
 
-use nasa_rust_project::ast::pattern::{PatternParam, PatternParamKind, ReflectBlock};
-use nasa_rust_project::ast::types::SignalKind;
-use nasa_rust_project::ast::types::SignalType;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::ast::pattern::{PatternParam, PatternParamKind, ReflectBlock};
+use mirrc::ast::types::SignalKind;
+use mirrc::ast::types::SignalType;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 fn run_src(
     src: &str,
-) -> Result<nasa_rust_project::pipeline::PipelineResult, nasa_rust_project::error::PipelineErrors> {
+) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 

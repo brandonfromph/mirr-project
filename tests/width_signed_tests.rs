@@ -11,15 +11,15 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-extern crate nasa_rust_project;
+extern crate mirrc;
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{
     BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
 };
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::width;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::width;
 
 // ───────────────────── helpers ─────────────────────
 
@@ -249,7 +249,7 @@ fn typecheck_module_returns_type_map() {
         pattern_origins: vec![],
         span: None,
     };
-    let type_map = nasa_rust_project::typeck::typecheck_module(&module).unwrap();
+    let type_map = mirrc::typeck::typecheck_module(&module).unwrap();
     // Should have entries for: literal true, signal a, signal b, a+b
     assert!(type_map.len() >= 3, "type_map should have at least 3 entries, got {}", type_map.len());
 }

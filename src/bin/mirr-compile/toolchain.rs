@@ -2,8 +2,8 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::emit;
-use nasa_rust_project::emit::fpga_target::FpgaTarget;
+use mirrc::emit;
+use mirrc::emit::fpga_target::FpgaTarget;
 
 /// Run toolchain operations (formal, lint, simulate, pnr, timing, eqy).
 ///
@@ -12,7 +12,7 @@ use nasa_rust_project::emit::fpga_target::FpgaTarget;
 /// if not.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn run_toolchain_operations(
-    result: &nasa_rust_project::pipeline::PipelineResult,
+    result: &mirrc::pipeline::PipelineResult,
     input_path: &str,
     fpga_target: &FpgaTarget,
     dsp_threshold: u32,
@@ -27,7 +27,7 @@ pub(super) fn run_toolchain_operations(
     eqy_check: bool,
     _toolchain_path: Option<&str>,
 ) {
-    use nasa_rust_project::toolchain::{Tool, ToolRegistry};
+    use mirrc::toolchain::{Tool, ToolRegistry};
 
     eprintln!();
     eprintln!("=== Toolchain Operations ===");
@@ -83,15 +83,15 @@ pub(super) fn run_toolchain_operations(
     // Formal verification
     if formal {
         if registry.is_available(Tool::Sby) {
-            let engine = nasa_rust_project::toolchain::sby::SbyEngine::from_str_name(formal_engine)
-                .unwrap_or(nasa_rust_project::toolchain::sby::SbyEngine::Z3);
-            let config = nasa_rust_project::toolchain::sby::SbyConfig {
+            let engine = mirrc::toolchain::sby::SbyEngine::from_str_name(formal_engine)
+                .unwrap_or(mirrc::toolchain::sby::SbyEngine::Z3);
+            let config = mirrc::toolchain::sby::SbyConfig {
                 bmc_depth: formal_depth,
                 prove: formal_prove,
                 cover: false,
                 engine,
             };
-            let sby_content = nasa_rust_project::toolchain::sby::generate_sby_config(
+            let sby_content = mirrc::toolchain::sby::generate_sby_config(
                 &result.program.module.name,
                 std::path::Path::new(&sv_path),
                 bind_path.as_ref().map(|p| std::path::Path::new(p.as_str())),
@@ -104,7 +104,7 @@ pub(super) fn run_toolchain_operations(
                 eprintln!("  [formal] Config written to {sby_path}");
                 eprintln!("  [formal] Engine: {formal_engine}, depth: {formal_depth}, prove: {formal_prove}");
                 // Run sby
-                match nasa_rust_project::toolchain::sby::run_formal(
+                match mirrc::toolchain::sby::run_formal(
                     std::path::Path::new(&sby_path),
                     std::path::Path::new("."),
                     &registry,
@@ -128,7 +128,7 @@ pub(super) fn run_toolchain_operations(
     if lint {
         if registry.is_available(Tool::Verilator) {
             eprintln!("  [lint] Running Verilator lint...");
-            match nasa_rust_project::toolchain::verilator::run_lint(
+            match mirrc::toolchain::verilator::run_lint(
                 std::path::Path::new(&sv_path),
                 std::path::Path::new("."),
                 &registry,
@@ -154,7 +154,7 @@ pub(super) fn run_toolchain_operations(
     if simulate {
         if registry.is_available(Tool::Verilator) {
             eprintln!("  [simulate] Running Verilator simulation...");
-            match nasa_rust_project::toolchain::verilator::run_simulation(
+            match mirrc::toolchain::verilator::run_simulation(
                 std::path::Path::new(&sv_path),
                 &result.program.module.name,
                 std::path::Path::new("."),

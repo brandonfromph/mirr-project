@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 fn check_err(src: &str, msg: &str) {
     let res = run_pipeline(src, &PipelineConfig::default());

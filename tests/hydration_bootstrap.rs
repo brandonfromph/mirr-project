@@ -1,5 +1,5 @@
-use nasa_rust_project::parser::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline_on_program, PipelineConfig};
+use mirrc::parser::parse_mirr;
+use mirrc::pipeline::{run_pipeline_on_program, PipelineConfig};
 
 fn run_test(source: &str) -> Result<(), String> {
     let program = match parse_mirr(source) {

@@ -5,10 +5,10 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, UnaryOp};
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ecs::Registry;
-use nasa_rust_project::parser::expr_parser::parse_expression;
+use mirrc::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use mirrc::ast::Expr;
+use mirrc::ecs::Registry;
+use mirrc::parser::expr_parser::parse_expression;
 use proptest::prelude::*;
 
 // --- Strategies for Generating AST Nodes ---

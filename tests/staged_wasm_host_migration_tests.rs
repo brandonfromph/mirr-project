@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::mrt_host as mrt;
+use mirrc::mrt_host as mrt;
 
 fn runtime_with_limits(stdout_limit: usize, stderr_limit: usize) -> mrt::HostRuntime {
     mrt::HostRuntime::builder()

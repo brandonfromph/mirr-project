@@ -16,7 +16,7 @@ const TEMPLATE_GITIGNORE: &str = include_str!("../template/.gitignore");
 const TEMPLATE_LRA_CARD: &str = include_str!("../template/lra-card.svg");
 const TEMPLATE_LRA_CLIENT: &str = include_str!("../template/lra-client.js");
 
-// GPL-3.0 license header — embedded directly so the crate is self-contained
+// Apache-2.0 license header — embedded directly so the crate is self-contained
 const TEMPLATE_LICENSE: &str = "\
                     GNU GENERAL PUBLIC LICENSE\n\
                        Version 3, 29 June 2007\n\n\
@@ -73,7 +73,7 @@ pub fn run(name: &str) -> i32 {
     println!("  paper.js       — interactive layer");
     println!("  sw.js          — service worker");
     println!("  CITATION.cff   — citation metadata");
-    println!("  LICENSE        — GPL-3.0");
+    println!("  LICENSE        — Apache-2.0");
     println!();
     println!("Next steps:");
     println!("  cd {}", name);

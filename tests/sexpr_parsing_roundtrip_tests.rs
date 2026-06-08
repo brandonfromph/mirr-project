@@ -3,10 +3,10 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::ast::program::{MirrProgram, Module};
-use nasa_rust_project::sexpr::types::SExpr;
-use nasa_rust_project::sexpr::{ast_to_sexpr, parse_sexpr, print_sexpr, sexpr_to_ast};
-use nasa_rust_project::{parse_mirr, validate_module};
+use mirrc::ast::program::{MirrProgram, Module};
+use mirrc::sexpr::types::SExpr;
+use mirrc::sexpr::{ast_to_sexpr, parse_sexpr, print_sexpr, sexpr_to_ast};
+use mirrc::{parse_mirr, validate_module};
 
 const MAX_TEST_ITER: usize = 8;
 

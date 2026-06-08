@@ -3,8 +3,8 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::emit::riscv::emit_riscv_asm;
-use nasa_rust_project::emit::rspu_isa::*;
+use mirrc::emit::riscv::emit_riscv_asm;
+use mirrc::emit::rspu_isa::*;
 
 fn empty_program() -> RspuProgram {
     RspuProgram {

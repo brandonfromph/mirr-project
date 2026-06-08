@@ -6,14 +6,14 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{
     ExtendedType, LiteralValue, SignalKind, SignalType, MAX_ARRAY_DIMS, MAX_FIXED_POINT_BITS,
     MAX_STRUCT_FIELDS,
 };
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::typeck::typecheck_module;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::typeck::typecheck_module;
 
 fn make_signal(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
     SignalDecl {

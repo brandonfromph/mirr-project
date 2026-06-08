@@ -43,31 +43,56 @@ mirr-private/
 
 ## 2. One-Screen Mental Model
 
-MIRR is a safety-critical compiler platform with three kinds of surfaces:
+MIRR is a safety-critical compiler platform (61k+ LOC) with three distinct layers:
 
-1. **Core compiler**: Parse -> Validate/Expand -> Type/Width -> Temporal Lowering -> Emit.
-2. **Control planes**: MRT / Presidential Arsenal, KB-lite, and private campaign planning.
-3. **Consumers and bridges**: WASM, LRA, MCP, VS Code, paper/demos, proofs, fuzz, and CI scripts.
+1. **Core Compiler Sub-Engines**: 14 specialized modules (Temporal, Symbolic, SAT, HLS, etc.) that perform rigorous behavioral-to-physical translation.
+2. **Control Planes**: MRT / Presidential Arsenal and KB-native (RAG) for autonomic governance and knowledge-backed synthesis.
+3. **Consumer Bridges**: WASM, LRA-CLI, and MCP-Control-Plane providing multi-surface accessibility.
 
 **Inputs:**
-- MIRR language (Signal/Guard/Reflex + properties/patterns)
+- MIRR specifications (Signals, Guards, Reflexes, Properties, Patterns)
 
 **Outputs:**
-- SystemVerilog, FIRRTL, JSON netlist, DOT graphs, S-expression IR, R-SPU assembly/binary, Yosys-compatible netlists
+- Verilog RTL (always_ff synchronous), FIRRTL, R-SPU Assembly, JSON Netlists, Formal S-Expressions.
 
-## 3. Data Flow Pathways
+## 3. The 14 Architectural Sub-Engines
 
-The following statements describe how services and subsystems interact within the MIRR ecosystem:
+The core of MIRR is partitioned into 14 high-assurance engines, each adhering to NASA's Power-of-10 rules for ultra-reliable execution.
 
-1. **Compiler Pipeline Flow:** 
-   - Source code is ingested by the [Lexer/Parser](../src/parser/module_parser/mod.rs), generating an AST.
-   - The AST is hydrated into the [ECS Registry](../src/ecs/registry.rs), where all hardware declarations become entities.
-   - [Semantic Validation](../src/ecs/semantic_validate.rs) ensures entity integrity (Name and Kind constraints).
-   - [Width Solver](../src/width/solver.rs) infers missing signal widths using SCC propagation. Note: The ECS-native width inference system is currently a mock; the AST-based solver remains the primary engine.
-   - [Temporal Lowering](../src/temporal/mod.rs) translates hardware guards into deterministic netlist primitives.
- This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes `TemporalNodeComponent` metadata for each guard entity, closing the "Temporal Seam".
-   - [Symbolic Evaluation Engine](../src/symbolic/mod.rs) provides abstract interpretation, discrete calculus approximations, anomaly signature fingerprinting, and a term rewriting engine for runtime logic optimization.
-   - Finally, [Emission Backends](../src/emit/mod.rs) generate the target artifacts.
+### Logic & Optimization
+1.  **Temporal Guard Compiler** (`src/temporal/compiler.rs`): Translates high-level temporal guards into deterministic shift-register and counter primitives.
+2.  **SAT Logic Solver** (`src/sat/mod.rs`): A bounded iterative DPLL solver for proving expression equivalences and verifying simplification candidates.
+3.  **High-Level Synthesis (HLS) Optimizer** (`src/hls/mod.rs`): Performs ASAP/ALAP scheduling, resource sharing, and FIFO streaming synthesis for hardware realization.
+4.  **Register Retiming Optimizer** (`src/temporal/retiming.rs`): Employs Leiserson-Saxe retiming to minimize critical path delay by moving registers across combinational logic.
+
+### Verification & Assurance
+5.  **Symbolic Evaluation Engine** (`src/symbolic/mod.rs`): Implements interval-based abstract interpretation to prove signal value bounds and structural netlist equivalence.
+6.  **Totality Engine** (`src/totality/mod.rs`): Verifies the five Pillars of Totality: resource bounds, output completeness, guard coverage, temporal finiteness, and dependency acyclicity.
+7.  **S-Expression Transpiler** (`src/sexpr/convert/to_sexpr.rs`): Generates homoiconic IR for formal verification bridges (Z3, Rocq).
+8.  **R-SPU Silicon Simulator** (`src/emit/rspu_sim/mod.rs`): Provides cycle-accurate, bit-precise simulation for 16-core R-SPU programs.
+
+### Infrastructure & Orchestration
+9.  **ECS Registry** (`src/ecs/registry.rs`): A high-performance SoA (Structure of Arrays) registry managing up to 1M hardware entities. Currently serves as the final synthesis IR.
+10. **Cross-Module Symbol Resolver** (`src/symbols/resolver.rs`): Manages cross-crate namespace resolution and visibility.
+11. **S-Expression "Code as Data" Engine** (`src/sexpr/mod.rs`): A homoiconic IR with a bounded, iterative eval/apply core. **Current Status**: Not wired to the main pipeline. Used exclusively for self-hosting bootstrap and formal verification bridges.
+12. **Semantic Type Checker** (`src/typeck/mod.rs`): Enforces signedness consistency. **Current Role**: Production-grade AST checker; ECS-native typechecking is currently a shadow gate.
+13. **MAPE-K Analyzer** (`src/mape_k/analyzer.rs`): Evaluates bounded LTL properties over rolling windows for autonomic safety.
+14. **MAPE-K Telemetry Bridge** (`src/mape_k/bridge/mod.rs`): Orchestrates the 16-core telemetry fabric (Proposal 045) for cross-core safety coordination.
+
+## 4. Data Flow Pathways
+
+The following pathways describe the lifecycle of a MIRR specification:
+
+1. **Compiler Pipeline Flow (Triple-Brain Sync):** 
+   - **Ingestion**: Source code is ingested by the [Lexer/Parser](../src/parser/module_parser/mod.rs), generating an AST.
+   - **Hydration 1 (Expansion)**: The AST is partially hydrated into the [ECS Registry](../src/ecs/registry.rs) to resolve pattern definitions.
+   - **Duality Expansion (Hazard)**: Patterns are currently expanded ONLY via the legacy AST engine. The [S-Expression Macro Expander](../src/sexpr/macro_expand.rs) is functional but not yet integrated into the production pipeline.
+   - **AST Validation**: The expanded AST undergoes [Semantic Validation](../src/validation/semantic.rs) and production type checking.
+   - **Hydration 2 (Shadow Gate)**: The validated AST is hydrated into the Registry for "Shadow Gate" parity checks.
+   - **AST Optimization**: [Width Solver](../src/width/solver.rs) and Simplification passes are performed on the AST.
+   - **Hydration 3 (Synthesis)**: The final, optimized AST is hydrated a third time into a fresh Registry. This is the **Absolute Source of Truth** for synthesis.
+   - **Temporal Lowering**: The ECS Registry is used by [Temporal Lowering](../src/temporal/mod.rs) to close the "Temporal Seam," lowering guards into hardware primitives.
+   - **Emission**: [Emission Backends](../src/emit/mod.rs) generate the final target artifacts from the synchronized state.
 
 2. **Control Plane & RAG Integration:**
    - The [MCP Semantic Bridge](../crates/mirr-mcp-control-plane/) routes cross-subsystem tool calls.
@@ -156,21 +181,20 @@ The repository maintains rigorous formal verification infrastructure in the `pro
 
 ## 4.6 R-SPU 16-Core Architecture (rspu_chip/)
 
-The `rspu_chip/` directory houses the complete structural hardware layout of the R-SPU processor:
+The `rspu_chip/` directory houses the complete structural hardware layout of the RS-16 processor, a 16-core "Reflexive Signal Processing Unit" baseline.
 
 - **64-bit Tagged-Word Specification (`core/types.mirr`)**:
   - Encodes the standard 64-bit word format: `[63:40]` Reserved (24 bits), `[39:36]` Provenance tracking (4 bits), `[35:32]` Hardware Type Tag (4 bits), and `[31:0]` Raw Data Payload (32 bits).
 - **Core Subsystems**:
-  - `core/alu.mirr`: High-assurance ALU performing hardware type dispatch and dynamic arithmetic safety trap generation.
+  - **Upgraded Tagged-Word ALU** (`core/alu.mirr`): A high-performance 64-bit unit using masked-range optimization. It performs hardware type dispatch and dynamic arithmetic safety trap generation, utilizing iterative bit-width narrowing (E504/E505 resolution).
   - `core/regfile.mirr`: Bounded register file (256x64-bit tagged words) with concurrent dual read and single write lines.
-  - `core/pipeline.mirr`: Bounded 5-stage pipeline wiring together Fetch (IF), Decode (ID), Execute (EX), Memory (MEM), and Writeback (WB) stages.
-  - `core/core_top.mirr`: Top-level core wrapper integrating pipeline stages and exception routing.
-- **Verification Subsystems**:
-  - `verification/pcc_verifier.mirr`: Safe IF-stage hardware gatekeeper enforcing dynamic verification bounds and instruction boundaries.
-  - `verification/tmr_voter.mirr`: Triple-Modular Redundancy (TMR) majority voter mask to mitigate single-core physical faults.
-- **Interconnect & Fabric**:
-  - `interconnect/noc_router.mirr`: 16-port packet-switched Network-on-Chip (NoC) router supporting broadcast/star topology routing.
-  - `rspu_top.mirr`: Top-level integration file wiring the 16 cores to the NoC router and verification voters.
+  - `core/pipeline.mirr`: Bounded 5-stage pipeline (IF, ID, EX, MEM, WB) with hardware-enforced dynamic verification bounds.
+- **Interconnect & SoC Integration**:
+  - **NoC Interconnect** (`interconnect/noc_router.mirr`): A 16-port packet-switched router supporting broadcast and star topology routing across the multi-core fabric.
+  - **16-Core SoC** (`rspu_top.mirr`): Integrates 16 R-SPU cores via the NoC router. Implements a **DCE Protection Strategy** by driving physical `out_pc` and `out_data` pins to prevent Yosys Dead Code Elimination of the core datapaths.
+- **Verification & Safety**:
+  - `verification/pcc_verifier.mirr`: Safe IF-stage hardware gatekeeper enforcing dynamic verification bounds.
+  - `verification/tmr_voter.mirr`: Triple-Modular Redundancy (TMR) majority voter mask for physical fault mitigation.
 
 ## 5. Main Projects At A Glance
 
@@ -230,7 +254,43 @@ The `rspu_chip/` directory houses the complete structural hardware layout of the
 | Phase 7i | In Progress | Verified compilation chain (ConstFold proof & audit tool) |
 | Phase 8a | In Progress | R-SPU Core Architecture (64-bit tagged-word pipeline) |
 
-## 8. Practical Pitfalls In This Workspace
+## 9. NASA Power-of-10 Compliance (Current State)
+
+The MIRR compiler mandates adherence to NASA's rules for safety-critical software, but currently carries **Recursion Debt** in transition layers:
+
+1.  **Rule 1: No Unbounded Recursion**: 
+    *   **Status**: **PARTIAL DEBT**.
+    *   **Hazards**: `reify_expr_memoized` (Registry) and `parse_signal_type_str` (Parser) remain recursive. 
+    *   **Mitigation**: Bounded iteration is enforced in all simplification and logic passes.
+2.  **Rule 2: Fixed Bounds**: All ECS Registry tables are capped at 1,000,000 entities.
+3.  **Rule 3: No Dynamic Allocation after Init**: Most compiler passes pre-allocate SoA buffers; however, the AST pipeline still relies on heap-allocated `Box` and `Vec` nodes during expansion.
+
+## 10. Zero-Debt Closeout Strategy
+
+Managed by `src/zero_debt_closeout.rs`, this strategy defines the roadmap for resolving the "Split-Brain" hazard:
+
+1.  **Shadow Parity Validation**: Running ECS systems in parallel with AST gates and asserting parity.
+2.  **Compatibility Contracts**: Defining specific legacy routes (AST-based emitters) that will be disabled once ECS synthesis is proven stable.
+3.  **The Cutover**: A formal gated transition where the AST becomes a volatile front-end and the ECS Registry becomes the sole long-lived IR.
+
+## 11. Practical Pitfalls In This Workspace
+
+- **Environment Note:** `cargo run --bin <name> -- <args>` is broken in this environment due to a rustup home-dir error. Always invoke compiled binaries directly (`./target/debug/<name>`).
+- Do not trust stale status docs/logs over source and tests.
+- Self-hosting is active but still evolving; parity tests are a better truth source than narrative status files.
+ication and logic passes.
+2.  **Rule 2: Fixed Bounds**: All ECS Registry tables are capped at 1,000,000 entities.
+3.  **Rule 3: No Dynamic Allocation after Init**: Most compiler passes pre-allocate SoA buffers; however, the AST pipeline still relies on heap-allocated `Box` and `Vec` nodes during expansion.
+
+## 10. Zero-Debt Closeout Strategy
+
+Managed by `src/zero_debt_closeout.rs`, this strategy defines the roadmap for resolving the "Split-Brain" hazard:
+
+1.  **Shadow Parity Validation**: Running ECS systems in parallel with AST gates and asserting parity.
+2.  **Compatibility Contracts**: Defining specific legacy routes (AST-based emitters) that will be disabled once ECS synthesis is proven stable.
+3.  **The Cutover**: A formal gated transition where the AST becomes a volatile front-end and the ECS Registry becomes the sole long-lived IR.
+
+## 11. Practical Pitfalls In This Workspace
 
 - **Environment Note:** `cargo run --bin <name> -- <args>` is broken in this environment due to a rustup home-dir error. Always invoke compiled binaries directly (`./target/debug/<name>`).
 - Do not trust stale status docs/logs over source and tests.

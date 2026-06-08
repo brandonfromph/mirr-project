@@ -10,12 +10,12 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-extern crate nasa_rust_project;
+extern crate mirrc;
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::validate_module;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::validate_module;
 
 // ───────────────────── helpers ─────────────────────
 
@@ -344,7 +344,7 @@ module mw_test {
     }
 }
 "#;
-    let program = nasa_rust_project::parse_mirr(source).expect("should parse");
+    let program = mirrc::parse_mirr(source).expect("should parse");
     let err = validate_module(&program.module).expect_err("should fail with E216");
     let msg = err.to_string();
     assert!(msg.contains("[E216]"), "expected E216, got: {}", msg);
@@ -370,7 +370,7 @@ module sw_test {
     }
 }
 "#;
-    let program = nasa_rust_project::parse_mirr(source).expect("should parse");
+    let program = mirrc::parse_mirr(source).expect("should parse");
     validate_module(&program.module).expect("single-writer module should pass validation");
 }
 

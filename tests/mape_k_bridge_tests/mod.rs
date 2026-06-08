@@ -7,19 +7,19 @@
 //! including sensor extraction, property lowering, action table generation,
 //! and error handling for unsupported formulas and resource limits.
 
-use nasa_rust_project::ast::program::{MirrProgram, Module};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::ast::{Expr, SignalDecl};
-use nasa_rust_project::mape_k::bridge::{
+use mirrc::ast::program::{MirrProgram, Module};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::ast::{Expr, SignalDecl};
+use mirrc::mape_k::bridge::{
     bridge_from_pipeline, DEFAULT_KNOWLEDGE_CAPACITY, DEFAULT_WINDOW_SIZE, MAX_BRIDGE_PROPERTIES,
     MAX_BRIDGE_SIGNALS,
 };
-use nasa_rust_project::mape_k::error::MapeKError;
-use nasa_rust_project::mape_k::planner::{AdaptationAction, TriggerCondition};
-use nasa_rust_project::mape_k::{SignalPredicate, TemporalProperty};
-use nasa_rust_project::parser::parse_mirr;
-use nasa_rust_project::pipeline::PipelineResult;
+use mirrc::mape_k::error::MapeKError;
+use mirrc::mape_k::planner::{AdaptationAction, TriggerCondition};
+use mirrc::mape_k::{SignalPredicate, TemporalProperty};
+use mirrc::parser::parse_mirr;
+use mirrc::pipeline::PipelineResult;
 
 // ---------------------------------------------------------------------------
 // Constants — bounded iteration limits (NASA P10)

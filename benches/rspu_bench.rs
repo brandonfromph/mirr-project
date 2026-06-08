@@ -3,9 +3,9 @@
 //! simulate, and tagged-register operations. All loops bounded (NASA Power-of-10).
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use nasa_rust_project::emit::rspu_isa::{AluOp, AluUnaryOp, MAX_SIM_CYCLES};
-use nasa_rust_project::emit::rspu_tagged::check_alu_tags;
-use nasa_rust_project::{
+use mirrc::emit::rspu_isa::{AluOp, AluUnaryOp, MAX_SIM_CYCLES};
+use mirrc::emit::rspu_tagged::check_alu_tags;
+use mirrc::{
     decode, emit_binary, encode, RegisterFile, RspuInstruction, RspuProgram, RspuSimulator,
     TaggedWord, TypeTag,
 };

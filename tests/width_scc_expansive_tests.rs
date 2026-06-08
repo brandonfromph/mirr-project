@@ -1,11 +1,11 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::width::scc_solver::solve_expansive;
-use nasa_rust_project::width::types::{SccInfo, SccKind};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::width::scc_solver::solve_expansive;
+use mirrc::width::types::{SccInfo, SccKind};
 
 fn make_signal(name: &str, width: u32) -> SignalDecl {
     SignalDecl {
@@ -78,7 +78,7 @@ fn test_solve_expansive_simple_accumulator() {
         result
             .diagnostics
             .iter()
-            .all(|d| d.severity != nasa_rust_project::width::types::DiagSeverity::Error),
+            .all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
         "Expected no error diagnostics: {:?}",
         result.diagnostics
     );
@@ -136,7 +136,7 @@ fn test_solve_expansive_reversed_operand_accumulator() {
         result
             .diagnostics
             .iter()
-            .all(|d| d.severity != nasa_rust_project::width::types::DiagSeverity::Error),
+            .all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
         "Expected no error diagnostics: {:?}",
         result.diagnostics
     );
@@ -211,7 +211,7 @@ fn test_solve_expansive_multiple_accumulators_takes_first_valid() {
         result
             .diagnostics
             .iter()
-            .all(|d| d.severity != nasa_rust_project::width::types::DiagSeverity::Error),
+            .all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
         "Expected no error diagnostics: {:?}",
         result.diagnostics
     );

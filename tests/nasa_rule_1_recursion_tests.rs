@@ -8,9 +8,9 @@
 //! 2. Safe iterative traversal of deeply nested AST expressions, arrays, and structs.
 //! 3. Absence of stack overflows under pathologically large source constructs.
 
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue};
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ecs::Registry;
+use mirrc::ast::types::{BinaryOp, LiteralValue};
+use mirrc::ast::Expr;
+use mirrc::ecs::Registry;
 
 /// Verify that a deeply nested binary addition expression is processed iteratively
 /// without causing a call stack overflow during registry ingestion.

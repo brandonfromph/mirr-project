@@ -1,11 +1,11 @@
 #![forbid(unsafe_code)]
 //! Typecheck node-budget contract tests.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::typeck::typecheck_module;
-use nasa_rust_project::validate_module;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::typeck::typecheck_module;
+use mirrc::validate_module;
 
 const MAX_EXPR_NODES_BUDGET: usize = 512;
 

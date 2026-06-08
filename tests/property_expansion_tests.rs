@@ -3,11 +3,11 @@
 //! - Bug fix: prev() delay validation now applies to properties
 //! - Refactor: PropertyFormula::exprs() / exprs_mut() centralize variant dispatch
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::{run_pipeline, validate_module, PipelineConfig};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyFormula};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::{run_pipeline, validate_module, PipelineConfig};
 
 // ---------------------------------------------------------------------------
 // Helpers: build AST nodes directly
@@ -78,7 +78,7 @@ fn module_with_properties(properties: Vec<PropertyDecl>) -> Module {
 fn prop(name: &str, formula: PropertyFormula) -> PropertyDecl {
     PropertyDecl {
         name: name.to_string(),
-        directive: nasa_rust_project::ast::property::PropertyDirective::Assert,
+        directive: mirrc::ast::property::PropertyDirective::Assert,
         formula,
         origin: None,
         span: None,

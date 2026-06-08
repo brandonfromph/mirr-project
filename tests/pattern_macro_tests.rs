@@ -1,6 +1,6 @@
 #[test]
 fn test_pattern_parameter_dependent_for_loop_expansion() {
-    use nasa_rust_project::parse_mirr;
+    use mirrc::parse_mirr;
     let src = r#"
         def p(N: u16) {
             reflect {
@@ -23,6 +23,6 @@ fn test_pattern_parameter_dependent_for_loop_expansion() {
     let pat = &program.patterns[0];
     assert_eq!(pat.body.statements.len(), 1, "Should contain one for-loop statement");
 
-    use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
+    use mirrc::ast::macro_nodes::ModuleMacroStmt;
     assert!(matches!(pat.body.statements[0], ModuleMacroStmt::ForLoop { .. }));
 }

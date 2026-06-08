@@ -5,8 +5,8 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use nasa_rust_project::emit;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 const SRC_A: &str = r#"
 module temp_iso_a {

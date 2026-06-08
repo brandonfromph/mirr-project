@@ -42,7 +42,7 @@ Integration tests go in `tests/` directory:
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_full_pipeline() {

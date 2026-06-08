@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::identity_op, clippy::erasing_op)]
 
-use nasa_rust_project::emit::rspu_sim::RspuSimulator;
-use nasa_rust_project::emit::rspu_tagged::TypeTag;
-use nasa_rust_project::pipeline::PipelineConfig;
-use nasa_rust_project::Workspace;
+use mirrc::emit::rspu_sim::RspuSimulator;
+use mirrc::emit::rspu_tagged::TypeTag;
+use mirrc::pipeline::PipelineConfig;
+use mirrc::Workspace;
 use std::path::PathBuf;
 
 #[test]

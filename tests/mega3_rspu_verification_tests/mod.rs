@@ -19,15 +19,15 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::emit::rspu_encoding::{decode, encode, EncodedInstruction};
-use nasa_rust_project::emit::rspu_isa::{
+use mirrc::emit::rspu_encoding::{decode, encode, EncodedInstruction};
+use mirrc::emit::rspu_isa::{
     AluOp, AluUnaryOp, RegId, RspuInstruction, RspuProgram, MAX_GUARDS, MAX_INSTRUCTIONS,
     MAX_REGISTERS, MAX_SIM_CYCLES, REG_INPUT_BASE, REG_INPUT_MAX, REG_INTERNAL_BASE,
     REG_INTERNAL_MAX, REG_OUTPUT_BASE, REG_OUTPUT_MAX, REG_TEMP_BASE, REG_TEMP_MAX,
 };
-use nasa_rust_project::emit::rspu_sim::{RspuSimulator, StepResult};
-use nasa_rust_project::emit::rspu_tagged::{RegisterFile, TaggedWord, TypeTag};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::rspu_sim::{RspuSimulator, StepResult};
+use mirrc::emit::rspu_tagged::{RegisterFile, TaggedWord, TypeTag};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA P10)
@@ -55,7 +55,7 @@ fn make_program(instrs: Vec<RspuInstruction>) -> RspuProgram {
 /// Run pipeline with R-SPU emission on the given MIRR source.
 fn pipeline_with_rspu(
     src: &str,
-) -> Result<nasa_rust_project::PipelineResult, nasa_rust_project::PipelineErrors> {
+) -> Result<mirrc::PipelineResult, mirrc::PipelineErrors> {
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,

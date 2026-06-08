@@ -12,8 +12,8 @@
 use clap::Parser;
 use std::process;
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
-use nasa_rust_project::mape_k::{
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::mape_k::{
     self, ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
     TemporalProperty, TriggerCondition,
 };

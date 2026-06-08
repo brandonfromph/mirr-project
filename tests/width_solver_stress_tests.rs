@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::ast::types::BinaryOp;
-use nasa_rust_project::width::constraint::WidthConstraint;
-use nasa_rust_project::width::solver::solve;
-use nasa_rust_project::width::types::{FlatNode, Width};
+use mirrc::ast::types::BinaryOp;
+use mirrc::width::constraint::WidthConstraint;
+use mirrc::width::solver::solve;
+use mirrc::width::types::{FlatNode, Width};
 
 #[test]
 fn test_width_solver_stress_high_density_independent_channels() {

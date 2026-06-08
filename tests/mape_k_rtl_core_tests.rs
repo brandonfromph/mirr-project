@@ -4,12 +4,12 @@
 //!
 //! Tests E1.1-E1.25 verify RTL structure, module generation, and pipeline integration.
 
-use nasa_rust_project::ast::program::{MirrProgram, Module};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ast::{Expr, SignalDecl};
-use nasa_rust_project::emit::mape_k_rtl::{emit_mape_k_rtl, MAX_RTL_PROPERTIES, MAX_RTL_SIGNALS};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
+use mirrc::ast::program::{MirrProgram, Module};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::ast::{Expr, SignalDecl};
+use mirrc::emit::mape_k_rtl::{emit_mape_k_rtl, MAX_RTL_PROPERTIES, MAX_RTL_SIGNALS};
+use mirrc::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
 const MAX_TEST_SIGNALS: usize = 512;
 const MAX_TEST_PROPERTIES: usize = 128;

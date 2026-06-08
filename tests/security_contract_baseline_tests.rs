@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::mrt_auth::{
+use mirrc::mrt_auth::{
     AuthConfig, AuthDecision, AuthInput, DynamicAuthMiddleware, HashedTokenRecord,
     HashedTokenValidator, Role, RoutePolicy, TokenHasher, TokenValidation,
 };
-use nasa_rust_project::mrt_schema::{
+use mirrc::mrt_schema::{
     BoundedFieldSpec, BoundedJsonInput, PreDispatchDecision, PreDispatchInput, SchemaContract,
     SchemaPipeline, SchemaPolicy, SchemaStage,
 };

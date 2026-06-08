@@ -3,7 +3,7 @@ name = "mirr-arsenal-wasm"
 version = "0.1.0"
 edition = "2021"
 description = "WASM bindings for the MIRR compiler semantic bridge"
-license = "GPL-3.0"
+license = "Apache-2.0"
 publish = false
 
 
@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-nasa-rust-project = { path = "../.." }
+mirrc = { path = "../.." }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }

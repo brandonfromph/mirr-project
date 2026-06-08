@@ -25,7 +25,7 @@ static A: CountingAllocator = CountingAllocator;
 
 #[test]
 fn allocation_audit_hot_path_no_new_allocs_after_init() {
-    use nasa_rust_project::mirr_executor::{drive_lexer_with_interpreter, set_alloc_hook};
+    use mirrc::mirr_executor::{drive_lexer_with_interpreter, set_alloc_hook};
 
     // install hook so that the interpreter will notify us of checkpoints
     set_alloc_hook(|label| {

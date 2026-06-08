@@ -8,8 +8,8 @@
 //! 2. Static verification invariants enforced by the native Totality Engine (MEGA-4).
 //! 3. Hygienic AST macro expansion span preservation for high-fidelity debugging.
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::totality::run_totality_check;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::totality::run_totality_check;
 
 #[test]
 fn test_silicon_truth_one_to_one_guard_mapping() {
@@ -33,7 +33,7 @@ fn test_silicon_truth_one_to_one_guard_mapping() {
     let result = run_pipeline(source, &config).expect("Pipeline should compile");
 
     // Retrieve the compiled temporal netlist
-    let verilog = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let verilog = mirrc::emit::verilog::emit_sv(&result);
 
     assert!(
         verilog.contains("output logic") && verilog.contains("b"),
@@ -69,7 +69,7 @@ fn test_silicon_truth_one_to_one_reflex_mapping() {
 
     let config = PipelineConfig::default();
     let result = run_pipeline(source, &config).expect("Pipeline should compile");
-    let verilog = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let verilog = mirrc::emit::verilog::emit_sv(&result);
 
     // The emitted Verilog must declare out_val1 and out_val2 driven combinational 1:1 from reflex
     assert!(verilog.contains("out_val1"), "Must preserve output target name 'out_val1'");
@@ -229,11 +229,11 @@ fn test_compiler_ecs_representation_traceability() {
         }
     "#;
 
-    let parsed = nasa_rust_project::parser::parse_mirr(source).expect("Should parse");
-    let mut registry = nasa_rust_project::ecs::Registry::new();
+    let parsed = mirrc::parser::parse_mirr(source).expect("Should parse");
+    let mut registry = mirrc::ecs::Registry::new();
 
     // Ingest the program into the registry
-    nasa_rust_project::ecs::adapter::ingest_program(&mut registry, parsed, None)
+    mirrc::ecs::adapter::ingest_program(&mut registry, parsed, None)
         .expect("Ingesting program into ECS Registry must succeed");
 
     // Verify entities are mapped to contiguous component arrays
@@ -249,7 +249,7 @@ fn test_compiler_ecs_representation_traceability() {
     assert_eq!(registry.cycles[idx].as_ref().unwrap().0, 3);
 
     // Run the temporal synthesis system which lowers the guard and attaches synthesis metadata
-    let _netlist = nasa_rust_project::ecs::systems::temporal_synthesis_system(&mut registry)
+    let _netlist = mirrc::ecs::systems::temporal_synthesis_system(&mut registry)
         .expect("Temporal synthesis system must run successfully");
 
     // The guard entity should now have a TemporalNodeComponent attached

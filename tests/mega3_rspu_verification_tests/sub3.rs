@@ -194,7 +194,7 @@ fn e9_sim_total_check_with_violations_raises_exception() {
         StepResult::Exception(code) => {
             assert_eq!(
                 code,
-                nasa_rust_project::emit::rspu_exceptions::ExceptionCode::PropertyFail,
+                mirrc::emit::rspu_exceptions::ExceptionCode::PropertyFail,
                 "TotalCheck with violations must raise PropertyFail"
             );
         }
@@ -319,7 +319,7 @@ fn e10_sim_interval_check_out_of_range_exception() {
         StepResult::Exception(code) => {
             assert_eq!(
                 code,
-                nasa_rust_project::emit::rspu_exceptions::ExceptionCode::IntervalViolation,
+                mirrc::emit::rspu_exceptions::ExceptionCode::IntervalViolation,
                 "Out-of-range IntervalCheck must raise IntervalViolation"
             );
         }
@@ -342,7 +342,7 @@ fn e10_sim_interval_check_below_range_exception() {
         StepResult::Exception(code) => {
             assert_eq!(
                 code,
-                nasa_rust_project::emit::rspu_exceptions::ExceptionCode::IntervalViolation,
+                mirrc::emit::rspu_exceptions::ExceptionCode::IntervalViolation,
                 "Below-range IntervalCheck must raise IntervalViolation"
             );
         }

@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 //! Deep extended type-check tests for effect qualifiers.
 
-use nasa_rust_project::ast::program::Module;
-use nasa_rust_project::ast::types::{SignalKind, SignalType};
-use nasa_rust_project::ast::SignalDecl;
-use nasa_rust_project::typeck::extended::{
+use mirrc::ast::program::Module;
+use mirrc::ast::types::{SignalKind, SignalType};
+use mirrc::ast::SignalDecl;
+use mirrc::typeck::extended::{
     typecheck_extended, ExtendedSignalDecl, ExtendedType, TypeQualifier,
 };
 
@@ -42,7 +42,7 @@ fn module_from_exts(exts: &[ExtendedSignalDecl]) -> Module {
             .map(|e| SignalDecl {
                 name: e.name.clone(),
                 kind: e.kind,
-                ty: nasa_rust_project::ast::types::ExtendedType::from_core(e.ty.clone()),
+                ty: mirrc::ast::types::ExtendedType::from_core(e.ty.clone()),
                 origin: None,
                 span: None,
             })

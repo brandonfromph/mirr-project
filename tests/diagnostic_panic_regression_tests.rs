@@ -2,14 +2,14 @@
 //! Panic regression tests targeting all compiler stages (parser, temporal lower, width inference).
 //! Contains exactly 75 distinct test cases verifying panic-free MirrError propagation.
 
-use nasa_rust_project::ast::types::{BinaryOp, UnaryOp};
-use nasa_rust_project::ecs::components::*;
-use nasa_rust_project::ecs::registry::Registry;
-use nasa_rust_project::error::MirrError;
-use nasa_rust_project::parser::expr_parser::parse_expression;
-use nasa_rust_project::parser::module_parser::parse_mirr;
-use nasa_rust_project::temporal::compiler::TemporalCompiler;
-use nasa_rust_project::width::infer_widths;
+use mirrc::ast::types::{BinaryOp, UnaryOp};
+use mirrc::ecs::components::*;
+use mirrc::ecs::registry::Registry;
+use mirrc::error::MirrError;
+use mirrc::parser::expr_parser::parse_expression;
+use mirrc::parser::module_parser::parse_mirr;
+use mirrc::temporal::compiler::TemporalCompiler;
+use mirrc::width::infer_widths;
 
 // Helper to run temporal lower and return Result
 fn run_lower_guard(registry: &Registry, gid: EntityId) -> Result<(), MirrError> {
@@ -253,11 +253,11 @@ macro_rules! gen_width_node_limit_test {
             $name,
             {
                 // Create an expression that exceeds 512 nodes limit.
-                let mut current = nasa_rust_project::ast::Expr::Signal("a".to_string());
+                let mut current = mirrc::ast::Expr::Signal("a".to_string());
                 for _ in 0..520 {
-                    current = nasa_rust_project::ast::Expr::Binary {
+                    current = mirrc::ast::Expr::Binary {
                         op: BinaryOp::And,
-                        left: Box::new(nasa_rust_project::ast::Expr::Signal("a".to_string())),
+                        left: Box::new(mirrc::ast::Expr::Signal("a".to_string())),
                         right: Box::new(current),
                     };
                 }

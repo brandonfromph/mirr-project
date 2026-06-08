@@ -8,14 +8,14 @@
 //! run_formal_pipeline error paths, constant values, clone/debug traits,
 //! and end-to-end pipeline-to-formal-config wiring.
 
-use nasa_rust_project::parser::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::toolchain::formal::{
+use mirrc::parser::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::toolchain::formal::{
     FormalConfig, FormalResult, FormalStatus, PropertyVerdict, MAX_FORMAL_DEPTH,
     MAX_FORMAL_PROPERTIES,
 };
-use nasa_rust_project::toolchain::sby::SbyEngine;
-use nasa_rust_project::toolchain::{Tool, ToolInfo, ToolRegistry, ToolchainError};
+use mirrc::toolchain::sby::SbyEngine;
+use mirrc::toolchain::{Tool, ToolInfo, ToolRegistry, ToolchainError};
 
 /// Bounded iteration limits for test loops.
 const MAX_TEST_CONFIGS: usize = 32;
@@ -457,7 +457,7 @@ fn max_formal_properties_is_256() {
 fn max_formal_depth_matches_sby_max_bmc_depth() {
     assert_eq!(
         MAX_FORMAL_DEPTH,
-        nasa_rust_project::toolchain::sby::MAX_BMC_DEPTH,
+        mirrc::toolchain::sby::MAX_BMC_DEPTH,
         "MAX_FORMAL_DEPTH should equal sby::MAX_BMC_DEPTH for consistency"
     );
 }
@@ -470,7 +470,7 @@ fn max_formal_depth_matches_sby_max_bmc_depth() {
 fn run_formal_pipeline_tool_not_found_empty_registry() {
     let registry = empty_registry();
     let cfg = config_for_sv("test.sv");
-    let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+    let result = mirrc::toolchain::formal::run_formal_pipeline(
         &registry,
         &cfg,
         "test_mod",
@@ -489,7 +489,7 @@ fn run_formal_pipeline_tool_not_found_empty_registry() {
 fn run_formal_pipeline_tool_not_found_sby_unavailable() {
     let registry = registry_without_sby();
     let cfg = config_for_sv("design.sv");
-    let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+    let result = mirrc::toolchain::formal::run_formal_pipeline(
         &registry,
         &cfg,
         "design",
@@ -508,7 +508,7 @@ fn run_formal_pipeline_tool_not_found_sby_unavailable() {
 fn run_formal_pipeline_error_is_tool_not_found_variant() {
     let registry = empty_registry();
     let cfg = config_for_sv("x.sv");
-    let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+    let result = mirrc::toolchain::formal::run_formal_pipeline(
         &registry,
         &cfg,
         "x",
@@ -532,7 +532,7 @@ fn run_formal_pipeline_with_prove_still_fails_without_sby() {
         sv_path: "prove_test.sv".to_string(),
         ..FormalConfig::default()
     };
-    let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+    let result = mirrc::toolchain::formal::run_formal_pipeline(
         &registry,
         &cfg,
         "prove_mod",
@@ -545,7 +545,7 @@ fn run_formal_pipeline_with_prove_still_fails_without_sby() {
 fn run_formal_pipeline_with_bind_path_still_fails_without_sby() {
     let registry = empty_registry();
     let cfg = config_with_bind("top.sv", "top_sva.sv");
-    let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+    let result = mirrc::toolchain::formal::run_formal_pipeline(
         &registry,
         &cfg,
         "top",
@@ -562,7 +562,7 @@ fn run_formal_pipeline_with_max_depth_still_fails_without_sby() {
         sv_path: "deep.sv".to_string(),
         ..FormalConfig::default()
     };
-    let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+    let result = mirrc::toolchain::formal::run_formal_pipeline(
         &registry,
         &cfg,
         "deep_mod",
@@ -579,7 +579,7 @@ fn run_formal_pipeline_with_over_max_depth_still_fails_without_sby() {
         sv_path: "over_max.sv".to_string(),
         ..FormalConfig::default()
     };
-    let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+    let result = mirrc::toolchain::formal::run_formal_pipeline(
         &registry,
         &cfg,
         "over_mod",
@@ -608,7 +608,7 @@ fn run_formal_pipeline_all_engines_fail_without_sby() {
             sv_path: format!("engine_{i}.sv"),
             ..FormalConfig::default()
         };
-        let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+        let result = mirrc::toolchain::formal::run_formal_pipeline(
             &registry,
             &cfg,
             &format!("eng_{i}"),
@@ -762,13 +762,13 @@ fn mirr_module_has_required_signals() {
         .module
         .signals
         .iter()
-        .filter(|s| s.kind == nasa_rust_project::ast::types::SignalKind::Input)
+        .filter(|s| s.kind == mirrc::ast::types::SignalKind::Input)
         .count();
     let output_count = prog
         .module
         .signals
         .iter()
-        .filter(|s| s.kind == nasa_rust_project::ast::types::SignalKind::Output)
+        .filter(|s| s.kind == mirrc::ast::types::SignalKind::Output)
         .count();
     assert!(input_count >= 1, "module should have at least 1 input signal, found {input_count}");
     assert!(output_count >= 1, "module should have at least 1 output signal, found {output_count}");
@@ -1069,7 +1069,7 @@ fn run_formal_pipeline_various_working_dirs() {
             break;
         }
         let cfg = config_for_sv("test.sv");
-        let result = nasa_rust_project::toolchain::formal::run_formal_pipeline(
+        let result = mirrc::toolchain::formal::run_formal_pipeline(
             &registry,
             &cfg,
             "mod",

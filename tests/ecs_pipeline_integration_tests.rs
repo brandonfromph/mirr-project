@@ -3,10 +3,10 @@
 //! ECS pipeline integration tests covering constant folding, width inference, and full compiler orchestrator steps.
 //! Contains exactly 100 distinct test cases.
 
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue};
-use nasa_rust_project::ecs::components::*;
-use nasa_rust_project::ecs::registry::Registry;
-use nasa_rust_project::ecs::systems::{
+use mirrc::ast::types::{BinaryOp, LiteralValue};
+use mirrc::ecs::components::*;
+use mirrc::ecs::registry::Registry;
+use mirrc::ecs::systems::{
     parallel_constant_folding_system, parallel_width_inference_system, run_compilation_pipeline,
 };
 

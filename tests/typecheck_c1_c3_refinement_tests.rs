@@ -7,18 +7,18 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::typeck::typecheck_module;
-use nasa_rust_project::validate_module;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::typeck::typecheck_module;
+use mirrc::validate_module;
 
 const MAX_ERR_SCAN: usize = 16;
 
 fn run_src(
     src: &str,
-) -> Result<nasa_rust_project::pipeline::PipelineResult, nasa_rust_project::error::PipelineErrors> {
+) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 

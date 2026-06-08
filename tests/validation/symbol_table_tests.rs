@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
-pub use nasa_rust_project::ast;
-pub use nasa_rust_project::error;
-pub use nasa_rust_project::error_codes;
-pub use nasa_rust_project::span;
+pub use mirrc::ast;
+pub use mirrc::error;
+pub use mirrc::error_codes;
+pub use mirrc::span;
 #[rustfmt::skip]
 #[path = "../src/symbols/table.rs"]
 pub mod table;
-use nasa_rust_project::ast::types::*;
+use mirrc::ast::types::*;
 use std::path::PathBuf;
 use table::*;
 #[test]

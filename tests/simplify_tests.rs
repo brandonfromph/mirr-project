@@ -6,9 +6,9 @@
 //! folding, cascading simplification, fixpoint idempotence, base cases, and
 //! integration with the temporal pipeline.
 
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ast::{BinaryOp, LiteralValue, UnaryOp};
-use nasa_rust_project::simplify::{simplify_expr, simplify_expr_with_stats};
+use mirrc::ast::Expr;
+use mirrc::ast::{BinaryOp, LiteralValue, UnaryOp};
+use mirrc::simplify::{simplify_expr, simplify_expr_with_stats};
 
 // ---------------------------------------------------------------------------
 // Helper constructors
@@ -408,8 +408,8 @@ module test_simplify {
     }
 }
 "#;
-    let program = nasa_rust_project::parse_mirr(src).expect("parse should succeed");
-    let mut compiler = nasa_rust_project::TemporalGuardCompiler::new();
+    let program = mirrc::parse_mirr(src).expect("parse should succeed");
+    let mut compiler = mirrc::TemporalGuardCompiler::new();
     let netlist = compiler
         .compile_temporal_guards(&program.module)
         .expect("temporal lowering should succeed after simplification");

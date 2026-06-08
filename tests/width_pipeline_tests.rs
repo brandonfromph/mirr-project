@@ -8,7 +8,7 @@
 //! 2. Multi-stage arithmetic and bitwise width propagation.
 //! 3. Compile-time width narrowing and mismatch diagnostics.
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// Test that a basic addition of two signals propagates the maximum width plus one.
 #[test]

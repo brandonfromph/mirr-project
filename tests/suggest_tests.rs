@@ -5,7 +5,7 @@
 // Levenshtein edit distance to suggest typo corrections for undeclared
 // signal and guard references.
 
-use nasa_rust_project::suggest::closest_match;
+use mirrc::suggest::closest_match;
 
 // ---------------------------------------------------------------------------
 // Test: basic typo correction

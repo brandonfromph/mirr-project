@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod e2e_tests {
-    use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+    use mirrc::pipeline::{run_pipeline, PipelineConfig};
     use std::path::PathBuf;
 
     fn get_alu_path() -> String {

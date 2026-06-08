@@ -5,12 +5,12 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::hls::binding::bind_operations;
-use nasa_rust_project::hls::schedule::{
+use mirrc::hls::binding::bind_operations;
+use mirrc::hls::schedule::{
     alap_schedule, asap_schedule, compute_mobility, ScheduleOp,
 };
-use nasa_rust_project::hls::sharing::find_shareable_ops;
-use nasa_rust_project::hls::{run_hls_pass, HlsConfig, OpDag, ResourceKind};
+use mirrc::hls::sharing::find_shareable_ops;
+use mirrc::hls::{run_hls_pass, HlsConfig, OpDag, ResourceKind};
 
 // =========================================================================
 // DAG construction tests
@@ -225,14 +225,14 @@ module test {
 }
 "#;
 
-    let config = nasa_rust_project::PipelineConfig {
+    let config = mirrc::PipelineConfig {
         hls: false,
         rspu: false,
         mape_k: false,
         ..Default::default()
     };
 
-    let result = nasa_rust_project::run_pipeline(source, &config).unwrap();
+    let result = mirrc::run_pipeline(source, &config).unwrap();
     assert!(result.hls_result.is_none());
 }
 
@@ -255,14 +255,14 @@ module test {
 }
 "#;
 
-    let config = nasa_rust_project::PipelineConfig {
+    let config = mirrc::PipelineConfig {
         hls: true,
         rspu: false,
         mape_k: false,
         ..Default::default()
     };
 
-    let result = nasa_rust_project::run_pipeline(source, &config).unwrap();
+    let result = mirrc::run_pipeline(source, &config).unwrap();
     // HLS may or may not produce results depending on the DAG.
     // The pass should not crash.
     let _ = result.hls_result;

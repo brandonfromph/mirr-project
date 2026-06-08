@@ -7,12 +7,12 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::ast::program::Module;
-use nasa_rust_project::ast::types::{ExtendedType as AstExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ast::SignalDecl;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::typeck::extended::ExtendedType as CheckerExtType;
-use nasa_rust_project::typeck::extended::{
+use mirrc::ast::program::Module;
+use mirrc::ast::types::{ExtendedType as AstExtendedType, SignalKind, SignalType};
+use mirrc::ast::SignalDecl;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::typeck::extended::ExtendedType as CheckerExtType;
+use mirrc::typeck::extended::{
     typecheck_extended, ClockDomain, ExtendedSignalDecl, TypeQualifier,
 };
 
@@ -40,7 +40,7 @@ fn module_from_exts(exts: &[ExtendedSignalDecl]) -> Module {
 
 fn run_extended(
     src: &str,
-) -> Result<nasa_rust_project::pipeline::PipelineResult, nasa_rust_project::error::PipelineErrors> {
+) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     let cfg = PipelineConfig { extended_typecheck: true, ..PipelineConfig::default() };
     run_pipeline(src, &cfg)
 }

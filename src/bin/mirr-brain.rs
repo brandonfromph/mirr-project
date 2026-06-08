@@ -27,7 +27,7 @@
 
 use clap::{Parser, Subcommand};
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use std::fs;

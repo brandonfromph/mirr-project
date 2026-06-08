@@ -2,7 +2,7 @@
 
 **Status:** Stable
 **Date:** 2026-03-12
-**License:** GPL-3.0
+**License:** Apache-2.0
 
 ---
 
@@ -17,7 +17,7 @@ no server, no account.
 The format is designed to be:
 
 - **Verifiable**: Claims link to executable evidence.
-- **Permanent**: GPL-3.0 ensures the artifact can never be paywalled.
+- **Permanent**: Apache-2.0 ensures the artifact can never be paywalled.
 - **Self-contained**: No external dependencies, CDN links, or API calls.
 - **Archivable**: A single directory that works offline.
 
@@ -43,7 +43,7 @@ Every conforming LRA MUST contain:
 |------|---------|
 | `index.html` | The paper itself |
 | `paper.css` | Stylesheet (may be inlined) |
-| `LICENSE` | GPL-3.0 license text |
+| `LICENSE` | Apache-2.0 license text |
 | `CITATION.cff` | Machine-readable citation metadata |
 
 ### 3.2 Required HTML Sections
@@ -105,9 +105,9 @@ The `<head>` element SHOULD contain:
 
 Every conforming LRA MUST include these indicators:
 
-1. A `LICENSE` file containing the GPL-3.0 full text
+1. A `LICENSE` file containing the Apache-2.0 full text
 2. A visible link to the license in the paper header or footer
-3. The `license` field in `CITATION.cff` set to `GPL-3.0`
+3. The `license` field in `CITATION.cff` set to `Apache-2.0`
 
 ## 4. Optional Structure
 
@@ -138,7 +138,7 @@ An LRA SHOULD include:
 ### 5.1 Bronze — Static
 
 A Bronze LRA meets all Section 3 requirements.
-It is a static HTML paper with claims, references, and GPL-3.0 license.
+It is a static HTML paper with claims, references, and Apache-2.0 license.
 No JavaScript required.
 
 **Verification**: Bronze compliance can be checked by confirming:
@@ -205,9 +205,9 @@ No build tool, package manager, or server is required to READ the paper.
 A WASM module MAY require a build step to PRODUCE, but the pre-built
 artifact must be serveable as static files.
 
-### 6.3 GPL-3.0 Copyleft
+### 6.3 Apache-2.0 Copyleft
 
-The GPL-3.0 license is a deliberate design choice, not a default.
+The Apache-2.0 license is a deliberate design choice, not a default.
 
 - It ensures the template format propagates openness: forks must
   share their modifications under the same terms.
@@ -276,7 +276,7 @@ Implementors SHOULD include the following `<meta>` tags:
 ```html
 <meta name="lra:version" content="1.0">
 <meta name="lra:capability" content="your-tool-name">
-<meta name="lra:license" content="GPL-3.0">
+<meta name="lra:license" content="Apache-2.0">
 ```
 
 These tags declare the paper's identity and capabilities to the network.

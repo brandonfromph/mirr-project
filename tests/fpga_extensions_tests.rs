@@ -5,9 +5,9 @@
 //! Covers parsing, constraint files, build scripts, and all accessor
 //! methods introduced for the Lattice ECP5 and Lattice Nexus targets.
 
-use nasa_rust_project::emit::fpga_scaffold;
-use nasa_rust_project::emit::fpga_target::FpgaTarget;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::fpga_scaffold;
+use mirrc::emit::fpga_target::FpgaTarget;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// A minimal MIRR program used by scaffold emission tests.
 const TEST_MIRR: &str = r#"
@@ -29,7 +29,7 @@ module test_fpga {
 "#;
 
 /// Run the pipeline on `TEST_MIRR` and return the result.
-fn pipeline_result() -> nasa_rust_project::pipeline::PipelineResult {
+fn pipeline_result() -> mirrc::pipeline::PipelineResult {
     let config = PipelineConfig::default();
     run_pipeline(TEST_MIRR, &config).expect("pipeline should succeed for test_fpga module")
 }

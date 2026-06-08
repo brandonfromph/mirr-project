@@ -1,11 +1,11 @@
 #![forbid(unsafe_code)]
 //! Tests for S-expression eval, macros, and reader macros.
 
-use nasa_rust_project::sexpr::eval::{eval, EvalState};
-use nasa_rust_project::sexpr::macro_expand::MacroExpander;
-use nasa_rust_project::sexpr::parser::parse_sexpr;
-use nasa_rust_project::sexpr::reader::ReaderMacroRegistry;
-use nasa_rust_project::sexpr::types::SExpr;
+use mirrc::sexpr::eval::{eval, EvalState};
+use mirrc::sexpr::macro_expand::MacroExpander;
+use mirrc::sexpr::parser::parse_sexpr;
+use mirrc::sexpr::reader::ReaderMacroRegistry;
+use mirrc::sexpr::types::SExpr;
 
 // =========================================================================
 // Eval Tests

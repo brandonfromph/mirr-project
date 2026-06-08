@@ -3,12 +3,12 @@
 //!
 //! NASA Power-of-10: bounded iteration, no recursion.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::sexpr::convert::ast_to_sexpr;
-use nasa_rust_project::sexpr::print_sexpr;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::sexpr::convert::ast_to_sexpr;
+use mirrc::sexpr::print_sexpr;
 
 const MAX_SCAN: usize = 128;
 

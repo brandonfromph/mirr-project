@@ -5,11 +5,11 @@
 //! empty module through emit_expr_dot, multi-assignment reflex subgraphs,
 //! and internal signal shape.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::emit;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::emit;
+use mirrc::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
 // ---------------------------------------------------------------------------
 // MIRR fixtures (no Prev — those use programmatic AST)

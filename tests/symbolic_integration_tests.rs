@@ -3,9 +3,9 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, UnaryOp};
-use nasa_rust_project::symbolic::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use mirrc::symbolic::{
     sym_check_refinement, sym_eval_binary, sym_eval_expr, sym_eval_unary, sym_widen, SymState,
     SymValue,
 };

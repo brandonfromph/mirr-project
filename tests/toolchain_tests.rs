@@ -2,9 +2,9 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::toolchain::eqy::*;
-use nasa_rust_project::toolchain::sby::*;
-use nasa_rust_project::toolchain::*;
+use mirrc::toolchain::eqy::*;
+use mirrc::toolchain::sby::*;
+use mirrc::toolchain::*;
 use std::path::Path;
 
 #[test]

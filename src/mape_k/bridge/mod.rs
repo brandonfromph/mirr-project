@@ -1,9 +1,11 @@
 #![forbid(unsafe_code)]
 
-//! Bridge from compiler `PipelineResult` to MAPE-K `SimConfig`.
+//! ARCHITECTURAL SUB-ENGINE: MAPE-K TELEMETRY BRIDGE
 //!
-//! Converts the compiler's AST-level property definitions and signal
-//! declarations into the MAPE-K simulator's configuration format.
+//! Orchestrates the translation of compiler `PipelineResult` (signals and 
+//! properties) into `SimConfig` for the MAPE-K autonomic loop. This engine 
+//! manages the 'Bridge'—a telemetry fabric proposed in Proposal 045 for 
+//! coordinating safety-critical monitor state across the 16-core RS-16 SoC.
 //!
 //! # Lowering strategy
 //!
@@ -157,7 +159,7 @@ mod tests {
     use crate::ast::SignalDecl;
     use crate::mape_k::ltl::SignalPredicate;
 
-    fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> PipelineResult {
+    fn synthesize_test_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> PipelineResult {
         let module = Module {
             name: "test_mod".to_string(),
             signals,
@@ -219,7 +221,7 @@ mod tests {
 
     #[test]
     fn empty_module_produces_empty_config() {
-        let result = stub_pipeline(Vec::new(), Vec::new());
+        let result = synthesize_test_pipeline(Vec::new(), Vec::new());
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert!(config.sensors.is_empty());
         assert!(config.properties.is_empty());
@@ -235,7 +237,7 @@ mod tests {
             output_signal("alarm", SignalType::Bool),
             input_signal("temp", SignalType::Unsigned(16)),
         ];
-        let result = stub_pipeline(signals, Vec::new());
+        let result = synthesize_test_pipeline(signals, Vec::new());
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.sensors.len(), 3);
         let pressure = config.sensors.iter().find(|s| s.name == "pressure").unwrap();
@@ -249,7 +251,7 @@ mod tests {
     #[test]
     fn bool_sensor_defaults() {
         let signals = vec![input_signal("flag", SignalType::Bool)];
-        let result = stub_pipeline(signals, Vec::new());
+        let result = synthesize_test_pipeline(signals, Vec::new());
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.sensors[0].base_value, 1);
         assert_eq!(config.sensors[0].noise_amplitude, 0);
@@ -258,7 +260,7 @@ mod tests {
     #[test]
     fn unsigned_sensor_midpoint() {
         let signals = vec![input_signal("data", SignalType::Unsigned(8))];
-        let result = stub_pipeline(signals, Vec::new());
+        let result = synthesize_test_pipeline(signals, Vec::new());
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.sensors[0].base_value, 127);
         assert_eq!(config.sensors[0].noise_amplitude, sensors::DEFAULT_NOISE_AMPLITUDE);
@@ -268,7 +270,7 @@ mod tests {
     fn always_signal_lowers_to_always_is_true() {
         let props =
             vec![assert_property("p1", PropertyFormula::Always(Expr::Signal("alive".to_string())))];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -283,7 +285,7 @@ mod tests {
             "p_never",
             PropertyFormula::Never(Expr::Signal("fault".to_string())),
         )];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -301,7 +303,7 @@ mod tests {
                 cycles: 10,
             },
         )];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -328,7 +330,7 @@ mod tests {
                 span: None,
             },
         ];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert!(config.properties.is_empty());
         assert!(config.action_table.is_empty());
@@ -343,7 +345,7 @@ mod tests {
                 consequent: Expr::Signal("b".to_string()),
             },
         )];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("AlwaysImplies should lower");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -367,7 +369,7 @@ mod tests {
                 },
             ),
         ];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.action_table.len(), 2);
         assert_eq!(config.action_table[0].trigger_property_idx, 0);
@@ -387,7 +389,7 @@ mod tests {
                 consequent: Expr::Signal("b".to_string()),
             },
         )];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.action_table.len(), 1);
         assert_eq!(config.action_table[0].action, AdaptationAction::Reduce);
@@ -399,7 +401,7 @@ mod tests {
         let signals: Vec<SignalDecl> = (0..MAX_BRIDGE_SIGNALS + 1)
             .map(|i| input_signal(&format!("s{i}"), SignalType::Unsigned(8)))
             .collect();
-        let result = stub_pipeline(signals, Vec::new());
+        let result = synthesize_test_pipeline(signals, Vec::new());
         let err = bridge_from_pipeline(&result).expect_err("should fail");
         assert!(err.iter().any(|e| matches!(e, MapeKError::BridgeConfigError(_))));
     }
@@ -442,7 +444,7 @@ mod tests {
                 right: Box::new(Expr::Literal(crate::ast::types::LiteralValue::Integer(100))),
             }),
         )];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(
             config.properties[0],
@@ -462,7 +464,7 @@ mod tests {
                 right: Box::new(Expr::Literal(crate::ast::types::LiteralValue::Integer(50))),
             }),
         )];
-        let result = stub_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(Vec::new(), props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(
             config.properties[0],

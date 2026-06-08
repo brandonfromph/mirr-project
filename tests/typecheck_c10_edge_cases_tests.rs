@@ -6,17 +6,17 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Module, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::typeck::typecheck_module;
-use nasa_rust_project::validate_module;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Module, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::typeck::typecheck_module;
+use mirrc::validate_module;
 
 fn run_src(
     src: &str,
-) -> Result<nasa_rust_project::pipeline::PipelineResult, nasa_rust_project::error::PipelineErrors> {
+) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 
@@ -109,7 +109,7 @@ fn c10_eventually_within_typechecks() {
 
 #[test]
 fn c10_never_comparison_typechecks() {
-    use nasa_rust_project::ast::types::BinaryOp;
+    use mirrc::ast::types::BinaryOp;
     let prop = prop_assert(
         "p_never_cmp",
         PropertyFormula::Never(Expr::Binary {

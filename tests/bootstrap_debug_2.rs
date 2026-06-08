@@ -1,4 +1,4 @@
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 const FIXTURE_COUNTER: &str = r#"
 module test_counter {
     signals {

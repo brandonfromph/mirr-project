@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::cross_surface_stress as css;
+use mirrc::cross_surface_stress as css;
 
 #[test]
 fn fuzz_harness_contract_registers_wasm_host_surface() {

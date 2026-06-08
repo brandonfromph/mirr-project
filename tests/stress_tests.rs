@@ -1,4 +1,4 @@
-use nasa_rust_project::{ecs::Registry, parse_mirr, run_pipeline, validate_module, PipelineConfig};
+use mirrc::{ecs::Registry, parse_mirr, run_pipeline, validate_module, PipelineConfig};
 
 fn assert_pass(source: &str) {
     let config = PipelineConfig::default();

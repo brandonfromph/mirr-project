@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::error::MirrError;
-use nasa_rust_project::error_codes;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::error::MirrError;
+use mirrc::error_codes;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use std::fs;
 
 #[test]

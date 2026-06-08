@@ -1,8 +1,8 @@
 #![feature(box_patterns)]
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::ast::{PatternDef, MirrProgram};
+use mirrc::parse_mirr;
+use mirrc::ast::{PatternDef, MirrProgram};
 
 fn ok_pattern(src: &str) -> PatternDef {
     let full_src = format!("{}\nmodule m {{}}", src);

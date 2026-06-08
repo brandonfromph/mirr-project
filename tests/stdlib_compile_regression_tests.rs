@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::parser::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::validation::validate_module;
+use mirrc::parser::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::validation::validate_module;
 use std::fs;
 
 #[test]

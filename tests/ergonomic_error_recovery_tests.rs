@@ -2,7 +2,7 @@
 //! This test enforces that when a syntax error occurs inside a signals block,
 //! the compiler reports the error at the correct line number of the original file.
 
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 
 #[test]
 fn test_signals_block_error_line_reporting() {

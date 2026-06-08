@@ -8,7 +8,7 @@
 //! 2. Accurate mapping of compile-time violations to their standard [Exxx] codes.
 //! 3. Preservation of diagnostics integrity under failed builds.
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// Test that referencing an undeclared signal triggers compile error.
 #[test]

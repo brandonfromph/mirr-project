@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::parser::module_parser::parse_mirr;
+use mirrc::parser::module_parser::parse_mirr;
 
 #[test]
 fn test_11_12_parser_orphan_structdef_injection() {

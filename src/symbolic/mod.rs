@@ -1,9 +1,9 @@
-// ---------------------------------------------------------------------------
-//! Symbolic evaluation engine for abstract interpretation of MIRR signals.
+//! ARCHITECTURAL SUB-ENGINE: SYMBOLIC EVALUATION ENGINE
 //!
 //! Implements interval-based abstract interpretation (Cousot & Cousot 1977)
-//! applied to MIRR's signal expressions.  All algorithms are bounded by
-//! explicit `MAX_*` constants (NASA Power-of-10).
+//! for MIRR signal expressions. This engine proves signal value bounds and
+//! verifies structural equivalence between original and optimized netlists,
+//! serving as a formal gatekeeper before final hardware synthesis.
 //!
 //! ## Error codes: E10xx (symbolic analysis)
 //!

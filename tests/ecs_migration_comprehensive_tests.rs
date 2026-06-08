@@ -1,15 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use nasa_rust_project::ast::types::*;
-    use nasa_rust_project::ast::Expr;
-    use nasa_rust_project::ecs::*;
+    use mirrc::ast::types::*;
+    use mirrc::ast::Expr;
+    use mirrc::ecs::*;
 
     // --- UNIT TESTS (10) ---
 
     #[test]
     fn test_unit_signal_hydration() {
         let mut reg = Registry::new();
-        let sig = nasa_rust_project::ast::program::SignalDecl {
+        let sig = mirrc::ast::program::SignalDecl {
             name: "test_sig".to_string(),
             kind: SignalKind::Input,
             ty: ExtendedType::new(SignalType::Unsigned(8), Default::default()),
@@ -29,10 +29,10 @@ mod tests {
     #[test]
     fn test_unit_guard_hydration() {
         let mut reg = Registry::new();
-        let module = nasa_rust_project::ast::program::Module {
+        let module = mirrc::ast::program::Module {
             name: "top".to_string(),
             signals: vec![],
-            guards: vec![nasa_rust_project::ast::program::Guard {
+            guards: vec![mirrc::ast::program::Guard {
                 name: "g1".to_string(),
                 condition: Expr::Literal(LiteralValue::Bool(true)),
                 cycles: 10,
@@ -131,9 +131,9 @@ mod tests {
         let mut reg = Registry::new();
         let _sig =
             reg.create_entity("out_sig", KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
-        let module = nasa_rust_project::ast::program::Module {
+        let module = mirrc::ast::program::Module {
             name: "top".to_string(),
-            signals: vec![nasa_rust_project::ast::program::SignalDecl {
+            signals: vec![mirrc::ast::program::SignalDecl {
                 name: "out_sig".to_string(),
                 kind: SignalKind::Output,
                 ty: ExtendedType::new(SignalType::Bool, Default::default()),
@@ -141,10 +141,10 @@ mod tests {
                 span: None,
             }],
             guards: vec![],
-            reflexes: vec![nasa_rust_project::ast::program::Reflex {
+            reflexes: vec![mirrc::ast::program::Reflex {
                 name: "r1".to_string(),
                 guard_names: vec![],
-                assignments: vec![nasa_rust_project::ast::program::Assignment {
+                assignments: vec![mirrc::ast::program::Assignment {
                     target: "out_sig".to_string(),
                     value: Expr::Literal(LiteralValue::Bool(true)),
                     span: None,
@@ -165,15 +165,15 @@ mod tests {
     #[test]
     fn test_unit_property_hydration() {
         let mut reg = Registry::new();
-        let module = nasa_rust_project::ast::program::Module {
+        let module = mirrc::ast::program::Module {
             name: "top".to_string(),
             signals: vec![],
             guards: vec![],
             reflexes: vec![],
-            properties: vec![nasa_rust_project::ast::property::PropertyDecl {
+            properties: vec![mirrc::ast::property::PropertyDecl {
                 name: "p1".to_string(),
-                directive: nasa_rust_project::ast::property::PropertyDirective::Assert,
-                formula: nasa_rust_project::ast::property::PropertyFormula::Always(Expr::Literal(
+                directive: mirrc::ast::property::PropertyDirective::Assert,
+                formula: mirrc::ast::property::PropertyFormula::Always(Expr::Literal(
                     LiteralValue::Bool(true),
                 )),
                 origin: None,

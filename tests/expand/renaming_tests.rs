@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 fn run_expand_only(src: &str) -> Result<(), String> {
     let config = PipelineConfig {
         typecheck: false,

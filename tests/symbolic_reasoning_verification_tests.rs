@@ -22,19 +22,19 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{
     BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
 };
-use nasa_rust_project::emit::rspu_tagged::{Provenance, TaggedWord, TypeTag};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::symbolic::diff::sym_diff;
-use nasa_rust_project::symbolic::interval::{interval_binary, interval_unary};
-use nasa_rust_project::symbolic::pattern::{
+use mirrc::emit::rspu_tagged::{Provenance, TaggedWord, TypeTag};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::symbolic::diff::sym_diff;
+use mirrc::symbolic::interval::{interval_binary, interval_unary};
+use mirrc::symbolic::pattern::{
     match_word, MatchAction, MatchPattern, MAX_MATCH_PATTERNS,
 };
-use nasa_rust_project::symbolic::{
+use mirrc::symbolic::{
     analyze_module, sym_check_refinement, sym_eval_binary, sym_eval_expr, sym_eval_unary,
     sym_widen, SymState, SymValue, MAX_SYM_DEPTH, MAX_SYM_ITERATIONS, MAX_SYM_SIGNALS,
 };

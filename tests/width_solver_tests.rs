@@ -17,13 +17,13 @@
 //!  9. SCC solver dispatch (`solve_scc`)
 //! 10. Edge cases and boundary conditions
 
-use nasa_rust_project::ast::program::SignalDecl;
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, SignalKind, SignalType, UnaryOp};
-use nasa_rust_project::width::constraint::{generate_constraints, WidthConstraint};
-use nasa_rust_project::width::scc_solver::solve_nonexpansive;
-use nasa_rust_project::width::scc_solver::SccSolveResult;
-use nasa_rust_project::width::solver::{check_truncation, solve, SolveResult};
-use nasa_rust_project::width::types::{
+use mirrc::ast::program::SignalDecl;
+use mirrc::ast::types::{BinaryOp, ExtendedType, SignalKind, SignalType, UnaryOp};
+use mirrc::width::constraint::{generate_constraints, WidthConstraint};
+use mirrc::width::scc_solver::solve_nonexpansive;
+use mirrc::width::scc_solver::SccSolveResult;
+use mirrc::width::solver::{check_truncation, solve, SolveResult};
+use mirrc::width::types::{
     DiagSeverity, FlatNode, SccInfo, SccKind, Width, WidthDiag, MAX_FLAT_NODES,
 };
 

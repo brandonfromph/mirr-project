@@ -9,8 +9,8 @@
 //! 3. Type checker error line and span accuracy.
 //! 4. Diagnostics for edge-case parser and syntax errors (reflex sugar, unmatched braces).
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::span::Span;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::span::Span;
 
 #[test]
 fn test_macro_expansion_provenance_tracing() {

@@ -1,6 +1,6 @@
 # Q9 Agent Report - MRT Surface Maturity and LRA Exposure Audit
 Date: 2026-04-05
-Scope: c:\Users\elvie\nasa-rust-project
+Scope: c:\Users\elvie\mirrc
 
 ## Audited Files
 - mcp_server/src/server.ts

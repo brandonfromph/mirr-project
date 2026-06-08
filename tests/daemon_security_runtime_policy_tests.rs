@@ -2,12 +2,12 @@
 
 use std::time::Duration;
 
-use nasa_rust_project::mirr_daemon_security::audit::{AuditEvent, AuditEventKind};
-use nasa_rust_project::mirr_daemon_security::auth::{AuthContext, Role, RuntimeAuthorizer};
-use nasa_rust_project::mirr_daemon_security::policy::{
+use mirrc::mirr_daemon_security::audit::{AuditEvent, AuditEventKind};
+use mirrc::mirr_daemon_security::auth::{AuthContext, Role, RuntimeAuthorizer};
+use mirrc::mirr_daemon_security::policy::{
     OutputLimitPolicy, PayloadLimitPolicy, RoutePolicy,
 };
-use nasa_rust_project::mirr_daemon_security::rate_limit::{TokenBucketConfig, TokenBucketLimiter};
+use mirrc::mirr_daemon_security::rate_limit::{TokenBucketConfig, TokenBucketLimiter};
 
 #[test]
 fn token_bucket_starts_full_at_capacity() {

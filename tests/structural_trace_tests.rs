@@ -5,9 +5,9 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ecs::components::EntityKind;
-use nasa_rust_project::ecs::Registry;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::ecs::components::EntityKind;
+use mirrc::ecs::Registry;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_ecs_span_linkage_integrity() {
@@ -25,7 +25,7 @@ fn test_ecs_span_linkage_integrity() {
     let res = run_pipeline(source, &config).expect("Pipeline failed");
 
     let mut reg = Registry::new();
-    nasa_rust_project::ecs::adapter::ingest_program(&mut reg, res.program, None)
+    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None)
         .expect("Ingest failed");
 
     // Every signal entity in the Registry MUST have a valid Span
@@ -65,7 +65,7 @@ fn test_diagnostic_precision_whitebox() {
 
     let errs = res.err().unwrap();
     let found_e607 = errs.errors.iter().any(|e| match e {
-        nasa_rust_project::error::MirrError::TypeError { message, .. } => {
+        mirrc::error::MirrError::TypeError { message, .. } => {
             message.contains("[E607]") && message.contains("requires matching types")
         }
         _ => false,
@@ -87,7 +87,7 @@ fn test_internal_wiring_consistency() {
 
     let res = run_pipeline(source, &PipelineConfig::default()).expect("Pipeline failed");
     let mut reg = Registry::new();
-    nasa_rust_project::ecs::adapter::ingest_program(&mut reg, res.program, None)
+    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None)
         .expect("Ingest failed");
 
     // Verify binary operator wiring

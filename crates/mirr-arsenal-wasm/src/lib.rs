@@ -1,5 +1,5 @@
-use nasa_rust_project::emit;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]

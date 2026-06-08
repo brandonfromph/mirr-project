@@ -25,7 +25,7 @@
   <!-- Stats -->
   <text x="600" y="410" text-anchor="middle" fill="#64748b"
     font-family="system-ui, -apple-system, sans-serif" font-size="22">
-    GPL-3.0 · 2,491 tests · 55 Rocq theorems · 9 backends
+    Apache-2.0 · 2,491 tests · 55 Rocq theorems · 9 backends
   </text>
   <!-- URL -->
   <text x="600" y="560" text-anchor="middle" fill="#475569"

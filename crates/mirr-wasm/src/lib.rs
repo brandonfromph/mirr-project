@@ -4,9 +4,9 @@
 
 use wasm_bindgen::prelude::*;
 
-use nasa_rust_project::diagnostic::LabelKind;
-use nasa_rust_project::error::MirrError;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::diagnostic::LabelKind;
+use mirrc::error::MirrError;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// Maximum source length accepted by the WASM API.
 const MAX_SOURCE_BYTES: usize = 65_536;
@@ -47,7 +47,7 @@ enum WasmResult {
 }
 
 impl WasmSpan {
-    fn from_span(span: &nasa_rust_project::span::Span) -> Self {
+    fn from_span(span: &mirrc::span::Span) -> Self {
         Self {
             start_line: span.start_line,
             start_col: span.start_col,
@@ -93,7 +93,7 @@ fn wasm_ok(value: serde_json::Value) -> String {
         .unwrap_or_else(|_| r#"{"type":"Ok","value":null}"#.to_string())
 }
 
-fn wasm_err(errors: &nasa_rust_project::error::PipelineErrors) -> String {
+fn wasm_err(errors: &mirrc::error::PipelineErrors) -> String {
     let diags: Vec<WasmDiagnostic> = errors.errors.iter().map(WasmDiagnostic::from_error).collect();
     serde_json::to_string(&WasmResult::Err { errors: diags })
         .unwrap_or_else(|_| r#"{"type":"Err","errors":[]}"#.to_string())
@@ -175,7 +175,7 @@ pub fn compile_verilog(source: &str) -> String {
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
-            let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+            let sv = mirrc::emit::verilog::emit_sv(&result);
             wasm_ok(serde_json::Value::String(sv))
         }
         Err(errors) => wasm_err(&errors),
@@ -190,7 +190,7 @@ pub fn compile_firrtl(source: &str) -> String {
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
-            let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
+            let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
             wasm_ok(serde_json::Value::String(firrtl))
         }
         Err(errors) => wasm_err(&errors),
@@ -205,7 +205,7 @@ pub fn compile_sexpr(source: &str) -> String {
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
-            let sexpr = nasa_rust_project::emit::sexpr::emit_sexpr(&result);
+            let sexpr = mirrc::emit::sexpr::emit_sexpr(&result);
             wasm_ok(serde_json::Value::String(sexpr))
         }
         Err(errors) => wasm_err(&errors),
@@ -220,7 +220,7 @@ pub fn compile_dot(source: &str) -> String {
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
-            let dot = nasa_rust_project::emit::dot::emit_module_dot(&result);
+            let dot = mirrc::emit::dot::emit_module_dot(&result);
             wasm_ok(serde_json::Value::String(dot))
         }
         Err(errors) => wasm_err(&errors),
@@ -234,7 +234,7 @@ pub fn compile_rspu(source: &str) -> String {
     }
     let config = PipelineConfig { rspu: true, temporal: true, ..default_config() };
     match run_pipeline(source, &config) {
-        Ok(result) => match nasa_rust_project::emit::rspu::emit_rspu(&result) {
+        Ok(result) => match mirrc::emit::rspu::emit_rspu(&result) {
             Ok(program) => wasm_ok(serde_json::Value::String(program.emit_asm())),
             Err(e) => {
                 let diag = WasmDiagnostic::from_error(&e);
@@ -253,7 +253,7 @@ pub fn compile_verilog_sat(source: &str) -> String {
     let config = PipelineConfig { sat_simplify: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => {
-            let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+            let sv = mirrc::emit::verilog::emit_sv(&result);
             wasm_ok(serde_json::Value::String(sv))
         }
         Err(errors) => wasm_err(&errors),
@@ -274,9 +274,9 @@ pub fn compile_graph_data(source: &str) -> String {
             let module = &result.program.module;
             for sig in &module.signals {
                 let node_type = match &sig.kind {
-                    nasa_rust_project::ast::types::SignalKind::Input => "Input",
-                    nasa_rust_project::ast::types::SignalKind::Output => "Output",
-                    nasa_rust_project::ast::types::SignalKind::Internal => "Internal",
+                    mirrc::ast::types::SignalKind::Input => "Input",
+                    mirrc::ast::types::SignalKind::Output => "Output",
+                    mirrc::ast::types::SignalKind::Internal => "Internal",
                 };
                 nodes.push(serde_json::json!({
                     "id": sig.name,
@@ -318,7 +318,7 @@ pub fn infer_widths(source: &str) -> String {
     }
     let config = default_config();
     match run_pipeline(source, &config) {
-        Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
+        Ok(result) => match mirrc::emit::json_netlist::emit_json(&result) {
             Ok(json_str) => wasm_ok(serde_json::Value::String(json_str)),
             Err(e) => {
                 let diag = WasmDiagnostic {
@@ -353,14 +353,14 @@ pub fn compile_verilog_with_options(
     match run_pipeline(source, &config) {
         Ok(result) => {
             let fpga_target =
-                nasa_rust_project::emit::fpga_target::FpgaTarget::from_str_name(target);
+                mirrc::emit::fpga_target::FpgaTarget::from_str_name(target);
             let t = fpga_target.filter(|&fpga_t| {
-                fpga_t != nasa_rust_project::emit::fpga_target::FpgaTarget::Generic
+                fpga_t != mirrc::emit::fpga_target::FpgaTarget::Generic
             });
             let sv = if strip_sva {
-                nasa_rust_project::emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
+                mirrc::emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
             } else {
-                nasa_rust_project::emit::verilog::emit_sv_with_options(&result, t, dsp_threshold)
+                mirrc::emit::verilog::emit_sv_with_options(&result, t, dsp_threshold)
             };
             wasm_ok(serde_json::Value::String(sv))
         }
@@ -377,9 +377,9 @@ pub fn compile_dot_with_detail(source: &str, detail_expr: bool) -> String {
     match run_pipeline(source, &config) {
         Ok(result) => {
             let dot = if detail_expr {
-                nasa_rust_project::emit::dot::emit_expr_dot(&result)
+                mirrc::emit::dot::emit_expr_dot(&result)
             } else {
-                nasa_rust_project::emit::dot::emit_module_dot(&result)
+                mirrc::emit::dot::emit_module_dot(&result)
             };
             wasm_ok(serde_json::Value::String(dot))
         }
@@ -394,7 +394,7 @@ pub fn compile_json_netlist(source: &str) -> String {
     }
     let config = default_config();
     match run_pipeline(source, &config) {
-        Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
+        Ok(result) => match mirrc::emit::json_netlist::emit_json(&result) {
             Ok(json_str) => wasm_ok(serde_json::Value::String(json_str)),
             Err(e) => {
                 let diag = WasmDiagnostic {
@@ -421,21 +421,21 @@ pub fn compile_target(source: &str, target: &str) -> String {
         "verilog" | "sv" => {
             let config = default_config();
             match run_pipeline(source, &config) {
-                Ok(result) => nasa_rust_project::emit::verilog::emit_sv(&result),
+                Ok(result) => mirrc::emit::verilog::emit_sv(&result),
                 Err(errors) => return wasm_err(&errors),
             }
         }
         "firrtl" => {
             let config = default_config();
             match run_pipeline(source, &config) {
-                Ok(result) => nasa_rust_project::emit::firrtl::emit_firrtl(&result),
+                Ok(result) => mirrc::emit::firrtl::emit_firrtl(&result),
                 Err(errors) => return wasm_err(&errors),
             }
         }
         "rspu" => {
             let config = PipelineConfig { rspu: true, temporal: true, ..default_config() };
             match run_pipeline(source, &config) {
-                Ok(result) => match nasa_rust_project::emit::rspu::emit_rspu(&result) {
+                Ok(result) => match mirrc::emit::rspu::emit_rspu(&result) {
                     Ok(program) => program.emit_asm(),
                     Err(e) => {
                         let diag = WasmDiagnostic::from_error(&e);
@@ -448,7 +448,7 @@ pub fn compile_target(source: &str, target: &str) -> String {
         "json" => {
             let config = default_config();
             match run_pipeline(source, &config) {
-                Ok(result) => match nasa_rust_project::emit::json_netlist::emit_json(&result) {
+                Ok(result) => match mirrc::emit::json_netlist::emit_json(&result) {
                     Ok(json_str) => json_str,
                     Err(e) => {
                         let diag = WasmDiagnostic {
@@ -467,14 +467,14 @@ pub fn compile_target(source: &str, target: &str) -> String {
         "sexpr" => {
             let config = default_config();
             match run_pipeline(source, &config) {
-                Ok(result) => nasa_rust_project::emit::sexpr::emit_sexpr(&result),
+                Ok(result) => mirrc::emit::sexpr::emit_sexpr(&result),
                 Err(errors) => return wasm_err(&errors),
             }
         }
         "dot" => {
             let config = default_config();
             match run_pipeline(source, &config) {
-                Ok(result) => nasa_rust_project::emit::dot::emit_module_dot(&result),
+                Ok(result) => mirrc::emit::dot::emit_module_dot(&result),
                 Err(errors) => return wasm_err(&errors),
             }
         }
@@ -541,7 +541,7 @@ pub fn compile_cert(source: &str) -> String {
     }
     let config = PipelineConfig { rspu: true, temporal: true, totality: true, ..default_config() };
     match run_pipeline(source, &config) {
-        Ok(result) => match nasa_rust_project::emit::cert::emit_certificate(&result) {
+        Ok(result) => match mirrc::emit::cert::emit_certificate(&result) {
             Ok(cert_bytes) => {
                 let hex_cert = cert_bytes.iter().fold(String::new(), |mut acc, byte| {
                     acc.push_str(&format!("{:02x}", byte));
@@ -581,17 +581,17 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
     let config = PipelineConfig { temporal: true, ..default_config() };
     match run_pipeline(source, &config) {
         Ok(result) => {
-            use nasa_rust_project::temporal::low_level_ir::CompiledGuard;
+            use mirrc::temporal::low_level_ir::CompiledGuard;
 
             let module = &result.program.module;
             let mut signals = Vec::new();
 
             for (si, sig) in module.signals.iter().enumerate() {
-                if !matches!(sig.kind, nasa_rust_project::ast::types::SignalKind::Input) {
+                if !matches!(sig.kind, mirrc::ast::types::SignalKind::Input) {
                     continue;
                 }
                 let is_bool =
-                    matches!(sig.ty.core, nasa_rust_project::ast::types::SignalType::Bool);
+                    matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
                 if is_bool {
                     let period = (si as u32 + 2).min(64);
                     let values: Vec<u8> = (0..capped_cycles)
@@ -605,7 +605,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                     }));
                 } else {
                     let max_val: u64 = match &sig.ty.core {
-                        nasa_rust_project::ast::types::SignalType::Unsigned(w) => {
+                        mirrc::ast::types::SignalType::Unsigned(w) => {
                             1u64.checked_shl(*w).unwrap_or(256).saturating_sub(1)
                         }
                         _ => 255,
@@ -616,7 +616,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                     signals.push(serde_json::json!({
                         "name": sig.name,
                         "width": match &sig.ty.core {
-                            nasa_rust_project::ast::types::SignalType::Unsigned(w) => *w,
+                            mirrc::ast::types::SignalType::Unsigned(w) => *w,
                             _ => 8,
                         },
                         "kind": "input",
@@ -649,7 +649,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
             }
 
             for sig in &module.signals {
-                if !matches!(sig.kind, nasa_rust_project::ast::types::SignalKind::Output) {
+                if !matches!(sig.kind, mirrc::ast::types::SignalKind::Output) {
                     continue;
                 }
                 let mut earliest_delay: Option<u64> = None;
@@ -681,7 +681,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 }
                 let delay = earliest_delay.unwrap_or(0);
                 let is_bool =
-                    matches!(sig.ty.core, nasa_rust_project::ast::types::SignalType::Bool);
+                    matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
                 if is_bool {
                     let values: Vec<u8> = (0..capped_cycles)
                         .map(|c| if c as u64 >= delay { 1u8 } else { 0u8 })
@@ -699,7 +699,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                     signals.push(serde_json::json!({
                         "name": sig.name,
                         "width": match &sig.ty.core {
-                            nasa_rust_project::ast::types::SignalType::Unsigned(w) => *w,
+                            mirrc::ast::types::SignalType::Unsigned(w) => *w,
                             _ => 8,
                         },
                         "kind": "output",

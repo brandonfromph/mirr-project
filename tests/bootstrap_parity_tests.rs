@@ -9,7 +9,7 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::emit::rspu_encoding::opcodes::*;
+use mirrc::emit::rspu_encoding::opcodes::*;
 
 /// Test fixture: simple signal declaration
 const FIXTURE_SIGNALS: &str = r#"
@@ -90,30 +90,30 @@ fn bootstrap_opcode_constants_match() {
 
 #[test]
 fn bootstrap_parity_signals() {
-    let config = nasa_rust_project::pipeline::PipelineConfig { rspu: true, ..Default::default() };
-    let result = nasa_rust_project::pipeline::run_pipeline(FIXTURE_SIGNALS, &config);
+    let config = mirrc::pipeline::PipelineConfig { rspu: true, ..Default::default() };
+    let result = mirrc::pipeline::run_pipeline(FIXTURE_SIGNALS, &config);
     assert!(result.is_ok(), "[E906] Bootstrap parity failure: signal declarations");
 }
 
 #[test]
 fn bootstrap_parity_guard_reflex() {
-    let config = nasa_rust_project::pipeline::PipelineConfig { rspu: true, ..Default::default() };
-    let result = nasa_rust_project::pipeline::run_pipeline(FIXTURE_GUARD_REFLEX, &config);
+    let config = mirrc::pipeline::PipelineConfig { rspu: true, ..Default::default() };
+    let result = mirrc::pipeline::run_pipeline(FIXTURE_GUARD_REFLEX, &config);
     assert!(result.is_ok(), "[E906] Bootstrap parity failure: guard/reflex");
 }
 
 #[test]
 fn bootstrap_parity_counter() {
-    let config = nasa_rust_project::pipeline::PipelineConfig { rspu: true, ..Default::default() };
-    let result = nasa_rust_project::pipeline::run_pipeline(FIXTURE_COUNTER, &config);
+    let config = mirrc::pipeline::PipelineConfig { rspu: true, ..Default::default() };
+    let result = mirrc::pipeline::run_pipeline(FIXTURE_COUNTER, &config);
     assert!(result.is_ok(), "[E906] Bootstrap parity failure: counter guard");
 }
 
 #[test]
 fn bootstrap_rspu_roundtrip() {
     // Verify all opcodes roundtrip through encode/decode
-    use nasa_rust_project::emit::rspu_encoding::{decode, encode};
-    use nasa_rust_project::emit::rspu_isa::RspuInstruction;
+    use mirrc::emit::rspu_encoding::{decode, encode};
+    use mirrc::emit::rspu_isa::RspuInstruction;
 
     let instructions = vec![
         RspuInstruction::LoadInput { dst: 0, port: 0 },

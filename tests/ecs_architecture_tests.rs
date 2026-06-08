@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ecs::*;
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::ecs::*;
 
 #[test]
 fn test_ecs_registry_signal_creation() {
@@ -42,7 +42,7 @@ fn test_ecs_soa_performance_layout() {
 
 #[test]
 fn test_ecs_full_module_ingestion() {
-    use nasa_rust_project::parser::parse_mirr;
+    use mirrc::parser::parse_mirr;
     use std::fs;
 
     // Load a real module: majority_gate
@@ -70,7 +70,7 @@ fn test_ecs_full_module_ingestion() {
     let binary = registry.binary_ops[cond_ref.0 .0 as usize]
         .as_ref()
         .expect("Top node of a_and_b must be binary");
-    assert_eq!(binary.op, nasa_rust_project::ast::types::BinaryOp::And);
+    assert_eq!(binary.op, mirrc::ast::types::BinaryOp::And);
 
     println!("Successfully ingested majority_gate into ECS. Module Entity: {}", mod_id.0);
     println!("Guard 'a_and_b' Entity: {}", a_and_b.0);
@@ -78,9 +78,9 @@ fn test_ecs_full_module_ingestion() {
 
 #[test]
 fn test_ecs_constant_folding_system() {
-    use nasa_rust_project::ast::types::LiteralValue;
-    use nasa_rust_project::ecs::systems::parallel_constant_folding_system;
-    use nasa_rust_project::parser::parse_mirr;
+    use mirrc::ast::types::LiteralValue;
+    use mirrc::ecs::systems::parallel_constant_folding_system;
+    use mirrc::parser::parse_mirr;
 
     let src = r#"
     module test_simplify {
@@ -115,8 +115,8 @@ fn test_ecs_constant_folding_system() {
 
 #[test]
 fn test_ecs_parallel_scaling() {
-    use nasa_rust_project::ast::types::{BinaryOp, LiteralValue};
-    use nasa_rust_project::ecs::systems::parallel_constant_folding_system;
+    use mirrc::ast::types::{BinaryOp, LiteralValue};
+    use mirrc::ecs::systems::parallel_constant_folding_system;
 
     let mut registry = Registry::new();
 
@@ -154,7 +154,7 @@ fn test_ecs_parallel_scaling() {
 
 #[test]
 fn test_ecs_parallel_vector_search() {
-    use nasa_rust_project::ecs::systems::parallel_vector_search_system;
+    use mirrc::ecs::systems::parallel_vector_search_system;
 
     let mut registry = Registry::new();
 
@@ -197,7 +197,7 @@ fn test_ecs_parallel_vector_search() {
 
 #[test]
 fn test_ecs_parallel_width_inference() {
-    use nasa_rust_project::ecs::systems::parallel_width_inference_system;
+    use mirrc::ecs::systems::parallel_width_inference_system;
 
     let mut registry = Registry::new();
 

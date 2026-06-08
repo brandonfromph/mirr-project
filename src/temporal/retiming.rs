@@ -1,4 +1,4 @@
-//! Register retiming optimization for temporal netlists.
+//! ARCHITECTURAL SUB-ENGINE: REGISTER RETIMING OPTIMIZER
 //!
 //! Moves registers across combinational logic boundaries to improve
 //! timing (reduce critical path delay) without changing I/O behavior.

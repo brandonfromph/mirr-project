@@ -1,5 +1,5 @@
 // paper.js — Living Research Artifact interactive layer
-// GPL-3.0 — see LICENSE for terms.
+// Apache-2.0 — see LICENSE for terms.
 // No external dependencies. No npm. No CDN. No fetch().
 //
 // This file has two sections:

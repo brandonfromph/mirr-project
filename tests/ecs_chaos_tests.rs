@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ecs::components::*;
-use nasa_rust_project::ecs::registry::Registry;
+use mirrc::ecs::components::*;
+use mirrc::ecs::registry::Registry;
 
 #[test]
 fn test_chaos_missing_kind_no_panic() {
@@ -29,10 +29,10 @@ fn test_chaos_circular_expression_audit() {
 
     // A -> B
     registry.unary_ops[ent_a.0 as usize] =
-        Some(UnaryComponent { op: nasa_rust_project::ast::types::UnaryOp::Not, operand: ent_b });
+        Some(UnaryComponent { op: mirrc::ast::types::UnaryOp::Not, operand: ent_b });
     // B -> A
     registry.unary_ops[ent_b.0 as usize] =
-        Some(UnaryComponent { op: nasa_rust_project::ast::types::UnaryOp::Not, operand: ent_a });
+        Some(UnaryComponent { op: mirrc::ast::types::UnaryOp::Not, operand: ent_a });
 
     let g = registry.create_entity("circular_g", KindComponent(EntityKind::GUARD));
     registry.cycles[g.0 as usize] = Some(CyclesComponent(10));

@@ -2,8 +2,8 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::error::PipelineErrors;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
+use mirrc::error::PipelineErrors;
+use mirrc::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
 /// Helper: run pipeline with extended typechecking enabled.
 fn run_extended(source: &str) -> Result<PipelineResult, PipelineErrors> {

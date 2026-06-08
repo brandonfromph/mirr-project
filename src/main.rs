@@ -8,7 +8,7 @@
 
 use std::{env, fs, process};
 
-use nasa_rust_project::{parse_mirr, BootstrapOpts, BootstrapRunner, TemporalGuardCompiler};
+use mirrc::{parse_mirr, BootstrapOpts, BootstrapRunner, TemporalGuardCompiler};
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -72,7 +72,7 @@ fn main() {
     let input_path = match input_path {
         Some(path) => path,
         None => {
-            eprintln!("Usage: nasa-rust-project [OPTIONS] <file.mirr>");
+            eprintln!("Usage: mirrc [OPTIONS] <file.mirr>");
             print_help();
             process::exit(1);
         }
@@ -163,7 +163,7 @@ fn main() {
         return;
     }
 
-    let config = nasa_rust_project::pipeline::PipelineConfig {
+    let config = mirrc::pipeline::PipelineConfig {
         temporal: true,
         rspu: run_rspu,
         bootstrap_mode: run_bootstrap,
@@ -177,7 +177,7 @@ fn main() {
     };
 
     let pipeline_result =
-        match nasa_rust_project::pipeline::run_pipeline_on_program(program, &config) {
+        match mirrc::pipeline::run_pipeline_on_program(program, &config) {
             Ok(result) => result,
             Err(errors) => {
                 for err in errors.errors {
@@ -217,7 +217,7 @@ fn main() {
         }
     }
     if emit_verilog {
-        let sv = nasa_rust_project::emit::verilog::emit_sv(&pipeline_result);
+        let sv = mirrc::emit::verilog::emit_sv(&pipeline_result);
         println!("{}", sv);
     }
     if !emit_json && !emit_dot && !emit_verilog {
@@ -240,7 +240,7 @@ fn main() {
 fn print_help() {
     println!("NASA Rust Project - MIRR Compiler");
     println!();
-    println!("Usage: nasa-rust-project [OPTIONS] <file.mirr>");
+    println!("Usage: mirrc [OPTIONS] <file.mirr>");
     println!();
     println!("Options:");
     println!("  -c, --compile              Compile temporal guards to low-level netlist");
@@ -258,9 +258,9 @@ fn print_help() {
     println!("  -h, --help                 Show this help message");
     println!();
     println!("Examples:");
-    println!("  nasa-rust-project example.mirr                    # Parse and display AST");
-    println!("  nasa-rust-project --compile example.mirr          # Compile temporal guards");
-    println!("  nasa-rust-project --compile --json example.mirr   # Compile and emit JSON");
-    println!("  nasa-rust-project --compile --dot example.mirr    # Compile and emit DOT");
-    println!("  nasa-rust-project --selfhost-compile example.mirr # Self-hosting pipeline");
+    println!("  mirrc example.mirr                    # Parse and display AST");
+    println!("  mirrc --compile example.mirr          # Compile temporal guards");
+    println!("  mirrc --compile --json example.mirr   # Compile and emit JSON");
+    println!("  mirrc --compile --dot example.mirr    # Compile and emit DOT");
+    println!("  mirrc --selfhost-compile example.mirr # Self-hosting pipeline");
 }

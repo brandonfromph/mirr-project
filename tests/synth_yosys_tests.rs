@@ -6,11 +6,11 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::emit::verilog;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::verilog;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// Helper: compile a .mirr source string through the full pipeline.
-fn compile(source: &str) -> nasa_rust_project::pipeline::PipelineResult {
+fn compile(source: &str) -> mirrc::pipeline::PipelineResult {
     run_pipeline(source, &PipelineConfig::default()).expect("pipeline should succeed")
 }
 

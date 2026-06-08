@@ -8,11 +8,45 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/brandonfromph/mirr-project/ci.yml?branch=main&style=flat-square)](https://github.com/brandonfromph/mirr-project/actions)
 [![Tests](https://img.shields.io/badge/tests-3%2C469%2B%20passing-brightgreen?style=flat-square)](#testing)
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.85.0-orange?style=flat-square)](https://www.rust-lang.org/)
 [![unsafe: forbidden](https://img.shields.io/badge/unsafe-forbidden-red?style=flat-square)](#design-philosophy)
 
 </div>
+
+---
+
+## Time as a First-Class Citizen
+
+MIRR is built on the philosophy that **time is not an after-thought.** In traditional HDL design, implementing a temporal rule (e.g., "if signal A is high for 500 cycles") requires manually managing counters, reset logic, and comparison operators. This is error-prone and verbose.
+
+In MIRR, time is a first-class primitive:
+
+```mirr
+guard sustained_error {
+    when error_signal == true
+    for  500 cycles;
+}
+```
+
+The compiler automatically synthesizes this into a deterministic hardware structure:
+- **Shift Registers**: For short delays (e.g., `< 16 cycles`), providing single-cycle response.
+- **Binary Counters**: For long delays (e.g., `> 16 cycles`), optimizing for area efficiency.
+
+This ensures your safety rules are enforced with **cycle-accurate precision** and zero jitter.
+
+---
+
+## FuseSoC Integration
+
+MIRR is fully integrated with the [FuseSoC](https://github.com/olofk/fusesoc) package manager. You can use MIRR to generate verified hardware IP cores dynamically during your SoC build process.
+
+To add a MIRR-generated watchdog to your project:
+```yaml
+# In your .core file
+dependencies:
+  - brandonfromph:mirr:watchdog:1.0.0
+```
 
 ---
 
@@ -145,9 +179,9 @@ MIRR is published as a Living Research Artifact (LRA) — an interactive paper w
 
 **[Read the interactive paper →](https://brandonfromph.github.io/mirr-project/paper/)**
 
-The paper, the compiler, the Rocq proofs, and the browser demos are one GPL-3.0 licensed artifact. To cite MIRR, use [`paper/CITATION.cff`](paper/CITATION.cff) or cite the commit hash of the version you used.
+The paper, the compiler, the Rocq proofs, and the browser demos are one Apache-2.0 licensed artifact. To cite MIRR, use [`paper/CITATION.cff`](paper/CITATION.cff) or cite the commit hash of the version you used.
 
-**Want this format for your own research?** Fork the [LRA Template](https://github.com/brandonfromph/lra-template) — a reusable GPL-3.0 scaffold for interactive papers. See the [LRA-1.0 Specification](template/spec/LRA-1.0.md) for the formal standard.
+**Want this format for your own research?** Fork the [LRA Template](https://github.com/brandonfromph/lra-template) — a reusable Apache-2.0 scaffold for interactive papers. See the [LRA-1.0 Specification](template/spec/LRA-1.0.md) for the formal standard.
 
 ---
 
@@ -266,9 +300,9 @@ cargo fmt --check               # formatting
 
 ## License
 
-Distributed under the GPL-3.0 License. See [`LICENSE`](LICENSE) for the full terms.
+Distributed under the Apache-2.0 License. See [`LICENSE`](LICENSE) for the full terms.
 
-The interactive paper, compiler, proofs, and WASM demos are one unified GPL-3.0 artifact and cannot be separated for journal submission under a copyright transfer agreement.
+The interactive paper, compiler, proofs, and WASM demos are one unified Apache-2.0 artifact and cannot be separated for journal submission under a copyright transfer agreement.
 
 ---
 

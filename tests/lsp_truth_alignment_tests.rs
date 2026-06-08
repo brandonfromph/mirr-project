@@ -1,19 +1,19 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::lsp_bridge::compiler::CompilerLspRoute;
-use nasa_rust_project::lsp_bridge::diagnostics::{
+use mirrc::lsp_bridge::compiler::CompilerLspRoute;
+use mirrc::lsp_bridge::diagnostics::{
     clear_diagnostics_publication, publish_diagnostics, DiagnosticCode, DiagnosticItem,
     DiagnosticRange, DiagnosticSeverity, DiagnosticStreamContractVersion,
 };
-use nasa_rust_project::lsp_bridge::handshake::{
+use mirrc::lsp_bridge::handshake::{
     negotiate_handshake, Capability, CapabilityAgreement, CapabilityRejectionReason,
     ClientHandshakeHello, HandshakeDecision, HandshakeRequest, HandshakeSessionId, ProtocolVersion,
     ServerHandshakeHello, TextEncoding,
 };
-use nasa_rust_project::lsp_bridge::routing::{
+use mirrc::lsp_bridge::routing::{
     route_ui_request, RoutedUiRequest, UiRequest, UiRequestId, UiRequestKind, UiRouteRejection,
 };
-use nasa_rust_project::lsp_bridge::types::{DocumentId, DocumentRevision, Position};
+use mirrc::lsp_bridge::types::{DocumentId, DocumentRevision, Position};
 
 fn server_hello() -> ServerHandshakeHello {
     ServerHandshakeHello::new(

@@ -5,7 +5,7 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::hls::fifo::{
+use mirrc::hls::fifo::{
     emit_fifo_verilog, fifo_stats, synthesize_fifo, validate_fifo, FifoHandshake, FifoHardware,
     MAX_FIFO_DEPTH,
 };
@@ -123,14 +123,14 @@ module test {
 }
 "#;
 
-    let config = nasa_rust_project::PipelineConfig {
+    let config = mirrc::PipelineConfig {
         hls: false,
         rspu: false,
         mape_k: false,
         ..Default::default()
     };
 
-    let result = nasa_rust_project::run_pipeline(source, &config);
+    let result = mirrc::run_pipeline(source, &config);
     if let Err(e) = &result {
         eprintln!("Pipeline error: {e:?}");
     }

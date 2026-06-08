@@ -5,10 +5,10 @@
 //!
 //! NASA Power-of-10 compliant: bounded iteration, no recursion, descriptive asserts.
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic, LabelKind, Severity};
-use nasa_rust_project::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
-use nasa_rust_project::span::Span;
-use nasa_rust_project::width::types::{DiagSeverity, WidthDiag};
+use mirrc::diagnostic::{render_diagnostic, Diagnostic, LabelKind, Severity};
+use mirrc::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
+use mirrc::span::Span;
+use mirrc::width::types::{DiagSeverity, WidthDiag};
 
 /// Maximum iterations for bounded test loops (NASA Power-of-10 rule #2).
 const MAX_TEST_ITEMS: usize = 64;
@@ -928,7 +928,7 @@ fn render_diagnostic_from_mirr_error_semantic() {
 
 #[test]
 fn parse_empty_input_produces_error() {
-    let result = nasa_rust_project::parse_mirr("");
+    let result = mirrc::parse_mirr("");
     assert!(result.is_err(), "parsing empty input should produce an error");
     let err = result.unwrap_err();
     let display = err.to_string();
@@ -937,7 +937,7 @@ fn parse_empty_input_produces_error() {
 
 #[test]
 fn parse_garbage_input_produces_parse_error() {
-    let result = nasa_rust_project::parse_mirr("@#$%^&*");
+    let result = mirrc::parse_mirr("@#$%^&*");
     assert!(result.is_err(), "parsing garbage input should produce an error");
     let err = result.unwrap_err();
     let display = err.to_string();
@@ -949,7 +949,7 @@ fn parse_garbage_input_produces_parse_error() {
 
 #[test]
 fn parse_incomplete_module_produces_error() {
-    let result = nasa_rust_project::parse_mirr("module Incomplete {");
+    let result = mirrc::parse_mirr("module Incomplete {");
     assert!(result.is_err(), "parsing incomplete module should produce an error");
 }
 

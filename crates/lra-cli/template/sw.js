@@ -2,7 +2,7 @@
 // Phase 1: Offline cache
 // Phase 4: JSON-RPC 2.0 protocol (lra.ping, lra.meta, lra.claims, lra.cite, lra.run_tool)
 //
-// GPL-3.0 — see LICENSE for terms.
+// Apache-2.0 — see LICENSE for terms.
 
 // IMPORTANT: Bump this version string when you change any cached file
 var CACHE_NAME = 'lra-v3';
@@ -21,7 +21,7 @@ var LRA_META = {
   title: 'REPLACE: Your Paper Title',
   authors: ['REPLACE: Your Name'],
   date: 'REPLACE: 2026-01',
-  license: 'GPL-3.0',
+  license: 'Apache-2.0',
   version: '1.0',
   abstract: 'REPLACE: Your abstract here.',
   keywords: ['REPLACE'],

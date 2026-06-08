@@ -99,7 +99,7 @@ fn parse_frontmatter(fm: &str) -> Result<Meta, String> {
         date: String::new(),
         description: String::new(),
         url: String::new(),
-        license: "GPL-3.0".to_string(),
+        license: "Apache-2.0".to_string(),
         keywords: Vec::new(),
         capability: String::new(),
         claims: Vec::new(),

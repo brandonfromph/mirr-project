@@ -2,8 +2,8 @@
 //! This test enforces that signals defined in ergonomic 'signals { ... }' blocks
 //! are correctly ingested into the ECS Registry as first-class entities.
 
-use nasa_rust_project::ecs::{adapter::ingest_program, components::*, Registry};
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::ecs::{adapter::ingest_program, components::*, Registry};
+use mirrc::parser::parse_mirr;
 
 #[test]
 fn test_signals_block_to_ecs_entities() {
@@ -30,6 +30,6 @@ module test_mod {
 
     assert_eq!(
         kind,
-        KindComponent(EntityKind::SIGNAL(nasa_rust_project::ast::types::SignalKind::Input))
+        KindComponent(EntityKind::SIGNAL(mirrc::ast::types::SignalKind::Input))
     );
 }

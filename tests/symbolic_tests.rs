@@ -2,16 +2,16 @@
 
 //! Integration tests for the MEGA-5 symbolic evaluation engine.
 
-use nasa_rust_project::symbolic::interval::interval_binary;
-use nasa_rust_project::symbolic::pattern::{MatchAction, MatchPattern, MAX_MATCH_PATTERNS};
-use nasa_rust_project::symbolic::{
+use mirrc::symbolic::interval::interval_binary;
+use mirrc::symbolic::pattern::{MatchAction, MatchPattern, MAX_MATCH_PATTERNS};
+use mirrc::symbolic::{
     sym_check_refinement, sym_eval_binary, sym_eval_expr, sym_eval_unary, sym_widen, SymState,
     SymValue,
 };
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue, UnaryOp};
-use nasa_rust_project::emit::rspu_tagged::{TaggedWord, TypeTag};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use mirrc::emit::rspu_tagged::{TaggedWord, TypeTag};
 
 // ---------------------------------------------------------------------------
 // SymValue basic tests
@@ -191,7 +191,7 @@ fn test_match_word_first_match_wins() {
             action: MatchAction::Accept(1),
         },
     ];
-    match nasa_rust_project::symbolic::pattern::match_word(&word, &patterns) {
+    match mirrc::symbolic::pattern::match_word(&word, &patterns) {
         MatchAction::Accept(id) => assert_eq!(id, 0, "first match should win"),
         other => panic!("expected Accept(0), got {other:?}"),
     }
@@ -207,7 +207,7 @@ fn test_match_word_no_match() {
         value_pattern: 42,
         action: MatchAction::Accept(0),
     }];
-    match nasa_rust_project::symbolic::pattern::match_word(&word, &patterns) {
+    match mirrc::symbolic::pattern::match_word(&word, &patterns) {
         MatchAction::Continue => {} // expected
         other => panic!("expected Continue, got {other:?}"),
     }
@@ -224,7 +224,7 @@ fn test_match_word_tag_only() {
         value_pattern: 0,
         action: MatchAction::Accept(5),
     }];
-    match nasa_rust_project::symbolic::pattern::match_word(&word, &patterns) {
+    match mirrc::symbolic::pattern::match_word(&word, &patterns) {
         MatchAction::Accept(id) => assert_eq!(id, 5),
         other => panic!("expected Accept(5), got {other:?}"),
     }
@@ -245,7 +245,7 @@ fn test_match_word_bounded() {
         });
     }
     // None of first 16 match value=0, so should get Continue.
-    match nasa_rust_project::symbolic::pattern::match_word(&word, &patterns) {
+    match mirrc::symbolic::pattern::match_word(&word, &patterns) {
         MatchAction::Continue => {} // expected: none of the bounded patterns matched
         other => panic!("expected Continue, got {other:?}"),
     }
@@ -283,7 +283,7 @@ fn test_signed_signal_unknown() {
 
 #[test]
 fn test_pipeline_symbolic_disabled() {
-    use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+    use mirrc::pipeline::{run_pipeline, PipelineConfig};
     let config = PipelineConfig { symbolic: false, ..PipelineConfig::default() };
     let source = r#"module test { signal x : unsigned<8>; }"#;
     let result = run_pipeline(source, &config);
@@ -294,7 +294,7 @@ fn test_pipeline_symbolic_disabled() {
 
 #[test]
 fn test_pipeline_symbolic_enabled() {
-    use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+    use mirrc::pipeline::{run_pipeline, PipelineConfig};
     let config = PipelineConfig { symbolic: true, ..PipelineConfig::default() };
     let source = r#"module test { signal x : unsigned<8>; }"#;
     let result = run_pipeline(source, &config);

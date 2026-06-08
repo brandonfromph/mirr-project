@@ -3,7 +3,7 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::mape_k::{
+use mirrc::mape_k::{
     ActionEntry, AdaptationAction, MapeKSimulator, SensorConfig, SignalPredicate, SimConfig,
     TemporalProperty, TriggerCondition,
 };

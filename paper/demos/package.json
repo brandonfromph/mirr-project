@@ -3,7 +3,7 @@
   "type": "module",
   "description": "WASM bindings for the MIRR compiler",
   "version": "0.1.0",
-  "license": "GPL-3.0",
+  "license": "Apache-2.0",
   "files": [
     "mirr_wasm_bg.wasm",
     "mirr_wasm.js",

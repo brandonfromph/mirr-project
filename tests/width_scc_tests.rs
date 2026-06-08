@@ -15,10 +15,10 @@
 //!  8. Least solution verification
 //!  9. Full program integration
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::width;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::width;
 
 // =========================================================================
 // Helpers
@@ -125,7 +125,7 @@ fn prev_with_delay_greater_than_one() {
 #[test]
 fn prev_passes_through_simplifier_unchanged() {
     let expr = prev("x", 1);
-    let simplified = nasa_rust_project::simplify::simplify_expr(expr.clone());
+    let simplified = mirrc::simplify::simplify_expr(expr.clone());
     assert_eq!(simplified, expr);
 }
 
@@ -133,7 +133,7 @@ fn prev_passes_through_simplifier_unchanged() {
 fn prev_in_binary_expr_passes_through_simplifier() {
     // prev(x) + 0 => prev(x)  (arithmetic identity fires on the add, prev untouched)
     let expr = add(prev("x", 1), int_lit(0));
-    let simplified = nasa_rust_project::simplify::simplify_expr(expr);
+    let simplified = mirrc::simplify::simplify_expr(expr);
     assert_eq!(simplified, prev("x", 1));
 }
 

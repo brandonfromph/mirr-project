@@ -9,7 +9,7 @@
       "hash": "sha256:6ad504f180a021084ddde9657ac0f49f88761193908ab419e54c06202204691a",
       "capability": "mirr-compiler",
       "keywords": ["HDL", "compiler", "safety-critical", "formal verification", "width inference", "SystemVerilog", "FIRRTL", "WASM", "NASA Power-of-10"],
-      "license": "GPL-3.0",
+      "license": "Apache-2.0",
       "version": "0.3.0",
       "depends": [],
       "peers": [],

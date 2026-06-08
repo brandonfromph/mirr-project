@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 #![allow(unused_imports)]
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 fn tool_available(name: &str) -> bool {
     // Actually run the tool to verify it loads (catches missing DLLs on Windows).

@@ -382,8 +382,8 @@ fn f7_all_property_kinds_recognized() {
 
 #[test]
 fn f8_cert_serialize_deserialize_roundtrip() {
-    use nasa_rust_project::cert;
-    use nasa_rust_project::totality::ResourceBound;
+    use mirrc::cert;
+    use mirrc::totality::ResourceBound;
 
     let cert = ProofCertificate {
         version: 1,
@@ -413,8 +413,8 @@ fn f8_cert_serialize_deserialize_roundtrip() {
 
 #[test]
 fn f8_cert_magic_bytes() {
-    use nasa_rust_project::cert;
-    use nasa_rust_project::totality::ResourceBound;
+    use mirrc::cert;
+    use mirrc::totality::ResourceBound;
 
     let cert = ProofCertificate {
         version: 1,
@@ -441,7 +441,7 @@ fn f8_cert_magic_bytes() {
 #[test]
 fn f8_cert_invalid_magic_fails() {
     let bad_bytes = b"INVALID_MAGIC_PADDING_DATA_HERE!!";
-    let result = nasa_rust_project::cert::deserialize_certificate(bad_bytes);
+    let result = mirrc::cert::deserialize_certificate(bad_bytes);
     assert!(result.is_err(), "Invalid magic must fail deserialization");
 }
 

@@ -1,5 +1,5 @@
 // Bug Hunt #11: Check if the AST parser handles extremely deep nested properties without a stack overflow.
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 #[test]
 fn test_deep_nesting_stack_overflow() {
     let mut nested_expr = "a".to_string();

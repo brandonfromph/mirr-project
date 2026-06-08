@@ -4,9 +4,9 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
-use nasa_rust_project::ecs::Registry;
+use mirrc::ecs::Registry;
 /// Structural sanity check: verify every entity in the Registry is well-formed.
 fn verify_registry_integrity(registry: &mut Registry) {
     let next_id = registry.next_id();
@@ -23,7 +23,7 @@ fn verify_registry_integrity(registry: &mut Registry) {
 
         // If it's a signal, it must have a Type. Name is optional for internal signals.
         if let Some(kind) = &registry.kinds[idx] {
-            if let nasa_rust_project::ecs::components::EntityKind::SIGNAL(_) = kind.0 {
+            if let mirrc::ecs::components::EntityKind::SIGNAL(_) = kind.0 {
                 assert!(registry.types[idx].is_some(), "Signal {i} has no TypeComponent");
             }
         }
@@ -77,7 +77,7 @@ fn test_industrial_operator_matrix() {
 
                 // Perform structural sanity check on the final Registry
                 let mut reg = Registry::new();
-                nasa_rust_project::ecs::adapter::ingest_program(
+                mirrc::ecs::adapter::ingest_program(
                     &mut reg,
                     res.program.clone(),
                     None,
@@ -116,7 +116,7 @@ fn test_hyper_scale_random_logic_matrix() {
 
         let res = run_pipeline(&source, &PipelineConfig::default()).expect("Hyper-scale failed");
         let mut reg = Registry::new();
-        nasa_rust_project::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
+        mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
             .expect("Ingest failed");
         verify_registry_integrity(&mut reg);
 
@@ -171,7 +171,7 @@ fn test_industrial_mux_matrix() {
 
             let res = run_pipeline(&source, &PipelineConfig::default()).expect("MUX matrix failed");
             let mut reg = Registry::new();
-            nasa_rust_project::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
+            mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
                 .expect("Ingest failed");
             verify_registry_integrity(&mut reg);
             count += 1;
@@ -204,7 +204,7 @@ fn test_hyper_scale_shift_matrix() {
             let res =
                 run_pipeline(&source, &PipelineConfig::default()).expect("Shift hyper failed");
             let mut reg = Registry::new();
-            nasa_rust_project::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
+            mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
                 .expect("Ingest failed");
             verify_registry_integrity(&mut reg);
             count += 1;

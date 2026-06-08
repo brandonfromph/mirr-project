@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::parser::parse_mirr;
-use nasa_rust_project::symbolic::{sym_eval_expr, SymState, SymValue};
+use mirrc::parser::parse_mirr;
+use mirrc::symbolic::{sym_eval_expr, SymState, SymValue};
 use std::fs;
 
 #[test]

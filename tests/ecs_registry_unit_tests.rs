@@ -1,14 +1,14 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::types::{
+use mirrc::ast::types::{
     BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
 };
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ecs::components::*;
-use nasa_rust_project::ecs::systems::*;
-use nasa_rust_project::ecs::Registry;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::ast::Expr;
+use mirrc::ecs::components::*;
+use mirrc::ecs::systems::*;
+use mirrc::ecs::Registry;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_registry_construction_and_basic_entity_ops() {
@@ -544,7 +544,7 @@ macro_rules! test_expr_roundtrip {
     ($name:ident, $src:expr) => {
         #[test]
         fn $name() -> Result<(), Box<dyn std::error::Error>> {
-            use nasa_rust_project::parser::parse_expression;
+            use mirrc::parser::parse_expression;
             let expr = parse_expression($src)?;
             let mut reg = Registry::new();
             let ent = reg.ingest_expr(&expr)?;

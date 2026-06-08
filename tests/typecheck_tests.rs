@@ -3,15 +3,15 @@
 //!
 //! Tests all 16 type rules (T1–T16) and all 7 error codes (E601–E607).
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{
     BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
 };
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::typeck::typecheck_module;
-use nasa_rust_project::validate_module;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::typeck::typecheck_module;
+use mirrc::validate_module;
 
 // ---------------------------------------------------------------------------
 // Helpers

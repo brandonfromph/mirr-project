@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::width;
+use mirrc::parse_mirr;
+use mirrc::width;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {

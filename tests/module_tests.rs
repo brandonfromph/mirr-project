@@ -3,12 +3,12 @@
 // Module parser tests
 // ---------------------------------------------------------------------------
 
-use nasa_rust_project::ast::{BinaryOp, Expr, LiteralValue, SignalKind, SignalType, UnaryOp};
-use nasa_rust_project::parse_mirr;
+use mirrc::ast::{BinaryOp, Expr, LiteralValue, SignalKind, SignalType, UnaryOp};
+use mirrc::parse_mirr;
 
 // -- Helpers --
 
-fn assert_parse_ok(source: &str) -> nasa_rust_project::MirrProgram {
+fn assert_parse_ok(source: &str) -> mirrc::MirrProgram {
     parse_mirr(source).expect("expected parse to succeed")
 }
 

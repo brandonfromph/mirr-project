@@ -1,5 +1,5 @@
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline_on_program, PipelineConfig};
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline_on_program, PipelineConfig};
 
 #[test]
 fn test_bool_u1_compatibility() {

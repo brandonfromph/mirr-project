@@ -12,7 +12,7 @@
 //   - Round-trip: parse JSON back into structs and compare equality
 // ---------------------------------------------------------------------------
 
-use nasa_rust_project::{parse_mirr, MirrAstJson, TemporalGuardCompiler, TemporalNetlistJson};
+use mirrc::{parse_mirr, MirrAstJson, TemporalGuardCompiler, TemporalNetlistJson};
 
 // ---------------------------------------------------------------------------
 // Helpers

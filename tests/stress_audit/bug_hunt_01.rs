@@ -1,5 +1,5 @@
 // Bug Hunt #1: Ergonomic macro expansion of empty signals block should not crash the parser.
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 
 #[test]
 fn test_empty_signals_block() {

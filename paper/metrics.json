@@ -38,6 +38,6 @@
     "nasaP10Compliant": true,
     "forbidUnsafeCode": true,
     "zeroDependencyDocs": true,
-    "license": "GPL-3.0"
+    "license": "Apache-2.0"
   }
 }

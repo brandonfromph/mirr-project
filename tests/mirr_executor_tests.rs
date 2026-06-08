@@ -14,8 +14,8 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_range_loop)]
 
-use nasa_rust_project::mirr_executor::drive_parsed_module_with_interpreter;
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::mirr_executor::drive_parsed_module_with_interpreter;
+use mirrc::parser::parse_mirr;
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA Power-of-10)
@@ -314,22 +314,22 @@ module comprehensive_test {
 }
 "#;
 
-fn parse_comprehensive() -> nasa_rust_project::ast::MirrProgram {
+fn parse_comprehensive() -> mirrc::ast::MirrProgram {
     parse_mirr(COMPREHENSIVE_MODULE).expect("comprehensive module must parse")
 }
 
-fn parse_ok(src: &str) -> nasa_rust_project::ast::MirrProgram {
+fn parse_ok(src: &str) -> mirrc::ast::MirrProgram {
     parse_mirr(src).expect("parse_mirr should succeed for valid test input")
 }
 
-fn count_pushes(pushes: &[nasa_rust_project::mirr_driver::ObservedPush], kind: &str) -> usize {
+fn count_pushes(pushes: &[mirrc::mirr_driver::ObservedPush], kind: &str) -> usize {
     pushes.iter().take(MAX_PUSH_SCAN).filter(|p| p.kind == kind).count()
 }
 
 fn find_push<'a>(
-    pushes: &'a [nasa_rust_project::mirr_driver::ObservedPush],
+    pushes: &'a [mirrc::mirr_driver::ObservedPush],
     kind: &str,
-) -> Option<&'a nasa_rust_project::mirr_driver::ObservedPush> {
+) -> Option<&'a mirrc::mirr_driver::ObservedPush> {
     pushes.iter().take(MAX_PUSH_SCAN).find(|p| p.kind == kind)
 }
 
@@ -670,12 +670,12 @@ fn comprehensive_module_parses_with_expected_signals() {
     let input_count = signals
         .iter()
         .take(MAX_STRUCT_CHECK)
-        .filter(|s| s.kind == nasa_rust_project::ast::types::SignalKind::Input)
+        .filter(|s| s.kind == mirrc::ast::types::SignalKind::Input)
         .count();
     let output_count = signals
         .iter()
         .take(MAX_STRUCT_CHECK)
-        .filter(|s| s.kind == nasa_rust_project::ast::types::SignalKind::Output)
+        .filter(|s| s.kind == mirrc::ast::types::SignalKind::Output)
         .count();
 
     assert!(
@@ -809,7 +809,7 @@ fn alloc_hook_invoked_on_drive() {
         HOOK_COUNT.fetch_add(1, Ordering::SeqCst);
     }
 
-    nasa_rust_project::mirr_executor::set_alloc_hook(hook);
+    mirrc::mirr_executor::set_alloc_hook(hook);
 
     let prog = parse_comprehensive();
     let _pushes = drive_parsed_module_with_interpreter(&prog, b"42");

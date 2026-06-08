@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 //! Emitter capacity exhaustion boundary tests.
 
-use nasa_rust_project::ast::program::MirrProgram;
-use nasa_rust_project::ast::types::{LiteralValue, SignalKind};
-use nasa_rust_project::pipeline::PipelineResult;
-use nasa_rust_project::temporal::low_level_ir::{
+use mirrc::ast::program::MirrProgram;
+use mirrc::ast::types::{LiteralValue, SignalKind};
+use mirrc::pipeline::PipelineResult;
+use mirrc::temporal::low_level_ir::{
     CompiledGuard, ConditionKind, ShiftRegisterGuard, TemporalNetlist,
 };
 
@@ -32,13 +32,13 @@ fn result_with_many_temporal_guards() -> PipelineResult {
         program: MirrProgram {
             patterns: Vec::new(),
             imports: Vec::new(),
-            module: nasa_rust_project::ast::program::Module {
+            module: mirrc::ast::program::Module {
                 name: "emit_capacity".to_string(),
-                signals: vec![nasa_rust_project::ast::program::SignalDecl {
+                signals: vec![mirrc::ast::program::SignalDecl {
                     name: "in_sig".to_string(),
                     kind: SignalKind::Input,
-                    ty: nasa_rust_project::ast::types::ExtendedType::from_core(
-                        nasa_rust_project::ast::types::SignalType::Bool,
+                    ty: mirrc::ast::types::ExtendedType::from_core(
+                        mirrc::ast::types::SignalType::Bool,
                     ),
                     origin: None,
                     span: None,
@@ -70,7 +70,7 @@ fn result_with_many_temporal_guards() -> PipelineResult {
 #[test]
 fn dot_temporal_subgraph_caps_emitted_capacity() {
     let result = result_with_many_temporal_guards();
-    let dot = nasa_rust_project::emit::dot::emit_module_dot(&result);
+    let dot = mirrc::emit::dot::emit_module_dot(&result);
     let sr_nodes = dot.matches("SR:").count();
 
     assert_eq!(sr_nodes, DOT_CAPACITY, "DOT temporal subgraph should stop at the configured cap");
@@ -87,13 +87,13 @@ fn temporal_emit_still_produces_valid_output_under_load() {
         4,
         ConditionKind::Comparison {
             signal: "in_sig".to_string(),
-            op: nasa_rust_project::ast::types::BinaryOp::Eq,
+            op: mirrc::ast::types::BinaryOp::Eq,
             value: LiteralValue::Bool(true),
         },
     );
     netlist.add_guard(CompiledGuard::ShiftRegister(sr));
 
-    let verilog = nasa_rust_project::temporal::emit::emit_verilog(&netlist)
+    let verilog = mirrc::temporal::emit::emit_verilog(&netlist)
         .expect("temporal verilog emission should succeed");
     assert!(verilog.contains("module mirr_temporal_netlist"));
 }

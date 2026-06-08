@@ -9,11 +9,11 @@ use std::path::Path;
 
 /// Compile a .mirr source and return the error string (empty if no errors).
 fn compile_and_capture(source: &str) -> String {
-    let result = nasa_rust_project::parser::parse_mirr(source);
+    let result = mirrc::parser::parse_mirr(source);
     match result {
         Ok(program) => {
             // Try validation
-            match nasa_rust_project::validation::validate_module(&program.module) {
+            match mirrc::validation::validate_module(&program.module) {
                 Ok(()) => String::new(),
                 Err(e) => format!("{e}"),
             }

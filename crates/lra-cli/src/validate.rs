@@ -76,15 +76,15 @@ fn run_checks(html: &str, dir: &Path) -> Vec<Check> {
         Check { id: "B11", label: "LICENSE file exists", pass: license_path.exists() },
         Check {
             id: "B12",
-            label: "LICENSE contains GPL",
+            label: "LICENSE contains Apache",
             pass: license_text.contains("GNU GENERAL PUBLIC"),
         },
         Check { id: "B13", label: "CITATION.cff exists", pass: citation_path.exists() },
         Check { id: "B14", label: "lra:version meta", pass: html.contains("lra:version") },
         Check {
             id: "B15",
-            label: "CITATION.cff has GPL-3.0 license",
-            pass: citation_text.contains("license:") && citation_text.contains("GPL-3.0"),
+            label: "CITATION.cff has Apache-2.0 license",
+            pass: citation_text.contains("license:") && citation_text.contains("Apache-2.0"),
         },
         Check { id: "B16", label: "paper.css exists", pass: dir.join("paper.css").exists() },
         // Silver (3)

@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::lsp_incremental::{
+use mirrc::lsp_incremental::{
     ChangeBudget, DiagnosticPublishKind, DocumentId, IncrementalLspEngine, ParseScope,
     PositionUtf16, ReloadMode, SnapshotVersion, TextEdit,
 };

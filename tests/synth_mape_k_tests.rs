@@ -5,7 +5,7 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// Helper: compile a .mirr source string through the full pipeline with MAPE-K RTL enabled.
 fn compile_mape_k(source: &str) -> String {

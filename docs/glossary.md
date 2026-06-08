@@ -30,7 +30,7 @@ Terminology and acronyms used throughout the MIRR project.
 | **Homoiconic** | Property where code and data share the same representation (S-expressions) |
 | **ISA** | Instruction Set Architecture |
 | **JSON-RPC** | Remote procedure call protocol used by the LRA Service Worker |
-| **Living Research Artifact (LRA)** | A paper that bundles code, proofs, and GUI into a single GPL-licensed repository |
+| **Living Research Artifact (LRA)** | A paper that bundles code, proofs, and GUI into a single Apache-licensed repository |
 | **LPF** | Lattice Preference File — ECP5 constraint format |
 | **LRA-1.0** | The specification standard for Living Research Artifacts |
 | **LTL** | Linear Temporal Logic — formal language for specifying temporal properties |

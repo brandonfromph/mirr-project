@@ -4,12 +4,12 @@
 //! Verifies that the compiler reports multiple errors per compilation
 //! instead of stopping at the first.
 
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ast::SignalDecl;
-use nasa_rust_project::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
-use nasa_rust_project::parser::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::validation::validate_module;
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::ast::SignalDecl;
+use mirrc::error::{MirrError, PipelineErrors, MAX_ACCUMULATED_ERRORS};
+use mirrc::parser::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::validation::validate_module;
 
 fn default_config() -> PipelineConfig {
     PipelineConfig {
@@ -323,9 +323,9 @@ fn pipeline_errors_from_single() {
 
 #[test]
 fn pattern_errors_accumulate() {
-    use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
-    use nasa_rust_project::ast::pattern::{PatternDef, ReflectBlock};
-    use nasa_rust_project::validation::validate_pattern_defs;
+    use mirrc::ast::macro_nodes::ModuleMacroStmt;
+    use mirrc::ast::pattern::{PatternDef, ReflectBlock};
+    use mirrc::validation::validate_pattern_defs;
 
     let defs = vec![
         PatternDef {

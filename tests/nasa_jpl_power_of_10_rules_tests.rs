@@ -10,10 +10,10 @@
 //! 3. Rule 5: High assertion density and expression depth limit gates (MAX_EXPR_NODES = 512).
 //! 4. Rule 6: Scope isolation and narrowest variable/signal visibility boundaries.
 
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ecs::{KindComponent, Registry, TypeComponent};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::ast::Expr;
+use mirrc::ecs::{KindComponent, Registry, TypeComponent};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// NASA JPL Rule 2: Strict Loop and Cycle Bounds.
 /// Verify that the compiler strictly limits loops and cycle propagation budgets.
@@ -27,13 +27,13 @@ fn test_nasa_rule_2_bounded_loops_and_cycles() {
     let loop_ent_2 = registry.next_id();
 
     registry.binary_ops[loop_ent_1.0 as usize] =
-        Some(nasa_rust_project::ecs::components::BinaryComponent {
+        Some(mirrc::ecs::components::BinaryComponent {
             op: BinaryOp::Add,
             left: loop_ent_2,
             right: loop_ent_2,
         });
     registry.binary_ops[loop_ent_2.0 as usize] =
-        Some(nasa_rust_project::ecs::components::BinaryComponent {
+        Some(mirrc::ecs::components::BinaryComponent {
             op: BinaryOp::Add,
             left: loop_ent_1,
             right: loop_ent_1,
@@ -41,12 +41,12 @@ fn test_nasa_rule_2_bounded_loops_and_cycles() {
 
     let g_ent = registry.next_id();
     registry.names[g_ent.0 as usize] =
-        Some(nasa_rust_project::ecs::components::NameComponent("loop_guard".to_string()));
+        Some(mirrc::ecs::components::NameComponent("loop_guard".to_string()));
     registry.kinds[g_ent.0 as usize] = Some(KindComponent::GUARD);
     registry.conditions[g_ent.0 as usize] =
-        Some(nasa_rust_project::ecs::components::ConditionComponent(loop_ent_1));
+        Some(mirrc::ecs::components::ConditionComponent(loop_ent_1));
     registry.cycles[g_ent.0 as usize] =
-        Some(nasa_rust_project::ecs::components::CyclesComponent(10));
+        Some(mirrc::ecs::components::CyclesComponent(10));
 
     // Semantic validation must fail, detecting the cycle rather than falling into infinite recursion.
     let res = registry.semantic_validate();
@@ -67,7 +67,7 @@ fn test_nasa_rule_3_registry_preallocated_bounds() {
     let mod_ent = registry.create_entity("top_module", KindComponent::MODULE);
     let sig = registry.create_signal(
         "sensor_a".to_string(),
-        KindComponent(nasa_rust_project::ecs::components::EntityKind::SIGNAL(SignalKind::Internal)),
+        KindComponent(mirrc::ecs::components::EntityKind::SIGNAL(SignalKind::Internal)),
         TypeComponent(ExtendedType::new(SignalType::Unsigned(8), Default::default())),
     );
     registry.set_parent(sig, mod_ent);

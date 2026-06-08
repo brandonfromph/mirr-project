@@ -1,9 +1,9 @@
 #[test]
 fn scratch_test() {
-    use nasa_rust_project::ecs::registry::Registry;
-    use nasa_rust_project::ecs::components::*;
-    use nasa_rust_project::ecs::systems::temporal_synthesis_system;
-    use nasa_rust_project::ast::types::*;
+    use mirrc::ecs::registry::Registry;
+    use mirrc::ecs::components::*;
+    use mirrc::ecs::systems::temporal_synthesis_system;
+    use mirrc::ast::types::*;
     let mut reg = Registry::new();
     let cond_id = reg.create_entity("cond_1", KindComponent::SIGNAL);
     reg.signals[cond_id.0 as usize] = Some(SignalComponent { kind: SignalKind::In, typ: Type::Bool, width: 1, signed: false });

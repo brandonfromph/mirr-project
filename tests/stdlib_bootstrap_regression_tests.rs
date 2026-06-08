@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::bootstrap_runner::{BootstrapOpts, BootstrapRunner};
+use mirrc::bootstrap_runner::{BootstrapOpts, BootstrapRunner};
 use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;

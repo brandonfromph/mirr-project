@@ -20,16 +20,16 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::cert::{ProofCertificate, TerminationStrategy};
-use nasa_rust_project::emit::rspu_isa::{MAX_GUARDS, MAX_INSTRUCTIONS, MAX_REGISTERS};
-use nasa_rust_project::error::MirrError;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::totality::run_totality_check;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::cert::{ProofCertificate, TerminationStrategy};
+use mirrc::emit::rspu_isa::{MAX_GUARDS, MAX_INSTRUCTIONS, MAX_REGISTERS};
+use mirrc::error::MirrError;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::totality::run_totality_check;
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA P10)

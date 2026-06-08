@@ -1,9 +1,9 @@
 #![forbid(unsafe_code)]
 //! Tests for S-expression parser, printer, and type helpers.
 
-use nasa_rust_project::sexpr::parser::parse_sexpr;
-use nasa_rust_project::sexpr::printer::print_sexpr;
-use nasa_rust_project::sexpr::types::SExpr;
+use mirrc::sexpr::parser::parse_sexpr;
+use mirrc::sexpr::printer::print_sexpr;
+use mirrc::sexpr::types::SExpr;
 
 // =========================================================================
 // Parser Tests

@@ -6,15 +6,15 @@
 //! condition types (SimpleSignal, Negated, Comparison), and temporal/emit.rs
 //! emit_verilog (first coverage ever).
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::emit;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::emit;
+use mirrc::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
 // Also test temporal::emit::emit_verilog directly.
-use nasa_rust_project::temporal::emit as temporal_emit;
-use nasa_rust_project::temporal::low_level_ir::{
+use mirrc::temporal::emit as temporal_emit;
+use mirrc::temporal::low_level_ir::{
     CompiledGuard, ComplexGuard, ConditionKind, CounterGuard, GeneratedSignal, ShiftRegisterGuard,
     TemporalNetlist,
 };
@@ -213,8 +213,8 @@ fn sv_comparison_condition_in_temporal_verilog() {
     let mut netlist = TemporalNetlist::new();
     let ck = ConditionKind::Comparison {
         signal: "pressure".to_string(),
-        op: nasa_rust_project::ast::types::BinaryOp::Lt,
-        value: nasa_rust_project::ast::types::LiteralValue::Integer(50),
+        op: mirrc::ast::types::BinaryOp::Lt,
+        value: mirrc::ast::types::LiteralValue::Integer(50),
     };
     let cg = CounterGuard::new("pressure_drop".to_string(), "pressure".to_string(), 1000, ck);
     netlist.add_signal(GeneratedSignal::counter(cg.counter_signal.clone(), cg.counter_width()));
@@ -274,7 +274,7 @@ fn temporal_emit_verilog_complex_guard() {
     let complex = ComplexGuard::new(
         "combo".to_string(),
         vec![],
-        nasa_rust_project::ast::Expr::Signal("dummy".to_string()),
+        mirrc::ast::Expr::Signal("dummy".to_string()),
     );
     netlist.add_guard(CompiledGuard::Complex(complex));
 
@@ -287,8 +287,8 @@ fn temporal_emit_verilog_unsigned_zero_width() {
     let mut netlist = TemporalNetlist::new();
     netlist.add_signal(GeneratedSignal {
         name: "zero_w".to_string(),
-        ty: nasa_rust_project::ast::types::SignalType::Unsigned(0),
-        kind: nasa_rust_project::temporal::low_level_ir::GeneratedSignalKind::Intermediate,
+        ty: mirrc::ast::types::SignalType::Unsigned(0),
+        kind: mirrc::temporal::low_level_ir::GeneratedSignalKind::Intermediate,
         source: None,
     });
 
@@ -462,7 +462,7 @@ module dsp_small {
 
 #[test]
 fn sv_dsp_attribute_xilinx7() {
-    use nasa_rust_project::emit::fpga_target::FpgaTarget;
+    use mirrc::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     let result = run_pipeline(DSP_MUL_MIRR, &config).unwrap();
     let sv = emit::verilog::emit_sv_with_options(&result, Some(FpgaTarget::Xilinx7), 9);
@@ -474,7 +474,7 @@ fn sv_dsp_attribute_xilinx7() {
 
 #[test]
 fn sv_dsp_attribute_intel() {
-    use nasa_rust_project::emit::fpga_target::FpgaTarget;
+    use mirrc::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     let result = run_pipeline(DSP_MUL_MIRR, &config).unwrap();
     let sv = emit::verilog::emit_sv_with_options(&result, Some(FpgaTarget::IntelCyclone), 9);
@@ -483,7 +483,7 @@ fn sv_dsp_attribute_intel() {
 
 #[test]
 fn sv_dsp_attribute_lattice() {
-    use nasa_rust_project::emit::fpga_target::FpgaTarget;
+    use mirrc::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     let result = run_pipeline(DSP_MUL_MIRR, &config).unwrap();
     let sv = emit::verilog::emit_sv_with_options(&result, Some(FpgaTarget::LatticeIce40), 9);
@@ -500,7 +500,7 @@ fn sv_no_dsp_attribute_generic() {
 
 #[test]
 fn sv_no_dsp_below_threshold() {
-    use nasa_rust_project::emit::fpga_target::FpgaTarget;
+    use mirrc::emit::fpga_target::FpgaTarget;
     let config = PipelineConfig::default();
     // u4 * u4 — both operands below 9-bit threshold.
     // DSP analysis finds the multiply but we still emit the attribute because

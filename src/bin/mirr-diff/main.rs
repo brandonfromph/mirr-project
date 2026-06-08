@@ -9,7 +9,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
 
 /// Maximum AST nodes to compare (NASA P10 bounded iteration).
 const MAX_AST_NODES: usize = 10000;
@@ -111,7 +111,7 @@ fn structural_diff(baseline: &str, candidate: &str, _ignore_names: bool) -> Vec<
             baseline: format!("{} lines", base_lines.len()),
             candidate: format!(
                 "{} AST diff overflow: {} lines > {} limit",
-                nasa_rust_project::error_codes::ec(908),
+                mirrc::error_codes::ec(908),
                 max_lines,
                 MAX_AST_NODES
             ),

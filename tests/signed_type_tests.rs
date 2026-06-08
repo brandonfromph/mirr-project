@@ -4,15 +4,15 @@
 //! Tests signed type parsing, type checking, assignment compatibility,
 //! arithmetic, comparisons, and emission.
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::{
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
+use mirrc::ast::types::{
     BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
 };
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::typeck::typecheck_module;
-use nasa_rust_project::validate_module;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::typeck::typecheck_module;
+use mirrc::validate_module;
 
 // ---------------------------------------------------------------------------
 // Helper: module with signed signals
@@ -633,7 +633,7 @@ module signed_test {
         ..PipelineConfig::default()
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
-    let sv = nasa_rust_project::emit::verilog::emit_sv(&result);
+    let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(
         sv.contains("signed"),
         "Verilog output should contain 'signed' for i16 signals: {}",
@@ -675,7 +675,7 @@ module signed_test {
         ..PipelineConfig::default()
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
-    let firrtl = nasa_rust_project::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
     assert!(
         firrtl.contains("SInt<16>"),
         "FIRRTL output should contain 'SInt<16>' for i16 signals: {}",

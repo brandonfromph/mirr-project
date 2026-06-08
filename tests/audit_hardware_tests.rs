@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::{BootstrapOpts, BootstrapRunner};
+use mirrc::{BootstrapOpts, BootstrapRunner};
 use std::path::Path;
 
 fn run_pipeline_on_file(path: &str) -> bool {

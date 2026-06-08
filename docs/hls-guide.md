@@ -20,7 +20,7 @@ The HLS pass operates on the guard/reflex DAG and provides:
 ## Usage
 
 ```rust
-use nasa_rust_project::hls::{OpDag, ResourceKind, HlsConfig};
+use mirrc::hls::{OpDag, ResourceKind, HlsConfig};
 
 let mut dag = OpDag::new();
 let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
@@ -28,7 +28,7 @@ let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
 dag.add_edge(a, b);
 
 let config = HlsConfig { latency: 3, sharing: true, binding: true, fifo: true };
-let result = nasa_rust_project::hls::run_hls_pass(&dag, &config).unwrap();
+let result = mirrc::hls::run_hls_pass(&dag, &config).unwrap();
 ```
 
 ## Scheduling

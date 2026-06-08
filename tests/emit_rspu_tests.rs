@@ -4,9 +4,9 @@
 //! Covers register allocation, instruction emission for each MIRR primitive,
 //! temporal guard lowering, property assertions, and full pipeline E2E.
 
-use nasa_rust_project::emit::rspu_isa::*;
-use nasa_rust_project::emit::rspu_regalloc::allocate_registers;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
+use mirrc::emit::rspu_isa::*;
+use mirrc::emit::rspu_regalloc::allocate_registers;
+use mirrc::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
 // ---------------------------------------------------------------------------
 // Helpers

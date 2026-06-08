@@ -1,5 +1,4 @@
-// ---------------------------------------------------------------------------
-//! MEGA-4: Totality Engine — Static totality analysis for MIRR modules.
+//! ARCHITECTURAL SUB-ENGINE: TOTALITY ENGINE
 //!
 //! Verifies that a MIRR module is a total function: bounded resource usage,
 //! every output driven, all guards coverable, bounded temporal latency, and

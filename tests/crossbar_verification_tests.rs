@@ -1,5 +1,5 @@
-use nasa_rust_project::pipeline::PipelineConfig;
-use nasa_rust_project::Workspace;
+use mirrc::pipeline::PipelineConfig;
+use mirrc::Workspace;
 use std::path::PathBuf;
 
 #[test]

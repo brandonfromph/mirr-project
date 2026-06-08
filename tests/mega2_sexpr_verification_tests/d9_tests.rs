@@ -242,9 +242,9 @@ fn test_d9_convert_literal_integer() {
 #[test]
 fn test_d9_convert_prev() {
     // Prev is an AST-level construct (no parser syntax); construct AST directly.
-    use nasa_rust_project::ast::expr::Expr;
-    use nasa_rust_project::ast::program::*;
-    use nasa_rust_project::ast::types::*;
+    use mirrc::ast::expr::Expr;
+    use mirrc::ast::program::*;
+    use mirrc::ast::types::*;
     let m = Module {
         name: "m".to_string(),
         signals: vec![
@@ -291,7 +291,7 @@ fn test_d9_convert_prev() {
         pattern_origins: vec![],
         span: None,
     };
-    let prog = nasa_rust_project::MirrProgram { module: m, imports: vec![], patterns: vec![] };
+    let prog = mirrc::MirrProgram { module: m, imports: vec![], patterns: vec![] };
     let sexpr = ast_to_sexpr(&prog);
     let s = print_sexpr(&sexpr);
     assert!(s.contains("prev"), "Should contain prev reference");

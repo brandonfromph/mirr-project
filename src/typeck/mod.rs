@@ -1,3 +1,5 @@
+//! ARCHITECTURAL SUB-ENGINE: SEMANTIC TYPE CHECKER
+//!
 //! TYPE-001/TYPE-002/TYPE-003: Semantic type checker for MIRR modules.
 //!
 //! Runs after semantic validation (name/reference checks) and before

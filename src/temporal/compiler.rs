@@ -1,7 +1,9 @@
-//! Temporal Guard Compiler
+//! ARCHITECTURAL SUB-ENGINE: TEMPORAL GUARD COMPILER
 //!
-//! Deterministic lowering of high-level temporal guards into
-//! a bounded, verifiable low-level IR (shift registers / counters).
+//! Responsible for the deterministic lowering of high-level temporal guards
+//! into synthesizable low-level IR (shift registers and counters). This engine
+//! ensures that 'Time' is treated as a first-class citizen, providing 
+//! cycle-accurate synthesis with mathematically proven latency for all reflexes.
 //!
 //! Phase 3 interface notes:
 //! - Public APIs validate inputs and return Result; callers must check returns.

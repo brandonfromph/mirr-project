@@ -12,11 +12,11 @@
 
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ecs::components::{EntityKind, KindComponent, NameComponent};
-use nasa_rust_project::ecs::systems::parallel_width_inference_system;
-use nasa_rust_project::ecs::Registry;
-use nasa_rust_project::parser::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::ecs::components::{EntityKind, KindComponent, NameComponent};
+use mirrc::ecs::systems::parallel_width_inference_system;
+use mirrc::ecs::Registry;
+use mirrc::parser::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 // ---------------------------------------------------------------------------
 // BUG-1: ECS semantic_validate() is never called by the production pipeline
@@ -112,8 +112,8 @@ fn bug2_pipeline_with_missing_import_must_error() {
 /// BUG-3-A: A u16 signal must have width 16 in ECS inference, not 8.
 #[test]
 fn bug3_ecs_width_inference_must_return_correct_width_for_u16() {
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-    use nasa_rust_project::ecs::components::TypeComponent;
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ecs::components::TypeComponent;
 
     let mut registry = Registry::new();
 
@@ -136,8 +136,8 @@ fn bug3_ecs_width_inference_must_return_correct_width_for_u16() {
 /// BUG-3-B: A u32 signal must have width 32 in ECS inference, not 8.
 #[test]
 fn bug3_ecs_width_inference_must_return_correct_width_for_u32() {
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-    use nasa_rust_project::ecs::components::TypeComponent;
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ecs::components::TypeComponent;
 
     let mut registry = Registry::new();
 
@@ -159,8 +159,8 @@ fn bug3_ecs_width_inference_must_return_correct_width_for_u32() {
 /// BUG-3-C: A bool signal must have width 1 in ECS inference.
 #[test]
 fn bug3_ecs_width_inference_must_return_width_1_for_bool() {
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-    use nasa_rust_project::ecs::components::TypeComponent;
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ecs::components::TypeComponent;
 
     let mut registry = Registry::new();
 
@@ -260,7 +260,7 @@ fn bug5_collect_reflect_body_handles_template_substitution_braces() {
         !statements.is_empty(),
         "BUG-5: Reflect body should not be empty — `${{n}}` braces were mistakenly counted"
     );
-    use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
+    use mirrc::ast::macro_nodes::ModuleMacroStmt;
     assert!(
         statements.iter().any(|s| matches!(s, ModuleMacroStmt::Guard(g) if g.name.contains("g_"))),
         "BUG-5: Reflect body should contain the guard line, but got: {:?}",

@@ -1,6 +1,11 @@
-//! R-SPU fixed-point simulator.
+//! ARCHITECTURAL SUB-ENGINE: R-SPU SILICON SIMULATOR
 //!
-//! Cycle-accurate executor for R-SPU programs, used for validation.
+//! Cycle-accurate architectural model of the R-SPU processor. This engine 
+//! simulates instruction fetch, decode, and execution (including tagged-word
+//! ALU operations and exception handling) to verify hardware correctness 
+//! before physical synthesis.
+//!
+//! All operations are bounded (NASA P10) to ensure deterministic validation.
 
 #![forbid(unsafe_code)]
 

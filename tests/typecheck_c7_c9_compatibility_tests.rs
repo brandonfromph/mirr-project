@@ -7,15 +7,15 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::ast::program::Module;
-use nasa_rust_project::ast::types::{SignalKind, SignalType};
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::typeck::extended::ExtendedType as CheckerExtType;
-use nasa_rust_project::typeck::extended::{typecheck_extended, ExtendedSignalDecl, PhantomTag};
+use mirrc::ast::program::Module;
+use mirrc::ast::types::{SignalKind, SignalType};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::typeck::extended::ExtendedType as CheckerExtType;
+use mirrc::typeck::extended::{typecheck_extended, ExtendedSignalDecl, PhantomTag};
 
 fn run_src(
     src: &str,
-) -> Result<nasa_rust_project::pipeline::PipelineResult, nasa_rust_project::error::PipelineErrors> {
+) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 
@@ -24,7 +24,7 @@ fn module_from_exts(exts: &[ExtendedSignalDecl]) -> Module {
         name: "typeck_test".to_string(),
         signals: exts
             .iter()
-            .map(|e| nasa_rust_project::ast::program::SignalDecl {
+            .map(|e| mirrc::ast::program::SignalDecl {
                 name: e.name.clone(),
                 kind: e.kind,
                 ty: e.ty.clone().into(),
@@ -226,7 +226,7 @@ fn c8_bool_width_pipeline() {
 
 #[test]
 fn c9_parse_errors_have_e1xx_prefix() {
-    use nasa_rust_project::parse_mirr;
+    use mirrc::parse_mirr;
     // Force a parse error and check it has E1xx code
     let result = parse_mirr("module @invalid {");
     assert!(result.is_err(), "invalid syntax must fail");
@@ -241,7 +241,7 @@ fn c9_parse_errors_have_e1xx_prefix() {
 
 #[test]
 fn c9_semantic_errors_have_e2xx_prefix() {
-    use nasa_rust_project::pipeline::run_pipeline;
+    use mirrc::pipeline::run_pipeline;
     // Undefined signal reference -> semantic error
     let result = run_pipeline(
         r#"module bad_ref {
@@ -264,7 +264,7 @@ fn c9_semantic_errors_have_e2xx_prefix() {
 
 #[test]
 fn c9_error_codes_are_numeric() {
-    use nasa_rust_project::error::MirrError;
+    use mirrc::error::MirrError;
     let parse_err = MirrError::ParseError { message: "[E101] test error".to_string(), span: None };
     let code = parse_err.error_code();
     assert!(code.is_some(), "error code must be present, got {:?}", code);

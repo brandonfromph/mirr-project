@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+    use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
     #[test]
     fn test_telemetry_node_density() {

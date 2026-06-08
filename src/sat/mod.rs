@@ -1,4 +1,4 @@
-//! SAT-based logic simplification for the MIRR compiler.
+//! ARCHITECTURAL SUB-ENGINE: SAT LOGIC SOLVER
 //!
 //! Provides a bounded iterative DPLL solver and Tseitin CNF conversion
 //! for proving expression equivalences during simplification. When the

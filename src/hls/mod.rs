@@ -1,4 +1,4 @@
-//! MEGA-12: BOUNDED-HLS — High-Level Synthesis optimizations.
+//! ARCHITECTURAL SUB-ENGINE: HIGH-LEVEL SYNTHESIS (HLS) OPTIMIZER
 //!
 //! Provides compile-time passes for: ASAP/ALAP scheduling, resource sharing
 //! (time-multiplex ALUs across cycles), operation binding, and bounded FIFO

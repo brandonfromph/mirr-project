@@ -1,7 +1,7 @@
 # Q7 Agent Report - MRT Arsenal CLI Polish Audit
 Date: 2026-04-05
 Agent: Q7-agent
-Workspace: C:\Users\elvie\nasa-rust-project
+Workspace: C:\Users\elvie\mirrc
 
 ## Scope
 - src/bin/mirr-audit.rs
@@ -99,7 +99,7 @@ flowchart TD
     A -->|optional stash_key| B
     W -->|stash logs and receipts| B
     G -->|cargo and CI orchestration| C[Toolchain and workspace tasks]
-    L -->|stdin stdout JSON RPC| S[nasa_rust_project::lsp::server::run]
+    L -->|stdin stdout JSON RPC| S[mirrc::lsp::server::run]
 
     A -. format json supported .- U
     B -. format json supported .- U

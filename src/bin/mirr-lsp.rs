@@ -28,7 +28,7 @@ fn main() {
     let mut input = stdin.lock();
     let mut output = stdout.lock();
 
-    if let Err(e) = nasa_rust_project::lsp::server::run(&mut input, &mut output) {
+    if let Err(e) = mirrc::lsp::server::run(&mut input, &mut output) {
         if args.format == "json" {
             println!(
                 "{{\"ok\":false,\"binary\":\"mirr-lsp\",\"error\":\"{}\"}}",

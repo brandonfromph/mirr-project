@@ -7,19 +7,19 @@
 //!
 //! Minimum 48 tests. All error messages pinned with exact strings from spec.
 
-use nasa_rust_project::ast::pattern::{PatternArg, PatternParamKind};
-use nasa_rust_project::ast::types::{SignalKind, SignalType};
-use nasa_rust_project::emit;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
-use nasa_rust_project::validate_module;
+use mirrc::ast::pattern::{PatternArg, PatternParamKind};
+use mirrc::ast::types::{SignalKind, SignalType};
+use mirrc::emit;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::validate_module;
 
 // =========================================================================
 // Helpers
 // =========================================================================
 
 /// Parse and return the program, or panic with the error.
-fn parse_ok(source: &str) -> nasa_rust_project::MirrProgram {
+fn parse_ok(source: &str) -> mirrc::MirrProgram {
     parse_mirr(source).unwrap_or_else(|e| panic!("Parse failed: {e}"))
 }
 
@@ -37,7 +37,7 @@ fn pipeline_err(source: &str) -> String {
 }
 
 /// Run full pipeline and return the PipelineResult.
-fn pipeline_ok(source: &str) -> nasa_rust_project::pipeline::PipelineResult {
+fn pipeline_ok(source: &str) -> mirrc::pipeline::PipelineResult {
     run_pipeline(source, &PipelineConfig::default())
         .unwrap_or_else(|e| panic!("Pipeline failed: {e}"))
 }

@@ -1,13 +1,13 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::symbolic::integration::{
+use mirrc::symbolic::integration::{
     rectangular_integration_left, rectangular_integration_right, trapezoidal_integration,
     MAX_INTEGRATION_WINDOW,
 };
-use nasa_rust_project::symbolic::statistics::{
+use mirrc::symbolic::statistics::{
     symbolic_mean, symbolic_trend, symbolic_variance, MAX_STATS_WINDOW,
 };
-use nasa_rust_project::symbolic::SymValue;
+use mirrc::symbolic::SymValue;
 
 #[test]
 fn test_integration_statistics_mean_and_variance() {

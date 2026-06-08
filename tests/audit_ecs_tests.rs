@@ -1,9 +1,9 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::types::{BinaryOp, LiteralValue};
-use nasa_rust_project::ecs::components::{BinaryComponent, EntityId, LiteralComponent};
-use nasa_rust_project::ecs::*;
-use nasa_rust_project::error::MirrError;
+use mirrc::ast::types::{BinaryOp, LiteralValue};
+use mirrc::ecs::components::{BinaryComponent, EntityId, LiteralComponent};
+use mirrc::ecs::*;
+use mirrc::error::MirrError;
 
 fn create_literal(registry: &mut Registry, lit: LiteralValue) -> EntityId {
     let id = registry.next_id();
@@ -109,10 +109,10 @@ fn test_7_ecs_garbage_collection_pipeline_cleanup() {
 
 #[test]
 fn test_8_9_typeck_domain_check_deferred_session_fail() {
-    use nasa_rust_project::ast::program::Module;
-    use nasa_rust_project::error::PipelineErrors;
-    use nasa_rust_project::typeck::extended::domain_checks::check_session_types;
-    use nasa_rust_project::typeck::extended::{
+    use mirrc::ast::program::Module;
+    use mirrc::error::PipelineErrors;
+    use mirrc::typeck::extended::domain_checks::check_session_types;
+    use mirrc::typeck::extended::{
         ExtendedSignalDecl, ExtendedType, SessionProtocol, SessionRole, SessionTransition,
         SessionTypeRef,
     };
@@ -130,11 +130,11 @@ fn test_8_9_typeck_domain_check_deferred_session_fail() {
 
     let mut sig1 = ExtendedSignalDecl {
         name: "valid_session_sig".to_string(),
-        kind: nasa_rust_project::ast::types::SignalKind::Input,
-        ty: nasa_rust_project::ast::types::SignalType::Bool,
+        kind: mirrc::ast::types::SignalKind::Input,
+        ty: mirrc::ast::types::SignalType::Bool,
         span: None,
         origin: None,
-        extended_ty: ExtendedType::from_base(nasa_rust_project::ast::types::SignalType::Bool),
+        extended_ty: ExtendedType::from_base(mirrc::ast::types::SignalType::Bool),
     };
     sig1.extended_ty.session = Some(SessionTypeRef {
         protocol: "ValidProto".to_string(),
@@ -144,11 +144,11 @@ fn test_8_9_typeck_domain_check_deferred_session_fail() {
 
     let mut sig2 = ExtendedSignalDecl {
         name: "invalid_proto_sig".to_string(),
-        kind: nasa_rust_project::ast::types::SignalKind::Input,
-        ty: nasa_rust_project::ast::types::SignalType::Bool,
+        kind: mirrc::ast::types::SignalKind::Input,
+        ty: mirrc::ast::types::SignalType::Bool,
         span: None,
         origin: None,
-        extended_ty: ExtendedType::from_base(nasa_rust_project::ast::types::SignalType::Bool),
+        extended_ty: ExtendedType::from_base(mirrc::ast::types::SignalType::Bool),
     };
     sig2.extended_ty.session = Some(SessionTypeRef {
         protocol: "MissingProto".to_string(),
@@ -175,7 +175,7 @@ fn test_8_9_typeck_domain_check_deferred_session_fail() {
 
     assert_eq!(errors.len(), 1);
     match &errors.errors[0] {
-        nasa_rust_project::error::MirrError::TypeError { message, .. } => {
+        mirrc::error::MirrError::TypeError { message, .. } => {
             assert!(
                 message.contains("undeclared session protocol 'MissingProto'"),
                 "Expected MissingProto error"
@@ -187,15 +187,15 @@ fn test_8_9_typeck_domain_check_deferred_session_fail() {
 
 #[test]
 fn test_10_typeck_mock_parallel_width_inference_bypass() {
-    use nasa_rust_project::ecs::registry::Registry;
-    use nasa_rust_project::ecs::systems::parallel_width_inference_system;
+    use mirrc::ecs::registry::Registry;
+    use mirrc::ecs::systems::parallel_width_inference_system;
 
     let mut registry = Registry::new();
 
     for i in 0..5 {
         let id = registry.next_id();
         registry.names[id.0 as usize] =
-            Some(nasa_rust_project::ecs::components::NameComponent(format!("sig{}", i)));
+            Some(mirrc::ecs::components::NameComponent(format!("sig{}", i)));
     }
 
     let (sccs, solves, verify, stats) = parallel_width_inference_system(&mut registry);

@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use nasa_rust_project::{
+use mirrc::{
     parse_mirr,
     sexpr::{ast_to_sexpr, parser::parse_sexpr, printer::print_sexpr, sexpr_to_ast},
 };

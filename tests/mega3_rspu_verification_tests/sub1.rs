@@ -364,43 +364,43 @@ fn e3_binary_roundtrip_all_zero_arg_instructions() {
 #[test]
 fn e4_exception_code_tag_violation_is_zero() {
     // ExceptionCode::TagViolation repr = 0
-    let code = nasa_rust_project::emit::rspu_exceptions::ExceptionCode::TagViolation;
+    let code = mirrc::emit::rspu_exceptions::ExceptionCode::TagViolation;
     assert_eq!(code as u8, 0);
 }
 
 #[test]
 fn e4_exception_code_deadline_miss_is_one() {
-    let code = nasa_rust_project::emit::rspu_exceptions::ExceptionCode::DeadlineMiss;
+    let code = mirrc::emit::rspu_exceptions::ExceptionCode::DeadlineMiss;
     assert_eq!(code as u8, 1);
 }
 
 #[test]
 fn e4_exception_code_property_fail_is_two() {
-    let code = nasa_rust_project::emit::rspu_exceptions::ExceptionCode::PropertyFail;
+    let code = mirrc::emit::rspu_exceptions::ExceptionCode::PropertyFail;
     assert_eq!(code as u8, 2);
 }
 
 #[test]
 fn e4_exception_code_software_trap_is_five() {
-    let code = nasa_rust_project::emit::rspu_exceptions::ExceptionCode::SoftwareTrap;
+    let code = mirrc::emit::rspu_exceptions::ExceptionCode::SoftwareTrap;
     assert_eq!(code as u8, 5);
 }
 
 #[test]
 fn e4_exception_code_interval_violation_is_seven() {
-    let code = nasa_rust_project::emit::rspu_exceptions::ExceptionCode::IntervalViolation;
+    let code = mirrc::emit::rspu_exceptions::ExceptionCode::IntervalViolation;
     assert_eq!(code as u8, 7);
 }
 
 #[test]
 fn e4_exec_mode_reflex_display() {
-    let mode = nasa_rust_project::emit::rspu_exceptions::ExecMode::Reflex;
+    let mode = mirrc::emit::rspu_exceptions::ExecMode::Reflex;
     assert_eq!(format!("{}", mode), "Reflex");
 }
 
 #[test]
 fn e4_exec_mode_host_display() {
-    let mode = nasa_rust_project::emit::rspu_exceptions::ExecMode::Host;
+    let mode = mirrc::emit::rspu_exceptions::ExecMode::Host;
     assert_eq!(format!("{}", mode), "Host");
 }
 

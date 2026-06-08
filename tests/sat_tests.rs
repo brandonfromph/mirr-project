@@ -6,7 +6,7 @@
 //! nested guards, complex expressions, multi-guard reflexes, double negation,
 //! OR/AND/XOR chains, prev references, internal signals, and pipeline stats.
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 // ---------------------------------------------------------------------------
 // Helper: pipeline config with SAT simplification enabled

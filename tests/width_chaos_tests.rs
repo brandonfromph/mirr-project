@@ -1,9 +1,9 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::program::{Guard, MirrProgram, Module, SignalDecl};
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::width::scc_solver::solve_nonexpansive;
-use nasa_rust_project::width::types::{SccInfo, SccKind};
+use mirrc::ast::program::{Guard, MirrProgram, Module, SignalDecl};
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::width::scc_solver::solve_nonexpansive;
+use mirrc::width::types::{SccInfo, SccKind};
 
 #[test]
 fn test_width_chaos_nonexpansive_chain_performance() {
@@ -65,7 +65,7 @@ fn test_width_chaos_unbounded_expansive_loop() {
     };
 
     let result =
-        nasa_rust_project::width::scc_solver::solve_expansive(&scc, &signals, &[], &program);
+        mirrc::width::scc_solver::solve_expansive(&scc, &signals, &[], &program);
     assert!(!result.diagnostics.is_empty());
     let err_str = format!("{:?}", result.diagnostics);
     assert!(err_str.contains("E510"), "Expected E510, got: {}", err_str);
@@ -90,17 +90,17 @@ fn test_width_chaos_overflowing_inference() {
     let guard = Guard {
         name: "g".to_string(),
         cycles: 1u64 << 60,
-        condition: nasa_rust_project::ast::Expr::Literal(
-            nasa_rust_project::ast::types::LiteralValue::Bool(true),
+        condition: mirrc::ast::Expr::Literal(
+            mirrc::ast::types::LiteralValue::Bool(true),
         ),
         span: None,
         template_cycles: None,
         origin: None,
     };
 
-    use nasa_rust_project::ast::program::Assignment;
-    use nasa_rust_project::ast::program::Reflex;
-    use nasa_rust_project::ast::Expr;
+    use mirrc::ast::program::Assignment;
+    use mirrc::ast::program::Reflex;
+    use mirrc::ast::Expr;
 
     let reflex = Reflex {
         name: "r".to_string(),
@@ -108,10 +108,10 @@ fn test_width_chaos_overflowing_inference() {
         assignments: vec![Assignment {
             target: "a".to_string(),
             value: Expr::Binary {
-                op: nasa_rust_project::ast::types::BinaryOp::Add,
+                op: mirrc::ast::types::BinaryOp::Add,
                 left: Box::new(Expr::Prev { signal: "a".to_string(), delay: 1 }),
                 right: Box::new(Expr::Literal(
-                    nasa_rust_project::ast::types::LiteralValue::Integer(1024),
+                    mirrc::ast::types::LiteralValue::Integer(1024),
                 )),
             },
             span: None,
@@ -138,7 +138,7 @@ fn test_width_chaos_overflowing_inference() {
     let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Expansive };
 
     let result =
-        nasa_rust_project::width::scc_solver::solve_expansive(&scc, &signals, &[guard], &program);
+        mirrc::width::scc_solver::solve_expansive(&scc, &signals, &[guard], &program);
     assert!(!result.diagnostics.is_empty());
     let err_str = format!("{:?}", result.diagnostics);
     // Should fail Strategy 2 because bits > 64

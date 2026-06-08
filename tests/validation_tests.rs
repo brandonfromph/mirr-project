@@ -3,9 +3,9 @@
 // Semantic validation tests
 // ---------------------------------------------------------------------------
 
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::validate_module;
-use nasa_rust_project::MirrProgram;
+use mirrc::parse_mirr;
+use mirrc::validate_module;
+use mirrc::MirrProgram;
 
 // -- Helpers --
 

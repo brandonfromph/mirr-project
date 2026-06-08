@@ -17,10 +17,10 @@ use clap::Parser;
 use std::path::Path;
 use std::process;
 
-use nasa_rust_project::emit;
-use nasa_rust_project::emit::fpga_target::FpgaTarget;
-use nasa_rust_project::pipeline::PipelineConfig;
-use nasa_rust_project::Workspace;
+use mirrc::emit;
+use mirrc::emit::fpga_target::FpgaTarget;
+use mirrc::pipeline::PipelineConfig;
+use mirrc::Workspace;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -224,7 +224,7 @@ pub fn main() {
         });
 
         let cert =
-            nasa_rust_project::cert::deserialize_certificate(&cert_bytes).unwrap_or_else(|e| {
+            mirrc::cert::deserialize_certificate(&cert_bytes).unwrap_or_else(|e| {
                 eprintln!("Error: failed to deserialize certificate: {}", e);
                 process::exit(1);
             });
@@ -234,13 +234,13 @@ pub fn main() {
             process::exit(1);
         });
 
-        let binary_words = nasa_rust_project::emit::rspu_encoding::emit_binary(rspu_program)
+        let binary_words = mirrc::emit::rspu_encoding::emit_binary(rspu_program)
             .unwrap_or_else(|e| {
                 eprintln!("Error: failed to encode R-SPU binary: {}", e);
                 process::exit(1);
             });
 
-        match nasa_rust_project::cert::verify_certificate(&cert, rspu_program, &binary_words) {
+        match mirrc::cert::verify_certificate(&cert, rspu_program, &binary_words) {
             Ok(()) => {
                 println!("Proof certificate verification PASSED.");
                 process::exit(0);
@@ -269,7 +269,7 @@ pub fn main() {
             for wd in &width_diags {
                 let d = wd.to_diagnostic();
                 let rendered =
-                    nasa_rust_project::diagnostic::render_diagnostic(&d, &source, &root_file);
+                    mirrc::diagnostic::render_diagnostic(&d, &source, &root_file);
                 eprint!("{}", rendered);
             }
         }

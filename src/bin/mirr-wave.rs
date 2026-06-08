@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
 
 #[derive(Parser, Debug)]
 #[command(name = "mirr-wave", version, about = "MIRR Wave Executor")]

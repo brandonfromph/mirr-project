@@ -21,7 +21,7 @@ fn pattern_origin_comment_in_output() {
         }],
         properties: vec![],
         pattern_calls: vec![],
-        pattern_origins: vec![nasa_rust_project::ast::pattern::PatternOrigin {
+        pattern_origins: vec![mirrc::ast::pattern::PatternOrigin {
             pattern_name: "watchdog".to_string(),
             call_args_summary: "10, threshold".to_string(),
         }],

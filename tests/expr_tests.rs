@@ -3,8 +3,8 @@
 // Expression parser unit tests
 // ---------------------------------------------------------------------------
 
-use nasa_rust_project::ast::{BinaryOp, Expr, LiteralValue, UnaryOp};
-use nasa_rust_project::parser::parse_expression;
+use mirrc::ast::{BinaryOp, Expr, LiteralValue, UnaryOp};
+use mirrc::parser::parse_expression;
 
 // -- Helpers --
 

@@ -9,12 +9,12 @@
 //!
 //! NASA naming convention: test_d{section}_{description}
 
-use nasa_rust_project::sexpr::types::SExpr;
-use nasa_rust_project::sexpr::{
+use mirrc::sexpr::types::SExpr;
+use mirrc::sexpr::{
     ast_to_sexpr, eval, parse_sexpr, print_sexpr, sexpr_to_ast, EvalState, MacroExpander,
     ReaderMacroRegistry, MAX_EVAL_DEPTH, MAX_SEXPR_DEPTH,
 };
-use nasa_rust_project::{parse_mirr, validate_module};
+use mirrc::{parse_mirr, validate_module};
 
 /// NASA P10: maximum test iterations.
 const _MAX_TEST_EXAMPLES: usize = 20;

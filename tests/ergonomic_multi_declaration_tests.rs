@@ -2,7 +2,7 @@
 //! This test enforces that the compiler correctly handles mixed signal syntax:
 //! individual signal declarations existing alongside new 'signals { ... }' blocks.
 
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 
 #[test]
 fn test_mixed_signal_syntax_interop() {

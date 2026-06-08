@@ -186,7 +186,7 @@
     "scopedKnowledge": true
   },
   "chat.mcp.serverSampling": {
-    "nasa-rust-project/.vscode/mcp.json: mirr-local": {
+    "mirrc/.vscode/mcp.json: mirr-local": {
       "allowedModels": [
         "copilot/auto",
         "copilotcli/claude-sonnet-4.5",

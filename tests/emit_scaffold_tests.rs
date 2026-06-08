@@ -4,9 +4,9 @@
 //! Verifies constraint file and build script generation for all supported
 //! FPGA targets: Xilinx, Intel, Lattice, and Generic.
 
-use nasa_rust_project::emit::fpga_scaffold;
-use nasa_rust_project::emit::fpga_target::FpgaTarget;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::fpga_scaffold;
+use mirrc::emit::fpga_target::FpgaTarget;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 const SIMPLE_MODULE: &str = r#"
 module scaffold_test {
@@ -27,7 +27,7 @@ module scaffold_test {
 }
 "#;
 
-fn pipeline_result() -> nasa_rust_project::pipeline::PipelineResult {
+fn pipeline_result() -> mirrc::pipeline::PipelineResult {
     let config = PipelineConfig::default();
     run_pipeline(SIMPLE_MODULE, &config).expect("pipeline should succeed")
 }

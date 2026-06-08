@@ -9,10 +9,10 @@
 //! 2. Correct bit-width propagation bounds for arithmetic, logical, and SCC operations.
 //! 3. Deterministic convergence under pathologically ordered constraints.
 
-use nasa_rust_project::ast::types::BinaryOp;
-use nasa_rust_project::width::constraint::WidthConstraint;
-use nasa_rust_project::width::solver::solve;
-use nasa_rust_project::width::types::{FlatNode, Width};
+use mirrc::ast::types::BinaryOp;
+use mirrc::width::constraint::WidthConstraint;
+use mirrc::width::solver::solve;
+use mirrc::width::types::{FlatNode, Width};
 
 /// Verify arithmetic addition maximum plus one constraint propagation.
 #[test]

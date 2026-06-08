@@ -3,8 +3,8 @@
 //!
 //! NASA P10: bounded loops, no recursion.
 
-use nasa_rust_project::emit::verilog;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::emit::verilog;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 const MAX_LINE_SCAN: usize = 64;
 

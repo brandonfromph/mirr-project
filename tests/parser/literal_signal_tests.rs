@@ -1,9 +1,9 @@
 #![feature(box_patterns)]
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ast::types::LiteralValue;
-use nasa_rust_project::parser::parse_expression;
+use mirrc::ast::Expr;
+use mirrc::ast::types::LiteralValue;
+use mirrc::parser::parse_expression;
 
 fn ok_expr(s: &str) -> Expr {
     parse_expression(s).unwrap_or_else(|e| panic!("Failed to parse '{}': {:?}", s, e))

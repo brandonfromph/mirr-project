@@ -15,7 +15,7 @@
 //      symbol tables.
 // ---------------------------------------------------------------------------
 
-use nasa_rust_project::{parse_mirr, validate_module, MirrError};
+use mirrc::{parse_mirr, validate_module, MirrError};
 
 // ---------------------------------------------------------------------------
 // DiagCode numeric values matching stdlib/mirr_core/diagnostics.mirr

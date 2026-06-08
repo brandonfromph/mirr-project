@@ -1,16 +1,16 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::types::BinaryOp;
-use nasa_rust_project::ecs::components::*;
-use nasa_rust_project::ecs::registry::Registry;
-use nasa_rust_project::temporal::compiler::TemporalCompiler;
+use mirrc::ast::types::BinaryOp;
+use mirrc::ecs::components::*;
+use mirrc::ecs::registry::Registry;
+use mirrc::temporal::compiler::TemporalCompiler;
 
 #[test]
 fn test_diagnostic_e301_nesting_depth() {
     let mut registry = Registry::new();
     registry.create_entity("sig_a", KindComponent::SIGNAL);
     let expr_a =
-        registry.ingest_expr(&nasa_rust_project::ast::Expr::Signal("sig_a".to_string())).unwrap();
+        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut current = expr_a;
     for _ in 0..70 {
@@ -69,7 +69,7 @@ fn test_diagnostic_prev_on_literal_rejection() {
     let mut registry = Registry::new();
     let lit_ent = registry.next_id();
     registry.literals[lit_ent.0 as usize] =
-        Some(LiteralComponent(nasa_rust_project::ast::types::LiteralValue::Bool(true)));
+        Some(LiteralComponent(mirrc::ast::types::LiteralValue::Bool(true)));
 
     let prev_ent = registry.next_id();
     registry.prev_ops[prev_ent.0 as usize] = Some(PrevComponent { signal: lit_ent, delay: 5 });

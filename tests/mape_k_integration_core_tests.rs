@@ -13,18 +13,18 @@
 //! 7. Emergency-stop action table generation (priority 255, OnViolation)
 //! 8. Cover and Assume properties are filtered out
 
-use nasa_rust_project::ast::program::{MirrProgram, Module, SignalDecl};
-use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::mape_k::bridge::{
+use mirrc::ast::program::{MirrProgram, Module, SignalDecl};
+use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::ast::Expr;
+use mirrc::mape_k::bridge::{
     bridge_from_pipeline, MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS,
 };
-use nasa_rust_project::mape_k::error::MapeKError;
-use nasa_rust_project::mape_k::{
+use mirrc::mape_k::error::MapeKError;
+use mirrc::mape_k::{
     AdaptationAction, SignalPredicate, TemporalProperty, TriggerCondition,
 };
-use nasa_rust_project::pipeline::PipelineResult;
+use mirrc::pipeline::PipelineResult;
 
 // =========================================================================
 // Constants — bounded iteration limits (NASA P10)

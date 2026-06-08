@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::emit::rspu_tagged::{Provenance, TaggedWord, TypeTag};
-use nasa_rust_project::symbolic::fingerprint::{
+use mirrc::emit::rspu_tagged::{Provenance, TaggedWord, TypeTag};
+use mirrc::symbolic::fingerprint::{
     fingerprint_tagged, fingerprint_u64, RollingFingerprint, MAX_FINGERPRINT_WINDOW,
 };
 

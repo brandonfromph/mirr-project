@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-use nasa_rust_project::pipeline::PipelineConfig;
+use mirrc::pipeline::PipelineConfig;
 use std::path::PathBuf;
 
 #[test]
@@ -31,7 +31,7 @@ module industrial_integrator {
 "#;
 
     let program =
-        nasa_rust_project::parse_mirr(source).expect("E2E: Failed to parse industrial_integrator");
+        mirrc::parse_mirr(source).expect("E2E: Failed to parse industrial_integrator");
 
     // 2. Configure the pipeline with all standard checks enabled (including typecheck and width inference)
     let config = PipelineConfig {
@@ -47,7 +47,7 @@ module industrial_integrator {
     println!("Running full compiler pipeline on standard MIRR program...");
 
     // Convert program back to in-memory module validation
-    let res = nasa_rust_project::pipeline::run_pipeline_on_program(program, &config);
+    let res = mirrc::pipeline::run_pipeline_on_program(program, &config);
     if let Err(ref e) = res {
         panic!("E2E pipeline execution failed: {:?}", e);
     }
@@ -57,7 +57,7 @@ module industrial_integrator {
     // 3. Assertions on E2E compilation results:
     // Verify that the width solver successfully ran, suppressed the truncation error,
     // and correctly produced a successful compiled output.
-    let emitted_verilog = nasa_rust_project::emit::verilog::emit_sv(&pipeline_res);
+    let emitted_verilog = mirrc::emit::verilog::emit_sv(&pipeline_res);
 
     println!("Emitted E2E Verilog:\n{}", emitted_verilog);
 

@@ -1,10 +1,9 @@
-//! Analyzer: evaluates bounded LTL temporal properties over the monitor's
-//! rolling signal windows.
+//! ARCHITECTURAL SUB-ENGINE: MAPE-K ANALYZER
 //!
-//! The analyzer is the "A" in MAPE-K. Each tick it:
-//! 1. Receives the current monitor state (rolling windows).
-//! 2. Evaluates each registered temporal property.
-//! 3. Reports which properties are satisfied and which are violated.
+//! Evaluates bounded LTL (Linear Temporal Logic) properties over rolling 
+//! signal windows. This engine is the 'A' (Analysis) in the MAPE-K autonomic
+//! loop, responsible for detecting property violations and triggering 
+//! mitigation actions across the hardware fabric.
 //!
 //! All evaluation is O(window_size) per property per tick.
 //! All loops bounded. No recursion (NASA P10 rule #1).

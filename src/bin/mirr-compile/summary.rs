@@ -3,7 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub(super) fn print_summary(
-    result: &nasa_rust_project::pipeline::PipelineResult,
+    result: &mirrc::pipeline::PipelineResult,
     show_stats: bool,
 ) {
     let module = &result.program.module;

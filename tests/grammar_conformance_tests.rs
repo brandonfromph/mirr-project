@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 //! Grammar conformance tests covering 50 unique syntactic scenarios.
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 macro_rules! test_grammar {
     ($($name:ident, $src:expr, $expected_ok:expr);* $(;)?) => {

@@ -117,16 +117,16 @@ impl CiProfile {
 }
 
 const WORKSPACE_FULL_NEXTEST_ARGS: &[&str] =
-    &["nextest", "run", "-p", "nasa-rust-project", "--no-fail-fast"];
+    &["nextest", "run", "-p", "mirrc", "--no-fail-fast"];
 
 const WORKSPACE_FULL_CARGO_TEST_ARGS: &[&str] =
-    &["test", "-p", "nasa-rust-project", "--all-targets", "--no-fail-fast"];
+    &["test", "-p", "mirrc", "--all-targets", "--no-fail-fast"];
 
 const WORKSPACE_SELECTIVE_NEXTEST_ARGS: &[&str] = &[
     "nextest",
     "run",
     "-p",
-    "nasa-rust-project",
+    "mirrc",
     "--no-fail-fast",
     "--test",
     "parser_edge_cases_tests",
@@ -153,7 +153,7 @@ const WORKSPACE_SELECTIVE_NEXTEST_ARGS: &[&str] = &[
 const WORKSPACE_SELECTIVE_CARGO_TEST_ARGS: &[&str] = &[
     "test",
     "-p",
-    "nasa-rust-project",
+    "mirrc",
     "--no-fail-fast",
     "--test",
     "parser_edge_cases_tests",
@@ -233,7 +233,7 @@ fn build_ci_full_plan(use_nextest: bool) -> ExecutionPlan {
                         &[
                             "clippy",
                             "-p",
-                            "nasa-rust-project",
+                            "mirrc",
                             "--all-targets",
                             "--",
                             "-D",
@@ -386,7 +386,7 @@ fn build_ci_fast_plan() -> ExecutionPlan {
                     1,
                     "workspace-core-clippy",
                     "cargo",
-                    &["clippy", "-p", "nasa-rust-project", "--all-targets", "--", "-D", "warnings"],
+                    &["clippy", "-p", "mirrc", "--all-targets", "--", "-D", "warnings"],
                     true,
                 )],
             },
@@ -518,7 +518,7 @@ fn parse_profile_alias(command: &str) -> Option<CiProfile> {
 
 fn print_usage() {
     eprintln!(
-        "mirr-general quick usage:\n  cargo run --bin mirr-general -- check\n  cargo run --bin mirr-general -- fast\n  cargo run --bin mirr-general -- full\n  cargo run --bin mirr-general -- ci -p fast -j\n  cargo run --bin mirr-general -- inspect -j\n\nflags:\n  -p, --profile <full|compile|fast>\n  -j, --json, --format json\n\nnaming policy:\n  package identity remains nasa-rust-project for compatibility\n  compiler binary alias is mirrc (plus existing mirr-compile)"
+        "mirr-general quick usage:\n  cargo run --bin mirr-general -- check\n  cargo run --bin mirr-general -- fast\n  cargo run --bin mirr-general -- full\n  cargo run --bin mirr-general -- ci -p fast -j\n  cargo run --bin mirr-general -- inspect -j\n\nflags:\n  -p, --profile <full|compile|fast>\n  -j, --json, --format json\n\nnaming policy:\n  package identity remains mirrc for compatibility\n  compiler binary alias is mirrc (plus existing mirr-compile)"
     );
 }
 
@@ -697,7 +697,7 @@ fn gather_binary_inventory() -> io::Result<BinaryInventory> {
     let deps_hashed_bin_count =
         deps_bins.iter().filter(|name| has_hashed_suffix(name.as_str())).count();
     let deps_nasa_bin_count =
-        deps_bins.iter().filter(|name| name.starts_with("nasa_rust_project")).count();
+        deps_bins.iter().filter(|name| name.starts_with("mirrc")).count();
 
     let top_level_sample: Vec<String> =
         top_level_bins.iter().take(MAX_INSPECT_SAMPLE).cloned().collect();
@@ -716,7 +716,7 @@ fn gather_binary_inventory() -> io::Result<BinaryInventory> {
 fn run_inspect(as_json: bool) -> io::Result<i32> {
     let inventory = gather_binary_inventory()?;
     let payload = serde_json::json!({
-        "package_name": "nasa-rust-project",
+        "package_name": "mirrc",
         "compiler_binaries": {
             "primary": "mirr-compile",
             "alias": "mirrc",
@@ -735,7 +735,7 @@ fn run_inspect(as_json: bool) -> io::Result<i32> {
             "notes": [
                 "Many target/debug/deps binaries are build artifacts, not active processes.",
                 "Hashed suffixes identify distinct crate/test harness artifacts.",
-                "The package name remains nasa-rust-project for compatibility; only compiler binary alias is mirrc."
+                "The package name remains mirrc for compatibility; only compiler binary alias is mirrc."
             ]
         }
     });
@@ -743,7 +743,7 @@ fn run_inspect(as_json: bool) -> io::Result<i32> {
     if as_json {
         println!("{}", payload);
     } else {
-        println!("package_name: nasa-rust-project");
+        println!("package_name: mirrc");
         println!("compiler binaries: primary=mirr-compile alias=mirrc");
         println!(
             "runtime: sccache_enabled={} nextest_enabled={}",

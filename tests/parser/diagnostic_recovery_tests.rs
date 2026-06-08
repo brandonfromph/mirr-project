@@ -1,8 +1,8 @@
 #![feature(box_patterns)]
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::parser::parse_expression;
-use nasa_rust_project::parse_mirr;
+use mirrc::parser::parse_expression;
+use mirrc::parse_mirr;
 
 fn err_expr(s: &str) -> String {
     let res = parse_expression(s);

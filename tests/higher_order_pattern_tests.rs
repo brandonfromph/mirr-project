@@ -13,19 +13,19 @@
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
-extern crate nasa_rust_project;
+extern crate mirrc;
 
-use nasa_rust_project::ast::pattern::PatternParamKind;
-use nasa_rust_project::parse_mirr;
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::ast::pattern::PatternParamKind;
+use mirrc::parse_mirr;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 // ───────────────── helpers ─────────────────
 
-fn parse_ok(source: &str) -> nasa_rust_project::MirrProgram {
+fn parse_ok(source: &str) -> mirrc::MirrProgram {
     parse_mirr(source).unwrap_or_else(|e| panic!("Parse failed: {e}"))
 }
 
-fn pipeline_ok(source: &str) -> nasa_rust_project::pipeline::PipelineResult {
+fn pipeline_ok(source: &str) -> mirrc::pipeline::PipelineResult {
     run_pipeline(source, &PipelineConfig::default())
         .unwrap_or_else(|e| panic!("Pipeline failed: {e}"))
 }

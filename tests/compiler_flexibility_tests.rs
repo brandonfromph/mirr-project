@@ -6,7 +6,7 @@
 //! temporally-lower, and compile complex nested logical/arithmetic expressions,
 //! temporal `prev` operations, and advanced composite types.
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
 fn test_compiler_pipeline_flexibility_temporal_arithmetic() {

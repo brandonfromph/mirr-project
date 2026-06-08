@@ -225,7 +225,7 @@ As demonstrated by [@ref2026], the approach works.
     fs::write(dir.join("LICENSE"), "GNU GENERAL PUBLIC LICENSE\nVersion 3\n").unwrap();
     fs::write(
         dir.join("CITATION.cff"),
-        "cff-version: 1.2.0\ntitle: Bronze Test\nlicense: GPL-3.0\n",
+        "cff-version: 1.2.0\ntitle: Bronze Test\nlicense: Apache-2.0\n",
     )
     .unwrap();
     fs::write(dir.join("paper.css"), "/* placeholder */\n").unwrap();

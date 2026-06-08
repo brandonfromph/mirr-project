@@ -6,7 +6,7 @@
 #![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::pipeline::{run_pipeline, PipelineConfig};
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 /// Helper: compile a .mirr source file through the full pipeline.
 fn compile_file(path: &str) -> String {
@@ -18,7 +18,7 @@ fn compile_file(path: &str) -> String {
     let result = run_pipeline(&source, &config).expect("pipeline should succeed");
 
     // We want the raw SystemVerilog synthesis output
-    nasa_rust_project::emit::verilog::emit_sv_synthesis(&result, None, 0)
+    mirrc::emit::verilog::emit_sv_synthesis(&result, None, 0)
 }
 
 /// Helper: check if Yosys is available.

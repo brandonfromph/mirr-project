@@ -3,7 +3,7 @@ name = "mirr-kb-native"
 version = "0.1.0"
 edition = "2021"
 description = "MIRR native Rust RAG core with semantic and lexical retrieval"
-license = "GPL-3.0"
+license = "Apache-2.0"
 publish = false
 
 [dependencies]

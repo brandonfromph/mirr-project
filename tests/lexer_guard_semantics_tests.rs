@@ -1,9 +1,9 @@
 #![forbid(unsafe_code)]
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use nasa_rust_project::ast::types::LiteralValue;
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::mirr_executor::drive_parsed_module_with_interpreter;
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
+use mirrc::ast::types::LiteralValue;
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::mirr_executor::drive_parsed_module_with_interpreter;
 
 #[test]
 fn test_guard_counter_lifetime() {

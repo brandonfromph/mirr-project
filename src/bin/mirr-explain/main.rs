@@ -12,7 +12,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
 
 #[derive(Parser)]
 #[command(name = "mirr-explain", about = "Compilation trace tool for MIRR")]
@@ -45,7 +45,7 @@ fn main() {
         );
     });
 
-    let program = nasa_rust_project::parse_mirr(&source).unwrap_or_else(|e| {
+    let program = mirrc::parse_mirr(&source).unwrap_or_else(|e| {
         fatal_diagnostic(
             Diagnostic::error("failed to parse MIRR source")
                 .with_note(e.to_string())
@@ -81,7 +81,7 @@ fn main() {
         output.push_str(&format!("=== guard `{}` ===\n\n", guard.name));
         output.push_str(&format!(
             "Condition: {}\n",
-            nasa_rust_project::emit::expr_text(&guard.condition)
+            mirrc::emit::expr_text(&guard.condition)
         ));
         output.push_str(&format!("Cycles: {}\n", guard.cycles));
         if args.verbosity >= 2 {
@@ -97,7 +97,7 @@ fn main() {
             output.push_str(&format!(
                 "  {} = {}\n",
                 assign.target,
-                nasa_rust_project::emit::expr_text(&assign.value)
+                mirrc::emit::expr_text(&assign.value)
             ));
         }
         if args.verbosity >= 2 {
@@ -115,7 +115,7 @@ fn main() {
                 .iter()
                 .filter(|g| {
                     // Simple check: does the condition text contain the signal name.
-                    let text = nasa_rust_project::emit::expr_text(&g.condition);
+                    let text = mirrc::emit::expr_text(&g.condition);
                     text.contains(&args.name)
                 })
                 .map(|g| g.name.as_str())

@@ -2,10 +2,10 @@
 //! This test suite enforces that the R-SPU Resource Allocator correctly maps
 //! logical ECS-native signals to physical SPU registers within R-SPU architectural bounds.
 
-use nasa_rust_project::ast::program::SignalDecl;
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ecs::{adapter::register_signal_to_ecs, components::*, Registry};
-use nasa_rust_project::temporal::allocator::RspuAllocator;
+use mirrc::ast::program::SignalDecl;
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::ecs::{adapter::register_signal_to_ecs, components::*, Registry};
+use mirrc::temporal::allocator::RspuAllocator;
 
 #[test]
 fn test_allocator_maps_signals_to_unique_registers() {

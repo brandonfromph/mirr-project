@@ -1,4 +1,4 @@
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 #[test]
 fn test_signals_block_syntax_error() {
     let input = "module test_mod { signals { invalid_syntax } }";

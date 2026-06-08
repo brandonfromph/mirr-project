@@ -33,7 +33,7 @@ module multi_guard_mod {
 }
 "#;
 
-    let program = nasa_rust_project::parser::parse_mirr(src).expect("parse failed");
+    let program = mirrc::parser::parse_mirr(src).expect("parse failed");
 
     // Assert structural element counts.
     assert_eq!(program.module.signals.len(), 4, "Expected exactly 4 signals");

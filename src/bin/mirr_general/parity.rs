@@ -4,7 +4,7 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
-use nasa_rust_project::diagnostic::{render_diagnostic, Diagnostic};
+use mirrc::diagnostic::{render_diagnostic, Diagnostic};
 use serde::Serialize;
 use serde_json::Value;
 

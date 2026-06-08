@@ -1,5 +1,5 @@
 use super::*;
-use nasa_rust_project::emit::rspu_tagged::{TaggedWord, TypeTag};
+use mirrc::emit::rspu_tagged::{TaggedWord, TypeTag};
 
 #[test]
 fn test_pc_advances_on_continue() {

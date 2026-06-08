@@ -1,0 +1,17 @@
+CAPI=2:
+name: brandonfromph:mirr:mirrc:0.3.0
+description: MIRR compiler — hardware rule logic generator
+
+generators:
+  mirr_gen:
+    interpreter: python3
+    command: fusesoc/generators/mirr_generator.py
+
+targets:
+  default:
+    filesets: [src]
+
+filesets:
+  src:
+    files:
+      - fusesoc/generators/mirr_generator.py: {file_type: user}

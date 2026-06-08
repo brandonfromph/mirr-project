@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::macro_nodes::ModuleMacroStmt;
-use nasa_rust_project::ast::pattern::{PatternDef, ReflectBlock};
-use nasa_rust_project::ast::program::{MirrProgram, Module};
-use nasa_rust_project::ecs::Registry;
-use nasa_rust_project::expand::expand_patterns;
+use mirrc::ast::macro_nodes::ModuleMacroStmt;
+use mirrc::ast::pattern::{PatternDef, ReflectBlock};
+use mirrc::ast::program::{MirrProgram, Module};
+use mirrc::ecs::Registry;
+use mirrc::expand::expand_patterns;
 
 #[test]
 fn test_pattern_chaos_recursion_depth_limit() {
@@ -14,7 +14,7 @@ fn test_pattern_chaos_recursion_depth_limit() {
         params: vec![],
         body: ReflectBlock {
             statements: vec![ModuleMacroStmt::PatternCall(
-                nasa_rust_project::ast::pattern::PatternCall {
+                mirrc::ast::pattern::PatternCall {
                     pattern_name: "A".to_string(),
                     arguments: vec![],
                     span: None,
@@ -33,7 +33,7 @@ fn test_pattern_chaos_recursion_depth_limit() {
             guards: vec![],
             reflexes: vec![],
             properties: vec![],
-            pattern_calls: vec![nasa_rust_project::ast::pattern::PatternCall {
+            pattern_calls: vec![mirrc::ast::pattern::PatternCall {
                 pattern_name: "A".to_string(),
                 arguments: vec![],
                 span: None,
@@ -46,9 +46,9 @@ fn test_pattern_chaos_recursion_depth_limit() {
     let mut registry = Registry::new();
     for pat in &patterns {
         let ent = registry
-            .create_entity(&pat.name, nasa_rust_project::ecs::components::KindComponent::PATTERN);
+            .create_entity(&pat.name, mirrc::ecs::components::KindComponent::PATTERN);
         registry.pattern_defs[ent.0 as usize] =
-            Some(nasa_rust_project::ecs::components::PatternDefComponent(pat.clone()));
+            Some(mirrc::ecs::components::PatternDefComponent(pat.clone()));
     }
 
     // This should fail with a PatternError (Circular reference detected)
@@ -77,12 +77,12 @@ fn test_pattern_chaos_exponential_expansion_stress() {
             params: vec![],
             body: ReflectBlock {
                 statements: vec![
-                    ModuleMacroStmt::PatternCall(nasa_rust_project::ast::pattern::PatternCall {
+                    ModuleMacroStmt::PatternCall(mirrc::ast::pattern::PatternCall {
                         pattern_name: pat_names[i + 1].to_string(),
                         arguments: vec![],
                         span: None,
                     }),
-                    ModuleMacroStmt::PatternCall(nasa_rust_project::ast::pattern::PatternCall {
+                    ModuleMacroStmt::PatternCall(mirrc::ast::pattern::PatternCall {
                         pattern_name: pat_names[i + 1].to_string(),
                         arguments: vec![],
                         span: None,
@@ -97,11 +97,11 @@ fn test_pattern_chaos_exponential_expansion_stress() {
         params: vec![],
         body: ReflectBlock {
             statements: vec![ModuleMacroStmt::Signal(
-                nasa_rust_project::ast::program::SignalDecl {
+                mirrc::ast::program::SignalDecl {
                     name: "s".to_string(),
-                    kind: nasa_rust_project::ast::types::SignalKind::Internal,
-                    ty: nasa_rust_project::ast::types::ExtendedType::from_core(
-                        nasa_rust_project::ast::types::SignalType::Bool,
+                    kind: mirrc::ast::types::SignalKind::Internal,
+                    ty: mirrc::ast::types::ExtendedType::from_core(
+                        mirrc::ast::types::SignalType::Bool,
                     ),
                     origin: None,
                     span: None,
@@ -120,7 +120,7 @@ fn test_pattern_chaos_exponential_expansion_stress() {
             guards: vec![],
             reflexes: vec![],
             properties: vec![],
-            pattern_calls: vec![nasa_rust_project::ast::pattern::PatternCall {
+            pattern_calls: vec![mirrc::ast::pattern::PatternCall {
                 pattern_name: "A".to_string(),
                 arguments: vec![],
                 span: None,
@@ -133,9 +133,9 @@ fn test_pattern_chaos_exponential_expansion_stress() {
     let mut registry = Registry::new();
     for pat in &patterns {
         let ent = registry
-            .create_entity(&pat.name, nasa_rust_project::ecs::components::KindComponent::PATTERN);
+            .create_entity(&pat.name, mirrc::ecs::components::KindComponent::PATTERN);
         registry.pattern_defs[ent.0 as usize] =
-            Some(nasa_rust_project::ecs::components::PatternDefComponent(pat.clone()));
+            Some(mirrc::ecs::components::PatternDefComponent(pat.clone()));
     }
 
     // Run the expansion.

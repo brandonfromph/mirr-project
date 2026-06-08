@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::zero_debt_closeout::{
+use mirrc::zero_debt_closeout::{
     CompatibilityRouteDisablementContract, CutoverDecision, DeferredScope,
     DeferredScopeRollbackMetadata, EnforcementWindow, LegacyPathRemovalManifest, LegacyRoute,
     RemovalMode, RollbackMetadata, RouteResolution, ShadowModeCutoverPlanner, ShadowSample,

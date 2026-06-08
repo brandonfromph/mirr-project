@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::mape_k::*;
+use mirrc::mape_k::*;
 
 #[test]
 fn test_mape_k_thrashing_vulnerability() {

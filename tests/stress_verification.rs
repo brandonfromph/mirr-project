@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::parser::parse_mirr;
+use mirrc::parser::parse_mirr;
 use std::fs;
 use std::path::Path;
 

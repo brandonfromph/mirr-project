@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::bootstrap_runner::{BootstrapOpts, BootstrapResult, BootstrapRunner};
+use mirrc::bootstrap_runner::{BootstrapOpts, BootstrapResult, BootstrapRunner};
 use std::path::Path;
 
 fn assert_bootstrap_stages(result: BootstrapResult, expected_stages: &[&str]) {

@@ -1,23 +1,23 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::unnecessary_cast)]
 #[allow(unused_imports)]
-use nasa_rust_project::ast::program::Module;
+use mirrc::ast::program::Module;
 #[allow(unused_imports)]
-use nasa_rust_project::ast::types::*;
+use mirrc::ast::types::*;
 #[allow(unused_imports)]
-use nasa_rust_project::ast::BinaryOp;
+use mirrc::ast::BinaryOp;
 #[allow(unused_imports)]
-use nasa_rust_project::ast::Expr;
+use mirrc::ast::Expr;
 #[allow(unused_imports)]
-use nasa_rust_project::ast::UnaryOp;
+use mirrc::ast::UnaryOp;
 #[allow(unused_imports)]
-use nasa_rust_project::ecs::components::*;
+use mirrc::ecs::components::*;
 #[allow(unused_imports)]
-use nasa_rust_project::ecs::registry::Registry;
+use mirrc::ecs::registry::Registry;
 #[allow(unused_imports)]
-use nasa_rust_project::ecs::systems::*;
+use mirrc::ecs::systems::*;
 #[allow(unused_imports)]
-use nasa_rust_project::span::Span;
+use mirrc::span::Span;
 
 #[test]
 fn test_temporal_1() {

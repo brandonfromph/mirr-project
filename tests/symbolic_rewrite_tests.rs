@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 
-use nasa_rust_project::ast::expr::Expr;
-use nasa_rust_project::ast::program::SignalDecl;
-use nasa_rust_project::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use nasa_rust_project::symbolic::rewrite::RewriteEngine;
-use nasa_rust_project::symbolic::{SymState, SymValue};
+use mirrc::ast::expr::Expr;
+use mirrc::ast::program::SignalDecl;
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
+use mirrc::symbolic::rewrite::RewriteEngine;
+use mirrc::symbolic::{SymState, SymValue};
 
 fn make_decl(name: &str, ty: SignalType) -> SignalDecl {
     SignalDecl {

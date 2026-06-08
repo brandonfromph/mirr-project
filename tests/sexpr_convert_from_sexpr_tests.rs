@@ -3,10 +3,10 @@
 //!
 //! NASA P10: bounded iteration, no recursion.
 
-use nasa_rust_project::ast::program::{MirrProgram, Module};
-use nasa_rust_project::sexpr::convert::{ast_to_sexpr, sexpr_to_ast};
-use nasa_rust_project::sexpr::print_sexpr;
-use nasa_rust_project::sexpr::types::SExpr;
+use mirrc::ast::program::{MirrProgram, Module};
+use mirrc::sexpr::convert::{ast_to_sexpr, sexpr_to_ast};
+use mirrc::sexpr::print_sexpr;
+use mirrc::sexpr::types::SExpr;
 
 fn empty_program() -> MirrProgram {
     MirrProgram {
@@ -86,8 +86,8 @@ fn sexpr_to_ast_ok_for_valid_sexpr() {
 
 #[test]
 fn roundtrip_preserves_signal_count() {
-    use nasa_rust_project::ast::program::SignalDecl;
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ast::program::SignalDecl;
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 
     let mut prog = empty_program();
     let decls: &[(&str, SignalKind, SignalType)] = &[
@@ -113,8 +113,8 @@ fn roundtrip_preserves_signal_count() {
 
 #[test]
 fn roundtrip_preserves_signal_name() {
-    use nasa_rust_project::ast::program::SignalDecl;
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ast::program::SignalDecl;
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 
     let mut prog = empty_program();
     prog.module.signals.push(SignalDecl {
@@ -139,9 +139,9 @@ fn roundtrip_serializes_to_same_text() {
 
 #[test]
 fn roundtrip_guard_count() {
-    use nasa_rust_project::ast::expr::Expr;
-    use nasa_rust_project::ast::program::Guard;
-    use nasa_rust_project::ast::types::LiteralValue;
+    use mirrc::ast::expr::Expr;
+    use mirrc::ast::program::Guard;
+    use mirrc::ast::types::LiteralValue;
 
     let mut prog = empty_program();
     prog.module.guards.push(Guard {
@@ -166,10 +166,10 @@ fn roundtrip_guard_count() {
 
 #[test]
 fn roundtrip_property_count() {
-    use nasa_rust_project::ast::expr::Expr;
-    use nasa_rust_project::ast::program::SignalDecl;
-    use nasa_rust_project::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ast::expr::Expr;
+    use mirrc::ast::program::SignalDecl;
+    use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 
     let mut prog = empty_program();
     prog.module.signals.push(SignalDecl {
@@ -199,8 +199,8 @@ fn roundtrip_empty_reflexes() {
 
 #[test]
 fn roundtrip_preserves_fifo_signal_type() {
-    use nasa_rust_project::ast::program::SignalDecl;
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ast::program::SignalDecl;
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 
     let mut prog = empty_program();
     prog.module.signals.push(SignalDecl {
@@ -224,8 +224,8 @@ fn roundtrip_preserves_fifo_signal_type() {
 
 #[test]
 fn roundtrip_preserves_nested_fifo_element_type() {
-    use nasa_rust_project::ast::program::SignalDecl;
-    use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
+    use mirrc::ast::program::SignalDecl;
+    use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 
     let mut prog = empty_program();
     prog.module.signals.push(SignalDecl {
@@ -252,7 +252,7 @@ fn roundtrip_preserves_nested_fifo_element_type() {
 
 #[test]
 fn sexpr_to_ast_parses_fifo_type_canonical_shape() {
-    use nasa_rust_project::ast::types::SignalType;
+    use mirrc::ast::types::SignalType;
 
     let sexpr = single_signal_program_sexpr(SExpr::list(vec![
         SExpr::sym("fifo"),
@@ -269,7 +269,7 @@ fn sexpr_to_ast_parses_fifo_type_canonical_shape() {
 
 #[test]
 fn sexpr_to_ast_accepts_fifo_labeled_shape_and_roundtrips_to_canonical() {
-    use nasa_rust_project::ast::types::SignalType;
+    use mirrc::ast::types::SignalType;
 
     let sexpr = single_signal_program_sexpr(SExpr::list(vec![
         SExpr::sym("fifo"),

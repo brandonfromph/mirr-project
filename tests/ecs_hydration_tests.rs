@@ -1,14 +1,14 @@
 #![forbid(unsafe_code)]
 //! Tests for AST-to-ECS hydration covering 50 unique scenarios.
 
-use nasa_rust_project::ast::types::{
+use mirrc::ast::types::{
     BinaryOp, EffectQualifier, ExtendedType, Linearity, Refinement, SignalKind, SignalType, UnaryOp,
 };
-use nasa_rust_project::ast::Expr;
-use nasa_rust_project::ecs::adapter::ingest_program;
-use nasa_rust_project::ecs::components::*;
-use nasa_rust_project::ecs::registry::Registry;
-use nasa_rust_project::parser::module_parser::parse_mirr;
+use mirrc::ast::Expr;
+use mirrc::ecs::adapter::ingest_program;
+use mirrc::ecs::components::*;
+use mirrc::ecs::registry::Registry;
+use mirrc::parser::module_parser::parse_mirr;
 
 fn hydrate(src: &str) -> Registry {
     let program = parse_mirr(src).expect("Source parse failed");

@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::thread;
 
-use nasa_rust_project::mirr_daemon::{
+use mirrc::mirr_daemon::{
     CancellationToken, DaemonCore, DaemonCoreConfig, DaemonCoreError, DaemonRequest,
     DeterministicClock, LifecycleState, MpmcQueue, NamedPipeEndpoint, PipeEndpointConfig,
     PipeError, PipeScope, QueueConfig, QueueError, RequestPriority, Timeout,

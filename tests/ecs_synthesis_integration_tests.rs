@@ -2,11 +2,11 @@
 //! Validates the end-to-end synthesis pipeline:
 //! AST -> ECS Registry -> SPU Resource Allocation -> Temporal IR (CompiledGuard)
 
-use nasa_rust_project::ast::program::SignalDecl;
-use nasa_rust_project::ast::types::{ExtendedType, SignalKind, SignalType};
-use nasa_rust_project::ecs::{adapter::register_signal_to_ecs, components::*, Registry};
-use nasa_rust_project::temporal::compiler::TemporalCompiler;
-use nasa_rust_project::temporal::low_level_ir::CompiledGuard;
+use mirrc::ast::program::SignalDecl;
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
+use mirrc::ecs::{adapter::register_signal_to_ecs, components::*, Registry};
+use mirrc::temporal::compiler::TemporalCompiler;
+use mirrc::temporal::low_level_ir::CompiledGuard;
 
 #[test]
 fn test_synthesis_pipeline() {
@@ -26,7 +26,7 @@ fn test_synthesis_pipeline() {
 
     // 2. Register Guard Entity with expression hydration
     let cond_expr_id = registry
-        .ingest_expr(&nasa_rust_project::ast::Expr::Signal("sensor".to_string()))
+        .ingest_expr(&mirrc::ast::Expr::Signal("sensor".to_string()))
         .expect("failed to ingest");
 
     let guard_entity = registry.create_entity("guard1", KindComponent::GUARD);
