@@ -56,7 +56,7 @@ fn mock_execute_fallback(
     _config: &MrtDispatchExecutionConfig,
 ) -> Result<MrtDispatchExecutionResult, MrtDispatchExecutionError> {
     let plan_text = plan.args.join(" ");
-    if plan_text.contains("mirr-kb-native") {
+    if plan_text.contains("mirrc-kb") {
         return Err(MrtDispatchExecutionError::NonZeroExit {
             message: "new path failed".to_string(),
             stdout: String::new(),

@@ -222,7 +222,7 @@ fn resolve_kb_query_supports_phase4_parameters() {
         .expect("kb query should resolve with phase4 params");
 
     assert!(rupu_args_contains(&resolved.args, "--bin"));
-    assert!(rupu_args_contains(&resolved.args, "mirr-kb-native"));
+    assert!(rupu_args_contains(&resolved.args, "mirrc-kb"));
     assert!(rupu_args_contains(&resolved.args, "--expand-mode"));
     assert!(rupu_args_contains(&resolved.args, "synonym"));
     assert!(rupu_args_contains(&resolved.args, "--retry-count"));
@@ -264,7 +264,7 @@ fn resolve_kb_index_supports_optional_path() {
 
     assert_eq!(
         resolved.args,
-        vec!["run", "-p", "mirr-kb-native", "--bin", "mirr-kb-index", "--", "--path", "docs",]
+        vec!["run", "-p", "mirrc-kb", "--bin", "mirr-kb-index", "--", "--path", "docs",]
             .into_iter()
             .map(str::to_owned)
             .collect::<Vec<String>>()
@@ -279,7 +279,7 @@ fn resolve_kb_index_status_invokes_primary_kb_binary() {
 
     assert_eq!(
         resolved.args,
-        vec!["run", "-p", "mirr-kb-native", "--bin", "mirr-kb-native", "--", "status",]
+        vec!["run", "-p", "mirrc-kb", "--bin", "mirrc-kb", "--", "status",]
             .into_iter()
             .map(str::to_owned)
             .collect::<Vec<String>>()

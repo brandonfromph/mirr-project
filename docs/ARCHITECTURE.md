@@ -29,7 +29,7 @@ mirr-private/
 │   ├── mirr-wasm/            # WASM compilation API (browser/JS consumers)
 │   ├── mirr-arsenal-wasm/    # Validation and compile-contract wrapper
 │   ├── lra-cli/              # Living Research Artifact CLI tooling
-│   ├── mirr-kb-native/       # Knowledge Base native engine (RAG / Vector search)
+│   ├── mirrc-kb/       # Knowledge Base native engine (RAG / Vector search)
 │   └── mirr-mcp-control-plane/ # Model Context Protocol bridge & governance
 ├── tests/                    # Integration & Parity Test Matrix
 ├── fuzz/                     # Fuzzing harnesses for robustness
@@ -94,7 +94,7 @@ The following pathways describe the lifecycle of a MIRR specification:
 
 2. **Control Plane & RAG Integration:**
    - The [MCP Semantic Bridge](../crates/mirr-mcp-control-plane/) routes cross-subsystem tool calls.
-   - The [Knowledge Base Engine](../crates/mirr-kb-native/) serves as a RAG vector store. The compiler queries `mirr-kb-native` for synthesis precedents and formal proofs before resolving complex guard patterns.
+   - The [Knowledge Base Engine](../crates/mirrc-kb/) serves as a RAG vector store. The compiler queries `mirrc-kb` for synthesis precedents and formal proofs before resolving complex guard patterns.
 
 3. **Consumer Facades:**
    - The [mirr-wasm](../crates/mirr-wasm/) crate provides a JS-compatible binding over the core compiler, enabling browser-based IDEs and demonstrations.

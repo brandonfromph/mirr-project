@@ -14,7 +14,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 
 #[derive(Parser, Debug)]
-#[command(name = "mirr-kb-native", version, about = "MIRR Knowledge Base Grounding Engine")]
+#[command(name = "mirrc-kb", version, about = "MIRR Knowledge Base Grounding Engine")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
