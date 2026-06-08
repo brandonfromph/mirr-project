@@ -14,9 +14,7 @@ use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use mirrc::typeck::typecheck_module;
 use mirrc::validate_module;
 
-fn run_src(
-    src: &str,
-) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
+fn run_src(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 

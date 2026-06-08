@@ -5,9 +5,7 @@ use mirrc::parse_mirr;
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use mirrc::validation::validate_pattern_defs;
 
-fn run_src(
-    src: &str,
-) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
+fn run_src(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 

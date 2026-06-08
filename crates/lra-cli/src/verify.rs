@@ -288,12 +288,7 @@ fn chrono_iso8601() -> String {
     let max_years = 200;
     let mut year_iter = 0;
     while year_iter < max_years {
-        let days_in_year =
-            if y.is_multiple_of(4) && (!y.is_multiple_of(100) || y.is_multiple_of(400)) {
-                366
-            } else {
-                365
-            };
+        let days_in_year = if y % 4 == 0 && (!y % 100 == 0 || y % 400 == 0) { 366 } else { 365 };
         if remaining_days < days_in_year {
             break;
         }
@@ -301,12 +296,11 @@ fn chrono_iso8601() -> String {
         y += 1;
         year_iter += 1;
     }
-    let month_days: [u64; 12] =
-        if y.is_multiple_of(4) && (!y.is_multiple_of(100) || y.is_multiple_of(400)) {
-            [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        } else {
-            [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        };
+    let month_days: [u64; 12] = if y % 4 == 0 && (!y % 100 == 0 || y % 400 == 0) {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
     let mut m = 0usize;
     while m < 12 {
         if remaining_days < month_days[m] {

@@ -7,9 +7,7 @@
 
 use mirrc::cert::{deserialize_certificate, verify_certificate};
 use mirrc::emit::rspu_encoding::emit_binary;
-use mirrc::emit::rspu_isa::{
-    RspuInstruction, MAX_GUARDS, MAX_INSTRUCTIONS, MAX_REGISTERS,
-};
+use mirrc::emit::rspu_isa::{RspuInstruction, MAX_GUARDS, MAX_INSTRUCTIONS, MAX_REGISTERS};
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 const FIXTURE_SAFE_COUNTER: &str = r#"

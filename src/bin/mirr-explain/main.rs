@@ -79,10 +79,7 @@ fn main() {
 
     if let Some(guard) = found_guard {
         output.push_str(&format!("=== guard `{}` ===\n\n", guard.name));
-        output.push_str(&format!(
-            "Condition: {}\n",
-            mirrc::emit::expr_text(&guard.condition)
-        ));
+        output.push_str(&format!("Condition: {}\n", mirrc::emit::expr_text(&guard.condition)));
         output.push_str(&format!("Cycles: {}\n", guard.cycles));
         if args.verbosity >= 2 {
             output.push_str(&format!("Span: {:?}\n", guard.span));

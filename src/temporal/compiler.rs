@@ -2,7 +2,7 @@
 //!
 //! Responsible for the deterministic lowering of high-level temporal guards
 //! into synthesizable low-level IR (shift registers and counters). This engine
-//! ensures that 'Time' is treated as a first-class citizen, providing 
+//! ensures that 'Time' is treated as a first-class citizen, providing
 //! cycle-accurate synthesis with mathematically proven latency for all reflexes.
 //!
 //! Phase 3 interface notes:

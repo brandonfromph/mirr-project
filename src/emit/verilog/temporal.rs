@@ -198,9 +198,11 @@ pub(super) fn emit_reflex_logic(
     out.push('\n');
 
     // Group reflexes by their target signals to prevent multiple-driver conflicts.
-    let mut signal_to_reflexes: std::collections::HashMap<String, Vec<&crate::ast::program::Reflex>> =
-        std::collections::HashMap::new();
-    
+    let mut signal_to_reflexes: std::collections::HashMap<
+        String,
+        Vec<&crate::ast::program::Reflex>,
+    > = std::collections::HashMap::new();
+
     for r in &module.reflexes {
         for a in &r.assignments {
             signal_to_reflexes.entry(a.target.clone()).or_default().push(r);
@@ -213,7 +215,7 @@ pub(super) fn emit_reflex_logic(
 
     for sig in signals {
         let refs = &signal_to_reflexes[&sig];
-        
+
         // Emit DSP synthesis attribute if ANY reflex for this signal contains a multiply.
         if let Some(attr) = dsp_attr {
             let has_dsp = refs.iter().any(|r| dsp_reflexes.contains(&r.name));
@@ -227,7 +229,7 @@ pub(super) fn emit_reflex_logic(
         out.push_str("    if (!rst_n) begin\n");
         out.push_str(&format!("      {} <= '0;\n", sig));
         out.push_str("    end else begin\n");
-        
+
         // Priority-ordered assignments: later reflexes in the module override earlier ones.
         for r in refs {
             let guard_cond = if r.guard_names.len() == 1 {
@@ -236,7 +238,7 @@ pub(super) fn emit_reflex_logic(
                 let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
                 parts.join(" && ")
             };
-            
+
             // Find the assignment to THIS signal in this reflex.
             for a in &r.assignments {
                 if a.target == sig {

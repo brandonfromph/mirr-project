@@ -64,8 +64,7 @@ fn test_width_chaos_unbounded_expansive_loop() {
         },
     };
 
-    let result =
-        mirrc::width::scc_solver::solve_expansive(&scc, &signals, &[], &program);
+    let result = mirrc::width::scc_solver::solve_expansive(&scc, &signals, &[], &program);
     assert!(!result.diagnostics.is_empty());
     let err_str = format!("{:?}", result.diagnostics);
     assert!(err_str.contains("E510"), "Expected E510, got: {}", err_str);
@@ -90,9 +89,7 @@ fn test_width_chaos_overflowing_inference() {
     let guard = Guard {
         name: "g".to_string(),
         cycles: 1u64 << 60,
-        condition: mirrc::ast::Expr::Literal(
-            mirrc::ast::types::LiteralValue::Bool(true),
-        ),
+        condition: mirrc::ast::Expr::Literal(mirrc::ast::types::LiteralValue::Bool(true)),
         span: None,
         template_cycles: None,
         origin: None,
@@ -110,9 +107,7 @@ fn test_width_chaos_overflowing_inference() {
             value: Expr::Binary {
                 op: mirrc::ast::types::BinaryOp::Add,
                 left: Box::new(Expr::Prev { signal: "a".to_string(), delay: 1 }),
-                right: Box::new(Expr::Literal(
-                    mirrc::ast::types::LiteralValue::Integer(1024),
-                )),
+                right: Box::new(Expr::Literal(mirrc::ast::types::LiteralValue::Integer(1024))),
             },
             span: None,
         }],
@@ -137,8 +132,7 @@ fn test_width_chaos_overflowing_inference() {
 
     let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Expansive };
 
-    let result =
-        mirrc::width::scc_solver::solve_expansive(&scc, &signals, &[guard], &program);
+    let result = mirrc::width::scc_solver::solve_expansive(&scc, &signals, &[guard], &program);
     assert!(!result.diagnostics.is_empty());
     let err_str = format!("{:?}", result.diagnostics);
     // Should fail Strategy 2 because bits > 64

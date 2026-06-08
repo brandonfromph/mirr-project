@@ -3,15 +3,11 @@
 
 use mirrc::ast::expr::Expr;
 use mirrc::ast::program::{Module, SignalDecl};
-use mirrc::ast::types::{
-    BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
-};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp};
 use mirrc::emit::rspu_tagged::{TaggedWord, TypeTag};
 use mirrc::symbolic::diff::sym_diff;
 use mirrc::symbolic::interval::{interval_binary, interval_unary};
-use mirrc::symbolic::pattern::{
-    match_word, MatchAction, MatchPattern, MAX_MATCH_PATTERNS,
-};
+use mirrc::symbolic::pattern::{match_word, MatchAction, MatchPattern, MAX_MATCH_PATTERNS};
 use mirrc::symbolic::{
     analyze_module, sym_check_refinement, sym_eval_binary, sym_eval_expr, sym_eval_unary,
     sym_widen, SymState, SymValue, MAX_SYM_DEPTH, MAX_SYM_ITERATIONS, MAX_SYM_SIGNALS,

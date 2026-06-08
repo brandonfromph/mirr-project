@@ -26,18 +26,16 @@ fn test_nasa_rule_2_bounded_loops_and_cycles() {
     let loop_ent_1 = registry.next_id();
     let loop_ent_2 = registry.next_id();
 
-    registry.binary_ops[loop_ent_1.0 as usize] =
-        Some(mirrc::ecs::components::BinaryComponent {
-            op: BinaryOp::Add,
-            left: loop_ent_2,
-            right: loop_ent_2,
-        });
-    registry.binary_ops[loop_ent_2.0 as usize] =
-        Some(mirrc::ecs::components::BinaryComponent {
-            op: BinaryOp::Add,
-            left: loop_ent_1,
-            right: loop_ent_1,
-        });
+    registry.binary_ops[loop_ent_1.0 as usize] = Some(mirrc::ecs::components::BinaryComponent {
+        op: BinaryOp::Add,
+        left: loop_ent_2,
+        right: loop_ent_2,
+    });
+    registry.binary_ops[loop_ent_2.0 as usize] = Some(mirrc::ecs::components::BinaryComponent {
+        op: BinaryOp::Add,
+        left: loop_ent_1,
+        right: loop_ent_1,
+    });
 
     let g_ent = registry.next_id();
     registry.names[g_ent.0 as usize] =
@@ -45,8 +43,7 @@ fn test_nasa_rule_2_bounded_loops_and_cycles() {
     registry.kinds[g_ent.0 as usize] = Some(KindComponent::GUARD);
     registry.conditions[g_ent.0 as usize] =
         Some(mirrc::ecs::components::ConditionComponent(loop_ent_1));
-    registry.cycles[g_ent.0 as usize] =
-        Some(mirrc::ecs::components::CyclesComponent(10));
+    registry.cycles[g_ent.0 as usize] = Some(mirrc::ecs::components::CyclesComponent(10));
 
     // Semantic validation must fail, detecting the cycle rather than falling into infinite recursion.
     let res = registry.semantic_validate();

@@ -147,7 +147,8 @@ pub fn expand_patterns(
 
         // Check if this is an "Interface Pattern" (contains no logic).
         // Interface patterns are preserved for structural module instantiation.
-        let is_interface = fragment.statements.iter().all(|s| matches!(s, ModuleMacroStmt::Signal(_)));
+        let is_interface =
+            fragment.statements.iter().all(|s| matches!(s, ModuleMacroStmt::Signal(_)));
         if is_interface {
             let mut preserved_call = call.clone();
             // Apply parameter substitution to the call arguments themselves.
@@ -190,7 +191,9 @@ pub fn expand_patterns(
         };
 
         for param in &def.params {
-            if let crate::ast::pattern::PatternParamKind::Signal { kind, ty, annotations } = &param.kind {
+            if let crate::ast::pattern::PatternParamKind::Signal { kind, ty, annotations } =
+                &param.kind
+            {
                 temp_module.signals.push(crate::ast::program::SignalDecl {
                     name: param.name.clone(),
                     kind: *kind,

@@ -4,9 +4,7 @@
 //! NASA P10: bounded loops, no recursion.
 
 use mirrc::sexpr::types::SExpr;
-use mirrc::sexpr::{
-    eval, parse_sexpr, print_sexpr, EvalState, MacroExpander, MAX_EVAL_DEPTH,
-};
+use mirrc::sexpr::{eval, parse_sexpr, print_sexpr, EvalState, MacroExpander, MAX_EVAL_DEPTH};
 
 fn atom(s: &str) -> SExpr {
     SExpr::sym(s)

@@ -6,9 +6,7 @@
 #![forbid(unsafe_code)]
 
 use mirrc::hls::binding::bind_operations;
-use mirrc::hls::schedule::{
-    alap_schedule, asap_schedule, compute_mobility, ScheduleOp,
-};
+use mirrc::hls::schedule::{alap_schedule, asap_schedule, compute_mobility, ScheduleOp};
 use mirrc::hls::sharing::find_shareable_ops;
 use mirrc::hls::{run_hls_pass, HlsConfig, OpDag, ResourceKind};
 
@@ -225,12 +223,8 @@ module test {
 }
 "#;
 
-    let config = mirrc::PipelineConfig {
-        hls: false,
-        rspu: false,
-        mape_k: false,
-        ..Default::default()
-    };
+    let config =
+        mirrc::PipelineConfig { hls: false, rspu: false, mape_k: false, ..Default::default() };
 
     let result = mirrc::run_pipeline(source, &config).unwrap();
     assert!(result.hls_result.is_none());
@@ -255,12 +249,8 @@ module test {
 }
 "#;
 
-    let config = mirrc::PipelineConfig {
-        hls: true,
-        rspu: false,
-        mape_k: false,
-        ..Default::default()
-    };
+    let config =
+        mirrc::PipelineConfig { hls: true, rspu: false, mape_k: false, ..Default::default() };
 
     let result = mirrc::run_pipeline(source, &config).unwrap();
     // HLS may or may not produce results depending on the DAG.

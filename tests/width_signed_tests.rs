@@ -15,9 +15,7 @@ extern crate mirrc;
 
 use mirrc::ast::expr::Expr;
 use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
-use mirrc::ast::types::{
-    BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
-};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp};
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use mirrc::width;
 

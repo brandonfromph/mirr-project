@@ -281,11 +281,8 @@ fn compile_via_library(source: &str, target: &str, output: Option<&str>) -> i32 
         Err(errors) => {
             for err in &errors.errors {
                 let diagnostic = err.to_diagnostic();
-                let rendered = mirrc::diagnostic::render_diagnostic(
-                    &diagnostic,
-                    &source_text,
-                    source,
-                );
+                let rendered =
+                    mirrc::diagnostic::render_diagnostic(&diagnostic, &source_text, source);
                 eprint!("{rendered}");
             }
             return 1;

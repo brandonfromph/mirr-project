@@ -2,9 +2,9 @@
 
 //! ARCHITECTURAL SUB-ENGINE: MAPE-K TELEMETRY BRIDGE
 //!
-//! Orchestrates the translation of compiler `PipelineResult` (signals and 
-//! properties) into `SimConfig` for the MAPE-K autonomic loop. This engine 
-//! manages the 'Bridge'—a telemetry fabric proposed in Proposal 045 for 
+//! Orchestrates the translation of compiler `PipelineResult` (signals and
+//! properties) into `SimConfig` for the MAPE-K autonomic loop. This engine
+//! manages the 'Bridge'—a telemetry fabric proposed in Proposal 045 for
 //! coordinating safety-critical monitor state across the 16-core RS-16 SoC.
 //!
 //! # Lowering strategy
@@ -159,7 +159,10 @@ mod tests {
     use crate::ast::SignalDecl;
     use crate::mape_k::ltl::SignalPredicate;
 
-    fn synthesize_test_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> PipelineResult {
+    fn synthesize_test_pipeline(
+        signals: Vec<SignalDecl>,
+        properties: Vec<PropertyDecl>,
+    ) -> PipelineResult {
         let module = Module {
             name: "test_mod".to_string(),
             signals,

@@ -18,9 +18,7 @@ fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
         span: None,
     }
 }
-fn run_sym(
-    src: &str,
-) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
+fn run_sym(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     let cfg = PipelineConfig { symbolic: true, ..PipelineConfig::default() };
     run_pipeline(src, &cfg)
 }

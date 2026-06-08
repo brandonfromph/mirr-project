@@ -1,8 +1,8 @@
 //! ARCHITECTURAL SUB-ENGINE: MAPE-K ANALYZER
 //!
-//! Evaluates bounded LTL (Linear Temporal Logic) properties over rolling 
+//! Evaluates bounded LTL (Linear Temporal Logic) properties over rolling
 //! signal windows. This engine is the 'A' (Analysis) in the MAPE-K autonomic
-//! loop, responsible for detecting property violations and triggering 
+//! loop, responsible for detecting property violations and triggering
 //! mitigation actions across the hardware fabric.
 //!
 //! All evaluation is O(window_size) per property per tick.

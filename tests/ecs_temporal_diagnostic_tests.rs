@@ -9,8 +9,7 @@ use mirrc::temporal::compiler::TemporalCompiler;
 fn test_diagnostic_e301_nesting_depth() {
     let mut registry = Registry::new();
     registry.create_entity("sig_a", KindComponent::SIGNAL);
-    let expr_a =
-        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
+    let expr_a = registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut current = expr_a;
     for _ in 0..70 {

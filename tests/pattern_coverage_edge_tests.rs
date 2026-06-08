@@ -7,9 +7,7 @@ use mirrc::ast::types::SignalType;
 use mirrc::parse_mirr;
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
-fn run_src(
-    src: &str,
-) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
+fn run_src(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 

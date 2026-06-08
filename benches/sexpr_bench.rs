@@ -7,9 +7,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use mirrc::parse_mirr;
-use mirrc::sexpr::{
-    ast_to_sexpr, eval, parse_sexpr, print_sexpr, sexpr_to_ast, EvalState,
-};
+use mirrc::sexpr::{ast_to_sexpr, eval, parse_sexpr, print_sexpr, sexpr_to_ast, EvalState};
 use std::hint::black_box;
 
 // ---------------------------------------------------------------------------

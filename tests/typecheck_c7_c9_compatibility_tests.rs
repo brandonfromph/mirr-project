@@ -13,9 +13,7 @@ use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use mirrc::typeck::extended::ExtendedType as CheckerExtType;
 use mirrc::typeck::extended::{typecheck_extended, ExtendedSignalDecl, PhantomTag};
 
-fn run_src(
-    src: &str,
-) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
+fn run_src(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 

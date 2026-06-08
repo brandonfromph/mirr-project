@@ -1,8 +1,8 @@
 //! ARCHITECTURAL SUB-ENGINE: S-EXPRESSION TRANSPILER
 //!
-//! Converts the MIRR AST into a homoiconic S-expression representation. 
-//! This engine serves as the primary bridge for formal verification, 
-//! enabling MIRR programs to be consumed by external automated theorem 
+//! Converts the MIRR AST into a homoiconic S-expression representation.
+//! This engine serves as the primary bridge for formal verification,
+//! enabling MIRR programs to be consumed by external automated theorem
 //! provers (like Z3 or Rocq) for proving safety invariants.
 //!
 //! NASA Power-of-10: conversion depth bounded by MAX_CONVERT_DEPTH.

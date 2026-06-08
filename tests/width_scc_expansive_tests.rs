@@ -75,10 +75,7 @@ fn test_solve_expansive_simple_accumulator() {
 
     // 3. Assert
     assert!(
-        result
-            .diagnostics
-            .iter()
-            .all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
+        result.diagnostics.iter().all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
         "Expected no error diagnostics: {:?}",
         result.diagnostics
     );
@@ -133,10 +130,7 @@ fn test_solve_expansive_reversed_operand_accumulator() {
 
     // 3. Assert
     assert!(
-        result
-            .diagnostics
-            .iter()
-            .all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
+        result.diagnostics.iter().all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
         "Expected no error diagnostics: {:?}",
         result.diagnostics
     );
@@ -208,10 +202,7 @@ fn test_solve_expansive_multiple_accumulators_takes_first_valid() {
 
     // 3. Assert
     assert!(
-        result
-            .diagnostics
-            .iter()
-            .all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
+        result.diagnostics.iter().all(|d| d.severity != mirrc::width::types::DiagSeverity::Error),
         "Expected no error diagnostics: {:?}",
         result.diagnostics
     );

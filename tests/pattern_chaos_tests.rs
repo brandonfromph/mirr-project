@@ -13,13 +13,11 @@ fn test_pattern_chaos_recursion_depth_limit() {
         name: "A".to_string(),
         params: vec![],
         body: ReflectBlock {
-            statements: vec![ModuleMacroStmt::PatternCall(
-                mirrc::ast::pattern::PatternCall {
-                    pattern_name: "A".to_string(),
-                    arguments: vec![],
-                    span: None,
-                },
-            )],
+            statements: vec![ModuleMacroStmt::PatternCall(mirrc::ast::pattern::PatternCall {
+                pattern_name: "A".to_string(),
+                arguments: vec![],
+                span: None,
+            })],
         },
         span: None,
     }];
@@ -45,8 +43,7 @@ fn test_pattern_chaos_recursion_depth_limit() {
 
     let mut registry = Registry::new();
     for pat in &patterns {
-        let ent = registry
-            .create_entity(&pat.name, mirrc::ecs::components::KindComponent::PATTERN);
+        let ent = registry.create_entity(&pat.name, mirrc::ecs::components::KindComponent::PATTERN);
         registry.pattern_defs[ent.0 as usize] =
             Some(mirrc::ecs::components::PatternDefComponent(pat.clone()));
     }
@@ -96,17 +93,13 @@ fn test_pattern_chaos_exponential_expansion_stress() {
         name: "D".to_string(),
         params: vec![],
         body: ReflectBlock {
-            statements: vec![ModuleMacroStmt::Signal(
-                mirrc::ast::program::SignalDecl {
-                    name: "s".to_string(),
-                    kind: mirrc::ast::types::SignalKind::Internal,
-                    ty: mirrc::ast::types::ExtendedType::from_core(
-                        mirrc::ast::types::SignalType::Bool,
-                    ),
-                    origin: None,
-                    span: None,
-                },
-            )],
+            statements: vec![ModuleMacroStmt::Signal(mirrc::ast::program::SignalDecl {
+                name: "s".to_string(),
+                kind: mirrc::ast::types::SignalKind::Internal,
+                ty: mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Bool),
+                origin: None,
+                span: None,
+            })],
         },
         span: None,
     });
@@ -132,8 +125,7 @@ fn test_pattern_chaos_exponential_expansion_stress() {
 
     let mut registry = Registry::new();
     for pat in &patterns {
-        let ent = registry
-            .create_entity(&pat.name, mirrc::ecs::components::KindComponent::PATTERN);
+        let ent = registry.create_entity(&pat.name, mirrc::ecs::components::KindComponent::PATTERN);
         registry.pattern_defs[ent.0 as usize] =
             Some(mirrc::ecs::components::PatternDefComponent(pat.clone()));
     }

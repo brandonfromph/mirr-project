@@ -20,8 +20,8 @@ fn f2_example_tmr_sensor_fusion_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
+        let _cert =
+            mirrc::cert::deserialize_certificate(cert_bytes).expect("certificate must deserialize");
     }
 }
 

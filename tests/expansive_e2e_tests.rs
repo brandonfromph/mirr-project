@@ -30,8 +30,7 @@ module industrial_integrator {
 }
 "#;
 
-    let program =
-        mirrc::parse_mirr(source).expect("E2E: Failed to parse industrial_integrator");
+    let program = mirrc::parse_mirr(source).expect("E2E: Failed to parse industrial_integrator");
 
     // 2. Configure the pipeline with all standard checks enabled (including typecheck and width inference)
     let config = PipelineConfig {

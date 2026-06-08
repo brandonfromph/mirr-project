@@ -58,7 +58,7 @@ impl ContextBudget {
 
 /// Estimate token count conservatively: 1 token ≈ 4 characters.
 pub fn estimate_token_count(text: &str) -> usize {
-    text.len().div_ceil(CHARS_PER_TOKEN)
+    (text.len() + CHARS_PER_TOKEN - 1) / CHARS_PER_TOKEN
 }
 
 /// Validate query size.

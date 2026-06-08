@@ -116,8 +116,7 @@ impl CiProfile {
     }
 }
 
-const WORKSPACE_FULL_NEXTEST_ARGS: &[&str] =
-    &["nextest", "run", "-p", "mirrc", "--no-fail-fast"];
+const WORKSPACE_FULL_NEXTEST_ARGS: &[&str] = &["nextest", "run", "-p", "mirrc", "--no-fail-fast"];
 
 const WORKSPACE_FULL_CARGO_TEST_ARGS: &[&str] =
     &["test", "-p", "mirrc", "--all-targets", "--no-fail-fast"];
@@ -230,15 +229,7 @@ fn build_ci_full_plan(use_nextest: bool) -> ExecutionPlan {
                         1,
                         "workspace-core-clippy",
                         "cargo",
-                        &[
-                            "clippy",
-                            "-p",
-                            "mirrc",
-                            "--all-targets",
-                            "--",
-                            "-D",
-                            "warnings",
-                        ],
+                        &["clippy", "-p", "mirrc", "--all-targets", "--", "-D", "warnings"],
                         true,
                     ),
                     task(
@@ -696,8 +687,7 @@ fn gather_binary_inventory() -> io::Result<BinaryInventory> {
 
     let deps_hashed_bin_count =
         deps_bins.iter().filter(|name| has_hashed_suffix(name.as_str())).count();
-    let deps_nasa_bin_count =
-        deps_bins.iter().filter(|name| name.starts_with("mirrc")).count();
+    let deps_nasa_bin_count = deps_bins.iter().filter(|name| name.starts_with("mirrc")).count();
 
     let top_level_sample: Vec<String> =
         top_level_bins.iter().take(MAX_INSPECT_SAMPLE).cloned().collect();

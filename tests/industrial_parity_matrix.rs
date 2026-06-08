@@ -77,12 +77,8 @@ fn test_industrial_operator_matrix() {
 
                 // Perform structural sanity check on the final Registry
                 let mut reg = Registry::new();
-                mirrc::ecs::adapter::ingest_program(
-                    &mut reg,
-                    res.program.clone(),
-                    None,
-                )
-                .expect("Ingest failed");
+                mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
+                    .expect("Ingest failed");
                 verify_registry_integrity(&mut reg);
 
                 count += 1;

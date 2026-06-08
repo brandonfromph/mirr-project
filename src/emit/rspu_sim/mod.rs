@@ -1,8 +1,8 @@
 //! ARCHITECTURAL SUB-ENGINE: R-SPU SILICON SIMULATOR
 //!
-//! Cycle-accurate architectural model of the R-SPU processor. This engine 
+//! Cycle-accurate architectural model of the R-SPU processor. This engine
 //! simulates instruction fetch, decode, and execution (including tagged-word
-//! ALU operations and exception handling) to verify hardware correctness 
+//! ALU operations and exception handling) to verify hardware correctness
 //! before physical synthesis.
 //!
 //! All operations are bounded (NASA P10) to ensure deterministic validation.

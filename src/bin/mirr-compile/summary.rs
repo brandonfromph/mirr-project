@@ -2,10 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-pub(super) fn print_summary(
-    result: &mirrc::pipeline::PipelineResult,
-    show_stats: bool,
-) {
+pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, show_stats: bool) {
     let module = &result.program.module;
     eprintln!("MIRR Compile: {}", module.name);
     eprintln!(

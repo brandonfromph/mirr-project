@@ -1,8 +1,8 @@
 //! ARCHITECTURAL SUB-ENGINE: OSS-CAD-SUITE TOOLCHAIN ORCHESTRATOR
 //!
-//! Centralizes tool discovery, path normalization, and invocation for all 
-//! oss-cad-suite tools (Yosys, SymbiYosys, Verilator, nextpnr, etc.). This 
-//! engine provides the automated bridge between MIRR's high-level reflexes 
+//! Centralizes tool discovery, path normalization, and invocation for all
+//! oss-cad-suite tools (Yosys, SymbiYosys, Verilator, nextpnr, etc.). This
+//! engine provides the automated bridge between MIRR's high-level reflexes
 //! and the physical FPGA/ASIC synthesis toolchains.
 //!
 //! # Supported Tools

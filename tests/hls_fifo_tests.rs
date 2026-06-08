@@ -123,12 +123,8 @@ module test {
 }
 "#;
 
-    let config = mirrc::PipelineConfig {
-        hls: false,
-        rspu: false,
-        mape_k: false,
-        ..Default::default()
-    };
+    let config =
+        mirrc::PipelineConfig { hls: false, rspu: false, mape_k: false, ..Default::default() };
 
     let result = mirrc::run_pipeline(source, &config);
     if let Err(e) = &result {

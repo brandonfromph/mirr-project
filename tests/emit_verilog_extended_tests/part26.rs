@@ -102,10 +102,7 @@ fn negate_expr_renders_correctly() {
             vec!["g"],
             vec![make_assignment(
                 "y",
-                Expr::Unary {
-                    op: mirrc::ast::types::UnaryOp::Negate,
-                    operand: Box::new(sig("x")),
-                },
+                Expr::Unary { op: mirrc::ast::types::UnaryOp::Negate, operand: Box::new(sig("x")) },
             )],
         )],
         properties: vec![],

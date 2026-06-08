@@ -12,9 +12,7 @@ use mirrc::ast::types::{ExtendedType as AstExtendedType, SignalKind, SignalType}
 use mirrc::ast::SignalDecl;
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use mirrc::typeck::extended::ExtendedType as CheckerExtType;
-use mirrc::typeck::extended::{
-    typecheck_extended, ClockDomain, ExtendedSignalDecl, TypeQualifier,
-};
+use mirrc::typeck::extended::{typecheck_extended, ClockDomain, ExtendedSignalDecl, TypeQualifier};
 
 fn module_from_exts(exts: &[ExtendedSignalDecl]) -> Module {
     Module {

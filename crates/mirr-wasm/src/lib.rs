@@ -352,11 +352,9 @@ pub fn compile_verilog_with_options(
     let config = default_config();
     match run_pipeline(source, &config) {
         Ok(result) => {
-            let fpga_target =
-                mirrc::emit::fpga_target::FpgaTarget::from_str_name(target);
-            let t = fpga_target.filter(|&fpga_t| {
-                fpga_t != mirrc::emit::fpga_target::FpgaTarget::Generic
-            });
+            let fpga_target = mirrc::emit::fpga_target::FpgaTarget::from_str_name(target);
+            let t = fpga_target
+                .filter(|&fpga_t| fpga_t != mirrc::emit::fpga_target::FpgaTarget::Generic);
             let sv = if strip_sva {
                 mirrc::emit::verilog::emit_sv_synthesis(&result, t, dsp_threshold)
             } else {
@@ -590,12 +588,11 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 if !matches!(sig.kind, mirrc::ast::types::SignalKind::Input) {
                     continue;
                 }
-                let is_bool =
-                    matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
+                let is_bool = matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
                 if is_bool {
                     let period = (si as u32 + 2).min(64);
                     let values: Vec<u8> = (0..capped_cycles)
-                        .map(|c| if (c / period).is_multiple_of(2) { 1u8 } else { 0u8 })
+                        .map(|c| if (c / period) % 2 == 0 { 1u8 } else { 0u8 })
                         .collect();
                     signals.push(serde_json::json!({
                         "name": sig.name,
@@ -680,8 +677,7 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                     }
                 }
                 let delay = earliest_delay.unwrap_or(0);
-                let is_bool =
-                    matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
+                let is_bool = matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
                 if is_bool {
                     let values: Vec<u8> = (0..capped_cycles)
                         .map(|c| if c as u64 >= delay { 1u8 } else { 0u8 })

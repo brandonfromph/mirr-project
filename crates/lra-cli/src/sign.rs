@@ -103,7 +103,7 @@ pub fn run(receipt_path: &str, key_path: &str) -> i32 {
 /// Hex-decode a string into bytes (bounded by max_bytes).
 fn hex_decode(hex: &str, max_bytes: usize) -> Option<Vec<u8>> {
     let bytes_str = hex.as_bytes();
-    if !bytes_str.len().is_multiple_of(2) {
+    if !bytes_str.len() % 2 == 0 {
         return None;
     }
     let mut out = Vec::new();

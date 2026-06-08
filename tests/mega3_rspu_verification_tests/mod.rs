@@ -53,9 +53,7 @@ fn make_program(instrs: Vec<RspuInstruction>) -> RspuProgram {
 }
 
 /// Run pipeline with R-SPU emission on the given MIRR source.
-fn pipeline_with_rspu(
-    src: &str,
-) -> Result<mirrc::PipelineResult, mirrc::PipelineErrors> {
+fn pipeline_with_rspu(src: &str) -> Result<mirrc::PipelineResult, mirrc::PipelineErrors> {
     let config = PipelineConfig {
         typecheck: true,
         simplify: true,

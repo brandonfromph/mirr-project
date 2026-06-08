@@ -223,19 +223,18 @@ pub fn main() -> anyhow::Result<()> {
             process::exit(1);
         });
 
-        let cert =
-            mirrc::cert::deserialize_certificate(&cert_bytes).unwrap_or_else(|e| {
-                eprintln!("Error: failed to deserialize certificate: {}", e);
-                process::exit(1);
-            });
+        let cert = mirrc::cert::deserialize_certificate(&cert_bytes).unwrap_or_else(|e| {
+            eprintln!("Error: failed to deserialize certificate: {}", e);
+            process::exit(1);
+        });
 
         let rspu_program = result.rspu_program.as_ref().unwrap_or_else(|| {
             eprintln!("Error: R-SPU program was not compiled successfully");
             process::exit(1);
         });
 
-        let binary_words = mirrc::emit::rspu_encoding::emit_binary(rspu_program)
-            .unwrap_or_else(|e| {
+        let binary_words =
+            mirrc::emit::rspu_encoding::emit_binary(rspu_program).unwrap_or_else(|e| {
                 eprintln!("Error: failed to encode R-SPU binary: {}", e);
                 process::exit(1);
             });
@@ -268,8 +267,7 @@ pub fn main() -> anyhow::Result<()> {
             width_diags.extend(&wr.verification.diagnostics);
             for wd in &width_diags {
                 let d = wd.to_diagnostic();
-                let rendered =
-                    mirrc::diagnostic::render_diagnostic(&d, &source, &root_file);
+                let rendered = mirrc::diagnostic::render_diagnostic(&d, &source, &root_file);
                 eprint!("{}", rendered);
             }
         }

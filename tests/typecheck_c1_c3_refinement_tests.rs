@@ -16,9 +16,7 @@ use mirrc::validate_module;
 
 const MAX_ERR_SCAN: usize = 16;
 
-fn run_src(
-    src: &str,
-) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
+fn run_src(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())
 }
 

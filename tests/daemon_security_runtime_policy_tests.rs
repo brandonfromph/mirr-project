@@ -4,9 +4,7 @@ use std::time::Duration;
 
 use mirrc::mirr_daemon_security::audit::{AuditEvent, AuditEventKind};
 use mirrc::mirr_daemon_security::auth::{AuthContext, Role, RuntimeAuthorizer};
-use mirrc::mirr_daemon_security::policy::{
-    OutputLimitPolicy, PayloadLimitPolicy, RoutePolicy,
-};
+use mirrc::mirr_daemon_security::policy::{OutputLimitPolicy, PayloadLimitPolicy, RoutePolicy};
 use mirrc::mirr_daemon_security::rate_limit::{TokenBucketConfig, TokenBucketLimiter};
 
 #[test]

@@ -25,8 +25,7 @@ fn test_ecs_span_linkage_integrity() {
     let res = run_pipeline(source, &config).expect("Pipeline failed");
 
     let mut reg = Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None)
-        .expect("Ingest failed");
+    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None).expect("Ingest failed");
 
     // Every signal entity in the Registry MUST have a valid Span
     let next_id = reg.next_id();
@@ -87,8 +86,7 @@ fn test_internal_wiring_consistency() {
 
     let res = run_pipeline(source, &PipelineConfig::default()).expect("Pipeline failed");
     let mut reg = Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None)
-        .expect("Ingest failed");
+    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None).expect("Ingest failed");
 
     // Verify binary operator wiring
     let next_id = reg.next_id();

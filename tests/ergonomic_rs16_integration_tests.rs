@@ -28,8 +28,5 @@ module test_mod {
     let kind =
         registry.kinds[lidar_entity.0 as usize].expect("Entity should have a Kind component");
 
-    assert_eq!(
-        kind,
-        KindComponent(EntityKind::SIGNAL(mirrc::ast::types::SignalKind::Input))
-    );
+    assert_eq!(kind, KindComponent(EntityKind::SIGNAL(mirrc::ast::types::SignalKind::Input)));
 }

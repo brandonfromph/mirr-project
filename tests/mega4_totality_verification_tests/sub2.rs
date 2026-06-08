@@ -262,8 +262,8 @@ fn f2_example_flight_controller_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
+        let _cert =
+            mirrc::cert::deserialize_certificate(cert_bytes).expect("certificate must deserialize");
     }
 }
 
@@ -287,8 +287,8 @@ fn f2_example_autonomous_vehicle_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
+        let _cert =
+            mirrc::cert::deserialize_certificate(cert_bytes).expect("certificate must deserialize");
     }
 }
 
@@ -312,8 +312,8 @@ fn f2_example_industrial_safety_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
+        let _cert =
+            mirrc::cert::deserialize_certificate(cert_bytes).expect("certificate must deserialize");
     }
 }
 
@@ -337,8 +337,8 @@ fn f2_example_safety_property_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
+        let _cert =
+            mirrc::cert::deserialize_certificate(cert_bytes).expect("certificate must deserialize");
     }
 }
 
@@ -362,8 +362,8 @@ fn f2_example_icu_monitor_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
+        let _cert =
+            mirrc::cert::deserialize_certificate(cert_bytes).expect("certificate must deserialize");
     }
 }
 
@@ -387,8 +387,8 @@ fn f2_example_pattern_usage_cert_generation() {
     // Certificate generation depends on emit_binary support for all instructions.
     // If cert is present, verify it deserializes correctly.
     if let Some(ref cert_bytes) = rspu.certificate {
-        let _cert = mirrc::cert::deserialize_certificate(cert_bytes)
-            .expect("certificate must deserialize");
+        let _cert =
+            mirrc::cert::deserialize_certificate(cert_bytes).expect("certificate must deserialize");
     }
 }
 

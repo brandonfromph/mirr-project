@@ -1,8 +1,6 @@
 #![forbid(unsafe_code)]
 
-use mirrc::ast::types::{
-    BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp,
-};
+use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType, UnaryOp};
 use mirrc::ast::Expr;
 use mirrc::ecs::components::*;
 use mirrc::ecs::systems::*;

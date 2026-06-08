@@ -17,13 +17,9 @@ use mirrc::ast::program::{MirrProgram, Module, SignalDecl};
 use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
 use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 use mirrc::ast::Expr;
-use mirrc::mape_k::bridge::{
-    bridge_from_pipeline, MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS,
-};
+use mirrc::mape_k::bridge::{bridge_from_pipeline, MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS};
 use mirrc::mape_k::error::MapeKError;
-use mirrc::mape_k::{
-    AdaptationAction, SignalPredicate, TemporalProperty, TriggerCondition,
-};
+use mirrc::mape_k::{AdaptationAction, SignalPredicate, TemporalProperty, TriggerCondition};
 use mirrc::pipeline::PipelineResult;
 
 // =========================================================================

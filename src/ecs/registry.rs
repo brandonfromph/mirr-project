@@ -8,10 +8,10 @@ use std::collections::HashMap;
 
 // ARCHITECTURAL SUB-ENGINE: ECS REGISTRY
 //
-// The data-oriented 'World' of the MIRR compiler. This engine stores 
-// all hardware components (Signals, Guards, Reflexes) as cache-friendly 
-// entities in dense SoA (Structure of Arrays) tables. This architecture 
-// enables high-performance, parallel synthesis and simulation of 
+// The data-oriented 'World' of the MIRR compiler. This engine stores
+// all hardware components (Signals, Guards, Reflexes) as cache-friendly
+// entities in dense SoA (Structure of Arrays) tables. This architecture
+// enables high-performance, parallel synthesis and simulation of
 // multi-core SoCs exceeding 1,000,000 entities.
 //
 /// Max capacity for compiler entities (NASA P10 Rule #2: Fixed bounds)

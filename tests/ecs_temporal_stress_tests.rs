@@ -12,8 +12,7 @@ fn test_stress_nesting_depth_limit() {
 
     // Create a deeply nested AND tree: A && (A && (A && ...))
     let _sig_a = registry.create_entity("sig_a", KindComponent::SIGNAL);
-    let expr_a =
-        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
+    let expr_a = registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut current_expr = expr_a;
     // Nest 70 times (exceeds 64 limit)
@@ -40,8 +39,7 @@ fn test_stress_nesting_depth_limit() {
 fn test_stress_adaptive_strategy_selection() {
     let mut registry = Registry::new();
     let sig_a = registry.create_entity("sig_a", KindComponent::SIGNAL);
-    let expr_a =
-        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
+    let expr_a = registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut compiler = TemporalCompiler::new();
 
@@ -95,8 +93,7 @@ fn test_stress_registry_robustness_missing_components() {
 fn test_stress_large_breadth_synthesis() {
     let mut registry = Registry::new();
     let _sig_a = registry.create_entity("sig_a", KindComponent::SIGNAL);
-    let expr_a =
-        registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
+    let expr_a = registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
 
     let mut compiler = TemporalCompiler::new();
 

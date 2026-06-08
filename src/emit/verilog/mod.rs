@@ -100,7 +100,11 @@ fn emit_sv_full(
                     crate::ast::pattern::PatternArg::SignalRef(name) => name.clone(),
                     crate::ast::pattern::PatternArg::ConstInt(n) => format!("{n}"),
                     crate::ast::pattern::PatternArg::ConstBool(b) => {
-                        if *b { "1'b1".to_string() } else { "1'b0".to_string() }
+                        if *b {
+                            "1'b1".to_string()
+                        } else {
+                            "1'b0".to_string()
+                        }
                     }
                     crate::ast::pattern::PatternArg::PatternRef(p) => p.clone(),
                 };
