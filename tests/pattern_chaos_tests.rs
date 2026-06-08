@@ -97,7 +97,9 @@ fn test_pattern_chaos_exponential_expansion_stress() {
                 ModuleMacroStmt::Signal(mirrc::ast::program::SignalDecl {
                     name: "s".to_string(),
                     kind: mirrc::ast::types::SignalKind::Internal,
-                    ty: mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Bool),
+                    ty: mirrc::ast::types::ExtendedType::from_core(
+                        mirrc::ast::types::SignalType::Bool,
+                    ),
                     origin: None,
                     span: None,
                 }),

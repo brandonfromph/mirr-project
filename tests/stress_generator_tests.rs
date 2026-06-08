@@ -22,10 +22,7 @@ fn compile_mirr(code: &str) {
     write!(file, "{}", code).expect("write");
     let path = file.path().to_str().unwrap();
     let compiler_bin = env!("CARGO_BIN_EXE_mirrc");
-    let status = Command::new(compiler_bin)
-        .arg(path)
-        .status()
-        .expect("failed to invoke compiler");
+    let status = Command::new(compiler_bin).arg(path).status().expect("failed to invoke compiler");
     assert!(status.success(), "compilation failed for generated MIRR");
 }
 
