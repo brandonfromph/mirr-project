@@ -39,9 +39,13 @@ This ensures your safety rules are enforced with **cycle-accurate precision** an
 
 ## FuseSoC Integration
 
-MIRR is fully integrated with the [FuseSoC](https://github.com/olofk/fusesoc) package manager. You can use MIRR to generate verified hardware IP cores dynamically during your SoC build process.
+MIRR is fully integrated with the [FuseSoC](https://github.com/olofk/fusesoc) package manager. You can add the MIRR library to your project directly:
 
-To add a MIRR-generated watchdog to your project:
+```bash
+fusesoc library add mirr https://github.com/brandonfromph/mirr-project
+```
+
+Once added, you can use MIRR to generate verified hardware IP cores:
 ```yaml
 # In your .core file
 dependencies:
