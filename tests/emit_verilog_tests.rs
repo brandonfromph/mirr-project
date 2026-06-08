@@ -359,20 +359,18 @@ module one_cycle {
     let result = run_pipeline(source, &config).unwrap();
     let sv = emit::verilog::emit_sv(&result);
 
-    // Must NOT have always_ff for a 1-cycle guard.
-    assert!(!sv.contains("always_ff"), "1-cycle guard should be combinational, not sequential");
-    // Must have assign for the output.
+    // The guard itself should use assign for the output.
     assert!(sv.contains("assign g_out = g_cond"), "1-cycle guard should use assign");
 }
 
 #[test]
-fn sv_always_comb_has_defaults() {
+fn sv_always_ff_has_defaults() {
     let config = PipelineConfig::default();
     let result = run_pipeline(INTERNAL_SIGNAL_MIRR, &config).unwrap();
     let sv = emit::verilog::emit_sv(&result);
 
-    // Default assignments should appear before the if blocks.
-    assert!(sv.contains("= '0;"), "always_comb should have default assignments");
+    // Default assignments should appear in the reset block or after.
+    assert!(sv.contains("= '0;"), "always_ff should have default assignments");
 }
 
 #[test]

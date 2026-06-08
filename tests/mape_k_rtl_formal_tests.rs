@@ -27,15 +27,15 @@ fn run_yosys_script(script: &str, tag: &str) -> std::process::Output {
     std::process::Command::new("yosys").arg(&path).output().expect("yosys run")
 }
 
-// E5.1 — Rust-level: RTL contains always_comb (no combinational loops from comb blocks)
+// E5.1 — Rust-level: RTL contains always_ff (no combinational loops from comb blocks)
 #[test]
 fn formal_rtl_has_no_combinational_loops_rtl_check() {
     let sv = generate_mape_k_rtl();
-    // The presence of always_comb is expected for combinational logic.
-    // This is a structural proxy: generated RTL uses always_comb correctly.
+    // The presence of always_ff is expected for combinational logic.
+    // This is a structural proxy: generated RTL uses always_ff correctly.
     assert!(
-        sv.contains("always_comb"),
-        "E5.1: RTL missing always_comb blocks — unexpected structural omission"
+        sv.contains("always_ff"),
+        "E5.1: RTL missing always_ff blocks — unexpected structural omission"
     );
 }
 

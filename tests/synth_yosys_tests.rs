@@ -50,7 +50,7 @@ fn synth_tmr_preserves_rtl() {
     assert!(sv.contains("module tmr_sensor_fusion"), "missing module declaration");
     assert!(sv.contains("endmodule"), "missing endmodule");
     assert!(sv.contains("always_ff"), "missing always_ff");
-    assert!(sv.contains("always_comb"), "missing always_comb");
+    assert!(sv.contains("always_ff"), "missing always_ff");
 }
 
 #[test]

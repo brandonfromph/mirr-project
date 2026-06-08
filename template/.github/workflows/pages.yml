@@ -45,7 +45,7 @@ jobs:
           done
 
           # Apache-2.0 license check
-          if ! grep -q "GNU GENERAL PUBLIC LICENSE" LICENSE; then
+          if ! grep -q "Apache License" LICENSE; then
             echo "FAIL: LICENSE does not contain Apache-2.0 text"
             errors=$((errors + 1))
           fi

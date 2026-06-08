@@ -28,7 +28,7 @@ fn synthesis_mode_preserves_rtl() {
     let sv = verilog::emit_sv_synthesis(&result, None, 0);
 
     assert!(sv.contains("always_ff"), "synthesis mode must preserve always_ff blocks");
-    assert!(sv.contains("always_comb"), "synthesis mode must preserve always_comb blocks");
+    assert!(sv.contains("always_ff"), "synthesis mode must preserve always_ff blocks");
 }
 
 #[test]

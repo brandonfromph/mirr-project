@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::len_zero)]
-//! Integration test suite for the hybrid Vector+BM25 RAG Knowledge Base (mirrc-kb).
+//! Integration test suite for the hybrid Vector+BM25 RAG Knowledge Base (mirr-kb-native).
 //! Contains exactly 50 distinct parameter-driven tests.
 
 use mirr_kb_native::adapters::embedding::StubEmbeddingProvider;
@@ -189,20 +189,20 @@ fn get_kb_bin_path(name: &str) -> std::path::PathBuf {
 }
 
 fn run_kb_cli_no_file(args: &[&str]) -> Output {
-    let bin_path = get_kb_bin_path("mirrc-kb");
+    let bin_path = get_kb_bin_path("mirr-kb-native");
     std::process::Command::new(bin_path)
         .args(args)
         .output()
-        .expect("Failed to execute mirrc-kb")
+        .expect("Failed to execute mirr-kb-native")
 }
 
 fn run_kb_cli_with_env(args: &[&str], kb_root: &str) -> Output {
-    let bin_path = get_kb_bin_path("mirrc-kb");
+    let bin_path = get_kb_bin_path("mirr-kb-native");
     std::process::Command::new(bin_path)
         .args(args)
         .env("MIRR_KB_ROOT", kb_root)
         .output()
-        .expect("Failed to execute mirrc-kb with env")
+        .expect("Failed to execute mirr-kb-native with env")
 }
 
 // --- 036 - 050: CLI Binary Integration Tests ---

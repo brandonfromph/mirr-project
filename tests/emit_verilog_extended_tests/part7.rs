@@ -4,12 +4,12 @@ use super::*;
 // ===========================================================================
 
 #[test]
-fn one_cycle_guard_no_always_ff() {
+fn one_cycle_guard_is_combinational() {
     let result = run_pipeline(MINIMAL_MODULE, &default_config()).unwrap();
     let sv = verilog::emit_sv(&result);
 
-    // A 1-cycle guard is purely combinational
-    assert!(!sv.contains("always_ff"), "1-cycle guard must NOT use always_ff (combinational only)");
+    // A 1-cycle guard is purely combinational (assign g_out = g_cond)
+    assert!(sv.contains("assign g_out = g_cond"), "1-cycle guard must use combinational assign");
 }
 
 #[test]

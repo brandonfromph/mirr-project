@@ -77,7 +77,7 @@ fn run_checks(html: &str, dir: &Path) -> Vec<Check> {
         Check {
             id: "B12",
             label: "LICENSE contains Apache",
-            pass: license_text.contains("GNU GENERAL PUBLIC"),
+            pass: license_text.contains("Apache License"),
         },
         Check { id: "B13", label: "CITATION.cff exists", pass: citation_path.exists() },
         Check { id: "B14", label: "lra:version meta", pass: html.contains("lra:version") },

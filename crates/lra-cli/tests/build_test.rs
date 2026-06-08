@@ -222,7 +222,7 @@ As demonstrated by [@ref2026], the approach works.
     assert!(output_path.exists(), "index.html was not created");
 
     // Create LICENSE, CITATION.cff, and paper.css required for full Bronze
-    fs::write(dir.join("LICENSE"), "GNU GENERAL PUBLIC LICENSE\nVersion 3\n").unwrap();
+    fs::write(dir.join("LICENSE"), "Apache License\nVersion 2.0\n").unwrap();
     fs::write(
         dir.join("CITATION.cff"),
         "cff-version: 1.2.0\ntitle: Bronze Test\nlicense: Apache-2.0\n",

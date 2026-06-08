@@ -107,12 +107,12 @@ def noc_router(
         guard n15(!${tx_valid_15}) for 1 cycles;
         reflex r15 { on ${tx_valid_15} { sv15 = true; sd15 = ${tx_data_15}; } on n15 { sv15 = sv14; sd15 = sd14; } }
 
-        signal dest_id: internal u16;
+        signal dest_id: internal u64;
         signal payload: internal u64;
         reflex extract {
             on always {
-                dest_id = (sv15 >> 48) & 4095;
-                payload = sv15 & 281474976710655;
+                dest_id = (sd15 >> 48) & 4095;
+                payload = sd15 & 281474976710655;
             }
         }
 

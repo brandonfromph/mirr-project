@@ -146,7 +146,7 @@ No JavaScript required.
 - `<section id="claims">` exists with an `<ol>` containing `<li>` elements
 - `<section id="references">` exists
 - `<section id="citation">` exists
-- A `LICENSE` file contains "GNU GENERAL PUBLIC LICENSE"
+- A `LICENSE` file contains "Apache License"
 - A `CITATION.cff` file exists
 
 ### 5.2 Silver — Interactive

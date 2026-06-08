@@ -93,13 +93,29 @@ fn test_pattern_chaos_exponential_expansion_stress() {
         name: "D".to_string(),
         params: vec![],
         body: ReflectBlock {
-            statements: vec![ModuleMacroStmt::Signal(mirrc::ast::program::SignalDecl {
-                name: "s".to_string(),
-                kind: mirrc::ast::types::SignalKind::Internal,
-                ty: mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Bool),
-                origin: None,
-                span: None,
-            })],
+            statements: vec![
+                ModuleMacroStmt::Signal(mirrc::ast::program::SignalDecl {
+                    name: "s".to_string(),
+                    kind: mirrc::ast::types::SignalKind::Internal,
+                    ty: mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Bool),
+                    origin: None,
+                    span: None,
+                }),
+                ModuleMacroStmt::Reflex(mirrc::ast::macro_nodes::UnexpandedReflex {
+                    name: "dummy".to_string(),
+                    guard_names: vec![],
+                    statements: vec![mirrc::ast::macro_nodes::ReflexMacroStmt::Assignment(
+                        mirrc::ast::program::Assignment {
+                            target: "s".to_string(),
+                            value: mirrc::ast::expr::Expr::Literal(
+                                mirrc::ast::types::LiteralValue::Bool(true),
+                            ),
+                            span: None,
+                        },
+                    )],
+                    span: None,
+                }),
+            ],
         },
         span: None,
     });

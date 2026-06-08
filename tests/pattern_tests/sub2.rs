@@ -555,8 +555,8 @@ fn sva_emitted_for_pattern_property() {
 fn multiple_calls_produce_distinct_blocks() {
     let result = pipeline_ok(&ventilator_source());
     let sv = emit::verilog::emit_sv(&result);
-    let reflex_count = sv.matches("always_comb begin").count();
-    assert!(reflex_count >= 2, "Should have at least 2 always_comb blocks: found {reflex_count}");
+    let reflex_count = sv.matches("always_ff @").count();
+    assert!(reflex_count >= 2, "Should have at least 2 always_ff blocks: found {reflex_count}");
 }
 
 // =========================================================================

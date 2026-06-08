@@ -15,11 +15,11 @@ fn reflex_section_header() {
 }
 
 #[test]
-fn reflex_always_comb_block() {
+fn reflex_always_ff_block() {
     let result = run_pipeline(MINIMAL_MODULE, &default_config()).unwrap();
     let sv = verilog::emit_sv(&result);
 
-    assert!(sv.contains("always_comb begin"), "reflex must use always_comb block");
+    assert!(sv.contains("always_ff @"), "reflex must use always_ff block");
 }
 
 #[test]
@@ -29,7 +29,7 @@ fn reflex_default_assignment_prevents_latch() {
 
     assert!(
         sv.contains("= '0;"),
-        "always_comb must have default assignments to prevent latch inference"
+        "always_ff must have default assignments to prevent latch inference"
     );
 }
 
@@ -62,7 +62,7 @@ fn reflex_name_in_comment() {
     let result = run_pipeline(MINIMAL_MODULE, &default_config()).unwrap();
     let sv = verilog::emit_sv(&result);
 
-    assert!(sv.contains("// Reflex: r"), "reflex name must appear in comment");
+    assert!(sv.contains("// Unified Reflex Block for: b"), "reflex target must appear in comment");
 }
 
 #[test]

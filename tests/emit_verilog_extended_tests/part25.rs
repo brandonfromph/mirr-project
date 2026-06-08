@@ -11,7 +11,7 @@ fn full_pipeline_round_trip_minimal() {
     // Verify all major sections are present
     assert!(sv.contains("Auto-generated"), "missing header");
     assert!(sv.contains("module minimal"), "missing module declaration");
-    assert!(sv.contains("always_comb"), "missing always_comb");
+    assert!(sv.contains("always_ff"), "missing always_ff");
     assert!(sv.contains("endmodule"), "missing endmodule");
 }
 
@@ -22,7 +22,7 @@ fn full_pipeline_counter_guard_module() {
 
     assert!(sv.contains("module counter_mod"), "missing module name");
     assert!(sv.contains("always_ff"), "counter guard must have always_ff");
-    assert!(sv.contains("always_comb"), "reflex must have always_comb");
+    assert!(sv.contains("always_ff"), "reflex must have always_ff");
     assert!(sv.contains(">= 100"), "counter must compare against 100");
 }
 

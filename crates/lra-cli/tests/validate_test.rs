@@ -43,7 +43,7 @@ fn make_gold(html: &str) -> String {
 fn setup_dir(dir: &Path, html: &str, silver: bool, gold: bool) {
     fs::create_dir_all(dir).unwrap();
     fs::write(dir.join("index.html"), html).unwrap();
-    fs::write(dir.join("LICENSE"), "GNU GENERAL PUBLIC LICENSE\nVersion 3\n").unwrap();
+    fs::write(dir.join("LICENSE"), "Apache License\nVersion 2.0\n").unwrap();
     fs::write(dir.join("CITATION.cff"), "cff-version: 1.2.0\ntitle: Test\nlicense: Apache-2.0\n")
         .unwrap();
     fs::write(dir.join("paper.css"), "/* placeholder */\n").unwrap();

@@ -21,6 +21,7 @@ module noc_test_wrapper {
         port_tx_valid_12: in bool; port_tx_data_12: in u64;
         port_tx_valid_13: in bool; port_tx_data_13: in u64;
         port_tx_valid_14: in bool; port_tx_data_14: in u64;
+        port_tx_valid_15: in bool; port_tx_data_15: in u64;
 
         // RX ports for test output
         port_rx_valid_0: out bool; port_rx_data_0: out u64;
@@ -38,9 +39,10 @@ module noc_test_wrapper {
         port_rx_valid_12: out bool; port_rx_data_12: out u64;
         port_rx_valid_13: out bool; port_rx_data_13: out u64;
         port_rx_valid_14: out bool; port_rx_data_14: out u64;
-    }
+        port_rx_valid_15: out bool; port_rx_data_15: out u64;
+        }
 
-    router_mod::noc_router(
+        router_mod::noc_router(
         clk, rst_n,
         port_tx_valid_0, port_tx_data_0,
         port_tx_valid_1, port_tx_data_1,
@@ -57,6 +59,7 @@ module noc_test_wrapper {
         port_tx_valid_12, port_tx_data_12,
         port_tx_valid_13, port_tx_data_13,
         port_tx_valid_14, port_tx_data_14,
+        port_tx_valid_15, port_tx_data_15,
         port_rx_valid_0, port_rx_data_0,
         port_rx_valid_1, port_rx_data_1,
         port_rx_valid_2, port_rx_data_2,
@@ -71,6 +74,7 @@ module noc_test_wrapper {
         port_rx_valid_11, port_rx_data_11,
         port_rx_valid_12, port_rx_data_12,
         port_rx_valid_13, port_rx_data_13,
-        port_rx_valid_14, port_rx_data_14
-    );
+        port_rx_valid_14, port_rx_data_14,
+        port_rx_valid_15, port_rx_data_15
+        );
 }

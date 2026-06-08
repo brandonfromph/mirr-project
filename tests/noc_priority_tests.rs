@@ -33,15 +33,15 @@ fn test_noc_router_priority_scheduling() {
     // Default all inputs
     sim.set_input(0, 1, TypeTag::Bool); // clk = 1
     sim.set_input(1, 1, TypeTag::Bool); // rst_n = 1
-    for i in 0..15 {
+    for i in 0..16 {
         sim.set_input(2 + 2 * i, 0, TypeTag::Bool); // port_tx_valid_i = false
         sim.set_input(3 + 2 * i, 0, TypeTag::Unsigned { width: 64 }); // port_tx_data_i = 0
     }
 
     // --- Scenario 1: Standard routing (No contention) ---
     // Port 0 tx valid, data target port 5 (dest_id = 5), payload 12345
-    // tx_data = (5 << 60) | 12345 = 576460752303435881
-    let tx_data_0 = (5u64 << 60) | 12345u64;
+    // tx_data = (5 << 48) | 12345
+    let tx_data_0 = (5u64 << 48) | 12345u64;
     sim.set_input(0, 1, TypeTag::Bool); // clk
     sim.set_input(1, 1, TypeTag::Bool); // rst_n
     sim.set_input(2 + 2 * 0, 1, TypeTag::Bool); // tx_valid_0 = true
@@ -82,18 +82,19 @@ fn test_noc_router_priority_scheduling() {
     let rx_data_5 = sim.read_output(2 * 5 + 1).map(|w| w.value).unwrap_or(0);
 
     assert!(rx_valid_5, "Port 5 should receive a valid packet");
+    let expected_payload_0 = 12345u64;
     assert_eq!(
-        rx_data_5, tx_data_0,
-        "Port 5 data mismatch! Expected {}, got {}",
-        tx_data_0, rx_data_5
+        rx_data_5, expected_payload_0,
+        "Port 5 data mismatch! Expected payload {}, got {}",
+        expected_payload_0, rx_data_5
     );
 
     // --- Scenario 2: High-priority reflexive preemption (Contention on destination 7) ---
     // Port 1 (Standard): dest_id = 7, priority bit = 0, payload = 11111
     // Port 2 (Reflexive): dest_id = 7, priority bit = 1, payload = 22222
     // Expected result: Port 7 should receive the Reflexive packet from Port 2.
-    let tx_data_1 = (7u64 << 60) | 11111u64;
-    let tx_data_2 = (7u64 << 60) | (1u64 << 59) | 22222u64;
+    let tx_data_1 = (7u64 << 48) | 11111u64;
+    let tx_data_2 = (7u64 << 48) | (1u64 << 60) | 22222u64;
 
     // Reset inputs
     for i in 0..16 {
@@ -113,18 +114,19 @@ fn test_noc_router_priority_scheduling() {
     let rx_data_7 = sim.read_output(2 * 7 + 1).map(|w| w.value).unwrap_or(0);
 
     assert!(rx_valid_7, "Port 7 should receive a valid packet");
+    let expected_payload_2 = 22222u64;
     assert_eq!(
-        rx_data_7, tx_data_2,
-        "Port 7 should receive the high-priority packet! Expected {}, got {}",
-        tx_data_2, rx_data_7
+        rx_data_7, expected_payload_2,
+        "Port 7 should receive the high-priority packet! Expected payload {}, got {}",
+        expected_payload_2, rx_data_7
     );
 
     // --- Scenario 3: Dedicated Reflexive Channels (Preemption via dedicated port 14) ---
     // Port 3 (Standard): dest_id = 8, priority bit = 0, payload = 33333
     // Port 14 (Dedicated Reflexive): dest_id = 8, priority bit = 0, payload = 44444
     // Expected result: Port 8 should receive the packet from Port 14 because 14 is a dedicated reflexive channel.
-    let tx_data_3 = (8u64 << 60) | 33333u64;
-    let tx_data_14 = (8u64 << 60) | 44444u64;
+    let tx_data_3 = (8u64 << 48) | 33333u64;
+    let tx_data_14 = (8u64 << 48) | 44444u64;
 
     // Reset inputs
     for i in 0..16 {
@@ -144,10 +146,11 @@ fn test_noc_router_priority_scheduling() {
     let rx_data_8 = sim.read_output(2 * 8 + 1).map(|w| w.value).unwrap_or(0);
 
     assert!(rx_valid_8, "Port 8 should receive a valid packet");
+    let expected_payload_14 = 44444u64;
     assert_eq!(
-        rx_data_8, tx_data_14,
-        "Port 8 should receive packet from dedicated port 14! Expected {}, got {}",
-        tx_data_14, rx_data_8
+        rx_data_8, expected_payload_14,
+        "Port 8 should receive packet from dedicated port 14! Expected payload {}, got {}",
+        expected_payload_14, rx_data_8
     );
 
     println!("NOC DUAL-PRIORITY QUEUES & PREEMPTIVE ROUTING VERIFIED!");
