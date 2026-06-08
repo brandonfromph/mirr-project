@@ -3,8 +3,13 @@ name = "mirr-kb-native"
 version = "0.1.0"
 edition = "2021"
 description = "MIRR native Rust RAG core with semantic and lexical retrieval"
+authors = ["Brandon <brandonfromph@users.noreply.github.com>"]
 license = "Apache-2.0"
-publish = false
+repository = "https://github.com/brandonfromph/mirr-project"
+readme = "README.md"
+keywords = ["rag", "semantic-search", "sqlite", "embedding", "safety-critical"]
+categories = ["database-implementations", "text-processing"]
+rust-version = "1.70"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

@@ -2,9 +2,14 @@
 name = "mirr-mcp-control-plane"
 version = "0.1.0"
 edition = "2021"
-description = "Rust MIRR control-plane"
+description = "MIRR Model Context Protocol (MCP) control-plane bridge"
+authors = ["Brandon <brandonfromph@users.noreply.github.com>"]
 license = "Apache-2.0"
-publish = false
+repository = "https://github.com/brandonfromph/mirr-project"
+readme = "README.md"
+keywords = ["mcp", "control-plane", "governance", "safety-critical"]
+categories = ["asynchronous", "network-programming"]
+rust-version = "1.70"
 
 [dependencies]
 axum = { version = "0.6", features = ["http1", "json"] }
