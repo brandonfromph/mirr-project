@@ -132,6 +132,7 @@ mirr-debt-remediation.skill
 
 # ─── Python Scripts (project rule: no Python) ─────────────────────────────────
 *.py
+!fusesoc/generators/*.py
 
 # ─── PowerShell Scripts (internal CI helpers) ─────────────────────────────────
 scripts/*.ps1
