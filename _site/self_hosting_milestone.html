@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIRR Self-Hosting Milestone — v1 — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="MIRR Self-Hosting Milestone — v1 — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MIRR Self-Hosting Milestone — v1 — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#1-what-self-hosting-means-for-mirr">1  What &quot;Self-Hosting&quot; Means for MIRR</a></li>
+        <li><a href="#2-completed-tasks">2  Completed Tasks</a></li>
+        <li><a href="#3-architecture-overview">3  Architecture Overview</a></li>
+        <li><a href="#4-mirr-core-language-subset">4  MIRR-CORE Language Subset</a></li>
+        <li><a href="#5-ir-contract">5  IR Contract</a></li>
+        <li><a href="#6-test-coverage-summary">6  Test Coverage Summary</a></li>
+          <li class="toc-h3"><a href="#integration-parity-tests-testsselfhostingparitytestsrs">Integration Parity Tests (`tests/self_hosting_parity_tests.rs`)</a></li>
+          <li class="toc-h3"><a href="#expanded-self-hosting-test-suites">Expanded Self-Hosting Test Suites</a></li>
+        <li><a href="#7-cli-interface">7  CLI Interface</a></li>
+        <li><a href="#8-release-checklist">8  Release Checklist</a></li>
+          <li class="toc-h3"><a href="#compiler-in-mirr-modules">Compiler-in-MIRR Modules</a></li>
+          <li class="toc-h3"><a href="#standard-library">Standard Library</a></li>
+          <li class="toc-h3"><a href="#infrastructure">Infrastructure</a></li>
+        <li><a href="#9-rust-reference-fallback">9  Rust Reference Fallback</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Self-Hosting Milestone — v1</h1>
+<blockquote>
+<p><strong>Status:</strong> ACHIEVED<br />
+<strong>Date:</strong> 2026-03-01<br />
+<strong>IR Contract Version:</strong> 1.0<br />
+<strong>Reference:</strong> <code>docs/self_hosting_core_spec.md</code>, <code>docs/self_hosting_ir_contract.md</code></p>
+</blockquote>
+<hr />
+<h2 id="1-what-self-hosting-means-for-mirr">1  What "Self-Hosting" Means for MIRR</h2>
+<p>MIRR self-hosting is the ability for the MIRR compiler pipeline—lexer, parser, semantic validator, temporal guard lowering, and emitter—to be expressed in <strong>MIRR-CORE</strong> (the self-hostable subset of MIRR) and executed by the Rust bootstrap runner to produce output <strong>byte-stable or semantically equivalent</strong> to the reference Rust implementation.</p>
+<p>This milestone covers <strong>stage-1 self-hosting</strong> (hosted execution): the Rust runtime loads and executes MIRR-in-MIRR compiler modules. Full native self-hosting (MIRR compiling itself without a Rust host) is a future goal.</p>
+<hr />
+<h2 id="2-completed-tasks">2  Completed Tasks</h2>
+<table><thead><tr><th>#</th><th>Task</th><th>Deliverable</th><th>Status</th></tr></thead><tbody>
+<tr><td>1</td><td>Define MIRR-CORE subset</td><td><code>docs/self_hosting_core_spec.md</code></td><td>✅</td></tr>
+<tr><td>2</td><td>IR contract + JSON schemas</td><td><code>docs/self_hosting_ir_contract.md</code>, <code>docs/schemas/*.schema.json</code></td><td>✅</td></tr>
+<tr><td>3</td><td>Standard library primitives</td><td><code>stdlib/mirr_core/{str,token_buffer,fixed_map,diagnostics}.mirr</code></td><td>✅</td></tr>
+<tr><td>4</td><td>MIRR tokenizer in MIRR-CORE</td><td><code>compiler_mirr/lexer.mirr</code> + golden token fixtures</td><td>✅</td></tr>
+<tr><td>5</td><td>MIRR parser in MIRR-CORE</td><td><code>compiler_mirr/parser.mirr</code> + parse parity suite</td><td>✅</td></tr>
+<tr><td>6</td><td>Semantic validation in MIRR-CORE</td><td><code>compiler_mirr/semantic.mirr</code> + validation parity tests</td><td>✅</td></tr>
+<tr><td>7</td><td>Temporal guard lowering in MIRR-CORE</td><td><code>compiler_mirr/temporal_lowering.mirr</code> + netlist parity tests</td><td>✅</td></tr>
+<tr><td>8</td><td>Emitter in MIRR-CORE</td><td><code>compiler_mirr/emitter.mirr</code></td><td>✅</td></tr>
+<tr><td>9</td><td>Bootstrap runner</td><td><code>src/bootstrap_runner/</code> + <code>--selfhost-compile</code> CLI flag</td><td>✅</td></tr>
+<tr><td>10</td><td>Differential testing + CI gate</td><td><code>tests/self_hosting_parity_tests.rs</code> (21 tests)</td><td>✅</td></tr>
+<tr><td>11</td><td>Milestone freeze</td><td><code>docs/self_hosting_milestone.md</code> (this document)</td><td>✅</td></tr>
+</tbody></table>
+<hr />
+<h2 id="3-architecture-overview">3  Architecture Overview</h2>
+<pre><code class="language-text">┌──────────────────────────────────────────────────────────────────┐
+│                     MIRR Self-Hosting Architecture               │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   Source (.mirr)                                                 │
+│       │                                                          │
+│       ▼                                                          │
+│   ┌─────────┐   ┌──────────┐   ┌────────────┐   ┌───────────┐    │
+│   │  Read   │ → │  Parse   │ → │  Validate  │ → │ Temporal  │    │
+│   │         │   │          │   │            │   │  Lower    │    │
+│   └─────────┘   └──────────┘   └────────────┘   └───────────┘    │
+│       │              │              │                  │         │
+│       │              │              │                  ▼         │
+│       │              │              │          ┌─────────────┐   │
+│       │              │              │          │  Fixture    │   │
+│       │              │              │          │  Parity     │   │
+│       │              │              │          └─────────────┘   │
+│       │              │              │                  │         │
+│       ▼              ▼              ▼                  ▼         │
+│   BootstrapResult { stages: [Read, Parse, Validate,              │
+│                              TemporalLower, FixtureParity] }     │
+│                                                                  │
+├──────────────────────────────────────────────────────────────────┤
+│  Rust Reference Pipeline       MIRR-CORE Pipeline (future)       │
+│  ────────────────────────      ──────────────────────────────    │
+│  src/lexer/                    compiler_mirr/lexer.mirr          │
+│  src/parser/                   compiler_mirr/parser.mirr         │
+│  src/validation/               compiler_mirr/semantic.mirr       │
+│  src/temporal/                 compiler_mirr/temporal_lowering   │
+│                                  .mirr                           │
+│  src/emit/                     compiler_mirr/emitter.mirr        │
+│                                                                  │
+│  Both produce output conforming to:                              │
+│    docs/schemas/mirr_ast.schema.json                             │
+│    docs/schemas/mirr_temporal_netlist.schema.json                │
+└──────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr />
+<h2 id="4-mirr-core-language-subset">4  MIRR-CORE Language Subset</h2>
+<p>The self-hostable subset (defined in <code>docs/self_hosting_core_spec.md</code>):</p>
+<ul>
+<li><strong>Included:</strong> integers (i32, u16, u32), booleans, fixed-size arrays, structs/records, bounded loops (<code>for i in 0..N</code>), functions, modules, enums (discriminant-based).</li>
+<li><strong>Excluded:</strong> dynamic memory allocation, unbounded recursion, advanced generics, floating point, closures/lambdas, trait objects.</li>
+<li><strong>NASA Safety Rules:</strong> all loops bounded, no heap allocation, stack depth statically verifiable, all array accesses bounds-checked.</li>
+</ul>
+<hr />
+<h2 id="5-ir-contract">5  IR Contract</h2>
+<p>Both pipelines must produce JSON matching the schemas in <code>docs/schemas/</code>:</p>
+<table><thead><tr><th>Schema</th><th>File</th><th>Validates</th></tr></thead><tbody>
+<tr><td>AST</td><td><code>mirr_ast.schema.json</code></td><td>Parsed module structure</td></tr>
+<tr><td>Temporal Netlist</td><td><code>mirr_temporal_netlist.schema.json</code></td><td>Lowered guard netlist</td></tr>
+</tbody></table>
+<p>The contract version is <code>"ir_version": "1.0"</code> and is embedded in every JSON envelope.</p>
+<hr />
+<h2 id="6-test-coverage-summary">6  Test Coverage Summary</h2>
+<h3 id="integration-parity-tests-testsselfhostingparitytestsrs">Integration Parity Tests (<code>tests/self_hosting_parity_tests.rs</code>)</h3>
+<p>Contains <strong>21 rigorous tests</strong> verifying end-to-end self-hosted compiler stage stability and golden fixture matching.</p>
+<h3 id="expanded-self-hosting-test-suites">Expanded Self-Hosting Test Suites</h3>
+<table><thead><tr><th>Suite</th><th>File</th><th>What It Verifies</th></tr></thead><tbody>
+<tr><td>Extended Core</td><td><code>tests/bootstrap_runner_extended_core_tests.rs</code></td><td>Deeper core component execution</td></tr>
+<tr><td>Extended Stress</td><td><code>tests/bootstrap_runner_extended_stress_tests.rs</code></td><td>Scaling boundaries and failure recovery</td></tr>
+<tr><td>MIRR Stages</td><td><code>tests/bootstrap_runner_mirr_stages_tests.rs</code></td><td>Direct MIRR-to-MIRR pipeline execution</td></tr>
+<tr><td>IR Schema</td><td><code>tests/self_hosting_ir_schema_tests.rs</code></td><td>JSON schema conformance</td></tr>
+<tr><td>Bootstrap Parity</td><td><code>tests/bootstrap_parity_tests.rs</code></td><td>Rust-to-MIRR compiler byte-stability</td></tr>
+</tbody></table>
+<hr />
+<h2 id="7-cli-interface">7  CLI Interface</h2>
+<pre><code class="language-bash"><span class="hl-cmt"># Run the self-hosting bootstrap pipeline</span>
+<span class="hl-fn">cargo</span> run --bin mirr-compile -- --selfhost-compile examples/neonatal_respirator.mirr
+
+<span class="hl-cmt"># Also emit the netlist JSON to stdout</span>
+<span class="hl-fn">cargo</span> run --bin mirr-compile -- --selfhost-compile --selfhost-compile-json examples/neonatal_respirator.mirr</code></pre>
+<p>Output format:</p>
+<pre><code>Self-Host Bootstrap: PASS — examples/neonatal_respirator.mirr
+  Stage 1: ✓ [Read] 366 bytes read
+  Stage 2: ✓ [Parse] 3 signal(s), 1 guard(s), 1 reflex(es)
+  Stage 3: ✓ [Validate] all semantic checks passed
+  Stage 4: ✓ [TemporalLower] 1 guard(s) lowered — 3 signal(s) generated
+  Stage 5: ✓ [FixtureParity] matches tests/fixtures/netlist/neonatal_respirator.json
+[SELF-HOST PASS] 5/5 stages passed — examples/neonatal_respirator.mirr
+</code></pre>
+<p>Exit code: <code>0</code> on PASS, <code>1</code> on FAIL.</p>
+<hr />
+<h2 id="8-release-checklist">8  Release Checklist</h2>
+<h3 id="compiler-in-mirr-modules">Compiler-in-MIRR Modules</h3>
+<ul>
+<li>[x] <code>compiler_mirr/lexer.mirr</code> — tokenizer logic ported to MIRR-CORE</li>
+<li>[x] <code>compiler_mirr/parser.mirr</code> — parser logic ported to MIRR-CORE</li>
+<li>[x] <code>compiler_mirr/semantic.mirr</code> — semantic validation ported to MIRR-CORE</li>
+<li>[x] <code>compiler_mirr/temporal_lowering.mirr</code> — temporal guard lowering ported to MIRR-CORE</li>
+<li>[x] <code>compiler_mirr/emitter.mirr</code> — netlist emission ported to MIRR-CORE</li>
+</ul>
+<h3 id="standard-library">Standard Library</h3>
+<ul>
+<li>[x] <code>stdlib/mirr_core/str.mirr</code> — string slice operations</li>
+<li>[x] <code>stdlib/mirr_core/token_buffer.mirr</code> — bounded token buffer</li>
+<li>[x] <code>stdlib/mirr_core/fixed_map.mirr</code> — fixed-capacity hash map</li>
+<li>[x] <code>stdlib/mirr_core/diagnostics.mirr</code> — diagnostic builder</li>
+</ul>
+<h3 id="infrastructure">Infrastructure</h3>
+<ul>
+<li>[x] <code>src/bootstrap_runner/mod.rs</code> &amp; <code>types.rs</code> — 5-stage pipeline orchestrator</li>
+<li>[x] <code>--selfhost-compile</code> CLI flag wired in <code>src/main.rs</code></li>
+<li>[x] Extensive expanded CI test gates (21 base tests + extended suites)</li>
+</ul>
+<hr />
+<h2 id="9-rust-reference-fallback">9  Rust Reference Fallback</h2>
+<p>The Rust compiler remains the <strong>reference implementation</strong> and safety fallback.
+Any discrepancy between the Rust pipeline and the MIRR-CORE pipeline is a bug
+in the MIRR-CORE port, not the other way around. The golden fixtures in
+<code>tests/fixtures/</code> are generated by the Rust pipeline and are authoritative.</p>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

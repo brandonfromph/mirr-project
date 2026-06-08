@@ -150,9 +150,12 @@ debug_proc.rs
 test_replace
 test_replace.rs
 
-# ─── Large Log & Audit Files (internal only, not useful to contributors) ──────
+# Large Log & Audit Files (internal only, not useful to contributors) ──────
 # Note: *.log is already covered above; these are .txt variants that slip through
+cargo_tests_output.txt
+diff_output.txt
 ubuntu_test_log.txt
+
 clippy_err.txt
 clippy_log.txt
 audit_results.txt
@@ -189,3 +192,16 @@ parser_patch.diff
 
 # ─── LanceDB & crates test DBs ───────────────────────────────────────────────
 crates/**/.kb-test-*/
+
+# Coq/Rocq build artifacts
+*.vo
+*.vok
+*.vos
+*.glob
+*.aux
+.coq-native/
+.lia.cache
+.nia.cache
+
+# Skills dev directory
+.skills-dev/

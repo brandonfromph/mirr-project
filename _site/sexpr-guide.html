@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S-Expression IR Guide — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="S-Expression IR Guide — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="S-Expression IR Guide — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#what-is-the-s-expression-ir">What is the S-expression IR?</a></li>
+        <li><a href="#when-to-use-emit-sexpr">When to use --emit sexpr</a></li>
+        <li><a href="#the-8-sexpr-variants">The 8 SExpr variants</a></li>
+          <li class="toc-h3"><a href="#atoms">Atoms</a></li>
+          <li class="toc-h3"><a href="#compound-forms">Compound forms</a></li>
+        <li><a href="#tagged-list-conventions">Tagged list conventions</a></li>
+        <li><a href="#round-trip-property">Round-trip property</a></li>
+          <li class="toc-h3"><a href="#using-the-round-trip-in-rust">Using the round-trip in Rust</a></li>
+        <li><a href="#bounded-evaluation-model">Bounded evaluation model</a></li>
+          <li class="toc-h3"><a href="#resource-bounds">Resource bounds</a></li>
+          <li class="toc-h3"><a href="#evaluation-state">Evaluation state</a></li>
+          <li class="toc-h3"><a href="#supported-special-forms">Supported special forms</a></li>
+        <li><a href="#hygienic-macro-expansion">Hygienic macro expansion</a></li>
+        <li><a href="#reader-macros">Reader macros</a></li>
+        <li><a href="#example-output">Example output</a></li>
+        <li><a href="#error-codes-e8xx">Error codes (E8xx)</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>S-Expression IR Guide</h1>
+<p>The S-expression intermediate representation (IR) provides a homoiconic
+encoding of MIRR programs. Every AST node maps to a unique S-expression
+form, enabling code-as-data transformations, hygienic macros, and
+bounded compile-time evaluation.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#what-is-the-s-expression-ir">What is the S-expression IR?</a></li>
+<li><a href="#when-to-use---emit-sexpr">When to use --emit sexpr</a></li>
+<li><a href="#the-8-sexpr-variants">The 8 SExpr variants</a></li>
+<li><a href="#tagged-list-conventions">Tagged list conventions</a></li>
+<li><a href="#round-trip-property">Round-trip property</a></li>
+<li><a href="#bounded-evaluation-model">Bounded evaluation model</a></li>
+<li><a href="#hygienic-macro-expansion">Hygienic macro expansion</a></li>
+<li><a href="#reader-macros">Reader macros</a></li>
+<li><a href="#example-output">Example output</a></li>
+<li><a href="#error-codes-e8xx">Error codes (E8xx)</a></li>
+</ol>
+<hr />
+<h2 id="what-is-the-s-expression-ir">What is the S-expression IR?</h2>
+<p>S-expressions (symbolic expressions) are a parenthesized prefix notation
+originating from Lisp. In MIRR, the S-expression IR is a faithful
+encoding of the compiler's abstract syntax tree (AST) as nested lists
+and atoms. This gives you a human-readable, machine-parseable view of
+exactly what the compiler sees after parsing.</p>
+<p>The S-expression IR serves three purposes:</p>
+<ol>
+<li><strong>Compile-time metaprogramming</strong> -- code-as-data transformations via
+the eval/apply core and hygienic macros.</li>
+<li><strong>Debugging and tooling</strong> -- a serializable, human-readable IR that
+external tools can consume and produce.</li>
+<li><strong>Self-hosting validation</strong> -- a verified round-trip invariant between
+the AST and the S-expression encoding ensures the encoding is lossless.</li>
+</ol>
+<p>The implementation lives in <code>src/sexpr/</code> (7 submodules, approximately
+2,100 lines).</p>
+<hr />
+<h2 id="when-to-use-emit-sexpr">When to use --emit sexpr</h2>
+<p>Use the S-expression output when you need to:</p>
+<ul>
+<li><strong>Inspect the AST</strong> after parsing. The S-expression form shows every
+signal, guard, reflex, property, and pattern call in a structured tree.</li>
+<li><strong>Build external tools</strong> that read or transform MIRR programs. Parse
+the S-expression text, manipulate the tree, and convert it back.</li>
+<li><strong>Debug pattern expansion</strong>. The <code>pattern-origins</code> section records
+which pattern call generated each expanded element.</li>
+<li><strong>Verify round-trip correctness</strong>. Convert your program to S-expressions
+and back to confirm the encoding preserves all information.</li>
+</ul>
+<pre><code class="language-bash"><span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit sexpr my_module.mirr</code></pre>
+<hr />
+<h2 id="the-8-sexpr-variants">The 8 SExpr variants</h2>
+<p>The core <code>SExpr</code> enum (defined in <code>src/sexpr/types.rs</code>) has 8 variants.
+Four are atoms (leaf values), four are compound forms:</p>
+<h3 id="atoms">Atoms</h3>
+<table><thead><tr><th>Variant</th><th>Syntax</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>Symbol(String)</code></td><td><code>signal</code>, <code>guard</code>, <code>always</code></td><td>Identifiers, keywords, operators</td></tr>
+<tr><td><code>Integer(u64)</code></td><td><code>42</code>, <code>1000</code></td><td>Widths, cycle counts, delay values</td></tr>
+<tr><td><code>Bool(bool)</code></td><td><code>true</code>, <code>false</code></td><td>Boolean literals</td></tr>
+<tr><td><code>Str(String)</code></td><td><code>"airway_pressure"</code></td><td>Signal names, module names, pattern names</td></tr>
+</tbody></table>
+<h3 id="compound-forms">Compound forms</h3>
+<table><thead><tr><th>Variant</th><th>Syntax</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>List(Vec&lt;SExpr&gt;)</code></td><td><code>(signal "name" input bool)</code></td><td>Tagged lists (the primary structural form)</td></tr>
+<tr><td><code>Quote(Box&lt;SExpr&gt;)</code></td><td><code>'(expr)</code></td><td>Returns the expression unevaluated</td></tr>
+<tr><td><code>Quasiquote(Box&lt;SExpr&gt;)</code></td><td><code>`(expr)</code></td><td>Template with unquote splices</td></tr>
+<tr><td><code>Unquote(Box&lt;SExpr&gt;)</code></td><td><code>,expr</code></td><td>Evaluated and spliced into enclosing quasiquote</td></tr>
+</tbody></table>
+<p>Every S-expression tree is bounded: lists by <code>MAX_SEXPR_NODES</code> (4,096),
+strings by <code>MAX_SEXPR_STRING_LEN</code> (1 MB).</p>
+<hr />
+<h2 id="tagged-list-conventions">Tagged list conventions</h2>
+<p>MIRR S-expressions use <strong>tagged lists</strong> where the first element (the
+head) is a symbol that identifies the form. The remaining elements are
+the form's fields.</p>
+<pre><code>(signal "airway_pressure" input (unsigned 16))
+ ^^^^^^  ^^^^^^^^^^^^^^^^^  ^^^^^  ^^^^^^^^^^^
+  head     name (string)     kind   type
+</code></pre>
+<p>Common head tags:</p>
+<table><thead><tr><th>Head symbol</th><th>Structure</th></tr></thead><tbody>
+<tr><td><code>program</code></td><td><code>(program (patterns ...) (module ...))</code></td></tr>
+<tr><td><code>module</code></td><td><code>(module "name" (signals ...) (guards ...) (reflexes ...) ...)</code></td></tr>
+<tr><td><code>signal</code></td><td><code>(signal "name" input/output/internal type)</code></td></tr>
+<tr><td><code>guard</code></td><td><code>(guard "name" condition cycles)</code></td></tr>
+<tr><td><code>reflex</code></td><td><code>(reflex "name" (on "guard1" ...) (assign "target" value) ...)</code></td></tr>
+<tr><td><code>property</code></td><td><code>(property "name" assert/cover/assume formula)</code></td></tr>
+<tr><td><code>pattern-def</code></td><td><code>(pattern-def "name" (params ...) (reflect ...))</code></td></tr>
+<tr><td><code>pattern-call</code></td><td><code>(pattern-call "name" arg1 arg2 ...)</code></td></tr>
+</tbody></table>
+<hr />
+<h2 id="round-trip-property">Round-trip property</h2>
+<p>The bidirectional converter (<code>src/sexpr/convert.rs</code>) guarantees:</p>
+<pre><code>parse_mirr(source) == sexpr_to_ast(ast_to_sexpr(parse_mirr(source)))
+</code></pre>
+<p>This means you can convert any parsed MIRR program to S-expressions,
+print it to text, parse the text back into S-expressions, convert back
+to AST, and get an identical program.</p>
+<p>The two key functions are:</p>
+<ul>
+<li><code>ast_to_sexpr(program)</code> -- converts a <code>MirrProgram</code> AST to an <code>SExpr</code>
+tree. This is a total function (never fails).</li>
+<li><code>sexpr_to_ast(sexpr)</code> -- converts an <code>SExpr</code> tree back to a
+<code>MirrProgram</code>. Returns <code>Result&lt;MirrProgram, MirrError&gt;</code> because the
+S-expression may be malformed.</li>
+</ul>
+<p>The round-trip property is verified by self-hosting tests in
+<code>tests/self_hosting_ir_schema_tests.rs</code> and
+<code>tests/self_hosting_parity_tests.rs</code>.</p>
+<h3 id="using-the-round-trip-in-rust">Using the round-trip in Rust</h3>
+<pre><code class="language-rust"><span class="hl-kw">use</span> mirr::sexpr::{ast_to_sexpr, sexpr_to_ast, print_sexpr, parse_sexpr};
+
+<span class="hl-cmt">// AST -&gt; S-expression -&gt; text</span>
+<span class="hl-kw">let</span> sexpr <span class="hl-op">=</span> ast_to_sexpr(<span class="hl-op">&amp;</span>program);
+<span class="hl-kw">let</span> text <span class="hl-op">=</span> print_sexpr(<span class="hl-op">&amp;</span>sexpr);
+
+<span class="hl-cmt">// text -&gt; S-expression -&gt; AST</span>
+<span class="hl-kw">let</span> parsed_sexpr <span class="hl-op">=</span> parse_sexpr(<span class="hl-op">&amp;</span>text)?;
+<span class="hl-kw">let</span> recovered_program <span class="hl-op">=</span> sexpr_to_ast(<span class="hl-op">&amp;</span>parsed_sexpr)?;
+
+<span class="hl-fn">assert_eq</span><span class="hl-op">!</span>(program, recovered_program);</code></pre>
+<hr />
+<h2 id="bounded-evaluation-model">Bounded evaluation model</h2>
+<p>The eval/apply core (<code>src/sexpr/eval.rs</code>) implements a bounded
+interpreter for compile-time metaprogramming. It is deliberately
+not a general-purpose Lisp interpreter -- it omits lambda/closures
+to avoid Turing-completeness, which would violate the NASA Power-of-10
+termination guarantee.</p>
+<h3 id="resource-bounds">Resource bounds</h3>
+<table><thead><tr><th>Constant</th><th>Value</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>MAX_EVAL_STEPS</code></td><td>10,000</td><td>Total evaluation steps (fuel counter). Hard error at 0.</td></tr>
+<tr><td><code>MAX_EVAL_DEPTH</code></td><td>32</td><td>Maximum nesting depth for evaluation frames.</td></tr>
+<tr><td><code>MAX_SEXPR_DEPTH</code></td><td>64</td><td>Maximum nesting depth for parsing/printing.</td></tr>
+<tr><td><code>MAX_SEXPR_NODES</code></td><td>4,096</td><td>Maximum nodes in a single S-expression tree.</td></tr>
+<tr><td><code>MAX_SEXPR_STRING_LEN</code></td><td>1,048,576</td><td>Maximum input string length (1 MB).</td></tr>
+<tr><td><code>MAX_MACRO_EXPAND_DEPTH</code></td><td>8</td><td>Maximum depth for hygienic macro expansion.</td></tr>
+<tr><td><code>MAX_READER_MACROS</code></td><td>32</td><td>Maximum registered reader macros.</td></tr>
+</tbody></table>
+<h3 id="evaluation-state">Evaluation state</h3>
+<p>The evaluator uses an explicit <code>EvalState</code> with a step counter, depth
+tracker, and flat environment (no closures):</p>
+<pre><code class="language-rust"><span class="hl-kw">use</span> mirr::sexpr::{eval, <span class="hl-type">EvalState</span>, parse_sexpr};
+
+<span class="hl-kw">let</span> expr <span class="hl-op">=</span> parse_sexpr(<span class="hl-str">&quot;(if true 42 99)&quot;</span>)?;
+<span class="hl-kw">let</span> <span class="hl-kw">mut</span> state <span class="hl-op">=</span> <span class="hl-type">EvalState</span>::new();
+<span class="hl-kw">let</span> result <span class="hl-op">=</span> eval(<span class="hl-op">&amp;</span>expr, <span class="hl-op">&amp;</span><span class="hl-kw">mut</span> state)?;
+<span class="hl-cmt">// result == SExpr::Integer(42)</span></code></pre>
+<h3 id="supported-special-forms">Supported special forms</h3>
+<p>The evaluator supports these forms:</p>
+<table><thead><tr><th>Form</th><th>Syntax</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>quote</code></td><td><code>(quote expr)</code></td><td>Return expression unevaluated</td></tr>
+<tr><td><code>if</code></td><td><code>(if cond then else)</code></td><td>Conditional (bool, nonzero int, or nonempty list = true)</td></tr>
+<tr><td><code>list</code></td><td><code>(list a b c)</code></td><td>Construct a list from evaluated arguments</td></tr>
+<tr><td><code>car</code></td><td><code>(car lst)</code></td><td>First element of a list</td></tr>
+<tr><td><code>cdr</code></td><td><code>(cdr lst)</code></td><td>All elements after the first</td></tr>
+<tr><td><code>cons</code></td><td><code>(cons head tail)</code></td><td>Prepend an element to a list</td></tr>
+<tr><td><code>eq?</code></td><td><code>(eq? a b)</code></td><td>Structural equality test</td></tr>
+<tr><td><code>symbol?</code></td><td><code>(symbol? x)</code></td><td>Type predicate: is this a symbol?</td></tr>
+<tr><td><code>list?</code></td><td><code>(list? x)</code></td><td>Type predicate: is this a list?</td></tr>
+<tr><td><code>integer?</code></td><td><code>(integer? x)</code></td><td>Type predicate: is this an integer?</td></tr>
+<tr><td><code>bool?</code></td><td><code>(bool? x)</code></td><td>Type predicate: is this a boolean?</td></tr>
+<tr><td><code>match-type</code></td><td><code>(match-type type clause1 clause2 ...)</code></td><td>Pattern-match on type structure</td></tr>
+</tbody></table>
+<hr />
+<h2 id="hygienic-macro-expansion">Hygienic macro expansion</h2>
+<p>The macro expander (<code>src/sexpr/macro_expand.rs</code>) supports
+quasiquote/unquote-based template instantiation with hygienic name
+resolution. This prevents name collisions when expanding templates.</p>
+<p>Internal names generated during expansion are suffixed with
+<code>__hyg{expansion_id}</code> to ensure uniqueness.</p>
+<pre><code class="language-rust"><span class="hl-kw">use</span> mirr::sexpr::<span class="hl-type">MacroExpander</span>;
+
+<span class="hl-kw">let</span> <span class="hl-kw">mut</span> expander <span class="hl-op">=</span> <span class="hl-type">MacroExpander</span>::new();
+<span class="hl-kw">let</span> expanded <span class="hl-op">=</span> expander.expand_hygienic(
+    <span class="hl-op">&amp;</span>template,
+    <span class="hl-op">&amp;</span>param_names,
+    <span class="hl-op">&amp;</span>bindings,
+    <span class="hl-num">0</span>,  <span class="hl-cmt">// initial depth</span>
+)?;</code></pre>
+<p>Expansion is bounded by <code>MAX_MACRO_EXPAND_DEPTH</code> (8 levels) and
+<code>MAX_SEXPR_NODES</code> (4,096 nodes).</p>
+<hr />
+<h2 id="reader-macros">Reader macros</h2>
+<p>Reader macros (<code>src/sexpr/reader.rs</code>) transform notation during
+S-expression parsing (read time), before evaluation. Three built-in
+reader macros provide hardware-domain shorthand:</p>
+<table><thead><tr><th>Macro</th><th>Input</th><th>Output</th></tr></thead><tbody>
+<tr><td><code>#freq</code></td><td><code>100MHz</code></td><td><code>(frequency 100000000)</code></td></tr>
+<tr><td><code>#delay</code></td><td><code>5</code></td><td><code>(temporal-delay 5)</code></td></tr>
+<tr><td><code>#range</code></td><td><code>0..255</code></td><td><code>(refinement-range 0 255)</code></td></tr>
+</tbody></table>
+<p>The <code>#freq</code> macro supports Hz, KHz/kHz, MHz, and GHz suffixes.</p>
+<p>Custom reader macros can be registered up to the <code>MAX_READER_MACROS</code>
+(32) limit.</p>
+<hr />
+<h2 id="example-output">Example output</h2>
+<p>Given this MIRR source:</p>
+<pre><code>module neonatal_respirator {
+    signals {
+        respirator_enable: in bool
+        airway_pressure:   in u16
+        clamp_valve:       out bool
+    }
+
+    guard sustained_pressure_drop {
+        when airway_pressure &lt; 50
+        for  1000 cycles;
+    }
+
+    reflex emergency_clamp {
+        on sustained_pressure_drop {
+            clamp_valve = true;
+        }
+    }
+}
+</code></pre>
+<p>The <code>--emit sexpr</code> output is:</p>
+<pre><code class="language-lisp">(program
+  (patterns)
+  (<span class="hl-kw">module</span>
+    <span class="hl-str">&quot;neonatal_respirator&quot;</span>
+    (signals
+      (<span class="hl-kw">signal</span> <span class="hl-str">&quot;respirator_enable&quot;</span> input bool)
+      (<span class="hl-kw">signal</span> <span class="hl-str">&quot;airway_pressure&quot;</span> input (unsigned <span class="hl-num">16</span>))
+      (<span class="hl-kw">signal</span> <span class="hl-str">&quot;clamp_valve&quot;</span> output bool))
+    (guards
+      (<span class="hl-kw">guard</span> <span class="hl-str">&quot;sustained_pressure_drop&quot;</span>
+        (< (<span class="hl-kw">signal</span> <span class="hl-str">&quot;airway_pressure&quot;</span>) <span class="hl-num">50</span>)
+        <span class="hl-num">1000</span>))
+    (reflexes
+      (<span class="hl-kw">reflex</span> <span class="hl-str">&quot;emergency_clamp&quot;</span>
+        (on <span class="hl-str">&quot;sustained_pressure_drop&quot;</span>)
+        (assign <span class="hl-str">&quot;clamp_valve&quot;</span> true)))
+    (properties)
+    (pattern-calls)
+    (pattern-origins)))
+</code></pre>
+<p>Notice:</p>
+<ul>
+<li>Signal types are encoded as <code>bool</code> or <code>(unsigned 16)</code> / <code>(signed 32)</code>.</li>
+<li>Guard conditions use prefix notation: <code>(&lt; (signal "airway_pressure") 50)</code>.</li>
+<li>The <code>for 1000 cycles</code> clause becomes the integer <code>1000</code> as the guard's
+third field.</li>
+<li>Empty sections (<code>patterns</code>, <code>properties</code>, etc.) are present but empty.</li>
+</ul>
+<hr />
+<h2 id="error-codes-e8xx">Error codes (E8xx)</h2>
+<p>All S-expression errors use the E8xx range. The error is returned as a
+<code>MirrError::SExprError</code> with a message string containing the code.</p>
+<table><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>E800</td><td>Invalid token (e.g., bare <code>#</code> without <code>t</code> or <code>f</code>), or unexpected trailing tokens</td></tr>
+<tr><td>E801</td><td>Empty input, unterminated string literal, or unexpected end of input</td></tr>
+<tr><td>E802</td><td>Unbalanced parentheses (missing <code>)</code> or unexpected <code>)</code>)</td></tr>
+<tr><td>E803</td><td>Nesting depth exceeds <code>MAX_SEXPR_DEPTH</code> (64)</td></tr>
+<tr><td>E804</td><td>Node/token count exceeds <code>MAX_SEXPR_NODES</code> (4,096) or input exceeds <code>MAX_SEXPR_STRING_LEN</code></td></tr>
+<tr><td>E805</td><td>Structural error: unexpected form, unknown operator, or expected symbol as list head</td></tr>
+<tr><td>E806</td><td>Semantic error: missing required fields, wrong types, unknown parameter kinds</td></tr>
+<tr><td>E807</td><td>Signal kind or type error in S-expression (unknown kind, invalid type form)</td></tr>
+<tr><td>E808</td><td>Expression nesting exceeds max depth, or invalid reader macro argument</td></tr>
+<tr><td>E809</td><td>AST to S-expression conversion error</td></tr>
+<tr><td>E810</td><td>Round-trip validation failure</td></tr>
+<tr><td>E811</td><td>Evaluation depth exceeds <code>MAX_EVAL_DEPTH</code> (32)</td></tr>
+<tr><td>E812</td><td>Evaluation steps exceed <code>MAX_EVAL_STEPS</code> (10,000)</td></tr>
+<tr><td>E813</td><td>Undefined symbol during evaluation</td></tr>
+<tr><td>E814</td><td>Macro expansion depth exceeded (<code>MAX_MACRO_EXPAND_DEPTH</code> = 8)</td></tr>
+<tr><td>E815</td><td>Reader macro error: too many registered macros, or unknown reader macro name</td></tr>
+</tbody></table>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="tutorial.html">Tutorial</a> -- Getting started with MIRR</li>
+<li><a href="error_codes.html">Error Codes</a> -- Full list of compiler diagnostics</li>
+<li><a href="contributing.html">Contributing</a> -- Coding standards and campaign workflow</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

@@ -9,7 +9,7 @@
 //
 // Apache-2.0 — see LICENSE for terms.
 
-var CACHE_NAME = 'mirr-v9';
+var CACHE_NAME = 'mirr-v10';
 var ASSETS = [
   'index.html',
   'paper.css',

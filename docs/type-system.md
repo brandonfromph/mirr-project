@@ -96,7 +96,7 @@ with the target signal type. Compatible means:
 
 ### T9: Arithmetic Negation (`-expr`)
 
-{: .warning }
+> [!WARNING]
 > Negating an unsigned value produces a signed result one bit wider:
 > `-(u8)` yields `i9`. This is intentional -- two's complement negation
 > requires the sign bit. Plan your signal widths accordingly.
@@ -124,7 +124,7 @@ with the target signal type. Compatible means:
 
 ## The Cross-Category Rule
 
-{: .important }
+> [!IMPORTANT]
 > Signed and unsigned types never mix in the same expression. There is no
 > implicit conversion. This eliminates an entire class of bugs common in
 > C/C++ where signed-to-unsigned promotion causes unexpected behavior.

@@ -48,10 +48,8 @@ cycle (typically 10 nanoseconds).
 
 Software can be fast, but it cannot guarantee timing. Hardware can.
 
-{: .important }
-> In safety-critical systems, timing is not a performance metric -- it is a
-> correctness requirement. A response that arrives 1 millisecond late in a
-> neonatal ventilator is not slow; it is wrong.
+> [!IMPORTANT]
+> In safety-critical systems, timing is not a performance metric -- it is a correctness requirement. A response that arrives 1 millisecond late in a neonatal ventilator is not slow; it is wrong.
 
 ### What is a clock cycle?
 
@@ -162,21 +160,16 @@ to `true`.
 
 ### How they connect
 
-```
-             +------------------+
-  Input      |                  |     Output
-  signals -->|  Guard (watches) |
-             |  Reflex (acts)   |--> signals
-             |                  |
-             +------------------+
-
-  airway_pressure (in) --> [guard checks "< 50 for 1000 cycles"]
-                                        |
-                                        v (triggers)
-                               [reflex sets clamp_valve = true]
-                                        |
-                                        v
-                              clamp_valve (out) --> hardware pin
+```mermaid
+graph TD
+    A["Input Signals<br/>(airway_pressure)"] -->|watches| B("Guard<br/>'< 50 for 1000 cycles'")
+    B -->|triggers| C{"Reflex<br/>set clamp_valve = true"}
+    C -->|acts| D["Output Signals<br/>(clamp_valve to hardware pin)"]
+    
+    style B fill:#2b2b2b,stroke:#f39c12,stroke-width:2px,color:#fff
+    style C fill:#2b2b2b,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style A fill:#1a1a1a,stroke:#3498db,color:#fff
+    style D fill:#1a1a1a,stroke:#2ecc71,color:#fff
 ```
 
 ### The module wrapper
@@ -195,7 +188,7 @@ module neonatal_respirator {
 
 ## Lesson 3: Your first MIRR program
 
-{: .tip }
+> [!TIP]
 > If you remember only one thing from Lesson 2: **Signal** is data,
 > **Guard** is a condition over time, **Reflex** is the action. Everything
 > else in MIRR exists to support these three.
@@ -208,6 +201,9 @@ safety monitor.
 A ventilator for newborns has an air pressure sensor. If the pressure
 drops below 50 (arbitrary units) and stays low for 1000 clock cycles,
 we want to engage an emergency clamp valve.
+
+> [!TIP]
+> In this example, we use the ergonomic `signals { ... }` block to declare multiple signals. You can also declare them individually: `signal airway_pressure: in u16;`.
 
 ### Step 1: Create the file
 
@@ -270,7 +266,7 @@ real chip.
 # SystemVerilog Assertions — formal verification checks
 cargo run --bin mirr-compile -- --emit sva my_respirator.mirr
 
-# JSON — machine-readable AST for tools
+# JSON — machine-readable output for tools
 cargo run --bin mirr-compile -- --emit json my_respirator.mirr
 
 # DOT — graph visualization (open with Graphviz)
@@ -403,17 +399,32 @@ guard does NOT trigger. The counter resets and starts over.
 
 ### How it works inside the chip
 
-The compiler turns each guard into a **counter circuit**:
+The compiler turns each guard into a **counter circuit** (state machine):
 
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> 0
+    
+    0 --> 1: true
+    0 --> 0: false
+    
+    1 --> 2: true
+    1 --> 0: false
+    
+    2 --> 3: true
+    2 --> 0: false
+    
+    3 --> 4: true
+    3 --> 0: false
+    
+    4 --> 5: true
+    4 --> 0: false
+    
+    5 --> 5: true (Triggered)
+    5 --> 0: false
 ```
-Clock:    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-          +-----+-----+-----+-----+-----+-----+-----+
-temp>100? | yes | yes | yes |  no | yes | yes | yes |
-          +-----+-----+-----+-----+-----+-----+-----+
-counter:  |  1  |  2  |  3  |  0  |  1  |  2  |  3  |
-          +-----+-----+-----+-----+-----+-----+-----+
-trigger:  |  no |  no |  no |  no |  no |  no |  no |
-```
+
 
 The counter increments each cycle the condition is true. If the condition
 becomes false, the counter resets to 0. The guard triggers only when the
@@ -530,7 +541,7 @@ scenario where `clamp_valve` becomes true within 100 cycles."
 
 ### Properties do NOT generate hardware
 
-{: .warning }
+> [!WARNING]
 > Properties produce verification assertions, not hardware. A property like
 > `always (pressure > 10)` does not create a circuit that enforces the
 > condition. Only reflexes drive hardware outputs.
@@ -631,6 +642,7 @@ for different signals or thresholds. Do not use patterns for one-off logic.
 The MIRR compiler can emit ten output formats. Each serves a different
 purpose.
 
+````carousel
 ### Verilog (`--emit verilog`)
 
 Verilog is the standard hardware description language used by chip
@@ -643,7 +655,7 @@ Intel Quartus, Synopsys Design Compiler).
 ```bash
 cargo run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### FIRRTL (`--emit firrtl`)
 
 FIRRTL (Flexible Intermediate Representation for Register-Transfer Level)
@@ -656,7 +668,7 @@ transformations.
 ```bash
 cargo run --bin mirr-compile -- --emit firrtl examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### R-SPU Assembly (`--emit rspu`)
 
 R-SPU (Reflex Signal Processing Unit) is MIRR's instruction-level backend.
@@ -669,7 +681,7 @@ runtime monitors.
 ```bash
 cargo run --bin mirr-compile -- --emit rspu examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### DOT (`--emit dot`)
 
 DOT is a graph description language used by Graphviz. The output is a
@@ -681,7 +693,7 @@ visual diagram showing how signals, guards, and reflexes connect.
 cargo run --bin mirr-compile -- --emit dot examples/neonatal_respirator.mirr
 # Then open the .dot file with Graphviz or an online viewer
 ```
-
+<!-- slide -->
 ### JSON (`--emit json`)
 
 A machine-readable representation of the compiled program. Useful for
@@ -693,7 +705,7 @@ analyze the compiled output.
 The JSON output includes:
 - `schema_version` — version of the JSON schema (currently `"0.2.0"`)
 - `ir_version` — version of the IR contract (currently `"1.0"`)
-- `program` — the full AST (abstract syntax tree) of your module
+- `program` — the full ECS entity graph of your module
 - `simplify_stats` — how many logic simplifications were applied
 - `width_stats` — bit-width inference results
 - `temporal` — the lowered temporal guard netlist
@@ -702,7 +714,7 @@ The JSON output includes:
 ```bash
 cargo run --bin mirr-compile -- --emit json examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### Testbench (`--emit testbench`)
 
 Generates a SystemVerilog testbench that instantiates the compiled module
@@ -714,7 +726,7 @@ or open-source simulators like Verilator.
 ```bash
 cargo run --bin mirr-compile -- --emit testbench examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### S-expression IR (`--emit sexpr`)
 
 Emits the compiled design as an S-expression intermediate representation.
@@ -726,7 +738,7 @@ MIRR S-expression evaluator.
 ```bash
 cargo run --bin mirr-compile -- --emit sexpr examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### FPGA Scaffold (`--emit fpga_scaffold`)
 
 Generates a complete FPGA project scaffold including pin constraints,
@@ -738,7 +750,7 @@ development boards.
 ```bash
 cargo run --bin mirr-compile -- --emit fpga_scaffold examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### Build Script (`--emit build_script`)
 
 Generates a Makefile or build script that invokes the appropriate
@@ -750,7 +762,7 @@ automating synthesis flows.
 ```bash
 cargo run --bin mirr-compile -- --emit build_script examples/neonatal_respirator.mirr
 ```
-
+<!-- slide -->
 ### DSP (`--emit dsp`)
 
 Emits a DSP (Digital Signal Processing) block description for modules
@@ -763,6 +775,8 @@ hardware multiplier/accumulator blocks.
 ```bash
 cargo run --bin mirr-compile -- --emit dsp examples/neonatal_respirator.mirr
 ```
+````
+
 
 ---
 
@@ -789,12 +803,15 @@ the problem belongs to.
 
 **Unbalanced parentheses:**
 
-```mirr
-// Wrong:
-guard g {
-    when (pressure < 50
-    for 1 cycles;
-}
+```diff
+- guard g {
+-     when (pressure < 50
+-     for 1 cycles;
+- }
++ guard g {
++     when (pressure < 50)
++     for 1 cycles;
++ }
 ```
 
 ```
@@ -805,11 +822,13 @@ guard g {
 
 **Too many tokens:**
 
-```mirr
-// Wrong:
-signals {
-    x: in out bool
-}
+```diff
+- signals {
+-     x: in out bool
+- }
++ signals {
++     x: in bool
++ }
 ```
 
 ```
@@ -822,12 +841,13 @@ signals {
 
 **Duplicate names:**
 
-```mirr
-// Wrong:
-signals {
-    x: in bool
-    x: out bool   // x declared twice
-}
+```diff
+  signals {
+-     x: in bool
+-     x: out bool   // x declared twice
++     x_in: in bool
++     x_out: out bool
+  }
 ```
 
 ```
@@ -838,11 +858,12 @@ Semantic error: [E201] Duplicate signal name: 'x'. First defined at line 2.
 
 **Undeclared signal reference:**
 
-```mirr
-guard g {
-    when ghost > 50      // 'ghost' is not declared
-    for 1 cycles;
-}
+```diff
+  guard g {
+-     when ghost > 50      // 'ghost' is not declared
++     when host > 50
+      for 1 cycles;
+  }
 ```
 
 ```
@@ -900,46 +921,53 @@ important as understanding what it can do.
 
 ### No loops
 
-There is no `for`, `while`, or `loop`. Hardware does not "loop" — it
-exists physically and operates every cycle. If you need something to
-happen N times, you use a guard with `for N cycles`.
+> [!WARNING]
+> There is no `for`, `while`, or `loop`. Hardware does not "loop" — it
+> exists physically and operates every cycle. If you need something to
+> happen N times, you use a guard with `for N cycles`.
 
 ### No functions
 
-There are no callable functions. Patterns (`def`/`reflect`) look like
-functions but they are compile-time templates — they are expanded before
-anything runs. There is no call stack.
+> [!WARNING]
+> There are no callable functions. Patterns (`def`/`reflect`) look like
+> functions but they are compile-time templates — they are expanded before
+> anything runs. There is no call stack.
 
 ### No conditionals
 
-There is no `if`/`else`. Guards and reflexes are the MIRR equivalent of
-conditional behavior: "if this condition persists, then take this action."
+> [!NOTE]
+> There is no `if`/`else`. Guards and reflexes are the MIRR equivalent of
+> conditional behavior: "if this condition persists, then take this action."
 
 ### No variables
 
-There are no mutable variables. Signals carry values, but you cannot
-declare a local variable and change it over time. The only "state" in the
-hardware is in the guard counters and the `prev()` memory.
+> [!IMPORTANT]
+> There are no mutable variables. Signals carry values, but you cannot
+> declare a local variable and change it over time. The only "state" in the
+> hardware is in the guard counters and the `prev()` memory.
 
 ### No heap, no allocation
 
-There is no `malloc`, `new`, or dynamic allocation. Hardware is fixed at
-manufacturing time. You cannot create or destroy circuits at runtime.
+> [!CAUTION]
+> There is no `malloc`, `new`, or dynamic allocation. Hardware is fixed at
+> manufacturing time. You cannot create or destroy circuits at runtime.
 
 ### No recursion
 
-The compiler forbids recursion in all forms. This is a NASA/JPL Power-of-10
-safety rule: every algorithm must have a bounded execution time. Recursion
-makes execution time unpredictable.
+> [!CAUTION]
+> The compiler forbids recursion in all forms. This is a NASA/JPL Power-of-10
+> safety rule: every algorithm must have a bounded execution time. Recursion
+> makes execution time unpredictable.
 
 ### No floating point
 
-All types are integers (signed or unsigned) or booleans. Floating point arithmetic
-requires specialized hardware units and is outside MIRR's scope.
+> [!IMPORTANT]
+> All types are integers (signed or unsigned) or booleans. Floating point arithmetic
+> requires specialized hardware units and is outside MIRR's scope.
 
 ### Why so minimal?
 
-{: .note }
+> [!NOTE]
 > MIRR follows NASA/JPL Power-of-10 coding rules: no recursion, bounded
 > loops, bounded memory. Every language construct maps to hardware with
 > predictable timing and resource usage.

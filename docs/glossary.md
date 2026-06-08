@@ -20,6 +20,8 @@ Terminology and acronyms used throughout the MIRR project.
 | **DSL** | Domain-Specific Language |
 | **Dual-Mode Execution** | R-SPU execution mode switching between normal and exception handling |
 | **EDA** | Electronic Design Automation |
+| **ECS** | Entity Component System — data-oriented architecture introduced in Phase 3 for cache-friendly flat array iteration |
+| **EntityId** | A 32-bit handle representing an AST node or hardware primitive in the ECS Registry |
 | **EQY** | Yosys Equivalence Checker tool |
 | **Exception Code** | Numeric identifier for R-SPU trap conditions (E7xx range) |
 | **FIRRTL** | Flexible Intermediate Representation for RTL — Chisel's IR, used as a MIRR emission target |
@@ -48,6 +50,7 @@ Terminology and acronyms used throughout the MIRR project.
 | **Quasiquote** | S-expression template with unquote splicing for code generation |
 | **R-SPU** | Reflex Signal Processing Unit — the custom processor MIRR targets |
 | **Reader Macro** | User-defined syntax extension in the S-expression parser |
+| **Registry** | The central data store in the ECS containing all components as contiguous arrays |
 | **Reflex** | MIRR action that fires when a guard triggers; the only way to drive outputs |
 | **Rocq** | Interactive theorem prover (formerly Coq); used for FIRWINE proofs |
 | **RTL** | Register Transfer Level — hardware description abstraction |

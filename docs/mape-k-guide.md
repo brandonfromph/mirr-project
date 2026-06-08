@@ -43,8 +43,7 @@ These five phases execute in strict sequence on every simulation tick,
 forming a feedback loop. The knowledge base is shared across all phases,
 enabling post-run analysis and auditability.
 
-The implementation lives in `src/mape_k/` (8 files, approximately
-1,990 lines).
+The implementation lives in `src/mape_k/` (10 files, plus the `bridge/` logic, approximately 8,000 lines).
 
 ---
 
@@ -169,7 +168,7 @@ to JSON for DO-254 evidence trails.
 
 ## Bounded LTL properties
 
-The Analyzer evaluates three bounded temporal operators over rolling
+The Analyzer evaluates six bounded temporal operators over rolling
 signal windows. All algorithms are iterative with O(window_size)
 complexity per property per tick.
 
@@ -218,6 +217,39 @@ TemporalProperty::Persists(
 This checks: "pressure has been below 50 for at least 10 consecutive
 ticks somewhere in the window." This corresponds directly to the MIRR
 `guard ... for N cycles` construct.
+
+### AlwaysImplies -- G(P -> Q)
+
+Whenever P holds, Q must also hold in the exact same cycle. The analyzer
+evaluates both predicates on each tick in the window and returns a
+violation if P is true but Q is false.
+
+```rust
+TemporalProperty::AlwaysImplies(
+    SignalPredicate::IsTrue("alarm_active".into()),
+    SignalPredicate::IsTrue("buzzer_on".into()),
+)
+```
+
+### NeverImplies -- never (P -> Q)
+
+Ensures that P implies Q is *never* universally true. There must exist at least
+one tick in the window where P is true and Q is false. Violation occurs if
+no such counter-example exists.
+
+### AlwaysFollowedBy -- always (P followed_by N Q)
+
+Whenever P holds, Q must hold exactly N cycles later. The analyzer
+checks each tick where P is true, looks ahead N ticks within the window,
+and returns a violation if Q is false or the window ends before N ticks.
+
+```rust
+TemporalProperty::AlwaysFollowedBy(
+    SignalPredicate::IsTrue("button_press".into()),
+    5,
+    SignalPredicate::IsTrue("led_on".into()),
+)
+```
 
 ---
 

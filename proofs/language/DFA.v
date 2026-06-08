@@ -141,6 +141,7 @@ Proof.
     split.
     + (* initial state in bounds *)
       unfold total_state_space.
+      apply Nat.neq_0_lt_0.
       apply Nat.pow_nonzero.
       discriminate.
     + split.

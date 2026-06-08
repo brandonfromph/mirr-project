@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Codes — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Error Codes — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Error Codes — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#error-code-scheme">Error Code Scheme</a></li>
+        <li><a href="#wasm-builder-errors-e001e004">WASM Builder Errors (E001–E004)</a></li>
+        <li><a href="#parse-errors-module-e100e166">Parse Errors — Module (E100–E166)</a></li>
+        <li><a href="#parse-errors-expressions-e170e181">Parse Errors — Expressions (E170–E181)</a></li>
+        <li><a href="#parse-errors-mega-1-type-annotations-e177e183-e190e197">Parse Errors -- MEGA-1 Type Annotations (E177–E183, E190–E197)</a></li>
+        <li><a href="#semantic-errors-e2xx">Semantic Errors (E2xx)</a></li>
+        <li><a href="#temporal-errors-e3xx">Temporal Errors (E3xx)</a></li>
+        <li><a href="#pattern-errors-e4xx">Pattern Errors (E4xx)</a></li>
+          <li class="toc-h3"><a href="#semantic-level-e400">Semantic-level (E400)</a></li>
+          <li class="toc-h3"><a href="#parse-level-e401e425">Parse-level (E401–E425)</a></li>
+        <li><a href="#width-inference-errors-e5xx">Width Inference Errors (E5xx)</a></li>
+        <li><a href="#type-errors-e6xx">Type Errors (E6xx)</a></li>
+        <li><a href="#extended-type-errors-mega-1-e610-e625">Extended Type Errors -- MEGA-1 (E610--E625)</a></li>
+        <li><a href="#r-spu-emission-errors-e7xx">R-SPU Emission Errors (E7xx)</a></li>
+        <li><a href="#s-expression-errors-e800-e815">S-Expression Errors (E800--E815)</a></li>
+        <li><a href="#removed-variants">Removed Variants</a></li>
+        <li><a href="#diagnostic-rendering-err-001">Diagnostic Rendering (ERR-001)</a></li>
+        <li><a href="#see-also">See Also</a></li>
+        <li><a href="#e9xx-sat-simplification">E9xx — SAT Simplification</a></li>
+        <li><a href="#e901e910-build-certification-mega-16">E901–E910 — Build Certification (MEGA-16)</a></li>
+        <li><a href="#e12xx-testing-tooling-mega-17">E12xx — Testing &amp; Tooling (MEGA-17)</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR Error Code Reference</h1>
+<blockquote>
+<p><strong>Status:</strong> Active
+<strong>Last updated:</strong> 2026-03-20 (063: E001–E004 WASM builder)</p>
+</blockquote>
+<p>All MIRR compiler diagnostics carry a bracketed error code in the format <code>[Ennn]</code>.
+The prefix classifies the error; the full code maps to a single creation site.</p>
+<h2 id="error-code-scheme">Error Code Scheme</h2>
+<table><thead><tr><th>Prefix</th><th>Range</th><th>Category</th><th>Variant</th></tr></thead><tbody>
+<tr><td>E0xx</td><td>0–99</td><td>WASM builder / infrastructure</td><td><code>WasmDiagnostic</code> (crates/mirr-wasm)</td></tr>
+<tr><td>E1xx</td><td>100–199</td><td>Parse / lexical + MEGA-1 annotations</td><td><code>MirrError::ParseError</code></td></tr>
+<tr><td>E2xx</td><td>200–299</td><td>Semantic analysis</td><td><code>MirrError::SemanticError</code></td></tr>
+<tr><td>E3xx</td><td>300–399</td><td>Temporal compilation</td><td><code>MirrError::TemporalCompilationError</code></td></tr>
+<tr><td>E4xx</td><td>400–499</td><td>Pattern expansion</td><td><code>MirrError::PatternError</code></td></tr>
+<tr><td>E5xx</td><td>500–599</td><td>Width inference</td><td><code>WidthDiag</code> (subsystem-local)</td></tr>
+<tr><td>E6xx</td><td>600–699</td><td>Type checking</td><td><code>MirrError::TypeError</code></td></tr>
+<tr><td>E7xx</td><td>700–799</td><td>R-SPU emission</td><td><code>MirrError::RspuError</code></td></tr>
+<tr><td>E8xx</td><td>800–899</td><td>S-expression</td><td><code>MirrError::SExprError</code></td></tr>
+<tr><td>E9xx</td><td>900–910</td><td>Build certification</td><td>LRA CLI receipt/verify</td></tr>
+</tbody></table>
+<h2 id="wasm-builder-errors-e001e004">WASM Builder Errors (E001–E004)</h2>
+<blockquote>
+<p><strong>Status:</strong> Added 2026-03-20 (proposal 063). Infrastructure-level errors
+from the WASM builder (<code>crates/mirr-wasm</code>).</p>
+</blockquote>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E001</td><td><code>Source exceeds maximum size: {N} bytes (limit: 65536)</code></td><td><code>crates/mirr-wasm/src/lib.rs</code></td></tr>
+<tr><td>E002</td><td><code>MAPE-K serialization failed: {e}</code></td><td><code>crates/mirr-wasm/src/lib.rs</code></td></tr>
+<tr><td>E003</td><td><code>MAPE-K simulation produced no result</code></td><td><code>crates/mirr-wasm/src/lib.rs</code></td></tr>
+<tr><td>E004</td><td><code>JSON netlist serialization failed: {e}</code></td><td><code>crates/mirr-wasm/src/lib.rs</code></td></tr>
+</tbody></table>
+<h2 id="parse-errors-module-e100e166">Parse Errors — Module (E100–E166)</h2>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E100</td><td><em>(category fallback prefix)</em></td><td><code>src/error.rs</code></td></tr>
+<tr><td>E101</td><td><code>MIRR source is empty.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E102</td><td><code>Expected 'module' declaration but found end of file.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E103</td><td><code>Expected 'module' declaration, found: {header}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E104</td><td><code>Malformed module declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E105</td><td><code>Module name cannot be empty.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E106</td><td><code>Module '{name}' was not closed with '}'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E107</td><td><code>Unexpected line inside module '{name}': {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E108</td><td><code>Malformed signal declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E109</td><td><code>Signal declaration must end with ';'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E110</td><td><code>Signal declaration must contain ':'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E111</td><td><code>Signal name cannot be empty.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E112</td><td><code>Signal kind (in/out/internal) is missing.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E113</td><td><code>Signal type (bool/uN) is missing.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E114</td><td><code>Too many tokens in signal declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E115</td><td><code>Unknown signal kind: {other}. Expected 'in', 'out', or 'internal'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E116</td><td><code>Invalid unsigned width in type '{ty_str}'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E117</td><td><code>Invalid signed width in type '{ty_str}'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E118</td><td><code>Unknown signal type: {ty_str}. Expected 'bool', 'uN', or 'iN'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E119</td><td><code>Unexpected end of file in guard declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E120</td><td><code>Malformed guard declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E121</td><td><code>Guard name cannot be empty.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E122</td><td><code>Guard '{name}' missing 'when' clause.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E123</td><td><code>Guard '{name}' expected 'when' line, found: {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E124</td><td><code>Malformed 'when' line.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E125</td><td><code>Guard '{name}' condition parse error: {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E126</td><td><code>Guard '{name}' missing 'for' clause.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E127</td><td><code>Guard '{name}' expected 'for' line, found: {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E128</td><td><code>Malformed 'for' line.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E129</td><td><code>Expected cycle count after 'for'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E130</td><td><code>Invalid cycle count in guard '{name}': {str}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E131</td><td><code>Guard '{name}' not closed with '}'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E132</td><td><code>Guard '{name}' expected closing '}', found: {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E133</td><td><code>Assignment missing '=': {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E134</td><td><code>Assignment target cannot be empty.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E135</td><td><code>Assignment to '{target}' has empty right-hand side.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E136</td><td><code>Error in assignment to '{target}': {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E137</td><td><code>Unexpected end of file in reflex declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E138</td><td><code>Malformed reflex declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E139</td><td><code>Reflex name cannot be empty.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E140</td><td><code>Reflex '{name}' missing 'on' clause.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E141</td><td><code>Reflex '{name}' expected 'on' line, found: {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E142</td><td><code>Malformed 'on' line.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E143</td><td><code>Reflex '{name}' has no guard names in 'on' clause.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E144</td><td><code>In reflex '{name}': {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E145</td><td><code>Reflex '{name}' not closed with '}'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E146</td><td><code>Reflex '{name}' expected closing '}', found: {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E147</td><td><code>Unexpected end of file in property declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E148</td><td><code>Malformed property declaration.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E149</td><td><code>Property name cannot be empty.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E150</td><td><code>Property '{name}' missing formula (always/never).</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E151</td><td><code>Property '{name}' not closed with '}'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E152</td><td><code>Property '{name}' expected closing '}', found: {line}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E153</td><td><code>Property '{name}' formula must start with 'always', 'never', or 'eventually'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E154</td><td><code>Property '{name}': {keyword} formula must be wrapped in parentheses.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E155</td><td><code>Property '{name}' antecedent error: {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E156</td><td><code>Property '{name}' consequent error: {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E157</td><td><code>Property '{name}' formula error: {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E158</td><td><code>Property '{name}': expected 'eventually within N (expr)'.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E159</td><td><code>Property '{name}': eventually within requires parenthesized expression.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E160</td><td><code>Property '{name}': invalid cycle count '{str}' in eventually within.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E161</td><td><code>Property '{name}': eventually within requires cycles &gt;= 1.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E162</td><td><code>Property '{name}': expected 'P followed_by N Q' with delay and response expression.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E163</td><td><code>Property '{name}': invalid delay '{str}' in followed_by.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E164</td><td><code>Property '{name}': followed_by requires delay &gt;= 1.</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E165</td><td><code>Property '{name}' trigger error: {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+<tr><td>E166</td><td><code>Property '{name}' response error: {e}</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+</tbody></table>
+<h2 id="parse-errors-expressions-e170e181">Parse Errors — Expressions (E170–E181)</h2>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E170</td><td><code>Empty expression.</code></td><td><code>src/parser/expr_parser.rs</code></td></tr>
+<tr><td>E171</td><td><code>Unbalanced parentheses in expression.</code></td><td><code>src/parser/expr_parser.rs</code></td></tr>
+<tr><td>E172</td><td><code>Expression depth exceeds limit of {N}.</code></td><td><code>src/parser/expr_parser.rs</code></td></tr>
+<tr><td>E173</td><td><code>Unexpected end of expression.</code></td><td><code>src/parser/expr_parser.rs</code></td></tr>
+<tr><td>E174</td><td><code>Unexpected token at start of expression: {token}</code></td><td><code>src/parser/expr_parser.rs</code></td></tr>
+<tr><td>E175</td><td><code>Expected closing ')' in expression.</code></td><td><code>src/parser/expr_parser.rs</code></td></tr>
+<tr><td>E176</td><td><code>Unexpected token in expression: {token}</code></td><td><code>src/parser/expr_parser.rs</code></td></tr>
+<tr><td>E180</td><td><code>Integer literal too large: '{str}'.</code></td><td><code>src/lexer/tokenizer.rs</code></td></tr>
+<tr><td>E181</td><td><code>Unexpected character '{c}' in expression.</code></td><td><code>src/lexer/tokenizer.rs</code></td></tr>
+</tbody></table>
+<h2 id="parse-errors-mega-1-type-annotations-e177e183-e190e197">Parse Errors -- MEGA-1 Type Annotations (E177–E183, E190–E197)</h2>
+<blockquote>
+<p><strong>Note:</strong> E177-E183 are used by both the expression tokenizer/parser and the
+MEGA-1 type annotation parser (<code>src/parser/mod.rs</code>). E190-E197 are exclusive
+to the MEGA-1 annotation parser and were assigned during MEGA-7.</p>
+</blockquote>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E177</td><td><code>Invalid clock domain name.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E178</td><td><code>Empty phantom tag after '#'.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E179</td><td><code>Invalid phantom tag (must be uppercase identifier).</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E182</td><td><code>Duplicate phantom tag annotation.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E183</td><td><code>Too many tokens / unexpected token in signal declaration.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E190</td><td><code>Duplicate 'linear' qualifier in signal declaration.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E191</td><td><code>Conflicting effect qualifier: already have {existing}.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E192</td><td><code>Missing base type after qualifiers.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E193</td><td><code>Empty/malformed refinement clause.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E194</td><td><code>Invalid refinement range: lower bound exceeds upper bound.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E195</td><td><code>Empty clock domain after '@'.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E196</td><td><code>Duplicate 'where' clause in signal declaration.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+<tr><td>E197</td><td><code>Duplicate clock domain annotation.</code></td><td><code>src/parser/mod.rs</code></td></tr>
+</tbody></table>
+<h2 id="semantic-errors-e2xx">Semantic Errors (E2xx)</h2>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E201</td><td><code>Duplicate signal name: '{name}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E202</td><td><code>Duplicate guard name: '{name}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E203</td><td><code>Duplicate reflex name: '{name}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E204</td><td><code>Guard '{name}' references undeclared signal '{sig}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E205</td><td><code>Reflex '{name}' references undeclared guard '{guard}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E206</td><td><code>Reflex '{name}' assigns to input signal '{sig}', which is not writable.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E207</td><td><code>Reflex '{name}' assigns to undeclared signal '{sig}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E208</td><td><code>Reflex '{name}' assignment references undeclared signal '{sig}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E209</td><td><code>'{context}' contains prev('{sig}') with delay 0; delay must be &gt;= 1.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E210</td><td><code>Duplicate property name: '{name}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E211</td><td><code>Property '{name}' references undeclared signal '{sig}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E212</td><td><code>signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally</code></td><td><code>src/expand/mod.rs</code> (hand-written reflex target)</td></tr>
+<tr><td>E213</td><td><code>signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally</code></td><td><code>src/expand/mod.rs</code> (hand-written expression)</td></tr>
+<tr><td>E214</td><td><code>signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally</code></td><td><code>src/expand/mod.rs</code> (cross-expansion target)</td></tr>
+<tr><td>E215</td><td><code>signal '{sig}' is internal to pattern '{pat}' and cannot be referenced externally</code></td><td><code>src/expand/mod.rs</code> (cross-expansion expression)</td></tr>
+<tr><td>E216</td><td><code>Signal '{sig}' has multiple writers: reflex '{r1}' and reflex '{r2}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E229</td><td><code>No field '{field}' on struct signal '{sig}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E230</td><td><code>Signal '{sig}' is not an array type but is indexed.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E217</td><td><code>Duplicate pattern definition: '{name}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E218</td><td><code>Pattern '{name}' has duplicate parameter name: '{param}'.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E219</td><td><code>Pattern '{name}' has {N} parameters (max {M}).</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E220</td><td><code>Pattern '{name}' has empty reflect body.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E221</td><td><code>Pattern '{name}' reflect body exceeds max lines.</code></td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>E222</td><td><em>(reserved: MEGA-10 composite type parsing)</em></td><td>—</td></tr>
+<tr><td>E223</td><td><em>(reserved: MEGA-10 array type validation)</em></td><td>—</td></tr>
+<tr><td>E224</td><td><em>(reserved: MEGA-10 struct field count exceeded)</em></td><td>—</td></tr>
+<tr><td>E225</td><td><em>(reserved: MEGA-10 fixed-point bit width exceeded)</em></td><td>—</td></tr>
+<tr><td>E226</td><td><code>Operator '{op}' cannot be applied to composite type '{ty}'.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E227</td><td><em>(reserved: MEGA-10 bundle elaboration)</em></td><td>—</td></tr>
+<tr><td>E228</td><td><em>(reserved: MEGA-10 array index out of bounds)</em></td><td>—</td></tr>
+</tbody></table>
+<p><strong>ERR-001 enhancements:</strong> E204, E205, E207, E208, E211 now include "Did you mean '{closest}'?" when a close match exists. E201, E202, E203, E210, E216 now include "First defined at line N." when a span is available.</p>
+<h2 id="temporal-errors-e3xx">Temporal Errors (E3xx)</h2>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E300</td><td><em>(category fallback prefix)</em></td><td><code>src/error.rs</code></td></tr>
+<tr><td>E301</td><td><code>Exceeded maximum compile guard depth ({N}).</code></td><td>Recursive depth of compound AND/OR guards exceeded <code>MAX_COMPILE_GUARD_DEPTH</code> (default 64).</td></tr>
+<tr><td>E302</td><td><code>Condition cannot be lowered to hardware -- {reason}</code></td><td>Input condition form is not supported by the IR backend (e.g., non-Boolean comparisons).</td></tr>
+<tr><td>E303</td><td><code>Internal error — missing sub-guard result.</code></td><td>Iterative work-stack reached an inconsistent state where a parent was popped but children were missing.</td></tr>
+<tr><td>E304</td><td><code>Compilation exceeded maximum iteration bound ({N}).</code></td><td>Iterative synthesis loop exceeded <code>MAX_COMPILE_GUARD_DEPTH * 4</code> iterations.</td></tr>
+<tr><td>E305</td><td><code>Internal error — no compilation result.</code></td><td>Synthesis completed but failed to produce a valid <code>CompiledGuard</code> on the result stack.</td></tr>
+<tr><td>E306</td><td><code>Temporal synthesis failed for guard {id}: {reason}</code></td><td>General failure during the ECS Registry-to-IR translation pass.</td></tr>
+<tr><td>—</td><td><code>JSON serialization failed: {e}</code></td><td><code>src/temporal/emit.rs</code></td></tr>
+</tbody></table>
+<h2 id="pattern-errors-e4xx">Pattern Errors (E4xx)</h2>
+<h3 id="semantic-level-e400">Semantic-level (E400)</h3>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E400</td><td><code>Too many pattern definitions (max {N}).</code></td><td><code>src/parser/module_parser.rs</code></td></tr>
+</tbody></table>
+<blockquote>
+<p>Pattern validation errors E217–E221 are in the Semantic Errors table above.</p>
+</blockquote>
+<h3 id="parse-level-e401e425">Parse-level (E401–E425)</h3>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E401</td><td><code>Unexpected end of file in pattern definition.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E402</td><td><code>Malformed pattern definition.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E403</td><td><code>Pattern definition missing '('.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E404</td><td><code>Pattern name cannot be empty.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E405</td><td><code>Pattern '{name}' missing closing ')'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E406</td><td><code>Pattern '{name}' missing 'reflect' block.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E407</td><td><code>Pattern '{name}' expected 'reflect' block, found: {line}</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E408</td><td><code>Pattern '{name}' reflect block missing opening '{'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E409</td><td><code>Pattern definition header not closed with ') {'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E410</td><td><code>Pattern '{name}' has too many parameters (max {N}).</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E411</td><td><code>Pattern '{name}' parameter missing ':': {str}</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E412</td><td><code>Pattern '{name}' has parameter with empty name.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E413</td><td><code>Pattern '{name}' signal parameter '{param}' missing direction.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E414</td><td><code>Pattern '{name}' parameter '{param}': unknown signal kind '{kind}'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E415</td><td><code>Pattern '{name}' signal parameter '{param}' missing type.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E416</td><td><code>Pattern '{name}' parameter '{param}': invalid type '{ty}'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E417</td><td><code>Pattern '{name}' parameter '{param}': unknown type '{ty}'. Expected 'bool', 'uN', or 'iN'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E418</td><td><code>Pattern '{name}' reflect body exceeds maximum brace depth ({N}).</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E419</td><td><code>Pattern '{name}' reflect block not closed with '}'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E420</td><td><code>Pattern call must end with ';'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E421</td><td><code>Pattern call missing '('.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E422</td><td><code>Pattern call has empty name.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E423</td><td><code>Pattern call '{name}' missing closing ')'.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E424</td><td><code>Pattern call '{name}' has too many arguments (max {N}).</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E425</td><td><code>Pattern call '{name}' has empty argument.</code></td><td><code>src/parser/pattern_parser.rs</code></td></tr>
+<tr><td>E426</td><td><code>Pattern '{name}' parameter '{param}' has kind 'pattern' but argument is not a pattern reference.</code></td><td><code>src/expand/substitution.rs</code></td></tr>
+<tr><td>E427</td><td><code>Pattern '{name}' parameter '{param}' does not accept a pattern reference.</code></td><td><code>src/expand/substitution.rs</code></td></tr>
+<tr><td>E428</td><td><code>Circular pattern reference detected: {cycle}.</code></td><td><code>src/expand/cycles.rs</code></td></tr>
+</tbody></table>
+<h2 id="width-inference-errors-e5xx">Width Inference Errors (E5xx)</h2>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E500</td><td><code>expression tree exceeds maximum node count (512)</code></td><td><code>src/width/mod.rs</code></td></tr>
+<tr><td>E501</td><td><code>signal '{name}' has no declared width</code></td><td><code>src/width/constraint.rs</code></td></tr>
+<tr><td>E502</td><td><code>prev signal '{name}' has no declared width</code></td><td><code>src/width/constraint.rs</code></td></tr>
+<tr><td>E503</td><td><code>node {id} ({desc}) has unresolved width</code></td><td><code>src/width/solver.rs</code></td></tr>
+<tr><td>E504</td><td><code>node {id} ({desc}) requires {n} bits, exceeding maximum of 64</code></td><td><code>src/width/solver.rs</code></td></tr>
+<tr><td>E505</td><td><code>assignment to '{target}' truncates {signed|unsigned} {n} bits to {m} bits</code></td><td><code>src/width/solver.rs</code></td></tr>
+<tr><td>E506</td><td><code>SCC detection exceeded iteration budget</code></td><td><code>src/width/scc.rs</code></td></tr>
+<tr><td>E507</td><td><code>SCC with {n} signals exceeds maximum size of {max}; signals include: {names}</code></td><td><code>src/width/scc.rs</code></td></tr>
+<tr><td>E508</td><td><code>nonexpansive SCC solver exceeded iteration budget</code></td><td><code>src/width/scc_solver.rs</code></td></tr>
+<tr><td>E509</td><td><code>signal '{name}' in nonexpansive SCC has no width anchor (add an explicit type annotation)</code></td><td><code>src/width/scc_solver.rs</code></td></tr>
+<tr><td>E510</td><td><code>signal '{name}' is in an expansive SCC but has no provable width bound.</code></td><td><code>src/width/scc_solver.rs</code></td></tr>
+<tr><td>E511</td><td><code>COMPILER BUG: signal '{name}' solved width {i|u}{n} is less than declared {i|u}{m}</code></td><td><code>src/width/verify.rs</code></td></tr>
+</tbody></table>
+<blockquote>
+<p>[!IMPORTANT]
+Error E511 indicates a compiler bug -- the solved width is narrower than
+the declared type. If you encounter this error, please file a bug report
+with the <code>.mirr</code> source that triggered it.</p>
+</blockquote>
+<p><strong>ERR-001 enhancements:</strong> All WidthDiag instances now carry <code>.code</code>, <code>.signal_name</code>, and <code>.help</code> fields for structured diagnostic rendering.</p>
+<h2 id="type-errors-e6xx">Type Errors (E6xx)</h2>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E601</td><td><code>Guard '{name}' condition must be bool, got {ty}.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E602</td><td><code>Assignment to '{target}' ({target_ty}): expression type {expr_ty} is not compatible.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E603</td><td><code>Operator '{op}' requires numeric operands, got {left_ty} and {right_ty}.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E604</td><td><code>Operator '{op}' requires bool operands, got {left_ty} and {right_ty}.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E605</td><td><code>Ordering operator '{op}' cannot compare {left_ty} and {right_ty}.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E606</td><td><code>Equality operator '{op}' cannot compare {left_ty} and {right_ty}.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E607</td><td><code>Operator '^' (xor) requires matching types, got {left_ty} and {right_ty}.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E608</td><td><code>Operator '{op}' cannot mix signed and unsigned operands: {left} and {right}.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>E609</td><td><code>Operator '-' (negate) cannot be applied to bool.</code></td><td><code>src/typeck/mod.rs</code></td></tr>
+</tbody></table>
+<p><strong>ERR-001 change:</strong> E603 was previously overloaded for three distinct error conditions. E608 (mixed signedness) and E609 (negate bool) were split out as unique codes.</p>
+<h2 id="extended-type-errors-mega-1-e610-e625">Extended Type Errors -- MEGA-1 (E610--E625)</h2>
+<blockquote>
+<p><strong>Status:</strong> Error codes defined in <code>src/typeck/extended.rs</code>. Extended type
+checker is implemented but not yet wired into the compilation pipeline (orphaned).</p>
+</blockquote>
+<table><thead><tr><th>Code</th><th>Rule</th><th>Description</th><th>Source</th></tr></thead><tbody>
+<tr><td>E610</td><td>REF-BOUND</td><td>Refinement lower bound exceeds upper bound.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E611</td><td>REF-RANGE</td><td>Value outside refinement range at compile time.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E612</td><td>REF-WIDTH</td><td>Refinement bound exceeds declared bit-width capacity.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E613</td><td>LIN-UNUSED</td><td>Linear signal declared but never consumed.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E614</td><td>LIN-DOUBLE</td><td>Linear signal consumed more than once.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E615</td><td>LIN-ESCAPE</td><td>Linear signal escapes owning module boundary.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E616</td><td>EFF-PURE</td><td>Stateful operation in pure (combinational) context.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E617</td><td>EFF-MIX</td><td>Stateful signal used in pure expression.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E618</td><td>CLK-CROSS</td><td>Clock domain crossing without synchronizer.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E619</td><td>CLK-UNDEF</td><td>Reference to undeclared clock domain.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E620</td><td>PHT-MISMATCH</td><td>Phantom tag mismatch in assignment.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E621</td><td>PHT-UNDEF</td><td>Reference to undeclared phantom tag.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E622</td><td>NAT-OVERFLOW</td><td>Type-level natural exceeds MAX_TYPE_NAT (65536).</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E623</td><td>NAT-MISMATCH</td><td>Type-level natural dimension mismatch.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E624</td><td>DEP-MISMATCH</td><td>Dependent type parameter mismatch.</td><td><code>src/typeck/extended.rs</code></td></tr>
+<tr><td>E625</td><td>SES-PROTOCOL</td><td>Session type protocol violation.</td><td><code>src/typeck/extended.rs</code></td></tr>
+</tbody></table>
+<h2 id="r-spu-emission-errors-e7xx">R-SPU Emission Errors (E7xx)</h2>
+<table><thead><tr><th>Code</th><th>Message pattern</th><th>Source</th></tr></thead><tbody>
+<tr><td>E700</td><td><em>(category fallback prefix)</em></td><td><code>src/error.rs</code></td></tr>
+<tr><td>E701</td><td><code>R-SPU register allocation failed: too many {kind} signals ({count} &gt; {max}).</code></td><td><code>src/emit/rspu_regalloc.rs</code></td></tr>
+<tr><td>E702</td><td><code>R-SPU instruction budget exceeded: {count} instructions &gt; {max}.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E703</td><td><code>R-SPU guard resource exhausted: {count} guards &gt; {max}.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E704</td><td><code>R-SPU expression exceeds maximum node count.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E705</td><td><code>R-SPU temporary registers exhausted.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+<tr><td>E706</td><td><code>R-SPU encoding field overflow: immediate/register exceeds bit-width.</code></td><td><code>src/emit/rspu_encoding.rs</code></td></tr>
+<tr><td>E707</td><td><code>R-SPU unknown or reserved opcode in binary stream.</code></td><td><code>src/emit/rspu_encoding.rs</code></td></tr>
+<tr><td>E708</td><td><code>R-SPU tag violation: runtime type mismatch on tagged register.</code></td><td><code>src/emit/rspu_tagged.rs</code></td></tr>
+<tr><td>E709</td><td><code>R-SPU uninitialized register read.</code></td><td><code>src/emit/rspu_tagged.rs</code></td></tr>
+<tr><td>E710</td><td><code>R-SPU guard index out of bounds.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E711</td><td><code>R-SPU exception depth overflow: nested traps exceed MAX_EXCEPTION_DEPTH.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E712</td><td><code>R-SPU simulation cycle budget exceeded (MAX_SIM_CYCLES).</code></td><td><code>src/emit/rspu_sim.rs</code></td></tr>
+<tr><td>E713</td><td><code>R-SPU trap handler table overflow: exceeds MAX_TRAP_HANDLERS.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E714</td><td><code>R-SPU invalid execution mode for ModeSwitch.</code></td><td><code>src/emit/rspu_exceptions.rs</code></td></tr>
+<tr><td>E715</td><td><code>R-SPU deadline expired: DeadlineSet counter reached zero.</code></td><td><code>src/emit/rspu_sim.rs</code></td></tr>
+<tr><td>E720</td><td><code>R-SPU does not support composite type expressions.</code></td><td><code>src/emit/rspu.rs</code></td></tr>
+</tbody></table>
+<p><strong>ERR-001 changes:</strong> E701 was previously overloaded — temporary register exhaustion is now E705. E702 was previously overloaded — expression node count is now E704. E706–E715 were activated by MEGA-3 (R-SPU ISA v2): binary encoding, tagged words, exception model, dual-mode execution, and cycle-accurate simulator.</p>
+<h2 id="s-expression-errors-e800-e815">S-Expression Errors (E800--E815)</h2>
+<blockquote>
+<p><strong>Status:</strong> Error codes defined in <code>src/sexpr/</code> modules. S-expression
+parser, eval, macro expander, and reader macros are implemented and tested
+but eval/macro/reader are not yet wired into the main compilation pipeline (orphaned).</p>
+</blockquote>
+<table><thead><tr><th>Code</th><th>Rule</th><th>Description</th><th>Source</th></tr></thead><tbody>
+<tr><td>E800</td><td>SEXPR-PARSE</td><td>General S-expression parse error</td><td><code>src/sexpr/parser.rs</code></td></tr>
+<tr><td>E801</td><td>SEXPR-EOF</td><td>Unexpected end of S-expression input</td><td><code>src/sexpr/parser.rs</code></td></tr>
+<tr><td>E802</td><td>SEXPR-PAREN</td><td>Unbalanced parentheses</td><td><code>src/sexpr/parser.rs</code></td></tr>
+<tr><td>E803</td><td>SEXPR-DEPTH</td><td>Nesting exceeds MAX_SEXPR_DEPTH (64)</td><td><code>src/sexpr/parser.rs</code></td></tr>
+<tr><td>E804</td><td>SEXPR-SIZE</td><td>Tree exceeds MAX_SEXPR_NODES (4096)</td><td><code>src/sexpr/parser.rs</code></td></tr>
+<tr><td>E805</td><td>SEXPR-FORM</td><td>Unknown S-expression form</td><td><code>src/sexpr/convert.rs</code></td></tr>
+<tr><td>E806</td><td>SEXPR-FIELD</td><td>Missing required field in S-expression node</td><td><code>src/sexpr/convert.rs</code></td></tr>
+<tr><td>E807</td><td>SEXPR-TYPE</td><td>Invalid type in S-expression</td><td><code>src/sexpr/convert.rs</code></td></tr>
+<tr><td>E808</td><td>SEXPR-LIT</td><td>Invalid literal value in S-expression</td><td><code>src/sexpr/reader.rs</code></td></tr>
+<tr><td>E809</td><td>SEXPR-CONV</td><td>AST to S-expr conversion error</td><td><code>src/sexpr/convert.rs</code></td></tr>
+<tr><td>E810</td><td>SEXPR-ROUND</td><td>Round-trip validation failure</td><td><code>tests/sexpr_roundtrip_tests.rs</code></td></tr>
+<tr><td>E811</td><td>EVAL-DEPTH</td><td>Evaluation depth exceeds MAX_EVAL_DEPTH (32)</td><td><code>src/sexpr/eval.rs</code></td></tr>
+<tr><td>E812</td><td>EVAL-STEPS</td><td>Evaluation steps exceed MAX_EVAL_STEPS (10000)</td><td><code>src/sexpr/eval.rs</code></td></tr>
+<tr><td>E813</td><td>EVAL-UNDEF</td><td>Undefined symbol in evaluation</td><td><code>src/sexpr/eval.rs</code></td></tr>
+<tr><td>E814</td><td>MACRO-HYGIENE</td><td>Macro hygiene violation / expansion depth exceeded</td><td><code>src/sexpr/macro_expand.rs</code></td></tr>
+<tr><td>E815</td><td>READER-UNKNOWN</td><td>Unknown reader macro</td><td><code>src/sexpr/reader.rs</code></td></tr>
+</tbody></table>
+<h2 id="removed-variants">Removed Variants</h2>
+<blockquote>
+<p>[!WARNING]
+The <code>LexicalError</code> and <code>TemporalCausalityViolation</code> variants were removed.
+If your tooling matches on these variants, update to use <code>ParseError</code> and
+remove the causality match arm.</p>
+</blockquote>
+<p>The following variants were removed as dead code (never constructed):</p>
+<ul>
+<li><code>LexicalError</code> — lexer errors are correctly classified under <code>ParseError</code> (E1xx).</li>
+<li><code>TemporalCausalityViolation</code> — forward-declared for planned causality analysis; never implemented.</li>
+</ul>
+<hr />
+<h2 id="diagnostic-rendering-err-001">Diagnostic Rendering (ERR-001)</h2>
+<p>The <code>Diagnostic</code> struct in <code>src/diagnostic.rs</code> provides rustc-style error rendering with:</p>
+<ul>
+<li>Source line snippets with line numbers</li>
+<li>Caret indicators (<code>^^^</code>) pointing to the exact span</li>
+<li>Note and help labels for additional context</li>
+<li>"Did you mean?" suggestions via Levenshtein distance (<code>src/suggest.rs</code>)</li>
+<li>"First defined here" notes for duplicate-name errors</li>
+</ul>
+<p>CLI errors are rendered through <code>render_diagnostic()</code> in <code>mirr-compile</code>. LSP diagnostics are converted via <code>MirrError::to_diagnostic()</code>.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="tutorial.html">Tutorial</a> — Lesson 9: Common errors</li>
+<li><a href="type-system.html">Type System</a> — Type rules behind E6xx errors</li>
+<li><a href="rspu_isa_spec.html">R-SPU Reference</a> — Resource limits behind E7xx errors</li>
+<li><a href="migration-guide.html">Migration Guide</a> — New error codes added per version</li>
+</ul>
+<h2 id="e9xx-sat-simplification">E9xx — SAT Simplification</h2>
+<table><thead><tr><th>Code</th><th>Message</th><th>Trigger</th></tr></thead><tbody>
+<tr><td>E900</td><td>SAT error</td><td>General SAT simplification error (exceeds MAX_SAT_CHECKS or internal failure)</td></tr>
+</tbody></table>
+<h2 id="e901e910-build-certification-mega-16">E901–E910 — Build Certification (MEGA-16)</h2>
+<blockquote>
+<p><strong>Status:</strong> Added 2026-03-21 (proposal 069). LRA CLI receipt generation
+and verification errors for medical device / aerospace compliance.</p>
+</blockquote>
+<table><thead><tr><th>Code</th><th>Message</th><th>Trigger</th></tr></thead><tbody>
+<tr><td>E901</td><td><code>Receipt generation failed: {reason}</code></td><td>LRA receipt write error (file I/O, serialization)</td></tr>
+<tr><td>E902</td><td><code>Source hash mismatch: expected {exp}, got {got}</code></td><td>Receipt verification: source file changed after build</td></tr>
+<tr><td>E903</td><td><code>Signature verification failed</code></td><td>Invalid Ed25519 signature on receipt</td></tr>
+<tr><td>E904</td><td><code>Toolchain hash mismatch</code></td><td>Compiler binary changed between build and verification</td></tr>
+<tr><td>E905</td><td><code>Missing required field: {field}</code></td><td>Receipt JSON schema violation</td></tr>
+<tr><td>E906</td><td><code>Bootstrap parity failure: {diff}</code></td><td>Self-hosted vs Rust compiler output differs</td></tr>
+<tr><td>E907</td><td><code>Explain target not found: {name}</code></td><td>mirr-explain: unknown signal/guard/reflex name</td></tr>
+<tr><td>E908</td><td><code>AST diff overflow: design too large</code></td><td>mirr-diff: &gt;10,000 AST nodes in diff</td></tr>
+<tr><td>E909</td><td><code>Opcode mismatch: {op} has value {v1} but expected {v2}</code></td><td>Bootstrap opcode sync check failure</td></tr>
+<tr><td>E910</td><td><code>Certificate schema version unsupported: {v}</code></td><td>Future receipt format version</td></tr>
+</tbody></table>
+<h2 id="e12xx-testing-tooling-mega-17">E12xx — Testing &amp; Tooling (MEGA-17)</h2>
+<blockquote>
+<p><strong>Status:</strong> Added 2026-03-21 (proposal 070). Integration testing,
+documentation, and build tooling errors.</p>
+</blockquote>
+<table><thead><tr><th>Code</th><th>Message</th><th>Trigger</th></tr></thead><tbody>
+<tr><td>E1201</td><td><code>RISC-V emission failed: {reason}</code></td><td>RISC-V backend error</td></tr>
+<tr><td>E1202</td><td><code>ARM emission failed: {reason}</code></td><td>ARM backend error</td></tr>
+<tr><td>E1203</td><td><code>HLS scheduling failed: {reason}</code></td><td>HLS pass error</td></tr>
+<tr><td>E1204</td><td><code>Symbolic analysis overflow</code></td><td>Symbolic engine exceeded bounds</td></tr>
+<tr><td>E1205</td><td><code>FPGA target unsupported: {target}</code></td><td>Unknown FPGA target</td></tr>
+<tr><td>E1206</td><td><code>Nextest config invalid: {reason}</code></td><td>Configuration parse error</td></tr>
+<tr><td>E1207</td><td><code>Test fixture missing: {path}</code></td><td>Required test fixture not found</td></tr>
+<tr><td>E1208</td><td><code>Example compilation failed: {name}</code></td><td>Example .mirr file fails to compile</td></tr>
+</tbody></table>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

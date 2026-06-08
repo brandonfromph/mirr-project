@@ -24,17 +24,24 @@ Canonical index for all project documentation. Updated each campaign.
 
 | Document | Status | Description |
 |----------|--------|-------------|
+| [Architecture](ARCHITECTURE) | Active | Canonical source of truth for the codebase tree |
 | [Roadmap](roadmap) | Active | Project phases, architecture, research foundation |
+| [Presidential Arsenal Roadmap](presidential-arsenal-roadmap) | Active | Mega-campaign execution plans and strategies |
 | [Tutorial](tutorial) | Active | Learn MIRR from scratch |
-| [Type System](type-system) | Active | Type checker reference (E601–E609) |
+| [Type System](type-system) | Active | Type checker reference (E601–E625) |
 | [Error Codes](error_codes) | Active | Error codes introduced per phase |
 | [Logic Simplification](logic_simplification) | Active | Phase 3 simplifier architecture and rules |
 | [Benchmarks](benchmarks) | Active | Criterion benchmark tiers and usage |
 | [Glossary](glossary) | Active | Project terminology and acronyms (~55 terms) |
 | [Contributing](contributing) | Active | Coding standards, campaign workflow, error allocation |
+| [Testing Guide](testing-guide) | Active | Testing architecture and test suite organization |
+| [Web Rules](web-rules) | Active | Web development and aesthetic UI guidelines |
+| [File Tree](file-tree) | Frozen | Historical snapshot of the Phase 7 repository tree |
+| [Consumer Contracts](consumer-contracts) | Active | Interface boundaries and API guarantees for end users |
 | [FPGA Targets Guide](fpga-targets-guide) | Active | FPGA toolchain, synthesis, and target configuration |
 | [MAPE-K Guide](mape-k-guide) | Active | Autonomic feedback loop simulator and LTL monitoring |
 | [S-Expression Guide](sexpr-guide) | Active | Homoiconic S-expression IR, round-trip invariant |
+| [ECS Migration Guide](ECS_MIGRATION_GUIDE) | Active | Guide for migrating the compiler to the ECS architecture |
 
 ## Architecture References
 

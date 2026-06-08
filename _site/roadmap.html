@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roadmap — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Roadmap — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Roadmap — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#the-problem-this-solves-the-autonomic-observability-gap">The Problem This Solves: The Autonomic Observability Gap</a></li>
+        <li><a href="#what-makes-mirr-unique-three-roles-in-one-language">What Makes MIRR Unique: Three Roles in One Language</a></li>
+        <li><a href="#why-mirr-v22-failed-the-lessons-built-into-this-design">Why MIRR v2.2 Failed: The Lessons Built Into This Design</a></li>
+        <li><a href="#phase-0-foundation-completed">Phase 0 – Foundation (Completed)</a></li>
+        <li><a href="#phase-1-mini-mirr-reflex-oriented-dsl-completed">Phase 1 – Mini MIRR: Reflex-Oriented DSL (Completed)</a></li>
+        <li><a href="#phase-2-temporal-guard-compiler-cement2-inspired-completed">Phase 2 – Temporal Guard Compiler (Cement2-Inspired, Completed)</a></li>
+        <li><a href="#phase-3-logic-simplifier-smartly-inspired-completed">Phase 3 – Logic Simplifier (SmaRTLy-Inspired, Completed)</a></li>
+        <li><a href="#phase-4-bit-width-inference-firwine-inspired-completed">Phase 4 – Bit-Width Inference (FIRWINE-Inspired, Completed)</a></li>
+        <li><a href="#phase-5-mape-k-simulation-harness-phase-5a-complete-5b-complete">Phase 5 – MAPE-K Simulation Harness (Phase 5a Complete, 5b Complete)</a></li>
+        <li><a href="#phase-6-integration-and-visualization-completed">Phase 6 – Integration and Visualization (Completed)</a></li>
+        <li><a href="#phase-7a-safety-properties-sva-assertion-emission-completed">Phase 7a – Safety Properties &amp; SVA Assertion Emission (Completed)</a></li>
+        <li><a href="#phase-7b-homoiconic-pattern-system-completed">Phase 7b – Homoiconic Pattern System (Completed)</a></li>
+        <li><a href="#phase-7c-advanced-type-system-complete">Phase 7c — Advanced Type System (Complete)</a></li>
+          <li class="toc-h3"><a href="#phase-7d-s-expression-ir-mega-2">Phase 7d — S-Expression IR (MEGA-2)</a></li>
+        <li><a href="#metaprogramming-code-generation-phase-7d-extension-complete">Metaprogramming &amp; Code Generation (Phase 7d extension, Complete)</a></li>
+        <li><a href="#phase-7e-r-spu-instruction-set-architecture-complete">Phase 7e — R-SPU Instruction Set Architecture (Complete)</a></li>
+        <li><a href="#phase-7f-proof-carrying-code-infrastructure-completed">Phase 7f — Proof-Carrying Code Infrastructure (Completed)</a></li>
+        <li><a href="#phase-7g-symbolic-evaluation-engine-completed">Phase 7g — Symbolic Evaluation Engine (Completed)</a></li>
+        <li><a href="#phase-7h-mape-k-hardware-realization-completed">Phase 7h — MAPE-K Hardware Realization (Completed)</a></li>
+        <li><a href="#phase-7i-verified-compilation-chain-in-progress">Phase 7i — Verified Compilation Chain (In Progress)</a></li>
+        <li><a href="#phase-8a-r-spu-core-architecture-in-progress">Phase 8a — R-SPU Core Architecture (In Progress)</a></li>
+        <li><a href="#phase-8b-multi-core-fabric-tape-out-preparation-not-started">Phase 8b — Multi-Core Fabric &amp; Tape-Out Preparation (Not Started)</a></li>
+        <li><a href="#phase-9-production-deployment-certification-not-started">Phase 9 — Production Deployment &amp; Certification (Not Started)</a></li>
+        <li><a href="#the-ultimate-goal">The Ultimate Goal</a></li>
+        <li><a href="#key-benchmarks-to-target">Key Benchmarks to Target</a></li>
+        <li><a href="#research-foundation">Research Foundation</a></li>
+        <li><a href="#repository-structure">Repository Structure</a></li>
+          <li class="toc-h3"><a href="#where-to-make-changes">Where to make changes</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>R-SPU Compiler &amp; EDA Roadmap</h1>
+<p>This roadmap breaks the Reflexive Processing Unit (R‑SPU) concept into <strong>small, Rust‑based subprojects</strong>. Each step is intended to be realistically completable and to produce visible results.</p>
+<hr />
+<h2 id="the-problem-this-solves-the-autonomic-observability-gap">The Problem This Solves: The Autonomic Observability Gap</h2>
+<p>Modern processors operate on a dangerous assumption: that a delay in calculation is merely a performance issue. In safety-critical domains — medical robotics, aerospace controls, autonomous vehicles — a stalled thread means a failed respirator or a severed artery.</p>
+<p>Standard heterogeneous architectures are fundamentally unsafe for such automation because of the <strong>Autonomic Observability Gap</strong>: the inability of a standard silicon device to perceive its own operational context — thermal gradients, voltage droops, sensor degradation, or changing workload characteristics.</p>
+<p>A concrete example: Negative Bias Temperature Instability (NBTI) causes physical aging in silicon transistors. As demonstrated by Lin et al. (2016), hardware cannot detect its own timing degradation until a system-level failure occurs. Circuit-level mitigations like Adaptive Hold Logic (AHL) can pause the clock, but they lack the high-level semantic awareness required for clinical safety — they protect the clock, not the application.</p>
+<p>In traditional architectures, adaptation is relegated to the software layer. The latency inherent in this software-mediated control loop — from hardware capture to software analysis and back to hardware reconfiguration — is often in the millisecond range. For safety-critical applications, microseconds determine safety outcomes.</p>
+<p>The R‑SPU resolves this by bifurcating the computing substrate into:</p>
+<ul>
+<li><strong>Cognitive Host Domain</strong> — non-deterministic, high-level planning (Linux/software layer)</li>
+<li><strong>Deterministic Reflex Domain</strong> — cycle-accurate, formally verified hardware layer</li>
+</ul>
+<p>MIRR is the orchestration language that bridges both. It compiles high-level behavioral intent directly into Linear Temporal Logic (LTL) safety guards and SystemVerilog RTL, enforcing nanosecond-level Hardware-Software Co-Design precision.</p>
+<p>The three backend engines MIRR orchestrates:</p>
+<ul>
+<li><strong>Cement2</strong> — Temporal Hardware Transactions (replaces brittle global counters)</li>
+<li><strong>SmaRTLy</strong> — Inference-driven Logic Optimization (semantic redundancy elimination)</li>
+<li><strong>FIRWINE</strong> — Formally Verified Width Inference (prevents data corruption at compile time)</li>
+</ul>
+<hr />
+<h2 id="what-makes-mirr-unique-three-roles-in-one-language">What Makes MIRR Unique: Three Roles in One Language</h2>
+<p>MIRR is not merely a language or a compiler. It serves three distinct but interconnected roles simultaneously — which is what makes it fundamentally different from every existing tool:</p>
+<p><strong>1. Design Language</strong>
+The engineer writes MIRR code to describe desired hardware behavior. Time is a first-class citizen — delays and temporal relationships are part of the language itself, not library calls.</p>
+<p><strong>2. Compiler Toolchain</strong>
+The MIRR compiler translates design intent into Verilog RTL, automatically leveraging:</p>
+<ul>
+<li>Cement2 for synthesizing temporal constructs into efficient hardware</li>
+<li>SmaRTLy for optimizing logic and eliminating redundancy</li>
+<li>FIRWINE for formally verifying bit-width safety</li>
+</ul>
+<p><strong>3. Runtime Instruction Language</strong>
+Once the R-SPU chip is fabricated, the same MIRR language is used to write software that runs on it. The chip understands MIRR natively, creating a seamless continuum from design-time specification to runtime operation.</p>
+<p>This unified model is what makes MIRR fundamentally different from:</p>
+<ul>
+<li>C++ — software-only, no native hardware timing or physical bit-width concepts</li>
+<li>Verilog — hardware-only, no high-level behavioral abstractions</li>
+<li>Chisel — design-only, no runtime instruction semantics</li>
+<li>MIRR bridges all three, enabling true Hardware-Software Co-Design</li>
+</ul>
+<hr />
+<h2 id="why-mirr-v22-failed-the-lessons-built-into-this-design">Why MIRR v2.2 Failed: The Lessons Built Into This Design</h2>
+<p>Understanding MIRR v2.2's architectural failures explains every design decision in this project.</p>
+<p><strong>Failure 1 — <code>at(t)</code>: The Absolute Timing Trap</strong>
+MIRR v2.2 used absolute time: <code>at(system_time + 50) { fire_signal(); }</code>. The compiler synthesized one dedicated 64-bit comparator per temporal event, connected to a central chip-wide 64-bit counter bus. In a design with 10,000 temporal events: 10,000 comparators, massive routing bottleneck, timing closure impossible above 1 GHz. If a memory stall caused the counter to advance past the target time, the event was silently missed.</p>
+<p>→ <strong>This project's response:</strong> Cement2's <code>p.delay(k)</code> uses shift registers of length k instead. Gate count drops from O(N × 64) to O(N × k). No global bus, no routing congestion, no missed events.</p>
+<p><strong>Failure 2 — <code>mutate</code>: The MUX Forest Problem</strong>
+The <code>mutate</code> primitive synthesized runtime datapath switching into multiplexers naively. Nested mutate blocks generated MUX trees without checking for logical redundancy — it never analyzed whether cases shared common sub-expressions or whether control signals were logically correlated. Deep logic cones severely limited maximum operating frequency.</p>
+<p>→ <strong>This project's response:</strong> SmaRTLy performs Semantic Logic Inference — MiniSAT solver determines if a MUX actually affects the output. If not, it is removed. 47% area reduction on industrial benchmarks.</p>
+<p><strong>Failure 3 — <code>reflect</code>: Passive Telemetry Latency</strong>
+The <code>reflect</code> primitive used a Shadow Register Chain (scan chain) to capture register state non-intrusively. However, data had to be streamed out via JTAG/UART to host software for analysis. Round-trip latency: milliseconds. Too slow to suppress transient faults or adapt to rapid signal degradation.</p>
+<p>→ <strong>This project's response:</strong> MAPE-K with hardware-accelerated LTL Checker evaluates safety invariants within the current clock cycle. Sub-millisecond response, no software round-trip required.</p>
+<hr />
+<h2 id="phase-0-foundation-completed">Phase 0 – Foundation (Completed)</h2>
+<blockquote>
+<p>[!TIP]
+Phases 0--6, 7a, 7b, 7c, 7e, 7f, 7g, 7h complete. Phase 5 is complete (5a complete, 5b complete).
+The compiler is operational with 3,469+ tests passing, zero unsafe code,
+and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
+Formal proofs: 90+ Rocq proofs (13.54% Symbol Coverage).
+Code metrics: 509,000+ total lines across 293+ files.
+Error codes: 162 unique codes (E100--E705). SAT simplification module added (E900--E902).
+Phase 7h (MAPE-K RTL) complete with Yosys validation and equivalence proofs.
+Phase 7i (Verified Compilation) initialized with ConstFold proof and audit tool.
+Phase 8a (R-SPU Core) in progress: 64-bit tagged pipeline architecture initialized.</p>
+</blockquote>
+<ul>
+<li><strong>Goal:</strong> Establish a robust, safety-critical Rust toolchain with strict NASA/JPL coding standards.</li>
+<li><strong>Tasks:</strong>
+<ul>
+<li>Enforce <code>#![forbid(unsafe_code)]</code> and <code>#![deny(warnings)]</code> across all crates.</li>
+<li>Ensure all code passes <code>cargo fmt</code> and <code>cargo clippy</code> with zero warnings.</li>
+<li>Implement comprehensive unit tests for all core modules.</li>
+<li>Integrate performance optimizations: arena allocation, lookup tables, SIMD, and memory pooling.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result:</strong> A clean, strictly checked Rust environment for safety-critical EDA tooling, with production-grade performance and reliability.</p>
+<hr />
+<h2 id="phase-1-mini-mirr-reflex-oriented-dsl-completed">Phase 1 – Mini MIRR: Reflex-Oriented DSL (Completed)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Define and parse a minimal, text-based DSL for reflexive hardware behaviors, inspired by MIRR.</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Support declarations for inputs, outputs, and internal signals.</li>
+<li>Parse combinational expressions (<code>&amp;</code>, <code>|</code>, <code>^</code>, <code>!</code>).</li>
+<li>Parse temporal guards (<code>when signal for N cycles</code>).</li>
+<li>Implement a hand-written lexer and parser in Rust.</li>
+<li>Build a strongly-typed AST and IR.</li>
+<li>Provide clear, actionable error messages for syntax and type errors.</li>
+</ul>
+</li>
+<li>
+<p><strong>Philosophical foundation carried forward:</strong>
+MIRR enforces a <strong>Strict Static Typing System</strong> inherited from MIRR v2.2's core insight: in hardware, types represent physical wires, not memory abstractions. Implicit casting is forbidden. A <code>u8</code> signal cannot be assigned to a <code>u16</code> register without an explicit zero-extension (<code>zext</code>) operation. This forces designers to be explicitly aware of the physical dimensions of every data path — and lays the philosophical groundwork for FIRWINE's formal width inference in Phase 4.</p>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> CLI tool <code>mirr-parse</code> that reads <code>.mirr</code> files and prints structured JSON or pretty IR. Fully self-contained and shippable.</p>
+<hr />
+<h2 id="phase-2-temporal-guard-compiler-cement2-inspired-completed">Phase 2 – Temporal Guard Compiler (Cement2-Inspired, Completed)</h2>
+<ul>
+<li><strong>Goal:</strong> Compile temporal guards from the MIRR DSL into a low-level, hardware-mappable IR using shift registers and counters — replacing MIRR v2.2's absolute timing model with Cement2's distributed transactional model.</li>
+</ul>
+<p><strong>Why Cement2 matters:</strong> Reduces gate count from O(N × 64) to O(N × k), eliminates global counter bus routing bottleneck, handles non-deterministic latency without missed events. Benchmark: 377 MHz timing closure on RISC-V soft-core.</p>
+<ul>
+<li>
+<p><strong>Scope (Completed):</strong></p>
+<ul>
+<li><code>p.delay(k)</code> — Latency-Sensitive Guard: shift register of length k, one valid bit propagates per clock cycle.</li>
+<li>Shift-register chains for short delays (≤16 cycles).</li>
+<li>Counter-comparator structures for long delays (adaptive synthesis).</li>
+<li>Emit a gate-level netlist and structured JSON conforming to project schemas.</li>
+<li>Robust error handling for unsupported or unsafe guard forms.</li>
+</ul>
+</li>
+<li>
+<p><strong>Scope (Future — Phase 2b):</strong></p>
+<ul>
+<li><code>p.dyndelay(k)</code> — Latency-Insensitive Guard: FSM with sticky valid bit for non-deterministic components (DRAM, off-chip sensors). Guard becomes valid at cycle T+k and remains valid until the target rule fires.</li>
+<li>ASAP Scheduling: dependency graph of all rules, infer earliest possible fire time per action, maximizing throughput.</li>
+<li>Temporal Partitioning: auto-detect multi-cycle actions, slice into atomic intra-cycle stages. Relieves designer from manually inserting pipeline registers.</li>
+<li>Automatic Retiming: bottom-up timing inference using SDC formulation (Cong &amp; Zhang 2006), auto-insert pipeline registers to meet target frequency.</li>
+<li>Hybrid Temporal Synthesis: for macroscopic delays (milliseconds+), auto-switch from shift registers to Synchronous Counter-Comparator blocks via hardware cost function. Short delays retain shift-register topology for jitter-free reflex domain performance. Target: O(N) area reduction for long-interval timers.</li>
+<li><strong>Target benchmark:</strong> 377 MHz timing closure on RISC-V soft-core (matching Cement2 paper).</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> CLI tool <code>mirr-temporal</code> that shows how each high-level guard maps to concrete hardware primitives, with JSON/DOT output for downstream tools.</p>
+<hr />
+<h2 id="phase-3-logic-simplifier-smartly-inspired-completed">Phase 3 – Logic Simplifier (SmaRTLy-Inspired, Completed)</h2>
+<ul>
+<li><strong>Goal:</strong> Build a robust, resource-bounded logic simplification engine for the combinational logic in MIRR IR/netlists — addressing the MUX Forest problem from MIRR v2.2's <code>mutate</code> primitive.</li>
+</ul>
+<p><strong>Why SmaRTLy matters:</strong> Traditional tools like Yosys detect only structural equivalence. SmaRTLy detects semantic equivalence — if S_2 = S_1 ∨ X and S_1 is High, S_2 is necessarily High, making the second MUX redundant. Yosys misses this entirely. Benchmarks: 8.95% AIG reduction on RISC-V, 47.2% on industrial designs.</p>
+<ul>
+<li>
+<p><strong>Current Status (Completed):</strong></p>
+<ul>
+<li>All boolean, arithmetic, and comparison simplification rules implemented and tested (33 algebraic rules).</li>
+<li>Boolean identity/annihilation, idempotence, absorption.</li>
+<li>Arithmetic identity/annihilation and constant folding with wrapping semantics.</li>
+<li>Comparison constant folding.</li>
+<li>Iterative post-order traversal engine (bounded, NASA P10 compliant, no recursion).</li>
+<li>Fixpoint iteration (bounded by MAX_PASSES) catches cascading reductions.</li>
+<li>SimplifyStats API reports rules applied and before/after node counts.</li>
+<li>CLI tool <code>mirr-simplify</code> with <code>--stats</code> flag, Expr JSON and <code>.mirr</code> file modes.</li>
+<li>Wired into temporal lowering pipeline as pre-lowering pass.</li>
+<li>58 unit and integration tests with full rule coverage.</li>
+</ul>
+</li>
+<li>
+<p><strong>Scope (Future — Phase 3b: Full SmaRTLy):</strong></p>
+<ul>
+<li>MiniSAT integration: convert logic cone around each MUX into a Boolean Satisfiability problem. If unsatisfiable ("no input vector affects this MUX output"), remove it.</li>
+<li>Sub-Graph Pruning via Ancestry Theorem: a signal S can only affect signal T if S is an ancestor of T, T is an ancestor of S, or they share a common ancestor. Prunes ~80% of circuit from each SAT problem instance.</li>
+<li>Symmetry Theorem: further refine pruning by identifying irrelevant logic cones.</li>
+<li>Fast Inference Rules before SAT: OR-gate propagation and constant folding to resolve large portions before invoking the expensive solver.</li>
+<li>ADD-based structural rebuilding: Algebraic Decision Diagrams for optimal MUX tree variable ordering. Cost function (tree height + cell count) confirms rebuilt structure is superior to original.</li>
+<li><strong>Target benchmarks:</strong> 8.95% AIG reduction on RISC-V (early milestone), 47.2% on industrial designs (full milestone).</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> CLI tool <code>mirr-simplify</code> that reads a netlist/IR and prints a reduced version, with statistics on gate count reduction.</p>
+<hr />
+<h2 id="phase-4-bit-width-inference-firwine-inspired-completed">Phase 4 – Bit-Width Inference (FIRWINE-Inspired, Completed)</h2>
+<ul>
+<li><strong>Goal:</strong> Implement a robust bit-width inference and checking pass for arithmetic IR — preventing the bit-width mismatch failures of early R-SPUs where assigning a 12-bit sensor value to a 10-bit register caused silent data corruption.</li>
+</ul>
+<p><strong>Why FIRWINE matters:</strong> Width inference is modeled as a system of inequality constraints (Φ_W-constraints). Wang et al. (2026) proved the Unique Least Solution theorem: if η₁ and η₂ are both valid solutions, their component-wise minimum is also valid. The compiler doesn't search for a good solution — it calculates the mathematically optimal minimum width that guarantees zero data loss while minimizing silicon area.</p>
+<ul>
+<li>
+<p><strong>Scope (Phase 4a — Core, Completed):</strong></p>
+<ul>
+<li>Extend IR to support integer operations (add, sub, mul, shifts).</li>
+<li>Flatten Expr trees to post-order FlatNode arrays for iterative processing.</li>
+<li>Encode and solve width constraints via monotonic iterative propagation (bounded by MAX_PROPAGATION_ROUNDS).</li>
+<li>Termination proof: widths only increase, maximum value is 64, total increases ≤ 64 x node_count.</li>
+<li>Hard-error on width &gt; 64 bits with clear message instructing restructuring.</li>
+<li>Informational note on unsigned subtraction (common in hardware, worth flagging).</li>
+<li>Detect unsafe truncations at compile time with exact diagnostic messages pinning signal name and bit widths.</li>
+<li>Width inference across all expressions: guard conditions (validate to boolean) + all reflex RHS.</li>
+<li>New <code>src/width/</code> module — 6 files, FIRWINE-inspired constraint solver with 9 constraint kinds.</li>
+<li><code>mirr-width</code> CLI runs simplification automatically before inference.</li>
+<li>67 integration tests across 13 categories, every diagnostic message pinned by exact text.</li>
+</ul>
+</li>
+<li>
+<p><strong>Scope (Phase 4b — FIRWINE Complete, Completed):</strong></p>
+<ul>
+<li><strong><code>Expr::Prev { signal, delay }</code></strong> — new IR variant for temporal back-references (shift registers, accumulators). Delay ≥ 1 enforced by semantic validation. Wired through executor, semantic validator, all width pass stages, simplifier, and MAPE-K harness.</li>
+<li><strong>Width Dependency Graph</strong> (<code>src/width/graph.rs</code>) — directed graph tracking signal-to-signal width dependencies through all reflex assignment RHS expressions, including <code>Prev</code> back-edges that create cycles.</li>
+<li><strong>Iterative Tarjan's SCC</strong> (<code>src/width/scc.rs</code>) — finds strongly connected components; O(V+E), bounded by <code>MAX_SIGNALS = 1024</code>. All traversal via explicit work stack, zero recursion (NASA P10).</li>
+<li><strong>SCC classification:</strong> Expansive (cycle path contains <code>Add</code>, <code>Mul</code>, or <code>Shl</code> — values can grow), Nonexpansive (cycle contains only <code>Prev</code>, bitwise ops, comparisons — values circulate but don't grow).</li>
+<li><strong>Nonexpansive solver</strong> (<code>src/width/scc_solver.rs</code>) — Floyd-Warshall fixpoint: all signals in the SCC converge to the maximum declared width among members. Bounded by <code>MAX_SCC_SIZE² = 4096</code> iterations.</li>
+<li><strong>Expansive solver</strong> — guard-bound inference: extracts upper bound from guard cycle-count annotations, computes <code>min_bits_for(bound)</code>. Hard error (reject compilation) if no bound is provable — no silent u64 default.</li>
+<li><strong>Unique Least Solution verification</strong> (<code>src/width/verify.rs</code>) — confirms each solved width is not over-wide relative to declared signal types; emits COMPILER BUG diagnostic if minimality is violated.</li>
+<li><strong><code>scc_member_names: HashSet&lt;String&gt;</code></strong> in <code>SccWidthResult</code> — correct Phase 4a/4b diagnostic split. Phase 4a correctly flags <code>prev(counter)+1</code> as truncation; Phase 4b suppresses that error for SCC-member targets since it owns their width determination.</li>
+<li><strong><code>--scc</code> flag</strong> added to <code>mirr-width</code> CLI — activates the full Phase 4b pipeline.</li>
+<li>4 new modules (<code>graph.rs</code>, <code>scc.rs</code>, <code>scc_solver.rs</code>, <code>verify.rs</code>), 10 files total in <code>src/width/</code>, 38 new integration tests across 9 categories (105 total for Phase 4).</li>
+</ul>
+</li>
+<li>
+<p><strong>Scope (Phase 4c — Semantic Guard Wrappers, Future):</strong></p>
+<ul>
+<li>Pre-synthesis assertions defining "Physiological Plausibility" for input signals — maximum rates of change, absolute physical bounds (e.g., human heart rate cannot exceed 300 bpm). Protects against valid-but-incorrect data from sensor failure (e.g., disconnected sensor reading as valid "0"). Extends FIRWINE beyond arithmetic overflow into semantic data integrity.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> CLI tool <code>mirr-width</code> that computes widths, reports unsafe truncations, detects cyclic width dependencies via SCC analysis, and emits a fully width-annotated IR/netlist.</p>
+<hr />
+<h2 id="phase-5-mape-k-simulation-harness-phase-5a-complete-5b-complete">Phase 5 – MAPE-K Simulation Harness (Phase 5a Complete, 5b Complete)</h2>
+<ul>
+<li><strong>Goal:</strong> Simulate the Monitor–Analyze–Plan–Execute–Knowledge (MAPE-K) loop for clinical and safety-critical scenarios — transitioning R-SPU from "hardware as a resource" to "hardware as an agent."</li>
+</ul>
+<p><strong>MAPE-K loop architecture:</strong></p>
+<ul>
+<li>
+<p><strong>Monitor:</strong> Shadow register chains + Embedded Trace Buffers capture KPIs (localized voltage, die temperature, bus throughput, logic toggle rates). Pre-processed by hardware monitors for threshold violations — not buffered for software analysis.</p>
+</li>
+<li>
+<p><strong>Analyze:</strong> Hardware-accelerated LTL Checker evaluates real-time signals against Temporal Assertions within the current clock cycle. Triggers immediate transition to pre-verified safe state on invariant violation.</p>
+</li>
+<li>
+<p><strong>Plan:</strong> Query the <strong>Knowledge Base of pre-synthesized bitstreams</strong> — configurations optimized offline by SmaRTLy for specific fault scenarios. Never synthesizes new logic on the fly. Selects from a verified library.</p>
+</li>
+<li>
+<p><strong>Execute:</strong> DPR loads selected partial bitstream into target Reconfigurable Tile. Cement2 ensures temporal synchrony during transition — no glitches, no missed events.</p>
+</li>
+<li>
+<p><strong>Knowledge:</strong> Stores FIRWINE proofs and safety rules as the formal foundation for all planning decisions.</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Model a sensor pipeline (respiratory rate, ECG) as a Rust component graph.</li>
+<li>Monitor: sample sensor data and noise from a stochastic model.</li>
+<li>Analyze: check LTL-like invariants over recent history.</li>
+<li>Plan: select from pre-defined configurations in a pre-synthesized bitstream library.</li>
+<li>Execute: dynamically reconfigure the pipeline at runtime.</li>
+<li>Log all adaptation decisions and state transitions for auditability.</li>
+</ul>
+</li>
+<li>
+<p><strong>Case study 1 — Autonomic Epilepsy Monitor (Sayeed et al. 2024):</strong></p>
+<ul>
+<li>Low Risk (Sleep) → lightweight SVM classifier via DPR (small logic area, minimal power).</li>
+<li>Anomaly Suspected → DPR swap to high-precision CNN.</li>
+<li>Target: &gt;98% CNN sensitivity during critical moments, low-power SVM baseline.</li>
+</ul>
+</li>
+<li>
+<p><strong>Case study 2 — Self-Healing Respiratory Monitor, Neonatal (Kwon et al. 2021):</strong></p>
+<ul>
+<li>Continuous SNR monitoring → LTL compliance check → Kalman Filter variant selection on drift detection.</li>
+<li>Adapts to degrading sensor in real-time, prevents alarm fatigue without nurse intervention.</li>
+</ul>
+</li>
+<li>
+<p><strong>Phase 5b — Split MAPE-K (Complete):</strong></p>
+<ul>
+<li>Monitor &amp; Execute in FPGA fabric (nanosecond response).</li>
+<li>Analyze &amp; Plan offloaded to paired ARM processor (complex LTL evaluation, bitstream selection).</li>
+<li><strong>Dual-Layer Reflex System:</strong>
+<ul>
+<li>Immediate Layer (Static): safety clamps ("halt", "reset", "safe-mode") triggerable in a single clock cycle.</li>
+<li>Adaptive Layer (Dynamic): DPR reserved for "Plan" phase after clamp engages.</li>
+<li>Decouples reaction time from FPGA configuration bus bandwidth.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Rust binary that runs a time-stepped simulation and logs all adaptation and reconfiguration events.</p>
+<blockquote>
+<p><strong>SAT Solver (Campaign 045):</strong> A bounded DPLL-based SAT simplification
+module (<code>src/sat/</code>) was implemented with NASA Power-of-10 compliance
+(MAX_SAT_VARIABLES = 256, MAX_SAT_CLAUSES = 1024). Error codes E900--E902
+cover resource limit violations. The module supports CNF encoding of guard
+conditions for redundancy elimination.</p>
+</blockquote>
+<hr />
+<h2 id="phase-6-integration-and-visualization-completed">Phase 6 – Integration and Visualization (Completed)</h2>
+<ul>
+<li><strong>Goal:</strong> Integrate all previous tools into a cohesive, auditable "mini-EDA" flow.</li>
+<li><strong>Scope:</strong>
+<ul>
+<li>End-to-end pipeline: parse MIRR source → validate → simplify logic → assign bit-widths → temporal lowering → emit output.</li>
+<li><code>PipelineConfig</code> with toggles for simplification, width inference, and temporal compilation.</li>
+<li>Generate Graphviz <code>.dot</code> files from IR/netlist for visualization and debugging (with <code>--dot-detail expr</code> for full AST subgraphs).</li>
+<li>Emit SystemVerilog RTL, JSON netlist, and DOT graph from the unified pipeline.</li>
+<li>Single driver binary <code>mirr-compile</code> with <code>--emit verilog|dot|json</code> flags.</li>
+<li>Bootstrap runner (<code>mirr-parse</code>) with parity checks against the unified pipeline.</li>
+<li>3,469+ tests passing, zero clippy warnings, zero unsafe code.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Unified driver binary <code>mirr-compile</code> that performs a full compile-analyze run with multiple output formats.</p>
+<hr />
+<h2 id="phase-7a-safety-properties-sva-assertion-emission-completed">Phase 7a – Safety Properties &amp; SVA Assertion Emission (Completed)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Add a <code>property</code> keyword to the MIRR DSL that compiles to SystemVerilog Assertions (SVA), enabling formal verification of safety invariants without affecting generated hardware.</p>
+</li>
+<li>
+<p><strong>Scope (Completed):</strong></p>
+<ul>
+<li><strong>AST:</strong> <code>PropertyFormula</code> enum (<code>Always(Expr)</code>, <code>Never(Expr)</code>, <code>AlwaysImplies { antecedent, consequent }</code>) and <code>PropertyDecl</code> struct in <code>src/ast/property.rs</code>. <code>Module</code> extended with <code>properties: Vec&lt;PropertyDecl&gt;</code> (<code>#[serde(default)]</code> for backward compatibility).</li>
+<li><strong>Parser:</strong> <code>property</code> keyword dispatch in <code>module_parser.rs</code>. Multi-line block syntax matching <code>guard</code>/<code>reflex</code> pattern. <code>-&gt;</code> implication handled at property parser level (string split), not in tokenizer or expression parser — avoids ripple to simplifier, width inference, etc.</li>
+<li><strong>Validation:</strong> Duplicate property name detection. Signal reference validation — all signals referenced in property formulas must be declared in the module.</li>
+<li><strong>Pipeline:</strong> Property expressions simplified through the existing <code>simplify_expr_with_stats</code> pass.</li>
+<li><strong>SVA emission:</strong> <code>assert property (@(posedge clk) ...)</code> blocks in SystemVerilog output. <code>disable iff (!rst_n)</code> emitted only when <code>rst_n</code> is declared as an input signal. Three SVA forms: <code>always(P)</code> → <code>assert P</code>, <code>never(P)</code> → <code>assert !(P)</code>, <code>always(P -&gt; Q)</code> → <code>assert P |-&gt; Q</code>.</li>
+<li><strong>JSON emission:</strong> <code>"properties"</code> array in JSON netlist with <code>name</code>, <code>kind</code>, <code>formula_text</code> fields.</li>
+<li><strong>DOT emission:</strong> Property nodes (<code>shape=note</code>, lightblue fill) with dotted blue edges from referenced signals.</li>
+<li><strong>CLI:</strong> <code>--emit sva</code> for standalone SVA output (no module wrapper). <code>emit_sva_only()</code> public API.</li>
+<li>40 new tests (520 total). Zero clippy warnings, zero unsafe code.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> MIRR programs can now declare safety properties that compile to industry-standard SVA assertions, usable by any SystemVerilog simulation or formal verification tool.</p>
+<hr />
+<h2 id="phase-7b-homoiconic-pattern-system-completed">Phase 7b – Homoiconic Pattern System (Completed)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Add compile-time pattern expansion to MIRR via the <code>def</code>/<code>reflect</code> keywords, enabling reusable hardware structure definitions with DO-178C traceability.</p>
+</li>
+<li>
+<p><strong>Scope (Completed):</strong></p>
+<ul>
+<li><code>def</code> keyword for pattern definitions with signal (<code>signal in u16</code>, <code>signal out bool</code>) and constant (<code>u16</code>, <code>u32</code>, <code>bool</code>) parameters.</li>
+<li><code>reflect</code> block contains a template body with <code>${param}</code> interpolation markers. Body is stored as raw text, substituted at compile time, then re-parsed by the existing module parser.</li>
+<li>Name prefixing scheme: <code>{pattern_name}_{call_index}_{original_name}</code> for collision-proof naming across multiple calls.</li>
+<li>Origin tagging: <code>origin: Option&lt;String&gt;</code> on <code>Guard</code>, <code>Reflex</code>, <code>SignalDecl</code>, <code>PropertyDecl</code> for DO-178C traceability. Verilog emitter outputs <code>// Pattern: monitor_sensor_0</code> comments. DOT emitter adds tooltips. JSON omits the field when <code>None</code> (serde <code>skip_serializing_if</code>).</li>
+<li>Internal signal scoping: pattern-internal signals (<code>SignalKind::Internal</code>) cannot be referenced outside their expansion. Cross-expansion references also blocked.</li>
+<li>Bounded expansion: <code>MAX_EXPANSION_DEPTH=4</code>, <code>MAX_EXPANDED_ITEMS=256</code>, <code>MAX_PARAMS=32</code>, <code>MAX_ARGS=32</code>, <code>MAX_REFLECT_LINES=512</code>, <code>MAX_BRACE_DEPTH=16</code>.</li>
+<li>Pipeline ordering: parse → <code>validate_pattern_defs</code> → <code>expand_patterns</code> → validate_module → simplify → width → temporal → emit.</li>
+<li>New modules: <code>src/ast/pattern.rs</code>, <code>src/parser/pattern_parser.rs</code>, <code>src/expand/mod.rs</code>.</li>
+<li>112 pattern tests across parser, validation, expansion, scoping, emission, and pipeline integration categories. <strong>3,469+ total tests, zero clippy warnings.</strong></li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Reusable pattern definitions that expand at compile time into validated, origin-tagged hardware structures.</p>
+<hr />
+<h2 id="phase-7c-advanced-type-system-complete">Phase 7c — Advanced Type System (Complete)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Extend MIRR's strict static type system with expressive type-level features that encode hardware constraints directly in the type language, enabling the compiler to reject physically invalid designs before synthesis.</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Dependent types for encoding hardware constraints (e.g., FIFO depth parameterized by pipeline stage count).</li>
+<li>Linear types for resource tracking: enforce one-writer, one-reader signal semantics at the type level, preventing accidental multi-driver nets.</li>
+<li>Refinement types with compile-time range checking (e.g., <code>u8{0..=200}</code> for physiological sensor bounds).</li>
+<li>Effect system distinguishing pure combinational logic from stateful sequential logic — prevents accidental register inference in combinational contexts.</li>
+<li>Type-level natural numbers for dimension-safe signal arrays and bus widths, eliminating width mismatch classes that FIRWINE currently catches at constraint-solving time.</li>
+<li>Substructural type qualifiers for clock domain crossing safety — signals tagged with their clock domain cannot be mixed without explicit synchronizer instantiation.</li>
+<li>Phantom types for unit-of-measure tracking (voltage, current, temperature) through signal processing chains.</li>
+<li>Extended Rocq proofs covering type system soundness: progress and preservation theorems for the core type language.</li>
+<li>Integration with Phase 4's FIRWINE solver: refinement type bounds feed directly into width constraint generation.</li>
+<li>Backward compatibility layer: existing MIRR programs without advanced type annotations remain valid (all new features opt-in).</li>
+</ul>
+</li>
+</ul>
+<p><strong>Campaign 025 progress (FOUNDATION-001 + MEGA-1, Phase A--C):</strong></p>
+<ul>
+<li>Parser-level type annotations: <code>Linearity</code>, <code>EffectQualifier</code>, <code>Refinement</code>, <code>TypeAnnotations</code> in <code>src/ast/types.rs</code>.</li>
+<li>Token-stream signal parser: <code>tokenize_signal_decl()</code> in <code>src/parser/mod.rs</code> handling <code>linear</code>, <code>stateful</code>, <code>pure</code>, <code>where</code>, <code>@clock</code>, <code>#Tag</code> syntax.</li>
+<li>Extended type checker: <code>src/typeck/extended.rs</code> (2138 lines) implementing refinement bounds, linear tracking, effect qualification, clock domain verification, phantom tags, session types. Error codes E610--E625.</li>
+<li>Parser error codes E170--E183 for type annotation diagnostics.</li>
+<li>Sections D--H completed by campaign MEGA-1b (proposal 027). Extended type checker wired into pipeline. Phase 7c closed.</li>
+</ul>
+<p><strong>Result artifact:</strong> Type checker module (<code>src/typeck/</code>) extended with dependent, linear, and refinement type support, with Rocq-mechanized soundness proofs in <code>proofs/types/</code>.</p>
+<hr />
+<h3 id="phase-7d-s-expression-ir-mega-2">Phase 7d — S-Expression IR (MEGA-2)</h3>
+<ul>
+<li><strong>Status:</strong> Complete</li>
+<li><strong>Proposal:</strong> 026-MEGA2-LISP-CORE-2026-03-10</li>
+<li><strong>New module:</strong> <code>src/sexpr/</code> (8 files, ~2,300 lines)</li>
+<li><strong>New emit backend:</strong> <code>--emit sexpr</code> (S-expression output)</li>
+<li><strong>Error codes:</strong> E800–E815 (S-expression errors)</li>
+<li><strong>Tests:</strong> ~120 new tests across 3 test files</li>
+<li><strong>Key feature:</strong> Bidirectional AST ↔ S-expression conversion with round-trip invariant</li>
+</ul>
+<hr />
+<h2 id="metaprogramming-code-generation-phase-7d-extension-complete">Metaprogramming &amp; Code Generation (Phase 7d extension, Complete)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Provide structured compile-time program transformation capabilities, extending Phase 7b's <code>def</code>/<code>reflect</code> pattern system into a full metaprogramming framework for parametric hardware generation.</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Structured intermediate representation for compile-time program transformation — typed AST manipulation rather than text substitution.</li>
+<li>Hygienic macro system extending the <code>def</code>/<code>reflect</code> pattern system from Phase 7b, with guaranteed name hygiene across expansion boundaries.</li>
+<li>Reader extensions for domain-specific notations: timing constraint literals (<code>50ns</code>, <code>1.2GHz</code>), physical unit annotations, and signal range specifications.</li>
+<li>Compile-time evaluation engine for template instantiation with bounded execution (NASA P10 compliant: no unbounded recursion, configurable <code>MAX_EVAL_STEPS</code>).</li>
+<li>Parametric module generation: N-way Triple Modular Redundancy (TMR), configurable pipeline depths, variable-width crossbar switches — all from single parameterized definitions.</li>
+<li>Compile-time assertion system: <code>static_assert</code> for validating parameter constraints before expansion (e.g., TMR voter width must match data path width).</li>
+<li>Introspection API: patterns can query signal properties (width, direction, clock domain) of their arguments at expansion time.</li>
+<li>Code generation audit trail: every generated construct carries provenance metadata linking back to its macro definition and call site (extends Phase 7b's origin tagging).</li>
+<li>Integration with Phase 7c type system: macro parameters carry type constraints, expansion is type-checked before and after.</li>
+<li>Bounded expansion guarantees inherited from Phase 7b: <code>MAX_EXPANSION_DEPTH</code>, <code>MAX_EXPANDED_ITEMS</code> enforced across all metaprogramming constructs.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Extended pattern expansion engine (<code>src/expand/</code>) with hygienic macros, compile-time evaluation, and parametric module generation. CLI flag <code>--expand-only</code> for inspecting expanded output before compilation.</p>
+<hr />
+<h2 id="phase-7e-r-spu-instruction-set-architecture-complete">Phase 7e — R-SPU Instruction Set Architecture (Complete)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Define the formal Instruction Set Architecture (ISA) for the R-SPU execution model, establishing MIRR as the native instruction language that compiles to R-SPU microcode.</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Formal ISA specification document with precise encoding formats, instruction semantics, and operational modes.</li>
+<li>MIRR as native instruction language: compile MIRR behavioral descriptions directly to R-SPU microcode sequences.</li>
+<li>Tagged-word architecture: every data word carries type metadata and provenance tags in hardware, enabling runtime type safety without software overhead.</li>
+<li>Hardware type dispatch: instruction decoder inspects type tags for zero-overhead polymorphic operation selection (e.g., fixed-point vs. integer arithmetic resolved by tag, not by opcode).</li>
+<li>Native temporal instruction support: <code>DELAY</code>, <code>GUARD_CHECK</code>, <code>PROPERTY_EVAL</code> as first-class ISA operations with dedicated execution units.</li>
+<li>Microcode generation from MIRR behavioral descriptions: the compiler emits microcode sequences that the R-SPU control unit executes directly.</li>
+<li>Dual-mode execution: deterministic reflex mode (cycle-accurate, bounded latency) and cognitive host mode (interrupt-driven, variable latency) selectable per instruction stream.</li>
+<li>Register file design: split register banks for temporal state (shift register shadows), combinational intermediates, and persistent configuration.</li>
+<li>Exception model: hardware traps for type tag violations, temporal deadline misses, and safety property failures — all routed to the MAPE-K Analyze stage.</li>
+<li>ISA simulation model in Rust: cycle-accurate software simulator for validating ISA semantics before RTL implementation in Phase 8.</li>
+<li>Instruction encoding density analysis: minimize code size for the on-chip instruction memory budget.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Formal ISA specification (<code>docs/rspu_isa_spec.md</code>), Rust-based cycle-accurate ISA simulator (<code>src/emit/rspu_sim.rs</code>), and microcode assembler integrated into <code>mirr-compile --emit rspu</code>.</p>
+<p><strong>Delivered by MEGA-3 (2026-03-10):</strong></p>
+<ul>
+<li>Binary encoding: 32-bit fixed-width instruction words in 4 formats (R-type, I-type, G-type, S-type).</li>
+<li>Tagged-word register file: 256 registers with 4-bit type tags (<code>Bool</code>, <code>Unsigned</code>, <code>Signed</code>, <code>Uninitialized</code>) and 4-bit provenance tracking.</li>
+<li>Exception model with dual-mode execution: bounded trap depth (<code>MAX_EXCEPTION_DEPTH = 8</code>), handler table (<code>MAX_TRAP_HANDLERS = 16</code>), reflex-mode fail-safe (unhandled exception triggers <code>EMERGENCY_STOP</code>), host-mode trap-to-software.</li>
+<li>Cycle-accurate ISA simulator (<code>src/emit/rspu_sim.rs</code>) with bounded execution (<code>MAX_SIM_CYCLES</code>).</li>
+<li>ISA extended from 20 to 30 instructions: <code>TRAP</code>, <code>TRAP_IF</code>, <code>HALT</code>, <code>MODE_SWITCH</code>, <code>NOP</code>, <code>FENCE</code>, <code>TAG_LOAD</code>, <code>TAG_CHECK</code>, <code>TAG_READ</code>, <code>DEADLINE_SET</code>.</li>
+<li>Rocq formal proofs for encoding bijectivity and tagged-word invariants.</li>
+<li>Error codes E706–E715 activated for encoding, tagging, exceptions, simulation, and deadline enforcement.</li>
+</ul>
+<hr />
+<h2 id="phase-7f-proof-carrying-code-infrastructure-completed">Phase 7f — Proof-Carrying Code Infrastructure (Completed)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Implement a proof-carrying code framework where compiled R-SPU programs carry machine-checkable safety certificates alongside their executable code, enabling hardware-verified trust.</p>
+</li>
+<li>
+<p><strong>Status (May 2026):</strong> COMPLETE. Certificate generation and serialization implemented in <code>src/cert/</code>. Hardware Proof Verification Unit implemented in <code>rspu_chip/verification/pcc_verifier.mirr</code>. Formal verifier specification and correctness invariants proven in <code>proofs/cert/Verifier.v</code>.</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Proof-carrying code model: every compiled R-SPU binary includes a compact safety certificate attesting to specific verified properties.</li>
+<li>Certificate format design: compact proof witnesses checkable in bounded clock cycles by a hardware verification unit.</li>
+<li>Safety properties encoded in certificates: type safety (no tag violations), temporal safety (all deadlines met), width safety (no truncations), and resource safety (no multi-driver conflicts).</li>
+<li>Hardware proof verification unit specification: a dedicated on-chip module that validates certificates before permitting code execution on the R-SPU core.</li>
+<li>Integration with Rocq extraction: verified proof checkers extracted from Rocq proofs into synthesizable hardware descriptions.</li>
+<li>Total function enforcement: the MIRR compiler must prove termination for all R-SPU reflex-domain code — non-terminating programs are rejected at compile time.</li>
+<li>Termination analysis via structural recursion bounds and loop iteration limits (extends NASA P10 bounded-iteration requirement to a formal proof obligation).</li>
+<li>Certificate chaining: when modules compose, their certificates compose — system-level safety follows from component-level certificates.</li>
+<li>Revocation and versioning: certificates reference compiler version and proof context, enabling invalidation when compiler bugs are discovered.</li>
+<li>Bounded verification cost: certificate checking must complete within a configurable cycle budget (hard real-time requirement for safety-critical deployment).</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Certificate generation pass in the compiler (<code>src/certify/</code>), certificate format specification, and Rocq-extracted hardware proof checker RTL.</p>
+<hr />
+<h2 id="phase-7g-symbolic-evaluation-engine-completed">Phase 7g — Symbolic Evaluation Engine (Completed)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Build a hardware-acceleratable symbolic evaluation engine for runtime signal classification, constraint resolution, and logic optimization within the R-SPU execution model.</p>
+</li>
+<li>
+<p><strong>Status (May 2026):</strong> COMPLETE. Symbolic evaluation library implemented in <code>src/symbolic/</code> including interval analysis, fingerprinting, and term rewriting. Verified through extensive integration tests (<code>tests/symbolic_*.rs</code>).</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Hardware-accelerated pattern matching engine for classifying signal waveforms against known templates (e.g., QRS complex detection, sensor drift signatures).</li>
+<li>Constraint resolution engine for runtime sensor calibration: solve systems of inequalities derived from physical sensor models within bounded cycle budgets.</li>
+<li>Symbolic signal processing primitives: discrete differentiation, integration approximations, and moving-window statistics computed symbolically for precision analysis.</li>
+<li>Abstract interpretation passes realized as hardware acceleration targets: interval analysis, sign analysis, and range propagation for runtime signal characterization.</li>
+<li>Term rewriting engine for runtime logic optimization: dynamically simplify monitoring expressions as runtime knowledge narrows signal ranges.</li>
+<li>Bounded rewriting depth: all symbolic evaluation operations have configurable maximum step counts (NASA P10 compliance).</li>
+<li>Integration with Phase 3's SmaRTLy simplifier: the symbolic engine reuses algebraic simplification rules in a runtime context.</li>
+<li>Signal fingerprinting: compute compact signatures of signal behavior over configurable time windows for anomaly detection.</li>
+<li>Configurable precision modes: trade symbolic precision for evaluation speed based on current safety criticality level.</li>
+<li>Software simulation model in Rust before hardware realization: all symbolic primitives implemented and tested as software, then mapped to RTL in Phase 7h.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Symbolic evaluation library (<code>src/symbolic/</code>) with Rust simulation model, hardware mapping annotations, and integration into the MAPE-K Analyze stage.</p>
+<hr />
+<h2 id="phase-7h-mape-k-hardware-realization-completed">Phase 7h — MAPE-K Hardware Realization (Completed)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Port Phase 5's MAPE-K simulation harness to synthesizable RTL, creating a hardware-realized autonomic control loop with sub-microsecond response times.</p>
+</li>
+<li>
+<p><strong>Status (May 2026):</strong> COMPLETE. Synthesizable SystemVerilog emitter implemented in <code>src/emit/mape_k_rtl</code>. Verified via Yosys synthesis validation (<code>tests/synth_mape_k_tests.rs</code>). Behavioral equivalence established via Rocq proofs (<code>proofs/mape_k/</code>).</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Translate the Phase 5a Rust MAPE-K simulation model to synthesizable SystemVerilog RTL via the MIRR compilation pipeline.</li>
+<li>Hardware LTL checker with configurable property depth: evaluate temporal safety assertions within the current clock cycle using dedicated comparison and shift-register logic.</li>
+<li>On-chip knowledge base: pre-verified configuration library stored in on-chip SRAM or block RAM, indexed by fault signature for constant-time lookup.</li>
+<li>DPR controller with Cement2 temporal synchrony: manage partial bitstream loading into reconfigurable tiles without temporal discontinuity — no missed events during reconfiguration.</li>
+<li>Safety clamp integration: single-cycle hazard response implemented in the static shell — clamps engage independently of and prior to any DPR activity.</li>
+<li>Monitor stage hardware: shadow register chain with hardware pre-processing (threshold comparators, rate-of-change detectors) feeding the Analyze stage directly.</li>
+<li>Analyze stage hardware: LTL checker array with priority encoder for multi-property evaluation and fault classification.</li>
+<li>Plan stage hardware: lookup table indexed by fault classification, returning pre-verified bitstream identifiers and safety clamp configurations.</li>
+<li>Execute stage hardware: DPR sequencer with Cement2 guards ensuring reconfigurable tile transitions complete atomically with respect to the temporal domain.</li>
+<li>Formal verification of the hardware MAPE-K loop: Rocq proofs that the hardware realization preserves the safety properties validated in Phase 5's simulation.</li>
+<li>Area and timing budgets: LTL checker must meet target frequency with &lt; 5% area overhead relative to the monitored design.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Synthesizable MAPE-K RTL modules (<code>src/emit/mape_k_rtl.rs</code>), Yosys synthesis validation, and Rocq proofs of behavioral equivalence with the Phase 5 simulation model.</p>
+<hr />
+<h2 id="phase-7i-verified-compilation-chain-in-progress">Phase 7i — Verified Compilation Chain (In Progress)</h2>
+<ul>
+<li>
+<p><strong>Goal:</strong> Establish an end-to-end formally verified compilation chain from MIRR source code to gate-level netlist, providing mathematical proof that generated hardware preserves source-level semantics.</p>
+</li>
+<li>
+<p><strong>Status (May 2026):</strong> Infrastructure established. <code>mirr-proof-audit</code> tool implemented for coverage tracking. <code>ConstFold.v</code> proof stub created. CI updated with Rocq validation.</p>
+</li>
+<li>
+<p><strong>Scope:</strong></p>
+<ul>
+<li>Rocq-verified compiler passes: extend Phase 4's width inference proofs to cover ALL compiler passes — parsing, type checking, simplification, temporal lowering, and code emission.</li>
+<li>CompCert-inspired verified compilation methodology: each compiler pass accompanied by a simulation relation proof showing output preserves input semantics.</li>
+<li>Proof that generated RTL preserves MIRR source semantics: formal simulation relation between MIRR behavioral specification and emitted SystemVerilog.</li>
+<li>End-to-end formal chain: source → typed IR → simplified IR → temporal IR → RTL → gate-level netlist, with verified preservation at each boundary.</li>
+<li>Verified constant folding: proof that compile-time evaluation produces the same result as runtime evaluation for all constant expressions.</li>
+<li>Verified width inference: extend existing Rocq proofs (80+ proofs) to full coverage of the width constraint system including SCC cycles.</li>
+<li>Verified temporal lowering: proof that Cement2 shift-register synthesis preserves the temporal semantics of <code>delay(k)</code> guards.</li>
+<li>Verified simplification: proof that SmaRTLy-inspired algebraic rules preserve logical equivalence (all 33 rules individually proven).</li>
+<li>Certification artifacts for DO-178C Level A (aerospace) and IEC 62304 Class C (medical device software): compiler qualification data package derived from Rocq proofs.</li>
+<li>Regression proof infrastructure: CI pipeline runs Rocq proof checking on every commit, ensuring proofs remain valid as the compiler evolves.</li>
+<li>Proof maintenance tooling: when a compiler pass changes, identify which proofs are invalidated and require update.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Fully verified compilation chain with Rocq proofs covering all passes (<code>proofs/</code> expanded to cover full pipeline), DO-178C/IEC 62304 certification data package, and CI-integrated proof regression suite.</p>
+<hr />
+<h2 id="phase-8a-r-spu-core-architecture-in-progress">Phase 8a — R-SPU Core Architecture (In Progress)</h2>
+<ul>
+<li><strong>Goal:</strong> Design and implement the R-SPU processor core with reflexive capabilities as synthesizable RTL.</li>
+<li><strong>Status (May 2026):</strong> IN PROGRESS. Tagged-word architecture (64-bit) defined in <code>rspu_chip/core/types.mirr</code>. Upgraded 64-bit ALU and Register File implemented. 5-stage synthesizable pipeline with PCC verification interlock initialized in <code>rspu_chip/core/pipeline.mirr</code>.</li>
+<li><strong>Scope:</strong>
+<ul>
+<li>Word architecture: 64-bit data words with type metadata tags for runtime type safety.</li>
+<li>Datapath design: ALU, FPU, dedicated evaluation units for signal processing.</li>
+<li>Register file with hardware type checking and provenance tracking.</li>
+<li>Memory subsystem with metadata support and bounded allocation.</li>
+<li>5-stage pipeline with proof verification interlock stage.</li>
+<li>I/O subsystem: sensor interface with ADC/DAC integration points.</li>
+<li>Dual clock domains: deterministic reflex domain (synchronous) and cognitive host domain (asynchronous).</li>
+<li>Static shell (safety clamps, MAPE-K controller, LTL checker) — never reconfigured.</li>
+<li>Reconfigurable tiles receiving partial bitstreams via DPR controller.</li>
+<li>Mixed-signal interface layer for analog sensor front-end.</li>
+<li>Cement2 temporal primitives realized in silicon (shift registers, guard units).</li>
+<li>Exception handling: hardware-enforced safety modes on invariant violation.</li>
+<li>Power management: dynamic voltage/frequency scaling per tile.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Complete RTL implementation of the R-SPU processor core, validated through Yosys synthesis and formal verification.</p>
+<hr />
+<h2 id="phase-8b-multi-core-fabric-tape-out-preparation-not-started">Phase 8b — Multi-Core Fabric &amp; Tape-Out Preparation (Not Started)</h2>
+<ul>
+<li><strong>Goal:</strong> Scale R-SPU to multi-core fabric and prepare for physical implementation.</li>
+<li><strong>Scope:</strong>
+<ul>
+<li>Network-on-Chip (NoC) interconnect for multi-R-SPU communication.</li>
+<li>Distributed knowledge base across cores with consistency protocol.</li>
+<li>Fault tolerance: redundancy and voting mechanisms for safety-critical multi-core.</li>
+<li>Consensus protocol for distributed property verification across cores.</li>
+<li>Thermal-aware placement with on-die sensor feedback.</li>
+<li>Host interface: PCIe/AXI bridge for host CPU to dispatch MIRR programs to R-SPU fabric.</li>
+<li>FPGA prototype: validated on Xilinx Ultrascale+ and/or Lattice Nexus development boards.</li>
+<li>Pre-silicon verification: gate-level simulation, formal equivalence checking, timing closure.</li>
+<li>Tape-out preparation: GDS-II generation, DRC (Design Rule Check), LVS (Layout vs Schematic).</li>
+<li>Power/performance/area (PPA) characterization from post-synthesis and post-layout data.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Multi-core R-SPU fabric tape-out-ready design with FPGA prototype validation.</p>
+<hr />
+<h2 id="phase-9-production-deployment-certification-not-started">Phase 9 — Production Deployment &amp; Certification (Not Started)</h2>
+<blockquote>
+<p>[!NOTE]
+Phase 9 is a forward-looking design goal. It describes the
+intended trajectory of the project, not current capabilities.</p>
+</blockquote>
+<ul>
+<li><strong>Goal:</strong> Deploy R-SPU systems in real-world, safety-critical applications with full certification.</li>
+<li><strong>Scope:</strong>
+<ul>
+<li>Medical: ventilators, patient monitors, neonatal respiratory monitors, epilepsy wearables, implantable medical robotics.</li>
+<li>Aerospace: flight control systems, satellite subsystems.</li>
+<li>Automotive: ADAS, autonomous vehicle controls (Guo et al. 2024).</li>
+<li>Certification: DO-178C (aerospace), IEC 62304 (medical), ISO 26262 (automotive).</li>
+<li>Field testing, validation, volume manufacturing.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Result artifact:</strong> Certified, production-ready R-SPU systems deployed in safety-critical applications worldwide.</p>
+<hr />
+<h2 id="the-ultimate-goal">The Ultimate Goal</h2>
+<p>A complete ecosystem where domain experts specify safety-critical system behavior at a high level, and the toolchain automatically generates optimized, formally verified R-SPU hardware implementations deployable with NASA-level confidence in life-critical applications.</p>
+<p>The novel claim: integrating Cement2, SmaRTLy, and FIRWINE into a unified language and architecture (MIRR/R-SPU) is transformative. Each technology is already proven. MIRR is the orchestration layer that makes them work together — and the only language that simultaneously serves as design language, compiler toolchain, and runtime instruction language.</p>
+<hr />
+<h2 id="key-benchmarks-to-target">Key Benchmarks to Target</h2>
+<table><thead><tr><th>Technology</th><th>Metric</th><th>Source</th></tr></thead><tbody>
+<tr><td>Cement2</td><td>377 MHz timing closure on RISC-V soft-core</td><td>Xiao et al. 2025</td></tr>
+<tr><td>SmaRTLy</td><td>8.95% AIG reduction on RISC-V (early milestone)</td><td>Li et al. 2025</td></tr>
+<tr><td>SmaRTLy</td><td>47.2% AIG reduction vs Yosys (industrial, full milestone)</td><td>Li et al. 2025</td></tr>
+<tr><td>FIRWINE</td><td>Unique Least Solution — formally proven optimal</td><td>Wang et al. 2026</td></tr>
+<tr><td>R-SPU LTL</td><td>Sub-cycle fault detection (nanosecond response)</td><td>Architecture goal</td></tr>
+<tr><td>R-SPU DPR</td><td>Millisecond reconfiguration + static clamp in 1 cycle</td><td>Architecture goal</td></tr>
+</tbody></table>
+<hr />
+<h2 id="research-foundation">Research Foundation</h2>
+<p>Performance claims (377 MHz, 47% area reduction) are drawn from the original papers as evidence that the underlying components are already proven. The novel contribution of this project is their integration into a unified language experience under MIRR.</p>
+<p><strong>Core Technologies:</strong></p>
+<ul>
+<li>Xiao, Y. et al. (2025). Cement2: Temporal hardware transactions for FPGA programming. arXiv:2511.15073</li>
+<li>Li, C. et al. (2025). SmaRTLy: RTL optimization with logic inferencing and structural rebuilding. arXiv:2510.17251</li>
+<li>Wang, K. et al. (2026). FIRWINE: A formally verified procedure for width inference in FIRRTL. arXiv:2601.12813</li>
+<li>Arcaini, P. et al. (2015). Modeling and analyzing MAPE-K feedback loops for self-adaptation. SEAMS 2015.</li>
+</ul>
+<p><strong>Foundational Theory:</strong></p>
+<ul>
+<li>Pnueli, A. (1977). The temporal logic of programs. 18th Annual Symposium on Foundations of Computer Science. IEEE. — The foundational paper from which all LTL in this project traces its lineage.</li>
+<li>Cong, J., &amp; Zhang, Z. (2006). An efficient and versatile scheduling algorithm based on SDC formulation. DAC 2006.</li>
+</ul>
+<p><strong>Hardware Reliability &amp; Aging:</strong></p>
+<ul>
+<li>Lin, I.-C. et al. (2016). Aging-aware reliable multiplier design with adaptive hold logic. IEEE Trans. VLSI Systems, 24(3), 844–853.</li>
+</ul>
+<p><strong>Target Application Domains:</strong></p>
+<ul>
+<li>Guo, J.-I., &amp; Chen, Y.-L. (2024). ConcentrateNet: Multi-scale object detection for ADAS. Sensors, 24(5), 1682.</li>
+<li>Wu, Y.-C. et al. (2020). 28nm fully integrated genome analysis accelerator. IEEE Trans. Biomedical Circuits and Systems, 14(6), 1262–1274.</li>
+<li>Sayeed, M.A. et al. (2024). Real-time multi-channel epileptic seizure detection. Sensors, 24(22), 7175.</li>
+<li>Kwon, S. et al. (2021). Non-contact respiratory monitoring using an RGB camera. Sensors, 21(16), 5429.</li>
+<li>Sunkavilli, S. et al. (2022). DPReDO: DPR-enabled design obfuscation for FPGA security. IEEE SOCC 2022.</li>
+</ul>
+<hr />
+<h2 id="repository-structure">Repository Structure</h2>
+<pre><code class="language-text">.
+├── src/
+│   ├── main.rs                    # CLI entrypoint
+│   ├── lib.rs                     # Public API / module exports
+│   ├── error.rs                   # Shared error types
+│   ├── bootstrap_runner.rs        # Self-host bootstrap pipeline
+│   ├── simplify.rs                # Logic simplifier — 33 algebraic rules (Phase 3)
+│   ├── pipeline.rs                # Unified compilation pipeline (Phase 6)
+│   ├── mirr_executor.rs           # Signal evaluator used by MAPE-K harness (Phase 5)
+│   ├── diagnostic.rs              # Diagnostic formatting and error reporting (DIAG-001)
+│   ├── suggest.rs                 # Did-you-mean suggestions for misspelled identifiers (DIAG-001)
+│   ├── bin/
+│   │   ├── mirr-compile.rs        # Unified pipeline CLI: --emit verilog|dot|json|sva (Phase 6)
+│   │   ├── mirr-simplify.rs       # Standalone simplifier CLI
+│   │   ├── mirr-width.rs          # Bit-width inference CLI; --scc enables Phase 4b
+│   │   ├── mirr-simulate.rs       # MAPE-K simulation harness CLI (Phase 5)
+│   │   └── generate_mirr_stress.rs
+│   ├── ast/
+│   │   ├── mod.rs                 # Module declarations and re-exports
+│   │   ├── types.rs
+│   │   ├── expr.rs                # Includes Expr::Prev for temporal back-references
+│   │   ├── program.rs             # MirrProgram, Module (includes properties field)
+│   │   ├── property.rs            # PropertyDecl, PropertyFormula (Phase 7a)
+│   │   └── pattern.rs             # PatternDef, PatternCall, PatternOrigin (Phase 7b)
+│   ├── lexer/
+│   │   └── tokenizer.rs
+│   ├── parser/
+│   │   ├── expr_parser.rs
+│   │   ├── module_parser.rs       # Includes property parsing (Phase 7a)
+│   │   └── pattern_parser.rs      # Pattern definition and call parsing (Phase 7b)
+│   ├── validation/
+│   │   └── semantic.rs            # Includes property validation (Phase 7a)
+│   ├── typeck/                    # Type checker module (TYPE-001, MEGA-1)
+│   │   ├── mod.rs
+│   │   └── extended.rs            # MEGA-1 extended type checker (E610--E625)
+│   ├── emit/                      # Output emitters — 7 backends (Phase 6+)
+│   │   ├── mod.rs
+│   │   ├── verilog.rs             # SystemVerilog RTL + SVA assertions (Phase 7a)
+│   │   ├── dot.rs                 # Graphviz DOT with property nodes (Phase 7a)
+│   │   ├── json_netlist.rs        # JSON netlist with properties key (Phase 7a)
+│   │   ├── rspu.rs                # R-SPU native code emission
+│   │   ├── rspu_isa.rs            # R-SPU instruction set definitions
+│   │   ├── rspu_regalloc.rs       # R-SPU register allocator
+│   │   ├── firrtl.rs              # FIRRTL intermediate representation emission
+│   │   ├── fpga_scaffold.rs       # FPGA scaffold generation (FPGA-001)
+│   │   ├── fpga_target.rs         # FPGA target definitions (FPGA-002)
+│   │   ├── dsp.rs                 # DSP block emission
+│   │   └── testbench.rs           # Testbench generation
+│   ├── temporal/
+│   │   ├── compiler.rs
+│   │   ├── emit.rs
+│   │   └── low_level_ir.rs
+│   ├── width/                     # FIRWINE bit-width inference (Phase 4)
+│   │   ├── mod.rs                 # Pipeline entry; SccWidthResult and has_errors()
+│   │   ├── types.rs               # FlatNode, WidthExpr, SccInfo, WidthStats
+│   │   ├── flatten.rs             # Expression flattening including Prev back-edges
+│   │   ├── constraint.rs          # Constraint generation from flat nodes
+│   │   ├── solver.rs              # Acyclic constraint propagation (Phase 4a)
+│   │   ├── display.rs             # Human-readable width and SCC reports
+│   │   ├── graph.rs               # Width dependency graph construction (Phase 4b)
+│   │   ├── scc.rs                 # Iterative Tarjan's SCC detection (Phase 4b)
+│   │   ├── scc_solver.rs          # Expansive/nonexpansive SCC solvers (Phase 4b)
+│   │   └── verify.rs              # Unique least solution verification (Phase 4b)
+│   └── mape_k/                    # MAPE-K adaptive simulation harness (Phase 5)
+│       ├── mod.rs
+│       ├── monitor.rs
+│       ├── analyzer.rs
+│       ├── planner.rs
+│       └── sensor.rs
+├── src/expand/                    # Pattern expansion engine (Phase 7b)
+│   └── mod.rs                     # expand_patterns(), name prefixing, scoping validation
+├── tests/
+│   ├── *_tests.rs                 # Unit/integration suites (3,469+ tests)
+│   ├── property_tests.rs          # Property/SVA tests (Phase 7a)
+│   ├── pattern_tests.rs           # Pattern system tests (Phase 7b)
+│   ├── pattern_coverage_tests.rs  # Pattern coverage gap tests (Phase 7b)
+│   ├── synth_yosys_tests.rs       # End-to-end Yosys synthesis tests (SYNTH-001)
+│   └── fixtures/
+├── proofs/                        # Rocq (Coq) formal proofs (ROCQ-001)
+│   └── width/                     # FIRWINE width inference proofs
+│       ├── Types.v, MinBits.v, Constraint.v, Flatten.v
+│       ├── Solver.v, Monotone.v, Truncation.v, Integration.v
+│       └── SCC/                   # SCC-specific proofs
+│           ├── Tarjan.v, Classify.v, Nonexpansive.v
+├── compiler_mirr/                 # MIRR-in-MIRR self-hosting port (incremental)
+├── stdlib/mirr_core/              # Standard library primitives in MIRR
+├── examples/
+│   └── neonatal_respirator.mirr
+├── docs/
+│   ├── roadmap.md                 # This file
+│   ├── mirr_spec.md
+│   └── ...
+└── mcp_server/                    # TypeScript MCP stdio server
+</code></pre>
+<h3 id="where-to-make-changes">Where to make changes</h3>
+<table><thead><tr><th>Area</th><th>Files</th></tr></thead><tbody>
+<tr><td>Syntax / tokens</td><td><code>src/lexer/*</code>, <code>src/parser/*</code></td></tr>
+<tr><td>AST / data model</td><td><code>src/ast/*</code>; temporal back-refs: <code>Expr::Prev</code> in <code>expr.rs</code>; properties: <code>property.rs</code></td></tr>
+<tr><td>Semantic rules</td><td><code>src/validation/semantic.rs</code></td></tr>
+<tr><td>Temporal lowering</td><td><code>src/temporal/*</code></td></tr>
+<tr><td>Logic simplification</td><td><code>src/simplify.rs</code></td></tr>
+<tr><td>Bit-width inference (acyclic)</td><td><code>src/width/solver.rs</code>, <code>constraint.rs</code>, <code>flatten.rs</code></td></tr>
+<tr><td>Bit-width inference (cyclic SCC)</td><td><code>src/width/graph.rs</code>, <code>scc.rs</code>, <code>scc_solver.rs</code>, <code>verify.rs</code></td></tr>
+<tr><td>Output emission</td><td><code>src/emit/verilog.rs</code>, <code>dot.rs</code>, <code>json_netlist.rs</code>, <code>rspu.rs</code>, <code>firrtl.rs</code>, <code>fpga_scaffold.rs</code>, <code>fpga_target.rs</code>, <code>dsp.rs</code>, <code>testbench.rs</code></td></tr>
+<tr><td>R-SPU backend</td><td><code>src/emit/rspu.rs</code>, <code>rspu_isa.rs</code>, <code>rspu_regalloc.rs</code></td></tr>
+<tr><td>FIRRTL emission</td><td><code>src/emit/firrtl.rs</code></td></tr>
+<tr><td>FPGA targets</td><td><code>src/emit/fpga_scaffold.rs</code>, <code>src/emit/fpga_target.rs</code></td></tr>
+<tr><td>DSP emission</td><td><code>src/emit/dsp.rs</code></td></tr>
+<tr><td>Testbench generation</td><td><code>src/emit/testbench.rs</code></td></tr>
+<tr><td>Type checking</td><td><code>src/typeck/mod.rs</code></td></tr>
+<tr><td>Type checking (extended)</td><td><code>src/typeck/extended.ars</code></td></tr>
+<tr><td>Unified pipeline</td><td><code>src/pipeline.rs</code></td></tr>
+<tr><td>Safety properties / SVA</td><td><code>src/ast/property.rs</code>, <code>src/emit/verilog.rs</code> (SVA), <code>src/validation/semantic.rs</code></td></tr>
+<tr><td>Pattern expansion</td><td><code>src/ast/pattern.rs</code>, <code>src/parser/pattern_parser.rs</code>, <code>src/expand/mod.rs</code></td></tr>
+<tr><td>MAPE-K harness</td><td><code>src/mape_k/</code>, <code>src/mirr_executor.rs</code></td></tr>
+<tr><td>Self-hosting pipeline</td><td><code>src/bootstrap_runner.rs</code></td></tr>
+<tr><td>Rocq formal proofs</td><td><code>proofs/width/*.v</code>, <code>proofs/width/SCC/*.v</code></td></tr>
+</tbody></table>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="tutorial.html">Tutorial</a> — Learn the language from scratch</li>
+<li><a href="error_codes.html">Error Codes</a> — Error codes introduced per phase</li>
+<li><a href="type-system.html">Type System</a> — TYPE campaign results</li>
+<li><a href="rspu_isa_spec.html">R-SPU Reference</a> — Phase 8 deliverable</li>
+<li><a href="migration-guide.html">Migration Guide</a> — Breaking changes per version</li>
+<li><a href="glossary.html">Glossary</a> — Project terminology and acronyms</li>
+<li><a href="contributing.html">Contributing</a> — Coding standards, campaign workflow, error allocation</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

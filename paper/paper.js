@@ -221,90 +221,128 @@ const EXAMPLES = {
 }`
 };
 
-// ── CodeMirror MIRR mode + editor init ────────────────────────────────
+// ── Monaco Editor MIRR Mode + Init ────────────────────────────────
 
-var cmEditor = null;
+var monacoEditor = null;
+var fallbackTextarea = null;
+var editorInitialValue = EXAMPLES.tmr; // default
 
 function getSource() {
-  if (cmEditor) return cmEditor.getValue();
-  var ta = document.getElementById('mirr-source');
-  return ta ? ta.value : '';
+  if (monacoEditor) return monacoEditor.getValue();
+  if (fallbackTextarea) return fallbackTextarea.value;
+  return editorInitialValue;
 }
 
 function setSource(text) {
-  if (cmEditor) { cmEditor.setValue(text); return; }
-  var ta = document.getElementById('mirr-source');
-  if (ta) ta.value = text;
+  editorInitialValue = text;
+  if (monacoEditor) {
+    monacoEditor.setValue(text);
+    return;
+  }
+  if (fallbackTextarea) fallbackTextarea.value = text;
 }
 
-(function initCodeMirror() {
-  if (typeof CodeMirror === 'undefined') return;
+(function initMonaco() {
+  var container = document.getElementById('monaco-container');
+  if (!container) return;
 
-  // Define MIRR language mode
-  CodeMirror.defineMode('mirr', function() {
-    var signalKw = /^(signal|input|output|wire|reg|assign)\b/;
-    var guardKw  = /^(guard|when|cycles|for)\b/;
-    var reflexKw = /^(reflex|on)\b/;
-    var generalKw = /^(module|always|temporal|require|ensure|if|else|let|fn|struct|enum|match|return|property|pattern|prev|use)\b/;
-    var dirs     = /^(in|out|internal)\b/;
-    var types    = /^(u[0-9]+|i[0-9]+|bool|bit|clock|reset)\b/;
-    var bools    = /^(true|false)\b/;
-
-    return {
-      startState: function() { return {}; },
-      token: function(stream) {
-        // Comments
-        if (stream.match('//')) { stream.skipToEnd(); return 'comment'; }
-        // Whitespace
-        if (stream.eatSpace()) return null;
-        // Annotations
-        if (stream.match(/@[a-zA-Z_]\w*/)) return 'meta';
-        // Tags
-        if (stream.match(/#[a-zA-Z_]\w*/)) return 'tag';
-        // Numbers
-        if (stream.match(/0x[0-9a-fA-F_]+/) || stream.match(/0b[01_]+/) || stream.match(/0o[0-7_]+/) || stream.match(/[0-9][0-9_]*/)) return 'number';
-        // Identifiers and keywords
-        if (stream.match(/[a-zA-Z_]\w*/)) {
-          var w = stream.current();
-          if (signalKw.test(w))  return 'keyword';
-          if (guardKw.test(w))   return 'def';
-          if (reflexKw.test(w))  return 'builtin';
-          if (generalKw.test(w)) return 'keyword';
-          if (dirs.test(w))      return 'qualifier';
-          if (types.test(w))     return 'type';
-          if (bools.test(w))     return 'atom';
-          return 'variable';
-        }
-        // Operators
-        if (stream.match(/[+\-*=<>!&|^~%]+/)) return 'operator';
-        // Braces / parens
-        if (stream.match(/[{}()\[\];:,]/)) return 'punctuation';
-        // Advance one char if nothing matched
-        stream.next();
-        return null;
+  function installFallbackEditor() {
+    if (fallbackTextarea) return;
+    container.textContent = '';
+    fallbackTextarea = document.createElement('textarea');
+    fallbackTextarea.id = 'mirr-source';
+    fallbackTextarea.className = 'mirr-fallback-editor';
+    fallbackTextarea.setAttribute('spellcheck', 'false');
+    fallbackTextarea.setAttribute('aria-label', 'MIRR Source');
+    fallbackTextarea.value = editorInitialValue;
+    fallbackTextarea.addEventListener('input', function() {
+      editorInitialValue = fallbackTextarea.value;
+      debounceCompile();
+    });
+    fallbackTextarea.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        compile();
       }
-    };
-  });
+    });
+    container.appendChild(fallbackTextarea);
+  }
 
-  var textarea = document.getElementById('mirr-source');
-  if (!textarea) return;
+  if (typeof window.require !== 'function') {
+    installFallbackEditor();
+    return;
+  }
 
-  cmEditor = CodeMirror.fromTextArea(textarea, {
-    mode: 'mirr',
-    theme: 'material-darker',
-    lineNumbers: true,
-    matchBrackets: false,
-    indentUnit: 4,
-    tabSize: 4,
-    indentWithTabs: false,
-    lineWrapping: true,
-    viewportMargin: Infinity,
-    extraKeys: {
-      'Ctrl-Enter': function() { compile(); },
-      'Cmd-Enter':  function() { compile(); }
+  window.require.config({
+    paths: {
+      vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.46.0/min/vs'
     }
   });
-  cmEditor.setSize(null, 350);
+
+  window.require(['vs/editor/editor.main'], function() {
+    try {
+      monaco.languages.register({ id: 'mirr' });
+      monaco.languages.setMonarchTokensProvider('mirr', {
+        tokenizer: {
+          root: [
+            [/\/\/.*$/, 'comment'],
+            [/@[a-zA-Z_]\w*/, 'meta'],
+            [/#[a-zA-Z_]\w*/, 'tag'],
+            [/\b(module|always|temporal|require|ensure|if|else|let|fn|struct|enum|match|return|property|pattern|prev|use)\b/, 'keyword'],
+            [/\b(signal|input|output|wire|reg|assign)\b/, 'keyword'],
+            [/\b(guard|when|cycles|for)\b/, 'type.identifier'],
+            [/\b(reflex|on)\b/, 'predefined'],
+            [/\b(in|out|internal)\b/, 'attribute.name'],
+            [/\b(u[0-9]+|i[0-9]+|bool|bit|clock|reset)\b/, 'type'],
+            [/\b(true|false)\b/, 'constant'],
+            [/0x[0-9a-fA-F_]+|0b[01_]+|0o[0-7_]+|[0-9][0-9_]*/, 'number'],
+            [/[+\-*=<>!&|^~%]+/, 'operator'],
+            [/[{}()[\];:,]/, 'delimiter']
+          ]
+        }
+      });
+
+      monaco.editor.defineTheme('mirr-dark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: 'comment', foreground: '64748b' },
+          { token: 'keyword', foreground: '00e5ff' },
+          { token: 'type', foreground: '22c55e' },
+          { token: 'type.identifier', foreground: 'f59e0b' },
+          { token: 'predefined', foreground: '8b5cf6' },
+          { token: 'number', foreground: 'fbbf24' }
+        ],
+        colors: {
+          'editor.background': '#1A1B1E',
+          'editorLineNumber.foreground': '#475569',
+          'editor.lineHighlightBackground': '#162040'
+        }
+      });
+
+      monacoEditor = monaco.editor.create(container, {
+        value: editorInitialValue,
+        language: 'mirr',
+        theme: 'mirr-dark',
+        automaticLayout: true,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        fontFamily: 'JetBrains Mono, Fira Code, Cascadia Code, monospace',
+        fontSize: 13,
+        tabSize: 4,
+        insertSpaces: true,
+        wordWrap: 'on',
+        scrollBeyondLastLine: false
+      });
+      monacoEditor.onDidChangeModelContent(function() {
+        editorInitialValue = monacoEditor.getValue();
+        debounceCompile();
+      });
+      monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, compile);
+    } catch (_) {
+      installFallbackEditor();
+    }
+  }, installFallbackEditor);
 })();
 
 var compile_pipeline_stages, proof_status, simulate_rspu, simulate_mapek, mirr_version, simulate_waveform, compile_graph_data;
@@ -680,11 +718,7 @@ function showCompileTime(ms) {
 document.getElementById('compile-btn')
   .addEventListener('click', compile);
 
-// Hook real-time compilation to CodeMirror
-if (cmEditor) {
-  cmEditor.on('change', debounceCompile);
-}
-
+// Monaco handles 'change' internally in initMonaco()
 document.getElementById('example-select')
   .addEventListener('change', function(e) {
     var key = e.target.value;
@@ -843,16 +877,7 @@ document.getElementById('mapek-sim-btn')
     }
   });
 
-// Keyboard shortcut fallback: Ctrl+Enter (when CodeMirror is not active)
-if (!cmEditor) {
-  document.getElementById('mirr-source')
-    .addEventListener('keydown', function(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        compile();
-      }
-    });
-}
+// Monaco handles keyboard shortcuts internally in initMonaco()
 
 // Boot WASM (non-blocking — page works without it)
 initWasm();

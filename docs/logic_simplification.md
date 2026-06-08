@@ -1,37 +1,49 @@
-# MIRR Logic Simplification (Phase 3)
+# MIRR Logic Simplification & Constant Folding
 
 ## Overview
 
-The simplification engine reduces boolean, comparison, and arithmetic expressions
-in MIRR's AST before temporal lowering and hardware mapping. It uses a bounded
-iterative post-order traversal (NASA Power-of-10 rule #1 compliant -- no unbounded
-recursion) and runs to fixpoint to catch cascading reductions.
+The simplification engine reduces boolean, comparison, and arithmetic expressions in MIRR before temporal lowering and hardware mapping. 
 
-## Architecture
+Following the Phase 3 ECS Migration, MIRR now operates two distinct simplification engines:
+1. **ECS Parallel Constant Folding:** The modern production engine running natively over the flat Entity Component System arrays.
+2. **AST Iterative Simplifier:** The legacy bootstrap engine (`simplify_expr()`) that processes the Abstract Syntax Tree.
 
+---
+
+## 1. ECS Parallel Constant Folding (Phase 3 Native)
+
+The primary simplifier runs natively inside the ECS `Registry`. Because the ECS stores expressions as flat contiguous arrays (Data-Oriented Design), the simplification pass uses **Rayon** for blazing-fast multi-threaded constant folding.
+
+### Architecture
+Located in `src/ecs/systems.rs`:
+```rust
+pub fn parallel_constant_folding_system(registry: &mut Registry)
 ```
-                simplify_expr()
-.mirr source ──> parse ──> pattern expand ──> validate ──> typecheck ──> AST ────────────────> temporal lowering ──> netlist
-                                                                              ^                    |
-                                              Phase 3 integration wired in         v
-                                              src/temporal/mod.rs            Verilog / JSON / DOT / SVA
-```
 
-The simplifier is wired into the temporal compilation pipeline: guard conditions
-are simplified before `ConditionKind::try_from_expr` classifies them. This allows
-expressions like `sensor && true` to reduce to `sensor`, enabling correct
-`SimpleSignal` classification instead of unnecessary `ComplexGuard` wrapping.
+- **Execution:** Runs as an ECS System over all entities bounded by `registry.next_id`.
+- **Parallelism:** Uses `rayon::prelude::*` to iterate over `binary_ops` and `literals` component arrays concurrently.
+- **In-Place Mutation:** Directly transforms `BinaryComponent` entities into `LiteralComponent` entities when both children resolve to constants.
+- **NASA P10 Compliance:** Strict linear iteration bounded by active entity count. No recursive descent or unbounded stack usage.
 
-## Implementation
+---
 
-- **Engine:** Iterative post-order traversal with explicit stack (`Vec<WorkItem>`)
-- **Depth bound:** `MAX_SIMPLIFY_DEPTH = 128` (matches parser's `MAX_EXPR_DEPTH`)
-- **Fixpoint:** Repeats until no rules fire, bounded by `MAX_PASSES = 8`
+## 2. AST Iterative Simplification (Legacy / Bootstrap)
+
+The original Phase 2 simplifier operates directly on the `Expr` tree. It remains in the codebase primarily for the self-hosting bootstrap runner and CLI analysis (`mirr-simplify`).
+
+### Architecture
+- **Engine:** Iterative post-order traversal with an explicit stack (`Vec<WorkItem>`).
+- **Depth Bound:** `MAX_SIMPLIFY_DEPTH = 128` (prevents stack overflow).
+- **Fixpoint:** Repeats until no rules fire, bounded by `MAX_PASSES = 8`.
 - **Entry points:**
-  - `simplify_expr(expr) -> Expr` -- backward-compatible, returns simplified tree
-  - `simplify_expr_with_stats(expr) -> (Expr, SimplifyStats)` -- includes statistics
+  - `simplify_expr(expr) -> Expr`
+  - `simplify_expr_with_stats(expr) -> (Expr, SimplifyStats)`
 
-## Supported Rules
+---
+
+## 3. Supported Rules
+
+Both the ECS and AST simplifiers execute the following formal rules:
 
 ### Boolean Identity / Annihilation (8 rules)
 | Rule | Input | Output |
@@ -55,8 +67,7 @@ expressions like `sensor && true` to reduce to `sensor`, enabling correct
 | Tautology | `a \|\| !a` | `true` |
 
 ### Comparison Constant Folding (6 rules)
-When both operands are integer literals, all comparison operators (`<`, `<=`,
-`>`, `>=`, `==`, `!=`) are folded to boolean constants.
+When both operands are integer literals, all comparison operators (`<`, `<=`, `>`, `>=`, `==`, `!=`) are folded to boolean constants.
 
 ### Arithmetic Identity / Annihilation (9 rules)
 | Rule | Input | Output |
@@ -68,44 +79,22 @@ When both operands are integer literals, all comparison operators (`<`, `<=`,
 | Shift identity | `x << 0`, `x >> 0` | `x` |
 
 ### Arithmetic Constant Folding (5 rules)
-When both operands are integer literals, `+`, `-`, `*`, `<<`, `>>` are folded
-at compile time. Uses `wrapping_*` semantics matching `eval_expr` in the executor.
-Shift amounts clamped to 63 (matching CRIT-01 hardware safety fix).
+When both operands are integer literals, `+`, `-`, `*`, `<<`, `>>` are folded at compile time. Shift amounts are strictly clamped to 63 to prevent undefined behavior in hardware.
 
-## CLI Tool
+---
 
-```
+## 4. CLI Tool
+
+```bash
 mirr-simplify <expr.json | program.mirr> [--stats]
 ```
 
-- `.json` mode: simplify a bare `Expr` JSON and print the result
-- `.mirr` mode: parse the program, simplify all guard conditions and reflex
-  assignment RHS expressions, print a summary with gate count statistics
+- `.json` mode: Simplify a bare `Expr` JSON and print the result.
+- `.mirr` mode: Parse the program, simplify all guard conditions, and print gate count statistics.
 
-## Statistics
+## 5. Extensibility Roadmap
 
-`SimplifyStats` reports:
-- `rules_applied` -- total number of rule firings across all fixpoint passes
-- `nodes_before` -- AST node count before simplification
-- `nodes_after` -- AST node count after simplification
-
-## Testing
-
-58 tests in `tests/simplify_tests.rs` (count may increase with new campaigns) covering:
-- All boolean identity/annihilation rules (both operand positions)
-- All idempotence/absorption rules
-- All comparison constant folds
-- All arithmetic identity/annihilation rules
-- Arithmetic constant folding (including wrapping and shift clamping)
-- Cascading/nested simplification
-- Fixpoint idempotence
-- Base case passthrough (signals, literals)
-- Stats API correctness
-- Integration: temporal pipeline simplifies guard conditions before lowering
-
-## Extensibility
-
-The design allows for future integration of:
-- SAT solvers for equivalence checking
-- DAG-based common sub-expression elimination
-- Dead-gate elimination in post-lowering netlist
+The flat ECS data layout allows for future high-performance integration of:
+- GPU-accelerated massive SIMD parallel evaluation
+- Dead-gate elimination passes across component arrays
+- SAT-solver extraction for automated equivalence checking

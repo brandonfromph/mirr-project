@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Tutorial — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tutorial — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#lesson-1-what-is-hardware-and-why-it-matters">Lesson 1: What is hardware and why it matters</a></li>
+          <li class="toc-h3"><a href="#software-vs-hardware">Software vs. hardware</a></li>
+          <li class="toc-h3"><a href="#why-does-this-matter">Why does this matter?</a></li>
+          <li class="toc-h3"><a href="#what-is-a-clock-cycle">What is a clock cycle?</a></li>
+          <li class="toc-h3"><a href="#what-is-mirr">What is MIRR?</a></li>
+          <li class="toc-h3"><a href="#key-terms">Key terms</a></li>
+        <li><a href="#lesson-2-the-three-building-blocks">Lesson 2: The three building blocks</a></li>
+          <li class="toc-h3"><a href="#signals-the-wires">Signals: the wires</a></li>
+          <li class="toc-h3"><a href="#guards-the-watchers">Guards: the watchers</a></li>
+          <li class="toc-h3"><a href="#reflexes-the-responders">Reflexes: the responders</a></li>
+          <li class="toc-h3"><a href="#how-they-connect">How they connect</a></li>
+          <li class="toc-h3"><a href="#the-module-wrapper">The module wrapper</a></li>
+        <li><a href="#lesson-3-your-first-mirr-program">Lesson 3: Your first MIRR program</a></li>
+          <li class="toc-h3"><a href="#the-scenario">The scenario</a></li>
+          <li class="toc-h3"><a href="#step-1-create-the-file">Step 1: Create the file</a></li>
+          <li class="toc-h3"><a href="#step-2-compile-it">Step 2: Compile it</a></li>
+          <li class="toc-h3"><a href="#step-3-try-other-output-formats">Step 3: Try other output formats</a></li>
+        <li><a href="#lesson-4-types-and-expressions">Lesson 4: Types and expressions</a></li>
+          <li class="toc-h3"><a href="#types">Types</a></li>
+          <li class="toc-h3"><a href="#comparison-operators">Comparison operators</a></li>
+          <li class="toc-h3"><a href="#logical-operators">Logical operators</a></li>
+          <li class="toc-h3"><a href="#arithmetic-operators">Arithmetic operators</a></li>
+          <li class="toc-h3"><a href="#the-prev-function">The `prev()` function</a></li>
+          <li class="toc-h3"><a href="#truth-table-and-or-not">Truth table: AND, OR, NOT</a></li>
+        <li><a href="#lesson-5-temporal-guards">Lesson 5: Temporal guards</a></li>
+          <li class="toc-h3"><a href="#what-temporal-means">What &quot;temporal&quot; means</a></li>
+          <li class="toc-h3"><a href="#the-for-n-cycles-clause">The `for N cycles` clause</a></li>
+          <li class="toc-h3"><a href="#how-it-works-inside-the-chip">How it works inside the chip</a></li>
+          <li class="toc-h3"><a href="#using-prev-in-guards">Using `prev()` in guards</a></li>
+        <li><a href="#lesson-6-properties">Lesson 6: Properties</a></li>
+          <li class="toc-h3"><a href="#what-properties-do">What properties do</a></li>
+          <li class="toc-h3"><a href="#the-three-property-formulas-basic">The three property formulas (basic)</a></li>
+          <li class="toc-h3"><a href="#the-three-property-formulas-advanced">The three property formulas (advanced)</a></li>
+          <li class="toc-h3"><a href="#directives-assert-cover-assume">Directives: assert, cover, assume</a></li>
+          <li class="toc-h3"><a href="#properties-do-not-generate-hardware">Properties do NOT generate hardware</a></li>
+        <li><a href="#lesson-7-patterns">Lesson 7: Patterns</a></li>
+          <li class="toc-h3"><a href="#the-problem-patterns-solve">The problem patterns solve</a></li>
+          <li class="toc-h3"><a href="#defining-a-pattern-with-def-and-reflect">Defining a pattern with `def` and `reflect`</a></li>
+          <li class="toc-h3"><a href="#using-a-pattern">Using a pattern</a></li>
+          <li class="toc-h3"><a href="#when-to-use-patterns">When to use patterns</a></li>
+        <li><a href="#lesson-8-reading-compiler-output">Lesson 8: Reading compiler output</a></li>
+          <li class="toc-h3"><a href="#verilog-emit-verilog">Verilog (`--emit verilog`)</a></li>
+          <li class="toc-h3"><a href="#firrtl-emit-firrtl">FIRRTL (`--emit firrtl`)</a></li>
+          <li class="toc-h3"><a href="#r-spu-assembly-emit-rspu">R-SPU Assembly (`--emit rspu`)</a></li>
+          <li class="toc-h3"><a href="#dot-emit-dot">DOT (`--emit dot`)</a></li>
+          <li class="toc-h3"><a href="#json-emit-json">JSON (`--emit json`)</a></li>
+          <li class="toc-h3"><a href="#testbench-emit-testbench">Testbench (`--emit testbench`)</a></li>
+          <li class="toc-h3"><a href="#s-expression-ir-emit-sexpr">S-expression IR (`--emit sexpr`)</a></li>
+          <li class="toc-h3"><a href="#fpga-scaffold-emit-fpgascaffold">FPGA Scaffold (`--emit fpga_scaffold`)</a></li>
+          <li class="toc-h3"><a href="#build-script-emit-buildscript">Build Script (`--emit build_script`)</a></li>
+          <li class="toc-h3"><a href="#dsp-emit-dsp">DSP (`--emit dsp`)</a></li>
+        <li><a href="#lesson-9-common-errors">Lesson 9: Common errors</a></li>
+          <li class="toc-h3"><a href="#error-code-categories">Error code categories</a></li>
+          <li class="toc-h3"><a href="#e1xx-parse-errors">[E1xx] Parse errors</a></li>
+          <li class="toc-h3"><a href="#e2xx-semantic-errors">[E2xx] Semantic errors</a></li>
+          <li class="toc-h3"><a href="#e300-temporal-errors">[E300] Temporal errors</a></li>
+          <li class="toc-h3"><a href="#e4xx-pattern-errors">[E4xx] Pattern errors</a></li>
+        <li><a href="#lesson-10-what-mirr-does-not-do">Lesson 10: What MIRR does NOT do</a></li>
+          <li class="toc-h3"><a href="#no-loops">No loops</a></li>
+          <li class="toc-h3"><a href="#no-functions">No functions</a></li>
+          <li class="toc-h3"><a href="#no-conditionals">No conditionals</a></li>
+          <li class="toc-h3"><a href="#no-variables">No variables</a></li>
+          <li class="toc-h3"><a href="#no-heap-no-allocation">No heap, no allocation</a></li>
+          <li class="toc-h3"><a href="#no-recursion">No recursion</a></li>
+          <li class="toc-h3"><a href="#no-floating-point">No floating point</a></li>
+          <li class="toc-h3"><a href="#why-so-minimal">Why so minimal?</a></li>
+        <li><a href="#what-to-read-next">What to read next</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>Tutorial: MIRR from Scratch</h1>
+<p>A step-by-step guide for absolute beginners. No prior hardware experience
+required. You just need to be able to read code.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#lesson-1-what-is-hardware-and-why-it-matters">What is hardware and why it matters</a></li>
+<li><a href="#lesson-2-the-three-building-blocks">The three building blocks</a></li>
+<li><a href="#lesson-3-your-first-mirr-program">Your first MIRR program</a></li>
+<li><a href="#lesson-4-types-and-expressions">Types and expressions</a></li>
+<li><a href="#lesson-5-temporal-guards">Temporal guards</a></li>
+<li><a href="#lesson-6-properties">Properties</a></li>
+<li><a href="#lesson-7-patterns">Patterns</a></li>
+<li><a href="#lesson-8-reading-compiler-output">Reading compiler output</a></li>
+<li><a href="#lesson-9-common-errors">Common errors</a></li>
+<li><a href="#lesson-10-what-mirr-does-not-do">What MIRR does NOT do</a></li>
+</ol>
+<hr />
+<h2 id="lesson-1-what-is-hardware-and-why-it-matters">Lesson 1: What is hardware and why it matters</h2>
+<h3 id="software-vs-hardware">Software vs. hardware</h3>
+<p>When you write a program in Python, JavaScript, or Rust, it runs as
+<strong>software</strong>. The computer's processor reads your instructions one at a
+time and executes them in order. If the processor is busy doing something
+else, your code waits.</p>
+<p><strong>Hardware</strong> is different. Hardware is a physical circuit etched onto a
+chip. It does not "run" in the software sense — it reacts. When an
+electrical signal arrives, the circuit responds immediately, in the same
+way every time. There is no operating system, no scheduler, no queue.</p>
+<h3 id="why-does-this-matter">Why does this matter?</h3>
+<p>Consider a ventilator keeping a newborn alive. If the air pressure drops
+dangerously, the machine must clamp a valve shut — not in 50 milliseconds
+when the operating system gets around to it, but within a single clock
+cycle (typically 10 nanoseconds).</p>
+<p>Software can be fast, but it cannot guarantee timing. Hardware can.</p>
+<blockquote>
+<p>[!IMPORTANT]
+In safety-critical systems, timing is not a performance metric -- it is a correctness requirement. A response that arrives 1 millisecond late in a neonatal ventilator is not slow; it is wrong.</p>
+</blockquote>
+<h3 id="what-is-a-clock-cycle">What is a clock cycle?</h3>
+<p>A hardware chip has a <strong>clock</strong> — a tiny oscillator that ticks at a fixed
+rate. Every tick is one <strong>clock cycle</strong>. At each tick, every circuit on
+the chip reads its inputs and updates its outputs simultaneously.</p>
+<p>Think of it like a metronome: on every beat, the entire orchestra plays
+the next note together. Nothing runs "out of order."</p>
+<p>A common clock speed is 100 MHz — that is 100 million ticks per second.
+One tick lasts 10 nanoseconds.</p>
+<h3 id="what-is-mirr">What is MIRR?</h3>
+<p>MIRR is a language that lets you describe hardware rules in plain code.
+You write what you want the hardware to do. The MIRR compiler translates
+your code into a hardware description that can be manufactured onto a
+chip.</p>
+<p>MIRR is not a general-purpose programming language. It has no loops, no
+functions, no if-else, no heap. It does exactly one thing: it lets you
+write safety rules that become physical circuits.</p>
+<h3 id="key-terms">Key terms</h3>
+<table><thead><tr><th>Term</th><th>Plain-English definition</th></tr></thead><tbody>
+<tr><td><strong>Hardware</strong></td><td>A physical circuit on a chip. Reacts instantly, every clock cycle.</td></tr>
+<tr><td><strong>Software</strong></td><td>Instructions read and executed by a processor, one at a time.</td></tr>
+<tr><td><strong>Clock cycle</strong></td><td>One tick of the hardware clock. Everything updates simultaneously.</td></tr>
+<tr><td><strong>HDL</strong></td><td>Hardware Description Language — a language for describing circuits. MIRR is one.</td></tr>
+<tr><td><strong>RTL</strong></td><td>Register-Transfer Level — the level of detail at which hardware is described. It specifies how data moves between storage elements (registers) each cycle.</td></tr>
+<tr><td><strong>Synthesis</strong></td><td>The process of converting an HDL description into actual gates and wires on a chip.</td></tr>
+</tbody></table>
+<hr />
+<h2 id="lesson-2-the-three-building-blocks">Lesson 2: The three building blocks</h2>
+<p>MIRR is built on exactly three concepts. Every MIRR program uses only
+these three:</p>
+<pre><code class="language-mirr"><span class="mirr-name">Signal</span>  <span class="mirr-op">-</span>  <span class="mirr-name">a</span> <span class="mirr-signal">wire</span> <span class="mirr-name">carrying</span> <span class="mirr-name">data</span>
+<span class="mirr-name">Guard</span>   <span class="mirr-op">-</span>  <span class="mirr-name">a</span> <span class="mirr-name">condition</span> <span class="mirr-name">that</span> <span class="mirr-name">watches</span> <span class="mirr-name">signals</span> <span class="mirr-name">over</span> <span class="mirr-name">time</span>
+<span class="mirr-name">Reflex</span>  <span class="mirr-op">-</span>  <span class="mirr-name">an</span> <span class="mirr-name">action</span> <span class="mirr-name">that</span> <span class="mirr-name">fires</span> <span class="mirr-guard">when</span> <span class="mirr-name">a</span> <span class="mirr-guard">guard</span> <span class="mirr-name">triggers</span></code></pre>
+<p>That is the entire language. There are no other constructs for hardware
+generation. (Properties and patterns exist, but they do not generate
+hardware — more on that in Lessons 6 and 7.)</p>
+<h3 id="signals-the-wires">Signals: the wires</h3>
+<p>A signal is a named wire that carries a value every clock cycle. Signals
+have a direction and a type.</p>
+<p>Think of signals like pipes in a plumbing system. Some pipes bring water
+in (<code>in</code>), some carry water out (<code>out</code>), and some are internal connections
+you cannot see from outside.</p>
+<pre><code class="language-mirr"><span class="mirr-name">signals</span> {
+    <span class="mirr-name">airway_pressure</span>: <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>    <span class="mirr-cmt">// a 16-bit number coming in</span>
+    <span class="mirr-name">clamp_valve</span>:     <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>  <span class="mirr-cmt">// a true/false value going out</span>
+}</code></pre>
+<h3 id="guards-the-watchers">Guards: the watchers</h3>
+<p>A guard watches one or more signals and checks a condition over time.
+It does not do anything by itself — it just observes and decides
+"yes, this condition has been met."</p>
+<p>Think of a guard like a smoke detector. It constantly monitors the air.
+When it detects smoke persisting for a certain duration, it triggers.
+But the detector itself does not spray water — that is someone else's
+job.</p>
+<pre><code class="language-mirr"><span class="mirr-guard">guard</span> <span class="mirr-name">sustained_pressure_drop</span> {
+    <span class="mirr-guard">when</span> <span class="mirr-name">airway_pressure</span> <span class="mirr-op">&lt;</span> <span class="mirr-num">50</span>
+    <span class="mirr-guard">for</span> <span class="mirr-num">1000</span> <span class="mirr-guard">cycles</span>;
+}</code></pre>
+<p>This guard watches the <code>airway_pressure</code> signal. If the pressure stays
+below 50 for 1000 consecutive clock cycles, the guard triggers.</p>
+<h3 id="reflexes-the-responders">Reflexes: the responders</h3>
+<p>A reflex listens to a guard and takes an action when the guard triggers.
+It is the only way to change an output signal.</p>
+<p>Think of a reflex like the sprinkler system connected to the smoke
+detector. When the detector triggers, the sprinkler activates.</p>
+<pre><code class="language-mirr"><span class="mirr-reflex">reflex</span> <span class="mirr-name">emergency_clamp</span> {
+    <span class="mirr-reflex">on</span> <span class="mirr-name">sustained_pressure_drop</span> {
+        <span class="mirr-name">clamp_valve</span> <span class="mirr-op">=</span> <span class="mirr-bool">true</span>;
+    }
+}</code></pre>
+<p>When <code>sustained_pressure_drop</code> triggers, this reflex sets <code>clamp_valve</code>
+to <code>true</code>.</p>
+<h3 id="how-they-connect">How they connect</h3>
+<pre><code class="language-mermaid">graph TD
+    A["Input Signals&lt;br/&gt;(airway_pressure)"] --&gt;|watches| B("Guard&lt;br/&gt;'&lt; 50 for 1000 cycles'")
+    B --&gt;|triggers| C{"Reflex&lt;br/&gt;set clamp_valve = true"}
+    C --&gt;|acts| D["Output Signals&lt;br/&gt;(clamp_valve to hardware pin)"]
+    
+    style B fill:#2b2b2b,stroke:#f39c12,stroke-width:2px,color:#fff
+    style C fill:#2b2b2b,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style A fill:#1a1a1a,stroke:#3498db,color:#fff
+    style D fill:#1a1a1a,stroke:#2ecc71,color:#fff
+</code></pre>
+<h3 id="the-module-wrapper">The module wrapper</h3>
+<p>Every MIRR program lives inside a <code>module</code>. A module is like a chip
+boundary — it declares what signals go in, what signals come out, and
+what logic runs inside.</p>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">neonatal_respirator</span> {
+    <span class="mirr-cmt">// signals, guards, and reflexes go here</span>
+}</code></pre>
+<hr />
+<h2 id="lesson-3-your-first-mirr-program">Lesson 3: Your first MIRR program</h2>
+<blockquote>
+<p>[!TIP]
+If you remember only one thing from Lesson 2: <strong>Signal</strong> is data,
+<strong>Guard</strong> is a condition over time, <strong>Reflex</strong> is the action. Everything
+else in MIRR exists to support these three.</p>
+</blockquote>
+<p>Let us write a complete MIRR program step by step: a neonatal respirator
+safety monitor.</p>
+<h3 id="the-scenario">The scenario</h3>
+<p>A ventilator for newborns has an air pressure sensor. If the pressure
+drops below 50 (arbitrary units) and stays low for 1000 clock cycles,
+we want to engage an emergency clamp valve.</p>
+<blockquote>
+<p>[!TIP]
+In this example, we use the ergonomic <code>signals { ... }</code> block to declare multiple signals. You can also declare them individually: <code>signal airway_pressure: in u16;</code>.</p>
+</blockquote>
+<h3 id="step-1-create-the-file">Step 1: Create the file</h3>
+<p>Create a file called <code>my_respirator.mirr</code> with the following content:</p>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">neonatal_respirator</span> {
+    <span class="mirr-name">signals</span> {
+        <span class="mirr-name">respirator_enable</span>: <span class="mirr-dir">in</span> <span class="mirr-type">bool</span>
+        <span class="mirr-name">airway_pressure</span>:   <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>
+        <span class="mirr-name">clamp_valve</span>:       <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>
+    }
+
+    <span class="mirr-guard">guard</span> <span class="mirr-name">sustained_pressure_drop</span> {
+        <span class="mirr-guard">when</span> <span class="mirr-name">airway_pressure</span> <span class="mirr-op">&lt;</span> <span class="mirr-num">50</span>
+        <span class="mirr-guard">for</span>  <span class="mirr-num">1000</span> <span class="mirr-guard">cycles</span>;
+    }
+
+    <span class="mirr-reflex">reflex</span> <span class="mirr-name">emergency_clamp</span> {
+        <span class="mirr-reflex">on</span> <span class="mirr-name">sustained_pressure_drop</span> {
+            <span class="mirr-name">clamp_valve</span> <span class="mirr-op">=</span> <span class="mirr-bool">true</span>;
+        }
+    }
+}</code></pre>
+<p>Let us read it line by line:</p>
+<ol>
+<li><code>module neonatal_respirator { ... }</code> — declares a module named
+<code>neonatal_respirator</code>.</li>
+<li>Three signals:
+<ul>
+<li><code>respirator_enable</code> — a boolean input (is the machine on?).</li>
+<li><code>airway_pressure</code> — a 16-bit unsigned integer input (sensor reading).</li>
+<li><code>clamp_valve</code> — a boolean output (the valve we control).</li>
+</ul>
+</li>
+<li>One guard: <code>sustained_pressure_drop</code> watches <code>airway_pressure &lt; 50</code>
+and waits for it to persist for 1000 consecutive cycles.</li>
+<li>One reflex: <code>emergency_clamp</code> fires when the guard triggers and sets
+<code>clamp_valve = true</code>.</li>
+</ol>
+<h3 id="step-2-compile-it">Step 2: Compile it</h3>
+<pre><code class="language-bash"><span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit verilog my_respirator.mirr</code></pre>
+<p>This tells the MIRR compiler to:</p>
+<ul>
+<li>Read <code>my_respirator.mirr</code></li>
+<li>Run it through all compiler stages (parse, validate, expand patterns,
+type check, simplify, width inference, temporal lowering)</li>
+<li>Emit a Verilog file (Verilog is a standard hardware description language
+that chip manufacturers understand)</li>
+</ul>
+<p>If everything is correct, you will see Verilog code printed to the
+terminal. This Verilog can be fed to a synthesis tool to manufacture a
+real chip.</p>
+<h3 id="step-3-try-other-output-formats">Step 3: Try other output formats</h3>
+<pre><code class="language-bash"><span class="hl-cmt"># SystemVerilog Assertions — formal verification checks</span>
+<span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit sva my_respirator.mirr
+
+<span class="hl-cmt"># JSON — machine-readable output for tools</span>
+<span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit json my_respirator.mirr
+
+<span class="hl-cmt"># DOT — graph visualization (open with Graphviz)</span>
+<span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit dot my_respirator.mirr
+
+<span class="hl-cmt"># FIRRTL — intermediate representation for the FIRRTL ecosystem</span>
+<span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit firrtl my_respirator.mirr</code></pre>
+<hr />
+<h2 id="lesson-4-types-and-expressions">Lesson 4: Types and expressions</h2>
+<h3 id="types">Types</h3>
+<p>MIRR has a small, fixed set of types:</p>
+<table><thead><tr><th>Type</th><th>What it holds</th><th>Size</th></tr></thead><tbody>
+<tr><td><code>bool</code></td><td><code>true</code> or <code>false</code></td><td>1 bit</td></tr>
+<tr><td><code>u8</code></td><td>Unsigned integer 0-255</td><td>8 bits</td></tr>
+<tr><td><code>u16</code></td><td>Unsigned integer 0-65535</td><td>16 bits</td></tr>
+<tr><td><code>u32</code></td><td>Unsigned integer 0-4294967295</td><td>32 bits</td></tr>
+<tr><td><code>u64</code></td><td>Unsigned integer 0-18446744073709551615</td><td>64 bits</td></tr>
+<tr><td><code>i8</code></td><td>Signed integer -128 to 127</td><td>8 bits</td></tr>
+<tr><td><code>i16</code></td><td>Signed integer -32768 to 32767</td><td>16 bits</td></tr>
+<tr><td><code>i32</code></td><td>Signed integer -2147483648 to 2147483647</td><td>32 bits</td></tr>
+<tr><td><code>i64</code></td><td>Signed integer</td><td>64 bits</td></tr>
+</tbody></table>
+<p>There are no floating point numbers, no strings, no
+arrays, no structs. Hardware operates on bits and fixed-width numbers.</p>
+<p><strong>Signed vs. unsigned:</strong> Use unsigned types (<code>u8</code>–<code>u64</code>) for sensor readings,
+counters, and addresses. Use signed types (<code>i8</code>–<code>i64</code>) for values that can be
+negative, such as temperature deltas or error signals. The compiler rejects
+mixed signed/unsigned operations — you must be explicit about which you mean.</p>
+<h3 id="comparison-operators">Comparison operators</h3>
+<p>You use these to compare signal values:</p>
+<table><thead><tr><th>Operator</th><th>Meaning</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>&lt;</code></td><td>Less than</td><td><code>pressure &lt; 50</code></td></tr>
+<tr><td><code>&lt;=</code></td><td>Less than or equal</td><td><code>pressure &lt;= 50</code></td></tr>
+<tr><td><code>&gt;</code></td><td>Greater than</td><td><code>temperature &gt; 100</code></td></tr>
+<tr><td><code>&gt;=</code></td><td>Greater than or equal</td><td><code>temperature &gt;= 100</code></td></tr>
+<tr><td><code>==</code></td><td>Equal</td><td><code>enable == true</code></td></tr>
+<tr><td><code>!=</code></td><td>Not equal</td><td><code>mode != 0</code></td></tr>
+</tbody></table>
+<h3 id="logical-operators">Logical operators</h3>
+<p>Combine conditions:</p>
+<table><thead><tr><th>Operator</th><th>Meaning</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>&amp;&amp;</code></td><td>AND — both must be true</td><td><code>a &gt; 10 &amp;&amp; b &lt; 5</code></td></tr>
+<tr><td><code>||</code></td><td>OR — either can be true</td><td><code>a &gt; 10 || b &lt; 5</code></td></tr>
+<tr><td><code>!</code></td><td>NOT — inverts true/false</td><td><code>!enable</code></td></tr>
+<tr><td><code>^</code></td><td>XOR — exactly one is true</td><td><code>a ^ b</code></td></tr>
+</tbody></table>
+<h3 id="arithmetic-operators">Arithmetic operators</h3>
+<table><thead><tr><th>Operator</th><th>Meaning</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>+</code></td><td>Add</td><td><code>a + b</code></td></tr>
+<tr><td><code>-</code></td><td>Subtract</td><td><code>a - b</code></td></tr>
+<tr><td><code>*</code></td><td>Multiply</td><td><code>a * b</code></td></tr>
+<tr><td><code>&lt;&lt;</code></td><td>Shift left</td><td><code>a &lt;&lt; 2</code></td></tr>
+<tr><td><code>&gt;&gt;</code></td><td>Shift right</td><td><code>a &gt;&gt; 1</code></td></tr>
+<tr><td><code>-</code> (unary)</td><td>Negate (signed)</td><td><code>-a</code></td></tr>
+</tbody></table>
+<h3 id="the-prev-function">The <code>prev()</code> function</h3>
+<p><code>prev()</code> lets you look at a signal's value from a previous clock cycle.</p>
+<pre><code class="language-mirr"><span class="mirr-kw">prev</span>(<span class="mirr-name">airway_pressure</span>, <span class="mirr-num">1</span>)   <span class="mirr-cmt">// the value of airway_pressure one cycle ago</span>
+<span class="mirr-kw">prev</span>(<span class="mirr-name">airway_pressure</span>, <span class="mirr-num">3</span>)   <span class="mirr-cmt">// the value three cycles ago</span></code></pre>
+<p>Think of <code>prev()</code> as a "memory window." The hardware remembers what the
+signal was N cycles ago and lets you compare it to the current value.</p>
+<p>The delay must be at least 1. <code>prev(signal, 0)</code> is an error — that is
+just the current value, and the compiler will reject it.</p>
+<h3 id="truth-table-and-or-not">Truth table: AND, OR, NOT</h3>
+<p>For reference, here is how the logical operators work on boolean values:</p>
+<pre><code>AND (&amp;&amp;):           OR (||):            NOT (!):
+  A     B   Result    A     B   Result    A   Result
+  false false false    false false false    false true
+  false true  false    false true  true     true  false
+  true  false false    true  false true
+  true  true  true     true  true  true
+</code></pre>
+<hr />
+<h2 id="lesson-5-temporal-guards">Lesson 5: Temporal guards</h2>
+<h3 id="what-temporal-means">What "temporal" means</h3>
+<p>In MIRR, "temporal" means "over time." A temporal guard does not just
+check a condition at one instant — it checks whether the condition holds
+for a specified duration.</p>
+<h3 id="the-for-n-cycles-clause">The <code>for N cycles</code> clause</h3>
+<p>Every guard has two parts:</p>
+<ol>
+<li><strong><code>when &lt;condition&gt;</code></strong> — what to watch for</li>
+<li><strong><code>for N cycles</code></strong> — how long it must persist</li>
+</ol>
+<pre><code class="language-mirr"><span class="mirr-guard">guard</span> <span class="mirr-name">overheating</span> {
+    <span class="mirr-guard">when</span> <span class="mirr-name">temperature</span> <span class="mirr-op">&gt;</span> <span class="mirr-num">100</span>
+    <span class="mirr-guard">for</span> <span class="mirr-num">5</span> <span class="mirr-guard">cycles</span>;
+}</code></pre>
+<p>This guard says: "if <code>temperature</code> stays above 100 for 5 consecutive
+clock cycles, trigger."</p>
+<p>If the temperature goes above 100 for 4 cycles and then drops, the
+guard does NOT trigger. The counter resets and starts over.</p>
+<h3 id="how-it-works-inside-the-chip">How it works inside the chip</h3>
+<p>The compiler turns each guard into a <strong>counter circuit</strong> (state machine):</p>
+<pre><code class="language-mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; 0
+    
+    0 --&gt; 1: true
+    0 --&gt; 0: false
+    
+    1 --&gt; 2: true
+    1 --&gt; 0: false
+    
+    2 --&gt; 3: true
+    2 --&gt; 0: false
+    
+    3 --&gt; 4: true
+    3 --&gt; 0: false
+    
+    4 --&gt; 5: true
+    4 --&gt; 0: false
+    
+    5 --&gt; 5: true (Triggered)
+    5 --&gt; 0: false
+</code></pre>
+<p>The counter increments each cycle the condition is true. If the condition
+becomes false, the counter resets to 0. The guard triggers only when the
+counter reaches N.</p>
+<h3 id="using-prev-in-guards">Using <code>prev()</code> in guards</h3>
+<p>You can use <code>prev()</code> in guard conditions to detect changes:</p>
+<pre><code class="language-mirr"><span class="mirr-guard">guard</span> <span class="mirr-name">pressure_spike</span> {
+    <span class="mirr-guard">when</span> <span class="mirr-name">airway_pressure</span> <span class="mirr-op">&gt;</span> <span class="mirr-kw">prev</span>(<span class="mirr-name">airway_pressure</span>, <span class="mirr-num">1</span>) <span class="mirr-op">+</span> <span class="mirr-num">20</span>
+    <span class="mirr-guard">for</span> <span class="mirr-num">1</span> <span class="mirr-guard">cycles</span>;
+}</code></pre>
+<p>This detects when the pressure jumps by more than 20 in a single cycle.</p>
+<hr />
+<h2 id="lesson-6-properties">Lesson 6: Properties</h2>
+<h3 id="what-properties-do">What properties do</h3>
+<p>Properties are <strong>verification rules</strong>. They describe what MUST or MUST NOT
+be true about your hardware. The compiler checks them but they do NOT
+generate hardware — they produce assertions that formal verification
+tools can prove or disprove.</p>
+<p>Think of properties like a contract: "I declare that my hardware must
+always satisfy these conditions." A separate tool (a formal verifier)
+reads these assertions and mathematically proves whether they hold.</p>
+<h3 id="the-three-property-formulas-basic">The three property formulas (basic)</h3>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">pressure_bounded</span> {
+    <span class="mirr-kw">always</span> (<span class="mirr-name">airway_pressure</span> <span class="mirr-op">&gt;</span> <span class="mirr-num">10</span>);
+}</code></pre>
+<p><code>always (P)</code> means: "P must be true on every single clock cycle."</p>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">no_spurious_clamp</span> {
+    <span class="mirr-name">never</span> (<span class="mirr-name">clamp_valve</span> <span class="mirr-op">&amp;</span><span class="mirr-op">&amp;</span> <span class="mirr-name">airway_pressure</span> <span class="mirr-op">&gt;</span> <span class="mirr-num">200</span>);
+}</code></pre>
+<p><code>never (P)</code> means: "P must never be true on any clock cycle." This is
+equivalent to <code>always (!P)</code> but reads more naturally.</p>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">low_triggers_clamp</span> {
+    <span class="mirr-kw">always</span> (<span class="mirr-name">airway_pressure</span> <span class="mirr-op">&lt;</span> <span class="mirr-num">50</span> <span class="mirr-op">-</span><span class="mirr-op">&gt;</span> <span class="mirr-name">clamp_valve</span>);
+}</code></pre>
+<p><code>always (P -&gt; Q)</code> means: "whenever P is true, Q must also be true (in
+the same cycle)." The <code>-&gt;</code> is called <strong>implication</strong>. It says "P implies
+Q."</p>
+<h3 id="the-three-property-formulas-advanced">The three property formulas (advanced)</h3>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">never_drop_implies_alarm</span> {
+    <span class="mirr-name">never</span> (<span class="mirr-name">airway_pressure</span> <span class="mirr-op">&lt;</span> <span class="mirr-num">30</span> <span class="mirr-op">-</span><span class="mirr-op">&gt;</span> <span class="mirr-op">!</span><span class="mirr-name">clamp_valve</span>);
+}</code></pre>
+<p><code>never (P -&gt; Q)</code> means: "it must never be the case that P implies Q."</p>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">clamp_reachable</span> {
+    <span class="mirr-name">cover</span> <span class="mirr-name">eventually</span> <span class="mirr-name">within</span> <span class="mirr-num">100</span> (<span class="mirr-name">clamp_valve</span>);
+}</code></pre>
+<p><code>eventually within N (P)</code> means: "P must become true at least once within
+N clock cycles from reset." This is used to prove that something CAN
+happen — that a state is reachable.</p>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">clamp_follows_drop</span> {
+    <span class="mirr-kw">always</span> (<span class="mirr-name">airway_pressure</span> <span class="mirr-op">&lt;</span> <span class="mirr-num">50</span> <span class="mirr-name">followed_by</span> <span class="mirr-num">5</span> <span class="mirr-name">clamp_valve</span>);
+}</code></pre>
+<p><code>always (P followed_by N Q)</code> means: "whenever P is true, Q must be true
+exactly N cycles later."</p>
+<h3 id="directives-assert-cover-assume">Directives: assert, cover, assume</h3>
+<p>Each property has a <strong>directive</strong> that tells the formal verifier what to
+do with it:</p>
+<table><thead><tr><th>Directive</th><th>Meaning</th><th>When to use</th></tr></thead><tbody>
+<tr><td>(none / default)</td><td><code>assert</code> — prove this holds</td><td>Normal safety assertions</td></tr>
+<tr><td><code>cover</code></td><td>Prove this is reachable</td><td>Check that a state can be reached</td></tr>
+<tr><td><code>assume</code></td><td>Assume this is true (constrain inputs)</td><td>Restrict the verifier's input space</td></tr>
+</tbody></table>
+<p>Example with explicit directive:</p>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">clamp_reachable</span> {
+    <span class="mirr-name">cover</span> <span class="mirr-name">eventually</span> <span class="mirr-name">within</span> <span class="mirr-num">100</span> (<span class="mirr-name">clamp_valve</span>);
+}</code></pre>
+<p>The <code>cover</code> directive tells the verifier: "I am not asking you to prove
+this always holds. I am asking you to prove that there exists at least one
+scenario where <code>clamp_valve</code> becomes true within 100 cycles."</p>
+<h3 id="properties-do-not-generate-hardware">Properties do NOT generate hardware</h3>
+<blockquote>
+<p>[!WARNING]
+Properties produce verification assertions, not hardware. A property like
+<code>always (pressure &gt; 10)</code> does not create a circuit that enforces the
+condition. Only reflexes drive hardware outputs.</p>
+</blockquote>
+<p>This is important. A property like <code>always (pressure &gt; 10)</code> does NOT
+create a circuit that enforces <code>pressure &gt; 10</code>. It creates a check that
+a formal verification tool can analyze. The hardware behavior is defined
+entirely by signals, guards, and reflexes.</p>
+<hr />
+<h2 id="lesson-7-patterns">Lesson 7: Patterns</h2>
+<h3 id="the-problem-patterns-solve">The problem patterns solve</h3>
+<p>Imagine you have 10 sensors that all need the same guard-and-reflex
+structure: "if sensor exceeds a limit for N cycles, set an alarm." Writing
+the same code 10 times is tedious and error-prone.</p>
+<p>Patterns let you define a reusable template once and use it many times
+with different parameters.</p>
+<h3 id="defining-a-pattern-with-def-and-reflect">Defining a pattern with <code>def</code> and <code>reflect</code></h3>
+<pre><code class="language-mirr"><span class="mirr-name">def</span> <span class="mirr-name">threshold_guard</span>(
+    <span class="mirr-name">sensor</span>: <span class="mirr-signal">signal</span> <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>,
+    <span class="mirr-name">limit</span>:  <span class="mirr-type">u16</span>,
+    <span class="mirr-name">delay</span>:  <span class="mirr-type">u32</span>,
+    <span class="mirr-name">alarm</span>:  <span class="mirr-signal">signal</span> <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>
+) {
+    <span class="mirr-name">reflect</span> {
+        <span class="mirr-guard">guard</span> ${<span class="mirr-name">sensor</span>}<span class="mirr-name">_over</span> {
+            <span class="mirr-guard">when</span> ${<span class="mirr-name">sensor</span>} <span class="mirr-op">&gt;</span> ${<span class="mirr-name">limit</span>}
+            <span class="mirr-guard">for</span>  ${<span class="mirr-name">delay</span>} <span class="mirr-guard">cycles</span>;
+        }
+
+        <span class="mirr-reflex">reflex</span> ${<span class="mirr-name">sensor</span>}<span class="mirr-name">_trigger</span> {
+            <span class="mirr-reflex">on</span> ${<span class="mirr-name">sensor</span>}<span class="mirr-name">_over</span> {
+                ${<span class="mirr-name">alarm</span>} <span class="mirr-op">=</span> <span class="mirr-bool">true</span>;
+            }
+        }
+
+        <span class="mirr-kw">property</span> ${<span class="mirr-name">sensor</span>}<span class="mirr-name">_safety</span> {
+            <span class="mirr-kw">always</span> (${<span class="mirr-name">sensor</span>} <span class="mirr-op">&gt;</span> ${<span class="mirr-name">limit</span>} <span class="mirr-op">-</span><span class="mirr-op">&gt;</span> ${<span class="mirr-name">alarm</span>});
+        }
+    }
+}</code></pre>
+<p>Breaking it down:</p>
+<ul>
+<li><code>def</code> declares a named pattern.</li>
+<li>Parameters are listed in parentheses. Each one has a name and a type.
+<ul>
+<li><code>signal in u16</code> means "a signal that carries a 16-bit input"</li>
+<li><code>u16</code> means "a plain 16-bit value" (not a signal, just a number)</li>
+<li><code>signal out bool</code> means "a signal that carries a boolean output"</li>
+</ul>
+</li>
+<li><code>reflect { ... }</code> contains the template body.</li>
+<li><code>${param}</code> substitutes the parameter's value into names and expressions.</li>
+</ul>
+<h3 id="using-a-pattern">Using a pattern</h3>
+<p>Inside a module, call the pattern like a function:</p>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">dual_sensor</span> {
+    <span class="mirr-name">signals</span> {
+        <span class="mirr-name">temperature</span>:    <span class="mirr-dir">in</span>  <span class="mirr-type">u16</span>
+        <span class="mirr-name">pressure</span>:       <span class="mirr-dir">in</span>  <span class="mirr-type">u16</span>
+        <span class="mirr-name">temp_alarm</span>:     <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>
+        <span class="mirr-name">pressure_alarm</span>: <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>
+    }
+
+    <span class="mirr-name">calls</span> {
+        <span class="mirr-name">threshold_guard</span>(<span class="mirr-name">temperature</span>, <span class="mirr-num">100</span>, <span class="mirr-num">5</span>, <span class="mirr-name">temp_alarm</span>)
+        <span class="mirr-name">threshold_guard</span>(<span class="mirr-name">pressure</span>, <span class="mirr-num">300</span>, <span class="mirr-num">3</span>, <span class="mirr-name">pressure_alarm</span>)
+    }
+}</code></pre>
+<p>The compiler expands each call into the full guard/reflex/property code,
+with unique names so nothing collides:</p>
+<ul>
+<li>First call produces: <code>threshold_guard_0_temperature_over</code>,
+<code>threshold_guard_0_temperature_trigger</code>, etc.</li>
+<li>Second call produces: <code>threshold_guard_1_pressure_over</code>,
+<code>threshold_guard_1_pressure_trigger</code>, etc.</li>
+</ul>
+<h3 id="when-to-use-patterns">When to use patterns</h3>
+<p>Use patterns when you have the same signal/guard/reflex structure repeated
+for different signals or thresholds. Do not use patterns for one-off logic.</p>
+<hr />
+<h2 id="lesson-8-reading-compiler-output">Lesson 8: Reading compiler output</h2>
+<p>The MIRR compiler can emit ten output formats. Each serves a different
+purpose.</p>
+<pre><code class="language-carousel">### Verilog (`--emit verilog`)
+
+Verilog is the standard hardware description language used by chip
+manufacturers. This is the primary output — it is what gets turned into
+a real chip.
+
+**Who reads it:** Hardware engineers, synthesis tools (Xilinx Vivado,
+Intel Quartus, Synopsys Design Compiler).
+
+```bash
+cargo run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### FIRRTL (`--emit firrtl`)
+
+FIRRTL (Flexible Intermediate Representation for Register-Transfer Level)
+is an intermediate format used by the FIRRTL compiler framework
+(originally from UC Berkeley's Chisel project).
+
+**Who reads it:** FIRRTL-based toolchains for further hardware
+transformations.
+
+```bash
+cargo run --bin mirr-compile -- --emit firrtl examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### R-SPU Assembly (`--emit rspu`)
+
+R-SPU (Reflex Signal Processing Unit) is MIRR's instruction-level backend.
+It compiles your module into a bounded instruction sequence for a
+safety-critical processor architecture.
+
+**Who uses it:** Embedded safety systems, custom silicon targets, MAPE-K
+runtime monitors.
+
+```bash
+cargo run --bin mirr-compile -- --emit rspu examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### DOT (`--emit dot`)
+
+DOT is a graph description language used by Graphviz. The output is a
+visual diagram showing how signals, guards, and reflexes connect.
+
+**Who reads it:** You, for debugging and understanding your design.
+
+```bash
+cargo run --bin mirr-compile -- --emit dot examples/neonatal_respirator.mirr
+# Then open the .dot file with Graphviz or an online viewer
+```
+&lt;!-- slide --&gt;
+### JSON (`--emit json`)
+
+A machine-readable representation of the compiled program. Useful for
+building tools on top of the MIRR compiler.
+
+**Who reads it:** Scripts, dashboards, other programs that need to
+analyze the compiled output.
+
+The JSON output includes:
+- `schema_version` — version of the JSON schema (currently `"0.2.0"`)
+- `ir_version` — version of the IR contract (currently `"1.0"`)
+- `program` — the full ECS entity graph of your module
+- `simplify_stats` — how many logic simplifications were applied
+- `width_stats` — bit-width inference results
+- `temporal` — the lowered temporal guard netlist
+- `properties` — your property declarations
+
+```bash
+cargo run --bin mirr-compile -- --emit json examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### Testbench (`--emit testbench`)
+
+Generates a SystemVerilog testbench that instantiates the compiled module
+and drives stimulus for basic smoke-testing.
+
+**Who reads it:** Hardware engineers running simulation in Vivado, Quartus,
+or open-source simulators like Verilator.
+
+```bash
+cargo run --bin mirr-compile -- --emit testbench examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### S-expression IR (`--emit sexpr`)
+
+Emits the compiled design as an S-expression intermediate representation.
+Useful for tool interop, custom analysis passes, and round-trip testing.
+
+**Who reads it:** Toolchain developers, custom analysis scripts, the
+MIRR S-expression evaluator.
+
+```bash
+cargo run --bin mirr-compile -- --emit sexpr examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### FPGA Scaffold (`--emit fpga_scaffold`)
+
+Generates a complete FPGA project scaffold including pin constraints,
+clock configuration, and top-level wrappers for supported FPGA targets.
+
+**Who reads it:** FPGA engineers targeting Xilinx, Lattice, or Intel
+development boards.
+
+```bash
+cargo run --bin mirr-compile -- --emit fpga_scaffold examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### Build Script (`--emit build_script`)
+
+Generates a Makefile or build script that invokes the appropriate
+synthesis toolchain for the selected target.
+
+**Who reads it:** CI pipelines, build systems, hardware engineers
+automating synthesis flows.
+
+```bash
+cargo run --bin mirr-compile -- --emit build_script examples/neonatal_respirator.mirr
+```
+&lt;!-- slide --&gt;
+### DSP (`--emit dsp`)
+
+Emits a DSP (Digital Signal Processing) block description for modules
+that use arithmetic-heavy signal chains, targeting dedicated DSP slices
+on FPGAs.
+
+**Who reads it:** DSP engineers, FPGA synthesis tools that map to
+hardware multiplier/accumulator blocks.
+
+```bash
+cargo run --bin mirr-compile -- --emit dsp examples/neonatal_respirator.mirr
+```
+</code></pre>
+<hr />
+<h2 id="lesson-9-common-errors">Lesson 9: Common errors</h2>
+<p>When the MIRR compiler finds a problem, it tells you with a structured
+error message. Each error has a code prefix that tells you what category
+the problem belongs to.</p>
+<h3 id="error-code-categories">Error code categories</h3>
+<table><thead><tr><th>Code</th><th>Category</th><th>What went wrong</th></tr></thead><tbody>
+<tr><td><code>[E1xx]</code></td><td>Parse error</td><td>The compiler could not understand the syntax of your code (E101–E166, E170–E181)</td></tr>
+<tr><td><code>[E2xx]</code></td><td>Semantic error</td><td>The syntax is valid but the meaning is wrong (E201–E216)</td></tr>
+<tr><td><code>[E300]</code></td><td>Temporal error</td><td>Something went wrong during temporal guard compilation</td></tr>
+<tr><td><code>[E4xx]</code></td><td>Pattern error</td><td>Something went wrong during pattern expansion (E400–E425)</td></tr>
+<tr><td><code>[E5xx]</code></td><td>Width error</td><td>Bit-width inference found an inconsistency (E500–E511)</td></tr>
+<tr><td><code>[E6xx]</code></td><td>Type error</td><td>Type checker found a type mismatch (E601–E609)</td></tr>
+<tr><td><code>[E7xx]</code></td><td>R-SPU error</td><td>R-SPU instruction emission failed (E701–E715)</td></tr>
+<tr><td><code>[E8xx]</code></td><td>S-expression error</td><td>S-expression IR processing failed (E800–E815)</td></tr>
+</tbody></table>
+<h3 id="e1xx-parse-errors">[E1xx] Parse errors</h3>
+<p><strong>Unbalanced parentheses:</strong></p>
+<pre><code class="language-diff">- guard g {
+-     when (pressure &lt; 50
+-     for 1 cycles;
+- }
++ guard g {
++     when (pressure &lt; 50)
++     for 1 cycles;
++ }
+</code></pre>
+<pre><code>[E100] Parse error: [E171] Unbalanced parentheses in expression.
+</code></pre>
+<p><strong>Fix:</strong> Add the missing closing parenthesis: <code>when (pressure &lt; 50)</code>.</p>
+<p><strong>Too many tokens:</strong></p>
+<pre><code class="language-diff">- signals {
+-     x: in out bool
+- }
++ signals {
++     x: in bool
++ }
+</code></pre>
+<pre><code>[E100] Parse error: [E114] Too many tokens in signal declaration.
+</code></pre>
+<p><strong>Fix:</strong> A signal is either <code>in</code> or <code>out</code>, not both.</p>
+<h3 id="e2xx-semantic-errors">[E2xx] Semantic errors</h3>
+<p><strong>Duplicate names:</strong></p>
+<pre><code class="language-diff">  signals {
+-     x: in bool
+-     x: out bool   // x declared twice
++     x_in: in bool
++     x_out: out bool
+  }
+</code></pre>
+<pre><code>Semantic error: [E201] Duplicate signal name: 'x'. First defined at line 2.
+</code></pre>
+<p><strong>Fix:</strong> Give each signal a unique name.</p>
+<p><strong>Undeclared signal reference:</strong></p>
+<pre><code class="language-diff">  guard g {
+-     when ghost &gt; 50      // 'ghost' is not declared
++     when host &gt; 50
+      for 1 cycles;
+  }
+</code></pre>
+<pre><code>Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'. Did you mean 'host'?
+</code></pre>
+<p><strong>Fix:</strong> Declare <code>ghost</code> as a signal, or correct the spelling. The compiler
+suggests the closest match when a similar name exists.</p>
+<p><strong>Invalid <code>prev()</code> delay:</strong></p>
+<pre><code class="language-mirr"><span class="mirr-kw">property</span> <span class="mirr-name">p</span> {
+    <span class="mirr-kw">always</span> (<span class="mirr-kw">prev</span>(<span class="mirr-name">sensor</span>, <span class="mirr-num">0</span>) <span class="mirr-op">&gt;</span> <span class="mirr-num">50</span>);   <span class="mirr-cmt">// delay 0 is invalid</span>
+}</code></pre>
+<pre><code>Semantic error: [E209] 'p' contains prev('sensor') with delay 0; delay must be &gt;= 1.
+</code></pre>
+<p><strong>Fix:</strong> Use <code>prev(sensor, 1)</code> or higher.</p>
+<h3 id="e300-temporal-errors">[E300] Temporal errors</h3>
+<p>These occur during the temporal lowering stage (when the compiler converts
+guards into counter circuits). They are rare in normal usage.</p>
+<h3 id="e4xx-pattern-errors">[E4xx] Pattern errors</h3>
+<p><strong>Undefined pattern:</strong></p>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">m</span> {
+    <span class="mirr-name">signals</span> {
+        <span class="mirr-name">x</span>: <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>
+    }
+
+    <span class="mirr-name">undefined_pattern</span>(<span class="mirr-name">x</span>)    <span class="mirr-cmt">// no such pattern exists</span>
+}</code></pre>
+<pre><code>[E400] Pattern error: Undefined pattern 'undefined_pattern'.
+</code></pre>
+<p><strong>Fix:</strong> Define the pattern with <code>def</code> before calling it, or fix the name.</p>
+<hr />
+<h2 id="lesson-10-what-mirr-does-not-do">Lesson 10: What MIRR does NOT do</h2>
+<p>MIRR is deliberately minimal. Understanding what it cannot do is as
+important as understanding what it can do.</p>
+<h3 id="no-loops">No loops</h3>
+<blockquote>
+<p>[!WARNING]
+There is no <code>for</code>, <code>while</code>, or <code>loop</code>. Hardware does not "loop" — it
+exists physically and operates every cycle. If you need something to
+happen N times, you use a guard with <code>for N cycles</code>.</p>
+</blockquote>
+<h3 id="no-functions">No functions</h3>
+<blockquote>
+<p>[!WARNING]
+There are no callable functions. Patterns (<code>def</code>/<code>reflect</code>) look like
+functions but they are compile-time templates — they are expanded before
+anything runs. There is no call stack.</p>
+</blockquote>
+<h3 id="no-conditionals">No conditionals</h3>
+<blockquote>
+<p>[!NOTE]
+There is no <code>if</code>/<code>else</code>. Guards and reflexes are the MIRR equivalent of
+conditional behavior: "if this condition persists, then take this action."</p>
+</blockquote>
+<h3 id="no-variables">No variables</h3>
+<blockquote>
+<p>[!IMPORTANT]
+There are no mutable variables. Signals carry values, but you cannot
+declare a local variable and change it over time. The only "state" in the
+hardware is in the guard counters and the <code>prev()</code> memory.</p>
+</blockquote>
+<h3 id="no-heap-no-allocation">No heap, no allocation</h3>
+<blockquote>
+<p>[!CAUTION]
+There is no <code>malloc</code>, <code>new</code>, or dynamic allocation. Hardware is fixed at
+manufacturing time. You cannot create or destroy circuits at runtime.</p>
+</blockquote>
+<h3 id="no-recursion">No recursion</h3>
+<blockquote>
+<p>[!CAUTION]
+The compiler forbids recursion in all forms. This is a NASA/JPL Power-of-10
+safety rule: every algorithm must have a bounded execution time. Recursion
+makes execution time unpredictable.</p>
+</blockquote>
+<h3 id="no-floating-point">No floating point</h3>
+<blockquote>
+<p>[!IMPORTANT]
+All types are integers (signed or unsigned) or booleans. Floating point arithmetic
+requires specialized hardware units and is outside MIRR's scope.</p>
+</blockquote>
+<h3 id="why-so-minimal">Why so minimal?</h3>
+<blockquote>
+<p>[!NOTE]
+MIRR follows NASA/JPL Power-of-10 coding rules: no recursion, bounded
+loops, bounded memory. Every language construct maps to hardware with
+predictable timing and resource usage.</p>
+</blockquote>
+<p>MIRR targets safety-critical systems — medical devices, flight
+controllers, industrial safety monitors. In these systems, simplicity is
+a feature. Every construct in the language maps directly to hardware with
+predictable timing and resource usage. There are no hidden costs, no
+abstractions to leak, no runtime surprises.</p>
+<p>The three constructs (signal, guard, reflex) are sufficient to express
+any bounded-time, event-driven hardware safety rule. Adding more would
+increase complexity without increasing the set of hardware behaviors you
+can describe.</p>
+<hr />
+<h2 id="what-to-read-next">What to read next</h2>
+<ul>
+<li><a href="error_codes.html">Error Codes</a> — Full list of compiler diagnostics</li>
+<li><a href="type-system.html">Type System</a> — Signed/unsigned types and inference rules</li>
+<li><a href="rspu_isa_spec.html">R-SPU ISA Spec</a> — Instruction set architecture</li>
+<li><a href="migration-guide.html">Migration Guide</a> — Upgrading from an earlier version</li>
+<li><a href="roadmap.html">Roadmap</a> — Project phases and what comes next</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

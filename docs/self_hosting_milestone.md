@@ -9,15 +9,9 @@
 
 ## 1  What "Self-Hosting" Means for MIRR
 
-MIRR self-hosting is the ability for the MIRR compiler pipeline—lexer, parser,
-semantic validator, and temporal guard lowering—to be expressed in **MIRR-CORE**
-(the self-hostable subset of MIRR) and executed by the Rust bootstrap runner to
-produce output **byte-stable or semantically equivalent** to the reference Rust
-implementation.
+MIRR self-hosting is the ability for the MIRR compiler pipeline—lexer, parser, semantic validator, temporal guard lowering, and emitter—to be expressed in **MIRR-CORE** (the self-hostable subset of MIRR) and executed by the Rust bootstrap runner to produce output **byte-stable or semantically equivalent** to the reference Rust implementation.
 
-This milestone covers **stage-1 self-hosting** (hosted execution): the Rust
-runtime loads and executes MIRR-in-MIRR compiler modules.  Full native
-self-hosting (MIRR compiling itself without a Rust host) is a future goal.
+This milestone covers **stage-1 self-hosting** (hosted execution): the Rust runtime loads and executes MIRR-in-MIRR compiler modules. Full native self-hosting (MIRR compiling itself without a Rust host) is a future goal.
 
 ---
 
@@ -32,15 +26,16 @@ self-hosting (MIRR compiling itself without a Rust host) is a future goal.
 | 5 | MIRR parser in MIRR-CORE | `compiler_mirr/parser.mirr` + parse parity suite | ✅ |
 | 6 | Semantic validation in MIRR-CORE | `compiler_mirr/semantic.mirr` + validation parity tests | ✅ |
 | 7 | Temporal guard lowering in MIRR-CORE | `compiler_mirr/temporal_lowering.mirr` + netlist parity tests | ✅ |
-| 8 | Bootstrap runner | `src/bootstrap_runner.rs` + `--selfhost-compile` CLI flag | ✅ |
-| 9 | Differential testing + CI gate | `tests/self_hosting_parity_tests.rs` (13 tests) | ✅ |
-| 10 | Milestone freeze | `docs/self_hosting_milestone.md` (this document) | ✅ |
+| 8 | Emitter in MIRR-CORE | `compiler_mirr/emitter.mirr` | ✅ |
+| 9 | Bootstrap runner | `src/bootstrap_runner/` + `--selfhost-compile` CLI flag | ✅ |
+| 10 | Differential testing + CI gate | `tests/self_hosting_parity_tests.rs` (21 tests) | ✅ |
+| 11 | Milestone freeze | `docs/self_hosting_milestone.md` (this document) | ✅ |
 
 ---
 
 ## 3  Architecture Overview
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                     MIRR Self-Hosting Architecture               │
 ├──────────────────────────────────────────────────────────────────┤
@@ -71,6 +66,7 @@ self-hosting (MIRR compiling itself without a Rust host) is a future goal.
 │  src/validation/               compiler_mirr/semantic.mirr       │
 │  src/temporal/                 compiler_mirr/temporal_lowering   │
 │                                  .mirr                           │
+│  src/emit/                     compiler_mirr/emitter.mirr        │
 │                                                                  │
 │  Both produce output conforming to:                              │
 │    docs/schemas/mirr_ast.schema.json                             │
@@ -107,30 +103,17 @@ The contract version is `"ir_version": "1.0"` and is embedded in every JSON enve
 
 ### Integration Parity Tests (`tests/self_hosting_parity_tests.rs`)
 
-| Test | What It Verifies |
-|------|-----------------|
-| `selfhost_neonatal_all_stages_pass` | Full 5-stage pipeline succeeds |
-| `selfhost_neonatal_fixture_parity_stage_present` | FixtureParity stage runs (not skipped) |
-| `selfhost_neonatal_emits_valid_json` | Output is valid JSON with correct structure |
-| `selfhost_neonatal_guard_strategy_is_counter` | Counter strategy selected for 1000 cycles |
-| `selfhost_neonatal_signal_contract` | 3 signals with correct names/types/kinds |
-| `selfhost_neonatal_statistics_contract` | Statistics match golden fixture |
-| `selfhost_parse_error_fails_pipeline` | Malformed input detected at Parse stage |
-| `selfhost_missing_file_fails_pipeline` | Missing file detected at Read stage |
-| `selfhost_validation_error_fails_pipeline` | Duplicate signals caught at Validate stage |
-| `selfhost_summary_line_ci_format` | PASS summary matches CI format |
-| `selfhost_failure_summary_says_fail` | FAIL summary matches CI format |
-| `selfhost_neonatal_has_five_stages` | Pipeline reports exactly 5 stages in order |
-| `selfhost_fixture_json_roundtrip_stable` | Full JSON roundtrip matches golden fixture |
+Contains **21 rigorous tests** verifying end-to-end self-hosted compiler stage stability and golden fixture matching.
 
-### Other Self-Hosting Test Suites
+### Expanded Self-Hosting Test Suites
 
-| Suite | File | Tests |
-|-------|------|-------|
-| IR Schema Validation | `tests/self_hosting_ir_schema_tests.rs` | Schema conformance |
-| Stdlib Conformance | `tests/stdlib_conformance_tests.rs` | Core library primitives |
-| Temporal Lowering | `tests/temporal_lowering_tests.rs` | Guard compilation + netlist fixture parity |
-| Bootstrap Runner (unit) | `src/bootstrap_runner.rs` (mod tests) | 5 unit tests |
+| Suite | File | What It Verifies |
+|-------|------|------------------|
+| Extended Core | `tests/bootstrap_runner_extended_core_tests.rs` | Deeper core component execution |
+| Extended Stress | `tests/bootstrap_runner_extended_stress_tests.rs` | Scaling boundaries and failure recovery |
+| MIRR Stages | `tests/bootstrap_runner_mirr_stages_tests.rs` | Direct MIRR-to-MIRR pipeline execution |
+| IR Schema | `tests/self_hosting_ir_schema_tests.rs` | JSON schema conformance |
+| Bootstrap Parity | `tests/bootstrap_parity_tests.rs` | Rust-to-MIRR compiler byte-stability |
 
 ---
 
@@ -138,10 +121,10 @@ The contract version is `"ir_version": "1.0"` and is embedded in every JSON enve
 
 ```bash
 # Run the self-hosting bootstrap pipeline
-cargo run -- --selfhost-compile examples/neonatal_respirator.mirr
+cargo run --bin mirr-compile -- --selfhost-compile examples/neonatal_respirator.mirr
 
 # Also emit the netlist JSON to stdout
-cargo run -- --selfhost-compile --selfhost-compile-json examples/neonatal_respirator.mirr
+cargo run --bin mirr-compile -- --selfhost-compile --selfhost-compile-json examples/neonatal_respirator.mirr
 ```
 
 Output format:
@@ -161,25 +144,13 @@ Exit code: `0` on PASS, `1` on FAIL.
 
 ## 8  Release Checklist
 
-### Pre-Release Verification
-
-- [x] All 13 self-hosting parity tests pass (`cargo test --test self_hosting_parity_tests`)
-- [x] All bootstrap runner unit tests pass (`cargo test --lib bootstrap_runner`)
-- [x] All temporal lowering tests pass (`cargo test --test temporal_lowering_tests`)
-- [x] IR schema tests pass (`cargo test --test self_hosting_ir_schema_tests`)
-- [x] Stdlib conformance tests pass (`cargo test --test stdlib_conformance_tests`)
-- [x] CLI `--selfhost-compile` returns exit code 0 on canonical example
-- [x] Golden fixture `tests/fixtures/netlist/neonatal_respirator.json` matches pipeline output
-- [x] `docs/self_hosting_core_spec.md` frozen
-- [x] `docs/self_hosting_ir_contract.md` frozen
-- [x] JSON schemas in `docs/schemas/` frozen at version 1.0
-
 ### Compiler-in-MIRR Modules
 
 - [x] `compiler_mirr/lexer.mirr` — tokenizer logic ported to MIRR-CORE
 - [x] `compiler_mirr/parser.mirr` — parser logic ported to MIRR-CORE
 - [x] `compiler_mirr/semantic.mirr` — semantic validation ported to MIRR-CORE
 - [x] `compiler_mirr/temporal_lowering.mirr` — temporal guard lowering ported to MIRR-CORE
+- [x] `compiler_mirr/emitter.mirr` — netlist emission ported to MIRR-CORE
 
 ### Standard Library
 
@@ -190,10 +161,9 @@ Exit code: `0` on PASS, `1` on FAIL.
 
 ### Infrastructure
 
-- [x] `src/bootstrap_runner.rs` — 5-stage pipeline orchestrator
+- [x] `src/bootstrap_runner/mod.rs` & `types.rs` — 5-stage pipeline orchestrator
 - [x] `--selfhost-compile` CLI flag wired in `src/main.rs`
-- [x] `tests/self_hosting_parity_tests.rs` — 13-test CI gate
-- [x] `docs/self_hosting_milestone.md` — this document
+- [x] Extensive expanded CI test gates (21 base tests + extended suites)
 
 ---
 
@@ -201,26 +171,5 @@ Exit code: `0` on PASS, `1` on FAIL.
 
 The Rust compiler remains the **reference implementation** and safety fallback.
 Any discrepancy between the Rust pipeline and the MIRR-CORE pipeline is a bug
-in the MIRR-CORE port, not the other way around.  The golden fixtures in
+in the MIRR-CORE port, not the other way around. The golden fixtures in
 `tests/fixtures/` are generated by the Rust pipeline and are authoritative.
-
----
-
-## 10  Next Steps (Post-Milestone)
-
-1. **MIRR-CORE Interpreter:** Build a Rust-hosted interpreter that can execute
-   `compiler_mirr/*.mirr` modules, enabling true cross-pipeline comparison.
-2. **Stage-2 Self-Hosting:** Run the MIRR-CORE compiler modules through the
-   interpreter to produce output, and diff against the Rust pipeline.
-3. **Performance Benchmarking:** Measure compilation throughput of MIRR-CORE
-   pipeline vs Rust pipeline; set performance thresholds.
-4. **Additional Fixtures:** Add more test programs beyond `neonatal_respirator`
-   to increase parity coverage (shift-register guards, multi-guard modules,
-   error recovery scenarios).
-5. **Native Compilation:** Eventually compile MIRR-CORE to machine code,
-   achieving full native self-hosting without a Rust host.
-
----
-
-*This document was generated as part of the MIRR self-hosting plan (Task 10).*
-*The Rust compiler is preserved as the reference fallback for safety.*

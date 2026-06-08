@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIRR-CORE Self-Hosting Subset Specification — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="MIRR-CORE Self-Hosting Subset Specification — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MIRR-CORE Self-Hosting Subset Specification — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#1-introduction">1. Introduction</a></li>
+        <li><a href="#2-included-features-frozen">2. Included Features (Frozen)</a></li>
+          <li class="toc-h3"><a href="#21-primitive-types">2.1 Primitive Types</a></li>
+          <li class="toc-h3"><a href="#22-aggregate-types">2.2 Aggregate Types</a></li>
+          <li class="toc-h3"><a href="#23-control-flow">2.3 Control Flow</a></li>
+          <li class="toc-h3"><a href="#24-functions">2.4 Functions</a></li>
+          <li class="toc-h3"><a href="#25-modules">2.5 Modules</a></li>
+          <li class="toc-h3"><a href="#26-expressions">2.6 Expressions</a></li>
+          <li class="toc-h3"><a href="#27-let-bindings-and-mutation">2.7 Let Bindings and Mutation</a></li>
+          <li class="toc-h3"><a href="#28-string-slices-borrowed-read-only">2.8 String Slices (Borrowed, Read-Only)</a></li>
+          <li class="toc-h3"><a href="#29-references">2.9 References</a></li>
+          <li class="toc-h3"><a href="#210-constants">2.10 Constants</a></li>
+        <li><a href="#3-excluded-features-mirr-core-v1">3. Excluded Features (MIRR-CORE v1)</a></li>
+        <li><a href="#4-required-standard-library-primitives">4. Required Standard Library Primitives</a></li>
+        <li><a href="#5-determinism-and-safety-rules-nasa-core">5. Determinism and Safety Rules (NASA-CORE)</a></li>
+        <li><a href="#6-grammar-summary-mirr-core-v1">6. Grammar Summary (MIRR-CORE v1)</a></li>
+        <li><a href="#7-versioning-and-stability">7. Versioning and Stability</a></li>
+        <li><a href="#8-acceptance-criteria">8. Acceptance Criteria</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MIRR-CORE Self-Hosting Subset Specification</h1>
+<p><strong>Version:</strong> 1.0-draft<br />
+<strong>Status:</strong> Frozen for self-hosting milestone v1<br />
+<strong>Purpose:</strong> Defines the minimal language feature set required for MIRR to implement its own compiler front-end (self-hosting).</p>
+<hr />
+<h2 id="1-introduction">1. Introduction</h2>
+<p>MIRR-CORE is the <strong>self-hostable subset</strong> of the MIRR language. It contains exactly the features needed to write a MIRR compiler front-end in MIRR itself:</p>
+<ul>
+<li>Tokenizer (lexer)</li>
+<li>Parser (recursive descent / Pratt)</li>
+<li>Semantic validator</li>
+<li>Temporal guard lowering pass</li>
+<li>Netlist emitter</li>
+</ul>
+<p>The goal is <strong>stage-1 self-hosting</strong>: the Rust runtime hosts and executes MIRR compiler modules, while the MIRR compiler modules themselves process MIRR source text. In a later stage, the MIRR compiler modules will compile themselves.</p>
+<hr />
+<h2 id="2-included-features-frozen">2. Included Features (Frozen)</h2>
+<p>The following features are <strong>included</strong> and their semantics are frozen for this milestone.</p>
+<h3 id="21-primitive-types">2.1 Primitive Types</h3>
+<table><thead><tr><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>bool</code></td><td>Boolean: <code>true</code> or <code>false</code></td></tr>
+<tr><td><code>u8</code></td><td>Unsigned 8-bit integer</td></tr>
+<tr><td><code>u16</code></td><td>Unsigned 16-bit integer</td></tr>
+<tr><td><code>u32</code></td><td>Unsigned 32-bit integer</td></tr>
+<tr><td><code>u64</code></td><td>Unsigned 64-bit integer</td></tr>
+<tr><td><code>usize</code></td><td>Unsigned platform-word-size integer</td></tr>
+<tr><td><code>i8</code></td><td>Signed 8-bit integer</td></tr>
+<tr><td><code>i16</code></td><td>Signed 16-bit integer</td></tr>
+<tr><td><code>i32</code></td><td>Signed 32-bit integer</td></tr>
+<tr><td><code>i64</code></td><td>Signed 64-bit integer</td></tr>
+</tbody></table>
+<p>String handling is provided via the stdlib slice type (see Section 4).</p>
+<h3 id="22-aggregate-types">2.2 Aggregate Types</h3>
+<table><thead><tr><th>Feature</th><th>Description</th></tr></thead><tbody>
+<tr><td>Arrays</td><td>Fixed-size, statically-bounded: <code>let buf: [u8; 256]</code></td></tr>
+<tr><td>Structs</td><td>Named field records: <code>struct Token { kind: u32, len: usize }</code></td></tr>
+<tr><td>Enums</td><td>C-style discriminated union (no heap payload in MIRR-CORE)</td></tr>
+</tbody></table>
+<p>No dynamic-length collections. Sizes must be compile-time constants or bounded by <code>usize</code> parameters declared at module top level.</p>
+<h3 id="23-control-flow">2.3 Control Flow</h3>
+<table><thead><tr><th>Construct</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>if / else</code></td><td>Standard conditional branching</td></tr>
+<tr><td><code>loop</code></td><td>Unconditional loop with explicit <code>break</code> or <code>return</code> exit</td></tr>
+<tr><td><code>for i in 0..N</code></td><td>Bounded numeric iteration (upper bound must be provably finite)</td></tr>
+<tr><td><code>while cond</code></td><td>Permitted only when a clear termination argument exists</td></tr>
+<tr><td><code>match</code></td><td>Exhaustive pattern matching on enums and integer values</td></tr>
+<tr><td><code>return</code></td><td>Explicit function return</td></tr>
+<tr><td><code>break</code></td><td>Loop exit</td></tr>
+</tbody></table>
+<p><strong>NASA-CORE rule:</strong> Every loop must have a statically-bounded or demonstrably-finite iteration count. Unbounded loops that lack a formal termination argument are a compile-time warning and a self-hosting build blocker.</p>
+<h3 id="24-functions">2.4 Functions</h3>
+<ul>
+<li>Named functions with typed parameters and typed return values.</li>
+<li>No closures, no first-class functions in MIRR-CORE v1.</li>
+<li>Mutual recursion is <strong>excluded</strong> (see Section 3).</li>
+<li>Tail recursion transformable to <code>loop</code> is <strong>excluded</strong> from MIRR-CORE v1 — use explicit loops.</li>
+</ul>
+<pre><code class="language-mirr"><span class="mirr-kw">fn</span> <span class="mirr-name">tokenize</span>(<span class="mirr-name">src</span>: <span class="mirr-op">&amp;</span><span class="mirr-name">str</span>, <span class="mirr-dir">out</span>: <span class="mirr-op">&amp;</span><span class="mirr-name">mut</span> [<span class="mirr-name">Token</span>; <span class="mirr-name">MAX_TOKENS</span>]) <span class="mirr-op">-</span><span class="mirr-op">&gt;</span> <span class="mirr-name">usize</span> {
+    <span class="mirr-cmt">// ...</span>
+}</code></pre>
+<h3 id="25-modules">2.5 Modules</h3>
+<ul>
+<li>A MIRR-CORE program is organized into named modules.</li>
+<li>A module declares:
+<ul>
+<li>Named signals (in MIRR hardware domain)</li>
+<li>Named functions (in MIRR-CORE software domain)</li>
+<li>Named types (structs / enums)</li>
+<li>Named constants</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">lexer</span> {
+    <span class="mirr-name">const</span> <span class="mirr-name">MAX_TOKENS</span>: <span class="mirr-name">usize</span> <span class="mirr-op">=</span> <span class="mirr-num">4096</span>;
+
+    <span class="mirr-kw">struct</span> <span class="mirr-name">Token</span> { <span class="mirr-name">kind</span>: <span class="mirr-type">u32</span>, <span class="mirr-name">start</span>: <span class="mirr-name">usize</span>, <span class="mirr-name">len</span>: <span class="mirr-name">usize</span> }
+
+    <span class="mirr-kw">fn</span> <span class="mirr-name">tokenize</span>(<span class="mirr-name">src</span>: <span class="mirr-op">&amp;</span><span class="mirr-name">str</span>, <span class="mirr-dir">out</span>: <span class="mirr-op">&amp;</span><span class="mirr-name">mut</span> [<span class="mirr-name">Token</span>; <span class="mirr-name">MAX_TOKENS</span>]) <span class="mirr-op">-</span><span class="mirr-op">&gt;</span> <span class="mirr-name">usize</span> {
+        <span class="mirr-cmt">// ...</span>
+    }
+}</code></pre>
+<h3 id="26-expressions">2.6 Expressions</h3>
+<p>All expressions supported in the existing MIRR Rust implementation are available:</p>
+<table><thead><tr><th>Category</th><th>Operators</th></tr></thead><tbody>
+<tr><td>Logical</td><td><code>!</code>, <code>&amp;&amp;</code>, <code>||</code></td></tr>
+<tr><td>Bitwise</td><td><code>^</code>, <code>&amp;</code>, <code>|</code></td></tr>
+<tr><td>Comparison</td><td><code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code></td></tr>
+<tr><td>Arithmetic</td><td><code>+</code>, <code>-</code>, <code>*</code>, <code>&lt;&lt;</code>, <code>&gt;&gt;</code></td></tr>
+<tr><td>Grouping</td><td><code>(expr)</code></td></tr>
+<tr><td>Field access</td><td><code>struct_val.field</code></td></tr>
+<tr><td>Index</td><td><code>array[i]</code></td></tr>
+<tr><td>Call</td><td><code>fn_name(args...)</code></td></tr>
+</tbody></table>
+<h3 id="27-let-bindings-and-mutation">2.7 Let Bindings and Mutation</h3>
+<pre><code class="language-mirr"><span class="mirr-kw">let</span> <span class="mirr-name">x</span>: <span class="mirr-type">u32</span> <span class="mirr-op">=</span> <span class="mirr-num">0</span>;
+<span class="mirr-kw">let</span> <span class="mirr-name">mut</span> <span class="mirr-name">counter</span>: <span class="mirr-name">usize</span> <span class="mirr-op">=</span> <span class="mirr-num">0</span>;
+<span class="mirr-name">counter</span> <span class="mirr-op">=</span> <span class="mirr-name">counter</span> <span class="mirr-op">+</span> <span class="mirr-num">1</span>;</code></pre>
+<h3 id="28-string-slices-borrowed-read-only">2.8 String Slices (Borrowed, Read-Only)</h3>
+<p>String slices <code>&amp;str</code> are <strong>read-only views</strong> into a source buffer. They are not heap-allocated. Operations are provided through the stdlib (see Section 4).</p>
+<pre><code class="language-mirr"><span class="mirr-kw">fn</span> <span class="mirr-name">is_keyword</span>(<span class="mirr-name">s</span>: <span class="mirr-op">&amp;</span><span class="mirr-name">str</span>) <span class="mirr-op">-</span><span class="mirr-op">&gt;</span> <span class="mirr-type">bool</span> { ... }</code></pre>
+<h3 id="29-references">2.9 References</h3>
+<ul>
+<li><code>&amp;T</code> — immutable borrow.</li>
+<li><code>&amp;mut T</code> — mutable borrow (for output buffers / accumulators).</li>
+<li>No raw pointers. No lifetime annotations required in MIRR-CORE v1 (simplified region model).</li>
+</ul>
+<h3 id="210-constants">2.10 Constants</h3>
+<pre><code class="language-mirr"><span class="mirr-name">const</span> <span class="mirr-name">MAX_DEPTH</span>: <span class="mirr-name">usize</span> <span class="mirr-op">=</span> <span class="mirr-num">128</span>;
+<span class="mirr-name">const</span> <span class="mirr-name">SHIFT_REGISTER_THRESHOLD</span>: <span class="mirr-type">u64</span> <span class="mirr-op">=</span> <span class="mirr-num">16</span>;</code></pre>
+<hr />
+<h2 id="3-excluded-features-mirr-core-v1">3. Excluded Features (MIRR-CORE v1)</h2>
+<p>The following features are <strong>explicitly out of scope</strong> for the self-hosting v1 milestone. They may be added in a future MIRR version.</p>
+<table><thead><tr><th>Feature</th><th>Reason for exclusion</th></tr></thead><tbody>
+<tr><td>Dynamic memory allocation</td><td>Violates NASA determinism/safety rules; no <code>malloc</code> / <code>Box</code></td></tr>
+<tr><td>Recursion (general)</td><td>Cannot guarantee stack-bounded execution; use iterative forms</td></tr>
+<tr><td>Closures / lambdas</td><td>Increases execution model complexity; out of scope for v1</td></tr>
+<tr><td>Trait objects / vtables</td><td>Dynamic dispatch not supported in v1</td></tr>
+<tr><td>Generics / type parameters</td><td>Basic monomorphization may appear in v2; excluded from v1</td></tr>
+<tr><td>Exception handling / panics</td><td>All errors must be explicit <code>Result</code> returns</td></tr>
+<tr><td>Threading / concurrency</td><td>Single-threaded execution model for MIRR-CORE</td></tr>
+<tr><td>Heap collections (Vec, etc.)</td><td>All buffers are stack/fixed-size; deterministic memory layout</td></tr>
+<tr><td>Lifetimes (explicit syntax)</td><td>Simplified region model; no <code>'a</code> annotations in v1</td></tr>
+<tr><td>Operator overloading</td><td>Not supported in v1</td></tr>
+<tr><td>Macros</td><td>Not supported in v1</td></tr>
+</tbody></table>
+<hr />
+<h2 id="4-required-standard-library-primitives">4. Required Standard Library Primitives</h2>
+<p>These primitives are needed by the MIRR compiler modules (see <code>stdlib/mirr_core/</code>):</p>
+<table><thead><tr><th>Primitive</th><th>Module</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>str_len</code></td><td><code>stdlib/mirr_core/str.mirr</code></td><td>Get length of a <code>&amp;str</code> slice</td></tr>
+<tr><td><code>str_byte_at</code></td><td><code>stdlib/mirr_core/str.mirr</code></td><td>Zero-copy byte access at index</td></tr>
+<tr><td><code>str_slice</code></td><td><code>stdlib/mirr_core/str.mirr</code></td><td>Sub-slice <code>[start..end]</code> of a <code>&amp;str</code></td></tr>
+<tr><td><code>str_eq</code></td><td><code>stdlib/mirr_core/str.mirr</code></td><td>Equality check between two <code>&amp;str</code> slices</td></tr>
+<tr><td><code>TokenBuffer</code></td><td><code>stdlib/mirr_core/token_buffer.mirr</code></td><td>Fixed-capacity token accumulator</td></tr>
+<tr><td><code>FixedMap</code></td><td><code>stdlib/mirr_core/fixed_map.mirr</code></td><td>Open-addressed fixed-capacity hash table</td></tr>
+<tr><td><code>Diagnostic</code></td><td><code>stdlib/mirr_core/diagnostics.mirr</code></td><td>Structured error/warning record</td></tr>
+<tr><td><code>DiagnosticBuilder</code></td><td><code>stdlib/mirr_core/diagnostics.mirr</code></td><td>Builder for diagnostic emission</td></tr>
+</tbody></table>
+<hr />
+<h2 id="5-determinism-and-safety-rules-nasa-core">5. Determinism and Safety Rules (NASA-CORE)</h2>
+<p>All MIRR-CORE code must satisfy:</p>
+<ol>
+<li><strong>No unbounded loops.</strong> Every loop has a statically visible upper bound or a formal argument proving termination.</li>
+<li><strong>No allocation.</strong> All buffers are declared with compile-time sizes or bounded parameters.</li>
+<li><strong>All errors are explicit.</strong> Functions that can fail return <code>Result&lt;T, DiagCode&gt;</code>. No panics in production paths.</li>
+<li><strong>No hidden global mutable state.</strong> Module-level mutable state is forbidden; pass state explicitly.</li>
+<li><strong>Deterministic output.</strong> For the same input bytes, the compiler must always produce exactly the same output.</li>
+<li><strong>Bounded recursion exclusion.</strong> Even tail-recursive forms are excluded from v1; use <code>loop</code> explicitly.</li>
+</ol>
+<hr />
+<h2 id="6-grammar-summary-mirr-core-v1">6. Grammar Summary (MIRR-CORE v1)</h2>
+<pre><code>program        := module_decl+
+
+module_decl    := 'module' ident '{' module_item* '}'
+
+module_item    := const_decl
+                | struct_decl
+                | enum_decl
+                | fn_decl
+                | signal_decl
+                | guard_decl
+                | reflex_decl
+
+const_decl     := 'const' ident ':' type '=' expr ';'
+
+struct_decl    := 'struct' ident '{' field_list '}'
+field_list     := (ident ':' type ','?)*
+
+enum_decl      := 'enum' ident '{' variant_list '}'
+variant_list   := (ident ('(' type ')')? ','?)*
+
+fn_decl        := 'fn' ident '(' param_list ')' '-&gt;' type block
+param_list     := (ident ':' type ','?)*
+
+type           := 'bool' | 'u8' | 'u16' | 'u32' | 'u64' | 'usize'
+                | 'i8' | 'i16' | 'i32' | 'i64'
+                | '&amp;' 'str'
+                | '&amp;' type
+                | '&amp;' 'mut' type
+                | '[' type ';' integer ']'
+                | ident
+
+block          := '{' stmt* '}'
+
+stmt           := let_stmt
+                | assign_stmt
+                | return_stmt
+                | break_stmt
+                | if_stmt
+                | loop_stmt
+                | for_stmt
+                | while_stmt
+                | match_stmt
+                | expr_stmt
+
+let_stmt       := 'let' 'mut'? ident ':' type '=' expr ';'
+assign_stmt    := lvalue '=' expr ';'
+return_stmt    := 'return' expr? ';'
+break_stmt     := 'break' ';'
+if_stmt        := 'if' expr block ('else' (block | if_stmt))?
+loop_stmt      := 'loop' block
+for_stmt       := 'for' ident 'in' expr '..' expr block
+while_stmt     := 'while' expr block
+match_stmt     := 'match' expr '{' arm* '}'
+arm            := pattern '=&gt;' (block | expr ','?)
+expr_stmt      := expr ';'
+
+lvalue         := ident
+                | lvalue '.' ident
+                | lvalue '[' expr ']'
+
+expr           := literal
+                | ident
+                | expr binop expr
+                | unop expr
+                | expr '.' ident
+                | expr '[' expr ']'
+                | ident '(' arg_list ')'
+                | '(' expr ')'
+
+binop          := '&amp;&amp;' | '||' | '^' | '&amp;' | '|'
+                | '==' | '!=' | '&lt;' | '&lt;=' | '&gt;' | '&gt;='
+                | '+' | '-' | '*' | '&lt;&lt;' | '&gt;&gt;'
+
+unop           := '!'
+
+literal        := 'true' | 'false' | integer | string_lit
+
+integer        := [0-9]+
+string_lit     := '"' [^"]* '"'
+
+ident          := [a-zA-Z_][a-zA-Z0-9_]*
+
+// MIRR hardware primitives (hardware domain, unchanged from MIRR spec)
+signal_decl    := 'signal' ident ':' signal_kind type ';'
+signal_kind    := 'in' | 'out' | 'internal'
+
+guard_decl     := 'guard' ident '{' 'when' expr 'for' integer 'cycles' ';'? '}'
+reflex_decl    := 'reflex' ident '{' 'on' guard_ref_list '{' assignment* '}' '}'
+guard_ref_list := ident ('and' ident)*
+assignment     := ident '=' expr ';'
+</code></pre>
+<hr />
+<h2 id="7-versioning-and-stability">7. Versioning and Stability</h2>
+<ul>
+<li>This specification is <strong>frozen</strong> at v1 for the self-hosting milestone.</li>
+<li>No changes to included features or grammar without incrementing the version and updating the IR contract (<code>docs/self_hosting_ir_contract.md</code>).</li>
+<li>Additions to the excluded list require a documented rationale.</li>
+</ul>
+<hr />
+<h2 id="8-acceptance-criteria">8. Acceptance Criteria</h2>
+<p>The self-hosting milestone is considered achieved when:</p>
+<ol>
+<li>A MIRR source file can be tokenized by <code>compiler_mirr/lexer.mirr</code> (via bootstrap runner).</li>
+<li>The token stream is parsed by <code>compiler_mirr/parser.mirr</code> into an AST matching the IR contract.</li>
+<li>The AST is validated by <code>compiler_mirr/semantic.mirr</code> with diagnostics matching Rust validator output class.</li>
+<li>Temporal guards are lowered by <code>compiler_mirr/temporal_lowering.mirr</code> with netlist parity to Rust backend.</li>
+<li>All parity tests in <code>tests/self_hosting_parity_tests.rs</code> pass with byte-stable or semantically-equivalent output.</li>
+</ol>
+<hr />
+<p><em>End of MIRR-CORE Self-Hosting Core Specification v1.0-draft</em></p>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

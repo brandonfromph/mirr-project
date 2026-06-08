@@ -1,4 +1,4 @@
-﻿---
+---
 title: Roadmap
 nav_order: 4
 ---
@@ -79,7 +79,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ## Phase 0 – Foundation (Completed)
 
-{: .tip }
+> [!TIP]
 > Phases 0--6, 7a, 7b, 7c, 7e, 7f, 7g, 7h complete. Phase 5 is complete (5a complete, 5b complete).
 > The compiler is operational with 3,469+ tests passing, zero unsafe code,
 > and zero clippy warnings. Synthesis validated through Yosys (11/11 examples).
@@ -535,7 +535,7 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
 
 ## Phase 9 — Production Deployment & Certification (Not Started)
 
-{: .note }
+> [!NOTE]
 > Phase 9 is a forward-looking design goal. It describes the
 > intended trajectory of the project, not current capabilities.
 

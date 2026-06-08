@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPGA Targets Guide — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="FPGA Targets Guide — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FPGA Targets Guide — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#supported-fpga-families">Supported FPGA families</a></li>
+          <li class="toc-h3"><a href="#cli-name-aliases">CLI name aliases</a></li>
+        <li><a href="#constraint-file-formats">Constraint file formats</a></li>
+          <li class="toc-h3"><a href="#pcf-lattice-ice40">PCF -- Lattice iCE40</a></li>
+          <li class="toc-h3"><a href="#lpf-lattice-ecp5">LPF -- Lattice ECP5</a></li>
+          <li class="toc-h3"><a href="#pdc-lattice-nexus">PDC -- Lattice Nexus</a></li>
+          <li class="toc-h3"><a href="#xdc-xilinx-7-series-and-ultrascale">XDC -- Xilinx 7-Series and UltraScale+</a></li>
+        <li><a href="#auto-generated-xdc-constraints-for-neonatalrespirator-xilinx-7-series">Auto-generated XDC constraints for neonatal_respirator (Xilinx 7-Series)</a></li>
+        <li><a href="#fill-in-packagepin-values-for-your-board">Fill in PACKAGE_PIN values for your board.</a></li>
+          <li class="toc-h3"><a href="#sdc-intel-cyclone-and-generic">SDC -- Intel Cyclone and Generic</a></li>
+        <li><a href="#auto-generated-sdc-constraints-for-neonatalrespirator-intel-cyclone">Auto-generated SDC constraints for neonatal_respirator (Intel Cyclone)</a></li>
+        <li><a href="#fill-in-pin-assignments-for-your-board">Fill in pin assignments for your board.</a></li>
+        <li><a href="#build-script-generation">Build script generation</a></li>
+          <li class="toc-h3"><a href="#vivado-tcl-xilinx">Vivado Tcl (Xilinx)</a></li>
+          <li class="toc-h3"><a href="#quartus-tcl-intel">Quartus Tcl (Intel)</a></li>
+          <li class="toc-h3"><a href="#shell-scripts-lattice-and-generic">Shell scripts (Lattice and Generic)</a></li>
+        <li><a href="#yosys-and-nextpnr-integration">Yosys and nextpnr integration</a></li>
+          <li class="toc-h3"><a href="#sva-stripping">SVA stripping</a></li>
+          <li class="toc-h3"><a href="#yosys-synthesis-commands">Yosys synthesis commands</a></li>
+        <li><a href="#example-usage">Example usage</a></li>
+          <li class="toc-h3"><a href="#step-1-compile-to-systemverilog">Step 1: Compile to SystemVerilog</a></li>
+          <li class="toc-h3"><a href="#step-2-generate-fpga-scaffold">Step 2: Generate FPGA scaffold</a></li>
+          <li class="toc-h3"><a href="#step-3-fill-in-pin-assignments">Step 3: Fill in pin assignments</a></li>
+          <li class="toc-h3"><a href="#step-4-run-the-build">Step 4: Run the build</a></li>
+        <li><a href="#target-specific-details">Target-specific details</a></li>
+          <li class="toc-h3"><a href="#clock-primitives">Clock primitives</a></li>
+          <li class="toc-h3"><a href="#default-clock-period">Default clock period</a></li>
+          <li class="toc-h3"><a href="#io-standards">I/O standards</a></li>
+        <li><a href="#dsp-mapping">DSP mapping</a></li>
+        <li><a href="#resource-bounds">Resource bounds</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>FPGA Targets Guide</h1>
+<p>MIRR generates vendor-specific constraint files and build scripts for
+six FPGA target families. This enables one-command synthesis-to-bitstream
+workflows for prototyping safety-critical hardware monitors on real
+FPGA development boards.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#supported-fpga-families">Supported FPGA families</a></li>
+<li><a href="#constraint-file-formats">Constraint file formats</a></li>
+<li><a href="#build-script-generation">Build script generation</a></li>
+<li><a href="#yosys-and-nextpnr-integration">Yosys and nextpnr integration</a></li>
+<li><a href="#example-usage">Example usage</a></li>
+<li><a href="#target-specific-details">Target-specific details</a></li>
+<li><a href="#dsp-mapping">DSP mapping</a></li>
+<li><a href="#resource-bounds">Resource bounds</a></li>
+</ol>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>When you compile a MIRR module, the compiler generates SystemVerilog
+(<code>.sv</code>) output. To place that design onto a real FPGA, you need two
+additional artifacts:</p>
+<ol>
+<li><strong>Constraint file</strong> -- maps logical signal names to physical pins
+on your FPGA board and defines clock timing.</li>
+<li><strong>Build script</strong> -- invokes the vendor synthesis, place-and-route,
+and bitstream generation tools in the correct order.</li>
+</ol>
+<p>The MIRR FPGA scaffold generator (<code>src/emit/fpga_scaffold.rs</code> and
+<code>src/emit/fpga_target.rs</code>) produces both artifacts for your chosen
+target family. All generated files contain <code>PLACEHOLDER</code> pin
+assignments that you must fill in for your specific board.</p>
+<hr />
+<h2 id="supported-fpga-families">Supported FPGA families</h2>
+<p>MIRR supports six FPGA targets plus a generic fallback:</p>
+<table><thead><tr><th>Target name</th><th>Family</th><th>Vendor</th><th>Build tool</th><th>Default part</th></tr></thead><tbody>
+<tr><td><code>generic</code></td><td>Generic</td><td>--</td><td>Yosys</td><td>--</td></tr>
+<tr><td><code>xilinx-7</code></td><td>Xilinx 7-Series</td><td>AMD/Xilinx</td><td>Vivado</td><td>xc7a35tcpg236-1</td></tr>
+<tr><td><code>xilinx-us</code></td><td>Xilinx UltraScale+</td><td>AMD/Xilinx</td><td>Vivado</td><td>xcku5p-ffvb676-2-e</td></tr>
+<tr><td><code>intel-cyclone</code></td><td>Cyclone V/10</td><td>Intel/Altera</td><td>Quartus</td><td>5CSEBA6U23I7</td></tr>
+<tr><td><code>lattice-ice40</code></td><td>iCE40</td><td>Lattice</td><td>nextpnr-ice40</td><td>iCE40-HX8K-CT256</td></tr>
+<tr><td><code>lattice-ecp5</code></td><td>ECP5</td><td>Lattice</td><td>nextpnr-ecp5</td><td>LFE5U-85F-6BG381C</td></tr>
+<tr><td><code>lattice-nexus</code></td><td>Nexus/CrossLink-NX</td><td>Lattice</td><td>nextpnr-nexus</td><td>LIFCL-40-9BG400C</td></tr>
+</tbody></table>
+<h3 id="cli-name-aliases">CLI name aliases</h3>
+<p>Several aliases are accepted for convenience:</p>
+<table><thead><tr><th>Canonical name</th><th>Also accepts</th></tr></thead><tbody>
+<tr><td><code>xilinx-7</code></td><td><code>xilinx7</code></td></tr>
+<tr><td><code>xilinx-us</code></td><td><code>ultrascale</code></td></tr>
+<tr><td><code>intel-cyclone</code></td><td><code>cyclone</code></td></tr>
+<tr><td><code>lattice-ice40</code></td><td><code>ice40</code></td></tr>
+<tr><td><code>lattice-ecp5</code></td><td><code>ecp5</code></td></tr>
+<tr><td><code>lattice-nexus</code></td><td><code>nexus</code>, <code>crosslink-nx</code></td></tr>
+</tbody></table>
+<hr />
+<h2 id="constraint-file-formats">Constraint file formats</h2>
+<p>Each FPGA family uses a different constraint file format. MIRR generates
+the appropriate format based on the selected target.</p>
+<h3 id="pcf-lattice-ice40">PCF -- Lattice iCE40</h3>
+<p>Physical Constraints Format. Used by nextpnr-ice40.</p>
+<pre><code># Auto-generated PCF constraints for neonatal_respirator
+# Fill in pin numbers for your board.
+
+set_io respirator_enable PLACEHOLDER
+set_io clamp_valve PLACEHOLDER
+set_io airway_pressure[0] PLACEHOLDER
+set_io airway_pressure[1] PLACEHOLDER
+...
+</code></pre>
+<p>Each signal gets a <code>set_io</code> line mapping it to a physical pin. Multi-bit
+signals are expanded bit-by-bit.</p>
+<h3 id="lpf-lattice-ecp5">LPF -- Lattice ECP5</h3>
+<p>Lattice Preference File. Used by nextpnr-ecp5.</p>
+<pre><code># Auto-generated LPF constraints for neonatal_respirator (Lattice ECP5)
+# Fill in LOC values for your board.
+
+FREQUENCY NET "clk" 100.000000 MHz;
+
+LOCATE COMP "respirator_enable" SITE "PLACEHOLDER";
+IOBUF PORT "respirator_enable" IO_TYPE=LVCMOS33;
+...
+</code></pre>
+<p>LPF files include I/O type specifications (defaulting to LVCMOS33) and
+a frequency constraint for the clock net.</p>
+<h3 id="pdc-lattice-nexus">PDC -- Lattice Nexus</h3>
+<p>Physical Design Constraints. Used by nextpnr-nexus.</p>
+<pre><code># Auto-generated PDC constraints for neonatal_respirator (Lattice Nexus)
+# Fill in pin assignments for your board.
+
+create_clock -name {clk} -period 10.000 [get_ports clk]
+
+ldc_set_location -site {PLACEHOLDER} [get_ports {respirator_enable}]
+...
+</code></pre>
+<p>PDC files use Tcl-like syntax with <code>ldc_set_location</code> commands.</p>
+<h3 id="xdc-xilinx-7-series-and-ultrascale">XDC -- Xilinx 7-Series and UltraScale+</h3>
+<p>Xilinx Design Constraints. Used by Vivado.</p>
+<pre><code>## Auto-generated XDC constraints for neonatal_respirator (Xilinx 7-Series)
+## Fill in PACKAGE_PIN values for your board.
+
+create_clock -period 10.000 -name clk [get_ports clk]
+# set_property PACKAGE_PIN {PLACEHOLDER} [get_ports respirator_enable]
+# set_property IOSTANDARD LVCMOS33 [get_ports respirator_enable]
+...
+</code></pre>
+<p>XDC constraints are generated as comments (prefixed with <code>#</code>) so they
+do not cause errors before you fill in the pin assignments. Each port
+gets a <code>PACKAGE_PIN</code> and <code>IOSTANDARD</code> property.</p>
+<h3 id="sdc-intel-cyclone-and-generic">SDC -- Intel Cyclone and Generic</h3>
+<p>Synopsys Design Constraints. Used by Quartus and as the generic format.</p>
+<pre><code>## Auto-generated SDC constraints for neonatal_respirator (Intel Cyclone)
+## Fill in pin assignments for your board.
+
+create_clock -period 10.000 -name clk [get_ports clk]
+derive_pll_clocks
+derive_clock_uncertainty
+
+set_input_delay -clock clk 2.000 [get_ports respirator_enable]
+set_input_delay -clock clk 2.000 [get_ports airway_pressure]
+set_output_delay -clock clk 2.000 [get_ports clamp_valve]
+</code></pre>
+<p>SDC files include input/output delay constraints relative to the clock.</p>
+<hr />
+<h2 id="build-script-generation">Build script generation</h2>
+<p>MIRR generates complete build scripts for each target family. All scripts
+are clearly marked as auto-generated scaffolding.</p>
+<h3 id="vivado-tcl-xilinx">Vivado Tcl (Xilinx)</h3>
+<p>For Xilinx 7-Series and UltraScale+ targets, MIRR generates a Vivado
+Tcl build script:</p>
+<pre><code class="language-tcl"><span class="hl-cmt"># Auto-generated Vivado build script for neonatal_respirator</span>
+create_project neonatal_respirator ./build -part xc7a35tcpg236-1 -force
+add_files neonatal_respirator.sv
+add_files -fileset constrs_1 neonatal_respirator.xdc
+launch_runs synth_1 -jobs <span class="hl-num">4</span>
+wait_on_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs <span class="hl-num">4</span>
+wait_on_run impl_1</code></pre>
+<p>Run with: <code>vivado -mode batch -source build.tcl</code></p>
+<h3 id="quartus-tcl-intel">Quartus Tcl (Intel)</h3>
+<p>For Intel Cyclone targets:</p>
+<pre><code class="language-tcl"><span class="hl-cmt"># Auto-generated Quartus build script for neonatal_respirator</span>
+project_new neonatal_respirator -overwrite
+set_global_assignment -name FAMILY <span class="hl-str">&quot;Cyclone V&quot;</span>
+set_global_assignment -name DEVICE <span class="hl-num">5</span>CSEBA6U23I7
+set_global_assignment -name SYSTEMVERILOG_FILE neonatal_respirator.sv
+set_global_assignment -name SDC_FILE neonatal_respirator.sdc
+execute_flow -compile
+project_close</code></pre>
+<p>Run with: <code>quartus_sh -t build.tcl</code></p>
+<h3 id="shell-scripts-lattice-and-generic">Shell scripts (Lattice and Generic)</h3>
+<p>For Lattice targets and the generic target, MIRR generates bash scripts
+that invoke the open-source Yosys/nextpnr toolchain.</p>
+<p><strong>iCE40 example:</strong></p>
+<pre><code class="language-bash"><span class="hl-cmt">#!/usr/bin/env bash</span>
+<span class="hl-cmt"># Auto-generated build script for neonatal_respirator (Lattice iCE40)</span>
+<span class="hl-kw">set</span> -euo pipefail
+
+<span class="hl-cmt"># NOTE: Use --strip-sva when generating neonatal_respirator.sv for synthesis</span>
+yosys -p <span class="hl-str">&quot;read_verilog -sv neonatal_respirator.sv; synth_ice40 -top neonatal_respirator -json neonatal_respirator.json&quot;</span>
+nextpnr-ice40 --hx8k --package ct256 --json neonatal_respirator.json --pcf neonatal_respirator.pcf --asc neonatal_respirator.asc
+icepack neonatal_respirator.asc neonatal_respirator.bin
+<span class="hl-fn">echo</span> <span class="hl-str">&quot;Bitstream ready: neonatal_respirator.bin&quot;</span></code></pre>
+<p><strong>ECP5 example:</strong></p>
+<pre><code class="language-bash"><span class="hl-cmt">#!/usr/bin/env bash</span>
+<span class="hl-kw">set</span> -euo pipefail
+yosys -p <span class="hl-str">&quot;read_verilog -sv module.sv; synth_ecp5 -top module -json module.json&quot;</span>
+nextpnr-ecp5 --<span class="hl-num">85</span>k --package CABGA381 --json module.json --lpf module.lpf --textcfg module.config
+ecppack module.config module.bit
+<span class="hl-fn">echo</span> <span class="hl-str">&quot;Bitstream ready: module.bit&quot;</span></code></pre>
+<p><strong>Nexus example:</strong></p>
+<pre><code class="language-bash"><span class="hl-cmt">#!/usr/bin/env bash</span>
+<span class="hl-kw">set</span> -euo pipefail
+yosys -p <span class="hl-str">&quot;read_verilog -sv module.sv; synth_nexus -top module -json module.json&quot;</span>
+nextpnr-nexus --device LIFCL-40-9BG400C --json module.json --pdc module.pdc --fasm module.fasm
+prjoxide pack module.fasm module.bit
+<span class="hl-fn">echo</span> <span class="hl-str">&quot;Bitstream ready: module.bit&quot;</span></code></pre>
+<hr />
+<h2 id="yosys-and-nextpnr-integration">Yosys and nextpnr integration</h2>
+<p>The Lattice targets and the generic target use the open-source
+oss-cad-suite toolchain:</p>
+<table><thead><tr><th>Tool</th><th>Purpose</th><th>Used by</th></tr></thead><tbody>
+<tr><td><strong>Yosys</strong></td><td>RTL synthesis (Verilog to netlist)</td><td>All Lattice targets, Generic</td></tr>
+<tr><td><strong>nextpnr-ice40</strong></td><td>Place and route for iCE40</td><td><code>lattice-ice40</code></td></tr>
+<tr><td><strong>nextpnr-ecp5</strong></td><td>Place and route for ECP5</td><td><code>lattice-ecp5</code></td></tr>
+<tr><td><strong>nextpnr-nexus</strong></td><td>Place and route for Nexus</td><td><code>lattice-nexus</code></td></tr>
+<tr><td><strong>icepack</strong></td><td>Bitstream packing for iCE40</td><td><code>lattice-ice40</code></td></tr>
+<tr><td><strong>ecppack</strong></td><td>Bitstream packing for ECP5</td><td><code>lattice-ecp5</code></td></tr>
+<tr><td><strong>prjoxide</strong></td><td>Bitstream packing for Nexus</td><td><code>lattice-nexus</code></td></tr>
+<tr><td><strong>icetime</strong></td><td>Static timing analysis (iCE40)</td><td><code>lattice-ice40</code> (optional)</td></tr>
+</tbody></table>
+<h3 id="sva-stripping">SVA stripping</h3>
+<p>SystemVerilog Assertions (SVA) generated by the MIRR compiler's
+property blocks are not synthesizable. When targeting synthesis, use
+the <code>--strip-sva</code> flag to generate clean RTL without assertion blocks.
+The generated build scripts include a reminder comment about this.</p>
+<h3 id="yosys-synthesis-commands">Yosys synthesis commands</h3>
+<p>Each target uses a target-specific Yosys synthesis command:</p>
+<table><thead><tr><th>Target</th><th>Yosys command</th></tr></thead><tbody>
+<tr><td><code>lattice-ice40</code></td><td><code>synth_ice40</code></td></tr>
+<tr><td><code>lattice-ecp5</code></td><td><code>synth_ecp5</code></td></tr>
+<tr><td><code>lattice-nexus</code></td><td><code>synth_nexus</code></td></tr>
+<tr><td><code>xilinx-7</code> / <code>xilinx-us</code></td><td><code>synth_xilinx</code></td></tr>
+<tr><td><code>intel-cyclone</code></td><td><code>synth_intel</code></td></tr>
+<tr><td><code>generic</code></td><td><code>synth</code></td></tr>
+</tbody></table>
+<hr />
+<h2 id="example-usage">Example usage</h2>
+<h3 id="step-1-compile-to-systemverilog">Step 1: Compile to SystemVerilog</h3>
+<pre><code class="language-bash"><span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit verilog my_monitor.mirr <span class="hl-op">&gt;</span> my_monitor.sv</code></pre>
+<h3 id="step-2-generate-fpga-scaffold">Step 2: Generate FPGA scaffold</h3>
+<p>The scaffold generator is available through the Rust API:</p>
+<pre><code class="language-rust"><span class="hl-kw">use</span> mirr::emit::fpga_scaffold::{emit_constraints, emit_build_script};
+<span class="hl-kw">use</span> mirr::emit::fpga_target::<span class="hl-type">FpgaTarget</span>;
+
+<span class="hl-kw">let</span> target <span class="hl-op">=</span> <span class="hl-type">FpgaTarget</span>::from_str_name(<span class="hl-str">&quot;lattice-ice40&quot;</span>).unwrap();
+
+<span class="hl-cmt">// Generate constraint file</span>
+<span class="hl-kw">let</span> constraints <span class="hl-op">=</span> emit_constraints(<span class="hl-op">&amp;</span>pipeline_result, <span class="hl-op">&amp;</span>target);
+std::fs::write(<span class="hl-str">&quot;my_monitor.pcf&quot;</span>, <span class="hl-op">&amp;</span>constraints)?;
+
+<span class="hl-cmt">// Generate build script</span>
+<span class="hl-kw">let</span> build_script <span class="hl-op">=</span> emit_build_script(<span class="hl-op">&amp;</span>pipeline_result, <span class="hl-op">&amp;</span>target);
+std::fs::write(<span class="hl-str">&quot;build.sh&quot;</span>, <span class="hl-op">&amp;</span>build_script)?;</code></pre>
+<h3 id="step-3-fill-in-pin-assignments">Step 3: Fill in pin assignments</h3>
+<p>Open the generated constraint file and replace every <code>PLACEHOLDER</code>
+with the actual pin name from your board's datasheet or schematic.</p>
+<p>For example, on a Lattice iCE40-HX8K breakout board:</p>
+<pre><code># Before:
+set_io clk PLACEHOLDER
+
+# After:
+set_io clk J3
+</code></pre>
+<h3 id="step-4-run-the-build">Step 4: Run the build</h3>
+<pre><code class="language-bash">chmod +x build.sh
+./build.sh</code></pre>
+<p>This produces a bitstream file (<code>.bin</code>, <code>.bit</code>, or similar) that can
+be loaded onto your FPGA.</p>
+<hr />
+<h2 id="target-specific-details">Target-specific details</h2>
+<h3 id="clock-primitives">Clock primitives</h3>
+<p>Each FPGA family has a different PLL/clock primitive:</p>
+<table><thead><tr><th>Target</th><th>Clock primitive</th></tr></thead><tbody>
+<tr><td>Generic</td><td>PLL</td></tr>
+<tr><td>Xilinx 7-Series</td><td>MMCME2_BASE</td></tr>
+<tr><td>Xilinx UltraScale+</td><td>MMCME4_ADV</td></tr>
+<tr><td>Intel Cyclone</td><td>altpll</td></tr>
+<tr><td>Lattice iCE40</td><td>SB_PLL40_CORE</td></tr>
+<tr><td>Lattice ECP5</td><td>EHXPLLL</td></tr>
+<tr><td>Lattice Nexus</td><td>OSCA</td></tr>
+</tbody></table>
+<h3 id="default-clock-period">Default clock period</h3>
+<p>All generated constraint files assume a 100 MHz clock (10 ns period).
+Adjust the <code>create_clock</code> or <code>FREQUENCY</code> directive if your board uses
+a different oscillator.</p>
+<h3 id="io-standards">I/O standards</h3>
+<ul>
+<li>Xilinx targets default to LVCMOS33.</li>
+<li>Lattice ECP5 targets default to LVCMOS33 via <code>IOBUF</code> directives.</li>
+<li>Other targets leave I/O standards to be configured by the engineer.</li>
+</ul>
+<hr />
+<h2 id="dsp-mapping">DSP mapping</h2>
+<p>MIRR emits vendor-specific synthesis attributes to map multiply
+operations to hardware DSP blocks when possible:</p>
+<table><thead><tr><th>Target</th><th>DSP primitive</th><th>Attribute</th><th>Max input width</th></tr></thead><tbody>
+<tr><td>Xilinx 7-Series</td><td>DSP48E1</td><td><code>(* use_dsp48 = "yes" *)</code></td><td>25 bits</td></tr>
+<tr><td>Xilinx UltraScale+</td><td>DSP48E2</td><td><code>(* use_dsp48 = "yes" *)</code></td><td>27 bits</td></tr>
+<tr><td>Intel Cyclone</td><td>cyclonev_mac</td><td><code>(* multstyle = "dsp" *)</code></td><td>27 bits</td></tr>
+<tr><td>Lattice iCE40</td><td>SB_MAC16</td><td><code>(* use_dsp = "yes" *)</code></td><td>16 bits</td></tr>
+<tr><td>Lattice ECP5</td><td>ALU54B</td><td><code>(* use_dsp = "yes" *)</code></td><td>18 bits</td></tr>
+<tr><td>Lattice Nexus</td><td>MULT18X18</td><td><code>(* use_dsp = "yes" *)</code></td><td>18 bits</td></tr>
+<tr><td>Generic</td><td>--</td><td><code>(* use_dsp = "yes" *)</code></td><td>18 bits</td></tr>
+</tbody></table>
+<p>If a multiply operand exceeds the DSP block's maximum input width, the
+synthesis tool will infer logic-based multiplication instead.</p>
+<hr />
+<h2 id="resource-bounds">Resource bounds</h2>
+<p>The scaffold generator enforces the following NASA Power-of-10 bounds:</p>
+<table><thead><tr><th>Constant</th><th>Value</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>MAX_CONSTRAINT_LINES</code></td><td>256</td><td>Maximum lines in a generated constraint file</td></tr>
+<tr><td><code>MAX_SYNC_STAGES</code></td><td>4</td><td>Maximum clock-domain synchronizer stages</td></tr>
+</tbody></table>
+<p>Multi-bit signals are expanded bit-by-bit in constraint files. If the
+total line count reaches <code>MAX_CONSTRAINT_LINES</code>, generation stops to
+prevent unbounded output.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="tutorial.html">Tutorial</a> -- Getting started with MIRR</li>
+<li><a href="rspu_isa_spec.html">R-SPU Reference</a> -- Instruction set architecture</li>
+<li><a href="contributing.html">Contributing</a> -- Coding standards and campaign workflow</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

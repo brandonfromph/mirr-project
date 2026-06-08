@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Home — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Home — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#the-three-primitives">The Three Primitives</a></li>
+        <li><a href="#quick-example">Quick Example</a></li>
+        <li><a href="#documentation">Documentation</a></li>
+        <li><a href="#getting-started">Getting Started</a></li>
+        <li><a href="#license">License</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<div class="mirr-hero" markdown="0">
+  <img src="assets/images/mirr_logo.svg"
+       alt="MIRR ouroboros logo" class="mirr-hero-logo">
+  <h1 class="mirr-hero-title">MIRR</h1>
+  <p class="mirr-tagline">A hardware rule language for safety-critical systems.</p>
+  <p class="mirr-subline">
+    Write a rule in plain code. Get nanosecond-speed hardware logic &mdash;
+    no OS, no scheduler, no delays.
+  </p>
+  <div class="mirr-status-bar">
+    <span><span class="mirr-status-dot green"></span> Compiler operational</span>
+    <span><span class="mirr-status-dot blue"></span> 10 emit targets</span>
+    <span><span class="mirr-status-dot amber"></span> v0.3.0</span>
+  </div>
+</div>
+<h2 id="the-three-primitives">The Three Primitives</h2>
+<p>MIRR programs are built from exactly three constructs. Every safety rule
+you write uses only these:</p>
+<div class="mirr-features" markdown="0">
+  <div class="mirr-feature-card">
+    <h3 id="signal-mdash-the-wire"><code>signal</code> &mdash; The Wire</h3>
+    <p>A named data path carrying a typed value every clock cycle.
+    Signals are the inputs and outputs of your safety logic.</p>
+  </div>
+  <div class="mirr-feature-card">
+    <h3 id="guard-mdash-the-watcher"><code>guard</code> &mdash; The Watcher</h3>
+    <p>A temporal condition that monitors signals over time. Guards
+    count consecutive cycles a condition holds before triggering.</p>
+  </div>
+  <div class="mirr-feature-card">
+    <h3 id="reflex-mdash-the-responder"><code>reflex</code> &mdash; The Responder</h3>
+    <p>An action that fires when a guard triggers. Reflexes are the
+    only way to drive output signals in hardware.</p>
+  </div>
+</div>
+<p>The compiler turns your rules into synthesizable Verilog RTL that enforces
+them in hardware, with nanosecond response times.</p>
+<h2 id="quick-example">Quick Example</h2>
+<pre><code class="language-mirr"><span class="mirr-kw">module</span> <span class="mirr-name">neonatal_respirator</span> {
+    <span class="mirr-name">signals</span> {
+        <span class="mirr-name">airway_pressure</span>: <span class="mirr-dir">in</span> <span class="mirr-type">u16</span>
+        <span class="mirr-name">clamp_valve</span>:     <span class="mirr-dir">out</span> <span class="mirr-type">bool</span>
+    }
+
+    <span class="mirr-guard">guard</span> <span class="mirr-name">sustained_pressure_drop</span> {
+        <span class="mirr-guard">when</span> <span class="mirr-name">airway_pressure</span> <span class="mirr-op">&lt;</span> <span class="mirr-num">50</span> 
+        <span class="mirr-guard">for</span>  <span class="mirr-num">1000</span> <span class="mirr-guard">cycles</span>;
+    }
+
+    <span class="mirr-reflex">reflex</span> <span class="mirr-name">emergency_clamp</span> {
+        <span class="mirr-reflex">on</span> <span class="mirr-name">sustained_pressure_drop</span> {
+            <span class="mirr-name">clamp_valve</span> <span class="mirr-op">=</span> <span class="mirr-bool">true</span>;
+        }
+    }
+}</code></pre>
+<p>If <code>airway_pressure</code> stays below 50 for 1000 consecutive clock cycles,
+<code>clamp_valve</code> is set to <code>true</code> -- enforced directly in hardware.</p>
+<h2 id="documentation">Documentation</h2>
+<table><thead><tr><th>Document</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="tutorial.html">Tutorial</a></td><td>10-lesson beginner guide -- no hardware experience needed</td></tr>
+<tr><td><a href="error_codes.html">Error Codes</a></td><td>Complete catalogue of compiler diagnostics</td></tr>
+<tr><td><a href="type-system.html">Type System</a></td><td>Signed/unsigned types, width inference, and error codes</td></tr>
+<tr><td><a href="rspu_isa_spec.html">R-SPU Reference</a></td><td>R-SPU instruction set architecture and register file</td></tr>
+<tr><td><a href="migration-guide.html">Migration Guide</a></td><td>Upgrade notes for 0.1.0 through 0.3.0</td></tr>
+<tr><td><a href="roadmap.html">Roadmap</a></td><td>Phase 0-10 project roadmap</td></tr>
+<tr><td><a href="glossary.html">Glossary</a></td><td>Project terminology and acronyms</td></tr>
+<tr><td><a href="contributing.html">Contributing</a></td><td>Coding standards, workflow, error allocation</td></tr>
+<tr><td><a href="fpga-targets-guide.html">FPGA Targets Guide</a></td><td>FPGA toolchain, synthesis, and target configuration</td></tr>
+<tr><td><a href="mape-k-guide.html">MAPE-K Guide</a></td><td>Autonomic feedback loop simulator and LTL monitoring</td></tr>
+<tr><td><a href="sexpr-guide.html">S-Expression Guide</a></td><td>Homoiconic S-expression IR, round-trip invariant</td></tr>
+<tr><td><a href="doc-index.html">Documentation Index</a></td><td>Canonical index for all project docs</td></tr>
+</tbody></table>
+<h2 id="getting-started">Getting Started</h2>
+<pre><code class="language-bash"><span class="hl-cmt"># Clone and build</span>
+<span class="hl-fn">git</span> clone https://github.com/brandonfromph/mirr-project.<span class="hl-fn">git</span>
+<span class="hl-fn">cd</span> mirr-project
+<span class="hl-fn">cargo</span> build
+
+<span class="hl-cmt"># Compile an example</span>
+<span class="hl-fn">cargo</span> run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr</code></pre>
+<blockquote>
+<p><strong>Tip:</strong> MIRR requires no hardware experience. Start with the <a href="tutorial.html">Tutorial</a> for a
+step-by-step introduction to signals, guards, and reflexes.</p>
+</blockquote>
+<h2 id="license">License</h2>
+<p>Distributed under the GPL-3.0 License. See <a href="https://github.com/brandonfromph/mirr-project/blob/main/LICENSE">LICENSE</a> for details.</p>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

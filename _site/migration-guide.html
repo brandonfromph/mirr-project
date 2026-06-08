@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migration Guide — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="Migration Guide — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Migration Guide — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#010-020">0.1.0 → 0.2.0</a></li>
+        <li><a href="#for-rust-api-consumers">For Rust API Consumers</a></li>
+          <li class="toc-h3"><a href="#new-enum-variants-on-propertyformula">New enum variants on `PropertyFormula`</a></li>
+          <li class="toc-h3"><a href="#new-directive-field-on-propertydecl">New `directive` field on `PropertyDecl`</a></li>
+          <li class="toc-h3"><a href="#new-fields-on-module">New fields on `Module`</a></li>
+          <li class="toc-h3"><a href="#new-public-types">New public types</a></li>
+          <li class="toc-h3"><a href="#new-public-functions">New public functions</a></li>
+        <li><a href="#for-json-netlist-consumers">For JSON Netlist Consumers</a></li>
+          <li class="toc-h3"><a href="#new-top-level-field-schemaversion">New top-level field: `schema_version`</a></li>
+          <li class="toc-h3"><a href="#properties-array-is-always-present">`properties` array is always present</a></li>
+          <li class="toc-h3"><a href="#property-objects-have-new-fields-and-values">Property objects have new fields and values</a></li>
+          <li class="toc-h3"><a href="#patternorigins-array-conditional">`pattern_origins` array (conditional)</a></li>
+        <li><a href="#for-mirr-syntax-tool-authors">For MIRR Syntax / Tool Authors</a></li>
+          <li class="toc-h3"><a href="#new-keywords-in-property-blocks">New keywords in `property` blocks</a></li>
+          <li class="toc-h3"><a href="#new-top-level-keywords-def-and-reflect">New top-level keywords: `def` and `reflect`</a></li>
+        <li><a href="#for-error-message-parsers">For Error Message Parsers</a></li>
+        <li><a href="#020-030">0.2.0 → 0.3.0</a></li>
+          <li class="toc-h3"><a href="#campaign-summary">Campaign summary</a></li>
+          <li class="toc-h3"><a href="#for-rust-api-consumers">For Rust API Consumers</a></li>
+          <li class="toc-h3"><a href="#for-json-netlist-consumers">For JSON Netlist Consumers</a></li>
+          <li class="toc-h3"><a href="#for-mirr-syntax-tool-authors">For MIRR Syntax / Tool Authors</a></li>
+          <li class="toc-h3"><a href="#for-error-message-parsers">For Error Message Parsers</a></li>
+        <li><a href="#030-040-phase-3-ecs-migration">0.3.0 → 0.4.0 (Phase 3 ECS Migration)</a></li>
+          <li class="toc-h3"><a href="#for-rust-api-consumers">For Rust API Consumers</a></li>
+          <li class="toc-h3"><a href="#for-error-message-parsers">For Error Message Parsers</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>Migration Guide</h1>
+<p>This guide covers breaking and notable changes between MIRR compiler versions.
+Each version section is organized by audience.</p>
+<h2 id="010-020">0.1.0 → 0.2.0</h2>
+<blockquote>
+<p>[!NOTE]
+All new fields use <code>#[serde(default)]</code>, so JSON deserialization of data
+produced by older compiler versions continues to work without changes.</p>
+</blockquote>
+<hr />
+<h2 id="for-rust-api-consumers">For Rust API Consumers</h2>
+<h3 id="new-enum-variants-on-propertyformula">New enum variants on <code>PropertyFormula</code></h3>
+<blockquote>
+<p>[!IMPORTANT]
+If your code matches on <code>PropertyFormula</code> without a wildcard arm, you
+must add cases for the three new variants or compilation will fail.</p>
+</blockquote>
+<p><code>PropertyFormula</code> now has <strong>6 variants</strong> (was 3). If your code matches on this
+enum without a wildcard arm, you must handle the new variants:</p>
+<table><thead><tr><th>New Variant</th><th>MIRR Syntax</th></tr></thead><tbody>
+<tr><td><code>NeverImplies { antecedent, consequent }</code></td><td><code>never (P -&gt; Q)</code></td></tr>
+<tr><td><code>EventuallyWithin { expr, cycles }</code></td><td><code>eventually within N (P)</code></td></tr>
+<tr><td><code>AlwaysFollowedBy { trigger, response, delay_cycles }</code></td><td><code>always (P followed_by N Q)</code></td></tr>
+</tbody></table>
+<p>The <code>exprs()</code> and <code>exprs_mut()</code> methods on <code>PropertyFormula</code> handle all 6
+variants, so code using those methods needs no changes.</p>
+<h3 id="new-directive-field-on-propertydecl">New <code>directive</code> field on <code>PropertyDecl</code></h3>
+<p><code>PropertyDecl</code> has a new field:</p>
+<pre><code class="language-rust"><span class="hl-kw">pub</span> directive: <span class="hl-type">PropertyDirective</span>,  <span class="hl-cmt">// Assert (default), Cover, Assume</span></code></pre>
+<p>It is annotated with <code>#[serde(default)]</code>, so JSON deserialization of old data
+still works (defaults to <code>Assert</code>).</p>
+<h3 id="new-fields-on-module">New fields on <code>Module</code></h3>
+<p>Three new fields were added to <code>Module</code>:</p>
+<table><thead><tr><th>Field</th><th>Type</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>properties</code></td><td><code>Vec&lt;PropertyDecl&gt;</code></td><td><code>[]</code> (serde default)</td></tr>
+<tr><td><code>pattern_calls</code></td><td><code>Vec&lt;PatternCall&gt;</code></td><td><code>[]</code> (serde default)</td></tr>
+<tr><td><code>pattern_origins</code></td><td><code>Vec&lt;PatternOrigin&gt;</code></td><td><code>[]</code> (serde default)</td></tr>
+</tbody></table>
+<p>All three have <code>#[serde(default)]</code>, so deserialization of old JSON is
+backward-compatible.</p>
+<h3 id="new-public-types">New public types</h3>
+<table><thead><tr><th>Type</th><th>Module</th></tr></thead><tbody>
+<tr><td><code>PropertyDirective</code></td><td><code>crate::ast::property</code></td></tr>
+<tr><td><code>PropertyFormula</code> (3 new variants)</td><td><code>crate::ast::property</code></td></tr>
+<tr><td><code>PatternDef</code></td><td><code>crate::ast::pattern</code></td></tr>
+<tr><td><code>PatternOrigin</code></td><td><code>crate::ast::pattern</code></td></tr>
+<tr><td><code>PatternParam</code></td><td><code>crate::ast::pattern</code></td></tr>
+</tbody></table>
+<h3 id="new-public-functions">New public functions</h3>
+<table><thead><tr><th>Function</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>expand_patterns()</code></td><td>Expand <code>def</code>/<code>reflect</code> pattern calls</td></tr>
+<tr><td><code>emit_firrtl()</code></td><td>Emit FIRRTL output</td></tr>
+<tr><td><code>emit_sva_only()</code></td><td>Emit standalone SVA (no Verilog wrapper)</td></tr>
+</tbody></table>
+<hr />
+<h2 id="for-json-netlist-consumers">For JSON Netlist Consumers</h2>
+<h3 id="new-top-level-field-schemaversion">New top-level field: <code>schema_version</code></h3>
+<p>The JSON netlist now includes a <code>schema_version</code> field as the first key:</p>
+<pre><code class="language-json">{
+  <span class="hl-var">&quot;schema_version&quot;</span>: <span class="hl-str">&quot;0.2.0&quot;</span>,
+  <span class="hl-var">&quot;ir_version&quot;</span>: <span class="hl-str">&quot;1.0&quot;</span>,
+  ...
+}
+</code></pre>
+<p><code>ir_version</code> remains <code>"1.0"</code> and tracks the IR contract version.
+<code>schema_version</code> tracks the JSON output schema and will be bumped when
+fields are added, removed, or renamed.</p>
+<p><strong>Action required:</strong> If your JSON parser rejects unknown fields, allow
+<code>schema_version</code> (type: string).</p>
+<h3 id="properties-array-is-always-present"><code>properties</code> array is always present</h3>
+<p>Previously, the <code>properties</code> key was absent when no properties existed.
+Now it is always present as an array (may be empty <code>[]</code>).</p>
+<h3 id="property-objects-have-new-fields-and-values">Property objects have new fields and values</h3>
+<p>Each object in the <code>properties</code> array now has:</p>
+<table><thead><tr><th>Field</th><th>New?</th><th>Values</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>No</td><td>Property name string</td></tr>
+<tr><td><code>directive</code></td><td><strong>Yes</strong></td><td><code>"assert"</code>, <code>"cover"</code>, or <code>"assume"</code></td></tr>
+<tr><td><code>kind</code></td><td>No (3 new values)</td><td><code>"always"</code>, <code>"never"</code>, <code>"always_implies"</code>, <code>"never_implies"</code>, <code>"eventually_within"</code>, <code>"always_followed_by"</code></td></tr>
+<tr><td><code>formula_text</code></td><td>No</td><td>Human-readable formula string</td></tr>
+</tbody></table>
+<h3 id="patternorigins-array-conditional"><code>pattern_origins</code> array (conditional)</h3>
+<p>When a module uses pattern calls, a <code>pattern_origins</code> array appears:</p>
+<pre><code class="language-json"><span class="hl-var">&quot;pattern_origins&quot;</span>: [
+  { <span class="hl-var">&quot;pattern_name&quot;</span>: <span class="hl-str">&quot;threshold_guard&quot;</span>, <span class="hl-var">&quot;args_summary&quot;</span>: <span class="hl-str">&quot;temperature, 100, 5, temp_alarm&quot;</span> }
+]
+</code></pre>
+<p>This array is omitted (not present) when empty.</p>
+<hr />
+<h2 id="for-mirr-syntax-tool-authors">For MIRR Syntax / Tool Authors</h2>
+<h3 id="new-keywords-in-property-blocks">New keywords in <code>property</code> blocks</h3>
+<p>Five new keywords are recognized inside <code>property</code> blocks:</p>
+<table><thead><tr><th>Keyword</th><th>Context</th></tr></thead><tbody>
+<tr><td><code>cover</code></td><td>Directive prefix: <code>cover eventually within N (P)</code></td></tr>
+<tr><td><code>assume</code></td><td>Directive prefix: <code>assume always (P)</code></td></tr>
+<tr><td><code>eventually</code></td><td>Formula keyword: <code>eventually within N (P)</code></td></tr>
+<tr><td><code>within</code></td><td>Used with <code>eventually</code>: <code>eventually within N (P)</code></td></tr>
+<tr><td><code>followed_by</code></td><td>Used in implication: <code>always (P followed_by N Q)</code></td></tr>
+</tbody></table>
+<p>These keywords only have special meaning inside <code>property {}</code> blocks.
+They do <strong>not</strong> affect parsing of <code>signal</code>, <code>guard</code>, or <code>reflex</code> blocks.</p>
+<h3 id="new-top-level-keywords-def-and-reflect">New top-level keywords: <code>def</code> and <code>reflect</code></h3>
+<p>The pattern system introduces two new top-level constructs:</p>
+<pre><code>def pattern_name(param1: type, ...) {
+    reflect {
+        guard ... { ... }
+        reflex ... { ... }
+        property ... { ... }
+    }
+}
+</code></pre>
+<p>Pattern calls appear at module scope: <code>pattern_name(arg1, arg2, ...);</code></p>
+<hr />
+<h2 id="for-error-message-parsers">For Error Message Parsers</h2>
+<p>All error messages now start with a structured error code prefix:</p>
+<table><thead><tr><th>Prefix</th><th>Category</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>[E1xx]</code></td><td>Parse errors (E101–E166, E170–E181)</td><td><code>[E100] Parse error: [E171] Unbalanced parentheses in expression.</code></td></tr>
+<tr><td><code>[E2xx]</code></td><td>Semantic errors</td><td><code>Semantic error: [E201] Duplicate signal name: 'x'.</code> (unique codes E201–E216)</td></tr>
+<tr><td><code>[E300]</code></td><td>Temporal errors</td><td><code>[E300] Temporal compilation error: ...</code></td></tr>
+<tr><td><code>[E4xx]</code></td><td>Pattern errors (E400–E425)</td><td><code>[E400] Pattern error: [E401] ...</code></td></tr>
+</tbody></table>
+<p>If you parse error output, you can now match on the <code>[Ennn]</code> prefix to
+categorize errors programmatically.</p>
+<hr />
+<h2 id="020-030">0.2.0 → 0.3.0</h2>
+<blockquote>
+<p>[!WARNING]
+Version 0.3.0 introduces signed types, a type checker, and the R-SPU
+backend. Code that matches exhaustively on <code>SignalType</code>, <code>UnaryOp</code>, or
+<code>PatternParamKind</code> will require updates.</p>
+</blockquote>
+<p>Version 0.3.0 ships the results of 8 implementation campaigns. This section
+covers all breaking and notable changes.</p>
+<h3 id="campaign-summary">Campaign summary</h3>
+<table><thead><tr><th>Campaign</th><th>Description</th></tr></thead><tbody>
+<tr><td><strong>SEM-001</strong></td><td><code>prev(signal, delay)</code> temporal back-references with semantic validation (delay ≥ 1) and E209 error code</td></tr>
+<tr><td><strong>TYPE-001</strong></td><td>Signed integer types <code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code> via <code>SignalType::Signed(u8)</code> and unary negate operator <code>UnaryOp::Negate</code></td></tr>
+<tr><td><strong>TYPE-002</strong></td><td>Type checker module <code>src/typeck/</code> with <code>typecheck_module()</code>, enforcing signedness consistency, E6xx errors (E601–E609)</td></tr>
+<tr><td><strong>TYPE-003</strong></td><td>Width inference updated for signed types with two's complement semantics, E5xx errors updated</td></tr>
+<tr><td><strong>TYPE-004</strong></td><td>3 new property forms: <code>never (P -&gt; Q)</code>, <code>eventually_within(P, N)</code>, <code>always_followed_by(P, Q, N)</code> — total 6 property forms</td></tr>
+<tr><td><strong>TYPE-005</strong></td><td>Higher-order patterns — <code>PatternParamKind::Pattern</code> and <code>PatternArg::PatternRef</code> for passing patterns as arguments</td></tr>
+<tr><td><strong>ROCQ-001</strong></td><td>Rocq/Coq proof framework in <code>proofs/</code> directory</td></tr>
+<tr><td><strong>RSPU-001</strong></td><td>R-SPU instruction set backend — <code>emit_rspu()</code>, <code>RspuProgram</code>, <code>RspuInstruction</code>, register allocator, E7xx errors (E700–E714)</td></tr>
+</tbody></table>
+<hr />
+<h3 id="for-rust-api-consumers">For Rust API Consumers</h3>
+<h4>New public types</h4>
+<table><thead><tr><th>Type</th><th>Module</th><th>Campaign</th></tr></thead><tbody>
+<tr><td><code>SignalType::Signed(u8)</code></td><td><code>crate::ast::types</code></td><td>TYPE-001</td></tr>
+<tr><td><code>UnaryOp::Negate</code></td><td><code>crate::ast::types</code></td><td>TYPE-001</td></tr>
+<tr><td><code>TypeError</code></td><td><code>crate::typeck</code></td><td>TYPE-002</td></tr>
+<tr><td><code>TypeMap</code></td><td><code>crate::typeck</code></td><td>TYPE-002</td></tr>
+<tr><td><code>PatternParamKind::Pattern</code></td><td><code>crate::ast::pattern</code></td><td>TYPE-005</td></tr>
+<tr><td><code>PatternArg::PatternRef</code></td><td><code>crate::ast::pattern</code></td><td>TYPE-005</td></tr>
+<tr><td><code>RspuProgram</code></td><td><code>crate::emit::rspu</code></td><td>RSPU-001</td></tr>
+<tr><td><code>RspuInstruction</code></td><td><code>crate::emit::rspu</code></td><td>RSPU-001</td></tr>
+<tr><td><code>RspuError</code></td><td><code>crate::emit::rspu</code></td><td>RSPU-001</td></tr>
+</tbody></table>
+<h4>New public functions</h4>
+<table><thead><tr><th>Function</th><th>Purpose</th><th>Campaign</th></tr></thead><tbody>
+<tr><td><code>typecheck_module()</code></td><td>Run signedness/type consistency checks on a <code>Module</code>; returns <code>Vec&lt;TypeError&gt;</code></td><td>TYPE-002</td></tr>
+<tr><td><code>emit_rspu()</code></td><td>Emit an <code>RspuProgram</code> from a <code>Module</code>; returns <code>Result&lt;RspuProgram, RspuError&gt;</code></td><td>RSPU-001</td></tr>
+</tbody></table>
+<h4>New <code>PipelineConfig</code> fields</h4>
+<p>Two new boolean fields control the additional pipeline stages:</p>
+<table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>typecheck</code></td><td><code>bool</code></td><td><code>false</code></td><td>Enables the type checking stage (<code>typecheck_module()</code>)</td></tr>
+<tr><td><code>rspu</code></td><td><code>bool</code></td><td><code>false</code></td><td>Enables R-SPU instruction set emission (<code>emit_rspu()</code>)</td></tr>
+</tbody></table>
+<p>Both fields default to <code>false</code> for backward compatibility. Existing
+<code>PipelineConfig</code> values continue to work without modification.</p>
+<h4>New enum variants</h4>
+<p><code>SignalType</code> gains a <code>Signed(u8)</code> variant (TYPE-001). If your code matches on
+<code>SignalType</code> without a wildcard arm, you must handle:</p>
+<pre><code class="language-rust"><span class="hl-type">SignalType</span>::<span class="hl-type">Signed</span>(width) <span class="hl-op">=</span><span class="hl-op">&gt;</span> { <span class="hl-op">/</span><span class="hl-op">*</span> <span class="hl-type">i8</span>, <span class="hl-type">i16</span>, <span class="hl-type">i32</span>, <span class="hl-type">i64</span> <span class="hl-op">*</span><span class="hl-op">/</span> }</code></pre>
+<p><code>UnaryOp</code> gains a <code>Negate</code> variant (TYPE-001). If your code matches on
+<code>UnaryOp</code>, add:</p>
+<pre><code class="language-rust"><span class="hl-type">UnaryOp</span>::<span class="hl-type">Negate</span> <span class="hl-op">=</span><span class="hl-op">&gt;</span> { <span class="hl-op">/</span><span class="hl-op">*</span> unary minus, e.g. <span class="hl-op">-</span>x <span class="hl-op">*</span><span class="hl-op">/</span> }</code></pre>
+<p><code>PatternParamKind</code> gains a <code>Pattern</code> variant (TYPE-005). Pattern parameters
+can now accept other patterns as arguments via <code>PatternArg::PatternRef</code>.</p>
+<hr />
+<h3 id="for-json-netlist-consumers">For JSON Netlist Consumers</h3>
+<h4><code>schema_version</code> bumped to <code>"0.3.0"</code></h4>
+<p>The <code>schema_version</code> field is now <code>"0.3.0"</code>. <code>ir_version</code> remains <code>"1.0"</code>.</p>
+<h4>Signal objects may contain <code>signed: true</code></h4>
+<p>Signals declared with signed types (<code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>) include a
+<code>"signed": true</code> field. Unsigned signals omit this field or set it to <code>false</code>.</p>
+<hr />
+<h3 id="for-mirr-syntax-tool-authors">For MIRR Syntax / Tool Authors</h3>
+<h4>Signed type keywords</h4>
+<p>Four new type keywords are recognized in <code>signal</code> declarations:</p>
+<table><thead><tr><th>Keyword</th><th>Width</th></tr></thead><tbody>
+<tr><td><code>i8</code></td><td>8 bits, signed</td></tr>
+<tr><td><code>i16</code></td><td>16 bits, signed</td></tr>
+<tr><td><code>i32</code></td><td>32 bits, signed</td></tr>
+<tr><td><code>i64</code></td><td>64 bits, signed</td></tr>
+</tbody></table>
+<h4><code>prev()</code> temporal back-reference</h4>
+<p>The <code>prev(signal, delay)</code> built-in is now available in guard and reflex
+expressions. The <code>delay</code> argument must be a positive integer (≥ 1).</p>
+<h4>Higher-order pattern arguments</h4>
+<p>Pattern definitions can now accept other patterns as parameters using the
+<code>pattern</code> parameter kind, enabling composition of reusable design patterns.</p>
+<hr />
+<h3 id="for-error-message-parsers">For Error Message Parsers</h3>
+<p>The structured error code table is extended with the following new entries:</p>
+<table><thead><tr><th>Prefix</th><th>Category</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>[E210]</code></td><td>Semantic error — duplicate property name</td><td><code>Semantic error: [E210] Duplicate property name: 'watchdog'.</code></td></tr>
+<tr><td><code>[E5xx]</code></td><td>Width inference errors (E500–E511)</td><td><code>Width error: [E500] Cannot infer width for signal 'x'.</code></td></tr>
+<tr><td><code>[E6xx]</code></td><td>Type errors (E601–E609)</td><td><code>Type error: [E601] Signedness mismatch in binary operation.</code></td></tr>
+<tr><td><code>[E7xx]</code></td><td>R-SPU errors (E701–E715)</td><td><code>RSPU error: [E701] Register allocation failed for signal 'y'.</code></td></tr>
+<tr><td><code>[E8xx]</code></td><td>S-expression errors (E800–E815)</td><td><code>SExpr error: [E800] Invalid token in S-expression.</code></td></tr>
+</tbody></table>
+<p>The full error code table (0.1.0 through 0.3.0) is:</p>
+<table><thead><tr><th>Range</th><th>Category</th></tr></thead><tbody>
+<tr><td><code>[E1xx]</code> (E101–E166, E170–E181)</td><td>Parse errors</td></tr>
+<tr><td><code>[E2xx]</code> (E201–E216)</td><td>Semantic errors</td></tr>
+<tr><td><code>[E300]</code></td><td>Temporal errors</td></tr>
+<tr><td><code>[E4xx]</code> (E400–E425)</td><td>Pattern errors</td></tr>
+<tr><td><code>[E5xx]</code> (E500–E511)</td><td>Width inference errors</td></tr>
+<tr><td><code>[E6xx]</code> (E601–E609)</td><td>Type errors</td></tr>
+<tr><td><code>[E7xx]</code> (E701–E715)</td><td>R-SPU backend errors</td></tr>
+<tr><td><code>[E8xx]</code> (E800–E815)</td><td>S-expression errors</td></tr>
+</tbody></table>
+<hr />
+<h2 id="030-040-phase-3-ecs-migration">0.3.0 → 0.4.0 (Phase 3 ECS Migration)</h2>
+<blockquote>
+<p>[!WARNING]
+Version 0.4.0 introduces the Data-Oriented Entity Component System (ECS) architecture. AST <code>Expr</code> nodes are no longer used for logic evaluation in production pipelines; all expressions are lowered into flat contiguous arrays in <code>src/ecs/registry.rs</code>.</p>
+</blockquote>
+<h3 id="for-rust-api-consumers">For Rust API Consumers</h3>
+<h4>New ECS Pipeline</h4>
+<p>The compilation pipeline now centers entirely around the ECS <code>Registry</code>. The <code>Expr</code> AST tree is strictly used for the parsing phase and legacy bootstrap tools. If your code directly manipulates <code>Expr</code> enum variants for passes like constant folding, it must be rewritten to iterate over <code>Registry</code> component arrays.</p>
+<h4>New <code>PipelineConfig</code> Fields</h4>
+<p>Several new execution controls have been added:</p>
+<ul>
+<li><code>bootstrap_mode</code>: Runs the typechecker in a relaxed hydration mode.</li>
+<li><code>sat_simplify</code>: Enables formal SAT-based logic simplification.</li>
+<li><code>mape_k</code>: Runs the MAPE-K autonomic simulation pass.</li>
+<li><code>emit_mape_k_rtl</code>: Emits full SystemVerilog logic from the MAPE-K simulation.</li>
+</ul>
+<h4>Rayon Concurrency</h4>
+<p>Systems in <code>src/ecs/systems.rs</code> (e.g., <code>parallel_constant_folding_system</code>) heavily utilize <code>rayon</code>. To prevent thread starvation, avoid invoking the MIRR pipeline from within external tight <code>rayon</code> threadpools without allocating capacity.</p>
+<h3 id="for-error-message-parsers">For Error Message Parsers</h3>
+<p>New structured error code ranges were introduced:</p>
+<table><thead><tr><th>Range</th><th>Category</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>[E9xx]</code></td><td>SAT / Equivalence</td><td><code>Sat error: [E901] Receipt generation failed.</code></td></tr>
+<tr><td><code>[E10xx]</code></td><td>Symbolic Analysis</td><td><code>Symbolic error: [E1003] Signal limit exceeded.</code></td></tr>
+<tr><td><code>[E11xx]</code></td><td>Totality</td><td><code>Totality error: [E1100] Fallback.</code></td></tr>
+<tr><td><code>[E12xx]</code></td><td>Testing &amp; Tooling</td><td><code>Tooling error: [E1201] RISC-V emission failed.</code></td></tr>
+</tbody></table>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="error_codes.html">Error Codes</a> — Complete error code catalogue</li>
+<li><a href="type-system.html">Type System</a> — New type rules added in 0.2.0+</li>
+<li><a href="rspu_isa_spec.html">R-SPU ISA Spec</a> — R-SPU backend added in 0.3.0</li>
+<li><a href="tutorial.html">Tutorial</a> — Updated for all current features</li>
+<li><a href="roadmap.html">Roadmap</a> — Upcoming changes to plan for</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

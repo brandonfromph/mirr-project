@@ -32,9 +32,16 @@ fn rwfi2_wasm_target_validation_contract_exists() {
 
 #[test]
 fn rwfi2_js_wrapper_compile_target_unknown_returns_structured_error() {
+    if !Path::new("paper/demos/mirr_wasm_bg.wasm").exists() {
+        println!("Skipping WASM wrapper test because mirr_wasm_bg.wasm is missing (expected on non-wasm-build CI runners).");
+        return;
+    }
+
     let script = r#"
         (async () => {
+            const fs = require('fs');
             const wasm = await import('./paper/demos/mirr_wasm.js');
+            await wasm.default(fs.readFileSync('./paper/demos/mirr_wasm_bg.wasm'));
             const raw = wasm.compile_target('', 'definitely_not_a_target');
             const parsed = JSON.parse(raw);
 

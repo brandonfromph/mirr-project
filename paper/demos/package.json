@@ -11,10 +11,6 @@
   ],
   "main": "mirr_wasm.js",
   "types": "mirr_wasm.d.ts",
-  "scripts": {
-    "rwfi2:compat": "node -e \"const fs=require('fs');const cands=['mirr_wasm.js','paper/demos/mirr_wasm.js'];const p=cands.find(x=>fs.existsSync(x));if(!p){throw new Error('missing mirr_wasm.js in '+process.cwd());}const s=fs.readFileSync(p,'utf8');for(const n of ['compile_target','compile_verilog_with_options','compile_json_netlist']){if(!s.includes('function '+n)){throw new Error('missing export '+n);}}\"",
-    "test": "npm run rwfi2:compat"
-  },
   "sideEffects": [
     "./snippets/*"
   ]

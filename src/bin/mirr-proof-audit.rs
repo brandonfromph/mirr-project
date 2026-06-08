@@ -1,3 +1,7 @@
+//! STUB: This tool is currently a placeholder (Phase 7i).
+//! It uses regex string-matching to estimate proof coverage.
+//! TODO: Use actual Rocq compiler/prover integration to mathematically check all our proofs.
+
 use anyhow::Result;
 use clap::Parser;
 use regex::Regex;

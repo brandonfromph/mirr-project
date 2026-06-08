@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAPE-K Simulation Guide — MIRR Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/mirr_logo.svg">
+  <meta property="og:title" content="MAPE-K Simulation Guide — MIRR Documentation">
+  <meta property="og:description" content="MIRR: A hardware rule language for safety-critical systems. Compile temporal specs into synthesizable hardware logic.">
+  <meta property="og:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MAPE-K Simulation Guide — MIRR Documentation">
+  <meta name="twitter:image" content="https://brandonfromph.github.io/mirr-project/paper/lra-card.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+          integrity="sha512-4xUl/d6D6THrAnXAwGajXkoWaeMNwEKK4iNfq5DotEbLPAfk6FSxSP3ydNxqDgCw1c/0Z1Jg6L8h2j+++9BZmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site">
+  <header class="site-header">
+    <div class="header-left">
+      <img src="assets/images/mirr_logo.svg" alt="MIRR" class="logo">
+      <h1>MIRR <span>Documentation</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="header-right-inner">
+        <div class="search-container">
+          <input type="search" class="search-input" id="doc-search" placeholder="Search docs… (Ctrl+K)" aria-label="Search documentation">
+          <ul class="search-results" id="search-results" role="listbox"></ul>
+        </div>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav" onclick="var n=document.getElementById(&#39;site-nav&#39;);n.classList.toggle(&#39;open&#39;);this.setAttribute(&#39;aria-expanded&#39;,n.classList.contains(&#39;open&#39;))">Menu</button>
+        <a class="github-link" href="https://github.com/brandonfromph/mirr-project">GitHub &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <nav id="site-nav" class="site-nav" aria-label="Documentation">
+    <a href="index.html">Home</a>
+    <a href="doc-index.html">Documentation Index</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="error_codes.html">Error Codes</a>
+    <a href="migration-guide.html">Migration Guide</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="type-system.html">Type System</a>
+    <a href="rspu_isa_spec.html">R-SPU ISA v2 Specification</a>
+    <a href="sexpr-guide.html">S-Expression IR Guide</a>
+    <a href="mape-k-guide.html">MAPE-K Simulation Guide</a>
+    <a href="fpga-targets-guide.html">FPGA Targets Guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="riscv-target-guide.html">RISC-V Target Guide</a>
+    <a href="self_hosting_status.html">Self-Hosting Status</a>
+    <a href="arm-target-guide.html">ARM Target Guide</a>
+    <a href="hls-guide.html">HLS Optimization Guide</a>
+    <a href="symbolic-guide.html">Symbolic Analysis Guide</a>
+    <a href="nextest-guide.html">Nextest Configuration Guide</a>
+    <a href="testing-guide.html">Testing Guide</a>
+    <div class="paper-link"><a href="paper/index.html">Interactive Paper &rarr;</a></div>
+  </nav>
+
+  <noscript><div style="padding:0.75rem 1.5rem;background:#5c4a11;color:#e2e8f0;font-size:0.85rem;border-bottom:1px solid #d69e2e">On mobile, enable JavaScript or use the <a href="#main-content" style="color:#d69e2e">skip link</a> to navigate.</div></noscript>
+
+  <div class="content-wrapper">
+  <aside class="page-toc-container">
+    <nav class="page-toc" aria-label="Table of Contents">
+      <h2 class="toc-title">Contents</h2>
+      <ul>
+        <li><a href="#what-is-mape-k">What is MAPE-K?</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#the-five-components">The five components</a></li>
+          <li class="toc-h3"><a href="#monitor-srcmapekmonitorrs">Monitor (`src/mape_k/monitor.rs`)</a></li>
+          <li class="toc-h3"><a href="#analyzer-srcmapekanalyzerrs">Analyzer (`src/mape_k/analyzer.rs`)</a></li>
+          <li class="toc-h3"><a href="#planner-srcmapekplannerrs">Planner (`src/mape_k/planner.rs`)</a></li>
+          <li class="toc-h3"><a href="#executor-srcmapekexecutorrs">Executor (`src/mape_k/executor.rs`)</a></li>
+          <li class="toc-h3"><a href="#knowledge-base-srcmapekknowledgers">Knowledge Base (`src/mape_k/knowledge.rs`)</a></li>
+        <li><a href="#bounded-ltl-properties">Bounded LTL properties</a></li>
+          <li class="toc-h3"><a href="#always-gp">Always -- G(P)</a></li>
+          <li class="toc-h3"><a href="#eventuallywithin-fnp">EventuallyWithin -- F&lt;=N(P)</a></li>
+          <li class="toc-h3"><a href="#persists-p-for-n">Persists -- P for N</a></li>
+          <li class="toc-h3"><a href="#alwaysimplies-gp-q">AlwaysImplies -- G(P -&gt; Q)</a></li>
+          <li class="toc-h3"><a href="#neverimplies-never-p-q">NeverImplies -- never (P -&gt; Q)</a></li>
+          <li class="toc-h3"><a href="#alwaysfollowedby-always-p-followedby-n-q">AlwaysFollowedBy -- always (P followed_by N Q)</a></li>
+        <li><a href="#signal-predicates">Signal predicates</a></li>
+        <li><a href="#adaptation-actions">Adaptation actions</a></li>
+          <li class="toc-h3"><a href="#setsignal">SetSignal</a></li>
+          <li class="toc-h3"><a href="#switchmode">SwitchMode</a></li>
+          <li class="toc-h3"><a href="#emergencystop">EmergencyStop</a></li>
+          <li class="toc-h3"><a href="#trigger-conditions">Trigger conditions</a></li>
+        <li><a href="#the-neonatal-monitoring-scenario">The neonatal monitoring scenario</a></li>
+          <li class="toc-h3"><a href="#scenario-configuration">Scenario configuration</a></li>
+          <li class="toc-h3"><a href="#expected-behavior">Expected behavior</a></li>
+          <li class="toc-h3"><a href="#sensor-model">Sensor model</a></li>
+        <li><a href="#api-entry-points">API entry points</a></li>
+          <li class="toc-h3"><a href="#running-a-simulation">Running a simulation</a></li>
+          <li class="toc-h3"><a href="#reading-the-result">Reading the result</a></li>
+          <li class="toc-h3"><a href="#exporting-the-audit-trail">Exporting the audit trail</a></li>
+        <li><a href="#bounded-iteration-guarantees">Bounded iteration guarantees</a></li>
+        <li><a href="#knowledge-base-and-audit-trail">Knowledge base and audit trail</a></li>
+        <li><a href="#see-also">See Also</a></li>
+      </ul>
+    </nav>
+  </aside>
+  <main id="main-content" class="site-content content-with-toc">
+<h1>MAPE-K Simulation Guide</h1>
+<p>MIRR includes a deterministic MAPE-K autonomic simulator that validates
+whether hardware monitors can observe and respond to runtime anomalies.
+Unlike purely static verification, the simulator exercises temporal
+properties under fault injection, closing the loop between design-time
+specification and runtime adaptation.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#what-is-mape-k">What is MAPE-K?</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#the-five-components">The five components</a></li>
+<li><a href="#bounded-ltl-properties">Bounded LTL properties</a></li>
+<li><a href="#signal-predicates">Signal predicates</a></li>
+<li><a href="#adaptation-actions">Adaptation actions</a></li>
+<li><a href="#the-neonatal-monitoring-scenario">The neonatal monitoring scenario</a></li>
+<li><a href="#api-entry-points">API entry points</a></li>
+<li><a href="#bounded-iteration-guarantees">Bounded iteration guarantees</a></li>
+<li><a href="#knowledge-base-and-audit-trail">Knowledge base and audit trail</a></li>
+</ol>
+<hr />
+<h2 id="what-is-mape-k">What is MAPE-K?</h2>
+<p>MAPE-K is the canonical framework for self-adaptive systems, first
+described by Kephart and Chess (2003). The acronym stands for:</p>
+<ul>
+<li><strong>M</strong>onitor -- observe the system via sensors</li>
+<li><strong>A</strong>nalyze -- evaluate temporal properties over observed data</li>
+<li><strong>P</strong>lan -- select the best corrective action</li>
+<li><strong>E</strong>xecute -- apply the selected action to the system</li>
+<li><strong>K</strong>nowledge -- shared audit log of all decisions</li>
+</ul>
+<p>These five phases execute in strict sequence on every simulation tick,
+forming a feedback loop. The knowledge base is shared across all phases,
+enabling post-run analysis and auditability.</p>
+<p>The implementation lives in <code>src/mape_k/</code> (10 files, plus the <code>bridge/</code> logic, approximately 8,000 lines).</p>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<p>On each tick, the simulator executes the four MAPE phases in order,
+with the knowledge base recording every adaptation decision:</p>
+<pre><code>+----------+   +----------+   +----------+   +----------+
+| Monitor  | &gt; | Analyze  | &gt; |   Plan   | &gt; | Execute  |
+| (sample  |   | (LTL     |   | (select  |   | (apply   |
+|  sensors)|   |  check)  |   |  action) |   |  action) |
++----------+   +----------+   +----------+   +----------+
+      ^                                            |
+      +------------ Knowledge Base &lt;---------------+
+</code></pre>
+<p>Given system state at tick t, the state transition is:</p>
+<pre><code>state(t+1) = Execute(Plan(Analyze(Monitor(state(t), sensors), K(t)), K(t)), K(t))
+</code></pre>
+<p>where Monitor samples sensor values into rolling windows, Analyze
+evaluates bounded LTL properties over those windows, Plan selects the
+highest-priority applicable action, and Execute applies the chosen
+adaptation to the signal state.</p>
+<hr />
+<h2 id="the-five-components">The five components</h2>
+<h3 id="monitor-srcmapekmonitorrs">Monitor (<code>src/mape_k/monitor.rs</code>)</h3>
+<p>The Monitor samples all registered sensor channels each tick and stores
+values in fixed-capacity ring buffers -- one per signal. The ring
+buffer overwrites the oldest value when full, maintaining a sliding
+window of recent history.</p>
+<p>Key types:</p>
+<ul>
+<li><code>Monitor</code> -- holds per-signal rolling windows and the tick counter.</li>
+<li><code>RingBuffer</code> -- fixed-capacity ring buffer of <code>u64</code> values.</li>
+</ul>
+<p>The window size is configurable but clamped to <code>MAX_WINDOW_SIZE</code> (1,024).
+A maximum of <code>MAX_SENSORS</code> (64) channels can be tracked.</p>
+<h3 id="analyzer-srcmapekanalyzerrs">Analyzer (<code>src/mape_k/analyzer.rs</code>)</h3>
+<p>The Analyzer evaluates a set of bounded temporal properties against the
+Monitor's rolling windows each tick. It returns a <code>PropertyResult</code> for
+each registered property indicating whether it is satisfied or violated,
+along with the evidence tick.</p>
+<p>Key types:</p>
+<ul>
+<li><code>Analyzer</code> -- holds the property set and evaluates them.</li>
+<li><code>PropertyResult</code> -- satisfied/violated status with evidence tick offset.</li>
+</ul>
+<p>Maximum properties: <code>MAX_PROPERTIES</code> (256).</p>
+<h3 id="planner-srcmapekplannerrs">Planner (<code>src/mape_k/planner.rs</code>)</h3>
+<p>The Planner holds a fixed-size action table and selects the
+highest-priority matching action for the current set of property
+results. Actions are never synthesized on the fly -- they come from a
+pre-verified library.</p>
+<p>Each action entry specifies:</p>
+<ul>
+<li>Which property index triggers it</li>
+<li>Whether it fires on violation or on satisfaction</li>
+<li>A priority (0-255; higher wins ties)</li>
+</ul>
+<p>Key types:</p>
+<ul>
+<li><code>Planner</code> -- holds the action table, performs selection.</li>
+<li><code>ActionEntry</code> -- maps a property result to an action.</li>
+<li><code>PlanResult</code> -- the selected action (if any) with context.</li>
+</ul>
+<p>Maximum entries: <code>MAX_ACTION_ENTRIES</code> (256).</p>
+<h3 id="executor-srcmapekexecutorrs">Executor (<code>src/mape_k/executor.rs</code>)</h3>
+<p>The Executor applies the planner-selected action to the signal
+environment. It validates action targets against the declared signal
+set and captures before/after state snapshots for the knowledge base.</p>
+<p>Three action types:</p>
+<table><thead><tr><th>Action</th><th>Effect</th></tr></thead><tbody>
+<tr><td><code>SetSignal { name, value }</code></td><td>Force a specific signal to a value</td></tr>
+<tr><td><code>SwitchMode { mode_name }</code></td><td>Switch to a named operating mode (recorded, not directly applied)</td></tr>
+<tr><td><code>EmergencyStop</code></td><td>Zero all signals immediately (safety clamp)</td></tr>
+</tbody></table>
+<p>Key types:</p>
+<ul>
+<li><code>Executor</code> -- applies actions, tracks emergency state.</li>
+<li><code>ExecutionRecord</code> -- before/after snapshots and success status.</li>
+</ul>
+<h3 id="knowledge-base-srcmapekknowledgers">Knowledge Base (<code>src/mape_k/knowledge.rs</code>)</h3>
+<p>The Knowledge Base maintains a bounded FIFO ring buffer of adaptation
+records for audit logging. Each record stores the tick, triggering
+property index, action taken, pre/post state snapshots, and success
+flag.</p>
+<p>When the buffer reaches capacity, the oldest entry is evicted. A
+monotonic counter tracks lifetime insertions (including evicted records)
+for completeness audits.</p>
+<p>Key types:</p>
+<ul>
+<li><code>KnowledgeBase</code> -- bounded audit log.</li>
+<li><code>AdaptationRecord</code> -- one decision record with full context.</li>
+</ul>
+<p>Maximum entries: <code>MAX_LOG_ENTRIES</code> (4,096). The knowledge base exports
+to JSON for DO-254 evidence trails.</p>
+<hr />
+<h2 id="bounded-ltl-properties">Bounded LTL properties</h2>
+<p>The Analyzer evaluates six bounded temporal operators over rolling
+signal windows. All algorithms are iterative with O(window_size)
+complexity per property per tick.</p>
+<h3 id="always-gp">Always -- G(P)</h3>
+<p>P must hold at every tick in the current window. The analyzer scans
+the entire window and returns a violation on the first tick where P
+is false.</p>
+<pre><code class="language-rust"><span class="hl-type">TemporalProperty</span>::<span class="hl-type">Always</span>(<span class="hl-type">SignalPredicate</span>::<span class="hl-type">GreaterThan</span>(<span class="hl-str">&quot;pressure&quot;</span>.into(), <span class="hl-num">50</span>))</code></pre>
+<p>This checks: "pressure must be greater than 50 at every tick in the
+window."</p>
+<h3 id="eventuallywithin-fnp">EventuallyWithin -- F&lt;=N(P)</h3>
+<p>P must become true at least once within the last N ticks. The analyzer
+inspects the last N entries and returns satisfied on the first tick
+where P is true.</p>
+<pre><code class="language-rust"><span class="hl-type">TemporalProperty</span>::<span class="hl-type">EventuallyWithin</span>(
+    <span class="hl-type">SignalPredicate</span>::<span class="hl-type">IsTrue</span>(<span class="hl-str">&quot;alarm_ack&quot;</span>.into()),
+    <span class="hl-num">100</span>,
+)</code></pre>
+<p>This checks: "the alarm acknowledgment signal must become nonzero at
+least once within the last 100 ticks."</p>
+<h3 id="persists-p-for-n">Persists -- P for N</h3>
+<p>P must hold for at least N consecutive ticks anywhere in the window.
+The analyzer tracks consecutive satisfying ticks and fires when the
+count reaches N.</p>
+<pre><code class="language-rust"><span class="hl-type">TemporalProperty</span>::<span class="hl-type">Persists</span>(
+    <span class="hl-type">SignalPredicate</span>::<span class="hl-type">LessThan</span>(<span class="hl-str">&quot;pressure&quot;</span>.into(), <span class="hl-num">50</span>),
+    <span class="hl-num">10</span>,
+)</code></pre>
+<p>This checks: "pressure has been below 50 for at least 10 consecutive
+ticks somewhere in the window." This corresponds directly to the MIRR
+<code>guard ... for N cycles</code> construct.</p>
+<h3 id="alwaysimplies-gp-q">AlwaysImplies -- G(P -&gt; Q)</h3>
+<p>Whenever P holds, Q must also hold in the exact same cycle. The analyzer
+evaluates both predicates on each tick in the window and returns a
+violation if P is true but Q is false.</p>
+<pre><code class="language-rust"><span class="hl-type">TemporalProperty</span>::<span class="hl-type">AlwaysImplies</span>(
+    <span class="hl-type">SignalPredicate</span>::<span class="hl-type">IsTrue</span>(<span class="hl-str">&quot;alarm_active&quot;</span>.into()),
+    <span class="hl-type">SignalPredicate</span>::<span class="hl-type">IsTrue</span>(<span class="hl-str">&quot;buzzer_on&quot;</span>.into()),
+)</code></pre>
+<h3 id="neverimplies-never-p-q">NeverImplies -- never (P -&gt; Q)</h3>
+<p>Ensures that P implies Q is <em>never</em> universally true. There must exist at least
+one tick in the window where P is true and Q is false. Violation occurs if
+no such counter-example exists.</p>
+<h3 id="alwaysfollowedby-always-p-followedby-n-q">AlwaysFollowedBy -- always (P followed_by N Q)</h3>
+<p>Whenever P holds, Q must hold exactly N cycles later. The analyzer
+checks each tick where P is true, looks ahead N ticks within the window,
+and returns a violation if Q is false or the window ends before N ticks.</p>
+<pre><code class="language-rust"><span class="hl-type">TemporalProperty</span>::<span class="hl-type">AlwaysFollowedBy</span>(
+    <span class="hl-type">SignalPredicate</span>::<span class="hl-type">IsTrue</span>(<span class="hl-str">&quot;button_press&quot;</span>.into()),
+    <span class="hl-num">5</span>,
+    <span class="hl-type">SignalPredicate</span>::<span class="hl-type">IsTrue</span>(<span class="hl-str">&quot;led_on&quot;</span>.into()),
+)</code></pre>
+<hr />
+<h2 id="signal-predicates">Signal predicates</h2>
+<p>Atomic propositions are evaluated against a single <code>u64</code> signal value
+each tick:</p>
+<table><thead><tr><th>Predicate</th><th>Syntax</th><th>True when</th></tr></thead><tbody>
+<tr><td><code>IsTrue(signal)</code></td><td><code>value != 0</code></td><td>Signal is nonzero (boolean true)</td></tr>
+<tr><td><code>LessThan(signal, k)</code></td><td><code>value &lt; k</code></td><td>Signal is below threshold</td></tr>
+<tr><td><code>GreaterThan(signal, k)</code></td><td><code>value &gt; k</code></td><td>Signal is above threshold</td></tr>
+<tr><td><code>InRange(signal, lo, hi)</code></td><td><code>lo &lt;= value &lt;= hi</code></td><td>Signal is within inclusive range</td></tr>
+</tbody></table>
+<hr />
+<h2 id="adaptation-actions">Adaptation actions</h2>
+<p>The planner selects from three action types:</p>
+<h3 id="setsignal">SetSignal</h3>
+<p>Force a signal to a specific value. The executor validates that the
+target signal name exists before applying.</p>
+<pre><code class="language-rust"><span class="hl-type">AdaptationAction</span>::<span class="hl-type">SetSignal</span> { name: <span class="hl-str">&quot;clamp_valve&quot;</span>.into(), value: <span class="hl-num">1</span> }</code></pre>
+<h3 id="switchmode">SwitchMode</h3>
+<p>Switch to a named operating mode. In the R-SPU vision, this selects a
+pre-synthesized bitstream. In simulation, the mode switch is recorded
+but signal state is not directly modified.</p>
+<pre><code class="language-rust"><span class="hl-type">AdaptationAction</span>::<span class="hl-type">SwitchMode</span> { mode_name: <span class="hl-str">&quot;high_precision&quot;</span>.into() }</code></pre>
+<h3 id="emergencystop">EmergencyStop</h3>
+<p>Immediate safety clamp -- zeros all signals to safe defaults. Maps to
+the R-SPU "Immediate Layer (Static)" reflex. Once triggered, the
+emergency flag remains active until explicitly cleared.</p>
+<pre><code class="language-rust"><span class="hl-type">AdaptationAction</span>::<span class="hl-type">EmergencyStop</span></code></pre>
+<h3 id="trigger-conditions">Trigger conditions</h3>
+<p>Each action entry specifies whether it fires on property violation or
+property satisfaction:</p>
+<ul>
+<li><code>TriggerCondition::OnViolation</code> -- fire when the property is violated
+(safety invariant broken). This is the default.</li>
+<li><code>TriggerCondition::OnSatisfaction</code> -- fire when the property is
+satisfied (a dangerous condition has been detected and confirmed).</li>
+</ul>
+<hr />
+<h2 id="the-neonatal-monitoring-scenario">The neonatal monitoring scenario</h2>
+<p>The MIRR simulator includes a built-in neonatal airway-pressure scenario
+that exercises the full MAPE-K loop.</p>
+<h3 id="scenario-configuration">Scenario configuration</h3>
+<ul>
+<li><strong>Sensor:</strong> One channel (<code>airway_pressure</code>), base value 120,
+noise amplitude 5, fault injection at tick 500 (value drops to 10).</li>
+<li><strong>Properties:</strong>
+<ol>
+<li><code>Always(pressure &gt; 50)</code> -- invariant: pressure must never drop
+below 50.</li>
+<li><code>Persists(pressure &lt; 50, 10)</code> -- sustained anomaly: low pressure
+for 10 consecutive ticks.</li>
+</ol>
+</li>
+<li><strong>Actions:</strong>
+<ol>
+<li><code>SetSignal("clamp_valve", 1)</code> -- priority 50, fires on invariant
+violation.</li>
+<li><code>EmergencyStop</code> -- priority 100, fires on sustained low pressure.</li>
+</ol>
+</li>
+</ul>
+<h3 id="expected-behavior">Expected behavior</h3>
+<ol>
+<li><strong>Ticks 0-499:</strong> Normal operation. Pressure fluctuates around 120
+(within noise range 115-125). No violations.</li>
+<li><strong>Tick 500:</strong> Fault injected. Pressure drops to 10. The Always
+property is immediately violated. The <code>SetSignal</code> action fires
+(lower priority).</li>
+<li><strong>Tick 510:</strong> The low-pressure condition has persisted for 10
+consecutive ticks. The Persists property fires. <code>EmergencyStop</code>
+(higher priority) is selected, zeroing all signals.</li>
+<li><strong>Simulation halts</strong> after emergency stop.</li>
+</ol>
+<h3 id="sensor-model">Sensor model</h3>
+<p>Each sensor channel uses a deterministic Linear Congruential Generator
+(LCG) PRNG. Identical seeds produce identical output across runs,
+ensuring full reproducibility. Fault injection is configured by
+specifying a start tick, fault value, and optional end tick.</p>
+<pre><code class="language-rust"><span class="hl-type">SensorConfig</span> {
+    name: <span class="hl-str">&quot;airway_pressure&quot;</span>.into(),
+    base_value: <span class="hl-num">120</span>,
+    noise_amplitude: <span class="hl-num">5</span>,
+    fault_at_tick: <span class="hl-type">Some</span>(<span class="hl-num">500</span>),
+    fault_value: <span class="hl-num">10</span>,
+    fault_end_tick: <span class="hl-type">None</span>,
+    seed: <span class="hl-num">42</span>,
+}</code></pre>
+<hr />
+<h2 id="api-entry-points">API entry points</h2>
+<h3 id="running-a-simulation">Running a simulation</h3>
+<pre><code class="language-rust"><span class="hl-kw">use</span> mirr::mape_k::<span class="hl-op">*</span>;
+
+<span class="hl-kw">let</span> config <span class="hl-op">=</span> <span class="hl-type">SimConfig</span> {
+    sensors: <span class="hl-fn">vec</span><span class="hl-op">!</span>[
+        <span class="hl-type">SensorConfig</span> {
+            name: <span class="hl-str">&quot;airway_pressure&quot;</span>.into(),
+            base_value: <span class="hl-num">120</span>,
+            noise_amplitude: <span class="hl-num">5</span>,
+            fault_at_tick: <span class="hl-type">Some</span>(<span class="hl-num">500</span>),
+            fault_value: <span class="hl-num">10</span>,
+            fault_end_tick: <span class="hl-type">None</span>,
+            seed: <span class="hl-num">42</span>,
+        },
+    ],
+    properties: <span class="hl-fn">vec</span><span class="hl-op">!</span>[
+        <span class="hl-type">TemporalProperty</span>::<span class="hl-type">Always</span>(
+            <span class="hl-type">SignalPredicate</span>::<span class="hl-type">GreaterThan</span>(<span class="hl-str">&quot;airway_pressure&quot;</span>.into(), <span class="hl-num">50</span>),
+        ),
+        <span class="hl-type">TemporalProperty</span>::<span class="hl-type">Persists</span>(
+            <span class="hl-type">SignalPredicate</span>::<span class="hl-type">LessThan</span>(<span class="hl-str">&quot;airway_pressure&quot;</span>.into(), <span class="hl-num">50</span>),
+            <span class="hl-num">10</span>,
+        ),
+    ],
+    action_table: <span class="hl-fn">vec</span><span class="hl-op">!</span>[
+        <span class="hl-type">ActionEntry</span> {
+            trigger_property_idx: <span class="hl-num">0</span>,
+            action: <span class="hl-type">AdaptationAction</span>::<span class="hl-type">SetSignal</span> {
+                name: <span class="hl-str">&quot;clamp_valve&quot;</span>.into(),
+                value: <span class="hl-num">1</span>,
+            },
+            priority: <span class="hl-num">50</span>,
+            trigger_on: <span class="hl-type">TriggerCondition</span>::<span class="hl-type">OnViolation</span>,
+        },
+        <span class="hl-type">ActionEntry</span> {
+            trigger_property_idx: <span class="hl-num">1</span>,
+            action: <span class="hl-type">AdaptationAction</span>::<span class="hl-type">EmergencyStop</span>,
+            priority: <span class="hl-num">100</span>,
+            trigger_on: <span class="hl-type">TriggerCondition</span>::<span class="hl-type">OnSatisfaction</span>,
+        },
+    ],
+    window_size: <span class="hl-num">64</span>,
+    knowledge_capacity: <span class="hl-num">1024</span>,
+};
+
+<span class="hl-kw">let</span> <span class="hl-kw">mut</span> sim <span class="hl-op">=</span> <span class="hl-type">MapeKSimulator</span>::new(config);
+<span class="hl-kw">let</span> result <span class="hl-op">=</span> sim.run(<span class="hl-num">10_000</span>);
+<span class="hl-fn">println</span><span class="hl-op">!</span>(<span class="hl-str">&quot;{}&quot;</span>, result.summary());</code></pre>
+<h3 id="reading-the-result">Reading the result</h3>
+<p>The <code>SimResult</code> struct contains:</p>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>total_ticks</code></td><td><code>u64</code></td><td>Number of ticks simulated</td></tr>
+<tr><td><code>total_violations</code></td><td><code>u64</code></td><td>Total property violations detected</td></tr>
+<tr><td><code>total_adaptations</code></td><td><code>u64</code></td><td>Total adaptation actions executed</td></tr>
+<tr><td><code>emergency_triggered</code></td><td><code>bool</code></td><td>Whether emergency stop fired</td></tr>
+<tr><td><code>emergency_tick</code></td><td><code>Option&lt;u64&gt;</code></td><td>Tick at which emergency occurred</td></tr>
+<tr><td><code>final_signal_state</code></td><td><code>Vec&lt;(String, u64)&gt;</code></td><td>Signal values at end of simulation</td></tr>
+<tr><td><code>adaptation_log</code></td><td><code>Vec&lt;AdaptationRecord&gt;</code></td><td>Full audit trail from knowledge base</td></tr>
+</tbody></table>
+<h3 id="exporting-the-audit-trail">Exporting the audit trail</h3>
+<pre><code class="language-rust"><span class="hl-kw">let</span> json <span class="hl-op">=</span> sim.knowledge.to_json()?;
+std::fs::write(<span class="hl-str">&quot;audit_trail.json&quot;</span>, json)?;</code></pre>
+<hr />
+<h2 id="bounded-iteration-guarantees">Bounded iteration guarantees</h2>
+<p>Every loop and buffer in <code>src/mape_k/</code> is bounded by a named constant,
+per NASA Power-of-10 compliance:</p>
+<table><thead><tr><th>Constant</th><th>Value</th><th>Controls</th></tr></thead><tbody>
+<tr><td><code>MAX_TICKS</code></td><td>10,000,000</td><td>Maximum simulation ticks per run</td></tr>
+<tr><td><code>MAX_WINDOW_SIZE</code></td><td>1,024</td><td>Rolling window capacity per signal</td></tr>
+<tr><td><code>MAX_SENSORS</code></td><td>64</td><td>Maximum sensor channels</td></tr>
+<tr><td><code>MAX_PROPERTIES</code></td><td>256</td><td>Maximum temporal properties</td></tr>
+<tr><td><code>MAX_ACTION_ENTRIES</code></td><td>256</td><td>Maximum action table entries</td></tr>
+<tr><td><code>MAX_LOG_ENTRIES</code></td><td>4,096</td><td>Knowledge base capacity</td></tr>
+</tbody></table>
+<p>The tick count passed to <code>run()</code> is clamped to <code>MAX_TICKS</code>. Window
+sizes are clamped to <code>MAX_WINDOW_SIZE</code>. Excess properties and action
+entries beyond their limits are silently truncated.</p>
+<p>No unbounded iteration exists in the simulator. The main loop runs
+for at most <code>MAX_TICKS</code> iterations. Each inner phase (monitor, analyze,
+plan, execute) iterates over at most <code>MAX_SENSORS</code>, <code>MAX_PROPERTIES</code>,
+or <code>MAX_ACTION_ENTRIES</code> items respectively.</p>
+<hr />
+<h2 id="knowledge-base-and-audit-trail">Knowledge base and audit trail</h2>
+<p>Every adaptation decision is recorded as an <code>AdaptationRecord</code>:</p>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>tick</code></td><td><code>u64</code></td><td>When the adaptation occurred</td></tr>
+<tr><td><code>trigger_property_idx</code></td><td><code>usize</code></td><td>Which property triggered it</td></tr>
+<tr><td><code>trigger_description</code></td><td><code>String</code></td><td>Human-readable trigger label</td></tr>
+<tr><td><code>action</code></td><td><code>AdaptationAction</code></td><td>What was done</td></tr>
+<tr><td><code>success</code></td><td><code>bool</code></td><td>Whether it succeeded</td></tr>
+<tr><td><code>pre_state</code></td><td><code>Vec&lt;(String, u64)&gt;</code></td><td>Signal state before</td></tr>
+<tr><td><code>post_state</code></td><td><code>Vec&lt;(String, u64)&gt;</code></td><td>Signal state after</td></tr>
+</tbody></table>
+<p>The knowledge base serializes to JSON for integration with DO-254
+evidence trails and other certification workflows.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="tutorial.html">Tutorial</a> -- Getting started with MIRR</li>
+<li><a href="rspu_isa_spec.html">R-SPU Reference</a> -- Instruction set architecture</li>
+<li><a href="contributing.html">Contributing</a> -- Coding standards and campaign workflow</li>
+</ul>
+
+  </main>
+  </div>
+
+  <footer class="site-footer">MIRR &mdash; Safety-critical hardware, zero dependencies.</footer>
+</div>
+<script>
+(function() {
+  var path = location.pathname.split('/').pop() || 'index.html';
+  var links = document.querySelectorAll('.site-nav a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.remove('active');
+    if (links[i].getAttribute('href') === path) { links[i].classList.add('active'); }
+  }
+
+  var searchInput = document.getElementById('doc-search');
+  var resultsList = document.getElementById('search-results');
+  var searchData = null;
+  var lunrIndex = null;
+  var searchMap = {};
+  var MAX_RESULTS = 8;
+
+  if (searchInput) {
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.blur();
+        resultsList.innerHTML = '';
+      }
+    });
+    searchInput.addEventListener('focus', function() {
+      if (!searchData) {
+        fetch('search-index.json')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            searchData = data;
+            for (var k = 0; k < data.length; k++) { searchMap[data[k].url] = data[k]; }
+            if (typeof lunr !== 'undefined') {
+              lunrIndex = lunr(function() {
+                this.ref('url');
+                this.field('title', { boost: 3 });
+                this.field('headings', { boost: 2 });
+                this.field('snippet');
+                for (var m = 0; m < data.length; m++) {
+                  this.add({ url: data[m].url, title: data[m].title, headings: (data[m].headings || []).join(' '), snippet: data[m].snippet });
+                }
+              });
+            }
+          })
+          .catch(function() { searchData = []; });
+      }
+    });
+    function renderResult(entry) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = entry.url;
+      var title = document.createElement('span');
+      title.className = 'sr-title';
+      title.textContent = entry.title;
+      a.appendChild(title);
+      if (entry.snippet) {
+        var snip = document.createElement('span');
+        snip.className = 'sr-snippet';
+        snip.textContent = entry.snippet.substring(0, 120);
+        a.appendChild(snip);
+      }
+      li.appendChild(a);
+      return li;
+    }
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim();
+      resultsList.innerHTML = '';
+      if (!q || !searchData) return;
+      var results = [];
+      if (lunrIndex) {
+        try { results = lunrIndex.search(q); } catch(e) {}
+        if (results.length === 0) {
+          try { results = lunrIndex.search(q + '*'); } catch(e) {}
+        }
+        var count = 0;
+        for (var j = 0; j < results.length && count < MAX_RESULTS; j++) {
+          var entry = searchMap[results[j].ref];
+          if (entry) {
+            resultsList.appendChild(renderResult(entry));
+            count++;
+          }
+        }
+      } else {
+        var ql = q.toLowerCase();
+        var count2 = 0;
+        for (var j2 = 0; j2 < searchData.length && count2 < MAX_RESULTS; j2++) {
+          var entry2 = searchData[j2];
+          var hay = entry2.title.toLowerCase() + ' ' + entry2.snippet.toLowerCase() + ' ' + (entry2.headings || []).join(' ').toLowerCase();
+          if (hay.indexOf(ql) !== -1) {
+            resultsList.appendChild(renderResult(entry2));
+            count2++;
+          }
+        }
+      }
+      if (resultsList.children.length === 0 && q.length > 1) {
+        var noMatch = document.createElement('li');
+        noMatch.textContent = 'No results for "' + q + '"';
+        noMatch.style.cssText = 'color:var(--text-dim);font-style:italic;';
+        resultsList.appendChild(noMatch);
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-container')) resultsList.innerHTML = '';
+    });
+  }
+})();
+/* Scroll-spy: highlight active TOC link */
+(function() {
+  var tocLinks = document.querySelectorAll('.page-toc a');
+  if (!tocLinks.length) return;
+  var headings = [];
+  for (var i = 0; i < tocLinks.length; i++) {
+    var id = tocLinks[i].getAttribute('href');
+    if (id && id.charAt(0) === '#') {
+      var el = document.getElementById(id.substring(1));
+      if (el) headings.push({ el: el, link: tocLinks[i] });
+    }
+  }
+  if (!headings.length) return;
+  var ticking = false;
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = headings[0];
+    for (var j = 0; j < headings.length; j++) {
+      if (headings[j].el.offsetTop - 120 <= scrollY) active = headings[j];
+    }
+    for (var k = 0; k < headings.length; k++) {
+      headings[k].link.classList.remove('active');
+    }
+    if (active) active.link.classList.add('active');
+    ticking = false;
+  }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateActive); }
+  }, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

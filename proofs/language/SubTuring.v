@@ -83,23 +83,22 @@ Definition mirr_state_fixed : nat := MIRR_MAX_STATES.
 (** A Turing machine's state space GROWS with execution steps. *)
 Definition tm_state_at_step (n : nat) : nat := tm_state_space_after_steps n.
 
-(** Lemma: TM state space eventually exceeds MIRR's fixed state space. *)
 Lemma tm_exceeds_mirr : exists n, tm_state_at_step n > mirr_state_fixed.
 Proof.
-  (* tm_state_at_step n = (n+1)^2, which grows quadratically.
-     mirr_state_fixed = 2^MIRR_MAX_STATE_BITS, which is constant.
-     For sufficiently large n, (n+1)^2 > 2^MIRR_MAX_STATE_BITS. *)
-  exists (MIRR_MAX_STATES).
+  exists mirr_state_fixed.
   unfold tm_state_at_step.
   unfold tm_state_space_after_steps.
   unfold tm_max_tape_after_steps.
-  unfold mirr_state_fixed.
-  unfold MIRR_MAX_STATES.
-  (* (MIRR_MAX_STATES + 1)^2 > MIRR_MAX_STATES
-     = MIRR_MAX_STATES^2 + 2*MIRR_MAX_STATES + 1 > MIRR_MAX_STATES
-     which is clearly true for MIRR_MAX_STATES >= 1 *)
-  apply Nat.lt_le_incl.
-  apply Nat.lt_succ_diag_r.
+  generalize mirr_state_fixed as M.
+  intro M.
+  assert (H1: M < M + 1) by apply Nat.lt_succ_diag_r.
+  assert (H2: M + 1 <= (M + 1) * (M + 1)). {
+    rewrite <- (Nat.mul_1_r (M + 1)) at 1.
+    apply Nat.mul_le_mono_l.
+    rewrite Nat.add_comm.
+    apply Nat.le_add_l.
+  }
+  apply Nat.lt_le_trans with (m := M + 1); assumption.
 Qed.
 
 (** Lemma: MIRR's state space is a constant (does not grow). *)
@@ -133,69 +132,40 @@ Theorem not_turing_complete :
     tm_state_at_step steps > mirr_states.
 Proof.
   intros mirr_states Hbound.
-  (* Choose steps large enough that (steps+1)^2 > mirr_states *)
   exists mirr_states.
-  unfold tm_state_at_step.
-  unfold tm_state_space_after_steps.
-  unfold tm_max_tape_after_steps.
-  (* (mirr_states + 1)^2 = mirr_states^2 + 2*mirr_states + 1
-     We need to show this > mirr_states.
-     Since mirr_states^2 >= mirr_states for mirr_states >= 1,
-     and 2*mirr_states + 1 > 0, the result follows. *)
-  induction mirr_states.
-  - (* mirr_states = 0: (0+1)^2 = 1 > 0 *)
-    simpl. apply Nat.lt_0_succ.
-  - (* mirr_states = S n: (S n + 1)^2 > S n *)
-    (* (S n + 1)^2 = (S n)^2 + 2*(S n) + 1 > S n *)
-    simpl.
-    apply Nat.lt_le_incl.
-    apply Nat.lt_succ_diag_r.
+  unfold tm_state_at_step, tm_state_space_after_steps, tm_max_tape_after_steps.
+  assert (H1: mirr_states < mirr_states + 1) by apply Nat.lt_succ_diag_r.
+  assert (H2: mirr_states + 1 <= (mirr_states + 1) * (mirr_states + 1)). {
+    rewrite <- (Nat.mul_1_r (mirr_states + 1)) at 1.
+    apply Nat.mul_le_mono_l.
+    rewrite Nat.add_comm.
+    apply Nat.le_add_l.
+  }
+  apply Nat.lt_le_trans with (m := mirr_states + 1); assumption.
 Qed.
 
-(** Corollary: Gödel boundary.
-    MIRR cannot express Gödelian incompleteness because it cannot
-    express self-referential statements about unbounded computation.
-    Gödel's First Incompleteness Theorem requires a system strong
-    enough to express arithmetic (which is Turing-complete).
-    MIRR is below this threshold. *)
+(** Corollary: Gödel boundary. *)
 Corollary godel_boundary :
   forall mirr_states : nat,
   mirr_states <= MIRR_MAX_STATES ->
-  (* MIRR cannot simulate arithmetic (which requires unbounded state) *)
   exists computation, ~ (mirr_states >= tm_state_at_step computation).
 Proof.
   intros mirr_states Hbound.
   exists mirr_states.
   intro Hcontra.
-  (* If mirr_states >= tm_state_at_step mirr_states,
-     then mirr_states >= (mirr_states + 1)^2,
-     which is impossible since (mirr_states + 1)^2 > mirr_states. *)
-  unfold tm_state_at_step in Hcontra.
-  unfold tm_state_space_after_steps in Hcontra.
-  unfold tm_max_tape_after_steps in Hcontra.
-  (* mirr_states >= (mirr_states + 1)^2 implies mirr_states >= mirr_states^2 + 2*mirr_states + 1
-     But mirr_states^2 + 2*mirr_states + 1 > mirr_states for all mirr_states. *)
-  induction mirr_states.
-  - (* 0 >= 1^2 = 1: contradiction *)
-    inversion Hcontra.
-  - (* S n >= (S n + 1)^2: contradiction *)
-    (* (S n + 1)^2 = (S n)^2 + 2*(S n) + 1 > S n *)
-    apply Nat.lt_le_incl in Hcontra.
-    (* S n >= (S n + 1)^2 > S n: contradiction *)
-    apply Nat.lt_irrefl with (n := S mirr_states).
-    (* We need S n < (S n + 1)^2 *)
-    (* This follows from (S n + 1)^2 = (S n)^2 + 2*(S n) + 1 > S n *)
-    apply Nat.lt_le_trans with (m := S mirr_states * S mirr_states).
-    + (* S n < (S n)^2 for S n >= 2 *)
-      destruct mirr_states.
-      * (* 1 < 1: false, but Hcontra says 1 >= 4, contradiction *)
-        inversion Hcontra.
-      * (* S (S n) < (S (S n))^2: true for n >= 0 *)
-        simpl. apply Nat.lt_succ_diag_r.
-    + (* (S n)^2 <= (S n + 1)^2 *)
-      apply Nat.mul_le_mono.
-      * apply Nat.le_add_r.
-      * apply Nat.le_add_r.
+  unfold tm_state_at_step, tm_state_space_after_steps, tm_max_tape_after_steps in Hcontra.
+  assert (H1: mirr_states < mirr_states + 1) by apply Nat.lt_succ_diag_r.
+  assert (H2: mirr_states + 1 <= (mirr_states + 1) * (mirr_states + 1)). {
+    rewrite <- (Nat.mul_1_r (mirr_states + 1)) at 1.
+    apply Nat.mul_le_mono_l.
+    rewrite Nat.add_comm.
+    apply Nat.le_add_l.
+  }
+  assert (H3: mirr_states < (mirr_states + 1) * (mirr_states + 1)). {
+    apply Nat.lt_le_trans with (m := mirr_states + 1); assumption.
+  }
+  apply Nat.lt_nge in H3.
+  apply H3. apply Hcontra.
 Qed.
 
 (** Final corollary: MIRR is provably sub-Turing.
