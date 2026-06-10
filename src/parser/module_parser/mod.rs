@@ -75,7 +75,7 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
         if !in_quotes && !in_comment && !in_interpolation && (ch == ';' || ch == '{' || ch == '}') {
             // Only add newline if NOT at the very end and NOT already followed by newline
             match chars.peek() {
-                Some(&'\n') | None => {}
+                Some(&'\n') | Some(&'\r') | None => {}
                 _ => expanded.push('\n'),
             }
         }

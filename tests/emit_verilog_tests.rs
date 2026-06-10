@@ -180,6 +180,7 @@ fn prev_in_reflex_result() -> PipelineResult {
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
+        file_table: mirrc::span::FileTable::new(),
     }
 }
 

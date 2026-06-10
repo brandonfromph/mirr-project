@@ -40,6 +40,7 @@ fn result_with_module_name(module_name: &str) -> PipelineResult {
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
+        file_table: mirrc::span::FileTable::new(),
     }
 }
 

@@ -7,7 +7,9 @@ use crate::ast::program::Module;
 use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
 use crate::ast::types::SignalKind;
 use crate::emit::fpga_target::MAX_SYNC_STAGES;
+use crate::emit::verilog::emit_source_comment;
 use crate::pipeline::PipelineResult;
+use crate::span::FileTable;
 
 // -----------------------------------------------------------------------
 // Module structure helpers
@@ -34,7 +36,8 @@ pub(super) fn emit_pattern_annotations(module: &Module, out: &mut String) {
     out.push('\n');
 }
 
-pub(super) fn emit_module_decl(module: &Module, out: &mut String) {
+pub(super) fn emit_module_decl(module: &Module, ft: &FileTable, out: &mut String) {
+    emit_source_comment(module.span.as_ref(), ft, out);
     out.push_str(&format!("module {} (\n", module.name));
 
     let has_clk = module.signals.iter().any(|s| s.name == "clk");
@@ -72,13 +75,14 @@ pub(super) fn emit_module_decl(module: &Module, out: &mut String) {
     out.push_str(");\n\n");
 }
 
-pub(super) fn emit_internal_signals(module: &Module, out: &mut String) {
+pub(super) fn emit_internal_signals(module: &Module, ft: &FileTable, out: &mut String) {
     let internals: Vec<_> =
         module.signals.iter().filter(|s| s.kind == SignalKind::Internal).collect();
 
     if !internals.is_empty() {
         out.push_str("  // Internal signals\n");
         for s in &internals {
+            emit_source_comment(s.span.as_ref(), ft, out);
             if let Some(ref origin) = s.origin {
                 out.push_str(&format!("  // Pattern: {origin}\n"));
             }
@@ -103,7 +107,12 @@ pub(super) fn module_has_rst_n(module: &Module) -> bool {
 }
 
 /// Emit SVA assertion blocks for all property declarations.
-pub(super) fn emit_property_assertions(module: &Module, has_rst_n: bool, out: &mut String) {
+pub(super) fn emit_property_assertions(
+    module: &Module,
+    has_rst_n: bool,
+    ft: &FileTable,
+    out: &mut String,
+) {
     if module.properties.is_empty() {
         return;
     }
@@ -111,12 +120,18 @@ pub(super) fn emit_property_assertions(module: &Module, has_rst_n: bool, out: &m
     out.push_str("  // ── Safety Properties (SVA) ──\n\n");
 
     for prop in &module.properties {
-        emit_single_property(prop, has_rst_n, out);
+        emit_single_property(prop, has_rst_n, ft, out);
     }
 }
 
 /// Emit a single SVA `assert property` statement.
-pub(super) fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &mut String) {
+pub(super) fn emit_single_property(
+    prop: &PropertyDecl,
+    has_rst_n: bool,
+    ft: &FileTable,
+    out: &mut String,
+) {
+    emit_source_comment(prop.span.as_ref(), ft, out);
     if let Some(ref origin) = prop.origin {
         out.push_str(&format!("  // Pattern: {origin}\n"));
     }
@@ -304,6 +319,7 @@ pub fn emit_synchronizer_chains(
 /// Used by `--emit sva` standalone mode.
 pub fn emit_sva_only(result: &PipelineResult) -> String {
     let module = &result.program.module;
+    let ft = &result.file_table;
     let mut out = String::with_capacity(1024);
 
     out.push_str("// Auto-generated SVA assertions from MIRR compiler\n");
@@ -312,7 +328,7 @@ pub fn emit_sva_only(result: &PipelineResult) -> String {
     let has_rst_n = module_has_rst_n(module);
 
     for prop in &module.properties {
-        emit_single_property(prop, has_rst_n, &mut out);
+        emit_single_property(prop, has_rst_n, ft, &mut out);
     }
 
     out

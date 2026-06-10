@@ -5,11 +5,18 @@
 
 use crate::ast::program::Module;
 use crate::ast::types::BinaryOp;
+use crate::emit::verilog::emit_source_comment;
+use crate::span::FileTable;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
 use super::MAX_SR_STAGES_INLINE;
 
-pub(super) fn emit_temporal_logic(module: &Module, netlist: &TemporalNetlist, out: &mut String) {
+pub(super) fn emit_temporal_logic(
+    module: &Module,
+    netlist: &TemporalNetlist,
+    ft: &FileTable,
+    out: &mut String,
+) {
     out.push_str("  // ── Temporal Guards ──\n\n");
 
     // Declare registers for ALL prev() back-references found in the module
@@ -51,14 +58,21 @@ pub(super) fn emit_temporal_logic(module: &Module, netlist: &TemporalNetlist, ou
     out.push('\n');
 
     for guard in &netlist.guards {
+        // Find the AST guard to get its span
+        let ast_guard = module.guards.iter().find(|g| g.name == guard.name());
+        let span = ast_guard.and_then(|g| g.span.as_ref());
+
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
+                emit_source_comment(span, ft, out);
                 emit_shift_register_guard(sr, out);
             }
             CompiledGuard::Counter(cg) => {
+                emit_source_comment(span, ft, out);
                 emit_counter_guard(cg, out);
             }
             CompiledGuard::Complex(cx) => {
+                emit_source_comment(span, ft, out);
                 out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
                 out.push_str(&format!("  logic {};\n", cx.output_signal));
                 out.push_str(&format!(
@@ -68,6 +82,7 @@ pub(super) fn emit_temporal_logic(module: &Module, netlist: &TemporalNetlist, ou
                 ));
             }
             CompiledGuard::DynamicCounter(dc) => {
+                emit_source_comment(span, ft, out);
                 emit_dynamic_counter_guard(dc, out);
             }
         }
@@ -216,6 +231,7 @@ pub(super) fn emit_reflex_logic(
     dsp_reflexes: &std::collections::HashSet<String>,
     dsp_attr: Option<&str>,
     hls_result: Option<&crate::hls::HlsResult>,
+    ft: &FileTable,
     out: &mut String,
 ) {
     if module.reflexes.is_empty() {
@@ -299,6 +315,7 @@ pub(super) fn emit_reflex_logic(
                         };
                         for a in &r.assignments {
                             if a.target == *sig {
+                                emit_source_comment(r.span.as_ref(), ft, out);
                                 out.push_str(&format!(
                                     "          if ({}) {} <= {};\n",
                                     guard_cond,
@@ -374,6 +391,7 @@ pub(super) fn emit_reflex_logic(
                 // Find the assignment to THIS signal in this reflex.
                 for a in &r.assignments {
                     if a.target == sig {
+                        emit_source_comment(r.span.as_ref(), ft, out);
                         out.push_str(&format!(
                             "      if ({}) {} <= {};\n",
                             guard_cond,

@@ -194,6 +194,7 @@ mod tests {
             symbolic_result: None,
             mape_k_rtl: None,
             hls_result: None,
+            file_table: crate::span::FileTable::new(),
         }
     }
 

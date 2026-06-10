@@ -544,7 +544,7 @@ fn sva_eventually_within_output() {
     let src = mirr_with_property("eventually within 10 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let sv = mirrc::emit::verilog::emit_sv(&result);
-    assert!(sv.contains("##[1:10]"), "Expected '##[1:10]' in SVA: {sv}");
+    assert!(sv.contains("prop_p_timer < 10"), "Expected 'prop_p_timer < 10' in SVA: {sv}");
 }
 
 #[test]
@@ -552,7 +552,10 @@ fn sva_followed_by_output() {
     let src = mirr_with_property("always (x > 100 followed_by 5 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let sv = mirrc::emit::verilog::emit_sv(&result);
-    assert!(sv.contains("|-> ##5"), "Expected '|-> ##5' in SVA: {sv}");
+    assert!(
+        sv.contains("prop_p_trig_shift[4] |-> y"),
+        "Expected shift register logic in SVA: {sv}"
+    );
 }
 
 #[test]

@@ -17,6 +17,7 @@ use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, UnaryOp};
 use crate::emit::fpga_target::FpgaTarget;
 use crate::pipeline::PipelineResult;
+use crate::span::{FileTable, Span};
 
 use crate::ast::MAX_EXPR_NODES;
 
@@ -67,10 +68,12 @@ fn emit_sv_full(
     };
     let dsp_attr = if dsp_threshold > 0 { target.map(|t| t.dsp_attribute()) } else { None };
 
+    let ft = &result.file_table;
+
     sva::emit_header(&mut out);
     sva::emit_pattern_annotations(module, &mut out);
-    sva::emit_module_decl(module, &mut out);
-    sva::emit_internal_signals(module, &mut out);
+    sva::emit_module_decl(module, ft, &mut out);
+    sva::emit_internal_signals(module, ft, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
         if !netlist.signals.is_empty() {
@@ -81,7 +84,7 @@ fn emit_sv_full(
             }
             out.push('\n');
         }
-        temporal::emit_temporal_logic(module, netlist, &mut out);
+        temporal::emit_temporal_logic(module, netlist, ft, &mut out);
     }
 
     temporal::emit_reflex_logic(
@@ -89,12 +92,14 @@ fn emit_sv_full(
         &dsp_reflexes,
         dsp_attr,
         result.hls_result.as_ref(),
+        ft,
         &mut out,
     );
 
     if !module.pattern_calls.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
         for (i, call) in module.pattern_calls.iter().enumerate() {
+            emit_source_comment(call.span.as_ref(), ft, &mut out);
             // Use the unqualified name for the module instantiation (e.g. 'ram' from 'ram::ram')
             let mod_name = call.pattern_name.split("::").last().unwrap_or(&call.pattern_name);
             let inst_name = format!("{}_{}", mod_name, i);
@@ -122,7 +127,7 @@ fn emit_sv_full(
 
     if !strip_sva {
         let has_rst_n = sva::module_has_rst_n(module);
-        sva::emit_property_assertions(module, has_rst_n, &mut out);
+        sva::emit_property_assertions(module, has_rst_n, ft, &mut out);
     }
 
     sva::emit_module_end(&mut out);
@@ -178,8 +183,9 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
     out.push_str(");\n\n");
 
     // Emit all SVA properties.
+    let ft = &result.file_table;
     for prop in &module.properties {
-        sva::emit_single_property(prop, has_rst_n, &mut out);
+        sva::emit_single_property(prop, has_rst_n, ft, &mut out);
     }
 
     out.push_str("endmodule\n\n");
@@ -193,6 +199,14 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
 // -----------------------------------------------------------------------
 // Shared helpers (used by both temporal.rs and sva.rs submodules)
 // -----------------------------------------------------------------------
+
+/// Emit a source location comment if span data is available.
+pub(crate) fn emit_source_comment(span: Option<&Span>, table: &FileTable, out: &mut String) {
+    if let Some(s) = span {
+        let loc = s.display_location(table);
+        out.push_str(&format!("  // source: {loc}\n"));
+    }
+}
 
 /// Emit an Expr as an inline SystemVerilog expression.
 ///

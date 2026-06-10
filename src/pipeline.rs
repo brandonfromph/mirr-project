@@ -12,6 +12,7 @@ use crate::ast::MirrProgram;
 use crate::emit::rspu_isa::RspuProgram;
 use crate::error::PipelineErrors;
 use crate::simplify::SimplifyStats;
+use crate::span::FileTable;
 use crate::temporal::low_level_ir::TemporalNetlist;
 use crate::width::{self, SccWidthResult};
 
@@ -60,6 +61,9 @@ pub struct PipelineConfig {
     pub logic_optimize: bool,
     /// Base directory for resolving imports during ECS hydration.
     pub base_dir: Option<std::path::PathBuf>,
+    /// Source file path for traceability (plumbed into Span.file_id).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_file: Option<String>,
 }
 
 impl Default for PipelineConfig {
@@ -84,6 +88,7 @@ impl Default for PipelineConfig {
             hls: false,
             logic_optimize: false,
             base_dir: None,
+            source_file: None,
         }
     }
 }
@@ -121,6 +126,8 @@ pub struct PipelineResult {
     pub mape_k_rtl: Option<String>,
     /// MEGA-12 HLS pass result (None if stage was skipped).
     pub hls_result: Option<crate::hls::HlsResult>,
+    /// String-interned file path table for source traceability.
+    pub file_table: FileTable,
 }
 
 impl PipelineResult {
@@ -137,6 +144,22 @@ pub fn run_pipeline(
 ) -> Result<PipelineResult, PipelineErrors> {
     let program = crate::parser::parse_mirr(source)?;
     run_pipeline_on_program(program, config)
+}
+
+/// Run the full compilation pipeline with a source file path for traceability.
+pub fn run_pipeline_with_file(
+    source: &str,
+    source_file: &str,
+    config: &PipelineConfig,
+) -> Result<PipelineResult, PipelineErrors> {
+    let mut file_table = FileTable::new();
+    let file_id = file_table.intern(source_file);
+    let mut program = crate::parser::parse_mirr(source)?;
+    // Stamp all spans in the parsed program with the source file ID.
+    stamp_file_id(&mut program, file_id);
+    let mut result = run_pipeline_on_program(program, config)?;
+    result.file_table = file_table;
+    Ok(result)
 }
 
 /// Run the compilation pipeline on a pre-parsed (and potentially merged) MirrProgram.
@@ -287,6 +310,7 @@ pub fn run_pipeline_on_program(
         symbolic_result,
         mape_k_rtl: None,
         hls_result: None,
+        file_table: FileTable::new(),
     };
 
     // Stage 5c: HLS pass (optional, MEGA-12).
@@ -492,4 +516,63 @@ fn load_imports_recursive_for_pipeline(
         }
     }
     Ok(())
+}
+
+/// Stamp all existing spans in a parsed program with the given file ID.
+///
+/// This walks signals, guards, reflexes, properties, and pattern calls,
+/// setting `span.file_id = Some(file_id)` on every span that was created
+/// by the parser (which defaults file_id to None for inline sources).
+fn stamp_file_id(program: &mut MirrProgram, file_id: u32) {
+    // Module span
+    if let Some(ref mut s) = program.module.span {
+        s.file_id = Some(file_id);
+    }
+
+    // Signals
+    for sig in &mut program.module.signals {
+        if let Some(ref mut s) = sig.span {
+            s.file_id = Some(file_id);
+        }
+    }
+
+    // Guards
+    for guard in &mut program.module.guards {
+        if let Some(ref mut s) = guard.span {
+            s.file_id = Some(file_id);
+        }
+    }
+
+    // Reflexes and their assignments
+    for reflex in &mut program.module.reflexes {
+        if let Some(ref mut s) = reflex.span {
+            s.file_id = Some(file_id);
+        }
+        for assign in &mut reflex.assignments {
+            if let Some(ref mut s) = assign.span {
+                s.file_id = Some(file_id);
+            }
+        }
+    }
+
+    // Properties
+    for prop in &mut program.module.properties {
+        if let Some(ref mut s) = prop.span {
+            s.file_id = Some(file_id);
+        }
+    }
+
+    // Pattern calls
+    for call in &mut program.module.pattern_calls {
+        if let Some(ref mut s) = call.span {
+            s.file_id = Some(file_id);
+        }
+    }
+
+    // Import declarations
+    for import in &mut program.imports {
+        if let Some(ref mut s) = import.span {
+            s.file_id = Some(file_id);
+        }
+    }
 }

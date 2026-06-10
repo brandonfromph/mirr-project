@@ -152,6 +152,7 @@ fn result_from_module(module: Module) -> PipelineResult {
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
+        file_table: mirrc::span::FileTable::new(),
     }
 }
 
@@ -173,6 +174,7 @@ fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResu
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
+        file_table: mirrc::span::FileTable::new(),
     }
 }
 

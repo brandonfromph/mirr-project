@@ -140,6 +140,7 @@ fn default_config() -> PipelineConfig {
         hls: false,
         logic_optimize: false,
         base_dir: None,
+        source_file: None,
     }
 }
 

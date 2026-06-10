@@ -63,6 +63,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         symbolic_result: None,
         mape_k_rtl: None,
         hls_result: None,
+        file_table: mirrc::span::FileTable::new(),
     }
 }
 
@@ -85,6 +86,7 @@ fn parse_to_pipeline(source: &str) -> PipelineResult {
         symbolic_result: None,
         mape_k_rtl: None,
         hls_result: None,
+        file_table: mirrc::span::FileTable::new(),
     }
 }
 
