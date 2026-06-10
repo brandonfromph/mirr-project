@@ -166,7 +166,7 @@ fn test_i_type_field_layout_prev() {
 #[test]
 fn test_load_input_parametric_ports() {
     let target = TargetSpec::from_config(&None);
-    for port in vec![0, 1, 10, 255, 1023] {
+    for port in [0, 1, 10, 255, 1023] {
         let instr = RspuInstruction::LoadInput { dst: 0, port };
         let enc = encode(&instr, &target).expect("LoadInput encode must succeed");
         let word = enc.0;
@@ -178,7 +178,7 @@ fn test_load_input_parametric_ports() {
 #[test]
 fn test_store_output_parametric_ports() {
     let target = TargetSpec::from_config(&None);
-    for port in vec![0, 1, 10, 255, 1023] {
+    for port in [0, 1, 10, 255, 1023] {
         let instr = RspuInstruction::StoreOutput { src: 0, port };
         let enc = encode(&instr, &target).expect("StoreOutput encode must succeed");
         let word = enc.0;
@@ -194,7 +194,7 @@ fn test_mov_parametric_registers() {
     let dst_shift = op_shift - target.reg_bits;
     let src1_shift = dst_shift - target.reg_bits;
 
-    for (dst, src) in vec![(0, 1), (1, 0), (255, 512), (1023, 1022)] {
+    for (dst, src) in [(0, 1), (1, 0), (255, 512), (1023, 1022)] {
         let instr = RspuInstruction::Mov { dst, src };
         let enc = encode(&instr, &target).expect("Mov encode must succeed");
         let word = enc.0;
@@ -208,7 +208,7 @@ fn test_mov_parametric_registers() {
 #[test]
 fn test_load_imm_parametric_values() {
     let target = TargetSpec::from_config(&None);
-    for value in vec![0, 1, 0xFFF, 0x3FFFFFF] {
+    for value in [0, 1, 0xFFF, 0x3FFFFFF] {
         let instr = RspuInstruction::LoadImm { dst: 0, value, width: 32 };
         let enc = encode(&instr, &target).expect("LoadImm encode must succeed");
         let word = enc.0;
@@ -243,7 +243,7 @@ fn test_alu_unary_negate_parametric() {
 #[test]
 fn test_sr_init_parametric_length() {
     let target = TargetSpec::from_config(&None);
-    for length in vec![1, 8, 32, 64] {
+    for length in [1, 8, 32, 64] {
         let instr = RspuInstruction::SrInit { guard: 5, length, cond: 10 };
         let enc = encode(&instr, &target).expect("SrInit encode must succeed");
         let word = enc.0;
@@ -258,7 +258,7 @@ fn test_sr_tick_parametric_guard() {
     let op_shift = target.word_size - 6;
     let guard_shift = op_shift - target.guard_bits;
 
-    for guard in vec![0, 1, 15, 63] {
+    for guard in [0, 1, 15, 63] {
         let instr = RspuInstruction::SrTick { guard };
         let enc = encode(&instr, &target).expect("SrTick encode must succeed");
         let word = enc.0;
@@ -286,7 +286,7 @@ fn test_sr_query_parametric() {
 #[test]
 fn test_ctr_init_parametric_target() {
     let target = TargetSpec::from_config(&None);
-    for tgt in vec![1, 1000, 0x3FFFFFF] {
+    for tgt in [1, 1000, 0x3FFFFFF] {
         let instr = RspuInstruction::CtrInit { guard: 2, target: tgt, cond: 5 };
         let enc = encode(&instr, &target).expect("CtrInit encode must succeed");
         let word = enc.0;
@@ -429,7 +429,7 @@ fn test_tag_read_parametric() {
 #[test]
 fn test_prev_parametric_delay() {
     let target = TargetSpec::from_config(&None);
-    for delay in vec![1, 10, 64, 0x3FFFFFF] {
+    for delay in [1, 10, 64, 0x3FFFFFF] {
         let instr = RspuInstruction::Prev { dst: 0, signal: 0, delay };
         let enc = encode(&instr, &target).expect("Prev encode must succeed");
         let imm = enc.0 & target.imm_mask;
@@ -440,7 +440,7 @@ fn test_prev_parametric_delay() {
 #[test]
 fn test_trap_parametric_codes() {
     let target = TargetSpec::from_config(&None);
-    for code in vec![0, 1, 127, 255] {
+    for code in [0, 1, 127, 255] {
         let instr = RspuInstruction::Trap { code };
         let enc = encode(&instr, &target).expect("Trap encode must succeed");
         let imm = enc.0 & 0xFF;

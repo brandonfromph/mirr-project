@@ -2134,9 +2134,9 @@ module rspu_top (
 
   // ── Temporal Guards ──
 
-  logic signed [63:0] physics_pendulum_194_angular_velocity_d1;
-  logic signed [63:0] physics_pendulum_194_angle_internal_d1;
   logic signed [63:0] robot_angle_d1;
+  logic signed [63:0] physics_pendulum_194_angle_internal_d1;
+  logic signed [63:0] physics_pendulum_194_angular_velocity_d1;
 
   // Guard: fabric_noc_router_0_n1 — when !tx_valid_1 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n1_cond;

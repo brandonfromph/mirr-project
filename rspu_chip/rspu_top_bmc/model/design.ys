@@ -1,6 +1,6 @@
 # running in rspu_chip/rspu_top_bmc/src/
-read_verilog -sv -formal regfile.sv
 read_verilog -sv -formal ram.sv
+read_verilog -sv -formal regfile.sv
 read_verilog -sv -formal rspu_top_synth.sv
 read_verilog -sv -formal rspu_top_sva_bind.sv
 prep -top rspu_top

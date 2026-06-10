@@ -1,0 +1,6 @@
+read_verilog -sv rspu_chip/rspu_top_synth.sv
+hierarchy -top rspu_top
+proc; opt; memory; opt; fsm; opt;
+abc -g AND,NAND,OR,NOR,XOR,XNOR,MUX
+opt_clean
+write_verilog -noattr rspu_chip/rspu_top_opt_synth.sv

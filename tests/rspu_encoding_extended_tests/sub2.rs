@@ -102,7 +102,7 @@ fn test_alu_imm_field_encoding() {
 
 #[test]
 fn test_alu_imm_boundary_values() {
-    let target = TargetSpec::from_config(&None);
+    let _target = TargetSpec::from_config(&None);
     let instrs = vec![
         RspuInstruction::AluImm { op: AluOp::Add, dst: 0, a: 0, imm: 0 },
         RspuInstruction::AluImm { op: AluOp::Add, dst: 1023, a: 1023, imm: 1023 },
@@ -115,7 +115,7 @@ fn test_alu_imm_boundary_values() {
 #[test]
 fn test_alu_unary_funct_codes() {
     let target = TargetSpec::from_config(&None);
-    let ops = vec![AluUnaryOp::Not, AluUnaryOp::Negate];
+    let ops = [AluUnaryOp::Not, AluUnaryOp::Negate];
     for i in 0..2 {
         let instr = RspuInstruction::AluUnary { op: ops[i], dst: 0, src: 0 };
         let enc = encode(&instr, &target).expect("ALU_UNARY encode must succeed");
@@ -161,7 +161,7 @@ fn test_e706_alu_imm_immediate_overflow() {
 
 #[test]
 fn test_e706_alu_b_register_overflow() {
-    let target = TargetSpec::from_config(&None);
+    let _target = TargetSpec::from_config(&None);
     // Dst, a, b use reg_mask.
     // If we passed a RegId > 1023, it would overflow.
     // But RegId is u16, and max_registers() is 1024.

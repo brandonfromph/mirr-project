@@ -3,7 +3,7 @@
 //! simulate, and tagged-register operations. All loops bounded (NASA Power-of-10).
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use mirrc::emit::rspu_isa::{AluOp, AluUnaryOp, MAX_SIM_CYCLES};
+use mirrc::emit::rspu_isa::{AluOp, AluUnaryOp, TargetSpec, MAX_SIM_CYCLES};
 use mirrc::emit::rspu_tagged::check_alu_tags;
 use mirrc::{
     decode, emit_binary, encode, RegisterFile, RspuInstruction, RspuProgram, RspuSimulator,
@@ -20,6 +20,7 @@ const MAX_BENCH_REGS: usize = 64;
 
 fn prog(instrs: Vec<RspuInstruction>, regs: usize, guards: usize) -> RspuProgram {
     RspuProgram {
+        target: None,
         instructions: instrs,
         registers_used: regs,
         guards_used: guards,
@@ -48,7 +49,7 @@ fn small_program() -> RspuProgram {
 fn medium_program() -> RspuProgram {
     let mut v = Vec::with_capacity(33);
     for i in 0..32_usize {
-        let r = (i % 63) as u8;
+        let r = (i % 63) as u16;
         if i % 2 == 0 {
             v.push(RspuInstruction::LoadImm { dst: r, value: i as u64, width: 8 });
         } else {
@@ -63,7 +64,7 @@ fn medium_program() -> RspuProgram {
 fn large_program() -> RspuProgram {
     let mut v = Vec::with_capacity(MAX_BENCH_INSTRS + 1);
     for i in 0..MAX_BENCH_INSTRS {
-        let r = (i % 63) as u8;
+        let r = (i % 63) as u16;
         match i % 3 {
             0 => v.push(RspuInstruction::LoadImm { dst: r, value: i as u64, width: 8 }),
             1 => v.push(RspuInstruction::Alu { op: AluOp::Add, dst: r, a: r, b: 0 }),
@@ -134,16 +135,17 @@ fn all_alu_ops() -> Vec<AluOp> {
 // --- Benchmark groups ---
 
 fn bench_rspu_encode(c: &mut Criterion) {
+    let target = TargetSpec::from_config(&None);
     let opcodes = all_30_opcodes();
     let mut g = c.benchmark_group("rspu_encode");
     g.bench_function("single", |b| {
         let instr = RspuInstruction::LoadInput { dst: 0, port: 0 };
-        b.iter(|| encode(black_box(&instr)))
+        b.iter(|| encode(black_box(&instr), &target))
     });
     g.bench_function("all_30_opcodes", |b| {
         b.iter(|| {
             for instr in &opcodes {
-                let _ = encode(black_box(instr));
+                let _ = encode(black_box(instr), &target);
             }
         })
     });
@@ -151,14 +153,15 @@ fn bench_rspu_encode(c: &mut Criterion) {
 }
 
 fn bench_rspu_decode(c: &mut Criterion) {
-    let encoded: Vec<u32> = all_30_opcodes().iter().map(|i| encode(i).unwrap().0).collect();
+    let target = TargetSpec::from_config(&None);
+    let encoded: Vec<u64> = all_30_opcodes().iter().map(|i| encode(i, &target).unwrap().0).collect();
     let word = encoded[0];
     let mut g = c.benchmark_group("rspu_decode");
-    g.bench_function("single", |b| b.iter(|| decode(black_box(word))));
+    g.bench_function("single", |b| b.iter(|| decode(black_box(word), &target)));
     g.bench_function("all_30_opcodes", |b| {
         b.iter(|| {
             for &word in &encoded {
-                let _ = decode(black_box(word));
+                let _ = decode(black_box(word), &target);
             }
         })
     });
@@ -197,12 +200,12 @@ fn bench_rspu_tagged(c: &mut Criterion) {
             let mut rf = RegisterFile::new();
             for i in 0..MAX_BENCH_REGS {
                 rf.write(
-                    i as u8,
+                    i as u16,
                     TaggedWord::from_literal(i as u64, TypeTag::Unsigned { width: 16 }),
                 );
             }
             for i in 0..MAX_BENCH_REGS {
-                black_box(rf.read(i as u8));
+                black_box(rf.read(i as u16));
             }
         })
     });

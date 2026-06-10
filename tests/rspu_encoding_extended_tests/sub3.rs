@@ -2,7 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-use super::roundtrip_check;
+// Unused import removed
 use mirrc::emit::rspu_encoding::{encode, TargetSpec};
 use mirrc::emit::rspu_isa::{AluUnaryOp, RspuInstruction};
 

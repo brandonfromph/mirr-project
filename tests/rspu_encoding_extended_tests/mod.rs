@@ -15,26 +15,16 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_range_loop, clippy::clone_on_copy)]
 
-use mirrc::emit::rspu_encoding::{decode, emit_binary, encode, EncodedInstruction};
+use mirrc::emit::rspu_encoding::{decode, encode};
 use mirrc::emit::rspu_isa::{
-    AluOp, AluUnaryOp, RspuInstruction, RspuProgram, TargetSpec, MAX_INSTRUCTIONS,
+    RspuInstruction, TargetSpec,
 };
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA Power-of-10)
 // ---------------------------------------------------------------------------
 
-/// Maximum register values to iterate over in parametric tests.
-const MAX_REG_TEST_VALS: usize = 16;
-
-/// Maximum immediate values to iterate over in parametric tests.
-const MAX_IMM_TEST_VALS: usize = 32;
-
-/// Maximum opcodes to iterate over in unknown-opcode tests.
-const MAX_OPCODE_SCAN: usize = 64;
-
-/// Maximum instructions in emit_binary stress tests.
-const MAX_EMIT_STRESS: usize = 128;
+// Unused constants removed for clippy
 
 // ---------------------------------------------------------------------------
 // Helper: roundtrip encode->decode with descriptive failure message
@@ -54,17 +44,7 @@ fn roundtrip_check(instr: &RspuInstruction, label: &str) {
     );
 }
 
-fn make_program(instructions: Vec<RspuInstruction>) -> RspuProgram {
-    RspuProgram {
-        target: None,
-        instructions,
-        registers_used: 256,
-        guards_used: 64,
-        register_map: vec![],
-        guard_map: vec![],
-        certificate: None,
-    }
-}
+// Unused fn make_program removed for clippy
 
 // ===========================================================================
 // Section 1: Bit-level packing verification

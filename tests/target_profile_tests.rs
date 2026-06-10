@@ -24,8 +24,7 @@ module compact_test {
     }
 }
 ";
-    let mut config = PipelineConfig::default();
-    config.rspu = true;
+    let config = PipelineConfig { rspu: true, ..Default::default() };
 
     let result = run_pipeline(source, &config).expect("Pipeline failed");
     let program = result.rspu_program.expect("R-SPU program not emitted");
@@ -65,8 +64,7 @@ module liquid_test {
     }
 }
 ";
-    let mut config = PipelineConfig::default();
-    config.rspu = true;
+    let config = PipelineConfig { rspu: true, ..Default::default() };
 
     let result = run_pipeline(source, &config).expect("Pipeline failed");
     let program = result.rspu_program.expect("R-SPU program not emitted");
@@ -75,7 +73,7 @@ module liquid_test {
     assert_eq!(target.word_size, 64);
     assert_eq!(target.reg_bits, 10);
 
-    let binary = mirrc::emit::rspu_encoding::emit_binary(&program).expect("Binary emission failed");
+    let _binary = mirrc::emit::rspu_encoding::emit_binary(&program).expect("Binary emission failed");
     // At least some word should exceed 32-bit range for 64-bit target if opcodes/fields are high enough
     // But even if not, we checked the metadata.
 }
@@ -93,8 +91,7 @@ module default_test {
     }
 }
 ";
-    let mut config = PipelineConfig::default();
-    config.rspu = true;
+    let config = PipelineConfig { rspu: true, ..Default::default() };
 
     let result = run_pipeline(source, &config).expect("Pipeline failed");
     let program = result.rspu_program.expect("R-SPU program not emitted");
