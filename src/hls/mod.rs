@@ -139,16 +139,14 @@ impl OpDag {
         let mut entity_to_op = HashMap::new();
 
         // Find all reflexes and their assignments.
-        for opt_reflex in &registry.reflex_comps {
-            if let Some(reflex) = opt_reflex {
-                for &assign_id in &reflex.assignments {
-                    if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
-                        if let Some(op_id) =
-                            dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op)
-                        {
-                            if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
-                                dag.target_signals.insert(op_id, name_comp.0.clone());
-                            }
+        for reflex in registry.reflex_comps.iter().flatten() {
+            for &assign_id in &reflex.assignments {
+                if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
+                    if let Some(op_id) =
+                        dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op)
+                    {
+                        if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
+                            dag.target_signals.insert(op_id, name_comp.0.clone());
                         }
                     }
                 }

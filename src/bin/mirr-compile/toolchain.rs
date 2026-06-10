@@ -25,6 +25,7 @@ pub(super) fn run_toolchain_operations(
     pnr: bool,
     timing: bool,
     eqy_check: bool,
+    optimize: bool,
     _toolchain_path: Option<&str>,
     link: &[String],
 ) {
@@ -38,6 +39,9 @@ pub(super) fn run_toolchain_operations(
 
     if formal {
         registry.probe(Tool::Sby);
+    }
+    if optimize {
+        registry.probe(Tool::Yosys);
     }
     if lint || simulate {
         registry.probe(Tool::Verilator);
@@ -67,6 +71,30 @@ pub(super) fn run_toolchain_operations(
     if let Err(e) = std::fs::write(&sv_path, &sv_content) {
         eprintln!("  [toolchain] failed to write synthesis SV '{sv_path}'\n    help: {}", e);
         return;
+    }
+
+    if optimize {
+        if registry.is_available(Tool::Yosys) {
+            eprintln!("  [optimize] Running logic optimization with ABC...");
+            match mirrc::toolchain::optimize::run_logic_optimization(
+                &registry,
+                std::path::Path::new(&sv_path),
+                &result.program.module.name,
+                std::path::Path::new("."),
+            ) {
+                Ok(res) => {
+                    if res.success {
+                        eprintln!("  [optimize] PASSED");
+                        eprintln!("  [optimize] Optimized SV written to {}", res.optimized_path);
+                    } else {
+                        eprintln!("  [optimize] FAILED:\n{}", res.stderr);
+                    }
+                }
+                Err(e) => eprintln!("  [optimize] failed: {e}"),
+            }
+        } else {
+            eprintln!("  [optimize] SKIPPED — yosys not found in PATH");
+        }
     }
 
     // Write SVA bind file for formal verification

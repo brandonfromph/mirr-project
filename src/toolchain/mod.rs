@@ -24,6 +24,7 @@
 pub mod eqy;
 pub mod formal;
 pub mod icetime;
+pub mod optimize;
 pub mod sby;
 pub mod verilator;
 

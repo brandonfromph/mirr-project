@@ -34,6 +34,7 @@ pub struct WorkspaceSnapshot {
 #[derive(Debug, Clone, Default)]
 pub struct WorkspaceArtifactSummary {
     pub loaded_files: usize,
+    pub loaded_files_paths: Vec<PathBuf>,
     pub dependency_nodes: usize,
     pub source_hash: String,
     pub workspace_hash: String,
@@ -252,6 +253,7 @@ impl Workspace {
 
         let artifact_summary = WorkspaceArtifactSummary {
             loaded_files: load_state.files.len(),
+            loaded_files_paths: imported_paths,
             dependency_nodes: load_state.graph.all_files().len(),
             source_hash: root_source_hash.clone(),
             workspace_hash: workspace_hash.clone(),

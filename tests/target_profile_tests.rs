@@ -37,7 +37,7 @@ module compact_test {
     assert_eq!(target.reg_bits, 8);
 
     // Verify binary encoding (should be 32-bit words packed into u64 container)
-    let _binary = mirrc::emit::rspu_encoding::emit_binary(&program).expect("Binary emission failed");
+    let binary = mirrc::emit::rspu_encoding::emit_binary(&program).expect("Binary emission failed");
     for word in binary {
         // Opcode for 32-bit should be at [31:26].
         // 64-bit container will have high bits 0 if word_size was 32.

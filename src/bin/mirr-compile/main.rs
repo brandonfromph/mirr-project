@@ -129,6 +129,10 @@ struct Cli {
     #[arg(long)]
     eqy: bool,
 
+    /// Run post-synthesis logic optimization (Yosys ABC)
+    #[arg(short = 'O', long)]
+    optimize: bool,
+
     /// Override oss-cad-suite root directory
     #[arg(long)]
     toolchain_path: Option<String>,
@@ -398,7 +402,36 @@ pub fn main() -> anyhow::Result<()> {
         eprintln!("  Sync stages: {}", args.sync_stages);
     }
 
-    if args.formal || args.lint || args.simulate || args.pnr || args.timing || args.eqy {
+    if args.formal
+        || args.lint
+        || args.simulate
+        || args.pnr
+        || args.timing
+        || args.eqy
+        || args.optimize
+    {
+        let mut all_links = args.link.clone();
+        let root_path_canon = std::fs::canonicalize(std::path::Path::new(&root_file))
+            .unwrap_or_else(|_| std::path::PathBuf::from(&root_file));
+        for loaded_file in &snapshot.metadata.loaded_files_paths {
+            let loaded_canon =
+                std::fs::canonicalize(loaded_file).unwrap_or_else(|_| loaded_file.clone());
+            if loaded_canon == root_path_canon {
+                continue;
+            }
+            if let Some(ext) = loaded_file.extension() {
+                if ext == "mirr" {
+                    let sv_path = loaded_file.with_extension("sv");
+                    let v_path = loaded_file.with_extension("v");
+                    if sv_path.exists() {
+                        all_links.push(sv_path.to_string_lossy().into_owned());
+                    } else if v_path.exists() {
+                        all_links.push(v_path.to_string_lossy().into_owned());
+                    }
+                }
+            }
+        }
+
         toolchain::run_toolchain_operations(
             result,
             &root_file,
@@ -413,8 +446,9 @@ pub fn main() -> anyhow::Result<()> {
             args.pnr,
             args.timing,
             args.eqy,
+            args.optimize,
             args.toolchain_path.as_deref(),
-            &args.link,
+            &all_links,
         );
     }
     Ok(())

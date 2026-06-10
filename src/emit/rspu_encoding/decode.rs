@@ -49,7 +49,7 @@ pub fn decode(word: u64, target: &TargetSpec) -> Result<RspuInstruction, MirrErr
         }
         OP_SR_INIT => {
             let (guard, cond, imm) = extract_i_fields(word, target);
-            Ok(RspuInstruction::SrInit { guard: guard as u8, length: imm as u32, cond })
+            Ok(RspuInstruction::SrInit { guard: guard as u8, length: imm, cond })
         }
         OP_SR_TICK => {
             let (guard, _, _, _) = extract_g_fields(word, target);
