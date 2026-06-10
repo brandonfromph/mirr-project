@@ -154,7 +154,8 @@ fn bench_rspu_encode(c: &mut Criterion) {
 
 fn bench_rspu_decode(c: &mut Criterion) {
     let target = TargetSpec::from_config(&None);
-    let encoded: Vec<u64> = all_30_opcodes().iter().map(|i| encode(i, &target).unwrap().0).collect();
+    let encoded: Vec<u64> =
+        all_30_opcodes().iter().map(|i| encode(i, &target).unwrap().0).collect();
     let word = encoded[0];
     let mut g = c.benchmark_group("rspu_decode");
     g.bench_function("single", |b| b.iter(|| decode(black_box(word), &target)));

@@ -16,9 +16,7 @@
 #![allow(clippy::needless_range_loop, clippy::clone_on_copy)]
 
 use mirrc::emit::rspu_encoding::{decode, encode};
-use mirrc::emit::rspu_isa::{
-    RspuInstruction, TargetSpec,
-};
+use mirrc::emit::rspu_isa::{RspuInstruction, TargetSpec};
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA Power-of-10)

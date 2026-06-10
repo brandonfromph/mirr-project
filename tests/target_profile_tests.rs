@@ -73,7 +73,8 @@ module liquid_test {
     assert_eq!(target.word_size, 64);
     assert_eq!(target.reg_bits, 10);
 
-    let _binary = mirrc::emit::rspu_encoding::emit_binary(&program).expect("Binary emission failed");
+    let _binary =
+        mirrc::emit::rspu_encoding::emit_binary(&program).expect("Binary emission failed");
     // At least some word should exceed 32-bit range for 64-bit target if opcodes/fields are high enough
     // But even if not, we checked the metadata.
 }
