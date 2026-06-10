@@ -32,6 +32,8 @@ pub struct FormalConfig {
     pub sv_path: String,
     /// Path to the SVA bind file (if any).
     pub bind_path: Option<String>,
+    /// Extra Verilog files to link.
+    pub extra_files: Vec<String>,
 }
 
 impl Default for FormalConfig {
@@ -42,6 +44,7 @@ impl Default for FormalConfig {
             engine: SbyEngine::Z3,
             sv_path: String::new(),
             bind_path: None,
+            extra_files: Vec::new(),
         }
     }
 }
@@ -99,8 +102,13 @@ pub fn run_formal_pipeline(
 
     // 2. Clamp depth and build sby-level config.
     let depth = config.bmc_depth.min(MAX_FORMAL_DEPTH);
-    let sby_cfg =
-        SbyConfig { bmc_depth: depth, prove: config.prove, cover: false, engine: config.engine };
+    let sby_cfg = SbyConfig {
+        bmc_depth: depth,
+        prove: config.prove,
+        cover: false,
+        engine: config.engine,
+        extra_files: config.extra_files.clone(),
+    };
 
     let sv_path = Path::new(&config.sv_path);
     let bind_path_buf; // keep the Path alive if needed

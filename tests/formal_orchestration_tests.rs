@@ -73,6 +73,7 @@ fn config_with_bind(sv_path: &str, bind_path: &str) -> FormalConfig {
         engine: SbyEngine::Yices,
         sv_path: sv_path.to_string(),
         bind_path: Some(bind_path.to_string()),
+        extra_files: Vec::new(),
     }
 }
 
@@ -197,6 +198,7 @@ fn formal_config_clone_preserves_all_fields() {
         engine: SbyEngine::Bitwuzla,
         sv_path: "my/path.sv".to_string(),
         bind_path: Some("my/bind.sv".to_string()),
+        extra_files: Vec::new(),
     };
     let cloned = original.clone();
     assert_eq!(cloned.bmc_depth, 75, "cloned bmc_depth should equal original");
@@ -810,6 +812,7 @@ fn formal_config_from_pipeline_output_path() {
         engine: SbyEngine::Z3,
         sv_path: sv_path.to_string(),
         bind_path: Some(bind_path.to_string()),
+        extra_files: Vec::new(),
     };
     assert_eq!(cfg.sv_path, sv_path, "FormalConfig sv_path should reference pipeline SV output");
     assert_eq!(

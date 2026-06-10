@@ -1,0 +1,9 @@
+# running in examples/safety_property_bmc/src/
+read_verilog -sv -formal safety_property_synth.sv
+read_verilog -sv -formal safety_property_sva_bind.sv
+prep -top pressure_monitor
+
+hierarchy -smtcheck
+rename -witness
+write_jny -no-connections ../model/design.json
+write_rtlil ../model/design.il

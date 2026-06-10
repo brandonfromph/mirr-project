@@ -1,0 +1,14 @@
+module ScienceHls {
+    signal a: signed<8>;
+    signal b: signed<8>;
+    signal c: signed<8>;
+    signal out_val: signed<8>;
+
+    reflex compute {
+        out_val = (a + b) * c;
+    }
+
+    property math_check {
+        always (out_val == (a + b) * c);
+    }
+}

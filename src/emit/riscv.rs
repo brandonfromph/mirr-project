@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+use super::rspu::rspu_err;
 use super::rspu_isa::*;
 use crate::error::MirrError;
 
@@ -41,7 +42,7 @@ pub fn emit_riscv_asm(program: &RspuProgram) -> Result<String, MirrError> {
     // Emit instructions
     for (i, instr) in program.instructions.iter().enumerate() {
         out.push_str(&format!("\ninstr_{}:\n", i));
-        emit_riscv_instruction(&mut out, instr, &mut label_counter);
+        emit_riscv_instruction(&mut out, instr, &mut label_counter)?;
     }
 
     // HALT at end (safety guarantee)
@@ -67,7 +68,11 @@ pub fn emit_riscv_asm(program: &RspuProgram) -> Result<String, MirrError> {
 }
 
 /// Emit a single RISC-V instruction.
-fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_counter: &mut u32) {
+fn emit_riscv_instruction(
+    out: &mut String,
+    instr: &RspuInstruction,
+    label_counter: &mut u32,
+) -> Result<(), MirrError> {
     match instr {
         RspuInstruction::TagBranch { tag_value, target_pc } => {
             out.push_str(&format!("    # TAG_BRANCH {}, {}\n", tag_value, target_pc));
@@ -92,10 +97,15 @@ fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_count
 
         // ALU tier
         RspuInstruction::Alu { op, dst, a, b } => {
-            emit_riscv_alu(out, *op, *dst, *a, *b);
+            let d8 = (*dst).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let a8 = (*a).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let b8 = (*b).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            emit_riscv_alu(out, *op, d8, a8, b8);
         }
         RspuInstruction::AluImm { op, dst, a, imm } => {
-            emit_riscv_alu_imm(out, *op, *dst, *a, *imm);
+            let d8 = (*dst).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let a8 = (*a).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            emit_riscv_alu_imm(out, *op, d8, a8, *imm);
         }
         RspuInstruction::AluUnary { op, dst, src } => match op {
             AluUnaryOp::Not => out.push_str(&format!("    xori x{}, x{}, -1\n", dst, src)),
@@ -300,6 +310,7 @@ fn emit_riscv_instruction(out: &mut String, instr: &RspuInstruction, label_count
             out.push_str(&format!("    # INTERVAL_CHECK x{}, x{}\n", src, bounds));
         }
     }
+    Ok(())
 }
 
 /// Emit RISC-V ALU operation.

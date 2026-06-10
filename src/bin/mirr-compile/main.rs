@@ -89,6 +89,10 @@ struct Cli {
     #[arg(long)]
     symbolic: bool,
 
+    /// Enable MEGA-12 High-Level Synthesis (HLS) optimizer
+    #[arg(long)]
+    hls: bool,
+
     /// Run SymbiYosys formal verification
     #[arg(long)]
     formal: bool,
@@ -132,6 +136,10 @@ struct Cli {
     /// Verify a proof certificate against the compiled R-SPU program
     #[arg(long)]
     verify: Option<String>,
+
+    /// Extra Verilog files to link in formal verification
+    #[arg(long)]
+    link: Vec<String>,
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -197,6 +205,9 @@ pub fn main() -> anyhow::Result<()> {
     }
     if args.symbolic {
         config.symbolic = true;
+    }
+    if args.hls {
+        config.hls = true;
     }
     if args.emit.as_deref() == Some("mape-k-rtl") {
         config.temporal = true;
@@ -403,6 +414,7 @@ pub fn main() -> anyhow::Result<()> {
             args.timing,
             args.eqy,
             args.toolchain_path.as_deref(),
+            &args.link,
         );
     }
     Ok(())

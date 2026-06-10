@@ -1,0 +1,19 @@
+[options]
+mode bmc
+depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -sv -formal regfile.sv
+read_verilog -sv -formal ram.sv
+read_verilog -sv -formal rspu_top_synth.sv
+read_verilog -sv -formal rspu_top_sva_bind.sv
+prep -top rspu_top
+
+[files]
+rspu_chip/core/regfile.sv
+rspu_chip/core/ram.sv
+rspu_chip/rspu_top_synth.sv
+rspu_chip/rspu_top_sva_bind.sv

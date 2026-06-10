@@ -1,0 +1,2 @@
+SBY  4:30:33 [examples/watchdog_timer_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/examples/watchdog_timer_bmc'.
+SBY  4:30:33 [examples/watchdog_timer_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/watchdog_timer_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/watchdog_timer_bmc/src/watchdog_timer_synth.sv'.

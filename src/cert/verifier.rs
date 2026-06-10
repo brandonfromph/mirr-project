@@ -19,7 +19,7 @@ use crate::error_codes::{mirrcode, ErrorCode};
 pub fn verify_certificate(
     cert: &ProofCertificate,
     program: &RspuProgram,
-    binary: &[u32],
+    binary: &[u64],
 ) -> Result<(), MirrError> {
     // 1. Verify program hash (SHA-256 match).
     let computed_hash = super::sha256::sha256_words(binary);

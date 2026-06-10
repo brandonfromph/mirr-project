@@ -8,9 +8,9 @@
 
 def regfile(
     clk: signal in bool,
-    rs1: signal in u8,
-    rs2: signal in u8,
-    rd:  signal in u8,
+    rs1: signal in u10,
+    rs2: signal in u10,
+    rd:  signal in u10,
     we:  signal in bool,
     din: signal in u64,
     dout1: signal out u64,

@@ -2,15 +2,15 @@
 
 #![forbid(unsafe_code)]
 
-/// Compute SHA-256 of a slice of u32 words (treated as little-endian bytes).
+/// Compute SHA-256 of a slice of u64 words (treated as little-endian bytes).
 ///
 /// Uses a minimal implementation (no external crate) — bounded, no heap in
 /// the hash core. This is verification-grade, not performance-grade.
-pub(super) fn sha256_words(words: &[u32]) -> [u8; 32] {
+pub(super) fn sha256_words(words: &[u64]) -> [u8; 32] {
     // Convert words to bytes.
     let mut bytes: Vec<u8> = Vec::new();
     let mut i = 0;
-    let max = words.len().min(16384); // 64KB max
+    let max = words.len().min(16384); // 128KB max (16k * 8 bytes)
     while i < max {
         bytes.extend_from_slice(&words[i].to_le_bytes());
         i += 1;

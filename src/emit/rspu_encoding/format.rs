@@ -9,71 +9,66 @@ use crate::error::MirrError;
 use super::opcodes::IMM10_MAX;
 
 // ---------------------------------------------------------------------------
-// Pack helpers
+// Pack helpers (R-SPU 2.0: 64-bit)
 // ---------------------------------------------------------------------------
 
-pub(super) fn pack_r_type(opcode: u8, dst: u8, src1: u8, src2: u8, funct: u8) -> u32 {
-    ((opcode as u32) << 26)
-        | ((dst as u32) << 18)
-        | ((src1 as u32) << 10)
-        | ((src2 as u32) << 2)
-        | (funct as u32 & 0x3)
+pub(super) fn pack_r_type(opcode: u8, dst: u16, src1: u16, src2: u16, funct: u8) -> u64 {
+    ((opcode as u64) << 58)
+        | ((dst as u64) << 42)
+        | ((src1 as u64) << 26)
+        | ((src2 as u64) << 10)
+        | (funct as u64 & 0x3FF)
 }
 
-pub(super) fn pack_i_type(opcode: u8, dst: u8, src: u8, imm10: u16) -> u32 {
-    ((opcode as u32) << 26) | ((dst as u32) << 18) | ((src as u32) << 10) | (imm10 as u32 & 0x3FF)
+pub(super) fn pack_i_type(opcode: u8, dst: u16, src: u16, imm10: u16) -> u64 {
+    ((opcode as u64) << 58)
+        | ((dst as u64) << 42)
+        | ((src as u64) << 26)
+        | (imm10 as u64 & 0x03FF_FFFF)
 }
 
-pub(super) fn pack_g_type(opcode: u8, guard: u8, src_dst: u8, guard2: u8, funct: u8) -> u32 {
-    ((opcode as u32) << 26)
-        | ((guard as u32) << 18)
-        | ((src_dst as u32) << 10)
-        | ((guard2 as u32) << 2)
-        | (funct as u32 & 0x3)
+pub(super) fn pack_g_type(opcode: u8, guard: u8, src_dst: u16, guard2: u8, funct: u8) -> u64 {
+    ((opcode as u64) << 58)
+        | ((guard as u64) << 50)
+        | ((src_dst as u64) << 34)
+        | ((guard2 as u64) << 26)
+        | (funct as u64 & 0x03FF_FFFF)
 }
 
-pub(super) fn pack_s_type(opcode: u8, imm26: u32) -> u32 {
-    ((opcode as u32) << 26) | (imm26 & 0x03FF_FFFF)
+pub(super) fn pack_s_type(opcode: u8, imm26: u32) -> u64 {
+    ((opcode as u64) << 58) | (imm26 as u64 & 0x03FF_FFFF_FFFF_FFFF)
 }
 
 // ---------------------------------------------------------------------------
-// Extract helpers
+// Extract helpers (R-SPU 2.0: 64-bit)
 // ---------------------------------------------------------------------------
 
-pub(super) fn extract_opcode(word: u32) -> u8 {
-    ((word >> 26) & 0x3F) as u8
+pub(super) fn extract_opcode(word: u64) -> u8 {
+    ((word >> 58) & 0x3F) as u8
 }
 
-pub(super) fn extract_r_fields(word: u32) -> (u8, u8, u8, u8) {
-    let dst = ((word >> 18) & 0xFF) as u8;
-    let src1 = ((word >> 10) & 0xFF) as u8;
-    let src2 = ((word >> 2) & 0xFF) as u8;
-    let funct = (word & 0x3) as u8;
+pub(super) fn extract_r_fields(word: u64) -> (u16, u16, u16, u8) {
+    let dst = ((word >> 42) & 0xFFFF) as u16;
+    let src1 = ((word >> 26) & 0xFFFF) as u16;
+    let src2 = ((word >> 10) & 0xFFFF) as u16;
+    let funct = (word & 0x3FF) as u8;
     (dst, src1, src2, funct)
 }
 
-pub(super) fn extract_i_fields(word: u32) -> (u8, u8, u16) {
-    let dst = ((word >> 18) & 0xFF) as u8;
-    let src = ((word >> 10) & 0xFF) as u8;
-    let imm10 = (word & 0x3FF) as u16;
-    (dst, src, imm10)
+pub(super) fn extract_i_fields(word: u64) -> (u16, u16, u16) {
+    let dst = ((word >> 42) & 0xFFFF) as u16;
+    let src = ((word >> 26) & 0xFFFF) as u16;
+    let imm = (word & 0x03FF_FFFF) as u16;
+    (dst, src, imm)
 }
 
-pub(super) fn extract_g_fields(word: u32) -> (u8, u8, u8, u8) {
-    let guard = ((word >> 18) & 0xFF) as u8;
-    let src_dst = ((word >> 10) & 0xFF) as u8;
-    let guard2 = ((word >> 2) & 0xFF) as u8;
-    let funct = (word & 0x3) as u8;
+pub(super) fn extract_g_fields(word: u64) -> (u8, u16, u8, u8) {
+    let guard = ((word >> 50) & 0xFF) as u8;
+    let src_dst = ((word >> 34) & 0xFFFF) as u16;
+    let guard2 = ((word >> 26) & 0xFF) as u8;
+    let funct = (word & 0x03FF_FFFF) as u8;
     (guard, src_dst, guard2, funct)
 }
-
-pub(super) fn extract_s_imm26(word: u32) -> u32 {
-    word & 0x03FF_FFFF
-}
-
-// ---------------------------------------------------------------------------
-// ALU op encoding
-// ---------------------------------------------------------------------------
 
 pub(super) fn alu_op_to_funct(op: AluOp) -> u8 {
     match op {

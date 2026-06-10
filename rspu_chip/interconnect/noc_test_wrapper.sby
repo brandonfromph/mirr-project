@@ -1,0 +1,16 @@
+[tasks]
+bmc
+
+[options]
+bmc: mode bmc
+bmc: depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -sv -formal noc_test_wrapper_synth.sv
+prep -top noc_test_wrapper
+
+[files]
+noc_test_wrapper_synth.sv

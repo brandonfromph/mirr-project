@@ -1,0 +1,15 @@
+[options]
+mode bmc
+depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -sv -formal external.sv
+read_verilog -sv -formal test_link_synth.sv
+prep -top test_link
+
+[files]
+subdir/external.sv
+test_link_synth.sv

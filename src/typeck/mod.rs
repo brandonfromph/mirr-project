@@ -176,7 +176,20 @@ pub fn typecheck_module_with_mode(
             match infer_expr_type(&assignment.value, &signals, assignment.span, mode) {
                 Ok((expr_ty, expr_types)) => {
                     all_types.extend(expr_types);
-                    if !types_compatible(&target_ty, &expr_ty) {
+                    let compatible = if mode == TypecheckMode::Bootstrap {
+                        // In bootstrap mode, allow any numeric-to-numeric assignment.
+                        // This allows narrowing (e.g. u64 -> u16) which is needed for 
+                        // R-SPU 2.0 instruction decoding until explicit casts are added.
+                        match (&target_ty, &expr_ty) {
+                            (SignalType::Unsigned(_), SignalType::Unsigned(_)) => true,
+                            (SignalType::Signed(_), SignalType::Signed(_)) => true,
+                            _ => types_compatible(&target_ty, &expr_ty),
+                        }
+                    } else {
+                        types_compatible(&target_ty, &expr_ty)
+                    };
+
+                    if !compatible {
                         let code = crate::error_codes::ec(601); // TypeMismatch
                         errors.push(MirrError::TypeError {
                             message: format!(

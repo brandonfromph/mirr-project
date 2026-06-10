@@ -1,18 +1,16 @@
-//! Phase 3: ALU and Dispatcher Integration (16-Core Liquid Architecture)
-//!
-//! Top-level assembly for the RS-16 chip.
-//! Integrates 16 R-SPU cores via a high-throughput NoC Interconnect.
-
-import "interconnect/noc_router.mirr" as fabric;
 import "core/core_top.mirr" as core;
+import "interconnect/noc_router.mirr" as fabric;
+import "physics/pendulum.mirr" as physics;
+import "physics/controller.mirr" as ctrl;
+import "verification/pcc_verifier.mirr" as pcc;
 
 module rspu_top {
     signal clk: in bool;
     signal rst_n: in bool;
 
-    // --- Core Signals ---
+    // --- Core Signals (Full 16-Core Design) ---
     for i in 0..16 {
-        signal instr[i]: internal u32;
+        signal instr[i]: internal u64;
         signal pc[i]: internal u32;
         signal core_data[i]: internal u64;
         signal rx_valid[i]: internal bool;
@@ -20,12 +18,19 @@ module rspu_top {
         signal tx_valid[i]: internal bool;
         signal tx_data[i]: internal u64;
 
-        // Physical Outputs to prevent Dead Code Elimination (DCE)
+        // Physical Outputs
         signal out_pc[i]: out u32;
         signal out_data[i]: out u64;
     }
 
     signal global_trap: out bool;
+
+    // --- Digital Twin: Physics & Control ---
+    signal robot_angle:  internal i64;
+    signal robot_torque: internal i64;
+
+    physics::pendulum(robot_torque, robot_angle);
+    ctrl::controller(robot_angle, robot_torque);
 
     // --- 16-Core Integration ---
     for i in 0..16 {
@@ -44,18 +49,19 @@ module rspu_top {
         rx_valid_12, rx_data_12, rx_valid_13, rx_data_13, rx_valid_14, rx_data_14, rx_valid_15, rx_data_15
     );
 
-    // --- Monitoring & Diagnostics (DCE Protection) ---
+    // --- Closed-Loop Verification Logic ---
     reflex collect_diagnostics {
         on always {
             for i in 0..16 {
-                // DRIVE INSTR TO PREVENT DCE
                 instr[i] = 16777216 + (i * 4096); 
                 out_pc[i] = pc[i];
-                // DRIVE OUTPUT WITH CORE DATA TO KEEP ALU ALIVE
                 out_data[i] = core_data[i];
             }
-            // Aggregated trap signal
             global_trap = tx_valid_0 || tx_valid_1 || tx_valid_2 || tx_valid_3 || tx_valid_4 || tx_valid_5 || tx_valid_6 || tx_valid_7 || tx_valid_8 || tx_valid_9 || tx_valid_10 || tx_valid_11 || tx_valid_12 || tx_valid_13 || tx_valid_14 || tx_valid_15;
         }
+    }
+
+    property system_stability {
+        always (robot_angle < (- -100000) && robot_angle > (-100000));
     }
 }

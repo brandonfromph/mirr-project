@@ -1,0 +1,35 @@
+// PD Controller for Inverted Pendulum
+//
+// Calculates torque to maintain balance.
+// torque = -Kp * angle - Kd * (angle - prev_angle) / dt
+
+def controller(
+    angle_in: signal in i64,
+    torque_out: signal out i64
+) {
+    reflect {
+        // Intermediate torque components
+        signal kp_torque: internal i64;
+        signal kd_torque: internal i64;
+        signal t_next:     internal i64;
+
+        // Gains:
+        // Kp = 1500, Kd = 200
+        
+        reflex compute_torque {
+            on always {
+                // Kp torque component
+                kp_torque = -((${angle_in} >> 8) * (- -1500)) >> 2;
+
+                // Kd torque component
+                kd_torque = ((${angle_in} - prev(${angle_in}, 1)) >> 2) * (-200);
+
+                // Final torque sum (explicitly masked to stay within i64)
+                t_next = (kp_torque + kd_torque) & (-1);
+                ${torque_out} = t_next;
+            }
+        }
+    }
+}
+
+module controller {}

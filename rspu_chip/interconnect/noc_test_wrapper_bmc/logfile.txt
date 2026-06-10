@@ -1,0 +1,2 @@
+SBY  4:31:38 [rspu_chip/interconnect/noc_test_wrapper_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/rspu_chip/interconnect/noc_test_wrapper_bmc'.
+SBY  4:31:38 [rspu_chip/interconnect/noc_test_wrapper_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/noc_test_wrapper_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/rspu_chip/interconnect/noc_test_wrapper_bmc/src/noc_test_wrapper_synth.sv'.

@@ -81,10 +81,10 @@ fn emit_sv_full(
             }
             out.push('\n');
         }
-        temporal::emit_temporal_logic(netlist, &mut out);
+        temporal::emit_temporal_logic(module, netlist, &mut out);
     }
 
-    temporal::emit_reflex_logic(module, &dsp_reflexes, dsp_attr, &mut out);
+    temporal::emit_reflex_logic(module, &dsp_reflexes, dsp_attr, result.hls_result.as_ref(), &mut out);
 
     if !module.pattern_calls.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
@@ -131,8 +131,6 @@ fn emit_sv_full(
 /// connects it to the DUT for formal verification while keeping RTL
 /// synthesis-clean.
 pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
-    use crate::ast::types::SignalKind;
-
     let module = &result.program.module;
 
     if module.properties.is_empty() {
@@ -162,11 +160,9 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
         ports.push("  input  logic        rst_n".to_string());
     }
     for s in &module.signals {
-        if s.kind == SignalKind::Input || s.kind == SignalKind::Output {
-            let dir = "input ";
-            let type_str = super::sv_type(&s.ty.signal_type());
-            ports.push(format!("  {dir} {type_str} {}", s.name));
-        }
+        let dir = "input ";
+        let type_str = super::sv_type(&s.ty.signal_type());
+        ports.push(format!("  {dir} {type_str} {}", s.name));
     }
     let port_count = ports.len();
     for (i, port) in ports.iter().enumerate() {
@@ -226,8 +222,8 @@ fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
             let l = emit_expr_str(left, iterations);
             let r = emit_expr_str(right, iterations);
             let op_str = match op {
-                BinaryOp::And => "&",
-                BinaryOp::Or => "|",
+                BinaryOp::And => "&&",
+                BinaryOp::Or => "||",
                 BinaryOp::BitwiseOr => "|",
                 BinaryOp::BitwiseAnd => "&",
                 BinaryOp::Xor => "^",

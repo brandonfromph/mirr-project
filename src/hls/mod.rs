@@ -118,12 +118,112 @@ pub struct HlsOperation {
 pub struct OpDag {
     /// Operations in the graph.
     pub ops: Vec<HlsOperation>,
+    /// Map from operation ID to target signal name (traceability).
+    pub target_signals: HashMap<u32, String>,
 }
+
+use crate::ecs::{EntityId, Registry};
+use std::collections::HashMap;
 
 impl OpDag {
     /// Create a new empty DAG.
     pub fn new() -> Self {
-        Self { ops: Vec::new() }
+        Self { ops: Vec::new(), target_signals: HashMap::new() }
+    }
+
+    /// Build an HLS operation DAG from the ECS Registry.
+    ///
+    /// NASA Power-of-10: bounded by MAX_HLS_OPERATIONS.
+    pub fn build_from_registry(registry: &Registry) -> Self {
+        let mut dag = Self::new();
+        let mut entity_to_op = HashMap::new();
+
+        // Find all reflexes and their assignments.
+        for opt_reflex in &registry.reflex_comps {
+            if let Some(reflex) = opt_reflex {
+                for &assign_id in &reflex.assignments {
+                    if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
+                        if let Some(op_id) = dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op) {
+                            if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
+                                dag.target_signals.insert(op_id, name_comp.0.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        dag
+    }
+
+    /// Recursively (iteratively) ingest an expression entity into the DAG.
+    fn ingest_expr_entity(
+        &mut self,
+        registry: &Registry,
+        root_id: EntityId,
+        memo: &mut HashMap<EntityId, u32>,
+    ) -> Option<u32> {
+        if let Some(&op_id) = memo.get(&root_id) {
+            return Some(op_id);
+        }
+
+        let idx = root_id.0 as usize;
+
+        if let Some(binary) = &registry.binary_ops[idx] {
+            let left_op = self.ingest_expr_entity(registry, binary.left, memo);
+            let right_op = self.ingest_expr_entity(registry, binary.right, memo);
+
+            let kind = match binary.op {
+                crate::ast::types::BinaryOp::Add => ResourceKind::Add,
+                crate::ast::types::BinaryOp::Sub => ResourceKind::Sub,
+                crate::ast::types::BinaryOp::Mul => ResourceKind::Mul,
+                crate::ast::types::BinaryOp::And | crate::ast::types::BinaryOp::BitwiseAnd => {
+                    ResourceKind::And
+                }
+                crate::ast::types::BinaryOp::Or | crate::ast::types::BinaryOp::BitwiseOr => {
+                    ResourceKind::Or
+                }
+                crate::ast::types::BinaryOp::Xor => ResourceKind::Xor,
+                crate::ast::types::BinaryOp::Eq => ResourceKind::Eq,
+                crate::ast::types::BinaryOp::Ne => ResourceKind::Ne,
+                crate::ast::types::BinaryOp::Lt => ResourceKind::Lt,
+                crate::ast::types::BinaryOp::Le => ResourceKind::Le,
+                crate::ast::types::BinaryOp::Gt => ResourceKind::Gt,
+                crate::ast::types::BinaryOp::Ge => ResourceKind::Ge,
+                crate::ast::types::BinaryOp::Shl => ResourceKind::Shl,
+                crate::ast::types::BinaryOp::Shr => ResourceKind::Shr,
+            };
+
+            let width = registry.types[idx].as_ref().map(|t| t.0.core.width()).unwrap_or(8);
+            let op_id = self.add_op(kind, width, vec![width, width])?;
+            memo.insert(root_id, op_id);
+
+            if let Some(l) = left_op {
+                self.add_edge(l, op_id);
+            }
+            if let Some(r) = right_op {
+                self.add_edge(r, op_id);
+            }
+            Some(op_id)
+        } else if let Some(unary) = &registry.unary_ops[idx] {
+            let operand_op = self.ingest_expr_entity(registry, unary.operand, memo);
+
+            let kind = match unary.op {
+                crate::ast::types::UnaryOp::Not => ResourceKind::Not,
+                crate::ast::types::UnaryOp::Negate => ResourceKind::Negate,
+            };
+
+            let width = registry.types[idx].as_ref().map(|t| t.0.core.width()).unwrap_or(8);
+            let op_id = self.add_op(kind, width, vec![width])?;
+            memo.insert(root_id, op_id);
+
+            if let Some(o) = operand_op {
+                self.add_edge(o, op_id);
+            }
+            Some(op_id)
+        } else {
+            // Literals, signals, etc. — leaf nodes in the DAG.
+            None
+        }
     }
 
     /// Add an operation to the DAG.
@@ -174,6 +274,10 @@ pub struct HlsResult {
     pub bindings: Vec<u32>,
     /// Number of physical resources required.
     pub resource_count: Vec<(ResourceKind, u32)>,
+    /// Synthesized FIFOs for streaming data across cycles.
+    pub fifos: Vec<fifo::FifoHardware>,
+    /// Map from operation ID to target signal name.
+    pub target_signals: HashMap<u32, String>,
 }
 
 use crate::error::MirrError;
@@ -231,7 +335,32 @@ pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, MirrEr
     // Count physical resources.
     let resource_count = count_resources(&bindings, &schedule_ops);
 
-    Ok(HlsResult { schedule: schedule_ops, sharing_groups, bindings, resource_count })
+    // Step 5: FIFO streaming synthesis.
+    let mut fifos = Vec::new();
+    if config.fifo {
+        // Iterate over DAG edges (successors)
+        for src_idx in 0..dag.ops.len() {
+            let src_op = &dag.ops[src_idx];
+            let src_sched = &schedule_ops[src_idx];
+            
+            for &dst_id in &src_op.successors {
+                let dst_idx = dst_id as usize;
+                let dst_sched = &schedule_ops[dst_idx];
+                
+                // If dst starts strictly after src finishes (in terms of ALAP/ASAP cycles), we need a FIFO.
+                // Assuming latency difference means cycles.
+                if dst_sched.earliest > src_sched.latest {
+                    let depth = dst_sched.earliest - src_sched.latest;
+                    if let Ok(mut fifo) = fifo::FifoHardware::new(depth, src_op.width) {
+                        fifo.name = format!("fifo_edge_{}_to_{}", src_op.op_id, dst_id);
+                        fifos.push(fifo);
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(HlsResult { schedule: schedule_ops, sharing_groups, bindings, resource_count, fifos, target_signals: dag.target_signals.clone() })
 }
 
 /// Count physical resources used by the binding.
@@ -320,5 +449,24 @@ mod tests {
         }
         let result = dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
         assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_hls_pass_generates_fifo() {
+        let mut dag = OpDag::new();
+        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
+        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
+        dag.add_edge(a, b);
+
+        let mut config = HlsConfig::default();
+        config.latency = 2; // multi-cycle
+
+        let result = run_hls_pass(&dag, &config).expect("HLS pass failed");
+        
+        // `a` is at cycle 0, `b` is at cycle 1. 
+        // dst starts after src finishes, so a FIFO should be synthesized.
+        assert_eq!(result.fifos.len(), 1);
+        assert_eq!(result.fifos[0].depth, 1);
+        assert_eq!(result.fifos[0].elem_width, 8);
     }
 }

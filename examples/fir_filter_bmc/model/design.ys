@@ -1,0 +1,9 @@
+# running in examples/fir_filter_bmc/src/
+read_verilog -sv -formal fir_filter_synth.sv
+read_verilog -sv -formal fir_filter_sva_bind.sv
+prep -top fir_filter
+
+hierarchy -smtcheck
+rename -witness
+write_jny -no-connections ../model/design.json
+write_rtlil ../model/design.il

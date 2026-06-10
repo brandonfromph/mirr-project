@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 // ---------------------------------------------------------------------------
 
 /// Maximum allocatable registers.
-pub const MAX_REGISTERS: usize = 256;
+pub const MAX_REGISTERS: usize = 1024;
 
 /// Maximum temporal guard hardware units.
 ///
@@ -36,7 +36,7 @@ pub const MAX_REGISTERS: usize = 256;
 pub const MAX_GUARDS: usize = 64;
 
 /// Maximum instructions in a single R-SPU program.
-pub const MAX_INSTRUCTIONS: usize = 4096;
+pub const MAX_INSTRUCTIONS: usize = 16384;
 
 /// Maximum cycle count for the ISA simulator.
 pub const MAX_SIM_CYCLES: u64 = 1_000_000;
@@ -53,12 +53,12 @@ pub const MAX_EXCEPTION_DEPTH: usize = 8;
 
 /// A register index in the R-SPU register file.
 ///
-/// Partitions:
-/// - R0–R63: input ports
-/// - R64–R127: output ports
-/// - R128–R191: internal signals
-/// - R192–R255: expression temporaries
-pub type RegId = u8;
+/// Partitions (Elastic):
+/// - R0–R255: input ports
+/// - R256–R511: output ports
+/// - R512–R767: internal signals
+/// - R768–R1023: expression temporaries
+pub type RegId = u16;
 
 /// A port index (maps to a physical I/O pad).
 pub type PortId = u16;
@@ -76,22 +76,22 @@ pub type PropertyId = u32;
 /// First register for input ports.
 pub const REG_INPUT_BASE: RegId = 0;
 /// Last register for input ports (inclusive).
-pub const REG_INPUT_MAX: RegId = 63;
+pub const REG_INPUT_MAX: RegId = 255;
 
 /// First register for output ports.
-pub const REG_OUTPUT_BASE: RegId = 64;
+pub const REG_OUTPUT_BASE: RegId = 256;
 /// Last register for output ports (inclusive).
-pub const REG_OUTPUT_MAX: RegId = 127;
+pub const REG_OUTPUT_MAX: RegId = 511;
 
 /// First register for internal signals.
-pub const REG_INTERNAL_BASE: RegId = 128;
+pub const REG_INTERNAL_BASE: RegId = 512;
 /// Last register for internal signals (inclusive).
-pub const REG_INTERNAL_MAX: RegId = 191;
+pub const REG_INTERNAL_MAX: RegId = 767;
 
 /// First register for expression temporaries.
-pub const REG_TEMP_BASE: RegId = 192;
+pub const REG_TEMP_BASE: RegId = 768;
 /// Last register for expression temporaries (inclusive).
-pub const REG_TEMP_MAX: RegId = 255;
+pub const REG_TEMP_MAX: RegId = 1023;
 
 // ---------------------------------------------------------------------------
 // ALU operation codes

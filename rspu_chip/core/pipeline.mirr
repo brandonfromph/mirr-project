@@ -1,7 +1,8 @@
-//! Phase 8a: R-SPU 5-Stage Pipeline
+//! Phase 8a: R-SPU 2.0 5-Stage Pipeline
 //!
 //! Wires together the IF, ID, EX, MEM, and WB stages with
 //! integrated PCC verification and hardware type dispatch.
+//! Upgraded to 64-bit instructions and 1024 registers.
 
 import "types.mirr" as types;
 import "alu.mirr" as alu;
@@ -12,7 +13,7 @@ import "../verification/pcc_verifier.mirr" as pcc;
 def rspu_pipeline(
     clk: signal in bool,
     rst_n: signal in bool,
-    instr_in: signal in u32,
+    instr_in: signal in u64,
     pc_out: signal out u32,
     data_out: signal out u64,
     trap_out: signal out bool
@@ -63,18 +64,18 @@ def rspu_pipeline(
         }
 
         // --- 2. Decode Stage (ID) ---
-        signal id_rs1: internal u32;
-        signal id_rs2: internal u32;
-        signal id_rd:  internal u32;
+        signal id_rs1: internal u16;
+        signal id_rs2: internal u16;
+        signal id_rd:  internal u16;
         signal id_val1: internal u64;
         signal id_val2: internal u64;
         signal reg_we: internal bool;
         signal reg_din: internal u64;
         
+        // regfile ports are now u10
         reg::regfile(${clk}, id_rs1, id_rs2, id_rd, reg_we, reg_din, id_val1, id_val2);
 
         // --- 3. Execute Stage (EX) ---
-        // Operands typed as u64 to pass Type Checker, but masked via Patterns
         signal ex_d1: internal u64;
         signal ex_t1: internal u64;
         signal ex_p1: internal u64;
@@ -86,9 +87,8 @@ def rspu_pipeline(
         signal ex_out_t: internal u64;
         signal ex_out_p: internal u64;
         signal ex_trap:  internal bool;
-        signal alu_op:   internal u32;
+        signal alu_op:   internal u16;
 
-        // Use new correctly-typed patterns (returning u64 masked to 32/4 bits)
         types::extract_data(id_val1, ex_d1);
         types::extract_tag(id_val1, ex_t1);
         types::extract_provenance(id_val1, ex_p1);
@@ -107,7 +107,6 @@ def rspu_pipeline(
         signal ex_packed: internal u64;
         reflex pack_ex_result {
             on always {
-                // Pack bits back into 64-bit word
                 ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
                 ${data_out} = ex_packed;
             }
@@ -118,11 +117,14 @@ def rspu_pipeline(
 
         reflex decode_instr {
             on always {
-                id_rs1 = (${instr_in} >> 24) & 255;
-                id_rs2 = (${instr_in} >> 16) & 255;
-                id_rd  = (${instr_in} >> 8) & 255;
+                // R-SPU 2.0: 64-bit instructions, 10-bit registers
+                id_rs1 = (${instr_in} >> 48) & 1023;
+                id_rs2 = (${instr_in} >> 32) & 1023;
+                id_rd  = (${instr_in} >> 16) & 1023;
                 alu_op = (${instr_in} & 255);
-                ram_addr = (pc & 65535);
+                
+                // ram_addr is now u14 in ram module
+                ram_addr = (pc & 16383); 
                 reg_we = true;
                 reg_din = ex_packed;
             }

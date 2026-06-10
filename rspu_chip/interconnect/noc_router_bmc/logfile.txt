@@ -1,0 +1,12 @@
+SBY  4:36:27 [noc_router_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/rspu_chip/interconnect/noc_router_bmc'.
+SBY  4:36:27 [noc_router_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/rspu_chip/interconnect/noc_router_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/rspu_chip/interconnect/noc_router_bmc/src/noc_router_synth.sv'.
+SBY  4:36:27 [noc_router_bmc] engine_0: smtbmc z3
+SBY  4:36:27 [noc_router_bmc] base: starting process "cd noc_router_bmc/src; yosys -ql ../model/design.log ../model/design.ys"
+SBY  4:36:27 [noc_router_bmc] base: ERROR: No top module found!
+SBY  4:36:27 [noc_router_bmc] base: finished (returncode=1)
+SBY  4:36:27 [noc_router_bmc] base: task failed. ERROR.
+SBY  4:36:27 [noc_router_bmc] summary: Elapsed clock time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY  4:36:27 [noc_router_bmc] summary: Elapsed process time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY  4:36:27 [noc_router_bmc] summary: engine_0 (smtbmc z3) did not return a status
+SBY  4:36:27 [noc_router_bmc] summary: engine_0 did not produce any traces
+SBY  4:36:27 [noc_router_bmc] DONE (ERROR, rc=16)

@@ -291,18 +291,7 @@ pub fn run_pipeline_on_program(
 
     // Stage 5c: HLS pass (optional, MEGA-12).
     if config.hls {
-        let mut dag = crate::hls::OpDag::new();
-
-        // Build DAG from reflex assignments.
-        for reflex in &result.program.module.reflexes {
-            for _assign in &reflex.assignments {
-                let op_kind = crate::hls::ResourceKind::Add;
-                let width = 8;
-                if let Some(_op_id) = dag.add_op(op_kind, width, vec![width, width]) {
-                    // DAG built successfully.
-                }
-            }
-        }
+        let dag = crate::hls::OpDag::build_from_registry(&final_registry);
 
         let hls_config = crate::hls::HlsConfig::default();
         result.hls_result = crate::hls::run_hls_pass(&dag, &hls_config).ok();

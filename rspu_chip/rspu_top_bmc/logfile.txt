@@ -1,0 +1,102 @@
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/rspu_chip/rspu_top_bmc'.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/rspu_chip/core/regfile.sv' to '/Users/brandonc.blay/projects/mirr-private/rspu_chip/rspu_top_bmc/src/regfile.sv'.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/rspu_chip/core/ram.sv' to '/Users/brandonc.blay/projects/mirr-private/rspu_chip/rspu_top_bmc/src/ram.sv'.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/rspu_chip/rspu_top_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/rspu_chip/rspu_top_bmc/src/rspu_top_synth.sv'.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/rspu_chip/rspu_top_sva_bind.sv' to '/Users/brandonc.blay/projects/mirr-private/rspu_chip/rspu_top_bmc/src/rspu_top_sva_bind.sv'.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] engine_0: smtbmc z3
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: starting process "cd rspu_chip/rspu_top_bmc/src; yosys -ql ../model/design.log ../model/design.ys"
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_31.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_31.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_31.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_30.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_29.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_29.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_29.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_28.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_27.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_27.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_27.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_26.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_25.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_25.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_25.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_24.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_23.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_23.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_23.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_22.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_21.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_21.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_21.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_20.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_19.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_19.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_19.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_18.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_17.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_17.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_17.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_16.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_15.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_15.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_15.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_14.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_13.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_13.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_13.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_12.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_11.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_11.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_11.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_10.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_9.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_9.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_9.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_8.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_7.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_7.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_7.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_6.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_5.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_5.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_5.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_4.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_3.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_3.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_3.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_2.addr from 32 bits to 14 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_1.rs1 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_1.rs2 from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.regfile_1.rd from 16 bits to 10 bits.
+SBY 15:04:24 [rspu_chip/rspu_top_bmc] base: Warning: Resizing cell port rspu_top.ram_0.addr from 32 bits to 14 bits.
+SBY 15:04:27 [rspu_chip/rspu_top_bmc] base: finished (returncode=0)
+SBY 15:04:27 [rspu_chip/rspu_top_bmc] prep: starting process "cd rspu_chip/rspu_top_bmc/model; yosys -ql design_prep.log design_prep.ys"
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] prep: finished (returncode=0)
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] smt2: starting process "cd rspu_chip/rspu_top_bmc/model; yosys -ql design_smt2.log design_smt2.ys"
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] smt2: finished (returncode=0)
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] engine_0: starting process "cd rspu_chip/rspu_top_bmc; yosys-smtbmc -s z3 --presat --noprogress -t 20  --append 0 --dump-vcd engine_0/trace.vcd --dump-yw engine_0/trace.yw --dump-vlogtb engine_0/trace_tb.v --dump-smtc engine_0/trace.smtc model/design_smt2.smt2"
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:00  Solver: z3
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:00  Checking assumptions in step 0..
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:00  Checking assertions in step 0..
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:00  Checking assumptions in step 1..
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:00  Checking assertions in step 1..
+SBY 15:04:28 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:00  Checking assumptions in step 2..
+SBY 15:04:37 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:08  Checking assertions in step 2..
+SBY 15:04:37 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:08  Checking assumptions in step 3..
+SBY 15:04:46 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:18  Checking assertions in step 3..
+SBY 15:04:46 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:18  Checking assumptions in step 4..
+SBY 15:04:47 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:18  Checking assertions in step 4..
+SBY 15:04:47 [rspu_chip/rspu_top_bmc] engine_0: ##   0:00:18  Checking assumptions in step 5..
+SBY 15:05:47 [rspu_chip/rspu_top_bmc] engine_0: ##   0:01:18  waiting for solver (1 minute)
+SBY 15:09:47 [rspu_chip/rspu_top_bmc] engine_0: ##   0:05:18  waiting for solver (5 minutes)
+SBY 15:14:47 [rspu_chip/rspu_top_bmc] engine_0: ##   0:10:18  waiting for solver (10 minutes)
+SBY 15:14:49 [rspu_chip/rspu_top_bmc] engine_0: ##   0:10:20  Checking assertions in step 5..
+SBY 15:14:49 [rspu_chip/rspu_top_bmc] engine_0: ##   0:10:20  Checking assumptions in step 6..
+SBY 15:15:49 [rspu_chip/rspu_top_bmc] engine_0: ##   0:11:20  waiting for solver (1 minute)
+SBY 15:19:49 [rspu_chip/rspu_top_bmc] engine_0: ##   0:15:20  waiting for solver (5 minutes)
+SBY 15:20:13 [rspu_chip/rspu_top_bmc] engine_0: ##   0:15:44  Checking assertions in step 6..
+SBY 15:20:13 [rspu_chip/rspu_top_bmc] engine_0: ##   0:15:44  Checking assumptions in step 7..
+SBY 15:21:13 [rspu_chip/rspu_top_bmc] engine_0: ##   0:16:44  waiting for solver (1 minute)
+SBY 15:25:13 [rspu_chip/rspu_top_bmc] engine_0: ##   0:20:44  waiting for solver (5 minutes)
+SBY 15:30:13 [rspu_chip/rspu_top_bmc] engine_0: ##   0:25:44  waiting for solver (10 minutes)
+SBY 15:30:13 [rspu_chip/rspu_top_bmc] engine_0: terminating process

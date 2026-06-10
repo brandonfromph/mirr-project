@@ -1,0 +1,9 @@
+# running in test_link_bmc/src/
+read_verilog -sv -formal external.sv
+read_verilog -sv -formal test_link_synth.sv
+prep -top test_link
+
+hierarchy -smtcheck
+rename -witness
+write_jny -no-connections ../model/design.json
+write_rtlil ../model/design.il

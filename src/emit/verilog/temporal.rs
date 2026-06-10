@@ -9,8 +9,39 @@ use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
 use super::MAX_SR_STAGES_INLINE;
 
-pub(super) fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
+pub(super) fn emit_temporal_logic(
+    module: &Module,
+    netlist: &TemporalNetlist,
+    out: &mut String
+) {
     out.push_str("  // ── Temporal Guards ──\n\n");
+
+    // Declare registers for ALL prev() back-references found in the module
+    let mut seen_prevs = std::collections::HashSet::new();
+    for reflex in &module.reflexes {
+        for assignment in &reflex.assignments {
+            // Helper to find Prev nodes in expressions
+            fn collect_prevs(expr: &crate::ast::Expr, seen: &mut std::collections::HashSet<(String, u64)>) {
+                match expr {
+                    crate::ast::Expr::Prev { signal, delay } => { seen.insert((signal.clone(), *delay)); }
+                    crate::ast::Expr::Unary { operand, .. } => collect_prevs(operand, seen),
+                    crate::ast::Expr::Binary { left, right, .. } => { collect_prevs(left, seen); collect_prevs(right, seen); }
+                    crate::ast::Expr::ArrayIndex { array, index } => { collect_prevs(array, seen); collect_prevs(index, seen); }
+                    _ => {}
+                }
+            }
+            collect_prevs(&assignment.value, &mut seen_prevs);
+        }
+    }
+
+    for (sig_name, delay) in seen_prevs {
+        // Find the original signal to get its type
+        if let Some(sig) = module.signals.iter().find(|s| s.name == sig_name) {
+            let type_str = crate::emit::sv_type(&sig.ty.signal_type());
+            out.push_str(&format!("  {} {}_d{};\n", type_str, sig_name, delay));
+        }
+    }
+    out.push('\n');
 
     for guard in &netlist.guards {
         match guard {
@@ -177,6 +208,7 @@ pub(super) fn emit_reflex_logic(
     module: &Module,
     dsp_reflexes: &std::collections::HashSet<String>,
     dsp_attr: Option<&str>,
+    hls_result: Option<&crate::hls::HlsResult>,
     out: &mut String,
 ) {
     if module.reflexes.is_empty() {
@@ -209,50 +241,133 @@ pub(super) fn emit_reflex_logic(
         }
     }
 
-    // Sort signals by name for deterministic emission.
-    let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
-    signals.sort();
-
-    for sig in signals {
-        let refs = &signal_to_reflexes[&sig];
-
-        // Emit DSP synthesis attribute if ANY reflex for this signal contains a multiply.
-        if let Some(attr) = dsp_attr {
-            let has_dsp = refs.iter().any(|r| dsp_reflexes.contains(&r.name));
-            if has_dsp {
-                out.push_str(&format!("  {attr}\n"));
-            }
-        }
-
-        out.push_str(&format!("  // Unified Reflex Block for: {sig}\n"));
+    if let Some(hls) = hls_result {
+        out.push_str("  // ── HLS Finite State Machine ──\n");
+        out.push_str("  logic [31:0] hls_state;\n");
         out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
         out.push_str("    if (!rst_n) begin\n");
-        out.push_str(&format!("      {} <= '0;\n", sig));
+        out.push_str("      hls_state <= 0;\n");
+        
+        let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
+        signals.sort();
+        for sig in &signals {
+            out.push_str(&format!("      {} <= '0;\n", sig));
+        }
+        
         out.push_str("    end else begin\n");
+        out.push_str("      case (hls_state)\n");
 
-        // Priority-ordered assignments: later reflexes in the module override earlier ones.
-        for r in refs {
-            let guard_cond = if r.guard_names.len() == 1 {
-                format!("{}_out", r.guard_names[0])
-            } else {
-                let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
-                parts.join(" && ")
-            };
-
-            // Find the assignment to THIS signal in this reflex.
-            for a in &r.assignments {
-                if a.target == sig {
-                    out.push_str(&format!(
-                        "      if ({}) {} <= {};\n",
-                        guard_cond,
-                        sig,
-                        super::emit_expr_inline(&a.value),
-                    ));
+        let mut target_to_cycle: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+        let mut max_cycle = 0;
+        for op in &hls.schedule {
+            if let Some(target) = hls.target_signals.get(&op.op_id) {
+                target_to_cycle.insert(target.clone(), op.earliest);
+                if op.earliest > max_cycle {
+                    max_cycle = op.earliest;
                 }
             }
         }
+
+        // We want to group by cycle for the FSM states
+        let mut cycle_to_signals: std::collections::HashMap<u32, Vec<String>> = std::collections::HashMap::new();
+        for sig in &signals {
+            let cycle = target_to_cycle.get(sig).copied().unwrap_or(0);
+            cycle_to_signals.entry(cycle).or_default().push(sig.clone());
+        }
+
+        for cycle in 0..=max_cycle {
+            out.push_str(&format!("        {}: begin\n", cycle));
+            if let Some(sigs) = cycle_to_signals.get(&cycle) {
+                for sig in sigs {
+                    let refs = &signal_to_reflexes[sig];
+                    for r in refs {
+                        let guard_cond = if r.guard_names.len() == 1 {
+                            format!("{}_out", r.guard_names[0])
+                        } else {
+                            let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
+                            parts.join(" && ")
+                        };
+                        for a in &r.assignments {
+                            if a.target == *sig {
+                                out.push_str(&format!(
+                                    "          if ({}) {} <= {};\n",
+                                    guard_cond,
+                                    sig,
+                                    super::emit_expr_inline(&a.value),
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+            if cycle == max_cycle {
+                out.push_str("          hls_state <= 0;\n");
+            } else {
+                out.push_str(&format!("          hls_state <= {};\n", cycle + 1));
+            }
+            out.push_str("        end\n");
+        }
+        out.push_str("      endcase\n");
         out.push_str("    end\n");
         out.push_str("  end\n\n");
+
+        // Emit FIFOs if there are any
+        if !hls.fifos.is_empty() {
+            out.push_str("  // ── HLS FIFOs ──\n");
+            for fifo in &hls.fifos {
+                out.push_str(&format!("  // FIFO: {} (depth: {}, width: {})\n", fifo.name, fifo.depth, fifo.elem_width));
+                out.push_str(&format!("  logic [{}:0] {}_buffer [0:{}];\n", fifo.elem_width.saturating_sub(1), fifo.name, fifo.depth.saturating_sub(1)));
+                out.push_str(&format!("  logic [31:0] {}_head, {}_tail;\n", fifo.name, fifo.name));
+            }
+            out.push('\n');
+        }
+
+    } else {
+        // Sort signals by name for deterministic emission.
+        let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
+        signals.sort();
+
+        for sig in signals {
+            let refs = &signal_to_reflexes[&sig];
+
+            // Emit DSP synthesis attribute if ANY reflex for this signal contains a multiply.
+            if let Some(attr) = dsp_attr {
+                let has_dsp = refs.iter().any(|r| dsp_reflexes.contains(&r.name));
+                if has_dsp {
+                    out.push_str(&format!("  {attr}\n"));
+                }
+            }
+
+            out.push_str(&format!("  // Unified Reflex Block for: {sig}\n"));
+            out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+            out.push_str("    if (!rst_n) begin\n");
+            out.push_str(&format!("      {} <= '0;\n", sig));
+            out.push_str("    end else begin\n");
+
+            // Priority-ordered assignments: later reflexes in the module override earlier ones.
+            for r in refs {
+                let guard_cond = if r.guard_names.len() == 1 {
+                    format!("{}_out", r.guard_names[0])
+                } else {
+                    let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
+                    parts.join(" && ")
+                };
+
+                // Find the assignment to THIS signal in this reflex.
+                for a in &r.assignments {
+                    if a.target == sig {
+                        out.push_str(&format!(
+                            "      if ({}) {} <= {};\n",
+                            guard_cond,
+                            sig,
+                            super::emit_expr_inline(&a.value),
+                        ));
+                    }
+                }
+            }
+            out.push_str("    end\n");
+            out.push_str("  end\n\n");
+        }
     }
 }
 

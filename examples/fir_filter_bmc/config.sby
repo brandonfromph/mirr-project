@@ -1,0 +1,15 @@
+[options]
+mode bmc
+depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -sv -formal fir_filter_synth.sv
+read_verilog -sv -formal fir_filter_sva_bind.sv
+prep -top fir_filter
+
+[files]
+examples/fir_filter_synth.sv
+examples/fir_filter_sva_bind.sv

@@ -26,6 +26,7 @@ pub(super) fn run_toolchain_operations(
     timing: bool,
     eqy_check: bool,
     _toolchain_path: Option<&str>,
+    link: &[String],
 ) {
     use mirrc::toolchain::{Tool, ToolRegistry};
 
@@ -90,6 +91,7 @@ pub(super) fn run_toolchain_operations(
                 prove: formal_prove,
                 cover: false,
                 engine,
+                extra_files: link.to_vec(),
             };
             let sby_content = mirrc::toolchain::sby::generate_sby_config(
                 &result.program.module.name,

@@ -6,7 +6,7 @@
 
 def ram(
     clk: signal in bool,
-    addr: signal in u16,
+    addr: signal in u14,
     data_in: signal in u64,
     data_out: signal out u64
 ) {

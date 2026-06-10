@@ -28,8 +28,9 @@ pub mod sby;
 pub mod verilator;
 
 use std::collections::HashMap;
+use std::io::{Read, Write};
 use std::path::Path;
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 
 /// Maximum number of tools in the registry.
 pub const MAX_TOOLS: usize = 32;
@@ -113,6 +114,24 @@ impl ToolRegistry {
         let binary = tool.binary_name();
         match Command::new(binary).arg(tool.version_flag()).output() {
             Ok(output) => {
+                // Pre-flight Check: Did the executable actually run successfully?
+                // A crash (like missing python 'click' for sby) will return an error exit code.
+                if !output.status.success() {
+                    let err_msg = String::from_utf8_lossy(&output.stderr);
+                    // Provide a cleaner hint for known python crashes
+                    let hint = if err_msg.contains("ModuleNotFoundError") {
+                        "(Python environment broken: missing dependencies. Try 'pip install click')"
+                    } else {
+                        "(Execution failed during pre-flight check)"
+                    };
+                    let version = format!("Broken {} {}", hint, err_msg.lines().next().unwrap_or(""));
+                    self.tools.insert(
+                        tool,
+                        ToolInfo { path: binary.to_string(), version, available: false },
+                    );
+                    return false;
+                }
+
                 let version_raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 let version = if version_raw.len() > MAX_VERSION_LEN {
                     version_raw[..MAX_VERSION_LEN].to_string()
@@ -191,9 +210,60 @@ pub fn invoke_tool(
         .filter(|t| t.available)
         .ok_or_else(|| ToolchainError::ToolNotFound { tool: tool.binary_name().to_string() })?;
 
-    Command::new(&info.path).args(args).current_dir(working_dir).output().map_err(|e| {
-        ToolchainError::Invocation { tool: tool.binary_name().to_string(), message: e.to_string() }
-    })
+    let mut child = Command::new(&info.path)
+        .args(args)
+        .current_dir(working_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| ToolchainError::Invocation {
+            tool: tool.binary_name().to_string(),
+            message: e.to_string(),
+        })?;
+
+    let mut stdout = child.stdout.take().expect("Failed to open stdout");
+    let mut stderr = child.stderr.take().expect("Failed to open stderr");
+
+    // Use threads to stream stdout and stderr concurrently without blocking.
+    let t_stdout = std::thread::spawn(move || {
+        let mut buf = [0u8; 1024];
+        let mut out = Vec::new();
+        while let Ok(n) = stdout.read(&mut buf) {
+            if n == 0 {
+                break;
+            }
+            let data = &buf[..n];
+            std::io::stdout().write_all(data).ok();
+            std::io::stdout().flush().ok();
+            out.extend_from_slice(data);
+        }
+        out
+    });
+
+    let t_stderr = std::thread::spawn(move || {
+        let mut buf = [0u8; 1024];
+        let mut err = Vec::new();
+        while let Ok(n) = stderr.read(&mut buf) {
+            if n == 0 {
+                break;
+            }
+            let data = &buf[..n];
+            std::io::stderr().write_all(data).ok();
+            std::io::stderr().flush().ok();
+            err.extend_from_slice(data);
+        }
+        err
+    });
+
+    let stdout_res = t_stdout.join().unwrap_or_default();
+    let stderr_res = t_stderr.join().unwrap_or_default();
+
+    let status = child.wait().map_err(|e| ToolchainError::Invocation {
+        tool: tool.binary_name().to_string(),
+        message: e.to_string(),
+    })?;
+
+    Ok(Output { status, stdout: stdout_res, stderr: stderr_res })
 }
 
 /// Normalize a path for MinGW-based tools (replace backslashes with forward slashes).

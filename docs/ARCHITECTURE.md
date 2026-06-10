@@ -49,6 +49,19 @@ MIRR is a safety-critical compiler platform (61k+ LOC) with three distinct layer
 2. **Control Planes**: MRT / Presidential Arsenal and KB-native (RAG) for autonomic governance and knowledge-backed synthesis.
 3. **Consumer Bridges**: WASM, LRA-CLI, and MCP-Control-Plane providing multi-surface accessibility.
 
+### Project Specialization: The R-SPU Architecture
+MIRR is a specialized tool optimized for designing and verifying the **R-SPU (Reflexive Signal Processing Unit)**. It is intended for the high-assurance "brains" of robotic systems and autonomous medical/aerospace hardware.
+
+### Known Technical Flaws
+The following flaws have been identified in the current compiler implementation (Phase 6):
+
+1.  **Single-Clock Rigidity**: The compiler lacks native support for Multiple Clock Domains (CDC). All logic is currently tied to a single synchronous `clk`.
+2.  **Logic Optimization Gap**: MIRR does not perform boolean minimization (e.g., Espresso or ABC). This results in a higher gate count and lower power efficiency compared to hand-optimized Verilog.
+3.  **Physical P&R Agnosticism**: The compiler has no awareness of physical geometry or floorplanning, which can lead to timing closure failures on large-scale chips (like the 16-core R-SPU).
+4.  **Traceability Gap**: The high abstraction of the ECS engine makes it difficult to trace low-level bugs in the 10k+ lines of generated RTL back to the original MIRR source lines.
+5.  **SBY Pathing Bug**: The formal configuration generator (`.sby`) emits incorrect relative paths for synthesized artifacts, requiring manual correction to locate files.
+6.  **SVA Parser Incompatibility**: MIRR outputs advanced SystemVerilog Assertions (like `##[1:100]`) that the standard open-source Yosys parser is unable to handle without commercial tools or external translators.
+
 **Inputs:**
 - MIRR specifications (Signals, Guards, Reflexes, Properties, Patterns)
 
@@ -104,3 +117,21 @@ The following pathways describe the lifecycle of a MIRR specification:
    - Arbitrary input Verilog/RTL is synthesized using Yosys into a technology-mapped JSON netlist.
    - The [MIRR Hydrator](../src/bin/mirr-hydrate.rs) ingests this JSON and maps the cells directly back into MIRR signals and reflexes.
    - The compiled MIRR output is then lower-synthesized again via Yosys and formally verified using SAT Equivalence Checking (`equiv`) to guarantee absolute codegen parity and correct optimization.
+
+   ## 5. 12-Month R&D Roadmap
+
+   This section outlines the strategic development plan for the next 12 months, aimed at maturing MIRR into a production-grade EDA platform for the R-SPU architecture.
+
+   ### Goal: Scaling and Robustness
+   The primary objective is to transition from a high-assurance prototype to a mass-scale logic generator, increasing the test suite from **4,000+** to **8,000+** individual test cases.
+
+   ### Key Milestones:
+   1.  **ECS-Native Transition**: Complete the migration of the compiler pipeline from a tree-based AST to a high-performance ECS Registry.
+   2.  **Homoiconicity Integration**: Implement a "Code as Data" core to enable autonomic self-healing and knowledge-backed synthesis.
+   3.  **Scale-Blocker Debugging**: Perform a rigorous audit to identify and resolve logic bottlenecks that prevent scaling beyond 16-core designs.
+   4.  **Engine Wiring**: Complete and wire the 14 identified sub-engines (Symbolic, SAT, MAPE-K, etc.) into a unified, high-assurance pipeline.
+   5.  **Compiler Ergonomics**: Improve the MIRR language syntax and CLI feedback loops to reduce the barrier to entry for hardware architects.
+   6.  **Clock Domain Crossing (CDC)**: Implement native support for multiple clock domains to support industrial-grade SoC designs.
+   7.  **Logic Optimization (Boolean Minimization)**: Integrate standard boolean minimization engines (e.g., ABC) to reduce gate count and power consumption.
+   8.  **Source-Level Debugger**: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
+

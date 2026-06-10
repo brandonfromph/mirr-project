@@ -112,7 +112,7 @@ pub struct ProofCertificate {
 /// Build a proof certificate from a totality analysis result and program binary.
 pub fn build_certificate(
     totality: &crate::totality::TotalityResult,
-    program_binary: &[u32],
+    program_binary: &[u64],
     module: &crate::ast::program::Module,
 ) -> ProofCertificate {
     use crate::ast::types::SignalKind;

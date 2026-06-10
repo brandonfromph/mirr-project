@@ -11,7 +11,7 @@ def core_top(
     rst_n: signal in bool,
     
     // Instruction Memory Interface
-    instr_in: signal in u32,
+    instr_in: signal in u64,
     pc_out:   signal out u32,
     data_out: signal out u64,
     

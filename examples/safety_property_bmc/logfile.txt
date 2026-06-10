@@ -1,0 +1,13 @@
+SBY  4:27:31 [examples/safety_property_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc'.
+SBY  4:27:31 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_synth.sv'.
+SBY  4:27:31 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_sva_bind.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_sva_bind.sv'.
+SBY  4:27:31 [examples/safety_property_bmc] engine_0: smtbmc z3
+SBY  4:27:31 [examples/safety_property_bmc] base: starting process "cd examples/safety_property_bmc/src; yosys -ql ../model/design.log ../model/design.ys"
+SBY  4:27:31 [examples/safety_property_bmc] base: safety_property_sva_bind.sv:13: ERROR: syntax error, unexpected '@'
+SBY  4:27:31 [examples/safety_property_bmc] base: finished (returncode=1)
+SBY  4:27:31 [examples/safety_property_bmc] base: task failed. ERROR.
+SBY  4:27:31 [examples/safety_property_bmc] summary: Elapsed clock time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY  4:27:31 [examples/safety_property_bmc] summary: Elapsed process time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY  4:27:31 [examples/safety_property_bmc] summary: engine_0 (smtbmc z3) did not return a status
+SBY  4:27:31 [examples/safety_property_bmc] summary: engine_0 did not produce any traces
+SBY  4:27:31 [examples/safety_property_bmc] DONE (ERROR, rc=16)

@@ -70,11 +70,19 @@ pub struct SbyConfig {
     pub cover: bool,
     /// Solver engine to use.
     pub engine: SbyEngine,
+    /// Extra Verilog files to link.
+    pub extra_files: Vec<String>,
 }
 
 impl Default for SbyConfig {
     fn default() -> Self {
-        Self { bmc_depth: DEFAULT_BMC_DEPTH, prove: false, cover: false, engine: SbyEngine::Z3 }
+        Self {
+            bmc_depth: DEFAULT_BMC_DEPTH,
+            prove: false,
+            cover: false,
+            engine: SbyEngine::Z3,
+            extra_files: Vec::new(),
+        }
     }
 }
 
@@ -141,17 +149,41 @@ pub fn generate_sby_config(
 
     // Script section
     out.push_str("[script]\n");
-    let sv_normalized = normalize_path_for_mingw(sv_path);
-    out.push_str(&format!("read_verilog -sv -formal {sv_normalized}\n"));
+
+    // Helper to get normalized filename
+    let get_flat_name = |p: &Path| {
+        normalize_path_for_mingw(p)
+            .split('/')
+            .last()
+            .unwrap_or("")
+            .to_string()
+    };
+
+    // Flatten extra files for the script section
+    for extra in &config.extra_files {
+        let name = get_flat_name(Path::new(extra));
+        out.push_str(&format!("read_verilog -sv -formal {name}\n"));
+    }
+
+    // Flatten the main SystemVerilog file for the script section
+    let sv_name = get_flat_name(sv_path);
+    out.push_str(&format!("read_verilog -sv -formal {sv_name}\n"));
+
     if let Some(bind) = bind_path {
-        let bind_normalized = normalize_path_for_mingw(bind);
-        out.push_str(&format!("read_verilog -sv -formal {bind_normalized}\n"));
+        let bind_name = get_flat_name(bind);
+        out.push_str(&format!("read_verilog -sv -formal {bind_name}\n"));
     }
     out.push_str(&format!("prep -top {module_name}\n"));
     out.push('\n');
 
     // Files section
     out.push_str("[files]\n");
+    for extra in &config.extra_files {
+        let extra_normalized = normalize_path_for_mingw(Path::new(extra));
+        out.push_str(&format!("{extra_normalized}\n"));
+    }
+
+    let sv_normalized = normalize_path_for_mingw(sv_path);
     out.push_str(&format!("{sv_normalized}\n"));
     if let Some(bind) = bind_path {
         let bind_normalized = normalize_path_for_mingw(bind);
@@ -283,7 +315,8 @@ mod tests {
         assert!(result.contains("mode bmc"));
         assert!(result.contains("depth 20"));
         assert!(result.contains("smtbmc z3"));
-        assert!(result.contains("test.sv"));
+        assert!(result.contains("read_verilog -sv -formal test.sv"));
+        assert!(result.contains("test.sv\n"));
         assert!(result.contains("-top test_module"));
         assert!(!result.contains("prove"));
     }
@@ -293,13 +326,29 @@ mod tests {
         let config = SbyConfig { prove: true, ..Default::default() };
         let result = generate_sby_config(
             "my_module",
-            Path::new("my_module.sv"),
-            Some(Path::new("my_module_sva.sv")),
+            Path::new("subdir/my_module.sv"),
+            Some(Path::new("other/my_module_sva.sv")),
             &config,
         );
         assert!(result.contains("prove"));
         assert!(result.contains("mode prove"));
-        assert!(result.contains("my_module_sva.sv"));
+        assert!(result.contains("read_verilog -sv -formal my_module.sv"));
+        assert!(result.contains("read_verilog -sv -formal my_module_sva.sv"));
+        assert!(result.contains("subdir/my_module.sv"));
+        assert!(result.contains("other/my_module_sva.sv"));
+    }
+
+    #[test]
+    fn test_sby_config_with_extra_files() {
+        let config = SbyConfig {
+            extra_files: vec!["lib/ip.sv".to_string(), "common.v".to_string()],
+            ..Default::default()
+        };
+        let result = generate_sby_config("top", Path::new("top.sv"), None, &config);
+        assert!(result.contains("read_verilog -sv -formal ip.sv"));
+        assert!(result.contains("read_verilog -sv -formal common.v"));
+        assert!(result.contains("lib/ip.sv"));
+        assert!(result.contains("common.v"));
     }
 
     #[test]

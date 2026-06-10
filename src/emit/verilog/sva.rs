@@ -134,40 +134,41 @@ pub(super) fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &m
         PropertyFormula::Always(expr) => {
             let sv_expr = super::emit_expr_inline(expr);
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause}\n    {sv_expr});\n\n"
+                "  always @(posedge clk) begin\n    if (rst_n) {sva_keyword} ({sv_expr});\n  end\n\n"
             ));
         }
         PropertyFormula::Never(expr) => {
             let sv_expr = super::emit_expr_inline(expr);
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause}\n    !({sv_expr}));\n\n"
+                "  always @(posedge clk) begin\n    if (rst_n) {sva_keyword} (!({sv_expr}));\n  end\n\n"
             ));
         }
         PropertyFormula::AlwaysImplies { antecedent, consequent } => {
             let ante_sv = super::emit_expr_inline(antecedent);
             let cons_sv = super::emit_expr_inline(consequent);
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause}\n    {ante_sv} |-> {cons_sv});\n\n"
+                "  always @(posedge clk) begin\n    if (rst_n && {ante_sv}) {sva_keyword} ({cons_sv});\n  end\n\n"
             ));
         }
         PropertyFormula::NeverImplies { antecedent, consequent } => {
             let ante_sv = super::emit_expr_inline(antecedent);
             let cons_sv = super::emit_expr_inline(consequent);
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause}\n    !({ante_sv} |-> {cons_sv}));\n\n"
+                "  always @(posedge clk) begin\n    if (rst_n && {ante_sv}) {sva_keyword} (!({cons_sv}));\n  end\n\n"
             ));
         }
         PropertyFormula::EventuallyWithin { expr, cycles } => {
             let sv_expr = super::emit_expr_inline(expr);
+            // SVA style for bounded future checks
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause}\n    ##[1:{cycles}] {sv_expr});\n\n"
+                "  {sva_keyword} property (@(posedge clk){disable_clause} (##[1:{cycles}] {sv_expr}));\n\n"
             ));
         }
         PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => {
             let trig_sv = super::emit_expr_inline(trigger);
             let resp_sv = super::emit_expr_inline(response);
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause}\n    {trig_sv} |-> ##{delay_cycles} {resp_sv});\n\n"
+                "  {sva_keyword} property (@(posedge clk){disable_clause} ({trig_sv} |-> ##{delay_cycles} {resp_sv}));\n\n"
             ));
         }
     }

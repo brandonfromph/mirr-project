@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+use super::rspu::rspu_err;
 use super::rspu_isa::*;
 use crate::error::MirrError;
 
@@ -46,7 +47,7 @@ pub fn emit_arm_asm(program: &RspuProgram) -> Result<String, MirrError> {
     // Emit instructions
     for (i, instr) in program.instructions.iter().enumerate() {
         out.push_str(&format!("\ninstr_{}:\n", i));
-        emit_arm_instruction(&mut out, instr, &mut label_counter);
+        emit_arm_instruction(&mut out, instr, &mut label_counter)?;
     }
 
     // HALT at end (safety guarantee)
@@ -69,7 +70,11 @@ pub fn emit_arm_asm(program: &RspuProgram) -> Result<String, MirrError> {
 }
 
 /// Emit a single ARM instruction.
-fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter: &mut u32) {
+fn emit_arm_instruction(
+    out: &mut String,
+    instr: &RspuInstruction,
+    label_counter: &mut u32,
+) -> Result<(), MirrError> {
     match instr {
         RspuInstruction::TagBranch { tag_value, target_pc } => {
             out.push_str(&format!("    @ TAG_BRANCH {}, {}\n", tag_value, target_pc));
@@ -98,10 +103,16 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
 
         // ALU tier
         RspuInstruction::Alu { op, dst, a, b } => {
-            emit_arm_alu(out, *op, *dst, *a, *b);
+            // ARM target still uses 8-bit registers in this model.
+            let d8 = (*dst).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let a8 = (*a).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let b8 = (*b).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            emit_arm_alu(out, *op, d8, a8, b8);
         }
         RspuInstruction::AluImm { op, dst, a, imm } => {
-            emit_arm_alu_imm(out, *op, *dst, *a, *imm);
+            let d8 = (*dst).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let a8 = (*a).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            emit_arm_alu_imm(out, *op, d8, a8, *imm);
         }
         RspuInstruction::AluUnary { op, dst, src } => match op {
             AluUnaryOp::Not => out.push_str(&format!("    mvn r{}, r{}\n", dst, src)),
@@ -303,6 +314,7 @@ fn emit_arm_instruction(out: &mut String, instr: &RspuInstruction, label_counter
             out.push_str(&format!("    @ INTERVAL_CHECK r{}, r{}\n", src, bounds));
         }
     }
+    Ok(())
 }
 
 /// Emit ARM ALU operation.

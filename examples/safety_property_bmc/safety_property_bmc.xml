@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+<testsuite timestamp="2026-06-09T04:27:31" hostname="BRANDONs-MacBook.local" package="safety_property" id="0" name="bmc" tests="1" errors="1" failures="0" time="0" skipped="0">
+<properties>
+<property name="os" value="Darwin"/>
+<property name="expect" value="PASS"/>
+<property name="status" value="ERROR"/>
+</properties>
+<testcase classname="bmc" name="bmc" time="0">
+<error type="ERROR"/>
+</testcase>
+<system-out>SBY  4:27:31 [examples/safety_property_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc'.
+SBY  4:27:31 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_synth.sv'.
+SBY  4:27:31 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_sva_bind.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_sva_bind.sv'.
+SBY  4:27:31 [examples/safety_property_bmc] engine_0: smtbmc z3
+SBY  4:27:31 [examples/safety_property_bmc] base: starting process &quot;cd examples/safety_property_bmc/src; yosys -ql ../model/design.log ../model/design.ys&quot;
+SBY  4:27:31 [examples/safety_property_bmc] base: safety_property_sva_bind.sv:13: ERROR: syntax error, unexpected '@'
+SBY  4:27:31 [examples/safety_property_bmc] base: finished (returncode=1)
+SBY  4:27:31 [examples/safety_property_bmc] base: task failed. ERROR.
+SBY  4:27:31 [examples/safety_property_bmc] summary: Elapsed clock time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY  4:27:31 [examples/safety_property_bmc] summary: Elapsed process time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY  4:27:31 [examples/safety_property_bmc] summary: engine_0 (smtbmc z3) did not return a status
+SBY  4:27:31 [examples/safety_property_bmc] summary: engine_0 did not produce any traces
+SBY  4:27:31 [examples/safety_property_bmc] DONE (ERROR, rc=16)
+</system-out>
+<system-err>
+</system-err>
+</testsuite>
+</testsuites>
