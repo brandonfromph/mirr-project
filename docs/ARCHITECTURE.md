@@ -135,3 +135,21 @@ The following pathways describe the lifecycle of a MIRR specification:
    7.  **Logic Optimization (Boolean Minimization)**: Integrate standard boolean minimization engines (e.g., ABC) to reduce gate count and power consumption.
    8.  **Source-Level Debugger**: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
 
+## 6. The 1-Billion Transistor Vision (Wafer-Scale AI Engine)
+
+Because the R-SPU is a spatial architecture, it scales "out" rather than "up." If the R-SPU ever hits 1 billion transistors, it won't be because we added bloated x86 legacy baggage, deep branch predictors, or out-of-order execution pipelines. It will be because we built a **massively parallel synthetic brain** for robotics.
+
+A 1-Billion Transistor R-SPU would likely consist of:
+
+1. **Massive Core Count (1,024+ Cores):**
+   Scaling the NoC to thousands of independent cores allows massively parallel, hard real-time spatial processing. For example, assigning 2,000 cores just to process incoming lidar/camera arrays deterministically (a synthetic visual cortex), or thousands of cores independently controlling micro-actuators without OS scheduling overhead.
+
+2. **Massive "Local" Memory (SRAM):**
+   True deterministic AI and robotics cannot afford to wait hundreds of clock cycles for external DRAM. By embedding massive amounts of ultra-fast SRAM directly inside the R-SPU silicon (e.g., 1MB per core across 1,024 cores), the chip could store entire neural network models locally.
+
+3. **Matrix Math Units (Tensor Cores):**
+   Augmenting the simple 64-bit ALUs with dedicated Matrix Multiplication units on every single core. This allows the deterministic execution of advanced AI models (like localized Vision Transformers or LLMs) in a single clock cycle across the spatial grid.
+
+**The Ultimate Goal:**
+A sprawling grid of thousands of tiny, hyper-efficient, jitter-free cores swimming in a sea of local memory, communicating over a massive NoC router, and processing thousands of physical reflexes simultaneously without dropping a single frame.
+
