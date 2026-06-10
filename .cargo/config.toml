@@ -1,9 +1,4 @@
-[alias]
-t = "nextest run"
-nt = "nextest run"
-
 [build]
-rustc-wrapper = "sccache"
 incremental = false
 
 [target.wasm32-unknown-unknown]
