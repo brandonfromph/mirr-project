@@ -159,17 +159,65 @@ pub(super) fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &m
         }
         PropertyFormula::EventuallyWithin { expr, cycles } => {
             let sv_expr = super::emit_expr_inline(expr);
-            // SVA style for bounded future checks
+            let prop_name = &prop.name;
+            // Generate a counter to track if the expression is met within the window
+            out.push_str(&format!("  reg [31:0] prop_{prop_name}_timer;\n"));
+            out.push_str("  always @(posedge clk) begin\n");
+            if has_rst_n {
+                out.push_str(&format!("    if (!rst_n) prop_{prop_name}_timer <= 0;\n"));
+                out.push_str(&format!("    else if ({sv_expr}) prop_{prop_name}_timer <= 0;\n"));
+                out.push_str(&format!("    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"));
+            } else {
+                out.push_str(&format!("    if ({sv_expr}) prop_{prop_name}_timer <= 0;\n"));
+                out.push_str(&format!("    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"));
+            }
+            out.push_str("  end\n");
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause} (##[1:{cycles}] {sv_expr}));\n\n"
+                "  {sva_keyword} property (@(posedge clk){disable_clause} (prop_{prop_name}_timer < {cycles}));\n\n"
             ));
         }
         PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => {
             let trig_sv = super::emit_expr_inline(trigger);
             let resp_sv = super::emit_expr_inline(response);
-            out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk){disable_clause} ({trig_sv} |-> ##{delay_cycles} {resp_sv}));\n\n"
-            ));
+            let prop_name = &prop.name;
+            
+            if *delay_cycles == 0 {
+                out.push_str(&format!(
+                    "  {sva_keyword} property (@(posedge clk){disable_clause} ({trig_sv} |-> {resp_sv}));\n\n"
+                ));
+            } else if *delay_cycles == 1 {
+                out.push_str(&format!("  reg prop_{prop_name}_trig_d1;\n"));
+                out.push_str("  always @(posedge clk) begin\n");
+                if has_rst_n {
+                    out.push_str(&format!("    if (!rst_n) prop_{prop_name}_trig_d1 <= 0;\n"));
+                    out.push_str(&format!("    else prop_{prop_name}_trig_d1 <= {trig_sv};\n"));
+                } else {
+                    out.push_str(&format!("    prop_{prop_name}_trig_d1 <= {trig_sv};\n"));
+                }
+                out.push_str("  end\n");
+                out.push_str(&format!(
+                    "  {sva_keyword} property (@(posedge clk){disable_clause} (prop_{prop_name}_trig_d1 |-> {resp_sv}));\n\n"
+                ));
+            } else {
+                let msb = delay_cycles - 1;
+                out.push_str(&format!("  reg [{msb}:0] prop_{prop_name}_trig_shift;\n"));
+                out.push_str("  always @(posedge clk) begin\n");
+                let shift_expr = if *delay_cycles == 2 {
+                    format!("{{prop_{prop_name}_trig_shift[0], {trig_sv}}}")
+                } else {
+                    format!("{{prop_{prop_name}_trig_shift[{}:0], {trig_sv}}}", msb - 1)
+                };
+                if has_rst_n {
+                    out.push_str(&format!("    if (!rst_n) prop_{prop_name}_trig_shift <= 0;\n"));
+                    out.push_str(&format!("    else prop_{prop_name}_trig_shift <= {shift_expr};\n"));
+                } else {
+                    out.push_str(&format!("    prop_{prop_name}_trig_shift <= {shift_expr};\n"));
+                }
+                out.push_str("  end\n");
+                out.push_str(&format!(
+                    "  {sva_keyword} property (@(posedge clk){disable_clause} (prop_{prop_name}_trig_shift[{msb}] |-> {resp_sv}));\n\n"
+                ));
+            }
         }
     }
 }

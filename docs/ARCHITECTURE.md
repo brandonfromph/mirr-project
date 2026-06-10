@@ -56,11 +56,8 @@ MIRR is a specialized tool optimized for designing and verifying the **R-SPU (Re
 The following flaws have been identified in the current compiler implementation (Phase 6):
 
 1.  **Single-Clock Rigidity**: The compiler lacks native support for Multiple Clock Domains (CDC). All logic is currently tied to a single synchronous `clk`.
-2.  **Logic Optimization Gap**: MIRR does not perform boolean minimization (e.g., Espresso or ABC). This results in a higher gate count and lower power efficiency compared to hand-optimized Verilog.
-3.  **Physical P&R Agnosticism**: The compiler has no awareness of physical geometry or floorplanning, which can lead to timing closure failures on large-scale chips (like the 16-core R-SPU).
-4.  **Traceability Gap**: The high abstraction of the ECS engine makes it difficult to trace low-level bugs in the 10k+ lines of generated RTL back to the original MIRR source lines.
-5.  **SBY Pathing Bug**: The formal configuration generator (`.sby`) emits incorrect relative paths for synthesized artifacts, requiring manual correction to locate files.
-6.  **SVA Parser Incompatibility**: MIRR outputs advanced SystemVerilog Assertions (like `##[1:100]`) that the standard open-source Yosys parser is unable to handle without commercial tools or external translators.
+2.  **Physical P&R Agnosticism**: The compiler has no awareness of physical geometry or floorplanning, which can lead to timing closure failures on large-scale chips (like the 16-core R-SPU).
+3.  **Traceability Gap**: The high abstraction of the ECS engine makes it difficult to trace low-level bugs in the 10k+ lines of generated RTL back to the original MIRR source lines.
 
 **Inputs:**
 - MIRR specifications (Signals, Guards, Reflexes, Properties, Patterns)
@@ -132,8 +129,7 @@ The following pathways describe the lifecycle of a MIRR specification:
    4.  **Engine Wiring**: Complete and wire the 14 identified sub-engines (Symbolic, SAT, MAPE-K, etc.) into a unified, high-assurance pipeline.
    5.  **Compiler Ergonomics**: Improve the MIRR language syntax and CLI feedback loops to reduce the barrier to entry for hardware architects.
    6.  **Clock Domain Crossing (CDC)**: Implement native support for multiple clock domains to support industrial-grade SoC designs.
-   7.  **Logic Optimization (Boolean Minimization)**: Integrate standard boolean minimization engines (e.g., ABC) to reduce gate count and power consumption.
-   8.  **Source-Level Debugger**: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
+   7.  **Source-Level Debugger**: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
 
 ## 6. The 1-Billion Transistor Vision (Wafer-Scale AI Engine)
 

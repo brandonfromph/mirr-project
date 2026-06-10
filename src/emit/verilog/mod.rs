@@ -154,7 +154,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
     let sva_mod_name = format!("{}_sva", module.name);
     out.push_str(&format!("module {sva_mod_name} (\n"));
 
-    let needs_temporal = !module.guards.is_empty();
+    let needs_temporal = !module.guards.is_empty() || !module.properties.is_empty();
     let has_clk = module.signals.iter().any(|s| s.name == "clk");
     let has_rst = module.signals.iter().any(|s| s.name == "rst_n");
 

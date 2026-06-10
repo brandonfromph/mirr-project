@@ -209,6 +209,12 @@ jobs:
           CARGO_TARGET_DIR: ${{ github.workspace }}/target
         run: cargo llvm-cov test --all --locked --codecov --output-path codecov.json
 
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: codecov-report
+          path: codecov.json
+
   supply-chain:
     name: Supply Chain
     runs-on: ubuntu-latest
