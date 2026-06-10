@@ -1,8 +1,0 @@
-read_verilog -sv rspu_top_gen.sv
-read_verilog -sv rspu_chip/core/regfile.sv
-read_verilog -sv rspu_chip/core/ram.sv
-hierarchy -check -top rspu_top
-proc
-opt
-check
-stat

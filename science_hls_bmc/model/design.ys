@@ -1,8 +1,0 @@
-# running in science_hls_bmc/src/
-read_verilog -sv -formal science_hls_synth.sv
-prep -top ScienceHls
-
-hierarchy -smtcheck
-rename -witness
-write_jny -no-connections ../model/design.json
-write_rtlil ../model/design.il
