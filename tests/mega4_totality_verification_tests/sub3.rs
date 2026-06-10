@@ -306,6 +306,7 @@ fn f12_full_chain_cert_generate_verify_accept() {
 
     // Build a minimal program with VERIFY + CERTIFY + HALT to test the chain.
     let verify_program = mirrc::emit::rspu_isa::RspuProgram {
+        target: None,
         instructions: vec![
             RspuInstruction::Verify { cert_offset: 0 },
             RspuInstruction::Certify { dst: 192 },
@@ -339,6 +340,7 @@ fn f12_full_chain_certify_without_verify_returns_zero() {
     let mut sim = RspuSimulator::new();
 
     let program = mirrc::emit::rspu_isa::RspuProgram {
+        target: None,
         instructions: vec![RspuInstruction::Certify { dst: 192 }, RspuInstruction::Halt],
         registers_used: 1,
         guards_used: 0,
@@ -364,6 +366,7 @@ fn f12_full_chain_total_check_with_no_violations() {
     let mut sim = RspuSimulator::new();
 
     let program = mirrc::emit::rspu_isa::RspuProgram {
+        target: None,
         instructions: vec![
             RspuInstruction::TotalCheck { expected_properties: 0 },
             RspuInstruction::Halt,
@@ -407,6 +410,7 @@ fn f12_full_chain_verify_certify_total_check_sequence() {
         let mut sim = RspuSimulator::new();
 
         let program = mirrc::emit::rspu_isa::RspuProgram {
+            target: None,
             instructions: vec![
                 RspuInstruction::Verify { cert_offset: 0 },
                 RspuInstruction::Certify { dst: 192 },

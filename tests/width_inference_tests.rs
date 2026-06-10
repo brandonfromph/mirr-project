@@ -719,6 +719,7 @@ fn program_width_inference_basic() {
     use mirrc::ast::program::*;
 
     let program = mirrc::MirrProgram {
+        target: None,
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {
@@ -764,6 +765,7 @@ fn program_detects_truncation_in_reflex() {
     use mirrc::ast::program::*;
 
     let program = mirrc::MirrProgram {
+        target: None,
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {

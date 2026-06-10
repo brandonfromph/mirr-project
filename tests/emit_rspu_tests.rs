@@ -76,16 +76,18 @@ module test_mod {
 
 #[test]
 fn regalloc_input_signal_maps_to_input_partition() {
+    let target = TargetSpec::from_config(&None);
     let result = run_pipeline(minimal_source(), &temporal_config_no_rspu()).unwrap();
-    let regs = allocate_registers(&result.program.module).unwrap();
+    let regs = allocate_registers(&result.program.module, &target).unwrap();
     let a_reg = regs.reg("a");
     assert!(a_reg <= REG_INPUT_MAX, "input signal should be in input partition");
 }
 
 #[test]
 fn regalloc_output_signal_maps_to_output_partition() {
+    let target = TargetSpec::from_config(&None);
     let result = run_pipeline(minimal_source(), &temporal_config_no_rspu()).unwrap();
-    let regs = allocate_registers(&result.program.module).unwrap();
+    let regs = allocate_registers(&result.program.module, &target).unwrap();
     let b_reg = regs.reg("b");
     assert!(
         (REG_OUTPUT_BASE..=REG_OUTPUT_MAX).contains(&b_reg),
@@ -95,6 +97,7 @@ fn regalloc_output_signal_maps_to_output_partition() {
 
 #[test]
 fn regalloc_internal_signal_maps_to_internal_partition() {
+    let target = TargetSpec::from_config(&None);
     let source = r#"
 module test_mod {
     signal a: in bool;
@@ -120,7 +123,7 @@ module test_mod {
 }
 "#;
     let result = run_pipeline(source, &temporal_config_no_rspu()).unwrap();
-    let regs = allocate_registers(&result.program.module).unwrap();
+    let regs = allocate_registers(&result.program.module, &target).unwrap();
     let mid_reg = regs.reg("mid");
     assert!(
         (REG_INTERNAL_BASE..=REG_INTERNAL_MAX).contains(&mid_reg),
@@ -130,6 +133,7 @@ module test_mod {
 
 #[test]
 fn regalloc_multiple_signals_unique_registers() {
+    let target = TargetSpec::from_config(&None);
     let source = r#"
 module test_mod {
     signal x: in u8;
@@ -149,7 +153,7 @@ module test_mod {
 }
 "#;
     let result = run_pipeline(source, &temporal_config_no_rspu()).unwrap();
-    let regs = allocate_registers(&result.program.module).unwrap();
+    let regs = allocate_registers(&result.program.module, &target).unwrap();
     let x_reg = regs.reg("x");
     let y_reg = regs.reg("y");
     let z_reg = regs.reg("z");

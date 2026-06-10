@@ -356,62 +356,70 @@ fn e10_sim_interval_check_below_range_exception() {
 
 #[test]
 fn e3_encode_decode_verify_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Verify { cert_offset: 4096 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded, i, "Verify encode/decode roundtrip must preserve fields");
 }
 
 #[test]
 fn e3_encode_decode_certify_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Certify { dst: 192 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded, i, "Certify encode/decode roundtrip must preserve fields");
 }
 
 #[test]
 fn e3_encode_decode_total_check_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::TotalCheck { expected_properties: 5 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded, i, "TotalCheck encode/decode roundtrip must preserve fields");
 }
 
 #[test]
 fn e3_encode_decode_match_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Match { dst: 193, src: 10, table_offset: 42 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded, i, "Match encode/decode roundtrip must preserve fields");
 }
 
 #[test]
 fn e3_encode_decode_interval_lo_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::IntervalLo { dst: 192, src: 5 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded, i, "IntervalLo encode/decode roundtrip must preserve fields");
 }
 
 #[test]
 fn e3_encode_decode_interval_hi_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::IntervalHi { dst: 192, src: 5 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded, i, "IntervalHi encode/decode roundtrip must preserve fields");
 }
 
 #[test]
 fn e3_encode_decode_interval_check_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::IntervalCheck { src: 192, bounds: 5 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded, i, "IntervalCheck encode/decode roundtrip must preserve fields");
 }
 
 #[test]
 fn e3_encode_decode_all_mega4_mega5_opcodes_roundtrip() {
+    let target = TargetSpec::from_config(&None);
     let mega4_5_instrs: [RspuInstruction; 7] = [
         RspuInstruction::Verify { cert_offset: 0 },
         RspuInstruction::Certify { dst: 192 },
@@ -423,8 +431,8 @@ fn e3_encode_decode_all_mega4_mega5_opcodes_roundtrip() {
     ];
     let mut i = 0;
     while i < mega4_5_instrs.len() && i < MAX_TEST_ITERATIONS {
-        let encoded = encode(&mega4_5_instrs[i]).expect("encode must succeed");
-        let decoded = decode(encoded.0).expect("decode must succeed");
+        let encoded = encode(&mega4_5_instrs[i], &target).expect("encode must succeed");
+        let decoded = decode(encoded.0, &target).expect("decode must succeed");
         assert_eq!(
             decoded,
             mega4_5_instrs[i],

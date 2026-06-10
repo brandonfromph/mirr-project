@@ -266,77 +266,87 @@ fn e2_type_tag_display_interval() {
 
 #[test]
 fn e3_encode_decode_load_input() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::LoadInput { dst: 5, port: 3 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "LOAD_INPUT");
 }
 
 #[test]
 fn e3_encode_decode_store_output() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::StoreOutput { src: 64, port: 1 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "STORE_OUTPUT");
 }
 
 #[test]
 fn e3_encode_decode_mov() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Mov { dst: 10, src: 5 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "MOV");
 }
 
 #[test]
 fn e3_encode_decode_alu_add() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Alu { op: AluOp::Add, dst: 2, a: 0, b: 1 };
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "ALU");
 }
 
 #[test]
 fn e3_encode_decode_emergency_stop() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::EmergencyStop;
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "EMERGENCY_STOP");
 }
 
 #[test]
 fn e3_encode_decode_halt() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Halt;
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "HALT");
 }
 
 #[test]
 fn e3_encode_decode_nop() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Nop;
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "NOP");
 }
 
 #[test]
 fn e3_encode_decode_fence() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Fence;
-    let encoded = encode(&i).expect("encode must succeed");
-    let decoded = decode(encoded.0).expect("decode must succeed");
+    let encoded = encode(&i, &target).expect("encode must succeed");
+    let decoded = decode(encoded.0, &target).expect("decode must succeed");
     assert_eq!(decoded.mnemonic(), "FENCE");
 }
 
 #[test]
 fn e3_encoded_instruction_is_32_bits() {
+    let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Nop;
-    let _encoded = encode(&i).expect("encode must succeed");
+    let _encoded = encode(&i, &target).expect("encode must succeed");
     assert_eq!(std::mem::size_of::<EncodedInstruction>(), 4, "Encoded instruction must be 32 bits");
 }
 
 #[test]
 fn e3_binary_roundtrip_all_zero_arg_instructions() {
+    let target = TargetSpec::from_config(&None);
     let zero_arg_instrs = [
         RspuInstruction::EmergencyStop,
         RspuInstruction::Halt,
@@ -345,8 +355,8 @@ fn e3_binary_roundtrip_all_zero_arg_instructions() {
     ];
     let mut i = 0;
     while i < zero_arg_instrs.len() && i < MAX_TEST_ITERATIONS {
-        let encoded = encode(&zero_arg_instrs[i]).expect("encode must succeed");
-        let decoded = decode(encoded.0).expect("decode must succeed");
+        let encoded = encode(&zero_arg_instrs[i], &target).expect("encode must succeed");
+        let decoded = decode(encoded.0, &target).expect("decode must succeed");
         assert_eq!(
             decoded.mnemonic(),
             zero_arg_instrs[i].mnemonic(),

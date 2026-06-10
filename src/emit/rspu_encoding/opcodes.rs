@@ -53,13 +53,13 @@ pub const OP_TAG_BRANCH: u8 = 37;
 /// Total number of assigned opcodes (used + reserved).
 pub const TOTAL_OPCODES: usize = 38;
 
-/// Maximum value for a 10-bit immediate field.
+/// Maximum value for a 10-bit immediate field (used in AluImm).
 pub(super) const IMM10_MAX: u64 = 0x3FF;
 
 // ---------------------------------------------------------------------------
 // Encoded instruction newtype
 // ---------------------------------------------------------------------------
 
-/// A 32-bit encoded R-SPU instruction word.
+/// A 64-bit encoded R-SPU instruction word (R-SPU 2.0).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct EncodedInstruction(pub u32);
+pub struct EncodedInstruction(pub u64);

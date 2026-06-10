@@ -89,7 +89,9 @@ pub enum ErrorCode {
     ForLoopSuffixBad = 164,
     ForLoopStepZero = 165,
     ForLoopBodyError = 166,
-    // 167–169 reserved
+    TargetOpenBrace = 167,
+    TargetPropertyInvalid = 168,
+    // 169 reserved
     ImportMalformed = 170,
     ImportPathNotString = 171,
     ImportPathEmpty = 172,

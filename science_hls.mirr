@@ -1,14 +1,48 @@
 module ScienceHls {
-    signal a: signed<8>;
-    signal b: signed<8>;
-    signal c: signed<8>;
-    signal out_val: signed<8>;
+    signal clk: in bool;
+    signal rst_n: in bool;
+    signal a: in signed<8>;
+    signal b: in signed<8>;
+    signal c: in signed<8>;
+    signal out_val: out signed<17>;
+
+    signal a_d1: signed<8>;
+    signal a_d2: signed<8>;
+    signal a_d3: signed<8>;
+
+    signal b_d1: signed<8>;
+    signal b_d2: signed<8>;
+    signal b_d3: signed<8>;
+
+    signal c_d1: signed<8>;
+    signal c_d2: signed<8>;
+    signal c_d3: signed<8>;
+
+    signal rst_n_d1: bool;
+    signal rst_n_d2: bool;
+    signal rst_n_d3: bool;
 
     reflex compute {
         out_val = (a + b) * c;
+
+        a_d1 = a;
+        a_d2 = a_d1;
+        a_d3 = a_d2;
+
+        b_d1 = b;
+        b_d2 = b_d1;
+        b_d3 = b_d2;
+
+        c_d1 = c;
+        c_d2 = c_d1;
+        c_d3 = c_d2;
+
+        rst_n_d1 = rst_n;
+        rst_n_d2 = rst_n_d1;
+        rst_n_d3 = rst_n_d2;
     }
 
     property math_check {
-        always (out_val == (a + b) * c);
+        always ((((a_d3 == a) && (b_d3 == b)) && (c_d3 == c)) && rst_n_d3 -> out_val == (a + b) * c);
     }
 }

@@ -16,7 +16,9 @@
 #![allow(clippy::needless_range_loop, clippy::clone_on_copy)]
 
 use mirrc::emit::rspu_encoding::{decode, emit_binary, encode, EncodedInstruction};
-use mirrc::emit::rspu_isa::{AluOp, AluUnaryOp, RspuInstruction, RspuProgram, MAX_INSTRUCTIONS};
+use mirrc::emit::rspu_isa::{
+    AluOp, AluUnaryOp, RspuInstruction, RspuProgram, TargetSpec, MAX_INSTRUCTIONS,
+};
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA Power-of-10)
@@ -39,10 +41,11 @@ const MAX_EMIT_STRESS: usize = 128;
 // ---------------------------------------------------------------------------
 
 fn roundtrip_check(instr: &RspuInstruction, label: &str) {
-    let encoded = encode(instr).unwrap_or_else(|e| {
+    let target = TargetSpec::from_config(&None);
+    let encoded = encode(instr, &target).unwrap_or_else(|e| {
         panic!("roundtrip_check({label}): encode failed: {}", e.message());
     });
-    let decoded = decode(encoded.0).unwrap_or_else(|e| {
+    let decoded = decode(encoded.0, &target).unwrap_or_else(|e| {
         panic!("roundtrip_check({label}): decode failed: {}", e.message());
     });
     assert_eq!(
@@ -53,6 +56,7 @@ fn roundtrip_check(instr: &RspuInstruction, label: &str) {
 
 fn make_program(instructions: Vec<RspuInstruction>) -> RspuProgram {
     RspuProgram {
+        target: None,
         instructions,
         registers_used: 256,
         guards_used: 64,

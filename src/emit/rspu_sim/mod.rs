@@ -37,9 +37,11 @@ pub const MAX_REG_HISTORY: usize = 64;
 /// program counter, cycle counter, exception state, property tracking,
 /// and optional deadline.
 pub struct RspuSimulator {
-    /// Tagged register file (256 entries).
+    /// Target hardware configuration.
+    pub target: TargetSpec,
+    /// Tagged register file.
     pub registers: RegisterFile,
-    /// Double-buffered guard state array (`MAX_GUARDS` entries).
+    /// Double-buffered guard state array.
     pub guards: Vec<DoubleBufferedGuard>,
     /// Program counter (index into instruction vector).
     pub pc: usize,
@@ -60,7 +62,7 @@ pub struct RspuSimulator {
     /// Current active type tag register.
     pub tag_register: RegId,
     /// Circular buffer for register history `[cycle][reg]`.
-    /// Size: MAX_REGISTERS * MAX_REG_HISTORY
+    /// Size: max_registers * MAX_REG_HISTORY
     pub history: Vec<TaggedWord>,
     /// Index of the most recent cycle in the history buffer.
     pub history_cursor: usize,
@@ -70,23 +72,27 @@ pub struct RspuSimulator {
 
 impl RspuSimulator {
     /// Create a new simulator with all state initialized to defaults.
-    ///
-    /// - All registers are uninitialized.
-    /// - All guards are false.
-    /// - PC is 0, cycle is 0, no deadline.
     pub fn new() -> Self {
-        let mut guards = Vec::with_capacity(MAX_GUARDS);
-        for _i in 0..MAX_GUARDS {
+        Self::new_with_target(TargetSpec::from_config(&None))
+    }
+
+    /// Create a new simulator for a specific target configuration.
+    pub fn new_with_target(target: TargetSpec) -> Self {
+        let max_guards = target.max_guards();
+        let max_regs = target.max_registers();
+
+        let mut guards = Vec::with_capacity(max_guards);
+        for _i in 0..max_guards {
             guards.push(DoubleBufferedGuard::default());
         }
-        // MEGA-5: Initialize interval shadow with full range for every register.
-        // Bounded: exactly MAX_REGISTERS iterations.
-        let mut interval_shadow = Vec::with_capacity(MAX_REGISTERS);
-        for _i in 0..MAX_REGISTERS {
+
+        let mut interval_shadow = Vec::with_capacity(max_regs);
+        for _i in 0..max_regs {
             interval_shadow.push((0, u64::MAX));
         }
         let mut sim = Self {
-            registers: RegisterFile::new(),
+            target,
+            registers: RegisterFile::new_with_size(max_regs),
             guards,
             pc: 0,
             cycle: 0,
@@ -97,7 +103,7 @@ impl RspuSimulator {
             cert_verified: false,
             interval_shadow,
             tag_register: 0,
-            history: vec![TaggedWord::uninitialized(); MAX_REGISTERS * MAX_REG_HISTORY],
+            history: vec![TaggedWord::uninitialized(); max_regs * MAX_REG_HISTORY],
             history_cursor: 0,
             history_valid_count: 0,
         };
@@ -107,21 +113,21 @@ impl RspuSimulator {
     }
 
     /// Write an input value to the register file at the input partition.
-    ///
-    /// `port` selects the register in the R0-R63 input range.  The value
-    /// is tagged with the given `TypeTag`.
     pub fn set_input(&mut self, port: PortId, value: u64, tag: TypeTag) {
-        let reg = port as RegId;
+        let (input_base, _, _, _) = self.target.partitions();
+        let reg = input_base.wrapping_add(port as RegId);
         let word = TaggedWord::from_input(value, tag, port);
         self.registers.write(reg, word);
     }
 
-    /// Read an output value from the register file output partition (R64-R127).
-    ///
-    /// Returns `None` if the port index would exceed the output range.
+    /// Read an output value from the register file output partition.
     pub fn read_output(&self, port: PortId) -> Option<&TaggedWord> {
-        let reg = REG_OUTPUT_BASE.wrapping_add(port as RegId);
-        if !(REG_OUTPUT_BASE..=REG_OUTPUT_MAX).contains(&reg) {
+        let (_, output_base, internal_base, _) = self.target.partitions();
+        let reg = output_base.wrapping_add(port as RegId);
+        if reg >= internal_base {
+            return None;
+        }
+        if reg as usize >= self.registers.len() {
             return None;
         }
         Some(self.registers.read(reg))

@@ -166,7 +166,7 @@ fn prev_in_reflex_result() -> PipelineResult {
 
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { patterns: Vec::new(), imports: Vec::new(), module },
+        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
         simplify_stats: None,
         width_result: None,
         temporal_netlist: None,

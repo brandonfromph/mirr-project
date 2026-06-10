@@ -1,5 +1,5 @@
 use super::*;
-use mirrc::emit::rspu_tagged::{TaggedWord, TypeTag};
+use mirrc::emit::rspu_tagged::TaggedWord;
 
 #[test]
 fn test_pc_advances_on_continue() {
@@ -147,8 +147,6 @@ fn test_sim_result_no_outputs_when_none_written() {
 
 #[test]
 fn test_sim_result_fields() {
-    // MEGA-4: AssertAlways with cond=0 now raises PropertyFail,
-    // stopping execution at cycle 2 (LoadImm + AssertAlways).
     let mut sim = RspuSimulator::new();
     let program = make_program(vec![
         RspuInstruction::LoadImm { dst: 192, value: 0, width: 2 },
@@ -182,7 +180,7 @@ fn test_set_input_registers() {
 #[test]
 fn test_read_output_partition() {
     let mut sim = RspuSimulator::new();
-    // Directly write to the output partition register R64 (port 0).
+    // Directly write to the output partition register R256 (port 0).
     let program = make_program(vec![
         RspuInstruction::LoadImm { dst: 192, value: 555, width: 16 },
         RspuInstruction::StoreOutput { src: 192, port: 0 },
@@ -227,7 +225,7 @@ fn test_multiple_guards_independent() {
         instrs.push(RspuInstruction::SrInit { guard: i as u8, length: 1, cond });
     }
     for i in 0..MAX_GUARD_TEST {
-        instrs.push(RspuInstruction::SrQuery { dst: (200 + i) as u8, guard: i as u8 });
+        instrs.push(RspuInstruction::SrQuery { dst: (200 + i) as u16, guard: i as u8 });
     }
     instrs.push(RspuInstruction::Halt);
     let program = make_program(instrs);
@@ -235,7 +233,7 @@ fn test_multiple_guards_independent() {
     for i in 0..MAX_GUARD_TEST {
         let expected = if i % 2 == 0 { 1u64 } else { 0u64 };
         assert_eq!(
-            sim.registers.read((200 + i) as u8).value,
+            sim.registers.read((200 + i) as u16).value,
             expected,
             "Guard {i} must be {expected_str}",
             expected_str = if expected == 1 { "active" } else { "inactive" }

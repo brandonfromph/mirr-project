@@ -8,6 +8,7 @@ use mirrc::emit::rspu_isa::*;
 
 fn empty_program() -> RspuProgram {
     RspuProgram {
+        target: None,
         instructions: vec![],
         registers_used: 0,
         guards_used: 0,
@@ -19,6 +20,7 @@ fn empty_program() -> RspuProgram {
 
 fn simple_program() -> RspuProgram {
     RspuProgram {
+        target: None,
         instructions: vec![
             RspuInstruction::LoadInput { dst: 0, port: 0 },
             RspuInstruction::StoreOutput { src: 64, port: 0 },
@@ -60,6 +62,7 @@ fn riscv_emit_store_output() {
 #[test]
 fn riscv_emit_alu_operations() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![
             RspuInstruction::Alu { op: AluOp::Add, dst: 10, a: 1, b: 2 },
             RspuInstruction::Alu { op: AluOp::Sub, dst: 11, a: 3, b: 4 },
@@ -82,6 +85,7 @@ fn riscv_emit_alu_operations() {
 #[test]
 fn riscv_emit_shift_register() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![
             RspuInstruction::SrInit { guard: 0, length: 4, cond: 0 },
             RspuInstruction::SrTick { guard: 0 },
@@ -100,6 +104,7 @@ fn riscv_emit_shift_register() {
 #[test]
 fn riscv_emit_counter() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![
             RspuInstruction::CtrInit { guard: 1, target: 100, cond: 0 },
             RspuInstruction::CtrTick { guard: 1 },
@@ -118,6 +123,7 @@ fn riscv_emit_counter() {
 #[test]
 fn riscv_emit_reflex_if() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![RspuInstruction::ReflexIf { guard: 0, dst: 64, src: 0 }],
         registers_used: 2,
         guards_used: 1,
@@ -132,6 +138,7 @@ fn riscv_emit_reflex_if() {
 #[test]
 fn riscv_emit_assertions() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![
             RspuInstruction::AssertAlways { cond: 0, property_id: 1 },
             RspuInstruction::AssertNever { cond: 1, property_id: 2 },
@@ -158,6 +165,7 @@ fn riscv_emit_full_program() {
 #[test]
 fn riscv_register_bounds() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![RspuInstruction::Mov { dst: 255, src: 0 }],
         registers_used: 256,
         guards_used: 0,
@@ -172,6 +180,7 @@ fn riscv_register_bounds() {
 #[test]
 fn riscv_halt_produces_ecall() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![RspuInstruction::Halt],
         registers_used: 0,
         guards_used: 0,
@@ -186,6 +195,7 @@ fn riscv_halt_produces_ecall() {
 #[test]
 fn riscv_nop_produces_nop() {
     let program = RspuProgram {
+        target: None,
         instructions: vec![RspuInstruction::Nop],
         registers_used: 0,
         guards_used: 0,

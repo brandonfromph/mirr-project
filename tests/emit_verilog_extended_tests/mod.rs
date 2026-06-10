@@ -138,7 +138,7 @@ fn make_property(
 fn result_from_module(module: Module) -> PipelineResult {
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { patterns: Vec::new(), imports: Vec::new(), module },
+        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
         simplify_stats: None,
         width_result: None,
         temporal_netlist: None,
@@ -159,7 +159,7 @@ fn result_from_module(module: Module) -> PipelineResult {
 fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResult {
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { patterns: Vec::new(), imports: Vec::new(), module },
+        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
         simplify_stats: None,
         width_result: None,
         temporal_netlist: Some(netlist),

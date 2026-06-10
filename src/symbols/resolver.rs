@@ -615,6 +615,7 @@ mod tests {
         };
 
         let program = MirrProgram {
+            target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
             struct_defs: Vec::new(),
@@ -644,6 +645,7 @@ mod tests {
         };
 
         let program = MirrProgram {
+            target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
             struct_defs: Vec::new(),
@@ -678,6 +680,7 @@ mod tests {
         };
 
         let program = MirrProgram {
+            target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
             struct_defs: Vec::new(),
@@ -730,6 +733,7 @@ mod tests {
         };
 
         let program = MirrProgram {
+            target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
             struct_defs: Vec::new(),

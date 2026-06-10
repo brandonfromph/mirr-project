@@ -9,11 +9,7 @@ use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
 use super::MAX_SR_STAGES_INLINE;
 
-pub(super) fn emit_temporal_logic(
-    module: &Module,
-    netlist: &TemporalNetlist,
-    out: &mut String
-) {
+pub(super) fn emit_temporal_logic(module: &Module, netlist: &TemporalNetlist, out: &mut String) {
     out.push_str("  // ── Temporal Guards ──\n\n");
 
     // Declare registers for ALL prev() back-references found in the module
@@ -21,12 +17,23 @@ pub(super) fn emit_temporal_logic(
     for reflex in &module.reflexes {
         for assignment in &reflex.assignments {
             // Helper to find Prev nodes in expressions
-            fn collect_prevs(expr: &crate::ast::Expr, seen: &mut std::collections::HashSet<(String, u64)>) {
+            fn collect_prevs(
+                expr: &crate::ast::Expr,
+                seen: &mut std::collections::HashSet<(String, u64)>,
+            ) {
                 match expr {
-                    crate::ast::Expr::Prev { signal, delay } => { seen.insert((signal.clone(), *delay)); }
+                    crate::ast::Expr::Prev { signal, delay } => {
+                        seen.insert((signal.clone(), *delay));
+                    }
                     crate::ast::Expr::Unary { operand, .. } => collect_prevs(operand, seen),
-                    crate::ast::Expr::Binary { left, right, .. } => { collect_prevs(left, seen); collect_prevs(right, seen); }
-                    crate::ast::Expr::ArrayIndex { array, index } => { collect_prevs(array, seen); collect_prevs(index, seen); }
+                    crate::ast::Expr::Binary { left, right, .. } => {
+                        collect_prevs(left, seen);
+                        collect_prevs(right, seen);
+                    }
+                    crate::ast::Expr::ArrayIndex { array, index } => {
+                        collect_prevs(array, seen);
+                        collect_prevs(index, seen);
+                    }
                     _ => {}
                 }
             }
@@ -247,17 +254,18 @@ pub(super) fn emit_reflex_logic(
         out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
         out.push_str("    if (!rst_n) begin\n");
         out.push_str("      hls_state <= 0;\n");
-        
+
         let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
         signals.sort();
         for sig in &signals {
             out.push_str(&format!("      {} <= '0;\n", sig));
         }
-        
+
         out.push_str("    end else begin\n");
         out.push_str("      case (hls_state)\n");
 
-        let mut target_to_cycle: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+        let mut target_to_cycle: std::collections::HashMap<String, u32> =
+            std::collections::HashMap::new();
         let mut max_cycle = 0;
         for op in &hls.schedule {
             if let Some(target) = hls.target_signals.get(&op.op_id) {
@@ -269,7 +277,8 @@ pub(super) fn emit_reflex_logic(
         }
 
         // We want to group by cycle for the FSM states
-        let mut cycle_to_signals: std::collections::HashMap<u32, Vec<String>> = std::collections::HashMap::new();
+        let mut cycle_to_signals: std::collections::HashMap<u32, Vec<String>> =
+            std::collections::HashMap::new();
         for sig in &signals {
             let cycle = target_to_cycle.get(sig).copied().unwrap_or(0);
             cycle_to_signals.entry(cycle).or_default().push(sig.clone());
@@ -284,7 +293,8 @@ pub(super) fn emit_reflex_logic(
                         let guard_cond = if r.guard_names.len() == 1 {
                             format!("{}_out", r.guard_names[0])
                         } else {
-                            let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
+                            let parts: Vec<String> =
+                                r.guard_names.iter().map(|g| format!("{g}_out")).collect();
                             parts.join(" && ")
                         };
                         for a in &r.assignments {
@@ -315,13 +325,20 @@ pub(super) fn emit_reflex_logic(
         if !hls.fifos.is_empty() {
             out.push_str("  // ── HLS FIFOs ──\n");
             for fifo in &hls.fifos {
-                out.push_str(&format!("  // FIFO: {} (depth: {}, width: {})\n", fifo.name, fifo.depth, fifo.elem_width));
-                out.push_str(&format!("  logic [{}:0] {}_buffer [0:{}];\n", fifo.elem_width.saturating_sub(1), fifo.name, fifo.depth.saturating_sub(1)));
+                out.push_str(&format!(
+                    "  // FIFO: {} (depth: {}, width: {})\n",
+                    fifo.name, fifo.depth, fifo.elem_width
+                ));
+                out.push_str(&format!(
+                    "  logic [{}:0] {}_buffer [0:{}];\n",
+                    fifo.elem_width.saturating_sub(1),
+                    fifo.name,
+                    fifo.depth.saturating_sub(1)
+                ));
                 out.push_str(&format!("  logic [31:0] {}_head, {}_tail;\n", fifo.name, fifo.name));
             }
             out.push('\n');
         }
-
     } else {
         // Sort signals by name for deterministic emission.
         let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
@@ -349,7 +366,8 @@ pub(super) fn emit_reflex_logic(
                 let guard_cond = if r.guard_names.len() == 1 {
                     format!("{}_out", r.guard_names[0])
                 } else {
-                    let parts: Vec<String> = r.guard_names.iter().map(|g| format!("{g}_out")).collect();
+                    let parts: Vec<String> =
+                        r.guard_names.iter().map(|g| format!("{g}_out")).collect();
                     parts.join(" && ")
                 };
 

@@ -178,7 +178,7 @@ pub fn typecheck_module_with_mode(
                     all_types.extend(expr_types);
                     let compatible = if mode == TypecheckMode::Bootstrap {
                         // In bootstrap mode, allow any numeric-to-numeric assignment.
-                        // This allows narrowing (e.g. u64 -> u16) which is needed for 
+                        // This allows narrowing (e.g. u64 -> u16) which is needed for
                         // R-SPU 2.0 instruction decoding until explicit casts are added.
                         match (&target_ty, &expr_ty) {
                             (SignalType::Unsigned(_), SignalType::Unsigned(_)) => true,

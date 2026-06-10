@@ -19,6 +19,7 @@ module HlsTest (
 
   // ── Temporal Guards ──
 
+
   // Guard: always — always for 0 cycle (combinational)
   logic always_cond;
   assign always_cond = 1'b1;

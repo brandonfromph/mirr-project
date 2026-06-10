@@ -32,12 +32,13 @@ use crate::emit::rspu_tagged::tag_from_signal_type;
 pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     let module = &result.program.module;
     let netlist = result.temporal_netlist.as_ref();
+    let target_spec = TargetSpec::from_config(&result.program.target);
 
     // Step 1: Register allocation.
-    let mut regs = allocate_registers(module)?;
+    let mut regs = allocate_registers(module, &target_spec)?;
 
     // Step 2: Guard allocation.
-    let (guard_map_vec, guard_map) = allocate_guards(netlist, module)?;
+    let (guard_map_vec, guard_map) = allocate_guards(netlist, module, &target_spec)?;
 
     // Build a helper map to check compiled guards by name in emit_reflex.
     let mut compiled_guard_map = HashMap::new();
@@ -136,6 +137,7 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     }
 
     Ok(RspuProgram {
+        target: result.program.target.clone(),
         registers_used: regs.total_used,
         guards_used: guard_map_vec.len(),
         register_map: regs.entries.clone(),
@@ -154,6 +156,7 @@ type GuardAllocResult = (Vec<(String, GuardId)>, HashMap<String, GuardId>);
 fn allocate_guards(
     netlist: Option<&TemporalNetlist>,
     module: &crate::ast::program::Module,
+    target: &TargetSpec,
 ) -> Result<GuardAllocResult, MirrError> {
     let mut entries = Vec::new();
     let mut map = HashMap::new();
@@ -161,6 +164,7 @@ fn allocate_guards(
     map.insert("always".to_string(), 0);
     entries.push(("always".to_string(), 0));
     let mut next_id: GuardId = 1;
+    let max_guards = target.max_guards();
 
     if let Some(net) = netlist {
         let mut stack = Vec::new();
@@ -171,12 +175,12 @@ fn allocate_guards(
         while let Some(guard) = stack.pop() {
             let name = guard_name(guard);
             if !map.contains_key(&name) {
-                if next_id as usize >= MAX_GUARDS {
+                if next_id as usize >= max_guards {
                     return Err(rspu_err(format!(
                         "{} R-SPU guard resource exhausted: {} guards > {}.",
                         crate::error_codes::ec(703),
                         next_id as usize + 1,
-                        MAX_GUARDS,
+                        max_guards,
                     )));
                 }
                 map.insert(name.clone(), next_id);
@@ -195,12 +199,12 @@ fn allocate_guards(
     for reflex in &module.reflexes {
         for gname in &reflex.guard_names {
             if gname != "always" && !map.contains_key(gname) {
-                if next_id as usize >= MAX_GUARDS {
+                if next_id as usize >= max_guards {
                     return Err(rspu_err(format!(
                         "{} R-SPU guard resource exhausted: {} guards > {}.",
                         crate::error_codes::ec(703),
                         next_id as usize + 1,
-                        MAX_GUARDS,
+                        max_guards,
                     )));
                 }
                 map.insert(gname.clone(), next_id);

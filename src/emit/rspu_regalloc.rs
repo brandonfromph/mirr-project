@@ -56,9 +56,15 @@ impl RegAllocResult {
 ///
 /// Iterates once over `module.signals` (bounded by parser limit).
 /// Returns `Err(E701)` if the total hardware limit is exceeded.
-pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> {
+pub fn allocate_registers(
+    module: &Module,
+    target: &TargetSpec,
+) -> Result<RegAllocResult, MirrError> {
     let mut map = HashMap::with_capacity(module.signals.len());
     let mut entries = Vec::with_capacity(module.signals.len());
+
+    let max_regs = target.max_registers();
+    let (input_base, output_base, internal_base, temp_base) = target.partitions();
 
     // Separate signals by kind to allocate them in blocks (Elastic Partitions)
     let mut inputs = Vec::new();
@@ -73,12 +79,14 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
         }
     }
 
-    let mut cursor: u16 = REG_INPUT_BASE;
+    let mut cursor: u16 = input_base;
 
     // 1. Allocate Inputs
     for sig in inputs {
-        if cursor >= MAX_REGISTERS as u16 {
-            return Err(rspu_err("R-SPU register allocation failed: too many signals (hardware limit exceeded)."));
+        if cursor as usize >= max_regs {
+            return Err(rspu_err(
+                "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
+            ));
         }
         let reg = cursor as RegId;
         map.insert(sig.name.clone(), reg);
@@ -86,11 +94,13 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
         cursor += 1;
     }
 
-    // 2. Allocate Outputs (Start at REG_OUTPUT_BASE unless inputs overflowed into it)
-    cursor = cursor.max(REG_OUTPUT_BASE);
+    // 2. Allocate Outputs (Start at output_base unless inputs overflowed into it)
+    cursor = cursor.max(output_base);
     for sig in outputs {
-        if cursor >= MAX_REGISTERS as u16 {
-            return Err(rspu_err("R-SPU register allocation failed: too many signals (hardware limit exceeded)."));
+        if cursor as usize >= max_regs {
+            return Err(rspu_err(
+                "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
+            ));
         }
         let reg = cursor as RegId;
         map.insert(sig.name.clone(), reg);
@@ -98,11 +108,13 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
         cursor += 1;
     }
 
-    // 3. Allocate Internals (Start at REG_INTERNAL_BASE unless outputs overflowed into it)
-    cursor = cursor.max(REG_INTERNAL_BASE);
+    // 3. Allocate Internals (Start at internal_base unless outputs overflowed into it)
+    cursor = cursor.max(internal_base);
     for sig in internals {
-        if cursor >= MAX_REGISTERS as u16 {
-            return Err(rspu_err("R-SPU register allocation failed: too many signals (hardware limit exceeded)."));
+        if cursor as usize >= max_regs {
+            return Err(rspu_err(
+                "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
+            ));
         }
         let reg = cursor as RegId;
         map.insert(sig.name.clone(), reg);
@@ -115,19 +127,16 @@ pub fn allocate_registers(module: &Module) -> Result<RegAllocResult, MirrError> 
     map.insert("false".to_string(), 0);
 
     // Map "true" to a register initialized to 1.
-    // Start at REG_TEMP_BASE unless internals stretched into it.
-    let true_reg = cursor.max(REG_TEMP_BASE);
-    if true_reg >= MAX_REGISTERS as u16 {
-        return Err(rspu_err("R-SPU register allocation failed: no space for 'true' constant register."));
+    // Start at temp_base unless internals stretched into it.
+    let true_reg = cursor.max(temp_base);
+    if true_reg as usize >= max_regs {
+        return Err(rspu_err(
+            "R-SPU register allocation failed: no space for 'true' constant register.",
+        ));
     }
     map.insert("true".to_string(), true_reg as RegId);
 
     let total_used = (true_reg as usize + 1).max(cursor as usize);
 
-    Ok(RegAllocResult {
-        map,
-        entries,
-        total_used,
-        next_temp: true_reg + 1,
-    })
+    Ok(RegAllocResult { map, entries, total_used, next_temp: true_reg + 1 })
 }

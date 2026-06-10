@@ -23,6 +23,7 @@ fn test_pattern_chaos_recursion_depth_limit() {
     }];
 
     let mut program = MirrProgram {
+        target: None,
         imports: vec![],
         patterns: patterns.clone(),
         module: Module {
@@ -123,6 +124,7 @@ fn test_pattern_chaos_exponential_expansion_stress() {
     });
 
     let mut program = MirrProgram {
+        target: None,
         imports: vec![],
         patterns: patterns.clone(),
         module: Module {

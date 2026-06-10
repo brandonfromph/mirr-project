@@ -7,66 +7,116 @@ use crate::emit::rspu_isa::{AluOp, AluUnaryOp, PortId};
 use crate::error::MirrError;
 
 use super::opcodes::IMM10_MAX;
+use crate::emit::rspu_isa::TargetSpec;
 
 // ---------------------------------------------------------------------------
-// Pack helpers (R-SPU 2.0: 64-bit)
+// Pack helpers (Dynamic based on TargetSpec)
 // ---------------------------------------------------------------------------
 
-pub(super) fn pack_r_type(opcode: u8, dst: u16, src1: u16, src2: u16, funct: u8) -> u64 {
-    ((opcode as u64) << 58)
-        | ((dst as u64) << 42)
-        | ((src1 as u64) << 26)
-        | ((src2 as u64) << 10)
+pub(super) fn pack_r_type(
+    opcode: u8,
+    dst: u16,
+    src1: u16,
+    src2: u16,
+    funct: u8,
+    target: &TargetSpec,
+) -> u64 {
+    let op_shift = target.word_size - 6;
+    let dst_shift = op_shift - target.reg_bits;
+    let src1_shift = dst_shift - target.reg_bits;
+    let src2_shift = src1_shift - target.reg_bits;
+
+    ((opcode as u64) << op_shift)
+        | (((dst & target.reg_mask) as u64) << dst_shift)
+        | (((src1 & target.reg_mask) as u64) << src1_shift)
+        | (((src2 & target.reg_mask) as u64) << src2_shift)
         | (funct as u64 & 0x3FF)
 }
 
-pub(super) fn pack_i_type(opcode: u8, dst: u16, src: u16, imm10: u16) -> u64 {
-    ((opcode as u64) << 58)
-        | ((dst as u64) << 42)
-        | ((src as u64) << 26)
-        | (imm10 as u64 & 0x03FF_FFFF)
+pub(super) fn pack_i_type(opcode: u8, dst: u16, src: u16, imm: u32, target: &TargetSpec) -> u64 {
+    let op_shift = target.word_size - 6;
+    let dst_shift = op_shift - target.reg_bits;
+    let src_shift = dst_shift - target.reg_bits;
+
+    ((opcode as u64) << op_shift)
+        | (((dst & target.reg_mask) as u64) << dst_shift)
+        | (((src & target.reg_mask) as u64) << src_shift)
+        | (imm as u64 & target.imm_mask)
 }
 
-pub(super) fn pack_g_type(opcode: u8, guard: u8, src_dst: u16, guard2: u8, funct: u8) -> u64 {
-    ((opcode as u64) << 58)
-        | ((guard as u64) << 50)
-        | ((src_dst as u64) << 34)
-        | ((guard2 as u64) << 26)
-        | (funct as u64 & 0x03FF_FFFF)
+pub(super) fn pack_g_type(
+    opcode: u8,
+    guard: u8,
+    src_dst: u16,
+    guard2: u8,
+    funct: u32,
+    target: &TargetSpec,
+) -> u64 {
+    let op_shift = target.word_size - 6;
+    let guard_shift = op_shift - target.guard_bits;
+    let sd_shift = guard_shift - target.reg_bits;
+    let guard2_shift = sd_shift - target.guard_bits;
+
+    ((opcode as u64) << op_shift)
+        | (((guard & target.guard_mask) as u64) << guard_shift)
+        | (((src_dst & target.reg_mask) as u64) << sd_shift)
+        | (((guard2 & target.guard_mask) as u64) << guard2_shift)
+        | (funct as u64 & target.imm_mask)
 }
 
-pub(super) fn pack_s_type(opcode: u8, imm26: u32) -> u64 {
-    ((opcode as u64) << 58) | (imm26 as u64 & 0x03FF_FFFF_FFFF_FFFF)
+pub(super) fn pack_s_type(opcode: u8, imm: u32, target: &TargetSpec) -> u64 {
+    let op_shift = target.word_size - 6;
+    ((opcode as u64) << op_shift) | (imm as u64 & 0x03FF_FFFF_FFFF_FFFF)
 }
 
 // ---------------------------------------------------------------------------
-// Extract helpers (R-SPU 2.0: 64-bit)
+// Extract helpers (Dynamic based on TargetSpec)
 // ---------------------------------------------------------------------------
 
-pub(super) fn extract_opcode(word: u64) -> u8 {
-    ((word >> 58) & 0x3F) as u8
+pub fn extract_opcode(word: u64) -> u8 {
+    // We assume opcode is always top 6 bits of the word size, but for now 64-bit word is our container.
+    // If word_size is 32, opcode is at [31:26].
+    if (word >> 58) != 0 {
+        ((word >> 58) & 0x3F) as u8
+    } else {
+        ((word >> 26) & 0x3F) as u8
+    }
 }
 
-pub(super) fn extract_r_fields(word: u64) -> (u16, u16, u16, u8) {
-    let dst = ((word >> 42) & 0xFFFF) as u16;
-    let src1 = ((word >> 26) & 0xFFFF) as u16;
-    let src2 = ((word >> 10) & 0xFFFF) as u16;
+pub(super) fn extract_r_fields(word: u64, target: &TargetSpec) -> (u16, u16, u16, u8) {
+    let op_shift = target.word_size - 6;
+    let dst_shift = op_shift - target.reg_bits;
+    let src1_shift = dst_shift - target.reg_bits;
+    let src2_shift = src1_shift - target.reg_bits;
+
+    let dst = ((word >> dst_shift) & target.reg_mask as u64) as u16;
+    let src1 = ((word >> src1_shift) & target.reg_mask as u64) as u16;
+    let src2 = ((word >> src2_shift) & target.reg_mask as u64) as u16;
     let funct = (word & 0x3FF) as u8;
     (dst, src1, src2, funct)
 }
 
-pub(super) fn extract_i_fields(word: u64) -> (u16, u16, u16) {
-    let dst = ((word >> 42) & 0xFFFF) as u16;
-    let src = ((word >> 26) & 0xFFFF) as u16;
-    let imm = (word & 0x03FF_FFFF) as u16;
+pub(super) fn extract_i_fields(word: u64, target: &TargetSpec) -> (u16, u16, u32) {
+    let op_shift = target.word_size - 6;
+    let dst_shift = op_shift - target.reg_bits;
+    let src_shift = dst_shift - target.reg_bits;
+
+    let dst = ((word >> dst_shift) & target.reg_mask as u64) as u16;
+    let src = ((word >> src_shift) & target.reg_mask as u64) as u16;
+    let imm = (word & target.imm_mask) as u32;
     (dst, src, imm)
 }
 
-pub(super) fn extract_g_fields(word: u64) -> (u8, u16, u8, u8) {
-    let guard = ((word >> 50) & 0xFF) as u8;
-    let src_dst = ((word >> 34) & 0xFFFF) as u16;
-    let guard2 = ((word >> 26) & 0xFF) as u8;
-    let funct = (word & 0x03FF_FFFF) as u8;
+pub(super) fn extract_g_fields(word: u64, target: &TargetSpec) -> (u8, u16, u8, u32) {
+    let op_shift = target.word_size - 6;
+    let guard_shift = op_shift - target.guard_bits;
+    let sd_shift = guard_shift - target.reg_bits;
+    let guard2_shift = sd_shift - target.guard_bits;
+
+    let guard = ((word >> guard_shift) & target.guard_mask as u64) as u8;
+    let src_dst = ((word >> sd_shift) & target.reg_mask as u64) as u16;
+    let guard2 = ((word >> guard2_shift) & target.guard_mask as u64) as u8;
+    let funct = (word & target.imm_mask) as u32;
     (guard, src_dst, guard2, funct)
 }
 
@@ -141,12 +191,28 @@ pub(super) fn check_imm10(value: u64, context: &str) -> Result<u16, MirrError> {
     Ok(value as u16)
 }
 
-pub(super) fn check_port10(port: PortId, context: &str) -> Result<u16, MirrError> {
-    if port as u64 > IMM10_MAX {
+pub(super) fn check_imm(value: u64, context: &str, target: &TargetSpec) -> Result<u32, MirrError> {
+    if value > target.imm_mask {
         return Err(rspu_err(format!(
-            "{} {context} port {port} exceeds 10-bit immediate max ({IMM10_MAX})",
-            crate::error_codes::ec(706)
+            "{} {context} value {value} exceeds target immediate max ({})",
+            crate::error_codes::ec(706),
+            target.imm_mask
         )));
     }
-    Ok(port)
+    Ok(value as u32)
+}
+
+pub(super) fn check_port(
+    port: PortId,
+    context: &str,
+    target: &TargetSpec,
+) -> Result<u32, MirrError> {
+    if port as u64 > target.imm_mask {
+        return Err(rspu_err(format!(
+            "{} {context} port {port} exceeds target immediate max ({})",
+            crate::error_codes::ec(706),
+            target.imm_mask
+        )));
+    }
+    Ok(port as u32)
 }

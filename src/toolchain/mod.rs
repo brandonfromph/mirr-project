@@ -124,7 +124,8 @@ impl ToolRegistry {
                     } else {
                         "(Execution failed during pre-flight check)"
                     };
-                    let version = format!("Broken {} {}", hint, err_msg.lines().next().unwrap_or(""));
+                    let version =
+                        format!("Broken {} {}", hint, err_msg.lines().next().unwrap_or(""));
                     self.tools.insert(
                         tool,
                         ToolInfo { path: binary.to_string(), version, available: false },

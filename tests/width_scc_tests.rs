@@ -86,6 +86,7 @@ fn program(
     reflexes: Vec<Reflex>,
 ) -> MirrProgram {
     MirrProgram {
+        target: None,
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {

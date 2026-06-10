@@ -84,7 +84,13 @@ fn emit_sv_full(
         temporal::emit_temporal_logic(module, netlist, &mut out);
     }
 
-    temporal::emit_reflex_logic(module, &dsp_reflexes, dsp_attr, result.hls_result.as_ref(), &mut out);
+    temporal::emit_reflex_logic(
+        module,
+        &dsp_reflexes,
+        dsp_attr,
+        result.hls_result.as_ref(),
+        &mut out,
+    );
 
     if !module.pattern_calls.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");

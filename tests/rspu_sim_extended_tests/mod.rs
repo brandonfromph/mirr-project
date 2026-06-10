@@ -46,6 +46,7 @@ const MAX_STRESS_INSTRS: usize = 128;
 /// No recursion. Single bounded pass.
 fn make_program(instructions: Vec<RspuInstruction>) -> RspuProgram {
     RspuProgram {
+        target: None,
         instructions,
         registers_used: 0,
         guards_used: 0,

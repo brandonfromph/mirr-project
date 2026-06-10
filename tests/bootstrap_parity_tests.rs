@@ -113,7 +113,9 @@ fn bootstrap_parity_counter() {
 fn bootstrap_rspu_roundtrip() {
     // Verify all opcodes roundtrip through encode/decode
     use mirrc::emit::rspu_encoding::{decode, encode};
-    use mirrc::emit::rspu_isa::RspuInstruction;
+    use mirrc::emit::rspu_isa::{RspuInstruction, TargetSpec};
+
+    let target = TargetSpec::from_config(&None);
 
     let instructions = vec![
         RspuInstruction::LoadInput { dst: 0, port: 0 },
@@ -138,8 +140,8 @@ fn bootstrap_rspu_roundtrip() {
     ];
 
     for instr in &instructions {
-        let encoded = encode(instr).expect("encode should succeed");
-        let decoded = decode(encoded.0).expect("decode should succeed");
+        let encoded = encode(instr, &target).expect("encode should succeed");
+        let decoded = decode(encoded.0, &target).expect("decode should succeed");
         assert_eq!(
             &decoded,
             instr,

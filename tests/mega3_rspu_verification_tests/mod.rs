@@ -21,9 +21,10 @@
 
 use mirrc::emit::rspu_encoding::{decode, encode, EncodedInstruction};
 use mirrc::emit::rspu_isa::{
-    AluOp, AluUnaryOp, RegId, RspuInstruction, RspuProgram, MAX_GUARDS, MAX_INSTRUCTIONS,
-    MAX_REGISTERS, MAX_SIM_CYCLES, REG_INPUT_BASE, REG_INPUT_MAX, REG_INTERNAL_BASE,
-    REG_INTERNAL_MAX, REG_OUTPUT_BASE, REG_OUTPUT_MAX, REG_TEMP_BASE, REG_TEMP_MAX,
+    AluOp, AluUnaryOp, RegId, RspuInstruction, RspuProgram, TargetSpec, MAX_GUARDS,
+    MAX_INSTRUCTIONS, MAX_REGISTERS, MAX_SIM_CYCLES, REG_INPUT_BASE, REG_INPUT_MAX,
+    REG_INTERNAL_BASE, REG_INTERNAL_MAX, REG_OUTPUT_BASE, REG_OUTPUT_MAX, REG_TEMP_BASE,
+    REG_TEMP_MAX,
 };
 use mirrc::emit::rspu_sim::{RspuSimulator, StepResult};
 use mirrc::emit::rspu_tagged::{RegisterFile, TaggedWord, TypeTag};
@@ -43,6 +44,7 @@ const MAX_TEST_ITERATIONS: usize = 256;
 /// Build a minimal R-SPU program from a list of instructions.
 fn make_program(instrs: Vec<RspuInstruction>) -> RspuProgram {
     RspuProgram {
+        target: None,
         instructions: instrs,
         registers_used: MAX_REGISTERS,
         guards_used: 0,

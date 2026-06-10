@@ -30,7 +30,7 @@ pub fn sexpr_to_ast(sexpr: &SExpr) -> Result<MirrProgram, MirrError> {
     }
     let patterns = parse_patterns_section(&items[1])?;
     let module = parse_module_section(&items[2])?;
-    Ok(MirrProgram { patterns, imports: vec![], module })
+    Ok(MirrProgram { target: None, patterns, imports: vec![], module })
 }
 
 pub(super) fn expect_head(items: &[SExpr], expected: &str) -> Result<(), MirrError> {

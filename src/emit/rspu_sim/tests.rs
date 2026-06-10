@@ -10,6 +10,7 @@ use crate::emit::rspu_tagged::TypeTag;
 /// Helper to create a minimal program from a list of instructions.
 fn make_program(instructions: Vec<RspuInstruction>) -> RspuProgram {
     RspuProgram {
+        target: None,
         instructions,
         registers_used: 0,
         guards_used: 0,

@@ -26,7 +26,7 @@ fn result_with_module_name(module_name: &str) -> PipelineResult {
 
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { patterns: Vec::new(), imports: Vec::new(), module },
+        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
         simplify_stats: None,
         sat_stats: None,
         width_result: None,

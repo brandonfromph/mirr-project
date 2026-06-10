@@ -10,9 +10,7 @@ smtbmc z3
 
 [script]
 read_verilog -sv -formal science_hls_synth.sv
-read_verilog -sv -formal science_hls_sva_bind.sv
 prep -top ScienceHls
 
 [files]
 science_hls_synth.sv
-science_hls_sva_bind.sv

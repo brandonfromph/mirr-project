@@ -97,14 +97,24 @@ fn emit_riscv_instruction(
 
         // ALU tier
         RspuInstruction::Alu { op, dst, a, b } => {
-            let d8 = (*dst).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
-            let a8 = (*a).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
-            let b8 = (*b).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let d8 = (*dst)
+                .try_into()
+                .map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let a8 = (*a)
+                .try_into()
+                .map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let b8 = (*b)
+                .try_into()
+                .map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
             emit_riscv_alu(out, *op, d8, a8, b8);
         }
         RspuInstruction::AluImm { op, dst, a, imm } => {
-            let d8 = (*dst).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
-            let a8 = (*a).try_into().map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let d8 = (*dst)
+                .try_into()
+                .map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
+            let a8 = (*a)
+                .try_into()
+                .map_err(|_| rspu_err("RISC-V target only supports registers R0-R255"))?;
             emit_riscv_alu_imm(out, *op, d8, a8, *imm);
         }
         RspuInstruction::AluUnary { op, dst, src } => match op {

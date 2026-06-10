@@ -12,6 +12,7 @@ const MAX_TEST_ITER: usize = 8;
 
 fn empty_program() -> MirrProgram {
     MirrProgram {
+        target: None,
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {

@@ -27,6 +27,7 @@ mod tests {
     #[test]
     fn test_emit_sexpr_empty_module() {
         let program = MirrProgram {
+            target: None,
             patterns: vec![],
             imports: vec![],
             module: Module {

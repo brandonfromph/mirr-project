@@ -23,7 +23,7 @@ use super::pattern_parser::{
     parse_pattern_def,
 };
 use crate::ast::pattern::PatternDef;
-use crate::ast::program::{ImportDecl, MirrProgram, Module, SignalDecl};
+use crate::ast::program::{ImportDecl, MirrProgram, Module, SignalDecl, TargetConfig};
 use crate::ast::types::ExtendedType;
 use crate::ast::types::{SignalType, MAX_STRUCT_FIELDS};
 use crate::diagnostic_builder::emit_at;
@@ -145,6 +145,13 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
 
     skip_empty_and_comments(&lines, &mut index);
 
+    // Parse optional `target` block.
+    let mut target: Option<TargetConfig> = None;
+    if index < lines.len() && lines[index].trim().starts_with("target") {
+        target = Some(parse_target(&lines, &mut index)?);
+        skip_empty_and_comments(&lines, &mut index);
+    }
+
     let mut struct_defs: HashMap<String, Vec<(String, SignalType)>> = HashMap::new();
     while index < lines.len() {
         let line = lines[index].trim();
@@ -190,7 +197,7 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
     let mut module = parse_module(&lines, &mut index)?;
     hydrate_struct_signal_fields(&mut module, &struct_defs);
 
-    Ok(MirrProgram { patterns, imports, module })
+    Ok(MirrProgram { target, patterns, imports, module })
 }
 
 fn parse_top_level_struct(
@@ -530,6 +537,103 @@ fn skip_top_level_block(lines: &[&str], index: &mut usize) -> Result<(), MirrErr
         "Unclosed block declaration.",
         Span::full_line(index.saturating_sub(1) as u32),
     ))
+}
+
+fn parse_target(lines: &[&str], index: &mut usize) -> Result<TargetConfig, MirrError> {
+    let start_line = *index as u32;
+    let line = lines[*index].trim();
+    if !line.starts_with("target ") && line != "target" {
+        return Err(emit_at(
+            ErrorCode::SExprUnexpectedToken,
+            "Expected 'target' block.",
+            Span::full_line(start_line),
+        ));
+    }
+
+    let mut name = if line.starts_with("target ") {
+        line.strip_prefix("target ").unwrap().trim_end_matches('{').trim().to_string()
+    } else {
+        "unnamed".to_string()
+    };
+
+    if !lines[*index].contains('{') {
+        *index += 1;
+        skip_empty_and_comments(lines, index);
+        if *index >= lines.len() || !lines[*index].starts_with('{') {
+            return Err(emit_at(
+                ErrorCode::TargetOpenBrace,
+                "Expected '{' after 'target'.",
+                Span::full_line(*index as u32),
+            ));
+        }
+    }
+    *index += 1;
+
+    let mut word_size = 64;
+    let mut reg_bits = 10;
+    let mut guard_bits = 6;
+
+    while *index < lines.len() {
+        skip_empty_and_comments(lines, index);
+        let line = lines[*index].trim();
+        if line == "}" {
+            *index += 1;
+            break;
+        }
+
+        let parts: Vec<&str> = line.split(':').collect();
+        if parts.len() != 2 {
+            return Err(emit_at(
+                ErrorCode::TargetPropertyInvalid,
+                format!("Invalid target property: {line}"),
+                Span::full_line(*index as u32),
+            ));
+        }
+
+        let key = parts[0].trim();
+        let val = parts[1].trim().trim_end_matches(';');
+
+        match key {
+            "name" => name = val.trim_matches('"').to_string(),
+            "word_size" => {
+                word_size = val.parse().map_err(|_| {
+                    emit_at(
+                        ErrorCode::TargetPropertyInvalid,
+                        "Invalid word_size",
+                        Span::full_line(*index as u32),
+                    )
+                })?
+            }
+            "reg_bits" => {
+                reg_bits = val.parse().map_err(|_| {
+                    emit_at(
+                        ErrorCode::TargetPropertyInvalid,
+                        "Invalid reg_bits",
+                        Span::full_line(*index as u32),
+                    )
+                })?
+            }
+            "guard_bits" => {
+                guard_bits = val.parse().map_err(|_| {
+                    emit_at(
+                        ErrorCode::TargetPropertyInvalid,
+                        "Invalid guard_bits",
+                        Span::full_line(*index as u32),
+                    )
+                })?
+            }
+            _ => {} // Ignore unknown properties
+        }
+        *index += 1;
+    }
+
+    Ok(TargetConfig {
+        name,
+        word_size,
+        reg_bits,
+        guard_bits,
+        span: Some(Span::full_line(start_line)),
+    })
 }
 
 fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> {

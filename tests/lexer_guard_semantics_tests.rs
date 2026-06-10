@@ -12,6 +12,7 @@ fn test_guard_counter_lifetime() {
     // - a reflex that sets `emit_push_integer = true` while the guard is active
     // - a clear/tick reflex that resets `emit_push_integer = false`
     let prog = MirrProgram {
+        target: None,
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {

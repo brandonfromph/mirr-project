@@ -20,6 +20,7 @@ fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
 
 fn ring_program() -> MirrProgram {
     MirrProgram {
+        target: None,
         patterns: Vec::new(),
         imports: Vec::new(),
         module: Module {

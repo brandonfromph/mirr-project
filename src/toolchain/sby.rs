@@ -151,13 +151,8 @@ pub fn generate_sby_config(
     out.push_str("[script]\n");
 
     // Helper to get normalized filename
-    let get_flat_name = |p: &Path| {
-        normalize_path_for_mingw(p)
-            .split('/')
-            .last()
-            .unwrap_or("")
-            .to_string()
-    };
+    let get_flat_name =
+        |p: &Path| normalize_path_for_mingw(p).split('/').next_back().unwrap_or("").to_string();
 
     // Flatten extra files for the script section
     for extra in &config.extra_files {

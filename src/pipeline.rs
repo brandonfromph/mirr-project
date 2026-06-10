@@ -322,7 +322,8 @@ pub fn run_pipeline_on_program(
         if let Some(ref prog) = result.rspu_program {
             use crate::emit::rspu_isa::MAX_SIM_CYCLES;
             use crate::emit::rspu_sim::RspuSimulator;
-            let mut sim = RspuSimulator::new();
+            let target = crate::emit::rspu_isa::TargetSpec::from_config(&prog.target);
+            let mut sim = RspuSimulator::new_with_target(target);
             let sim_out =
                 sim.run(prog, MAX_SIM_CYCLES).map_err(crate::error::PipelineErrors::from)?;
             result.sim_result = Some(sim_out);

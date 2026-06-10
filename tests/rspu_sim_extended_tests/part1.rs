@@ -233,13 +233,11 @@ fn test_multiple_io_ports() {
 #[test]
 fn test_read_output_out_of_range() {
     let sim = RspuSimulator::new();
-    // Port 200 would compute REG_OUTPUT_BASE + 200 which overflows u8 (64+200=264 > 255).
-    // With wrapping_add, 64 + 200 = 264 wraps to 8 (on u8), which IS in range.
-    // Let's test a port that is clearly outside the output partition.
-    // REG_OUTPUT_BASE=64, REG_OUTPUT_MAX=127, so 64 ports (0..63) are valid.
-    // Port 64 would be 64+64=128, which is > 127, so out of range.
-    let result = sim.read_output(64);
-    assert!(result.is_none(), "read_output(64) must return None (out of output range)");
+    // In the 1024-register model (256 per partition):
+    // REG_OUTPUT_BASE=256, so valid ports are 0..255.
+    // Port 256 would be register 256+256=512, which is the internal partition.
+    let result = sim.read_output(256);
+    assert!(result.is_none(), "read_output(256) must return None (out of output range)");
 }
 
 // ---------------------------------------------------------------------------

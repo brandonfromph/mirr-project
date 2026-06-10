@@ -54,6 +54,7 @@ fn test_solve_expansive_simple_accumulator() {
     };
 
     let program = MirrProgram {
+        target: None,
         imports: vec![],
         patterns: vec![],
         module: Module {
@@ -109,6 +110,7 @@ fn test_solve_expansive_reversed_operand_accumulator() {
     };
 
     let program = MirrProgram {
+        target: None,
         imports: vec![],
         patterns: vec![],
         module: Module {
@@ -181,6 +183,7 @@ fn test_solve_expansive_multiple_accumulators_takes_first_valid() {
     };
 
     let program = MirrProgram {
+        target: None,
         imports: vec![],
         patterns: vec![],
         module: Module {

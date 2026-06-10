@@ -119,9 +119,28 @@ pub struct ImportDecl {
     pub span: Option<Span>,
 }
 
+/// Target hardware configuration: bit-widths and architectural constraints.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TargetConfig {
+    /// Target identifier (e.g., "Liquid", "Compact").
+    pub name: String,
+    /// Instruction word size (usually 32 or 64).
+    pub word_size: u32,
+    /// Bit-width for register IDs (e.g., 8 for 256 regs, 10 for 1024 regs).
+    pub reg_bits: u32,
+    /// Bit-width for guard IDs (e.g., 6 for 64 guards).
+    pub guard_bits: u32,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
+}
+
 /// Root of a parsed MIRR program, with IR version for contract tracking.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MirrProgram {
+    /// Target hardware configuration (optional, defaults to Liquid if None).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<TargetConfig>,
     /// Top-level pattern definitions (`def` blocks).
     #[serde(default)]
     pub patterns: Vec<PatternDef>,

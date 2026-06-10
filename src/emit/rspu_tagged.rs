@@ -122,20 +122,23 @@ impl TaggedWord {
 // RegisterFile
 // ---------------------------------------------------------------------------
 
-/// Tagged register file: exactly `MAX_REGISTERS` entries, each carrying a
-/// type tag and provenance annotation.
+/// Tagged register file: carriers type tag and provenance annotation for each register.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterFile {
-    /// Backing storage; always has exactly `MAX_REGISTERS` entries.
+    /// Backing storage.
     registers: Vec<TaggedWord>,
 }
 
 impl RegisterFile {
     /// Create a new register file with all registers uninitialized.
     pub fn new() -> Self {
-        let mut registers = Vec::with_capacity(MAX_REGISTERS);
-        // Bounded: exactly MAX_REGISTERS iterations.
-        for _i in 0..MAX_REGISTERS {
+        Self::new_with_size(MAX_REGISTERS)
+    }
+
+    /// Create a new register file with a specific size.
+    pub fn new_with_size(size: usize) -> Self {
+        let mut registers = Vec::with_capacity(size);
+        for _i in 0..size {
             registers.push(TaggedWord::uninitialized());
         }
         Self { registers }
@@ -146,14 +149,13 @@ impl RegisterFile {
         &self.registers
     }
 
-    /// Read the tagged word at `reg`. Panics if `reg` is out of bounds
-    /// (should never happen with valid R-SPU programs, as RegId is u8 and
-    /// MAX_REGISTERS is 256).
+    /// Read the tagged word at `reg`. Panics if `reg` is out of bounds.
     pub fn read(&self, reg: RegId) -> &TaggedWord {
         let idx = reg as usize;
         assert!(
-            idx < MAX_REGISTERS,
-            "RegisterFile::read: index {idx} out of bounds (max {MAX_REGISTERS})"
+            idx < self.registers.len(),
+            "RegisterFile::read: index {idx} out of bounds (size {})",
+            self.registers.len()
         );
         &self.registers[idx]
     }
@@ -162,8 +164,9 @@ impl RegisterFile {
     pub fn write(&mut self, reg: RegId, word: TaggedWord) {
         let idx = reg as usize;
         assert!(
-            idx < MAX_REGISTERS,
-            "RegisterFile::write: index {idx} out of bounds (max {MAX_REGISTERS})"
+            idx < self.registers.len(),
+            "RegisterFile::write: index {idx} out of bounds (size {})",
+            self.registers.len()
         );
         self.registers[idx] = word;
     }
@@ -171,6 +174,14 @@ impl RegisterFile {
     /// Convenience: read just the type tag of a register.
     pub fn read_tag(&self, reg: RegId) -> TypeTag {
         self.read(reg).tag
+    }
+
+    pub fn len(&self) -> usize {
+        self.registers.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.registers.is_empty()
     }
 }
 

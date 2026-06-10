@@ -50,6 +50,7 @@ fn test_width_chaos_unbounded_expansive_loop() {
     let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Expansive };
 
     let program = MirrProgram {
+        target: None,
         imports: vec![],
         patterns: vec![],
         module: Module {
@@ -116,6 +117,7 @@ fn test_width_chaos_overflowing_inference() {
     };
 
     let program = MirrProgram {
+        target: None,
         imports: vec![],
         patterns: vec![],
         module: Module {

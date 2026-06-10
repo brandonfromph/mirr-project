@@ -143,7 +143,9 @@ impl OpDag {
             if let Some(reflex) = opt_reflex {
                 for &assign_id in &reflex.assignments {
                     if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
-                        if let Some(op_id) = dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op) {
+                        if let Some(op_id) =
+                            dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op)
+                        {
                             if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
                                 dag.target_signals.insert(op_id, name_comp.0.clone());
                             }
@@ -342,11 +344,11 @@ pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, MirrEr
         for src_idx in 0..dag.ops.len() {
             let src_op = &dag.ops[src_idx];
             let src_sched = &schedule_ops[src_idx];
-            
+
             for &dst_id in &src_op.successors {
                 let dst_idx = dst_id as usize;
                 let dst_sched = &schedule_ops[dst_idx];
-                
+
                 // If dst starts strictly after src finishes (in terms of ALAP/ASAP cycles), we need a FIFO.
                 // Assuming latency difference means cycles.
                 if dst_sched.earliest > src_sched.latest {
@@ -360,7 +362,14 @@ pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, MirrEr
         }
     }
 
-    Ok(HlsResult { schedule: schedule_ops, sharing_groups, bindings, resource_count, fifos, target_signals: dag.target_signals.clone() })
+    Ok(HlsResult {
+        schedule: schedule_ops,
+        sharing_groups,
+        bindings,
+        resource_count,
+        fifos,
+        target_signals: dag.target_signals.clone(),
+    })
 }
 
 /// Count physical resources used by the binding.
@@ -458,12 +467,11 @@ mod tests {
         let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
         dag.add_edge(a, b);
 
-        let mut config = HlsConfig::default();
-        config.latency = 2; // multi-cycle
+        let config = HlsConfig { latency: 2, ..Default::default() };
 
         let result = run_hls_pass(&dag, &config).expect("HLS pass failed");
-        
-        // `a` is at cycle 0, `b` is at cycle 1. 
+
+        // `a` is at cycle 0, `b` is at cycle 1.
         // dst starts after src finishes, so a FIFO should be synthesized.
         assert_eq!(result.fifos.len(), 1);
         assert_eq!(result.fifos[0].depth, 1);

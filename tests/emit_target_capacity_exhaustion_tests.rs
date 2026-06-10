@@ -30,6 +30,7 @@ fn result_with_many_temporal_guards() -> PipelineResult {
     PipelineResult {
         hls_result: None,
         program: MirrProgram {
+            target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
             module: mirrc::ast::program::Module {

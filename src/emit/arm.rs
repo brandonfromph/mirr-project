@@ -104,14 +104,24 @@ fn emit_arm_instruction(
         // ALU tier
         RspuInstruction::Alu { op, dst, a, b } => {
             // ARM target still uses 8-bit registers in this model.
-            let d8 = (*dst).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
-            let a8 = (*a).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
-            let b8 = (*b).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let d8 = (*dst)
+                .try_into()
+                .map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let a8 = (*a)
+                .try_into()
+                .map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let b8 = (*b)
+                .try_into()
+                .map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
             emit_arm_alu(out, *op, d8, a8, b8);
         }
         RspuInstruction::AluImm { op, dst, a, imm } => {
-            let d8 = (*dst).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
-            let a8 = (*a).try_into().map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let d8 = (*dst)
+                .try_into()
+                .map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
+            let a8 = (*a)
+                .try_into()
+                .map_err(|_| rspu_err("ARM target only supports registers R0-R255"))?;
             emit_arm_alu_imm(out, *op, d8, a8, *imm);
         }
         RspuInstruction::AluUnary { op, dst, src } => match op {

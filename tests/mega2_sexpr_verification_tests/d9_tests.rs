@@ -291,7 +291,7 @@ fn test_d9_convert_prev() {
         pattern_origins: vec![],
         span: None,
     };
-    let prog = mirrc::MirrProgram { module: m, imports: vec![], patterns: vec![] };
+    let prog = mirrc::MirrProgram { target: None, module: m, imports: vec![], patterns: vec![] };
     let sexpr = ast_to_sexpr(&prog);
     let s = print_sexpr(&sexpr);
     assert!(s.contains("prev"), "Should contain prev reference");
