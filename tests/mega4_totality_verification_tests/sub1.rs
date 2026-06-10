@@ -49,9 +49,9 @@ fn f1_max_cycles_is_highest_guard() {
 
 #[test]
 fn f1_resource_limits_constants() {
-    assert_eq!(MAX_REGISTERS, 256, "MAX_REGISTERS hardware limit");
+    assert_eq!(MAX_REGISTERS, 1024, "MAX_REGISTERS hardware limit");
     assert_eq!(MAX_GUARDS, 64, "MAX_GUARDS hardware limit");
-    assert_eq!(MAX_INSTRUCTIONS, 4096, "MAX_INSTRUCTIONS hardware limit");
+    assert_eq!(MAX_INSTRUCTIONS, 16384, "MAX_INSTRUCTIONS hardware limit");
 }
 
 // ===========================================================================

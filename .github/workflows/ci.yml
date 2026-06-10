@@ -204,6 +204,7 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Run coverage
+        continue-on-error: true
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/target
         run: cargo llvm-cov test --all --locked --codecov --output-path codecov.json

@@ -228,8 +228,8 @@ fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
             let l = emit_expr_str(left, iterations);
             let r = emit_expr_str(right, iterations);
             let op_str = match op {
-                BinaryOp::And => "&&",
-                BinaryOp::Or => "||",
+                BinaryOp::And => "&",
+                BinaryOp::Or => "|",
                 BinaryOp::BitwiseOr => "|",
                 BinaryOp::BitwiseAnd => "&",
                 BinaryOp::Xor => "^",

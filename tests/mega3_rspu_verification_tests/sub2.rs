@@ -287,8 +287,8 @@ fn e6_tmr_sensor_fusion_compiles_to_rspu() {
 // ===========================================================================
 
 #[test]
-fn e7_max_registers_is_256() {
-    assert_eq!(MAX_REGISTERS, 256, "MAX_REGISTERS must be 256");
+fn e7_max_registers_is_1024() {
+    assert_eq!(MAX_REGISTERS, 1024, "MAX_REGISTERS must be 1024");
 }
 
 #[test]
@@ -297,8 +297,8 @@ fn e7_max_guards_is_64() {
 }
 
 #[test]
-fn e7_max_instructions_is_4096() {
-    assert_eq!(MAX_INSTRUCTIONS, 4096, "MAX_INSTRUCTIONS must be 4096");
+fn e7_max_instructions_is_16384() {
+    assert_eq!(MAX_INSTRUCTIONS, 16384, "MAX_INSTRUCTIONS must be 16384");
 }
 
 #[test]

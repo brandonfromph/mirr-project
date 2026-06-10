@@ -134,27 +134,27 @@ pub(super) fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &m
         PropertyFormula::Always(expr) => {
             let sv_expr = super::emit_expr_inline(expr);
             out.push_str(&format!(
-                "  always @(posedge clk) begin\n    if (rst_n) {sva_keyword} ({sv_expr});\n  end\n\n"
+                "  {sva_keyword} property (@(posedge clk){disable_clause} ({sv_expr}));\n\n"
             ));
         }
         PropertyFormula::Never(expr) => {
             let sv_expr = super::emit_expr_inline(expr);
             out.push_str(&format!(
-                "  always @(posedge clk) begin\n    if (rst_n) {sva_keyword} (!({sv_expr}));\n  end\n\n"
+                "  {sva_keyword} property (@(posedge clk){disable_clause} (!({sv_expr})));\n\n"
             ));
         }
         PropertyFormula::AlwaysImplies { antecedent, consequent } => {
             let ante_sv = super::emit_expr_inline(antecedent);
             let cons_sv = super::emit_expr_inline(consequent);
             out.push_str(&format!(
-                "  always @(posedge clk) begin\n    if (rst_n && {ante_sv}) {sva_keyword} ({cons_sv});\n  end\n\n"
+                "  {sva_keyword} property (@(posedge clk){disable_clause} ({ante_sv} |-> {cons_sv}));\n\n"
             ));
         }
         PropertyFormula::NeverImplies { antecedent, consequent } => {
             let ante_sv = super::emit_expr_inline(antecedent);
             let cons_sv = super::emit_expr_inline(consequent);
             out.push_str(&format!(
-                "  always @(posedge clk) begin\n    if (rst_n && {ante_sv}) {sva_keyword} (!({cons_sv}));\n  end\n\n"
+                "  {sva_keyword} property (@(posedge clk){disable_clause} ({ante_sv} |-> !({cons_sv})));\n\n"
             ));
         }
         PropertyFormula::EventuallyWithin { expr, cycles } => {

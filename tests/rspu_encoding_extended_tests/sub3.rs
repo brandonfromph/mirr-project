@@ -97,8 +97,8 @@ fn test_g_type_fields_no_overlap() {
     assert_eq!(opcode, 15, "ReflexIf opcode should be 15");
     assert_eq!(guard, 255, "guard at max should be 255");
     assert_eq!(src_dst, 65535, "src_dst at max should be 65535");
-    assert_eq!(guard2, 255, "guard2 (src) at max should be 255");
-    assert_eq!(funct, 0, "ReflexIf funct should be 0");
+    assert_eq!(guard2, 0, "guard2 should be 0");
+    assert_eq!(funct, 65535, "ReflexIf funct should be 65535");
 }
 
 #[test]

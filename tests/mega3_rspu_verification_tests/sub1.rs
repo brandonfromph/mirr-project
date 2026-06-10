@@ -214,25 +214,25 @@ fn e2_register_file_write_read_roundtrip() {
 #[test]
 fn e2_register_partition_input() {
     assert_eq!(REG_INPUT_BASE, 0);
-    assert_eq!(REG_INPUT_MAX, 63);
+    assert_eq!(REG_INPUT_MAX, 255);
 }
 
 #[test]
 fn e2_register_partition_output() {
-    assert_eq!(REG_OUTPUT_BASE, 64);
-    assert_eq!(REG_OUTPUT_MAX, 127);
+    assert_eq!(REG_OUTPUT_BASE, 256);
+    assert_eq!(REG_OUTPUT_MAX, 511);
 }
 
 #[test]
 fn e2_register_partition_internal() {
-    assert_eq!(REG_INTERNAL_BASE, 128);
-    assert_eq!(REG_INTERNAL_MAX, 191);
+    assert_eq!(REG_INTERNAL_BASE, 512);
+    assert_eq!(REG_INTERNAL_MAX, 767);
 }
 
 #[test]
 fn e2_register_partition_temp() {
-    assert_eq!(REG_TEMP_BASE, 192);
-    assert_eq!(REG_TEMP_MAX, 255);
+    assert_eq!(REG_TEMP_BASE, 768);
+    assert_eq!(REG_TEMP_MAX, 1023);
 }
 
 #[test]
@@ -337,11 +337,11 @@ fn e3_encode_decode_fence() {
 }
 
 #[test]
-fn e3_encoded_instruction_is_32_bits() {
+fn e3_encoded_instruction_is_64_bits() {
     let target = TargetSpec::from_config(&None);
     let i = RspuInstruction::Nop;
     let _encoded = encode(&i, &target).expect("encode must succeed");
-    assert_eq!(std::mem::size_of::<EncodedInstruction>(), 4, "Encoded instruction must be 32 bits");
+    assert_eq!(std::mem::size_of::<EncodedInstruction>(), 8, "Encoded instruction must be 64 bits");
 }
 
 #[test]

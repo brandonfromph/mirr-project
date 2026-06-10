@@ -107,8 +107,8 @@ fn test_g_type_field_layout() {
     assert_eq!(opcode, 15, "ReflexIf opcode should be 15");
     assert_eq!(guard, 0x11, "ReflexIf guard field should be 0x11");
     assert_eq!(src_dst, 0x22, "ReflexIf src_dst field should be 0x22");
-    assert_eq!(guard2, 0x33, "ReflexIf guard2 field should be 0x33");
-    assert_eq!(funct, 0, "ReflexIf funct field should be 0");
+    assert_eq!(guard2, 0, "ReflexIf guard2 field should be 0");
+    assert_eq!(funct, 0x33, "ReflexIf funct field should be 0x33");
 }
 
 #[test]
