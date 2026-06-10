@@ -166,10 +166,14 @@ pub(super) fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &m
             if has_rst_n {
                 out.push_str(&format!("    if (!rst_n) prop_{prop_name}_timer <= 0;\n"));
                 out.push_str(&format!("    else if ({sv_expr}) prop_{prop_name}_timer <= 0;\n"));
-                out.push_str(&format!("    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"));
+                out.push_str(&format!(
+                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"
+                ));
             } else {
                 out.push_str(&format!("    if ({sv_expr}) prop_{prop_name}_timer <= 0;\n"));
-                out.push_str(&format!("    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"));
+                out.push_str(&format!(
+                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"
+                ));
             }
             out.push_str("  end\n");
             out.push_str(&format!(
@@ -180,7 +184,7 @@ pub(super) fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &m
             let trig_sv = super::emit_expr_inline(trigger);
             let resp_sv = super::emit_expr_inline(response);
             let prop_name = &prop.name;
-            
+
             if *delay_cycles == 0 {
                 out.push_str(&format!(
                     "  {sva_keyword} property (@(posedge clk){disable_clause} ({trig_sv} |-> {resp_sv}));\n\n"
@@ -209,7 +213,9 @@ pub(super) fn emit_single_property(prop: &PropertyDecl, has_rst_n: bool, out: &m
                 };
                 if has_rst_n {
                     out.push_str(&format!("    if (!rst_n) prop_{prop_name}_trig_shift <= 0;\n"));
-                    out.push_str(&format!("    else prop_{prop_name}_trig_shift <= {shift_expr};\n"));
+                    out.push_str(&format!(
+                        "    else prop_{prop_name}_trig_shift <= {shift_expr};\n"
+                    ));
                 } else {
                     out.push_str(&format!("    prop_{prop_name}_trig_shift <= {shift_expr};\n"));
                 }

@@ -47,7 +47,10 @@ fn sva_eventually_within_temporal() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
     let sv = verilog::emit_sv(&result);
 
-    assert!(sv.contains("prop_p_eventually_timer < 10"), "eventually within 10 must produce timer logic");
+    assert!(
+        sv.contains("prop_p_eventually_timer < 10"),
+        "eventually within 10 must produce timer logic"
+    );
 }
 
 #[test]
@@ -55,7 +58,10 @@ fn sva_always_followed_by_delay() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
     let sv = verilog::emit_sv(&result);
 
-    assert!(sv.contains("prop_p_followed_by_trig_shift[2] |->"), "always followed_by 3 must produce shift register logic");
+    assert!(
+        sv.contains("prop_p_followed_by_trig_shift[2] |->"),
+        "always followed_by 3 must produce shift register logic"
+    );
 }
 
 #[test]
