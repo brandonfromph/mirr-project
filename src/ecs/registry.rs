@@ -46,6 +46,9 @@ pub struct Registry {
     pub struct_literals: Vec<Option<StructLiteralComponent>>,
     pub unfold_indices: Vec<Option<UnfoldIndexComponent>>,
 
+    // Phase 4: Width Inference Components
+    pub width_constraints: Vec<Option<WidthConstraintComponent>>,
+
     // Knowledge Base Component Tables (Phase 2)
     pub vectors: Vec<Option<VectorComponent>>,
     pub chunk_texts: Vec<Option<ChunkTextComponent>>,
@@ -116,6 +119,7 @@ impl Registry {
             array_literals: vec![None; cap],
             struct_literals: vec![None; cap],
             unfold_indices: vec![None; cap],
+            width_constraints: vec![None; cap],
             symbol_to_entity: HashMap::with_capacity(cap),
         }
     }
@@ -164,6 +168,7 @@ impl Registry {
             self.array_literals.resize(new_cap, None);
             self.struct_literals.resize(new_cap, None);
             self.unfold_indices.resize(new_cap, None);
+            self.width_constraints.resize(new_cap, None);
         }
 
         id

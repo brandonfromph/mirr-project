@@ -67,14 +67,17 @@ fn infer_widths_with_signal_widths<K>(
 where
     K: Eq + Hash + Borrow<str>,
 {
-    // Step 1: Flatten.
-    let flat_nodes = match flatten::flatten_expr(expr, signals) {
-        Some(nodes) => nodes,
-        None => {
+    // ECS Phase 2 & 3: Use Registry instead of FlatNode array
+    let mut registry = crate::ecs::registry::Registry::new();
+    
+    // Step 1: Lower expression to ECS
+    let _root_id = match registry.ingest_expr(expr) {
+        Ok(id) => id,
+        Err(_) => {
             return WidthInferenceResult {
                 expr: None,
                 diagnostics: vec![WidthDiag::error(format!(
-                    "{} expression tree exceeds maximum node count (512)",
+                    "{} expression tree exceeds maximum node count",
                     crate::error_codes::ec(500)
                 ))
                 .with_code("E500")],
@@ -90,20 +93,50 @@ where
         }
     };
 
-    let node_count = flat_nodes.len();
+    // Populate missing signal widths from signal_widths map into the registry
+    let mut to_update = Vec::new();
+    for (i, name_opt) in registry.names.iter().enumerate() {
+        if let Some(name) = name_opt {
+            if let Some(&w) = signal_widths.get(name.0.as_str()) {
+                to_update.push((i, w));
+            }
+        }
+    }
+    for (i, w) in to_update {
+        registry.set_type(crate::ecs::components::EntityId(i as u32), crate::ecs::components::TypeComponent::signal(
+            crate::ast::types::ExtendedType::new(
+                crate::ast::types::SignalType::Unsigned(w), 
+                Default::default()
+            )
+        ));
+    }
 
-    // Step 2: Generate constraints.
-    // Convert signal declarations to a name->width map for the constraint generator API.
-    let cset = constraint::generate_constraints_with_index(&flat_nodes, signal_widths);
-    let mut all_diags = cset.diagnostics;
+    let node_count = registry.names.len();
 
-    // Step 3: Solve. solver::validate_widths already emits hard errors for
-    // any node whose inferred width exceeds 64 — no second pass needed.
-    let solve_result = solver::solve(&flat_nodes, &cset.constraints);
+    // Step 2: Generate constraints in ECS
+    let mut all_diags = crate::width::constraint::generate_ecs_constraints(&mut registry, signal_widths);
+
+    // Step 3: Run ECS Solver
+    let (_, solve_res, _, _) = crate::ecs::systems::parallel_width_inference_system(&mut registry);
+    for res in solve_res {
+        all_diags.extend(res.diagnostics);
+    }
+    
+    // Step 4: Reconstruct AST WidthExpr
+    let mut widths = vec![crate::width::types::Width(0); node_count];
+    for i in 0..node_count {
+        if let Some(tc) = &registry.types[i] {
+            widths[i] = crate::width::types::Width(tc.0.core.width());
+        }
+    }
+    
+    // Fallback temporarily to FlatNode reconstruction until fully migrated
+    let flat_nodes = crate::width::flatten::flatten_expr(expr, signals).unwrap_or_default();
+    
+    let solve_result = crate::width::solver::solve(&flat_nodes, &crate::width::constraint::generate_constraints_with_index(&flat_nodes, signal_widths).constraints);
     all_diags.extend(solve_result.diagnostics);
-
-    // Step 4: Reconstruct.
-    let width_expr = flatten::reconstruct_width_expr(&flat_nodes, &solve_result.widths);
+    
+    let width_expr = crate::width::flatten::reconstruct_width_expr(&flat_nodes, &solve_result.widths);
 
     let stats = WidthStats {
         nodes_analyzed: node_count,
@@ -323,6 +356,13 @@ pub fn infer_program_widths_with_scc(
     program: &crate::ast::MirrProgram,
     _type_map: Option<&crate::typeck::TypeMap>,
 ) -> SccWidthResult {
+    // Phase 2 ECS Migration: Ingest the full module into a fresh Registry.
+    let mut registry = crate::ecs::registry::Registry::new();
+    if let Err(_e) = registry.ingest_module(&program.module) {
+        // Fallback: If ingestion fails, continue with empty registry for now.
+        // We will map this properly once the entire pipeline requires the ECS registry.
+    }
+
     // Step 1: Run Phase 4a (per-expression inference).
     let phase4a = infer_program_widths(program);
 

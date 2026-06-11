@@ -192,7 +192,37 @@ pub struct InstructionTableComponent {
     pub opcodes: std::collections::HashMap<u16, EntityId>,
 }
 
-// --- Temporal Synthesis Components (Phase 3 ECS — Proposal 110) ---
+// --- Width Inference Components (Phase 4a ECS) ---
+
+/// Defines the minimum mathematical width of an expression based on operations.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum WidthConstraintComponent {
+    /// Node must be exactly `width` bits (literal or declared signal).
+    Fixed(u32),
+    /// Node width = max(left, right) + 1  (for Add).
+    MaxPlusOne { left: EntityId, right: EntityId },
+    /// Node width = max(left, right)  (for Sub, And, Or, Xor).
+    MaxOf { left: EntityId, right: EntityId },
+    /// Node width = left + right  (for Mul).
+    SumOf { left: EntityId, right: EntityId },
+    /// Node width = left_width + shift_const  (for Shl with constant shift).
+    LeftPlusConst { left: EntityId, shift_amount: u32 },
+    /// Node width = left_width + 63  (for Shl with variable shift — worst case).
+    LeftPlusMaxShift { left: EntityId },
+    /// Node width = max(1, left_width - shift_const)  (for Shr with constant shift).
+    LeftMinusConst { left: EntityId, shift_amount: u32 },
+    /// Node width = left_width  (for Shr with variable shift, Unary Not).
+    SameAs { source: EntityId },
+    /// Node width = source_width + 1  (for unsigned-to-signed negate).
+    SameAsPlusOne { source: EntityId },
+    /// Node width = sw.min(narrow_width) (for BitwiseAnd with literal).
+    Narrowed { source: EntityId, narrow_width: u32 },
+    /// Node width = 1  (for comparison operators and boolean literals).
+    Boolean,
+    /// Node width = sum of all element widths (for array/struct literals).
+    SumAll { elements: Vec<EntityId> },
+}
+
 
 /// The hardware implementation strategy chosen during temporal synthesis.
 #[derive(Debug, Clone, Serialize, Deserialize)]
