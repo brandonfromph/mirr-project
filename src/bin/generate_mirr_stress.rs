@@ -7,7 +7,7 @@
 
 #![forbid(unsafe_code)]
 
-use clap::{Arg, Command};
+use clap::Parser;
 use std::fmt::Write as FmtWrite;
 
 fn generate_mux_forest(size: usize) -> anyhow::Result<String> {
@@ -109,34 +109,22 @@ fn generate_width_chain(size: usize) -> anyhow::Result<String> {
     Ok(s)
 }
 
-fn main() -> anyhow::Result<()> {
-    let matches = Command::new("generate_mirr_stress")
-        .about("Generate MIRR stress test code")
-        .arg(
-            Arg::new("type")
-                .long("type")
-                .value_parser(["mux_forest", "temporal_chain", "width_chain"])
-                .required(true)
-                .help("Which template to emit"),
-        )
-        .arg(
-            Arg::new("size")
-                .long("size")
-                .value_parser(clap::value_parser!(usize))
-                .default_value("100")
-                .help("Rough size parameter for the template"),
-        )
-        .get_matches();
+#[derive(Parser, Debug)]
+#[command(about = "Generate MIRR stress test code")]
+pub struct Args {
+    #[arg(long, help = "Which template to emit")]
+    pub typ: String,
 
-    let size = *matches.get_one::<usize>("size").ok_or_else(|| anyhow::anyhow!("missing size"))?;
-    let typ =
-        matches.get_one::<String>("type").ok_or_else(|| anyhow::anyhow!("missing type"))?.as_str();
+    #[arg(long, default_value_t = 100, help = "Rough size parameter for the template")]
+    pub size: usize,
+}
 
-    let code = match typ {
-        "mux_forest" => generate_mux_forest(size),
-        "temporal_chain" => generate_temporal_chain(size),
-        "width_chain" => generate_width_chain(size),
-        _ => unreachable!(),
+pub fn run(args: Args) -> anyhow::Result<()> {
+    let code = match args.typ.as_str() {
+        "mux_forest" => generate_mux_forest(args.size),
+        "temporal_chain" => generate_temporal_chain(args.size),
+        "width_chain" => generate_width_chain(args.size),
+        _ => return Err(anyhow::anyhow!("invalid type: {}", args.typ)),
     }?;
 
     print!("{}", code);

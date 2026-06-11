@@ -125,7 +125,7 @@ pub fn parse_mirr(source: &str) -> Result<MirrProgram, MirrError> {
             break;
         }
         let line = lines[index].trim();
-        if line.starts_with("def ") {
+        if line.starts_with("def ") || line.starts_with("pattern ") {
             if def_count >= MAX_PATTERN_DEFS {
                 return Err(MirrError::PatternError {
                     message: format!(

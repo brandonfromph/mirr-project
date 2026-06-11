@@ -263,6 +263,13 @@ fn eval_unary(op: AluUnaryOp, value: u64) -> u64 {
     match op {
         AluUnaryOp::Not => !value,
         AluUnaryOp::Negate => (value as i64).wrapping_neg() as u64,
+        AluUnaryOp::ReductionOr => {
+            if value != 0 {
+                1
+            } else {
+                0
+            }
+        }
     }
 }
 

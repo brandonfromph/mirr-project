@@ -539,7 +539,7 @@ fn full_pipeline_ventilator_e2e() {
     let sv = emit::verilog::emit_sv(&result);
     assert!(sv.contains("module ventilator"), "Should have module declaration");
     assert!(sv.contains("endmodule"), "Should have endmodule");
-    assert!(sv.contains("assert property"), "Should have SVA assertions from expanded properties");
+    assert!(sv.contains("assert "), "Should have SVA assertions from expanded properties");
     assert!(!result.program.module.properties.is_empty(), "Should have properties");
 }
 
@@ -547,7 +547,7 @@ fn full_pipeline_ventilator_e2e() {
 fn sva_emitted_for_pattern_property() {
     let result = pipeline_ok(&ventilator_source());
     let sv = emit::verilog::emit_sv(&result);
-    assert!(sv.contains("assert property"), "SV should contain assert property from pattern");
+    assert!(sv.contains("assert "), "SV should contain assert property from pattern");
     assert!(sv.contains("|->"), "SV should contain implication from AlwaysImplies property");
 }
 

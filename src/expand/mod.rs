@@ -28,7 +28,7 @@ use crate::error::MirrError;
 const MAX_EXPANSION_DEPTH: usize = 4;
 
 /// Maximum total items (signals + guards + reflexes + properties) from all expansions.
-const MAX_EXPANDED_ITEMS: usize = 4096;
+const MAX_EXPANDED_ITEMS: usize = 262144;
 
 // ---------------------------------------------------------------------------
 // Public API

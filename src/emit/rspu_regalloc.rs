@@ -81,45 +81,55 @@ pub fn allocate_registers(
 
     let mut cursor: u16 = input_base;
 
-    // 1. Allocate Inputs
-    for sig in inputs {
-        if cursor as usize >= max_regs {
+    // Helper closure to allocate a signal (either scalar or flattened array)
+    let allocate_signal = |sig: &crate::ast::program::SignalDecl,
+                           cursor: &mut u16,
+                           map: &mut HashMap<String, RegId>,
+                           entries: &mut Vec<(String, RegId)>|
+     -> Result<(), MirrError> {
+        let size = match &sig.ty.core {
+            crate::ast::types::SignalType::Array { length, .. } => *length as u16,
+            _ => 1,
+        };
+
+        if *cursor as usize + size as usize > max_regs {
             return Err(rspu_err(
                 "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
             ));
         }
-        let reg = cursor as RegId;
-        map.insert(sig.name.clone(), reg);
-        entries.push((sig.name.clone(), reg));
-        cursor += 1;
+
+        if size == 1 {
+            let reg = *cursor as RegId;
+            map.insert(sig.name.clone(), reg);
+            entries.push((sig.name.clone(), reg));
+            *cursor += 1;
+        } else {
+            for i in 0..size {
+                let reg = *cursor as RegId;
+                let flat_name = format!("{}[{}]", sig.name, i);
+                map.insert(flat_name.clone(), reg);
+                entries.push((flat_name, reg));
+                *cursor += 1;
+            }
+        }
+        Ok(())
+    };
+
+    // 1. Allocate Inputs
+    for sig in inputs {
+        allocate_signal(sig, &mut cursor, &mut map, &mut entries)?;
     }
 
     // 2. Allocate Outputs (Start at output_base unless inputs overflowed into it)
     cursor = cursor.max(output_base);
     for sig in outputs {
-        if cursor as usize >= max_regs {
-            return Err(rspu_err(
-                "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
-            ));
-        }
-        let reg = cursor as RegId;
-        map.insert(sig.name.clone(), reg);
-        entries.push((sig.name.clone(), reg));
-        cursor += 1;
+        allocate_signal(sig, &mut cursor, &mut map, &mut entries)?;
     }
 
     // 3. Allocate Internals (Start at internal_base unless outputs overflowed into it)
     cursor = cursor.max(internal_base);
     for sig in internals {
-        if cursor as usize >= max_regs {
-            return Err(rspu_err(
-                "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
-            ));
-        }
-        let reg = cursor as RegId;
-        map.insert(sig.name.clone(), reg);
-        entries.push((sig.name.clone(), reg));
-        cursor += 1;
+        allocate_signal(sig, &mut cursor, &mut map, &mut entries)?;
     }
 
     // 4. Reserve 'true' constant and setup Temporaries

@@ -8,7 +8,7 @@ fn synthesis_mode_strips_sva() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
     let sv = verilog::emit_sv_synthesis(&result, None, 0);
 
-    assert!(!sv.contains("assert property"), "synthesis mode must strip 'assert property'");
+    assert!(!sv.contains("assert "), "synthesis mode must strip 'assert property'");
     assert!(!sv.contains("assume property"), "synthesis mode must strip 'assume property'");
     assert!(!sv.contains("cover property"), "synthesis mode must strip 'cover property'");
 }

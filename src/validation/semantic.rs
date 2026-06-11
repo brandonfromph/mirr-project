@@ -198,12 +198,25 @@ pub fn validate_module(module: &Module) -> Result<(), PipelineErrors> {
             if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
                 break;
             }
-            let is_bool_signal = module
-                .signals
-                .iter()
-                .any(|s| s.name == *gname && s.ty.core == crate::ast::types::SignalType::Bool);
-            if gname != "always" && !guard_names.contains(gname.as_str()) && !is_bool_signal {
-                let suggestion = crate::suggest::closest_match(gname, &guard_name_candidates);
+            let clean_gname =
+                if let Some(pos) = gname.find('[') { &gname[..pos] } else { gname.as_str() };
+
+            let is_bool_signal = module.signals.iter().any(|s| {
+                if s.name != clean_gname {
+                    return false;
+                }
+                match &s.ty.core {
+                    crate::ast::types::SignalType::Bool => true,
+                    crate::ast::types::SignalType::Array { element, .. } => {
+                        matches!(**element, crate::ast::types::SignalType::Bool)
+                            && gname.contains('[')
+                    }
+                    _ => false,
+                }
+            });
+
+            if gname != "always" && !guard_names.contains(clean_gname) && !is_bool_signal {
+                let suggestion = crate::suggest::closest_match(clean_gname, &guard_name_candidates);
                 let mut msg = format!(
                     "{} Reflex '{}' references undeclared guard '{}'.",
                     crate::error_codes::ec(205),
@@ -639,8 +652,16 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
             break;
         }
         match node {
-            Expr::Signal(name) => refs.push(name.clone()),
-            Expr::Prev { signal, .. } => refs.push(signal.clone()),
+            Expr::Signal(name) => {
+                let clean_name =
+                    if let Some(pos) = name.find('[') { &name[..pos] } else { name.as_str() };
+                refs.push(clean_name.to_string());
+            }
+            Expr::Prev { signal, .. } => {
+                let clean_name =
+                    if let Some(pos) = signal.find('[') { &signal[..pos] } else { signal.as_str() };
+                refs.push(clean_name.to_string());
+            }
             Expr::Literal(_) => {}
             Expr::Unary { operand, .. } => stack.push(operand),
             Expr::Binary { left, right, .. } => {

@@ -120,6 +120,7 @@ fn emit_riscv_instruction(
         RspuInstruction::AluUnary { op, dst, src } => match op {
             AluUnaryOp::Not => out.push_str(&format!("    xori x{}, x{}, -1\n", dst, src)),
             AluUnaryOp::Negate => out.push_str(&format!("    sub x{}, x0, x{}\n", dst, src)),
+            AluUnaryOp::ReductionOr => out.push_str(&format!("    snez x{}, x{}\n", dst, src)),
         },
 
         // Temporal tier — shift register emulation

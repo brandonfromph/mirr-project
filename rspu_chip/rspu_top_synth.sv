@@ -3,9 +3,9 @@
 // Target: SystemVerilog (.sv)
 
 // ── Pattern Expansions ──
-// Pattern: fabric::noc_router(clk, rst_n, tx_valid_0, tx_data_0, tx_valid_1, tx_data_1, tx_valid_2, tx_data_2, tx_valid_3, tx_data_3, tx_valid_4, tx_data_4, tx_valid_5, tx_data_5, tx_valid_6, tx_data_6, tx_valid_7, tx_data_7, tx_valid_8, tx_data_8, tx_valid_9, tx_data_9, tx_valid_10, tx_data_10, tx_valid_11, tx_data_11, tx_valid_12, tx_data_12, tx_valid_13, tx_data_13, tx_valid_14, tx_data_14, tx_valid_15, tx_data_15, rx_valid_0, rx_data_0, rx_valid_1, rx_data_1, rx_valid_2, rx_data_2, rx_valid_3, rx_data_3, rx_valid_4, rx_data_4, rx_valid_5, rx_data_5, rx_valid_6, rx_data_6, rx_valid_7, rx_data_7, rx_valid_8, rx_data_8, rx_valid_9, rx_data_9, rx_valid_10, rx_data_10, rx_valid_11, rx_data_11, rx_valid_12, rx_data_12, rx_valid_13, rx_data_13, rx_valid_14, rx_data_14, rx_valid_15, rx_data_15)
-// Pattern: core::core_top(clk, rst_n, instr_15, pc_15, core_data_15, rx_valid_15, rx_data_15, tx_valid_15, tx_data_15)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_15, pc_15, core_data_15, core_core_top_1_trap_signal)
+// Pattern: fabric::noc_router(clk, rst_n, tx_valid_0, tx_data_0, tx_valid_1, tx_data_1, tx_valid_2, tx_data_2, tx_valid_3, tx_data_3, tx_valid_4, tx_data_4, tx_valid_5, tx_data_5, tx_valid_6, tx_data_6, tx_valid_7, tx_data_7, tx_valid_8, tx_data_8, tx_valid_9, tx_data_9, tx_valid_10, tx_data_10, tx_valid_11, tx_data_11, tx_valid_12, tx_data_12, tx_valid_13, tx_data_13, tx_valid_14, tx_data_14, tx_valid_15, tx_data_15, stream_rx_valid, stream_rx_data, rx_valid_0, rx_data_0, rx_valid_1, rx_data_1, rx_valid_2, rx_data_2, rx_valid_3, rx_data_3, rx_valid_4, rx_data_4, rx_valid_5, rx_data_5, rx_valid_6, rx_data_6, rx_valid_7, rx_data_7, rx_valid_8, rx_data_8, rx_valid_9, rx_data_9, rx_valid_10, rx_data_10, rx_valid_11, rx_data_11, rx_valid_12, rx_data_12, rx_valid_13, rx_data_13, rx_valid_14, rx_data_14, rx_valid_15, rx_data_15)
+// Pattern: core::core_top(clk, rst_n, pc_15, core_data_15, rx_valid_15, rx_data_15, tx_valid_15, tx_data_15)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_1_current_instr, pc_15, core_data_15, core_core_top_1_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_2_ram_addr, pipe_rspu_pipeline_2_ex_packed, pipe_rspu_pipeline_2_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_2_alu_op, pipe_rspu_pipeline_2_ex_d1, pipe_rspu_pipeline_2_ex_t1, pipe_rspu_pipeline_2_ex_p1, pipe_rspu_pipeline_2_ex_d2, pipe_rspu_pipeline_2_ex_t2, pipe_rspu_pipeline_2_ex_p2, pipe_rspu_pipeline_2_ex_out_d, pipe_rspu_pipeline_2_ex_out_t, pipe_rspu_pipeline_2_ex_out_p, pipe_rspu_pipeline_2_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_2_id_val2, pipe_rspu_pipeline_2_ex_p2)
@@ -16,8 +16,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_2_id_val1, pipe_rspu_pipeline_2_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_2_id_rs1, pipe_rspu_pipeline_2_id_rs2, pipe_rspu_pipeline_2_id_rd, pipe_rspu_pipeline_2_reg_we, pipe_rspu_pipeline_2_reg_din, pipe_rspu_pipeline_2_id_val1, pipe_rspu_pipeline_2_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_2_cert_i, pipe_rspu_pipeline_2_cert_r, pipe_rspu_pipeline_2_cert_g, pipe_rspu_pipeline_2_cert_h, pipe_rspu_pipeline_2_cert_v, pipe_rspu_pipeline_2_pcc_valid, pipe_rspu_pipeline_2_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_14, pc_14, core_data_14, rx_valid_14, rx_data_14, tx_valid_14, tx_data_14)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_14, pc_14, core_data_14, core_core_top_13_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_14, core_data_14, rx_valid_14, rx_data_14, tx_valid_14, tx_data_14)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_13_current_instr, pc_14, core_data_14, core_core_top_13_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_14_ram_addr, pipe_rspu_pipeline_14_ex_packed, pipe_rspu_pipeline_14_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_14_alu_op, pipe_rspu_pipeline_14_ex_d1, pipe_rspu_pipeline_14_ex_t1, pipe_rspu_pipeline_14_ex_p1, pipe_rspu_pipeline_14_ex_d2, pipe_rspu_pipeline_14_ex_t2, pipe_rspu_pipeline_14_ex_p2, pipe_rspu_pipeline_14_ex_out_d, pipe_rspu_pipeline_14_ex_out_t, pipe_rspu_pipeline_14_ex_out_p, pipe_rspu_pipeline_14_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_14_id_val2, pipe_rspu_pipeline_14_ex_p2)
@@ -28,8 +28,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_14_id_val1, pipe_rspu_pipeline_14_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_14_id_rs1, pipe_rspu_pipeline_14_id_rs2, pipe_rspu_pipeline_14_id_rd, pipe_rspu_pipeline_14_reg_we, pipe_rspu_pipeline_14_reg_din, pipe_rspu_pipeline_14_id_val1, pipe_rspu_pipeline_14_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_14_cert_i, pipe_rspu_pipeline_14_cert_r, pipe_rspu_pipeline_14_cert_g, pipe_rspu_pipeline_14_cert_h, pipe_rspu_pipeline_14_cert_v, pipe_rspu_pipeline_14_pcc_valid, pipe_rspu_pipeline_14_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_13, pc_13, core_data_13, rx_valid_13, rx_data_13, tx_valid_13, tx_data_13)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_13, pc_13, core_data_13, core_core_top_25_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_13, core_data_13, rx_valid_13, rx_data_13, tx_valid_13, tx_data_13)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_25_current_instr, pc_13, core_data_13, core_core_top_25_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_26_ram_addr, pipe_rspu_pipeline_26_ex_packed, pipe_rspu_pipeline_26_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_26_alu_op, pipe_rspu_pipeline_26_ex_d1, pipe_rspu_pipeline_26_ex_t1, pipe_rspu_pipeline_26_ex_p1, pipe_rspu_pipeline_26_ex_d2, pipe_rspu_pipeline_26_ex_t2, pipe_rspu_pipeline_26_ex_p2, pipe_rspu_pipeline_26_ex_out_d, pipe_rspu_pipeline_26_ex_out_t, pipe_rspu_pipeline_26_ex_out_p, pipe_rspu_pipeline_26_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_26_id_val2, pipe_rspu_pipeline_26_ex_p2)
@@ -40,8 +40,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_26_id_val1, pipe_rspu_pipeline_26_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_26_id_rs1, pipe_rspu_pipeline_26_id_rs2, pipe_rspu_pipeline_26_id_rd, pipe_rspu_pipeline_26_reg_we, pipe_rspu_pipeline_26_reg_din, pipe_rspu_pipeline_26_id_val1, pipe_rspu_pipeline_26_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_26_cert_i, pipe_rspu_pipeline_26_cert_r, pipe_rspu_pipeline_26_cert_g, pipe_rspu_pipeline_26_cert_h, pipe_rspu_pipeline_26_cert_v, pipe_rspu_pipeline_26_pcc_valid, pipe_rspu_pipeline_26_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_12, pc_12, core_data_12, rx_valid_12, rx_data_12, tx_valid_12, tx_data_12)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_12, pc_12, core_data_12, core_core_top_37_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_12, core_data_12, rx_valid_12, rx_data_12, tx_valid_12, tx_data_12)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_37_current_instr, pc_12, core_data_12, core_core_top_37_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_38_ram_addr, pipe_rspu_pipeline_38_ex_packed, pipe_rspu_pipeline_38_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_38_alu_op, pipe_rspu_pipeline_38_ex_d1, pipe_rspu_pipeline_38_ex_t1, pipe_rspu_pipeline_38_ex_p1, pipe_rspu_pipeline_38_ex_d2, pipe_rspu_pipeline_38_ex_t2, pipe_rspu_pipeline_38_ex_p2, pipe_rspu_pipeline_38_ex_out_d, pipe_rspu_pipeline_38_ex_out_t, pipe_rspu_pipeline_38_ex_out_p, pipe_rspu_pipeline_38_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_38_id_val2, pipe_rspu_pipeline_38_ex_p2)
@@ -52,8 +52,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_38_id_val1, pipe_rspu_pipeline_38_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_38_id_rs1, pipe_rspu_pipeline_38_id_rs2, pipe_rspu_pipeline_38_id_rd, pipe_rspu_pipeline_38_reg_we, pipe_rspu_pipeline_38_reg_din, pipe_rspu_pipeline_38_id_val1, pipe_rspu_pipeline_38_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_38_cert_i, pipe_rspu_pipeline_38_cert_r, pipe_rspu_pipeline_38_cert_g, pipe_rspu_pipeline_38_cert_h, pipe_rspu_pipeline_38_cert_v, pipe_rspu_pipeline_38_pcc_valid, pipe_rspu_pipeline_38_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_11, pc_11, core_data_11, rx_valid_11, rx_data_11, tx_valid_11, tx_data_11)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_11, pc_11, core_data_11, core_core_top_49_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_11, core_data_11, rx_valid_11, rx_data_11, tx_valid_11, tx_data_11)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_49_current_instr, pc_11, core_data_11, core_core_top_49_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_50_ram_addr, pipe_rspu_pipeline_50_ex_packed, pipe_rspu_pipeline_50_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_50_alu_op, pipe_rspu_pipeline_50_ex_d1, pipe_rspu_pipeline_50_ex_t1, pipe_rspu_pipeline_50_ex_p1, pipe_rspu_pipeline_50_ex_d2, pipe_rspu_pipeline_50_ex_t2, pipe_rspu_pipeline_50_ex_p2, pipe_rspu_pipeline_50_ex_out_d, pipe_rspu_pipeline_50_ex_out_t, pipe_rspu_pipeline_50_ex_out_p, pipe_rspu_pipeline_50_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_50_id_val2, pipe_rspu_pipeline_50_ex_p2)
@@ -64,8 +64,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_50_id_val1, pipe_rspu_pipeline_50_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_50_id_rs1, pipe_rspu_pipeline_50_id_rs2, pipe_rspu_pipeline_50_id_rd, pipe_rspu_pipeline_50_reg_we, pipe_rspu_pipeline_50_reg_din, pipe_rspu_pipeline_50_id_val1, pipe_rspu_pipeline_50_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_50_cert_i, pipe_rspu_pipeline_50_cert_r, pipe_rspu_pipeline_50_cert_g, pipe_rspu_pipeline_50_cert_h, pipe_rspu_pipeline_50_cert_v, pipe_rspu_pipeline_50_pcc_valid, pipe_rspu_pipeline_50_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_10, pc_10, core_data_10, rx_valid_10, rx_data_10, tx_valid_10, tx_data_10)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_10, pc_10, core_data_10, core_core_top_61_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_10, core_data_10, rx_valid_10, rx_data_10, tx_valid_10, tx_data_10)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_61_current_instr, pc_10, core_data_10, core_core_top_61_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_62_ram_addr, pipe_rspu_pipeline_62_ex_packed, pipe_rspu_pipeline_62_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_62_alu_op, pipe_rspu_pipeline_62_ex_d1, pipe_rspu_pipeline_62_ex_t1, pipe_rspu_pipeline_62_ex_p1, pipe_rspu_pipeline_62_ex_d2, pipe_rspu_pipeline_62_ex_t2, pipe_rspu_pipeline_62_ex_p2, pipe_rspu_pipeline_62_ex_out_d, pipe_rspu_pipeline_62_ex_out_t, pipe_rspu_pipeline_62_ex_out_p, pipe_rspu_pipeline_62_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_62_id_val2, pipe_rspu_pipeline_62_ex_p2)
@@ -76,8 +76,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_62_id_val1, pipe_rspu_pipeline_62_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_62_id_rs1, pipe_rspu_pipeline_62_id_rs2, pipe_rspu_pipeline_62_id_rd, pipe_rspu_pipeline_62_reg_we, pipe_rspu_pipeline_62_reg_din, pipe_rspu_pipeline_62_id_val1, pipe_rspu_pipeline_62_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_62_cert_i, pipe_rspu_pipeline_62_cert_r, pipe_rspu_pipeline_62_cert_g, pipe_rspu_pipeline_62_cert_h, pipe_rspu_pipeline_62_cert_v, pipe_rspu_pipeline_62_pcc_valid, pipe_rspu_pipeline_62_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_9, pc_9, core_data_9, rx_valid_9, rx_data_9, tx_valid_9, tx_data_9)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_9, pc_9, core_data_9, core_core_top_73_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_9, core_data_9, rx_valid_9, rx_data_9, tx_valid_9, tx_data_9)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_73_current_instr, pc_9, core_data_9, core_core_top_73_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_74_ram_addr, pipe_rspu_pipeline_74_ex_packed, pipe_rspu_pipeline_74_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_74_alu_op, pipe_rspu_pipeline_74_ex_d1, pipe_rspu_pipeline_74_ex_t1, pipe_rspu_pipeline_74_ex_p1, pipe_rspu_pipeline_74_ex_d2, pipe_rspu_pipeline_74_ex_t2, pipe_rspu_pipeline_74_ex_p2, pipe_rspu_pipeline_74_ex_out_d, pipe_rspu_pipeline_74_ex_out_t, pipe_rspu_pipeline_74_ex_out_p, pipe_rspu_pipeline_74_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_74_id_val2, pipe_rspu_pipeline_74_ex_p2)
@@ -88,8 +88,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_74_id_val1, pipe_rspu_pipeline_74_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_74_id_rs1, pipe_rspu_pipeline_74_id_rs2, pipe_rspu_pipeline_74_id_rd, pipe_rspu_pipeline_74_reg_we, pipe_rspu_pipeline_74_reg_din, pipe_rspu_pipeline_74_id_val1, pipe_rspu_pipeline_74_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_74_cert_i, pipe_rspu_pipeline_74_cert_r, pipe_rspu_pipeline_74_cert_g, pipe_rspu_pipeline_74_cert_h, pipe_rspu_pipeline_74_cert_v, pipe_rspu_pipeline_74_pcc_valid, pipe_rspu_pipeline_74_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_8, pc_8, core_data_8, rx_valid_8, rx_data_8, tx_valid_8, tx_data_8)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_8, pc_8, core_data_8, core_core_top_85_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_8, core_data_8, rx_valid_8, rx_data_8, tx_valid_8, tx_data_8)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_85_current_instr, pc_8, core_data_8, core_core_top_85_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_86_ram_addr, pipe_rspu_pipeline_86_ex_packed, pipe_rspu_pipeline_86_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_86_alu_op, pipe_rspu_pipeline_86_ex_d1, pipe_rspu_pipeline_86_ex_t1, pipe_rspu_pipeline_86_ex_p1, pipe_rspu_pipeline_86_ex_d2, pipe_rspu_pipeline_86_ex_t2, pipe_rspu_pipeline_86_ex_p2, pipe_rspu_pipeline_86_ex_out_d, pipe_rspu_pipeline_86_ex_out_t, pipe_rspu_pipeline_86_ex_out_p, pipe_rspu_pipeline_86_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_86_id_val2, pipe_rspu_pipeline_86_ex_p2)
@@ -100,8 +100,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_86_id_val1, pipe_rspu_pipeline_86_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_86_id_rs1, pipe_rspu_pipeline_86_id_rs2, pipe_rspu_pipeline_86_id_rd, pipe_rspu_pipeline_86_reg_we, pipe_rspu_pipeline_86_reg_din, pipe_rspu_pipeline_86_id_val1, pipe_rspu_pipeline_86_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_86_cert_i, pipe_rspu_pipeline_86_cert_r, pipe_rspu_pipeline_86_cert_g, pipe_rspu_pipeline_86_cert_h, pipe_rspu_pipeline_86_cert_v, pipe_rspu_pipeline_86_pcc_valid, pipe_rspu_pipeline_86_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_7, pc_7, core_data_7, rx_valid_7, rx_data_7, tx_valid_7, tx_data_7)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_7, pc_7, core_data_7, core_core_top_97_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_7, core_data_7, rx_valid_7, rx_data_7, tx_valid_7, tx_data_7)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_97_current_instr, pc_7, core_data_7, core_core_top_97_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_98_ram_addr, pipe_rspu_pipeline_98_ex_packed, pipe_rspu_pipeline_98_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_98_alu_op, pipe_rspu_pipeline_98_ex_d1, pipe_rspu_pipeline_98_ex_t1, pipe_rspu_pipeline_98_ex_p1, pipe_rspu_pipeline_98_ex_d2, pipe_rspu_pipeline_98_ex_t2, pipe_rspu_pipeline_98_ex_p2, pipe_rspu_pipeline_98_ex_out_d, pipe_rspu_pipeline_98_ex_out_t, pipe_rspu_pipeline_98_ex_out_p, pipe_rspu_pipeline_98_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_98_id_val2, pipe_rspu_pipeline_98_ex_p2)
@@ -112,8 +112,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_98_id_val1, pipe_rspu_pipeline_98_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_98_id_rs1, pipe_rspu_pipeline_98_id_rs2, pipe_rspu_pipeline_98_id_rd, pipe_rspu_pipeline_98_reg_we, pipe_rspu_pipeline_98_reg_din, pipe_rspu_pipeline_98_id_val1, pipe_rspu_pipeline_98_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_98_cert_i, pipe_rspu_pipeline_98_cert_r, pipe_rspu_pipeline_98_cert_g, pipe_rspu_pipeline_98_cert_h, pipe_rspu_pipeline_98_cert_v, pipe_rspu_pipeline_98_pcc_valid, pipe_rspu_pipeline_98_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_6, pc_6, core_data_6, rx_valid_6, rx_data_6, tx_valid_6, tx_data_6)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_6, pc_6, core_data_6, core_core_top_109_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_6, core_data_6, rx_valid_6, rx_data_6, tx_valid_6, tx_data_6)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_109_current_instr, pc_6, core_data_6, core_core_top_109_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_110_ram_addr, pipe_rspu_pipeline_110_ex_packed, pipe_rspu_pipeline_110_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_110_alu_op, pipe_rspu_pipeline_110_ex_d1, pipe_rspu_pipeline_110_ex_t1, pipe_rspu_pipeline_110_ex_p1, pipe_rspu_pipeline_110_ex_d2, pipe_rspu_pipeline_110_ex_t2, pipe_rspu_pipeline_110_ex_p2, pipe_rspu_pipeline_110_ex_out_d, pipe_rspu_pipeline_110_ex_out_t, pipe_rspu_pipeline_110_ex_out_p, pipe_rspu_pipeline_110_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_110_id_val2, pipe_rspu_pipeline_110_ex_p2)
@@ -124,8 +124,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_110_id_val1, pipe_rspu_pipeline_110_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_110_id_rs1, pipe_rspu_pipeline_110_id_rs2, pipe_rspu_pipeline_110_id_rd, pipe_rspu_pipeline_110_reg_we, pipe_rspu_pipeline_110_reg_din, pipe_rspu_pipeline_110_id_val1, pipe_rspu_pipeline_110_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_110_cert_i, pipe_rspu_pipeline_110_cert_r, pipe_rspu_pipeline_110_cert_g, pipe_rspu_pipeline_110_cert_h, pipe_rspu_pipeline_110_cert_v, pipe_rspu_pipeline_110_pcc_valid, pipe_rspu_pipeline_110_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_5, pc_5, core_data_5, rx_valid_5, rx_data_5, tx_valid_5, tx_data_5)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_5, pc_5, core_data_5, core_core_top_121_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_5, core_data_5, rx_valid_5, rx_data_5, tx_valid_5, tx_data_5)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_121_current_instr, pc_5, core_data_5, core_core_top_121_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_122_ram_addr, pipe_rspu_pipeline_122_ex_packed, pipe_rspu_pipeline_122_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_122_alu_op, pipe_rspu_pipeline_122_ex_d1, pipe_rspu_pipeline_122_ex_t1, pipe_rspu_pipeline_122_ex_p1, pipe_rspu_pipeline_122_ex_d2, pipe_rspu_pipeline_122_ex_t2, pipe_rspu_pipeline_122_ex_p2, pipe_rspu_pipeline_122_ex_out_d, pipe_rspu_pipeline_122_ex_out_t, pipe_rspu_pipeline_122_ex_out_p, pipe_rspu_pipeline_122_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_122_id_val2, pipe_rspu_pipeline_122_ex_p2)
@@ -136,8 +136,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_122_id_val1, pipe_rspu_pipeline_122_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_122_id_rs1, pipe_rspu_pipeline_122_id_rs2, pipe_rspu_pipeline_122_id_rd, pipe_rspu_pipeline_122_reg_we, pipe_rspu_pipeline_122_reg_din, pipe_rspu_pipeline_122_id_val1, pipe_rspu_pipeline_122_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_122_cert_i, pipe_rspu_pipeline_122_cert_r, pipe_rspu_pipeline_122_cert_g, pipe_rspu_pipeline_122_cert_h, pipe_rspu_pipeline_122_cert_v, pipe_rspu_pipeline_122_pcc_valid, pipe_rspu_pipeline_122_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_4, pc_4, core_data_4, rx_valid_4, rx_data_4, tx_valid_4, tx_data_4)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_4, pc_4, core_data_4, core_core_top_133_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_4, core_data_4, rx_valid_4, rx_data_4, tx_valid_4, tx_data_4)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_133_current_instr, pc_4, core_data_4, core_core_top_133_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_134_ram_addr, pipe_rspu_pipeline_134_ex_packed, pipe_rspu_pipeline_134_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_134_alu_op, pipe_rspu_pipeline_134_ex_d1, pipe_rspu_pipeline_134_ex_t1, pipe_rspu_pipeline_134_ex_p1, pipe_rspu_pipeline_134_ex_d2, pipe_rspu_pipeline_134_ex_t2, pipe_rspu_pipeline_134_ex_p2, pipe_rspu_pipeline_134_ex_out_d, pipe_rspu_pipeline_134_ex_out_t, pipe_rspu_pipeline_134_ex_out_p, pipe_rspu_pipeline_134_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_134_id_val2, pipe_rspu_pipeline_134_ex_p2)
@@ -148,8 +148,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_134_id_val1, pipe_rspu_pipeline_134_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_134_id_rs1, pipe_rspu_pipeline_134_id_rs2, pipe_rspu_pipeline_134_id_rd, pipe_rspu_pipeline_134_reg_we, pipe_rspu_pipeline_134_reg_din, pipe_rspu_pipeline_134_id_val1, pipe_rspu_pipeline_134_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_134_cert_i, pipe_rspu_pipeline_134_cert_r, pipe_rspu_pipeline_134_cert_g, pipe_rspu_pipeline_134_cert_h, pipe_rspu_pipeline_134_cert_v, pipe_rspu_pipeline_134_pcc_valid, pipe_rspu_pipeline_134_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_3, pc_3, core_data_3, rx_valid_3, rx_data_3, tx_valid_3, tx_data_3)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_3, pc_3, core_data_3, core_core_top_145_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_3, core_data_3, rx_valid_3, rx_data_3, tx_valid_3, tx_data_3)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_145_current_instr, pc_3, core_data_3, core_core_top_145_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_146_ram_addr, pipe_rspu_pipeline_146_ex_packed, pipe_rspu_pipeline_146_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_146_alu_op, pipe_rspu_pipeline_146_ex_d1, pipe_rspu_pipeline_146_ex_t1, pipe_rspu_pipeline_146_ex_p1, pipe_rspu_pipeline_146_ex_d2, pipe_rspu_pipeline_146_ex_t2, pipe_rspu_pipeline_146_ex_p2, pipe_rspu_pipeline_146_ex_out_d, pipe_rspu_pipeline_146_ex_out_t, pipe_rspu_pipeline_146_ex_out_p, pipe_rspu_pipeline_146_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_146_id_val2, pipe_rspu_pipeline_146_ex_p2)
@@ -160,8 +160,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_146_id_val1, pipe_rspu_pipeline_146_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_146_id_rs1, pipe_rspu_pipeline_146_id_rs2, pipe_rspu_pipeline_146_id_rd, pipe_rspu_pipeline_146_reg_we, pipe_rspu_pipeline_146_reg_din, pipe_rspu_pipeline_146_id_val1, pipe_rspu_pipeline_146_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_146_cert_i, pipe_rspu_pipeline_146_cert_r, pipe_rspu_pipeline_146_cert_g, pipe_rspu_pipeline_146_cert_h, pipe_rspu_pipeline_146_cert_v, pipe_rspu_pipeline_146_pcc_valid, pipe_rspu_pipeline_146_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_2, pc_2, core_data_2, rx_valid_2, rx_data_2, tx_valid_2, tx_data_2)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_2, pc_2, core_data_2, core_core_top_157_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_2, core_data_2, rx_valid_2, rx_data_2, tx_valid_2, tx_data_2)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_157_current_instr, pc_2, core_data_2, core_core_top_157_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_158_ram_addr, pipe_rspu_pipeline_158_ex_packed, pipe_rspu_pipeline_158_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_158_alu_op, pipe_rspu_pipeline_158_ex_d1, pipe_rspu_pipeline_158_ex_t1, pipe_rspu_pipeline_158_ex_p1, pipe_rspu_pipeline_158_ex_d2, pipe_rspu_pipeline_158_ex_t2, pipe_rspu_pipeline_158_ex_p2, pipe_rspu_pipeline_158_ex_out_d, pipe_rspu_pipeline_158_ex_out_t, pipe_rspu_pipeline_158_ex_out_p, pipe_rspu_pipeline_158_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_158_id_val2, pipe_rspu_pipeline_158_ex_p2)
@@ -172,8 +172,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_158_id_val1, pipe_rspu_pipeline_158_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_158_id_rs1, pipe_rspu_pipeline_158_id_rs2, pipe_rspu_pipeline_158_id_rd, pipe_rspu_pipeline_158_reg_we, pipe_rspu_pipeline_158_reg_din, pipe_rspu_pipeline_158_id_val1, pipe_rspu_pipeline_158_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_158_cert_i, pipe_rspu_pipeline_158_cert_r, pipe_rspu_pipeline_158_cert_g, pipe_rspu_pipeline_158_cert_h, pipe_rspu_pipeline_158_cert_v, pipe_rspu_pipeline_158_pcc_valid, pipe_rspu_pipeline_158_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_1, pc_1, core_data_1, rx_valid_1, rx_data_1, tx_valid_1, tx_data_1)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_1, pc_1, core_data_1, core_core_top_169_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_1, core_data_1, rx_valid_1, rx_data_1, tx_valid_1, tx_data_1)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_169_current_instr, pc_1, core_data_1, core_core_top_169_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_170_ram_addr, pipe_rspu_pipeline_170_ex_packed, pipe_rspu_pipeline_170_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_170_alu_op, pipe_rspu_pipeline_170_ex_d1, pipe_rspu_pipeline_170_ex_t1, pipe_rspu_pipeline_170_ex_p1, pipe_rspu_pipeline_170_ex_d2, pipe_rspu_pipeline_170_ex_t2, pipe_rspu_pipeline_170_ex_p2, pipe_rspu_pipeline_170_ex_out_d, pipe_rspu_pipeline_170_ex_out_t, pipe_rspu_pipeline_170_ex_out_p, pipe_rspu_pipeline_170_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_170_id_val2, pipe_rspu_pipeline_170_ex_p2)
@@ -184,8 +184,8 @@
 // Pattern: types::extract_data(pipe_rspu_pipeline_170_id_val1, pipe_rspu_pipeline_170_ex_d1)
 // Pattern: reg::regfile(clk, pipe_rspu_pipeline_170_id_rs1, pipe_rspu_pipeline_170_id_rs2, pipe_rspu_pipeline_170_id_rd, pipe_rspu_pipeline_170_reg_we, pipe_rspu_pipeline_170_reg_din, pipe_rspu_pipeline_170_id_val1, pipe_rspu_pipeline_170_id_val2)
 // Pattern: pcc::pcc_verifier(clk, rst_n, pipe_rspu_pipeline_170_cert_i, pipe_rspu_pipeline_170_cert_r, pipe_rspu_pipeline_170_cert_g, pipe_rspu_pipeline_170_cert_h, pipe_rspu_pipeline_170_cert_v, pipe_rspu_pipeline_170_pcc_valid, pipe_rspu_pipeline_170_pcc_fault)
-// Pattern: core::core_top(clk, rst_n, instr_0, pc_0, core_data_0, rx_valid_0, rx_data_0, tx_valid_0, tx_data_0)
-// Pattern: pipe::rspu_pipeline(clk, rst_n, instr_0, pc_0, core_data_0, core_core_top_181_trap_signal)
+// Pattern: core::core_top(clk, rst_n, pc_0, core_data_0, rx_valid_0, rx_data_0, tx_valid_0, tx_data_0)
+// Pattern: pipe::rspu_pipeline(clk, rst_n, core_core_top_181_current_instr, pc_0, core_data_0, core_core_top_181_trap_signal)
 // Pattern: ram::ram(clk, pipe_rspu_pipeline_182_ram_addr, pipe_rspu_pipeline_182_ex_packed, pipe_rspu_pipeline_182_mem_out)
 // Pattern: alu::alu_core(clk, pipe_rspu_pipeline_182_alu_op, pipe_rspu_pipeline_182_ex_d1, pipe_rspu_pipeline_182_ex_t1, pipe_rspu_pipeline_182_ex_p1, pipe_rspu_pipeline_182_ex_d2, pipe_rspu_pipeline_182_ex_t2, pipe_rspu_pipeline_182_ex_p2, pipe_rspu_pipeline_182_ex_out_d, pipe_rspu_pipeline_182_ex_out_t, pipe_rspu_pipeline_182_ex_out_p, pipe_rspu_pipeline_182_ex_trap)
 // Pattern: types::extract_provenance(pipe_rspu_pipeline_182_id_val2, pipe_rspu_pipeline_182_ex_p2)
@@ -199,10 +199,11 @@
 // Pattern: ctrl::controller(robot_angle, robot_torque)
 // Pattern: physics::pendulum(robot_torque, robot_angle)
 
-  // source: <unknown>:7
 module rspu_top (
   input  logic        clk,
   input  logic        rst_n,
+  input  logic        stream_rx_valid,
+  input  logic [63:0] stream_rx_data,
   output logic [31:0] out_pc_0,
   output logic [63:0] out_data_0,
   output logic [31:0] out_pc_1,
@@ -239,2388 +240,882 @@ module rspu_top (
 );
 
   // Internal signals
-  // source: <unknown>:13
   logic [63:0] instr_0;
-  // source: <unknown>:14
   logic [31:0] pc_0;
-  // source: <unknown>:15
   logic [63:0] core_data_0;
-  // source: <unknown>:16
   logic        rx_valid_0;
-  // source: <unknown>:17
   logic [63:0] rx_data_0;
-  // source: <unknown>:18
   logic        tx_valid_0;
-  // source: <unknown>:19
   logic [63:0] tx_data_0;
-  // source: <unknown>:13
   logic [63:0] instr_1;
-  // source: <unknown>:14
   logic [31:0] pc_1;
-  // source: <unknown>:15
   logic [63:0] core_data_1;
-  // source: <unknown>:16
   logic        rx_valid_1;
-  // source: <unknown>:17
   logic [63:0] rx_data_1;
-  // source: <unknown>:18
   logic        tx_valid_1;
-  // source: <unknown>:19
   logic [63:0] tx_data_1;
-  // source: <unknown>:13
   logic [63:0] instr_2;
-  // source: <unknown>:14
   logic [31:0] pc_2;
-  // source: <unknown>:15
   logic [63:0] core_data_2;
-  // source: <unknown>:16
   logic        rx_valid_2;
-  // source: <unknown>:17
   logic [63:0] rx_data_2;
-  // source: <unknown>:18
   logic        tx_valid_2;
-  // source: <unknown>:19
   logic [63:0] tx_data_2;
-  // source: <unknown>:13
   logic [63:0] instr_3;
-  // source: <unknown>:14
   logic [31:0] pc_3;
-  // source: <unknown>:15
   logic [63:0] core_data_3;
-  // source: <unknown>:16
   logic        rx_valid_3;
-  // source: <unknown>:17
   logic [63:0] rx_data_3;
-  // source: <unknown>:18
   logic        tx_valid_3;
-  // source: <unknown>:19
   logic [63:0] tx_data_3;
-  // source: <unknown>:13
   logic [63:0] instr_4;
-  // source: <unknown>:14
   logic [31:0] pc_4;
-  // source: <unknown>:15
   logic [63:0] core_data_4;
-  // source: <unknown>:16
   logic        rx_valid_4;
-  // source: <unknown>:17
   logic [63:0] rx_data_4;
-  // source: <unknown>:18
   logic        tx_valid_4;
-  // source: <unknown>:19
   logic [63:0] tx_data_4;
-  // source: <unknown>:13
   logic [63:0] instr_5;
-  // source: <unknown>:14
   logic [31:0] pc_5;
-  // source: <unknown>:15
   logic [63:0] core_data_5;
-  // source: <unknown>:16
   logic        rx_valid_5;
-  // source: <unknown>:17
   logic [63:0] rx_data_5;
-  // source: <unknown>:18
   logic        tx_valid_5;
-  // source: <unknown>:19
   logic [63:0] tx_data_5;
-  // source: <unknown>:13
   logic [63:0] instr_6;
-  // source: <unknown>:14
   logic [31:0] pc_6;
-  // source: <unknown>:15
   logic [63:0] core_data_6;
-  // source: <unknown>:16
   logic        rx_valid_6;
-  // source: <unknown>:17
   logic [63:0] rx_data_6;
-  // source: <unknown>:18
   logic        tx_valid_6;
-  // source: <unknown>:19
   logic [63:0] tx_data_6;
-  // source: <unknown>:13
   logic [63:0] instr_7;
-  // source: <unknown>:14
   logic [31:0] pc_7;
-  // source: <unknown>:15
   logic [63:0] core_data_7;
-  // source: <unknown>:16
   logic        rx_valid_7;
-  // source: <unknown>:17
   logic [63:0] rx_data_7;
-  // source: <unknown>:18
   logic        tx_valid_7;
-  // source: <unknown>:19
   logic [63:0] tx_data_7;
-  // source: <unknown>:13
   logic [63:0] instr_8;
-  // source: <unknown>:14
   logic [31:0] pc_8;
-  // source: <unknown>:15
   logic [63:0] core_data_8;
-  // source: <unknown>:16
   logic        rx_valid_8;
-  // source: <unknown>:17
   logic [63:0] rx_data_8;
-  // source: <unknown>:18
   logic        tx_valid_8;
-  // source: <unknown>:19
   logic [63:0] tx_data_8;
-  // source: <unknown>:13
   logic [63:0] instr_9;
-  // source: <unknown>:14
   logic [31:0] pc_9;
-  // source: <unknown>:15
   logic [63:0] core_data_9;
-  // source: <unknown>:16
   logic        rx_valid_9;
-  // source: <unknown>:17
   logic [63:0] rx_data_9;
-  // source: <unknown>:18
   logic        tx_valid_9;
-  // source: <unknown>:19
   logic [63:0] tx_data_9;
-  // source: <unknown>:13
   logic [63:0] instr_10;
-  // source: <unknown>:14
   logic [31:0] pc_10;
-  // source: <unknown>:15
   logic [63:0] core_data_10;
-  // source: <unknown>:16
   logic        rx_valid_10;
-  // source: <unknown>:17
   logic [63:0] rx_data_10;
-  // source: <unknown>:18
   logic        tx_valid_10;
-  // source: <unknown>:19
   logic [63:0] tx_data_10;
-  // source: <unknown>:13
   logic [63:0] instr_11;
-  // source: <unknown>:14
   logic [31:0] pc_11;
-  // source: <unknown>:15
   logic [63:0] core_data_11;
-  // source: <unknown>:16
   logic        rx_valid_11;
-  // source: <unknown>:17
   logic [63:0] rx_data_11;
-  // source: <unknown>:18
   logic        tx_valid_11;
-  // source: <unknown>:19
   logic [63:0] tx_data_11;
-  // source: <unknown>:13
   logic [63:0] instr_12;
-  // source: <unknown>:14
   logic [31:0] pc_12;
-  // source: <unknown>:15
   logic [63:0] core_data_12;
-  // source: <unknown>:16
   logic        rx_valid_12;
-  // source: <unknown>:17
   logic [63:0] rx_data_12;
-  // source: <unknown>:18
   logic        tx_valid_12;
-  // source: <unknown>:19
   logic [63:0] tx_data_12;
-  // source: <unknown>:13
   logic [63:0] instr_13;
-  // source: <unknown>:14
   logic [31:0] pc_13;
-  // source: <unknown>:15
   logic [63:0] core_data_13;
-  // source: <unknown>:16
   logic        rx_valid_13;
-  // source: <unknown>:17
   logic [63:0] rx_data_13;
-  // source: <unknown>:18
   logic        tx_valid_13;
-  // source: <unknown>:19
   logic [63:0] tx_data_13;
-  // source: <unknown>:13
   logic [63:0] instr_14;
-  // source: <unknown>:14
   logic [31:0] pc_14;
-  // source: <unknown>:15
   logic [63:0] core_data_14;
-  // source: <unknown>:16
   logic        rx_valid_14;
-  // source: <unknown>:17
   logic [63:0] rx_data_14;
-  // source: <unknown>:18
   logic        tx_valid_14;
-  // source: <unknown>:19
   logic [63:0] tx_data_14;
-  // source: <unknown>:13
   logic [63:0] instr_15;
-  // source: <unknown>:14
   logic [31:0] pc_15;
-  // source: <unknown>:15
   logic [63:0] core_data_15;
-  // source: <unknown>:16
   logic        rx_valid_15;
-  // source: <unknown>:17
   logic [63:0] rx_data_15;
-  // source: <unknown>:18
   logic        tx_valid_15;
-  // source: <unknown>:19
   logic [63:0] tx_data_15;
-  // source: <unknown>:29
   logic signed [63:0] robot_angle;
-  // source: <unknown>:30
   logic signed [63:0] robot_torque;
-  // source: <unknown>:45
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv0;
-  // source: <unknown>:46
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd0;
-  // source: <unknown>:47
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv1;
-  // source: <unknown>:48
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd1;
-  // source: <unknown>:49
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv2;
-  // source: <unknown>:50
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd2;
-  // source: <unknown>:51
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv3;
-  // source: <unknown>:52
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd3;
-  // source: <unknown>:53
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv4;
-  // source: <unknown>:54
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd4;
-  // source: <unknown>:55
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv5;
-  // source: <unknown>:56
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd5;
-  // source: <unknown>:57
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv6;
-  // source: <unknown>:58
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd6;
-  // source: <unknown>:59
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv7;
-  // source: <unknown>:60
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd7;
-  // source: <unknown>:61
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv8;
-  // source: <unknown>:62
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd8;
-  // source: <unknown>:63
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv9;
-  // source: <unknown>:64
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd9;
-  // source: <unknown>:65
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv10;
-  // source: <unknown>:66
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd10;
-  // source: <unknown>:67
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv11;
-  // source: <unknown>:68
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd11;
-  // source: <unknown>:69
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv12;
-  // source: <unknown>:70
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd12;
-  // source: <unknown>:71
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv13;
-  // source: <unknown>:72
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd13;
-  // source: <unknown>:73
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv14;
-  // source: <unknown>:74
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd14;
-  // source: <unknown>:75
-  // Pattern: fabric_noc_router_0
   logic        fabric_noc_router_0_sv15;
-  // source: <unknown>:76
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_sd15;
-  // source: <unknown>:266
-  // Pattern: fabric_noc_router_0
+  logic        fabric_noc_router_0_sv16;
+  logic [63:0] fabric_noc_router_0_sd16;
   logic [63:0] fabric_noc_router_0_dest_id;
-  // source: <unknown>:267
-  // Pattern: fabric_noc_router_0
   logic [63:0] fabric_noc_router_0_payload;
-  // source: <unknown>:26
-  // Pattern: core_core_top_1
   logic        core_core_top_1_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_1
+  logic [63:0] core_core_top_1_current_instr;
   logic        core_core_top_1_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_2
-  logic [31:0] pipe_rspu_pipeline_2_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_2
+  logic [31:0] pipe_rspu_pipeline_2_pipe_pc;
   logic        pipe_rspu_pipeline_2_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_2
   logic        pipe_rspu_pipeline_2_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_2
   logic [15:0] pipe_rspu_pipeline_2_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_2
   logic [15:0] pipe_rspu_pipeline_2_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_2
   logic [15:0] pipe_rspu_pipeline_2_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_2
   logic        pipe_rspu_pipeline_2_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_2
   logic        pipe_rspu_pipeline_2_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_2
   logic [15:0] pipe_rspu_pipeline_2_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_2
   logic [15:0] pipe_rspu_pipeline_2_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_2
   logic [15:0] pipe_rspu_pipeline_2_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_2
   logic        pipe_rspu_pipeline_2_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_2
   logic        pipe_rspu_pipeline_2_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_2
   logic [15:0] pipe_rspu_pipeline_2_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_2
   logic [63:0] pipe_rspu_pipeline_2_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_2
   logic [31:0] pipe_rspu_pipeline_2_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_4
   logic [63:0] alu_alu_core_4_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_4
   logic [63:0] alu_alu_core_4_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_4
   logic [63:0] alu_alu_core_4_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_4
   logic        alu_alu_core_4_is_trap;
-  // Pattern: alu_alu_core_4
   logic        alu_alu_core_4_is_add;
-  // Pattern: alu_alu_core_4
   logic        alu_alu_core_4_is_sub;
-  // Pattern: alu_alu_core_4
   logic        alu_alu_core_4_is_relu_pos;
-  // Pattern: alu_alu_core_4
   logic        alu_alu_core_4_is_relu_neg;
-  // Pattern: alu_alu_core_4
   logic        alu_alu_core_4_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_12
   logic [15:0] pcc_pcc_verifier_12_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_12
   logic [15:0] pcc_pcc_verifier_12_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_12
   logic [15:0] pcc_pcc_verifier_12_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_12
   logic        pcc_pcc_verifier_12_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_13
   logic        core_core_top_13_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_13
+  logic [63:0] core_core_top_13_current_instr;
   logic        core_core_top_13_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_14
-  logic [31:0] pipe_rspu_pipeline_14_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_14
+  logic [31:0] pipe_rspu_pipeline_14_pipe_pc;
   logic        pipe_rspu_pipeline_14_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_14
   logic        pipe_rspu_pipeline_14_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_14
   logic [15:0] pipe_rspu_pipeline_14_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_14
   logic [15:0] pipe_rspu_pipeline_14_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_14
   logic [15:0] pipe_rspu_pipeline_14_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_14
   logic        pipe_rspu_pipeline_14_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_14
   logic        pipe_rspu_pipeline_14_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_14
   logic [15:0] pipe_rspu_pipeline_14_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_14
   logic [15:0] pipe_rspu_pipeline_14_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_14
   logic [15:0] pipe_rspu_pipeline_14_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_14
   logic        pipe_rspu_pipeline_14_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_14
   logic        pipe_rspu_pipeline_14_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_14
   logic [15:0] pipe_rspu_pipeline_14_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_14
   logic [63:0] pipe_rspu_pipeline_14_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_14
   logic [31:0] pipe_rspu_pipeline_14_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_16
   logic [63:0] alu_alu_core_16_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_16
   logic [63:0] alu_alu_core_16_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_16
   logic [63:0] alu_alu_core_16_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_16
   logic        alu_alu_core_16_is_trap;
-  // Pattern: alu_alu_core_16
   logic        alu_alu_core_16_is_add;
-  // Pattern: alu_alu_core_16
   logic        alu_alu_core_16_is_sub;
-  // Pattern: alu_alu_core_16
   logic        alu_alu_core_16_is_relu_pos;
-  // Pattern: alu_alu_core_16
   logic        alu_alu_core_16_is_relu_neg;
-  // Pattern: alu_alu_core_16
   logic        alu_alu_core_16_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_24
   logic [15:0] pcc_pcc_verifier_24_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_24
   logic [15:0] pcc_pcc_verifier_24_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_24
   logic [15:0] pcc_pcc_verifier_24_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_24
   logic        pcc_pcc_verifier_24_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_25
   logic        core_core_top_25_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_25
+  logic [63:0] core_core_top_25_current_instr;
   logic        core_core_top_25_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_26
-  logic [31:0] pipe_rspu_pipeline_26_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_26
+  logic [31:0] pipe_rspu_pipeline_26_pipe_pc;
   logic        pipe_rspu_pipeline_26_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_26
   logic        pipe_rspu_pipeline_26_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_26
   logic [15:0] pipe_rspu_pipeline_26_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_26
   logic [15:0] pipe_rspu_pipeline_26_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_26
   logic [15:0] pipe_rspu_pipeline_26_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_26
   logic        pipe_rspu_pipeline_26_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_26
   logic        pipe_rspu_pipeline_26_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_26
   logic [15:0] pipe_rspu_pipeline_26_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_26
   logic [15:0] pipe_rspu_pipeline_26_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_26
   logic [15:0] pipe_rspu_pipeline_26_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_26
   logic        pipe_rspu_pipeline_26_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_26
   logic        pipe_rspu_pipeline_26_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_26
   logic [15:0] pipe_rspu_pipeline_26_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_26
   logic [63:0] pipe_rspu_pipeline_26_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_26
   logic [31:0] pipe_rspu_pipeline_26_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_28
   logic [63:0] alu_alu_core_28_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_28
   logic [63:0] alu_alu_core_28_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_28
   logic [63:0] alu_alu_core_28_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_28
   logic        alu_alu_core_28_is_trap;
-  // Pattern: alu_alu_core_28
   logic        alu_alu_core_28_is_add;
-  // Pattern: alu_alu_core_28
   logic        alu_alu_core_28_is_sub;
-  // Pattern: alu_alu_core_28
   logic        alu_alu_core_28_is_relu_pos;
-  // Pattern: alu_alu_core_28
   logic        alu_alu_core_28_is_relu_neg;
-  // Pattern: alu_alu_core_28
   logic        alu_alu_core_28_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_36
   logic [15:0] pcc_pcc_verifier_36_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_36
   logic [15:0] pcc_pcc_verifier_36_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_36
   logic [15:0] pcc_pcc_verifier_36_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_36
   logic        pcc_pcc_verifier_36_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_37
   logic        core_core_top_37_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_37
+  logic [63:0] core_core_top_37_current_instr;
   logic        core_core_top_37_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_38
-  logic [31:0] pipe_rspu_pipeline_38_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_38
+  logic [31:0] pipe_rspu_pipeline_38_pipe_pc;
   logic        pipe_rspu_pipeline_38_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_38
   logic        pipe_rspu_pipeline_38_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_38
   logic [15:0] pipe_rspu_pipeline_38_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_38
   logic [15:0] pipe_rspu_pipeline_38_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_38
   logic [15:0] pipe_rspu_pipeline_38_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_38
   logic        pipe_rspu_pipeline_38_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_38
   logic        pipe_rspu_pipeline_38_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_38
   logic [15:0] pipe_rspu_pipeline_38_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_38
   logic [15:0] pipe_rspu_pipeline_38_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_38
   logic [15:0] pipe_rspu_pipeline_38_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_38
   logic        pipe_rspu_pipeline_38_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_38
   logic        pipe_rspu_pipeline_38_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_38
   logic [15:0] pipe_rspu_pipeline_38_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_38
   logic [63:0] pipe_rspu_pipeline_38_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_38
   logic [31:0] pipe_rspu_pipeline_38_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_40
   logic [63:0] alu_alu_core_40_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_40
   logic [63:0] alu_alu_core_40_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_40
   logic [63:0] alu_alu_core_40_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_40
   logic        alu_alu_core_40_is_trap;
-  // Pattern: alu_alu_core_40
   logic        alu_alu_core_40_is_add;
-  // Pattern: alu_alu_core_40
   logic        alu_alu_core_40_is_sub;
-  // Pattern: alu_alu_core_40
   logic        alu_alu_core_40_is_relu_pos;
-  // Pattern: alu_alu_core_40
   logic        alu_alu_core_40_is_relu_neg;
-  // Pattern: alu_alu_core_40
   logic        alu_alu_core_40_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_48
   logic [15:0] pcc_pcc_verifier_48_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_48
   logic [15:0] pcc_pcc_verifier_48_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_48
   logic [15:0] pcc_pcc_verifier_48_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_48
   logic        pcc_pcc_verifier_48_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_49
   logic        core_core_top_49_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_49
+  logic [63:0] core_core_top_49_current_instr;
   logic        core_core_top_49_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_50
-  logic [31:0] pipe_rspu_pipeline_50_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_50
+  logic [31:0] pipe_rspu_pipeline_50_pipe_pc;
   logic        pipe_rspu_pipeline_50_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_50
   logic        pipe_rspu_pipeline_50_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_50
   logic [15:0] pipe_rspu_pipeline_50_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_50
   logic [15:0] pipe_rspu_pipeline_50_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_50
   logic [15:0] pipe_rspu_pipeline_50_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_50
   logic        pipe_rspu_pipeline_50_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_50
   logic        pipe_rspu_pipeline_50_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_50
   logic [15:0] pipe_rspu_pipeline_50_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_50
   logic [15:0] pipe_rspu_pipeline_50_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_50
   logic [15:0] pipe_rspu_pipeline_50_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_50
   logic        pipe_rspu_pipeline_50_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_50
   logic        pipe_rspu_pipeline_50_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_50
   logic [15:0] pipe_rspu_pipeline_50_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_50
   logic [63:0] pipe_rspu_pipeline_50_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_50
   logic [31:0] pipe_rspu_pipeline_50_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_52
   logic [63:0] alu_alu_core_52_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_52
   logic [63:0] alu_alu_core_52_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_52
   logic [63:0] alu_alu_core_52_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_52
   logic        alu_alu_core_52_is_trap;
-  // Pattern: alu_alu_core_52
   logic        alu_alu_core_52_is_add;
-  // Pattern: alu_alu_core_52
   logic        alu_alu_core_52_is_sub;
-  // Pattern: alu_alu_core_52
   logic        alu_alu_core_52_is_relu_pos;
-  // Pattern: alu_alu_core_52
   logic        alu_alu_core_52_is_relu_neg;
-  // Pattern: alu_alu_core_52
   logic        alu_alu_core_52_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_60
   logic [15:0] pcc_pcc_verifier_60_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_60
   logic [15:0] pcc_pcc_verifier_60_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_60
   logic [15:0] pcc_pcc_verifier_60_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_60
   logic        pcc_pcc_verifier_60_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_61
   logic        core_core_top_61_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_61
+  logic [63:0] core_core_top_61_current_instr;
   logic        core_core_top_61_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_62
-  logic [31:0] pipe_rspu_pipeline_62_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_62
+  logic [31:0] pipe_rspu_pipeline_62_pipe_pc;
   logic        pipe_rspu_pipeline_62_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_62
   logic        pipe_rspu_pipeline_62_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_62
   logic [15:0] pipe_rspu_pipeline_62_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_62
   logic [15:0] pipe_rspu_pipeline_62_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_62
   logic [15:0] pipe_rspu_pipeline_62_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_62
   logic        pipe_rspu_pipeline_62_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_62
   logic        pipe_rspu_pipeline_62_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_62
   logic [15:0] pipe_rspu_pipeline_62_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_62
   logic [15:0] pipe_rspu_pipeline_62_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_62
   logic [15:0] pipe_rspu_pipeline_62_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_62
   logic        pipe_rspu_pipeline_62_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_62
   logic        pipe_rspu_pipeline_62_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_62
   logic [15:0] pipe_rspu_pipeline_62_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_62
   logic [63:0] pipe_rspu_pipeline_62_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_62
   logic [31:0] pipe_rspu_pipeline_62_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_64
   logic [63:0] alu_alu_core_64_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_64
   logic [63:0] alu_alu_core_64_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_64
   logic [63:0] alu_alu_core_64_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_64
   logic        alu_alu_core_64_is_trap;
-  // Pattern: alu_alu_core_64
   logic        alu_alu_core_64_is_add;
-  // Pattern: alu_alu_core_64
   logic        alu_alu_core_64_is_sub;
-  // Pattern: alu_alu_core_64
   logic        alu_alu_core_64_is_relu_pos;
-  // Pattern: alu_alu_core_64
   logic        alu_alu_core_64_is_relu_neg;
-  // Pattern: alu_alu_core_64
   logic        alu_alu_core_64_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_72
   logic [15:0] pcc_pcc_verifier_72_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_72
   logic [15:0] pcc_pcc_verifier_72_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_72
   logic [15:0] pcc_pcc_verifier_72_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_72
   logic        pcc_pcc_verifier_72_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_73
   logic        core_core_top_73_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_73
+  logic [63:0] core_core_top_73_current_instr;
   logic        core_core_top_73_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_74
-  logic [31:0] pipe_rspu_pipeline_74_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_74
+  logic [31:0] pipe_rspu_pipeline_74_pipe_pc;
   logic        pipe_rspu_pipeline_74_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_74
   logic        pipe_rspu_pipeline_74_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_74
   logic [15:0] pipe_rspu_pipeline_74_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_74
   logic [15:0] pipe_rspu_pipeline_74_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_74
   logic [15:0] pipe_rspu_pipeline_74_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_74
   logic        pipe_rspu_pipeline_74_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_74
   logic        pipe_rspu_pipeline_74_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_74
   logic [15:0] pipe_rspu_pipeline_74_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_74
   logic [15:0] pipe_rspu_pipeline_74_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_74
   logic [15:0] pipe_rspu_pipeline_74_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_74
   logic        pipe_rspu_pipeline_74_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_74
   logic        pipe_rspu_pipeline_74_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_74
   logic [15:0] pipe_rspu_pipeline_74_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_74
   logic [63:0] pipe_rspu_pipeline_74_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_74
   logic [31:0] pipe_rspu_pipeline_74_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_76
   logic [63:0] alu_alu_core_76_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_76
   logic [63:0] alu_alu_core_76_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_76
   logic [63:0] alu_alu_core_76_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_76
   logic        alu_alu_core_76_is_trap;
-  // Pattern: alu_alu_core_76
   logic        alu_alu_core_76_is_add;
-  // Pattern: alu_alu_core_76
   logic        alu_alu_core_76_is_sub;
-  // Pattern: alu_alu_core_76
   logic        alu_alu_core_76_is_relu_pos;
-  // Pattern: alu_alu_core_76
   logic        alu_alu_core_76_is_relu_neg;
-  // Pattern: alu_alu_core_76
   logic        alu_alu_core_76_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_84
   logic [15:0] pcc_pcc_verifier_84_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_84
   logic [15:0] pcc_pcc_verifier_84_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_84
   logic [15:0] pcc_pcc_verifier_84_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_84
   logic        pcc_pcc_verifier_84_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_85
   logic        core_core_top_85_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_85
+  logic [63:0] core_core_top_85_current_instr;
   logic        core_core_top_85_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_86
-  logic [31:0] pipe_rspu_pipeline_86_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_86
+  logic [31:0] pipe_rspu_pipeline_86_pipe_pc;
   logic        pipe_rspu_pipeline_86_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_86
   logic        pipe_rspu_pipeline_86_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_86
   logic [15:0] pipe_rspu_pipeline_86_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_86
   logic [15:0] pipe_rspu_pipeline_86_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_86
   logic [15:0] pipe_rspu_pipeline_86_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_86
   logic        pipe_rspu_pipeline_86_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_86
   logic        pipe_rspu_pipeline_86_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_86
   logic [15:0] pipe_rspu_pipeline_86_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_86
   logic [15:0] pipe_rspu_pipeline_86_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_86
   logic [15:0] pipe_rspu_pipeline_86_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_86
   logic        pipe_rspu_pipeline_86_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_86
   logic        pipe_rspu_pipeline_86_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_86
   logic [15:0] pipe_rspu_pipeline_86_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_86
   logic [63:0] pipe_rspu_pipeline_86_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_86
   logic [31:0] pipe_rspu_pipeline_86_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_88
   logic [63:0] alu_alu_core_88_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_88
   logic [63:0] alu_alu_core_88_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_88
   logic [63:0] alu_alu_core_88_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_88
   logic        alu_alu_core_88_is_trap;
-  // Pattern: alu_alu_core_88
   logic        alu_alu_core_88_is_add;
-  // Pattern: alu_alu_core_88
   logic        alu_alu_core_88_is_sub;
-  // Pattern: alu_alu_core_88
   logic        alu_alu_core_88_is_relu_pos;
-  // Pattern: alu_alu_core_88
   logic        alu_alu_core_88_is_relu_neg;
-  // Pattern: alu_alu_core_88
   logic        alu_alu_core_88_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_96
   logic [15:0] pcc_pcc_verifier_96_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_96
   logic [15:0] pcc_pcc_verifier_96_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_96
   logic [15:0] pcc_pcc_verifier_96_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_96
   logic        pcc_pcc_verifier_96_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_97
   logic        core_core_top_97_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_97
+  logic [63:0] core_core_top_97_current_instr;
   logic        core_core_top_97_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_98
-  logic [31:0] pipe_rspu_pipeline_98_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_98
+  logic [31:0] pipe_rspu_pipeline_98_pipe_pc;
   logic        pipe_rspu_pipeline_98_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_98
   logic        pipe_rspu_pipeline_98_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_98
   logic [15:0] pipe_rspu_pipeline_98_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_98
   logic [15:0] pipe_rspu_pipeline_98_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_98
   logic [15:0] pipe_rspu_pipeline_98_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_98
   logic        pipe_rspu_pipeline_98_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_98
   logic        pipe_rspu_pipeline_98_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_98
   logic [15:0] pipe_rspu_pipeline_98_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_98
   logic [15:0] pipe_rspu_pipeline_98_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_98
   logic [15:0] pipe_rspu_pipeline_98_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_98
   logic        pipe_rspu_pipeline_98_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_98
   logic        pipe_rspu_pipeline_98_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_98
   logic [15:0] pipe_rspu_pipeline_98_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_98
   logic [63:0] pipe_rspu_pipeline_98_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_98
   logic [31:0] pipe_rspu_pipeline_98_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_100
   logic [63:0] alu_alu_core_100_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_100
   logic [63:0] alu_alu_core_100_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_100
   logic [63:0] alu_alu_core_100_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_100
   logic        alu_alu_core_100_is_trap;
-  // Pattern: alu_alu_core_100
   logic        alu_alu_core_100_is_add;
-  // Pattern: alu_alu_core_100
   logic        alu_alu_core_100_is_sub;
-  // Pattern: alu_alu_core_100
   logic        alu_alu_core_100_is_relu_pos;
-  // Pattern: alu_alu_core_100
   logic        alu_alu_core_100_is_relu_neg;
-  // Pattern: alu_alu_core_100
   logic        alu_alu_core_100_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_108
   logic [15:0] pcc_pcc_verifier_108_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_108
   logic [15:0] pcc_pcc_verifier_108_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_108
   logic [15:0] pcc_pcc_verifier_108_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_108
   logic        pcc_pcc_verifier_108_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_109
   logic        core_core_top_109_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_109
+  logic [63:0] core_core_top_109_current_instr;
   logic        core_core_top_109_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_110
-  logic [31:0] pipe_rspu_pipeline_110_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_110
+  logic [31:0] pipe_rspu_pipeline_110_pipe_pc;
   logic        pipe_rspu_pipeline_110_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_110
   logic        pipe_rspu_pipeline_110_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_110
   logic [15:0] pipe_rspu_pipeline_110_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_110
   logic [15:0] pipe_rspu_pipeline_110_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_110
   logic [15:0] pipe_rspu_pipeline_110_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_110
   logic        pipe_rspu_pipeline_110_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_110
   logic        pipe_rspu_pipeline_110_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_110
   logic [15:0] pipe_rspu_pipeline_110_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_110
   logic [15:0] pipe_rspu_pipeline_110_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_110
   logic [15:0] pipe_rspu_pipeline_110_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_110
   logic        pipe_rspu_pipeline_110_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_110
   logic        pipe_rspu_pipeline_110_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_110
   logic [15:0] pipe_rspu_pipeline_110_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_110
   logic [63:0] pipe_rspu_pipeline_110_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_110
   logic [31:0] pipe_rspu_pipeline_110_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_112
   logic [63:0] alu_alu_core_112_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_112
   logic [63:0] alu_alu_core_112_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_112
   logic [63:0] alu_alu_core_112_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_112
   logic        alu_alu_core_112_is_trap;
-  // Pattern: alu_alu_core_112
   logic        alu_alu_core_112_is_add;
-  // Pattern: alu_alu_core_112
   logic        alu_alu_core_112_is_sub;
-  // Pattern: alu_alu_core_112
   logic        alu_alu_core_112_is_relu_pos;
-  // Pattern: alu_alu_core_112
   logic        alu_alu_core_112_is_relu_neg;
-  // Pattern: alu_alu_core_112
   logic        alu_alu_core_112_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_120
   logic [15:0] pcc_pcc_verifier_120_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_120
   logic [15:0] pcc_pcc_verifier_120_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_120
   logic [15:0] pcc_pcc_verifier_120_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_120
   logic        pcc_pcc_verifier_120_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_121
   logic        core_core_top_121_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_121
+  logic [63:0] core_core_top_121_current_instr;
   logic        core_core_top_121_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_122
-  logic [31:0] pipe_rspu_pipeline_122_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_122
+  logic [31:0] pipe_rspu_pipeline_122_pipe_pc;
   logic        pipe_rspu_pipeline_122_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_122
   logic        pipe_rspu_pipeline_122_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_122
   logic [15:0] pipe_rspu_pipeline_122_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_122
   logic [15:0] pipe_rspu_pipeline_122_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_122
   logic [15:0] pipe_rspu_pipeline_122_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_122
   logic        pipe_rspu_pipeline_122_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_122
   logic        pipe_rspu_pipeline_122_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_122
   logic [15:0] pipe_rspu_pipeline_122_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_122
   logic [15:0] pipe_rspu_pipeline_122_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_122
   logic [15:0] pipe_rspu_pipeline_122_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_122
   logic        pipe_rspu_pipeline_122_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_122
   logic        pipe_rspu_pipeline_122_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_122
   logic [15:0] pipe_rspu_pipeline_122_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_122
   logic [63:0] pipe_rspu_pipeline_122_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_122
   logic [31:0] pipe_rspu_pipeline_122_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_124
   logic [63:0] alu_alu_core_124_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_124
   logic [63:0] alu_alu_core_124_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_124
   logic [63:0] alu_alu_core_124_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_124
   logic        alu_alu_core_124_is_trap;
-  // Pattern: alu_alu_core_124
   logic        alu_alu_core_124_is_add;
-  // Pattern: alu_alu_core_124
   logic        alu_alu_core_124_is_sub;
-  // Pattern: alu_alu_core_124
   logic        alu_alu_core_124_is_relu_pos;
-  // Pattern: alu_alu_core_124
   logic        alu_alu_core_124_is_relu_neg;
-  // Pattern: alu_alu_core_124
   logic        alu_alu_core_124_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_132
   logic [15:0] pcc_pcc_verifier_132_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_132
   logic [15:0] pcc_pcc_verifier_132_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_132
   logic [15:0] pcc_pcc_verifier_132_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_132
   logic        pcc_pcc_verifier_132_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_133
   logic        core_core_top_133_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_133
+  logic [63:0] core_core_top_133_current_instr;
   logic        core_core_top_133_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_134
-  logic [31:0] pipe_rspu_pipeline_134_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_134
+  logic [31:0] pipe_rspu_pipeline_134_pipe_pc;
   logic        pipe_rspu_pipeline_134_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_134
   logic        pipe_rspu_pipeline_134_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_134
   logic [15:0] pipe_rspu_pipeline_134_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_134
   logic [15:0] pipe_rspu_pipeline_134_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_134
   logic [15:0] pipe_rspu_pipeline_134_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_134
   logic        pipe_rspu_pipeline_134_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_134
   logic        pipe_rspu_pipeline_134_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_134
   logic [15:0] pipe_rspu_pipeline_134_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_134
   logic [15:0] pipe_rspu_pipeline_134_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_134
   logic [15:0] pipe_rspu_pipeline_134_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_134
   logic        pipe_rspu_pipeline_134_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_134
   logic        pipe_rspu_pipeline_134_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_134
   logic [15:0] pipe_rspu_pipeline_134_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_134
   logic [63:0] pipe_rspu_pipeline_134_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_134
   logic [31:0] pipe_rspu_pipeline_134_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_136
   logic [63:0] alu_alu_core_136_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_136
   logic [63:0] alu_alu_core_136_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_136
   logic [63:0] alu_alu_core_136_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_136
   logic        alu_alu_core_136_is_trap;
-  // Pattern: alu_alu_core_136
   logic        alu_alu_core_136_is_add;
-  // Pattern: alu_alu_core_136
   logic        alu_alu_core_136_is_sub;
-  // Pattern: alu_alu_core_136
   logic        alu_alu_core_136_is_relu_pos;
-  // Pattern: alu_alu_core_136
   logic        alu_alu_core_136_is_relu_neg;
-  // Pattern: alu_alu_core_136
   logic        alu_alu_core_136_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_144
   logic [15:0] pcc_pcc_verifier_144_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_144
   logic [15:0] pcc_pcc_verifier_144_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_144
   logic [15:0] pcc_pcc_verifier_144_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_144
   logic        pcc_pcc_verifier_144_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_145
   logic        core_core_top_145_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_145
+  logic [63:0] core_core_top_145_current_instr;
   logic        core_core_top_145_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_146
-  logic [31:0] pipe_rspu_pipeline_146_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_146
+  logic [31:0] pipe_rspu_pipeline_146_pipe_pc;
   logic        pipe_rspu_pipeline_146_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_146
   logic        pipe_rspu_pipeline_146_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_146
   logic [15:0] pipe_rspu_pipeline_146_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_146
   logic [15:0] pipe_rspu_pipeline_146_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_146
   logic [15:0] pipe_rspu_pipeline_146_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_146
   logic        pipe_rspu_pipeline_146_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_146
   logic        pipe_rspu_pipeline_146_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_146
   logic [15:0] pipe_rspu_pipeline_146_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_146
   logic [15:0] pipe_rspu_pipeline_146_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_146
   logic [15:0] pipe_rspu_pipeline_146_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_146
   logic        pipe_rspu_pipeline_146_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_146
   logic        pipe_rspu_pipeline_146_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_146
   logic [15:0] pipe_rspu_pipeline_146_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_146
   logic [63:0] pipe_rspu_pipeline_146_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_146
   logic [31:0] pipe_rspu_pipeline_146_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_148
   logic [63:0] alu_alu_core_148_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_148
   logic [63:0] alu_alu_core_148_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_148
   logic [63:0] alu_alu_core_148_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_148
   logic        alu_alu_core_148_is_trap;
-  // Pattern: alu_alu_core_148
   logic        alu_alu_core_148_is_add;
-  // Pattern: alu_alu_core_148
   logic        alu_alu_core_148_is_sub;
-  // Pattern: alu_alu_core_148
   logic        alu_alu_core_148_is_relu_pos;
-  // Pattern: alu_alu_core_148
   logic        alu_alu_core_148_is_relu_neg;
-  // Pattern: alu_alu_core_148
   logic        alu_alu_core_148_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_156
   logic [15:0] pcc_pcc_verifier_156_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_156
   logic [15:0] pcc_pcc_verifier_156_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_156
   logic [15:0] pcc_pcc_verifier_156_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_156
   logic        pcc_pcc_verifier_156_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_157
   logic        core_core_top_157_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_157
+  logic [63:0] core_core_top_157_current_instr;
   logic        core_core_top_157_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_158
-  logic [31:0] pipe_rspu_pipeline_158_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_158
+  logic [31:0] pipe_rspu_pipeline_158_pipe_pc;
   logic        pipe_rspu_pipeline_158_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_158
   logic        pipe_rspu_pipeline_158_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_158
   logic [15:0] pipe_rspu_pipeline_158_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_158
   logic [15:0] pipe_rspu_pipeline_158_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_158
   logic [15:0] pipe_rspu_pipeline_158_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_158
   logic        pipe_rspu_pipeline_158_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_158
   logic        pipe_rspu_pipeline_158_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_158
   logic [15:0] pipe_rspu_pipeline_158_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_158
   logic [15:0] pipe_rspu_pipeline_158_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_158
   logic [15:0] pipe_rspu_pipeline_158_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_158
   logic        pipe_rspu_pipeline_158_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_158
   logic        pipe_rspu_pipeline_158_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_158
   logic [15:0] pipe_rspu_pipeline_158_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_158
   logic [63:0] pipe_rspu_pipeline_158_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_158
   logic [31:0] pipe_rspu_pipeline_158_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_160
   logic [63:0] alu_alu_core_160_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_160
   logic [63:0] alu_alu_core_160_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_160
   logic [63:0] alu_alu_core_160_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_160
   logic        alu_alu_core_160_is_trap;
-  // Pattern: alu_alu_core_160
   logic        alu_alu_core_160_is_add;
-  // Pattern: alu_alu_core_160
   logic        alu_alu_core_160_is_sub;
-  // Pattern: alu_alu_core_160
   logic        alu_alu_core_160_is_relu_pos;
-  // Pattern: alu_alu_core_160
   logic        alu_alu_core_160_is_relu_neg;
-  // Pattern: alu_alu_core_160
   logic        alu_alu_core_160_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_168
   logic [15:0] pcc_pcc_verifier_168_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_168
   logic [15:0] pcc_pcc_verifier_168_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_168
   logic [15:0] pcc_pcc_verifier_168_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_168
   logic        pcc_pcc_verifier_168_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_169
   logic        core_core_top_169_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_169
+  logic [63:0] core_core_top_169_current_instr;
   logic        core_core_top_169_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_170
-  logic [31:0] pipe_rspu_pipeline_170_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_170
+  logic [31:0] pipe_rspu_pipeline_170_pipe_pc;
   logic        pipe_rspu_pipeline_170_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_170
   logic        pipe_rspu_pipeline_170_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_170
   logic [15:0] pipe_rspu_pipeline_170_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_170
   logic [15:0] pipe_rspu_pipeline_170_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_170
   logic [15:0] pipe_rspu_pipeline_170_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_170
   logic        pipe_rspu_pipeline_170_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_170
   logic        pipe_rspu_pipeline_170_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_170
   logic [15:0] pipe_rspu_pipeline_170_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_170
   logic [15:0] pipe_rspu_pipeline_170_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_170
   logic [15:0] pipe_rspu_pipeline_170_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_170
   logic        pipe_rspu_pipeline_170_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_170
   logic        pipe_rspu_pipeline_170_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_170
   logic [15:0] pipe_rspu_pipeline_170_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_170
   logic [63:0] pipe_rspu_pipeline_170_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_170
   logic [31:0] pipe_rspu_pipeline_170_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_172
   logic [63:0] alu_alu_core_172_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_172
   logic [63:0] alu_alu_core_172_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_172
   logic [63:0] alu_alu_core_172_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_172
   logic        alu_alu_core_172_is_trap;
-  // Pattern: alu_alu_core_172
   logic        alu_alu_core_172_is_add;
-  // Pattern: alu_alu_core_172
   logic        alu_alu_core_172_is_sub;
-  // Pattern: alu_alu_core_172
   logic        alu_alu_core_172_is_relu_pos;
-  // Pattern: alu_alu_core_172
   logic        alu_alu_core_172_is_relu_neg;
-  // Pattern: alu_alu_core_172
   logic        alu_alu_core_172_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_180
   logic [15:0] pcc_pcc_verifier_180_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_180
   logic [15:0] pcc_pcc_verifier_180_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_180
   logic [15:0] pcc_pcc_verifier_180_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_180
   logic        pcc_pcc_verifier_180_bounds_ok;
-  // source: <unknown>:26
-  // Pattern: core_core_top_181
   logic        core_core_top_181_trap_signal;
-  // source: <unknown>:33
-  // Pattern: core_core_top_181
+  logic [63:0] core_core_top_181_current_instr;
   logic        core_core_top_181_core_halted;
-  // source: <unknown>:23
-  // Pattern: pipe_rspu_pipeline_182
-  logic [31:0] pipe_rspu_pipeline_182_pc;
-  // source: <unknown>:26
-  // Pattern: pipe_rspu_pipeline_182
+  logic [31:0] pipe_rspu_pipeline_182_pipe_pc;
   logic        pipe_rspu_pipeline_182_pcc_valid;
-  // source: <unknown>:27
-  // Pattern: pipe_rspu_pipeline_182
   logic        pipe_rspu_pipeline_182_pcc_fault;
-  // source: <unknown>:29
-  // Pattern: pipe_rspu_pipeline_182
   logic [15:0] pipe_rspu_pipeline_182_cert_i;
-  // source: <unknown>:30
-  // Pattern: pipe_rspu_pipeline_182
   logic [15:0] pipe_rspu_pipeline_182_cert_r;
-  // source: <unknown>:31
-  // Pattern: pipe_rspu_pipeline_182
   logic [15:0] pipe_rspu_pipeline_182_cert_g;
-  // source: <unknown>:32
-  // Pattern: pipe_rspu_pipeline_182
   logic        pipe_rspu_pipeline_182_cert_h;
-  // source: <unknown>:33
-  // Pattern: pipe_rspu_pipeline_182
   logic        pipe_rspu_pipeline_182_cert_v;
-  // source: <unknown>:67
-  // Pattern: pipe_rspu_pipeline_182
   logic [15:0] pipe_rspu_pipeline_182_id_rs1;
-  // source: <unknown>:68
-  // Pattern: pipe_rspu_pipeline_182
   logic [15:0] pipe_rspu_pipeline_182_id_rs2;
-  // source: <unknown>:69
-  // Pattern: pipe_rspu_pipeline_182
   logic [15:0] pipe_rspu_pipeline_182_id_rd;
-  // source: <unknown>:70
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_id_val1;
-  // source: <unknown>:71
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_id_val2;
-  // source: <unknown>:72
-  // Pattern: pipe_rspu_pipeline_182
   logic        pipe_rspu_pipeline_182_reg_we;
-  // source: <unknown>:73
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_reg_din;
-  // source: <unknown>:79
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_d1;
-  // source: <unknown>:80
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_t1;
-  // source: <unknown>:81
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_p1;
-  // source: <unknown>:82
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_d2;
-  // source: <unknown>:83
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_t2;
-  // source: <unknown>:84
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_p2;
-  // source: <unknown>:86
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_out_d;
-  // source: <unknown>:87
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_out_t;
-  // source: <unknown>:88
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_out_p;
-  // source: <unknown>:89
-  // Pattern: pipe_rspu_pipeline_182
   logic        pipe_rspu_pipeline_182_ex_trap;
-  // source: <unknown>:90
-  // Pattern: pipe_rspu_pipeline_182
   logic [15:0] pipe_rspu_pipeline_182_alu_op;
-  // source: <unknown>:107
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_ex_packed;
-  // source: <unknown>:115
-  // Pattern: pipe_rspu_pipeline_182
   logic [63:0] pipe_rspu_pipeline_182_mem_out;
-  // source: <unknown>:116
-  // Pattern: pipe_rspu_pipeline_182
   logic [31:0] pipe_rspu_pipeline_182_ram_addr;
-  // source: <unknown>:20
-  // Pattern: alu_alu_core_184
   logic [63:0] alu_alu_core_184_res_data;
-  // source: <unknown>:21
-  // Pattern: alu_alu_core_184
   logic [63:0] alu_alu_core_184_res_tag;
-  // source: <unknown>:22
-  // Pattern: alu_alu_core_184
   logic [63:0] alu_alu_core_184_res_prov;
-  // source: <unknown>:23
-  // Pattern: alu_alu_core_184
   logic        alu_alu_core_184_is_trap;
-  // Pattern: alu_alu_core_184
   logic        alu_alu_core_184_is_add;
-  // Pattern: alu_alu_core_184
   logic        alu_alu_core_184_is_sub;
-  // Pattern: alu_alu_core_184
   logic        alu_alu_core_184_is_relu_pos;
-  // Pattern: alu_alu_core_184
   logic        alu_alu_core_184_is_relu_neg;
-  // Pattern: alu_alu_core_184
   logic        alu_alu_core_184_is_tag_gate;
-  // source: <unknown>:23
-  // Pattern: pcc_pcc_verifier_192
   logic [15:0] pcc_pcc_verifier_192_MAX_INSTRUCTIONS;
-  // source: <unknown>:24
-  // Pattern: pcc_pcc_verifier_192
   logic [15:0] pcc_pcc_verifier_192_MAX_REGISTERS;
-  // source: <unknown>:25
-  // Pattern: pcc_pcc_verifier_192
   logic [15:0] pcc_pcc_verifier_192_MAX_GUARDS;
-  // source: <unknown>:28
-  // Pattern: pcc_pcc_verifier_192
   logic        pcc_pcc_verifier_192_bounds_ok;
-  // source: <unknown>:12
-  // Pattern: ctrl_controller_193
   logic signed [63:0] ctrl_controller_193_kp_torque;
-  // source: <unknown>:13
-  // Pattern: ctrl_controller_193
   logic signed [63:0] ctrl_controller_193_kd_torque;
-  // source: <unknown>:14
-  // Pattern: ctrl_controller_193
   logic signed [63:0] ctrl_controller_193_t_next;
-  // source: <unknown>:12
-  // Pattern: physics_pendulum_194
   logic signed [63:0] physics_pendulum_194_angular_velocity;
-  // source: <unknown>:14
-  // Pattern: physics_pendulum_194
   logic signed [63:0] physics_pendulum_194_angle_internal;
-  // source: <unknown>:18
-  // Pattern: physics_pendulum_194
   logic signed [63:0] physics_pendulum_194_v_next;
-  // source: <unknown>:19
-  // Pattern: physics_pendulum_194
   logic signed [63:0] physics_pendulum_194_p_next;
 
   // Temporal signals
@@ -2654,6 +1149,10 @@ module rspu_top (
   logic        fabric_noc_router_0_n14_out;
   logic        fabric_noc_router_0_n15_sr_0;
   logic        fabric_noc_router_0_n15_out;
+  logic        fabric_noc_router_0_n16_sr_0;
+  logic        fabric_noc_router_0_n16_out;
+  logic        core_core_top_1_noc_rx_arrived_sr_0;
+  logic        core_core_top_1_noc_rx_arrived_out;
   logic        core_core_top_1_trap_active_sr_0;
   logic        core_core_top_1_trap_active_out;
   logic        pipe_rspu_pipeline_2_fetch_active_sr_0;
@@ -2670,6 +1169,8 @@ module rspu_top (
   logic        alu_alu_core_4_is_relu_neg_g_out;
   logic        alu_alu_core_4_is_tag_gate_g_sr_0;
   logic        alu_alu_core_4_is_tag_gate_g_out;
+  logic        core_core_top_13_noc_rx_arrived_sr_0;
+  logic        core_core_top_13_noc_rx_arrived_out;
   logic        core_core_top_13_trap_active_sr_0;
   logic        core_core_top_13_trap_active_out;
   logic        pipe_rspu_pipeline_14_fetch_active_sr_0;
@@ -2686,6 +1187,8 @@ module rspu_top (
   logic        alu_alu_core_16_is_relu_neg_g_out;
   logic        alu_alu_core_16_is_tag_gate_g_sr_0;
   logic        alu_alu_core_16_is_tag_gate_g_out;
+  logic        core_core_top_25_noc_rx_arrived_sr_0;
+  logic        core_core_top_25_noc_rx_arrived_out;
   logic        core_core_top_25_trap_active_sr_0;
   logic        core_core_top_25_trap_active_out;
   logic        pipe_rspu_pipeline_26_fetch_active_sr_0;
@@ -2702,6 +1205,8 @@ module rspu_top (
   logic        alu_alu_core_28_is_relu_neg_g_out;
   logic        alu_alu_core_28_is_tag_gate_g_sr_0;
   logic        alu_alu_core_28_is_tag_gate_g_out;
+  logic        core_core_top_37_noc_rx_arrived_sr_0;
+  logic        core_core_top_37_noc_rx_arrived_out;
   logic        core_core_top_37_trap_active_sr_0;
   logic        core_core_top_37_trap_active_out;
   logic        pipe_rspu_pipeline_38_fetch_active_sr_0;
@@ -2718,6 +1223,8 @@ module rspu_top (
   logic        alu_alu_core_40_is_relu_neg_g_out;
   logic        alu_alu_core_40_is_tag_gate_g_sr_0;
   logic        alu_alu_core_40_is_tag_gate_g_out;
+  logic        core_core_top_49_noc_rx_arrived_sr_0;
+  logic        core_core_top_49_noc_rx_arrived_out;
   logic        core_core_top_49_trap_active_sr_0;
   logic        core_core_top_49_trap_active_out;
   logic        pipe_rspu_pipeline_50_fetch_active_sr_0;
@@ -2734,6 +1241,8 @@ module rspu_top (
   logic        alu_alu_core_52_is_relu_neg_g_out;
   logic        alu_alu_core_52_is_tag_gate_g_sr_0;
   logic        alu_alu_core_52_is_tag_gate_g_out;
+  logic        core_core_top_61_noc_rx_arrived_sr_0;
+  logic        core_core_top_61_noc_rx_arrived_out;
   logic        core_core_top_61_trap_active_sr_0;
   logic        core_core_top_61_trap_active_out;
   logic        pipe_rspu_pipeline_62_fetch_active_sr_0;
@@ -2750,6 +1259,8 @@ module rspu_top (
   logic        alu_alu_core_64_is_relu_neg_g_out;
   logic        alu_alu_core_64_is_tag_gate_g_sr_0;
   logic        alu_alu_core_64_is_tag_gate_g_out;
+  logic        core_core_top_73_noc_rx_arrived_sr_0;
+  logic        core_core_top_73_noc_rx_arrived_out;
   logic        core_core_top_73_trap_active_sr_0;
   logic        core_core_top_73_trap_active_out;
   logic        pipe_rspu_pipeline_74_fetch_active_sr_0;
@@ -2766,6 +1277,8 @@ module rspu_top (
   logic        alu_alu_core_76_is_relu_neg_g_out;
   logic        alu_alu_core_76_is_tag_gate_g_sr_0;
   logic        alu_alu_core_76_is_tag_gate_g_out;
+  logic        core_core_top_85_noc_rx_arrived_sr_0;
+  logic        core_core_top_85_noc_rx_arrived_out;
   logic        core_core_top_85_trap_active_sr_0;
   logic        core_core_top_85_trap_active_out;
   logic        pipe_rspu_pipeline_86_fetch_active_sr_0;
@@ -2782,6 +1295,8 @@ module rspu_top (
   logic        alu_alu_core_88_is_relu_neg_g_out;
   logic        alu_alu_core_88_is_tag_gate_g_sr_0;
   logic        alu_alu_core_88_is_tag_gate_g_out;
+  logic        core_core_top_97_noc_rx_arrived_sr_0;
+  logic        core_core_top_97_noc_rx_arrived_out;
   logic        core_core_top_97_trap_active_sr_0;
   logic        core_core_top_97_trap_active_out;
   logic        pipe_rspu_pipeline_98_fetch_active_sr_0;
@@ -2798,6 +1313,8 @@ module rspu_top (
   logic        alu_alu_core_100_is_relu_neg_g_out;
   logic        alu_alu_core_100_is_tag_gate_g_sr_0;
   logic        alu_alu_core_100_is_tag_gate_g_out;
+  logic        core_core_top_109_noc_rx_arrived_sr_0;
+  logic        core_core_top_109_noc_rx_arrived_out;
   logic        core_core_top_109_trap_active_sr_0;
   logic        core_core_top_109_trap_active_out;
   logic        pipe_rspu_pipeline_110_fetch_active_sr_0;
@@ -2814,6 +1331,8 @@ module rspu_top (
   logic        alu_alu_core_112_is_relu_neg_g_out;
   logic        alu_alu_core_112_is_tag_gate_g_sr_0;
   logic        alu_alu_core_112_is_tag_gate_g_out;
+  logic        core_core_top_121_noc_rx_arrived_sr_0;
+  logic        core_core_top_121_noc_rx_arrived_out;
   logic        core_core_top_121_trap_active_sr_0;
   logic        core_core_top_121_trap_active_out;
   logic        pipe_rspu_pipeline_122_fetch_active_sr_0;
@@ -2830,6 +1349,8 @@ module rspu_top (
   logic        alu_alu_core_124_is_relu_neg_g_out;
   logic        alu_alu_core_124_is_tag_gate_g_sr_0;
   logic        alu_alu_core_124_is_tag_gate_g_out;
+  logic        core_core_top_133_noc_rx_arrived_sr_0;
+  logic        core_core_top_133_noc_rx_arrived_out;
   logic        core_core_top_133_trap_active_sr_0;
   logic        core_core_top_133_trap_active_out;
   logic        pipe_rspu_pipeline_134_fetch_active_sr_0;
@@ -2846,6 +1367,8 @@ module rspu_top (
   logic        alu_alu_core_136_is_relu_neg_g_out;
   logic        alu_alu_core_136_is_tag_gate_g_sr_0;
   logic        alu_alu_core_136_is_tag_gate_g_out;
+  logic        core_core_top_145_noc_rx_arrived_sr_0;
+  logic        core_core_top_145_noc_rx_arrived_out;
   logic        core_core_top_145_trap_active_sr_0;
   logic        core_core_top_145_trap_active_out;
   logic        pipe_rspu_pipeline_146_fetch_active_sr_0;
@@ -2862,6 +1385,8 @@ module rspu_top (
   logic        alu_alu_core_148_is_relu_neg_g_out;
   logic        alu_alu_core_148_is_tag_gate_g_sr_0;
   logic        alu_alu_core_148_is_tag_gate_g_out;
+  logic        core_core_top_157_noc_rx_arrived_sr_0;
+  logic        core_core_top_157_noc_rx_arrived_out;
   logic        core_core_top_157_trap_active_sr_0;
   logic        core_core_top_157_trap_active_out;
   logic        pipe_rspu_pipeline_158_fetch_active_sr_0;
@@ -2878,6 +1403,8 @@ module rspu_top (
   logic        alu_alu_core_160_is_relu_neg_g_out;
   logic        alu_alu_core_160_is_tag_gate_g_sr_0;
   logic        alu_alu_core_160_is_tag_gate_g_out;
+  logic        core_core_top_169_noc_rx_arrived_sr_0;
+  logic        core_core_top_169_noc_rx_arrived_out;
   logic        core_core_top_169_trap_active_sr_0;
   logic        core_core_top_169_trap_active_out;
   logic        pipe_rspu_pipeline_170_fetch_active_sr_0;
@@ -2894,6 +1421,8 @@ module rspu_top (
   logic        alu_alu_core_172_is_relu_neg_g_out;
   logic        alu_alu_core_172_is_tag_gate_g_sr_0;
   logic        alu_alu_core_172_is_tag_gate_g_out;
+  logic        core_core_top_181_noc_rx_arrived_sr_0;
+  logic        core_core_top_181_noc_rx_arrived_out;
   logic        core_core_top_181_trap_active_sr_0;
   logic        core_core_top_181_trap_active_out;
   logic        pipe_rspu_pipeline_182_fetch_active_sr_0;
@@ -2918,859 +1447,801 @@ module rspu_top (
   logic signed [63:0] physics_pendulum_194_angle_internal_d1;
   logic signed [63:0] robot_angle_d1;
 
-  // source: <unknown>:86
   // Guard: fabric_noc_router_0_n1 — when !tx_valid_1 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n1_cond;
   assign fabric_noc_router_0_n1_cond = !tx_valid_1;
   assign fabric_noc_router_0_n1_out = fabric_noc_router_0_n1_cond;
 
-  // source: <unknown>:98
   // Guard: fabric_noc_router_0_n2 — when !tx_valid_2 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n2_cond;
   assign fabric_noc_router_0_n2_cond = !tx_valid_2;
   assign fabric_noc_router_0_n2_out = fabric_noc_router_0_n2_cond;
 
-  // source: <unknown>:110
   // Guard: fabric_noc_router_0_n3 — when !tx_valid_3 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n3_cond;
   assign fabric_noc_router_0_n3_cond = !tx_valid_3;
   assign fabric_noc_router_0_n3_out = fabric_noc_router_0_n3_cond;
 
-  // source: <unknown>:122
   // Guard: fabric_noc_router_0_n4 — when !tx_valid_4 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n4_cond;
   assign fabric_noc_router_0_n4_cond = !tx_valid_4;
   assign fabric_noc_router_0_n4_out = fabric_noc_router_0_n4_cond;
 
-  // source: <unknown>:134
   // Guard: fabric_noc_router_0_n5 — when !tx_valid_5 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n5_cond;
   assign fabric_noc_router_0_n5_cond = !tx_valid_5;
   assign fabric_noc_router_0_n5_out = fabric_noc_router_0_n5_cond;
 
-  // source: <unknown>:146
   // Guard: fabric_noc_router_0_n6 — when !tx_valid_6 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n6_cond;
   assign fabric_noc_router_0_n6_cond = !tx_valid_6;
   assign fabric_noc_router_0_n6_out = fabric_noc_router_0_n6_cond;
 
-  // source: <unknown>:158
   // Guard: fabric_noc_router_0_n7 — when !tx_valid_7 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n7_cond;
   assign fabric_noc_router_0_n7_cond = !tx_valid_7;
   assign fabric_noc_router_0_n7_out = fabric_noc_router_0_n7_cond;
 
-  // source: <unknown>:170
   // Guard: fabric_noc_router_0_n8 — when !tx_valid_8 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n8_cond;
   assign fabric_noc_router_0_n8_cond = !tx_valid_8;
   assign fabric_noc_router_0_n8_out = fabric_noc_router_0_n8_cond;
 
-  // source: <unknown>:182
   // Guard: fabric_noc_router_0_n9 — when !tx_valid_9 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n9_cond;
   assign fabric_noc_router_0_n9_cond = !tx_valid_9;
   assign fabric_noc_router_0_n9_out = fabric_noc_router_0_n9_cond;
 
-  // source: <unknown>:194
   // Guard: fabric_noc_router_0_n10 — when !tx_valid_10 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n10_cond;
   assign fabric_noc_router_0_n10_cond = !tx_valid_10;
   assign fabric_noc_router_0_n10_out = fabric_noc_router_0_n10_cond;
 
-  // source: <unknown>:206
   // Guard: fabric_noc_router_0_n11 — when !tx_valid_11 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n11_cond;
   assign fabric_noc_router_0_n11_cond = !tx_valid_11;
   assign fabric_noc_router_0_n11_out = fabric_noc_router_0_n11_cond;
 
-  // source: <unknown>:218
   // Guard: fabric_noc_router_0_n12 — when !tx_valid_12 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n12_cond;
   assign fabric_noc_router_0_n12_cond = !tx_valid_12;
   assign fabric_noc_router_0_n12_out = fabric_noc_router_0_n12_cond;
 
-  // source: <unknown>:230
   // Guard: fabric_noc_router_0_n13 — when !tx_valid_13 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n13_cond;
   assign fabric_noc_router_0_n13_cond = !tx_valid_13;
   assign fabric_noc_router_0_n13_out = fabric_noc_router_0_n13_cond;
 
-  // source: <unknown>:242
   // Guard: fabric_noc_router_0_n14 — when !tx_valid_14 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n14_cond;
   assign fabric_noc_router_0_n14_cond = !tx_valid_14;
   assign fabric_noc_router_0_n14_out = fabric_noc_router_0_n14_cond;
 
-  // source: <unknown>:254
   // Guard: fabric_noc_router_0_n15 — when !tx_valid_15 (low) for 1 cycle (combinational)
   logic fabric_noc_router_0_n15_cond;
   assign fabric_noc_router_0_n15_cond = !tx_valid_15;
   assign fabric_noc_router_0_n15_out = fabric_noc_router_0_n15_cond;
 
-  // source: <unknown>:35
+  // Guard: fabric_noc_router_0_n16 — when !stream_rx_valid (low) for 1 cycle (combinational)
+  logic fabric_noc_router_0_n16_cond;
+  assign fabric_noc_router_0_n16_cond = !stream_rx_valid;
+  assign fabric_noc_router_0_n16_out = fabric_noc_router_0_n16_cond;
+
+  // Guard: core_core_top_1_noc_rx_arrived — when rx_valid_15 (high) for 1 cycle (combinational)
+  logic core_core_top_1_noc_rx_arrived_cond;
+  assign core_core_top_1_noc_rx_arrived_cond = rx_valid_15;
+  assign core_core_top_1_noc_rx_arrived_out = core_core_top_1_noc_rx_arrived_cond;
+
   // Guard: core_core_top_1_trap_active — when core_core_top_1_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_1_trap_active_cond;
   assign core_core_top_1_trap_active_cond = core_core_top_1_trap_signal;
   assign core_core_top_1_trap_active_out = core_core_top_1_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_2_fetch_active — when pipe_rspu_pipeline_2_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_2_fetch_active_cond;
   assign pipe_rspu_pipeline_2_fetch_active_cond = pipe_rspu_pipeline_2_pcc_valid;
   assign pipe_rspu_pipeline_2_fetch_active_out = pipe_rspu_pipeline_2_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_2_fetch_fault — when pipe_rspu_pipeline_2_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_2_fetch_fault_cond;
   assign pipe_rspu_pipeline_2_fetch_fault_cond = pipe_rspu_pipeline_2_pcc_fault;
   assign pipe_rspu_pipeline_2_fetch_fault_out = pipe_rspu_pipeline_2_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_4_is_add_g — when alu_alu_core_4_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_4_is_add_g_cond;
   assign alu_alu_core_4_is_add_g_cond = alu_alu_core_4_is_add;
   assign alu_alu_core_4_is_add_g_out = alu_alu_core_4_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_4_is_sub_g — when alu_alu_core_4_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_4_is_sub_g_cond;
   assign alu_alu_core_4_is_sub_g_cond = alu_alu_core_4_is_sub;
   assign alu_alu_core_4_is_sub_g_out = alu_alu_core_4_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_4_is_relu_pos_g — when alu_alu_core_4_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_4_is_relu_pos_g_cond;
   assign alu_alu_core_4_is_relu_pos_g_cond = alu_alu_core_4_is_relu_pos;
   assign alu_alu_core_4_is_relu_pos_g_out = alu_alu_core_4_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_4_is_relu_neg_g — when alu_alu_core_4_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_4_is_relu_neg_g_cond;
   assign alu_alu_core_4_is_relu_neg_g_cond = alu_alu_core_4_is_relu_neg;
   assign alu_alu_core_4_is_relu_neg_g_out = alu_alu_core_4_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_4_is_tag_gate_g — when alu_alu_core_4_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_4_is_tag_gate_g_cond;
   assign alu_alu_core_4_is_tag_gate_g_cond = alu_alu_core_4_is_tag_gate;
   assign alu_alu_core_4_is_tag_gate_g_out = alu_alu_core_4_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_13_noc_rx_arrived — when rx_valid_14 (high) for 1 cycle (combinational)
+  logic core_core_top_13_noc_rx_arrived_cond;
+  assign core_core_top_13_noc_rx_arrived_cond = rx_valid_14;
+  assign core_core_top_13_noc_rx_arrived_out = core_core_top_13_noc_rx_arrived_cond;
+
   // Guard: core_core_top_13_trap_active — when core_core_top_13_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_13_trap_active_cond;
   assign core_core_top_13_trap_active_cond = core_core_top_13_trap_signal;
   assign core_core_top_13_trap_active_out = core_core_top_13_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_14_fetch_active — when pipe_rspu_pipeline_14_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_14_fetch_active_cond;
   assign pipe_rspu_pipeline_14_fetch_active_cond = pipe_rspu_pipeline_14_pcc_valid;
   assign pipe_rspu_pipeline_14_fetch_active_out = pipe_rspu_pipeline_14_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_14_fetch_fault — when pipe_rspu_pipeline_14_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_14_fetch_fault_cond;
   assign pipe_rspu_pipeline_14_fetch_fault_cond = pipe_rspu_pipeline_14_pcc_fault;
   assign pipe_rspu_pipeline_14_fetch_fault_out = pipe_rspu_pipeline_14_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_16_is_add_g — when alu_alu_core_16_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_16_is_add_g_cond;
   assign alu_alu_core_16_is_add_g_cond = alu_alu_core_16_is_add;
   assign alu_alu_core_16_is_add_g_out = alu_alu_core_16_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_16_is_sub_g — when alu_alu_core_16_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_16_is_sub_g_cond;
   assign alu_alu_core_16_is_sub_g_cond = alu_alu_core_16_is_sub;
   assign alu_alu_core_16_is_sub_g_out = alu_alu_core_16_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_16_is_relu_pos_g — when alu_alu_core_16_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_16_is_relu_pos_g_cond;
   assign alu_alu_core_16_is_relu_pos_g_cond = alu_alu_core_16_is_relu_pos;
   assign alu_alu_core_16_is_relu_pos_g_out = alu_alu_core_16_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_16_is_relu_neg_g — when alu_alu_core_16_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_16_is_relu_neg_g_cond;
   assign alu_alu_core_16_is_relu_neg_g_cond = alu_alu_core_16_is_relu_neg;
   assign alu_alu_core_16_is_relu_neg_g_out = alu_alu_core_16_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_16_is_tag_gate_g — when alu_alu_core_16_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_16_is_tag_gate_g_cond;
   assign alu_alu_core_16_is_tag_gate_g_cond = alu_alu_core_16_is_tag_gate;
   assign alu_alu_core_16_is_tag_gate_g_out = alu_alu_core_16_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_25_noc_rx_arrived — when rx_valid_13 (high) for 1 cycle (combinational)
+  logic core_core_top_25_noc_rx_arrived_cond;
+  assign core_core_top_25_noc_rx_arrived_cond = rx_valid_13;
+  assign core_core_top_25_noc_rx_arrived_out = core_core_top_25_noc_rx_arrived_cond;
+
   // Guard: core_core_top_25_trap_active — when core_core_top_25_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_25_trap_active_cond;
   assign core_core_top_25_trap_active_cond = core_core_top_25_trap_signal;
   assign core_core_top_25_trap_active_out = core_core_top_25_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_26_fetch_active — when pipe_rspu_pipeline_26_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_26_fetch_active_cond;
   assign pipe_rspu_pipeline_26_fetch_active_cond = pipe_rspu_pipeline_26_pcc_valid;
   assign pipe_rspu_pipeline_26_fetch_active_out = pipe_rspu_pipeline_26_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_26_fetch_fault — when pipe_rspu_pipeline_26_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_26_fetch_fault_cond;
   assign pipe_rspu_pipeline_26_fetch_fault_cond = pipe_rspu_pipeline_26_pcc_fault;
   assign pipe_rspu_pipeline_26_fetch_fault_out = pipe_rspu_pipeline_26_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_28_is_add_g — when alu_alu_core_28_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_28_is_add_g_cond;
   assign alu_alu_core_28_is_add_g_cond = alu_alu_core_28_is_add;
   assign alu_alu_core_28_is_add_g_out = alu_alu_core_28_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_28_is_sub_g — when alu_alu_core_28_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_28_is_sub_g_cond;
   assign alu_alu_core_28_is_sub_g_cond = alu_alu_core_28_is_sub;
   assign alu_alu_core_28_is_sub_g_out = alu_alu_core_28_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_28_is_relu_pos_g — when alu_alu_core_28_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_28_is_relu_pos_g_cond;
   assign alu_alu_core_28_is_relu_pos_g_cond = alu_alu_core_28_is_relu_pos;
   assign alu_alu_core_28_is_relu_pos_g_out = alu_alu_core_28_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_28_is_relu_neg_g — when alu_alu_core_28_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_28_is_relu_neg_g_cond;
   assign alu_alu_core_28_is_relu_neg_g_cond = alu_alu_core_28_is_relu_neg;
   assign alu_alu_core_28_is_relu_neg_g_out = alu_alu_core_28_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_28_is_tag_gate_g — when alu_alu_core_28_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_28_is_tag_gate_g_cond;
   assign alu_alu_core_28_is_tag_gate_g_cond = alu_alu_core_28_is_tag_gate;
   assign alu_alu_core_28_is_tag_gate_g_out = alu_alu_core_28_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_37_noc_rx_arrived — when rx_valid_12 (high) for 1 cycle (combinational)
+  logic core_core_top_37_noc_rx_arrived_cond;
+  assign core_core_top_37_noc_rx_arrived_cond = rx_valid_12;
+  assign core_core_top_37_noc_rx_arrived_out = core_core_top_37_noc_rx_arrived_cond;
+
   // Guard: core_core_top_37_trap_active — when core_core_top_37_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_37_trap_active_cond;
   assign core_core_top_37_trap_active_cond = core_core_top_37_trap_signal;
   assign core_core_top_37_trap_active_out = core_core_top_37_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_38_fetch_active — when pipe_rspu_pipeline_38_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_38_fetch_active_cond;
   assign pipe_rspu_pipeline_38_fetch_active_cond = pipe_rspu_pipeline_38_pcc_valid;
   assign pipe_rspu_pipeline_38_fetch_active_out = pipe_rspu_pipeline_38_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_38_fetch_fault — when pipe_rspu_pipeline_38_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_38_fetch_fault_cond;
   assign pipe_rspu_pipeline_38_fetch_fault_cond = pipe_rspu_pipeline_38_pcc_fault;
   assign pipe_rspu_pipeline_38_fetch_fault_out = pipe_rspu_pipeline_38_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_40_is_add_g — when alu_alu_core_40_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_40_is_add_g_cond;
   assign alu_alu_core_40_is_add_g_cond = alu_alu_core_40_is_add;
   assign alu_alu_core_40_is_add_g_out = alu_alu_core_40_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_40_is_sub_g — when alu_alu_core_40_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_40_is_sub_g_cond;
   assign alu_alu_core_40_is_sub_g_cond = alu_alu_core_40_is_sub;
   assign alu_alu_core_40_is_sub_g_out = alu_alu_core_40_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_40_is_relu_pos_g — when alu_alu_core_40_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_40_is_relu_pos_g_cond;
   assign alu_alu_core_40_is_relu_pos_g_cond = alu_alu_core_40_is_relu_pos;
   assign alu_alu_core_40_is_relu_pos_g_out = alu_alu_core_40_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_40_is_relu_neg_g — when alu_alu_core_40_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_40_is_relu_neg_g_cond;
   assign alu_alu_core_40_is_relu_neg_g_cond = alu_alu_core_40_is_relu_neg;
   assign alu_alu_core_40_is_relu_neg_g_out = alu_alu_core_40_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_40_is_tag_gate_g — when alu_alu_core_40_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_40_is_tag_gate_g_cond;
   assign alu_alu_core_40_is_tag_gate_g_cond = alu_alu_core_40_is_tag_gate;
   assign alu_alu_core_40_is_tag_gate_g_out = alu_alu_core_40_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_49_noc_rx_arrived — when rx_valid_11 (high) for 1 cycle (combinational)
+  logic core_core_top_49_noc_rx_arrived_cond;
+  assign core_core_top_49_noc_rx_arrived_cond = rx_valid_11;
+  assign core_core_top_49_noc_rx_arrived_out = core_core_top_49_noc_rx_arrived_cond;
+
   // Guard: core_core_top_49_trap_active — when core_core_top_49_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_49_trap_active_cond;
   assign core_core_top_49_trap_active_cond = core_core_top_49_trap_signal;
   assign core_core_top_49_trap_active_out = core_core_top_49_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_50_fetch_active — when pipe_rspu_pipeline_50_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_50_fetch_active_cond;
   assign pipe_rspu_pipeline_50_fetch_active_cond = pipe_rspu_pipeline_50_pcc_valid;
   assign pipe_rspu_pipeline_50_fetch_active_out = pipe_rspu_pipeline_50_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_50_fetch_fault — when pipe_rspu_pipeline_50_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_50_fetch_fault_cond;
   assign pipe_rspu_pipeline_50_fetch_fault_cond = pipe_rspu_pipeline_50_pcc_fault;
   assign pipe_rspu_pipeline_50_fetch_fault_out = pipe_rspu_pipeline_50_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_52_is_add_g — when alu_alu_core_52_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_52_is_add_g_cond;
   assign alu_alu_core_52_is_add_g_cond = alu_alu_core_52_is_add;
   assign alu_alu_core_52_is_add_g_out = alu_alu_core_52_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_52_is_sub_g — when alu_alu_core_52_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_52_is_sub_g_cond;
   assign alu_alu_core_52_is_sub_g_cond = alu_alu_core_52_is_sub;
   assign alu_alu_core_52_is_sub_g_out = alu_alu_core_52_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_52_is_relu_pos_g — when alu_alu_core_52_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_52_is_relu_pos_g_cond;
   assign alu_alu_core_52_is_relu_pos_g_cond = alu_alu_core_52_is_relu_pos;
   assign alu_alu_core_52_is_relu_pos_g_out = alu_alu_core_52_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_52_is_relu_neg_g — when alu_alu_core_52_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_52_is_relu_neg_g_cond;
   assign alu_alu_core_52_is_relu_neg_g_cond = alu_alu_core_52_is_relu_neg;
   assign alu_alu_core_52_is_relu_neg_g_out = alu_alu_core_52_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_52_is_tag_gate_g — when alu_alu_core_52_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_52_is_tag_gate_g_cond;
   assign alu_alu_core_52_is_tag_gate_g_cond = alu_alu_core_52_is_tag_gate;
   assign alu_alu_core_52_is_tag_gate_g_out = alu_alu_core_52_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_61_noc_rx_arrived — when rx_valid_10 (high) for 1 cycle (combinational)
+  logic core_core_top_61_noc_rx_arrived_cond;
+  assign core_core_top_61_noc_rx_arrived_cond = rx_valid_10;
+  assign core_core_top_61_noc_rx_arrived_out = core_core_top_61_noc_rx_arrived_cond;
+
   // Guard: core_core_top_61_trap_active — when core_core_top_61_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_61_trap_active_cond;
   assign core_core_top_61_trap_active_cond = core_core_top_61_trap_signal;
   assign core_core_top_61_trap_active_out = core_core_top_61_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_62_fetch_active — when pipe_rspu_pipeline_62_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_62_fetch_active_cond;
   assign pipe_rspu_pipeline_62_fetch_active_cond = pipe_rspu_pipeline_62_pcc_valid;
   assign pipe_rspu_pipeline_62_fetch_active_out = pipe_rspu_pipeline_62_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_62_fetch_fault — when pipe_rspu_pipeline_62_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_62_fetch_fault_cond;
   assign pipe_rspu_pipeline_62_fetch_fault_cond = pipe_rspu_pipeline_62_pcc_fault;
   assign pipe_rspu_pipeline_62_fetch_fault_out = pipe_rspu_pipeline_62_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_64_is_add_g — when alu_alu_core_64_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_64_is_add_g_cond;
   assign alu_alu_core_64_is_add_g_cond = alu_alu_core_64_is_add;
   assign alu_alu_core_64_is_add_g_out = alu_alu_core_64_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_64_is_sub_g — when alu_alu_core_64_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_64_is_sub_g_cond;
   assign alu_alu_core_64_is_sub_g_cond = alu_alu_core_64_is_sub;
   assign alu_alu_core_64_is_sub_g_out = alu_alu_core_64_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_64_is_relu_pos_g — when alu_alu_core_64_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_64_is_relu_pos_g_cond;
   assign alu_alu_core_64_is_relu_pos_g_cond = alu_alu_core_64_is_relu_pos;
   assign alu_alu_core_64_is_relu_pos_g_out = alu_alu_core_64_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_64_is_relu_neg_g — when alu_alu_core_64_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_64_is_relu_neg_g_cond;
   assign alu_alu_core_64_is_relu_neg_g_cond = alu_alu_core_64_is_relu_neg;
   assign alu_alu_core_64_is_relu_neg_g_out = alu_alu_core_64_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_64_is_tag_gate_g — when alu_alu_core_64_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_64_is_tag_gate_g_cond;
   assign alu_alu_core_64_is_tag_gate_g_cond = alu_alu_core_64_is_tag_gate;
   assign alu_alu_core_64_is_tag_gate_g_out = alu_alu_core_64_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_73_noc_rx_arrived — when rx_valid_9 (high) for 1 cycle (combinational)
+  logic core_core_top_73_noc_rx_arrived_cond;
+  assign core_core_top_73_noc_rx_arrived_cond = rx_valid_9;
+  assign core_core_top_73_noc_rx_arrived_out = core_core_top_73_noc_rx_arrived_cond;
+
   // Guard: core_core_top_73_trap_active — when core_core_top_73_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_73_trap_active_cond;
   assign core_core_top_73_trap_active_cond = core_core_top_73_trap_signal;
   assign core_core_top_73_trap_active_out = core_core_top_73_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_74_fetch_active — when pipe_rspu_pipeline_74_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_74_fetch_active_cond;
   assign pipe_rspu_pipeline_74_fetch_active_cond = pipe_rspu_pipeline_74_pcc_valid;
   assign pipe_rspu_pipeline_74_fetch_active_out = pipe_rspu_pipeline_74_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_74_fetch_fault — when pipe_rspu_pipeline_74_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_74_fetch_fault_cond;
   assign pipe_rspu_pipeline_74_fetch_fault_cond = pipe_rspu_pipeline_74_pcc_fault;
   assign pipe_rspu_pipeline_74_fetch_fault_out = pipe_rspu_pipeline_74_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_76_is_add_g — when alu_alu_core_76_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_76_is_add_g_cond;
   assign alu_alu_core_76_is_add_g_cond = alu_alu_core_76_is_add;
   assign alu_alu_core_76_is_add_g_out = alu_alu_core_76_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_76_is_sub_g — when alu_alu_core_76_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_76_is_sub_g_cond;
   assign alu_alu_core_76_is_sub_g_cond = alu_alu_core_76_is_sub;
   assign alu_alu_core_76_is_sub_g_out = alu_alu_core_76_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_76_is_relu_pos_g — when alu_alu_core_76_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_76_is_relu_pos_g_cond;
   assign alu_alu_core_76_is_relu_pos_g_cond = alu_alu_core_76_is_relu_pos;
   assign alu_alu_core_76_is_relu_pos_g_out = alu_alu_core_76_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_76_is_relu_neg_g — when alu_alu_core_76_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_76_is_relu_neg_g_cond;
   assign alu_alu_core_76_is_relu_neg_g_cond = alu_alu_core_76_is_relu_neg;
   assign alu_alu_core_76_is_relu_neg_g_out = alu_alu_core_76_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_76_is_tag_gate_g — when alu_alu_core_76_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_76_is_tag_gate_g_cond;
   assign alu_alu_core_76_is_tag_gate_g_cond = alu_alu_core_76_is_tag_gate;
   assign alu_alu_core_76_is_tag_gate_g_out = alu_alu_core_76_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_85_noc_rx_arrived — when rx_valid_8 (high) for 1 cycle (combinational)
+  logic core_core_top_85_noc_rx_arrived_cond;
+  assign core_core_top_85_noc_rx_arrived_cond = rx_valid_8;
+  assign core_core_top_85_noc_rx_arrived_out = core_core_top_85_noc_rx_arrived_cond;
+
   // Guard: core_core_top_85_trap_active — when core_core_top_85_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_85_trap_active_cond;
   assign core_core_top_85_trap_active_cond = core_core_top_85_trap_signal;
   assign core_core_top_85_trap_active_out = core_core_top_85_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_86_fetch_active — when pipe_rspu_pipeline_86_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_86_fetch_active_cond;
   assign pipe_rspu_pipeline_86_fetch_active_cond = pipe_rspu_pipeline_86_pcc_valid;
   assign pipe_rspu_pipeline_86_fetch_active_out = pipe_rspu_pipeline_86_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_86_fetch_fault — when pipe_rspu_pipeline_86_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_86_fetch_fault_cond;
   assign pipe_rspu_pipeline_86_fetch_fault_cond = pipe_rspu_pipeline_86_pcc_fault;
   assign pipe_rspu_pipeline_86_fetch_fault_out = pipe_rspu_pipeline_86_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_88_is_add_g — when alu_alu_core_88_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_88_is_add_g_cond;
   assign alu_alu_core_88_is_add_g_cond = alu_alu_core_88_is_add;
   assign alu_alu_core_88_is_add_g_out = alu_alu_core_88_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_88_is_sub_g — when alu_alu_core_88_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_88_is_sub_g_cond;
   assign alu_alu_core_88_is_sub_g_cond = alu_alu_core_88_is_sub;
   assign alu_alu_core_88_is_sub_g_out = alu_alu_core_88_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_88_is_relu_pos_g — when alu_alu_core_88_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_88_is_relu_pos_g_cond;
   assign alu_alu_core_88_is_relu_pos_g_cond = alu_alu_core_88_is_relu_pos;
   assign alu_alu_core_88_is_relu_pos_g_out = alu_alu_core_88_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_88_is_relu_neg_g — when alu_alu_core_88_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_88_is_relu_neg_g_cond;
   assign alu_alu_core_88_is_relu_neg_g_cond = alu_alu_core_88_is_relu_neg;
   assign alu_alu_core_88_is_relu_neg_g_out = alu_alu_core_88_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_88_is_tag_gate_g — when alu_alu_core_88_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_88_is_tag_gate_g_cond;
   assign alu_alu_core_88_is_tag_gate_g_cond = alu_alu_core_88_is_tag_gate;
   assign alu_alu_core_88_is_tag_gate_g_out = alu_alu_core_88_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_97_noc_rx_arrived — when rx_valid_7 (high) for 1 cycle (combinational)
+  logic core_core_top_97_noc_rx_arrived_cond;
+  assign core_core_top_97_noc_rx_arrived_cond = rx_valid_7;
+  assign core_core_top_97_noc_rx_arrived_out = core_core_top_97_noc_rx_arrived_cond;
+
   // Guard: core_core_top_97_trap_active — when core_core_top_97_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_97_trap_active_cond;
   assign core_core_top_97_trap_active_cond = core_core_top_97_trap_signal;
   assign core_core_top_97_trap_active_out = core_core_top_97_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_98_fetch_active — when pipe_rspu_pipeline_98_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_98_fetch_active_cond;
   assign pipe_rspu_pipeline_98_fetch_active_cond = pipe_rspu_pipeline_98_pcc_valid;
   assign pipe_rspu_pipeline_98_fetch_active_out = pipe_rspu_pipeline_98_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_98_fetch_fault — when pipe_rspu_pipeline_98_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_98_fetch_fault_cond;
   assign pipe_rspu_pipeline_98_fetch_fault_cond = pipe_rspu_pipeline_98_pcc_fault;
   assign pipe_rspu_pipeline_98_fetch_fault_out = pipe_rspu_pipeline_98_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_100_is_add_g — when alu_alu_core_100_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_100_is_add_g_cond;
   assign alu_alu_core_100_is_add_g_cond = alu_alu_core_100_is_add;
   assign alu_alu_core_100_is_add_g_out = alu_alu_core_100_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_100_is_sub_g — when alu_alu_core_100_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_100_is_sub_g_cond;
   assign alu_alu_core_100_is_sub_g_cond = alu_alu_core_100_is_sub;
   assign alu_alu_core_100_is_sub_g_out = alu_alu_core_100_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_100_is_relu_pos_g — when alu_alu_core_100_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_100_is_relu_pos_g_cond;
   assign alu_alu_core_100_is_relu_pos_g_cond = alu_alu_core_100_is_relu_pos;
   assign alu_alu_core_100_is_relu_pos_g_out = alu_alu_core_100_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_100_is_relu_neg_g — when alu_alu_core_100_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_100_is_relu_neg_g_cond;
   assign alu_alu_core_100_is_relu_neg_g_cond = alu_alu_core_100_is_relu_neg;
   assign alu_alu_core_100_is_relu_neg_g_out = alu_alu_core_100_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_100_is_tag_gate_g — when alu_alu_core_100_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_100_is_tag_gate_g_cond;
   assign alu_alu_core_100_is_tag_gate_g_cond = alu_alu_core_100_is_tag_gate;
   assign alu_alu_core_100_is_tag_gate_g_out = alu_alu_core_100_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_109_noc_rx_arrived — when rx_valid_6 (high) for 1 cycle (combinational)
+  logic core_core_top_109_noc_rx_arrived_cond;
+  assign core_core_top_109_noc_rx_arrived_cond = rx_valid_6;
+  assign core_core_top_109_noc_rx_arrived_out = core_core_top_109_noc_rx_arrived_cond;
+
   // Guard: core_core_top_109_trap_active — when core_core_top_109_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_109_trap_active_cond;
   assign core_core_top_109_trap_active_cond = core_core_top_109_trap_signal;
   assign core_core_top_109_trap_active_out = core_core_top_109_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_110_fetch_active — when pipe_rspu_pipeline_110_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_110_fetch_active_cond;
   assign pipe_rspu_pipeline_110_fetch_active_cond = pipe_rspu_pipeline_110_pcc_valid;
   assign pipe_rspu_pipeline_110_fetch_active_out = pipe_rspu_pipeline_110_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_110_fetch_fault — when pipe_rspu_pipeline_110_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_110_fetch_fault_cond;
   assign pipe_rspu_pipeline_110_fetch_fault_cond = pipe_rspu_pipeline_110_pcc_fault;
   assign pipe_rspu_pipeline_110_fetch_fault_out = pipe_rspu_pipeline_110_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_112_is_add_g — when alu_alu_core_112_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_112_is_add_g_cond;
   assign alu_alu_core_112_is_add_g_cond = alu_alu_core_112_is_add;
   assign alu_alu_core_112_is_add_g_out = alu_alu_core_112_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_112_is_sub_g — when alu_alu_core_112_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_112_is_sub_g_cond;
   assign alu_alu_core_112_is_sub_g_cond = alu_alu_core_112_is_sub;
   assign alu_alu_core_112_is_sub_g_out = alu_alu_core_112_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_112_is_relu_pos_g — when alu_alu_core_112_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_112_is_relu_pos_g_cond;
   assign alu_alu_core_112_is_relu_pos_g_cond = alu_alu_core_112_is_relu_pos;
   assign alu_alu_core_112_is_relu_pos_g_out = alu_alu_core_112_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_112_is_relu_neg_g — when alu_alu_core_112_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_112_is_relu_neg_g_cond;
   assign alu_alu_core_112_is_relu_neg_g_cond = alu_alu_core_112_is_relu_neg;
   assign alu_alu_core_112_is_relu_neg_g_out = alu_alu_core_112_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_112_is_tag_gate_g — when alu_alu_core_112_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_112_is_tag_gate_g_cond;
   assign alu_alu_core_112_is_tag_gate_g_cond = alu_alu_core_112_is_tag_gate;
   assign alu_alu_core_112_is_tag_gate_g_out = alu_alu_core_112_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_121_noc_rx_arrived — when rx_valid_5 (high) for 1 cycle (combinational)
+  logic core_core_top_121_noc_rx_arrived_cond;
+  assign core_core_top_121_noc_rx_arrived_cond = rx_valid_5;
+  assign core_core_top_121_noc_rx_arrived_out = core_core_top_121_noc_rx_arrived_cond;
+
   // Guard: core_core_top_121_trap_active — when core_core_top_121_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_121_trap_active_cond;
   assign core_core_top_121_trap_active_cond = core_core_top_121_trap_signal;
   assign core_core_top_121_trap_active_out = core_core_top_121_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_122_fetch_active — when pipe_rspu_pipeline_122_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_122_fetch_active_cond;
   assign pipe_rspu_pipeline_122_fetch_active_cond = pipe_rspu_pipeline_122_pcc_valid;
   assign pipe_rspu_pipeline_122_fetch_active_out = pipe_rspu_pipeline_122_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_122_fetch_fault — when pipe_rspu_pipeline_122_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_122_fetch_fault_cond;
   assign pipe_rspu_pipeline_122_fetch_fault_cond = pipe_rspu_pipeline_122_pcc_fault;
   assign pipe_rspu_pipeline_122_fetch_fault_out = pipe_rspu_pipeline_122_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_124_is_add_g — when alu_alu_core_124_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_124_is_add_g_cond;
   assign alu_alu_core_124_is_add_g_cond = alu_alu_core_124_is_add;
   assign alu_alu_core_124_is_add_g_out = alu_alu_core_124_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_124_is_sub_g — when alu_alu_core_124_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_124_is_sub_g_cond;
   assign alu_alu_core_124_is_sub_g_cond = alu_alu_core_124_is_sub;
   assign alu_alu_core_124_is_sub_g_out = alu_alu_core_124_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_124_is_relu_pos_g — when alu_alu_core_124_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_124_is_relu_pos_g_cond;
   assign alu_alu_core_124_is_relu_pos_g_cond = alu_alu_core_124_is_relu_pos;
   assign alu_alu_core_124_is_relu_pos_g_out = alu_alu_core_124_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_124_is_relu_neg_g — when alu_alu_core_124_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_124_is_relu_neg_g_cond;
   assign alu_alu_core_124_is_relu_neg_g_cond = alu_alu_core_124_is_relu_neg;
   assign alu_alu_core_124_is_relu_neg_g_out = alu_alu_core_124_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_124_is_tag_gate_g — when alu_alu_core_124_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_124_is_tag_gate_g_cond;
   assign alu_alu_core_124_is_tag_gate_g_cond = alu_alu_core_124_is_tag_gate;
   assign alu_alu_core_124_is_tag_gate_g_out = alu_alu_core_124_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_133_noc_rx_arrived — when rx_valid_4 (high) for 1 cycle (combinational)
+  logic core_core_top_133_noc_rx_arrived_cond;
+  assign core_core_top_133_noc_rx_arrived_cond = rx_valid_4;
+  assign core_core_top_133_noc_rx_arrived_out = core_core_top_133_noc_rx_arrived_cond;
+
   // Guard: core_core_top_133_trap_active — when core_core_top_133_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_133_trap_active_cond;
   assign core_core_top_133_trap_active_cond = core_core_top_133_trap_signal;
   assign core_core_top_133_trap_active_out = core_core_top_133_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_134_fetch_active — when pipe_rspu_pipeline_134_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_134_fetch_active_cond;
   assign pipe_rspu_pipeline_134_fetch_active_cond = pipe_rspu_pipeline_134_pcc_valid;
   assign pipe_rspu_pipeline_134_fetch_active_out = pipe_rspu_pipeline_134_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_134_fetch_fault — when pipe_rspu_pipeline_134_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_134_fetch_fault_cond;
   assign pipe_rspu_pipeline_134_fetch_fault_cond = pipe_rspu_pipeline_134_pcc_fault;
   assign pipe_rspu_pipeline_134_fetch_fault_out = pipe_rspu_pipeline_134_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_136_is_add_g — when alu_alu_core_136_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_136_is_add_g_cond;
   assign alu_alu_core_136_is_add_g_cond = alu_alu_core_136_is_add;
   assign alu_alu_core_136_is_add_g_out = alu_alu_core_136_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_136_is_sub_g — when alu_alu_core_136_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_136_is_sub_g_cond;
   assign alu_alu_core_136_is_sub_g_cond = alu_alu_core_136_is_sub;
   assign alu_alu_core_136_is_sub_g_out = alu_alu_core_136_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_136_is_relu_pos_g — when alu_alu_core_136_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_136_is_relu_pos_g_cond;
   assign alu_alu_core_136_is_relu_pos_g_cond = alu_alu_core_136_is_relu_pos;
   assign alu_alu_core_136_is_relu_pos_g_out = alu_alu_core_136_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_136_is_relu_neg_g — when alu_alu_core_136_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_136_is_relu_neg_g_cond;
   assign alu_alu_core_136_is_relu_neg_g_cond = alu_alu_core_136_is_relu_neg;
   assign alu_alu_core_136_is_relu_neg_g_out = alu_alu_core_136_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_136_is_tag_gate_g — when alu_alu_core_136_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_136_is_tag_gate_g_cond;
   assign alu_alu_core_136_is_tag_gate_g_cond = alu_alu_core_136_is_tag_gate;
   assign alu_alu_core_136_is_tag_gate_g_out = alu_alu_core_136_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_145_noc_rx_arrived — when rx_valid_3 (high) for 1 cycle (combinational)
+  logic core_core_top_145_noc_rx_arrived_cond;
+  assign core_core_top_145_noc_rx_arrived_cond = rx_valid_3;
+  assign core_core_top_145_noc_rx_arrived_out = core_core_top_145_noc_rx_arrived_cond;
+
   // Guard: core_core_top_145_trap_active — when core_core_top_145_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_145_trap_active_cond;
   assign core_core_top_145_trap_active_cond = core_core_top_145_trap_signal;
   assign core_core_top_145_trap_active_out = core_core_top_145_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_146_fetch_active — when pipe_rspu_pipeline_146_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_146_fetch_active_cond;
   assign pipe_rspu_pipeline_146_fetch_active_cond = pipe_rspu_pipeline_146_pcc_valid;
   assign pipe_rspu_pipeline_146_fetch_active_out = pipe_rspu_pipeline_146_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_146_fetch_fault — when pipe_rspu_pipeline_146_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_146_fetch_fault_cond;
   assign pipe_rspu_pipeline_146_fetch_fault_cond = pipe_rspu_pipeline_146_pcc_fault;
   assign pipe_rspu_pipeline_146_fetch_fault_out = pipe_rspu_pipeline_146_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_148_is_add_g — when alu_alu_core_148_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_148_is_add_g_cond;
   assign alu_alu_core_148_is_add_g_cond = alu_alu_core_148_is_add;
   assign alu_alu_core_148_is_add_g_out = alu_alu_core_148_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_148_is_sub_g — when alu_alu_core_148_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_148_is_sub_g_cond;
   assign alu_alu_core_148_is_sub_g_cond = alu_alu_core_148_is_sub;
   assign alu_alu_core_148_is_sub_g_out = alu_alu_core_148_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_148_is_relu_pos_g — when alu_alu_core_148_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_148_is_relu_pos_g_cond;
   assign alu_alu_core_148_is_relu_pos_g_cond = alu_alu_core_148_is_relu_pos;
   assign alu_alu_core_148_is_relu_pos_g_out = alu_alu_core_148_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_148_is_relu_neg_g — when alu_alu_core_148_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_148_is_relu_neg_g_cond;
   assign alu_alu_core_148_is_relu_neg_g_cond = alu_alu_core_148_is_relu_neg;
   assign alu_alu_core_148_is_relu_neg_g_out = alu_alu_core_148_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_148_is_tag_gate_g — when alu_alu_core_148_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_148_is_tag_gate_g_cond;
   assign alu_alu_core_148_is_tag_gate_g_cond = alu_alu_core_148_is_tag_gate;
   assign alu_alu_core_148_is_tag_gate_g_out = alu_alu_core_148_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_157_noc_rx_arrived — when rx_valid_2 (high) for 1 cycle (combinational)
+  logic core_core_top_157_noc_rx_arrived_cond;
+  assign core_core_top_157_noc_rx_arrived_cond = rx_valid_2;
+  assign core_core_top_157_noc_rx_arrived_out = core_core_top_157_noc_rx_arrived_cond;
+
   // Guard: core_core_top_157_trap_active — when core_core_top_157_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_157_trap_active_cond;
   assign core_core_top_157_trap_active_cond = core_core_top_157_trap_signal;
   assign core_core_top_157_trap_active_out = core_core_top_157_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_158_fetch_active — when pipe_rspu_pipeline_158_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_158_fetch_active_cond;
   assign pipe_rspu_pipeline_158_fetch_active_cond = pipe_rspu_pipeline_158_pcc_valid;
   assign pipe_rspu_pipeline_158_fetch_active_out = pipe_rspu_pipeline_158_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_158_fetch_fault — when pipe_rspu_pipeline_158_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_158_fetch_fault_cond;
   assign pipe_rspu_pipeline_158_fetch_fault_cond = pipe_rspu_pipeline_158_pcc_fault;
   assign pipe_rspu_pipeline_158_fetch_fault_out = pipe_rspu_pipeline_158_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_160_is_add_g — when alu_alu_core_160_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_160_is_add_g_cond;
   assign alu_alu_core_160_is_add_g_cond = alu_alu_core_160_is_add;
   assign alu_alu_core_160_is_add_g_out = alu_alu_core_160_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_160_is_sub_g — when alu_alu_core_160_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_160_is_sub_g_cond;
   assign alu_alu_core_160_is_sub_g_cond = alu_alu_core_160_is_sub;
   assign alu_alu_core_160_is_sub_g_out = alu_alu_core_160_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_160_is_relu_pos_g — when alu_alu_core_160_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_160_is_relu_pos_g_cond;
   assign alu_alu_core_160_is_relu_pos_g_cond = alu_alu_core_160_is_relu_pos;
   assign alu_alu_core_160_is_relu_pos_g_out = alu_alu_core_160_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_160_is_relu_neg_g — when alu_alu_core_160_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_160_is_relu_neg_g_cond;
   assign alu_alu_core_160_is_relu_neg_g_cond = alu_alu_core_160_is_relu_neg;
   assign alu_alu_core_160_is_relu_neg_g_out = alu_alu_core_160_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_160_is_tag_gate_g — when alu_alu_core_160_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_160_is_tag_gate_g_cond;
   assign alu_alu_core_160_is_tag_gate_g_cond = alu_alu_core_160_is_tag_gate;
   assign alu_alu_core_160_is_tag_gate_g_out = alu_alu_core_160_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_169_noc_rx_arrived — when rx_valid_1 (high) for 1 cycle (combinational)
+  logic core_core_top_169_noc_rx_arrived_cond;
+  assign core_core_top_169_noc_rx_arrived_cond = rx_valid_1;
+  assign core_core_top_169_noc_rx_arrived_out = core_core_top_169_noc_rx_arrived_cond;
+
   // Guard: core_core_top_169_trap_active — when core_core_top_169_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_169_trap_active_cond;
   assign core_core_top_169_trap_active_cond = core_core_top_169_trap_signal;
   assign core_core_top_169_trap_active_out = core_core_top_169_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_170_fetch_active — when pipe_rspu_pipeline_170_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_170_fetch_active_cond;
   assign pipe_rspu_pipeline_170_fetch_active_cond = pipe_rspu_pipeline_170_pcc_valid;
   assign pipe_rspu_pipeline_170_fetch_active_out = pipe_rspu_pipeline_170_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_170_fetch_fault — when pipe_rspu_pipeline_170_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_170_fetch_fault_cond;
   assign pipe_rspu_pipeline_170_fetch_fault_cond = pipe_rspu_pipeline_170_pcc_fault;
   assign pipe_rspu_pipeline_170_fetch_fault_out = pipe_rspu_pipeline_170_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_172_is_add_g — when alu_alu_core_172_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_172_is_add_g_cond;
   assign alu_alu_core_172_is_add_g_cond = alu_alu_core_172_is_add;
   assign alu_alu_core_172_is_add_g_out = alu_alu_core_172_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_172_is_sub_g — when alu_alu_core_172_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_172_is_sub_g_cond;
   assign alu_alu_core_172_is_sub_g_cond = alu_alu_core_172_is_sub;
   assign alu_alu_core_172_is_sub_g_out = alu_alu_core_172_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_172_is_relu_pos_g — when alu_alu_core_172_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_172_is_relu_pos_g_cond;
   assign alu_alu_core_172_is_relu_pos_g_cond = alu_alu_core_172_is_relu_pos;
   assign alu_alu_core_172_is_relu_pos_g_out = alu_alu_core_172_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_172_is_relu_neg_g — when alu_alu_core_172_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_172_is_relu_neg_g_cond;
   assign alu_alu_core_172_is_relu_neg_g_cond = alu_alu_core_172_is_relu_neg;
   assign alu_alu_core_172_is_relu_neg_g_out = alu_alu_core_172_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_172_is_tag_gate_g — when alu_alu_core_172_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_172_is_tag_gate_g_cond;
   assign alu_alu_core_172_is_tag_gate_g_cond = alu_alu_core_172_is_tag_gate;
   assign alu_alu_core_172_is_tag_gate_g_out = alu_alu_core_172_is_tag_gate_g_cond;
 
-  // source: <unknown>:35
+  // Guard: core_core_top_181_noc_rx_arrived — when rx_valid_0 (high) for 1 cycle (combinational)
+  logic core_core_top_181_noc_rx_arrived_cond;
+  assign core_core_top_181_noc_rx_arrived_cond = rx_valid_0;
+  assign core_core_top_181_noc_rx_arrived_out = core_core_top_181_noc_rx_arrived_cond;
+
   // Guard: core_core_top_181_trap_active — when core_core_top_181_trap_signal (high) for 1 cycle (combinational)
   logic core_core_top_181_trap_active_cond;
   assign core_core_top_181_trap_active_cond = core_core_top_181_trap_signal;
   assign core_core_top_181_trap_active_out = core_core_top_181_trap_active_cond;
 
-  // source: <unknown>:50
   // Guard: pipe_rspu_pipeline_182_fetch_active — when pipe_rspu_pipeline_182_pcc_valid (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_182_fetch_active_cond;
   assign pipe_rspu_pipeline_182_fetch_active_cond = pipe_rspu_pipeline_182_pcc_valid;
   assign pipe_rspu_pipeline_182_fetch_active_out = pipe_rspu_pipeline_182_fetch_active_cond;
 
-  // source: <unknown>:51
   // Guard: pipe_rspu_pipeline_182_fetch_fault — when pipe_rspu_pipeline_182_pcc_fault (high) for 1 cycle (combinational)
   logic pipe_rspu_pipeline_182_fetch_fault_cond;
   assign pipe_rspu_pipeline_182_fetch_fault_cond = pipe_rspu_pipeline_182_pcc_fault;
   assign pipe_rspu_pipeline_182_fetch_fault_out = pipe_rspu_pipeline_182_fetch_fault_cond;
 
-  // source: <unknown>:42
   // Guard: alu_alu_core_184_is_add_g — when alu_alu_core_184_is_add (high) for 1 cycle (combinational)
   logic alu_alu_core_184_is_add_g_cond;
   assign alu_alu_core_184_is_add_g_cond = alu_alu_core_184_is_add;
   assign alu_alu_core_184_is_add_g_out = alu_alu_core_184_is_add_g_cond;
 
-  // source: <unknown>:45
   // Guard: alu_alu_core_184_is_sub_g — when alu_alu_core_184_is_sub (high) for 1 cycle (combinational)
   logic alu_alu_core_184_is_sub_g_cond;
   assign alu_alu_core_184_is_sub_g_cond = alu_alu_core_184_is_sub;
   assign alu_alu_core_184_is_sub_g_out = alu_alu_core_184_is_sub_g_cond;
 
-  // source: <unknown>:48
   // Guard: alu_alu_core_184_is_relu_pos_g — when alu_alu_core_184_is_relu_pos (high) for 1 cycle (combinational)
   logic alu_alu_core_184_is_relu_pos_g_cond;
   assign alu_alu_core_184_is_relu_pos_g_cond = alu_alu_core_184_is_relu_pos;
   assign alu_alu_core_184_is_relu_pos_g_out = alu_alu_core_184_is_relu_pos_g_cond;
 
-  // source: <unknown>:51
   // Guard: alu_alu_core_184_is_relu_neg_g — when alu_alu_core_184_is_relu_neg (high) for 1 cycle (combinational)
   logic alu_alu_core_184_is_relu_neg_g_cond;
   assign alu_alu_core_184_is_relu_neg_g_cond = alu_alu_core_184_is_relu_neg;
   assign alu_alu_core_184_is_relu_neg_g_out = alu_alu_core_184_is_relu_neg_g_cond;
 
-  // source: <unknown>:54
   // Guard: alu_alu_core_184_is_tag_gate_g — when alu_alu_core_184_is_tag_gate (high) for 1 cycle (combinational)
   logic alu_alu_core_184_is_tag_gate_g_cond;
   assign alu_alu_core_184_is_tag_gate_g_cond = alu_alu_core_184_is_tag_gate;
@@ -3791,6 +2262,7 @@ module rspu_top (
   logic alu_alu_core_184_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_182_fetch_active_out;
   logic pipe_rspu_pipeline_182_fetch_fault_out;
+  logic core_core_top_181_noc_rx_arrived_out;
   logic core_core_top_181_trap_active_out;
   logic alu_alu_core_172_is_add_g_out;
   logic alu_alu_core_172_is_sub_g_out;
@@ -3799,6 +2271,7 @@ module rspu_top (
   logic alu_alu_core_172_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_170_fetch_active_out;
   logic pipe_rspu_pipeline_170_fetch_fault_out;
+  logic core_core_top_169_noc_rx_arrived_out;
   logic core_core_top_169_trap_active_out;
   logic alu_alu_core_160_is_add_g_out;
   logic alu_alu_core_160_is_sub_g_out;
@@ -3807,6 +2280,7 @@ module rspu_top (
   logic alu_alu_core_160_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_158_fetch_active_out;
   logic pipe_rspu_pipeline_158_fetch_fault_out;
+  logic core_core_top_157_noc_rx_arrived_out;
   logic core_core_top_157_trap_active_out;
   logic alu_alu_core_148_is_add_g_out;
   logic alu_alu_core_148_is_sub_g_out;
@@ -3815,6 +2289,7 @@ module rspu_top (
   logic alu_alu_core_148_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_146_fetch_active_out;
   logic pipe_rspu_pipeline_146_fetch_fault_out;
+  logic core_core_top_145_noc_rx_arrived_out;
   logic core_core_top_145_trap_active_out;
   logic alu_alu_core_136_is_add_g_out;
   logic alu_alu_core_136_is_sub_g_out;
@@ -3823,6 +2298,7 @@ module rspu_top (
   logic alu_alu_core_136_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_134_fetch_active_out;
   logic pipe_rspu_pipeline_134_fetch_fault_out;
+  logic core_core_top_133_noc_rx_arrived_out;
   logic core_core_top_133_trap_active_out;
   logic alu_alu_core_124_is_add_g_out;
   logic alu_alu_core_124_is_sub_g_out;
@@ -3831,6 +2307,7 @@ module rspu_top (
   logic alu_alu_core_124_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_122_fetch_active_out;
   logic pipe_rspu_pipeline_122_fetch_fault_out;
+  logic core_core_top_121_noc_rx_arrived_out;
   logic core_core_top_121_trap_active_out;
   logic alu_alu_core_112_is_add_g_out;
   logic alu_alu_core_112_is_sub_g_out;
@@ -3839,6 +2316,7 @@ module rspu_top (
   logic alu_alu_core_112_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_110_fetch_active_out;
   logic pipe_rspu_pipeline_110_fetch_fault_out;
+  logic core_core_top_109_noc_rx_arrived_out;
   logic core_core_top_109_trap_active_out;
   logic alu_alu_core_100_is_add_g_out;
   logic alu_alu_core_100_is_sub_g_out;
@@ -3847,6 +2325,7 @@ module rspu_top (
   logic alu_alu_core_100_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_98_fetch_active_out;
   logic pipe_rspu_pipeline_98_fetch_fault_out;
+  logic core_core_top_97_noc_rx_arrived_out;
   logic core_core_top_97_trap_active_out;
   logic alu_alu_core_88_is_add_g_out;
   logic alu_alu_core_88_is_sub_g_out;
@@ -3855,6 +2334,7 @@ module rspu_top (
   logic alu_alu_core_88_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_86_fetch_active_out;
   logic pipe_rspu_pipeline_86_fetch_fault_out;
+  logic core_core_top_85_noc_rx_arrived_out;
   logic core_core_top_85_trap_active_out;
   logic alu_alu_core_76_is_add_g_out;
   logic alu_alu_core_76_is_sub_g_out;
@@ -3863,6 +2343,7 @@ module rspu_top (
   logic alu_alu_core_76_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_74_fetch_active_out;
   logic pipe_rspu_pipeline_74_fetch_fault_out;
+  logic core_core_top_73_noc_rx_arrived_out;
   logic core_core_top_73_trap_active_out;
   logic alu_alu_core_64_is_add_g_out;
   logic alu_alu_core_64_is_sub_g_out;
@@ -3871,6 +2352,7 @@ module rspu_top (
   logic alu_alu_core_64_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_62_fetch_active_out;
   logic pipe_rspu_pipeline_62_fetch_fault_out;
+  logic core_core_top_61_noc_rx_arrived_out;
   logic core_core_top_61_trap_active_out;
   logic alu_alu_core_52_is_add_g_out;
   logic alu_alu_core_52_is_sub_g_out;
@@ -3879,6 +2361,7 @@ module rspu_top (
   logic alu_alu_core_52_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_50_fetch_active_out;
   logic pipe_rspu_pipeline_50_fetch_fault_out;
+  logic core_core_top_49_noc_rx_arrived_out;
   logic core_core_top_49_trap_active_out;
   logic alu_alu_core_40_is_add_g_out;
   logic alu_alu_core_40_is_sub_g_out;
@@ -3887,6 +2370,7 @@ module rspu_top (
   logic alu_alu_core_40_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_38_fetch_active_out;
   logic pipe_rspu_pipeline_38_fetch_fault_out;
+  logic core_core_top_37_noc_rx_arrived_out;
   logic core_core_top_37_trap_active_out;
   logic alu_alu_core_28_is_add_g_out;
   logic alu_alu_core_28_is_sub_g_out;
@@ -3895,6 +2379,7 @@ module rspu_top (
   logic alu_alu_core_28_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_26_fetch_active_out;
   logic pipe_rspu_pipeline_26_fetch_fault_out;
+  logic core_core_top_25_noc_rx_arrived_out;
   logic core_core_top_25_trap_active_out;
   logic alu_alu_core_16_is_add_g_out;
   logic alu_alu_core_16_is_sub_g_out;
@@ -3903,6 +2388,7 @@ module rspu_top (
   logic alu_alu_core_16_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_14_fetch_active_out;
   logic pipe_rspu_pipeline_14_fetch_fault_out;
+  logic core_core_top_13_noc_rx_arrived_out;
   logic core_core_top_13_trap_active_out;
   logic alu_alu_core_4_is_add_g_out;
   logic alu_alu_core_4_is_sub_g_out;
@@ -3911,6 +2397,7 @@ module rspu_top (
   logic alu_alu_core_4_is_tag_gate_g_out;
   logic pipe_rspu_pipeline_2_fetch_active_out;
   logic pipe_rspu_pipeline_2_fetch_fault_out;
+  logic core_core_top_1_noc_rx_arrived_out;
   logic core_core_top_1_trap_active_out;
   logic tx_valid_1_out;
   logic fabric_noc_router_0_n1_out;
@@ -3942,6 +2429,8 @@ module rspu_top (
   logic fabric_noc_router_0_n14_out;
   logic tx_valid_15_out;
   logic fabric_noc_router_0_n15_out;
+  logic stream_rx_valid_out;
+  logic fabric_noc_router_0_n16_out;
 
   // Unified Reflex Block for: alu_alu_core_100_is_add
   always_ff @(posedge clk or negedge rst_n) begin
@@ -3993,7 +2482,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_100_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_100_is_trap <= 1'b0;
     end
   end
@@ -4003,17 +2491,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_100_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_100_res_data <= pipe_rspu_pipeline_98_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_100_is_add_g_out) alu_alu_core_100_res_data <= ((pipe_rspu_pipeline_98_ex_d1 & 4294967295) + (pipe_rspu_pipeline_98_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_100_is_sub_g_out) alu_alu_core_100_res_data <= ((pipe_rspu_pipeline_98_ex_d1 & 4294967295) - (pipe_rspu_pipeline_98_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_100_is_relu_pos_g_out) alu_alu_core_100_res_data <= pipe_rspu_pipeline_98_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_100_is_relu_neg_g_out) alu_alu_core_100_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_100_is_tag_gate_g_out) alu_alu_core_100_res_data <= (((pipe_rspu_pipeline_98_ex_d1 & 4294967295) * (pipe_rspu_pipeline_98_ex_p1 & 15)) >> 4);
     end
   end
@@ -4023,7 +2505,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_100_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_100_res_prov <= pipe_rspu_pipeline_98_ex_p1;
     end
   end
@@ -4033,7 +2514,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_100_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_100_res_tag <= pipe_rspu_pipeline_98_ex_t1;
     end
   end
@@ -4088,7 +2568,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_112_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_112_is_trap <= 1'b0;
     end
   end
@@ -4098,17 +2577,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_112_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_112_res_data <= pipe_rspu_pipeline_110_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_112_is_add_g_out) alu_alu_core_112_res_data <= ((pipe_rspu_pipeline_110_ex_d1 & 4294967295) + (pipe_rspu_pipeline_110_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_112_is_sub_g_out) alu_alu_core_112_res_data <= ((pipe_rspu_pipeline_110_ex_d1 & 4294967295) - (pipe_rspu_pipeline_110_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_112_is_relu_pos_g_out) alu_alu_core_112_res_data <= pipe_rspu_pipeline_110_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_112_is_relu_neg_g_out) alu_alu_core_112_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_112_is_tag_gate_g_out) alu_alu_core_112_res_data <= (((pipe_rspu_pipeline_110_ex_d1 & 4294967295) * (pipe_rspu_pipeline_110_ex_p1 & 15)) >> 4);
     end
   end
@@ -4118,7 +2591,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_112_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_112_res_prov <= pipe_rspu_pipeline_110_ex_p1;
     end
   end
@@ -4128,7 +2600,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_112_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_112_res_tag <= pipe_rspu_pipeline_110_ex_t1;
     end
   end
@@ -4183,7 +2654,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_124_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_124_is_trap <= 1'b0;
     end
   end
@@ -4193,17 +2663,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_124_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_124_res_data <= pipe_rspu_pipeline_122_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_124_is_add_g_out) alu_alu_core_124_res_data <= ((pipe_rspu_pipeline_122_ex_d1 & 4294967295) + (pipe_rspu_pipeline_122_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_124_is_sub_g_out) alu_alu_core_124_res_data <= ((pipe_rspu_pipeline_122_ex_d1 & 4294967295) - (pipe_rspu_pipeline_122_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_124_is_relu_pos_g_out) alu_alu_core_124_res_data <= pipe_rspu_pipeline_122_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_124_is_relu_neg_g_out) alu_alu_core_124_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_124_is_tag_gate_g_out) alu_alu_core_124_res_data <= (((pipe_rspu_pipeline_122_ex_d1 & 4294967295) * (pipe_rspu_pipeline_122_ex_p1 & 15)) >> 4);
     end
   end
@@ -4213,7 +2677,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_124_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_124_res_prov <= pipe_rspu_pipeline_122_ex_p1;
     end
   end
@@ -4223,7 +2686,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_124_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_124_res_tag <= pipe_rspu_pipeline_122_ex_t1;
     end
   end
@@ -4278,7 +2740,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_136_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_136_is_trap <= 1'b0;
     end
   end
@@ -4288,17 +2749,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_136_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_136_res_data <= pipe_rspu_pipeline_134_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_136_is_add_g_out) alu_alu_core_136_res_data <= ((pipe_rspu_pipeline_134_ex_d1 & 4294967295) + (pipe_rspu_pipeline_134_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_136_is_sub_g_out) alu_alu_core_136_res_data <= ((pipe_rspu_pipeline_134_ex_d1 & 4294967295) - (pipe_rspu_pipeline_134_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_136_is_relu_pos_g_out) alu_alu_core_136_res_data <= pipe_rspu_pipeline_134_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_136_is_relu_neg_g_out) alu_alu_core_136_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_136_is_tag_gate_g_out) alu_alu_core_136_res_data <= (((pipe_rspu_pipeline_134_ex_d1 & 4294967295) * (pipe_rspu_pipeline_134_ex_p1 & 15)) >> 4);
     end
   end
@@ -4308,7 +2763,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_136_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_136_res_prov <= pipe_rspu_pipeline_134_ex_p1;
     end
   end
@@ -4318,7 +2772,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_136_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_136_res_tag <= pipe_rspu_pipeline_134_ex_t1;
     end
   end
@@ -4373,7 +2826,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_148_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_148_is_trap <= 1'b0;
     end
   end
@@ -4383,17 +2835,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_148_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_148_res_data <= pipe_rspu_pipeline_146_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_148_is_add_g_out) alu_alu_core_148_res_data <= ((pipe_rspu_pipeline_146_ex_d1 & 4294967295) + (pipe_rspu_pipeline_146_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_148_is_sub_g_out) alu_alu_core_148_res_data <= ((pipe_rspu_pipeline_146_ex_d1 & 4294967295) - (pipe_rspu_pipeline_146_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_148_is_relu_pos_g_out) alu_alu_core_148_res_data <= pipe_rspu_pipeline_146_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_148_is_relu_neg_g_out) alu_alu_core_148_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_148_is_tag_gate_g_out) alu_alu_core_148_res_data <= (((pipe_rspu_pipeline_146_ex_d1 & 4294967295) * (pipe_rspu_pipeline_146_ex_p1 & 15)) >> 4);
     end
   end
@@ -4403,7 +2849,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_148_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_148_res_prov <= pipe_rspu_pipeline_146_ex_p1;
     end
   end
@@ -4413,7 +2858,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_148_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_148_res_tag <= pipe_rspu_pipeline_146_ex_t1;
     end
   end
@@ -4468,7 +2912,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_160_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_160_is_trap <= 1'b0;
     end
   end
@@ -4478,17 +2921,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_160_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_160_res_data <= pipe_rspu_pipeline_158_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_160_is_add_g_out) alu_alu_core_160_res_data <= ((pipe_rspu_pipeline_158_ex_d1 & 4294967295) + (pipe_rspu_pipeline_158_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_160_is_sub_g_out) alu_alu_core_160_res_data <= ((pipe_rspu_pipeline_158_ex_d1 & 4294967295) - (pipe_rspu_pipeline_158_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_160_is_relu_pos_g_out) alu_alu_core_160_res_data <= pipe_rspu_pipeline_158_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_160_is_relu_neg_g_out) alu_alu_core_160_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_160_is_tag_gate_g_out) alu_alu_core_160_res_data <= (((pipe_rspu_pipeline_158_ex_d1 & 4294967295) * (pipe_rspu_pipeline_158_ex_p1 & 15)) >> 4);
     end
   end
@@ -4498,7 +2935,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_160_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_160_res_prov <= pipe_rspu_pipeline_158_ex_p1;
     end
   end
@@ -4508,7 +2944,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_160_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_160_res_tag <= pipe_rspu_pipeline_158_ex_t1;
     end
   end
@@ -4563,7 +2998,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_16_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_16_is_trap <= 1'b0;
     end
   end
@@ -4573,17 +3007,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_16_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_16_res_data <= pipe_rspu_pipeline_14_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_16_is_add_g_out) alu_alu_core_16_res_data <= ((pipe_rspu_pipeline_14_ex_d1 & 4294967295) + (pipe_rspu_pipeline_14_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_16_is_sub_g_out) alu_alu_core_16_res_data <= ((pipe_rspu_pipeline_14_ex_d1 & 4294967295) - (pipe_rspu_pipeline_14_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_16_is_relu_pos_g_out) alu_alu_core_16_res_data <= pipe_rspu_pipeline_14_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_16_is_relu_neg_g_out) alu_alu_core_16_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_16_is_tag_gate_g_out) alu_alu_core_16_res_data <= (((pipe_rspu_pipeline_14_ex_d1 & 4294967295) * (pipe_rspu_pipeline_14_ex_p1 & 15)) >> 4);
     end
   end
@@ -4593,7 +3021,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_16_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_16_res_prov <= pipe_rspu_pipeline_14_ex_p1;
     end
   end
@@ -4603,7 +3030,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_16_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_16_res_tag <= pipe_rspu_pipeline_14_ex_t1;
     end
   end
@@ -4658,7 +3084,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_172_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_172_is_trap <= 1'b0;
     end
   end
@@ -4668,17 +3093,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_172_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_172_res_data <= pipe_rspu_pipeline_170_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_172_is_add_g_out) alu_alu_core_172_res_data <= ((pipe_rspu_pipeline_170_ex_d1 & 4294967295) + (pipe_rspu_pipeline_170_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_172_is_sub_g_out) alu_alu_core_172_res_data <= ((pipe_rspu_pipeline_170_ex_d1 & 4294967295) - (pipe_rspu_pipeline_170_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_172_is_relu_pos_g_out) alu_alu_core_172_res_data <= pipe_rspu_pipeline_170_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_172_is_relu_neg_g_out) alu_alu_core_172_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_172_is_tag_gate_g_out) alu_alu_core_172_res_data <= (((pipe_rspu_pipeline_170_ex_d1 & 4294967295) * (pipe_rspu_pipeline_170_ex_p1 & 15)) >> 4);
     end
   end
@@ -4688,7 +3107,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_172_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_172_res_prov <= pipe_rspu_pipeline_170_ex_p1;
     end
   end
@@ -4698,7 +3116,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_172_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_172_res_tag <= pipe_rspu_pipeline_170_ex_t1;
     end
   end
@@ -4753,7 +3170,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_184_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_184_is_trap <= 1'b0;
     end
   end
@@ -4763,17 +3179,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_184_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_184_res_data <= pipe_rspu_pipeline_182_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_184_is_add_g_out) alu_alu_core_184_res_data <= ((pipe_rspu_pipeline_182_ex_d1 & 4294967295) + (pipe_rspu_pipeline_182_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_184_is_sub_g_out) alu_alu_core_184_res_data <= ((pipe_rspu_pipeline_182_ex_d1 & 4294967295) - (pipe_rspu_pipeline_182_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_184_is_relu_pos_g_out) alu_alu_core_184_res_data <= pipe_rspu_pipeline_182_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_184_is_relu_neg_g_out) alu_alu_core_184_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_184_is_tag_gate_g_out) alu_alu_core_184_res_data <= (((pipe_rspu_pipeline_182_ex_d1 & 4294967295) * (pipe_rspu_pipeline_182_ex_p1 & 15)) >> 4);
     end
   end
@@ -4783,7 +3193,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_184_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_184_res_prov <= pipe_rspu_pipeline_182_ex_p1;
     end
   end
@@ -4793,7 +3202,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_184_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_184_res_tag <= pipe_rspu_pipeline_182_ex_t1;
     end
   end
@@ -4848,7 +3256,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_28_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_28_is_trap <= 1'b0;
     end
   end
@@ -4858,17 +3265,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_28_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_28_res_data <= pipe_rspu_pipeline_26_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_28_is_add_g_out) alu_alu_core_28_res_data <= ((pipe_rspu_pipeline_26_ex_d1 & 4294967295) + (pipe_rspu_pipeline_26_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_28_is_sub_g_out) alu_alu_core_28_res_data <= ((pipe_rspu_pipeline_26_ex_d1 & 4294967295) - (pipe_rspu_pipeline_26_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_28_is_relu_pos_g_out) alu_alu_core_28_res_data <= pipe_rspu_pipeline_26_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_28_is_relu_neg_g_out) alu_alu_core_28_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_28_is_tag_gate_g_out) alu_alu_core_28_res_data <= (((pipe_rspu_pipeline_26_ex_d1 & 4294967295) * (pipe_rspu_pipeline_26_ex_p1 & 15)) >> 4);
     end
   end
@@ -4878,7 +3279,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_28_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_28_res_prov <= pipe_rspu_pipeline_26_ex_p1;
     end
   end
@@ -4888,7 +3288,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_28_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_28_res_tag <= pipe_rspu_pipeline_26_ex_t1;
     end
   end
@@ -4943,7 +3342,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_40_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_40_is_trap <= 1'b0;
     end
   end
@@ -4953,17 +3351,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_40_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_40_res_data <= pipe_rspu_pipeline_38_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_40_is_add_g_out) alu_alu_core_40_res_data <= ((pipe_rspu_pipeline_38_ex_d1 & 4294967295) + (pipe_rspu_pipeline_38_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_40_is_sub_g_out) alu_alu_core_40_res_data <= ((pipe_rspu_pipeline_38_ex_d1 & 4294967295) - (pipe_rspu_pipeline_38_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_40_is_relu_pos_g_out) alu_alu_core_40_res_data <= pipe_rspu_pipeline_38_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_40_is_relu_neg_g_out) alu_alu_core_40_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_40_is_tag_gate_g_out) alu_alu_core_40_res_data <= (((pipe_rspu_pipeline_38_ex_d1 & 4294967295) * (pipe_rspu_pipeline_38_ex_p1 & 15)) >> 4);
     end
   end
@@ -4973,7 +3365,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_40_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_40_res_prov <= pipe_rspu_pipeline_38_ex_p1;
     end
   end
@@ -4983,7 +3374,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_40_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_40_res_tag <= pipe_rspu_pipeline_38_ex_t1;
     end
   end
@@ -5038,7 +3428,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_4_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_4_is_trap <= 1'b0;
     end
   end
@@ -5048,17 +3437,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_4_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_4_res_data <= pipe_rspu_pipeline_2_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_4_is_add_g_out) alu_alu_core_4_res_data <= ((pipe_rspu_pipeline_2_ex_d1 & 4294967295) + (pipe_rspu_pipeline_2_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_4_is_sub_g_out) alu_alu_core_4_res_data <= ((pipe_rspu_pipeline_2_ex_d1 & 4294967295) - (pipe_rspu_pipeline_2_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_4_is_relu_pos_g_out) alu_alu_core_4_res_data <= pipe_rspu_pipeline_2_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_4_is_relu_neg_g_out) alu_alu_core_4_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_4_is_tag_gate_g_out) alu_alu_core_4_res_data <= (((pipe_rspu_pipeline_2_ex_d1 & 4294967295) * (pipe_rspu_pipeline_2_ex_p1 & 15)) >> 4);
     end
   end
@@ -5068,7 +3451,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_4_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_4_res_prov <= pipe_rspu_pipeline_2_ex_p1;
     end
   end
@@ -5078,7 +3460,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_4_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_4_res_tag <= pipe_rspu_pipeline_2_ex_t1;
     end
   end
@@ -5133,7 +3514,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_52_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_52_is_trap <= 1'b0;
     end
   end
@@ -5143,17 +3523,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_52_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_52_res_data <= pipe_rspu_pipeline_50_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_52_is_add_g_out) alu_alu_core_52_res_data <= ((pipe_rspu_pipeline_50_ex_d1 & 4294967295) + (pipe_rspu_pipeline_50_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_52_is_sub_g_out) alu_alu_core_52_res_data <= ((pipe_rspu_pipeline_50_ex_d1 & 4294967295) - (pipe_rspu_pipeline_50_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_52_is_relu_pos_g_out) alu_alu_core_52_res_data <= pipe_rspu_pipeline_50_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_52_is_relu_neg_g_out) alu_alu_core_52_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_52_is_tag_gate_g_out) alu_alu_core_52_res_data <= (((pipe_rspu_pipeline_50_ex_d1 & 4294967295) * (pipe_rspu_pipeline_50_ex_p1 & 15)) >> 4);
     end
   end
@@ -5163,7 +3537,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_52_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_52_res_prov <= pipe_rspu_pipeline_50_ex_p1;
     end
   end
@@ -5173,7 +3546,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_52_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_52_res_tag <= pipe_rspu_pipeline_50_ex_t1;
     end
   end
@@ -5228,7 +3600,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_64_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_64_is_trap <= 1'b0;
     end
   end
@@ -5238,17 +3609,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_64_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_64_res_data <= pipe_rspu_pipeline_62_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_64_is_add_g_out) alu_alu_core_64_res_data <= ((pipe_rspu_pipeline_62_ex_d1 & 4294967295) + (pipe_rspu_pipeline_62_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_64_is_sub_g_out) alu_alu_core_64_res_data <= ((pipe_rspu_pipeline_62_ex_d1 & 4294967295) - (pipe_rspu_pipeline_62_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_64_is_relu_pos_g_out) alu_alu_core_64_res_data <= pipe_rspu_pipeline_62_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_64_is_relu_neg_g_out) alu_alu_core_64_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_64_is_tag_gate_g_out) alu_alu_core_64_res_data <= (((pipe_rspu_pipeline_62_ex_d1 & 4294967295) * (pipe_rspu_pipeline_62_ex_p1 & 15)) >> 4);
     end
   end
@@ -5258,7 +3623,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_64_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_64_res_prov <= pipe_rspu_pipeline_62_ex_p1;
     end
   end
@@ -5268,7 +3632,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_64_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_64_res_tag <= pipe_rspu_pipeline_62_ex_t1;
     end
   end
@@ -5323,7 +3686,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_76_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_76_is_trap <= 1'b0;
     end
   end
@@ -5333,17 +3695,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_76_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_76_res_data <= pipe_rspu_pipeline_74_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_76_is_add_g_out) alu_alu_core_76_res_data <= ((pipe_rspu_pipeline_74_ex_d1 & 4294967295) + (pipe_rspu_pipeline_74_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_76_is_sub_g_out) alu_alu_core_76_res_data <= ((pipe_rspu_pipeline_74_ex_d1 & 4294967295) - (pipe_rspu_pipeline_74_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_76_is_relu_pos_g_out) alu_alu_core_76_res_data <= pipe_rspu_pipeline_74_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_76_is_relu_neg_g_out) alu_alu_core_76_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_76_is_tag_gate_g_out) alu_alu_core_76_res_data <= (((pipe_rspu_pipeline_74_ex_d1 & 4294967295) * (pipe_rspu_pipeline_74_ex_p1 & 15)) >> 4);
     end
   end
@@ -5353,7 +3709,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_76_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_76_res_prov <= pipe_rspu_pipeline_74_ex_p1;
     end
   end
@@ -5363,7 +3718,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_76_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_76_res_tag <= pipe_rspu_pipeline_74_ex_t1;
     end
   end
@@ -5418,7 +3772,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_88_is_trap <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_88_is_trap <= 1'b0;
     end
   end
@@ -5428,17 +3781,11 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_88_res_data <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_88_res_data <= pipe_rspu_pipeline_86_ex_d2;
-  // source: <unknown>:58
       if (alu_alu_core_88_is_add_g_out) alu_alu_core_88_res_data <= ((pipe_rspu_pipeline_86_ex_d1 & 4294967295) + (pipe_rspu_pipeline_86_ex_d2 & 4294967295));
-  // source: <unknown>:64
       if (alu_alu_core_88_is_sub_g_out) alu_alu_core_88_res_data <= ((pipe_rspu_pipeline_86_ex_d1 & 4294967295) - (pipe_rspu_pipeline_86_ex_d2 & 4294967295));
-  // source: <unknown>:70
       if (alu_alu_core_88_is_relu_pos_g_out) alu_alu_core_88_res_data <= pipe_rspu_pipeline_86_ex_d1;
-  // source: <unknown>:76
       if (alu_alu_core_88_is_relu_neg_g_out) alu_alu_core_88_res_data <= 0;
-  // source: <unknown>:82
       if (alu_alu_core_88_is_tag_gate_g_out) alu_alu_core_88_res_data <= (((pipe_rspu_pipeline_86_ex_d1 & 4294967295) * (pipe_rspu_pipeline_86_ex_p1 & 15)) >> 4);
     end
   end
@@ -5448,7 +3795,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_88_res_prov <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_88_res_prov <= pipe_rspu_pipeline_86_ex_p1;
     end
   end
@@ -5458,7 +3804,6 @@ module rspu_top (
     if (!rst_n) begin
       alu_alu_core_88_res_tag <= '0;
     end else begin
-  // source: <unknown>:26
       if (always_out) alu_alu_core_88_res_tag <= pipe_rspu_pipeline_86_ex_t1;
     end
   end
@@ -5468,10 +3813,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_109_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_109_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_109_trap_active_out) core_core_top_109_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_109_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_109_current_instr <= '0;
+    end else begin
+      if (core_core_top_109_noc_rx_arrived_out) core_core_top_109_current_instr <= rx_data_6;
     end
   end
 
@@ -5480,7 +3832,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_109_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_110_fetch_fault_out) core_core_top_109_trap_signal <= pipe_rspu_pipeline_110_pcc_fault;
     end
   end
@@ -5490,10 +3841,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_121_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_121_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_121_trap_active_out) core_core_top_121_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_121_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_121_current_instr <= '0;
+    end else begin
+      if (core_core_top_121_noc_rx_arrived_out) core_core_top_121_current_instr <= rx_data_5;
     end
   end
 
@@ -5502,7 +3860,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_121_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_122_fetch_fault_out) core_core_top_121_trap_signal <= pipe_rspu_pipeline_122_pcc_fault;
     end
   end
@@ -5512,10 +3869,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_133_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_133_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_133_trap_active_out) core_core_top_133_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_133_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_133_current_instr <= '0;
+    end else begin
+      if (core_core_top_133_noc_rx_arrived_out) core_core_top_133_current_instr <= rx_data_4;
     end
   end
 
@@ -5524,7 +3888,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_133_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_134_fetch_fault_out) core_core_top_133_trap_signal <= pipe_rspu_pipeline_134_pcc_fault;
     end
   end
@@ -5534,10 +3897,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_13_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_13_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_13_trap_active_out) core_core_top_13_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_13_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_13_current_instr <= '0;
+    end else begin
+      if (core_core_top_13_noc_rx_arrived_out) core_core_top_13_current_instr <= rx_data_14;
     end
   end
 
@@ -5546,7 +3916,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_13_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_14_fetch_fault_out) core_core_top_13_trap_signal <= pipe_rspu_pipeline_14_pcc_fault;
     end
   end
@@ -5556,10 +3925,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_145_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_145_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_145_trap_active_out) core_core_top_145_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_145_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_145_current_instr <= '0;
+    end else begin
+      if (core_core_top_145_noc_rx_arrived_out) core_core_top_145_current_instr <= rx_data_3;
     end
   end
 
@@ -5568,7 +3944,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_145_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_146_fetch_fault_out) core_core_top_145_trap_signal <= pipe_rspu_pipeline_146_pcc_fault;
     end
   end
@@ -5578,10 +3953,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_157_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_157_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_157_trap_active_out) core_core_top_157_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_157_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_157_current_instr <= '0;
+    end else begin
+      if (core_core_top_157_noc_rx_arrived_out) core_core_top_157_current_instr <= rx_data_2;
     end
   end
 
@@ -5590,7 +3972,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_157_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_158_fetch_fault_out) core_core_top_157_trap_signal <= pipe_rspu_pipeline_158_pcc_fault;
     end
   end
@@ -5600,10 +3981,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_169_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_169_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_169_trap_active_out) core_core_top_169_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_169_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_169_current_instr <= '0;
+    end else begin
+      if (core_core_top_169_noc_rx_arrived_out) core_core_top_169_current_instr <= rx_data_1;
     end
   end
 
@@ -5612,7 +4000,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_169_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_170_fetch_fault_out) core_core_top_169_trap_signal <= pipe_rspu_pipeline_170_pcc_fault;
     end
   end
@@ -5622,10 +4009,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_181_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_181_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_181_trap_active_out) core_core_top_181_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_181_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_181_current_instr <= '0;
+    end else begin
+      if (core_core_top_181_noc_rx_arrived_out) core_core_top_181_current_instr <= rx_data_0;
     end
   end
 
@@ -5634,7 +4028,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_181_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_182_fetch_fault_out) core_core_top_181_trap_signal <= pipe_rspu_pipeline_182_pcc_fault;
     end
   end
@@ -5644,10 +4037,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_1_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_1_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_1_trap_active_out) core_core_top_1_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_1_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_1_current_instr <= '0;
+    end else begin
+      if (core_core_top_1_noc_rx_arrived_out) core_core_top_1_current_instr <= rx_data_15;
     end
   end
 
@@ -5656,7 +4056,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_1_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_2_fetch_fault_out) core_core_top_1_trap_signal <= pipe_rspu_pipeline_2_pcc_fault;
     end
   end
@@ -5666,10 +4065,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_25_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_25_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_25_trap_active_out) core_core_top_25_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_25_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_25_current_instr <= '0;
+    end else begin
+      if (core_core_top_25_noc_rx_arrived_out) core_core_top_25_current_instr <= rx_data_13;
     end
   end
 
@@ -5678,7 +4084,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_25_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_26_fetch_fault_out) core_core_top_25_trap_signal <= pipe_rspu_pipeline_26_pcc_fault;
     end
   end
@@ -5688,10 +4093,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_37_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_37_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_37_trap_active_out) core_core_top_37_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_37_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_37_current_instr <= '0;
+    end else begin
+      if (core_core_top_37_noc_rx_arrived_out) core_core_top_37_current_instr <= rx_data_12;
     end
   end
 
@@ -5700,7 +4112,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_37_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_38_fetch_fault_out) core_core_top_37_trap_signal <= pipe_rspu_pipeline_38_pcc_fault;
     end
   end
@@ -5710,10 +4121,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_49_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_49_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_49_trap_active_out) core_core_top_49_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_49_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_49_current_instr <= '0;
+    end else begin
+      if (core_core_top_49_noc_rx_arrived_out) core_core_top_49_current_instr <= rx_data_11;
     end
   end
 
@@ -5722,7 +4140,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_49_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_50_fetch_fault_out) core_core_top_49_trap_signal <= pipe_rspu_pipeline_50_pcc_fault;
     end
   end
@@ -5732,10 +4149,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_61_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_61_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_61_trap_active_out) core_core_top_61_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_61_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_61_current_instr <= '0;
+    end else begin
+      if (core_core_top_61_noc_rx_arrived_out) core_core_top_61_current_instr <= rx_data_10;
     end
   end
 
@@ -5744,7 +4168,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_61_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_62_fetch_fault_out) core_core_top_61_trap_signal <= pipe_rspu_pipeline_62_pcc_fault;
     end
   end
@@ -5754,10 +4177,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_73_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_73_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_73_trap_active_out) core_core_top_73_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_73_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_73_current_instr <= '0;
+    end else begin
+      if (core_core_top_73_noc_rx_arrived_out) core_core_top_73_current_instr <= rx_data_9;
     end
   end
 
@@ -5766,7 +4196,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_73_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_74_fetch_fault_out) core_core_top_73_trap_signal <= pipe_rspu_pipeline_74_pcc_fault;
     end
   end
@@ -5776,10 +4205,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_85_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_85_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_85_trap_active_out) core_core_top_85_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_85_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_85_current_instr <= '0;
+    end else begin
+      if (core_core_top_85_noc_rx_arrived_out) core_core_top_85_current_instr <= rx_data_8;
     end
   end
 
@@ -5788,7 +4224,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_85_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_86_fetch_fault_out) core_core_top_85_trap_signal <= pipe_rspu_pipeline_86_pcc_fault;
     end
   end
@@ -5798,10 +4233,17 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_97_core_halted <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) core_core_top_97_core_halted <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_97_trap_active_out) core_core_top_97_core_halted <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: core_core_top_97_current_instr
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      core_core_top_97_current_instr <= '0;
+    end else begin
+      if (core_core_top_97_noc_rx_arrived_out) core_core_top_97_current_instr <= rx_data_7;
     end
   end
 
@@ -5810,7 +4252,6 @@ module rspu_top (
     if (!rst_n) begin
       core_core_top_97_trap_signal <= '0;
     end else begin
-  // source: <unknown>:60
       if (pipe_rspu_pipeline_98_fetch_fault_out) core_core_top_97_trap_signal <= pipe_rspu_pipeline_98_pcc_fault;
     end
   end
@@ -5820,7 +4261,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_0 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_0 <= pipe_rspu_pipeline_182_ex_packed;
     end
   end
@@ -5830,7 +4270,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_1 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_1 <= pipe_rspu_pipeline_170_ex_packed;
     end
   end
@@ -5840,7 +4279,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_10 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_10 <= pipe_rspu_pipeline_62_ex_packed;
     end
   end
@@ -5850,7 +4288,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_11 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_11 <= pipe_rspu_pipeline_50_ex_packed;
     end
   end
@@ -5860,7 +4297,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_12 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_12 <= pipe_rspu_pipeline_38_ex_packed;
     end
   end
@@ -5870,7 +4306,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_13 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_13 <= pipe_rspu_pipeline_26_ex_packed;
     end
   end
@@ -5880,7 +4315,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_14 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_14 <= pipe_rspu_pipeline_14_ex_packed;
     end
   end
@@ -5890,7 +4324,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_15 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_15 <= pipe_rspu_pipeline_2_ex_packed;
     end
   end
@@ -5900,7 +4333,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_2 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_2 <= pipe_rspu_pipeline_158_ex_packed;
     end
   end
@@ -5910,7 +4342,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_3 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_3 <= pipe_rspu_pipeline_146_ex_packed;
     end
   end
@@ -5920,7 +4351,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_4 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_4 <= pipe_rspu_pipeline_134_ex_packed;
     end
   end
@@ -5930,7 +4360,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_5 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_5 <= pipe_rspu_pipeline_122_ex_packed;
     end
   end
@@ -5940,7 +4369,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_6 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_6 <= pipe_rspu_pipeline_110_ex_packed;
     end
   end
@@ -5950,7 +4378,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_7 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_7 <= pipe_rspu_pipeline_98_ex_packed;
     end
   end
@@ -5960,7 +4387,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_8 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_8 <= pipe_rspu_pipeline_86_ex_packed;
     end
   end
@@ -5970,7 +4396,6 @@ module rspu_top (
     if (!rst_n) begin
       core_data_9 <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) core_data_9 <= pipe_rspu_pipeline_74_ex_packed;
     end
   end
@@ -5980,7 +4405,6 @@ module rspu_top (
     if (!rst_n) begin
       ctrl_controller_193_kd_torque <= '0;
     end else begin
-  // source: <unknown>:19
       if (always_out) ctrl_controller_193_kd_torque <= (((robot_angle - robot_angle_d1) >> 2) * (-200));
     end
   end
@@ -5990,7 +4414,6 @@ module rspu_top (
     if (!rst_n) begin
       ctrl_controller_193_kp_torque <= '0;
     end else begin
-  // source: <unknown>:19
       if (always_out) ctrl_controller_193_kp_torque <= ((-((robot_angle >> 8) * (-(-1500)))) >> 2);
     end
   end
@@ -6000,7 +4423,6 @@ module rspu_top (
     if (!rst_n) begin
       ctrl_controller_193_t_next <= '0;
     end else begin
-  // source: <unknown>:19
       if (always_out) ctrl_controller_193_t_next <= ((ctrl_controller_193_kp_torque + ctrl_controller_193_kd_torque) & (-1));
     end
   end
@@ -6010,8 +4432,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_dest_id <= '0;
     end else begin
-  // source: <unknown>:268
-      if (always_out) fabric_noc_router_0_dest_id <= ((fabric_noc_router_0_sd15 >> 48) & 4095);
+      if (always_out) fabric_noc_router_0_dest_id <= ((fabric_noc_router_0_sd16 >> 48) & 4095);
     end
   end
 
@@ -6020,8 +4441,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_payload <= '0;
     end else begin
-  // source: <unknown>:268
-      if (always_out) fabric_noc_router_0_payload <= (fabric_noc_router_0_sd15 & 281474976710655);
+      if (always_out) fabric_noc_router_0_payload <= (fabric_noc_router_0_sd16 & 281474976710655);
     end
   end
 
@@ -6030,7 +4450,6 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd0 <= '0;
     end else begin
-  // source: <unknown>:78
       if (always_out) fabric_noc_router_0_sd0 <= tx_data_0;
     end
   end
@@ -6040,9 +4459,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd1 <= '0;
     end else begin
-  // source: <unknown>:87
       if (tx_valid_1_out) fabric_noc_router_0_sd1 <= tx_data_1;
-  // source: <unknown>:87
       if (fabric_noc_router_0_n1_out) fabric_noc_router_0_sd1 <= fabric_noc_router_0_sd0;
     end
   end
@@ -6052,9 +4469,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd10 <= '0;
     end else begin
-  // source: <unknown>:195
       if (tx_valid_10_out) fabric_noc_router_0_sd10 <= tx_data_10;
-  // source: <unknown>:195
       if (fabric_noc_router_0_n10_out) fabric_noc_router_0_sd10 <= fabric_noc_router_0_sd9;
     end
   end
@@ -6064,9 +4479,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd11 <= '0;
     end else begin
-  // source: <unknown>:207
       if (tx_valid_11_out) fabric_noc_router_0_sd11 <= tx_data_11;
-  // source: <unknown>:207
       if (fabric_noc_router_0_n11_out) fabric_noc_router_0_sd11 <= fabric_noc_router_0_sd10;
     end
   end
@@ -6076,9 +4489,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd12 <= '0;
     end else begin
-  // source: <unknown>:219
       if (tx_valid_12_out) fabric_noc_router_0_sd12 <= tx_data_12;
-  // source: <unknown>:219
       if (fabric_noc_router_0_n12_out) fabric_noc_router_0_sd12 <= fabric_noc_router_0_sd11;
     end
   end
@@ -6088,9 +4499,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd13 <= '0;
     end else begin
-  // source: <unknown>:231
       if (tx_valid_13_out) fabric_noc_router_0_sd13 <= tx_data_13;
-  // source: <unknown>:231
       if (fabric_noc_router_0_n13_out) fabric_noc_router_0_sd13 <= fabric_noc_router_0_sd12;
     end
   end
@@ -6100,9 +4509,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd14 <= '0;
     end else begin
-  // source: <unknown>:243
       if (tx_valid_14_out) fabric_noc_router_0_sd14 <= tx_data_14;
-  // source: <unknown>:243
       if (fabric_noc_router_0_n14_out) fabric_noc_router_0_sd14 <= fabric_noc_router_0_sd13;
     end
   end
@@ -6112,10 +4519,18 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd15 <= '0;
     end else begin
-  // source: <unknown>:255
       if (tx_valid_15_out) fabric_noc_router_0_sd15 <= tx_data_15;
-  // source: <unknown>:255
       if (fabric_noc_router_0_n15_out) fabric_noc_router_0_sd15 <= fabric_noc_router_0_sd14;
+    end
+  end
+
+  // Unified Reflex Block for: fabric_noc_router_0_sd16
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      fabric_noc_router_0_sd16 <= '0;
+    end else begin
+      if (stream_rx_valid_out) fabric_noc_router_0_sd16 <= stream_rx_data;
+      if (fabric_noc_router_0_n16_out) fabric_noc_router_0_sd16 <= fabric_noc_router_0_sd15;
     end
   end
 
@@ -6124,9 +4539,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd2 <= '0;
     end else begin
-  // source: <unknown>:99
       if (tx_valid_2_out) fabric_noc_router_0_sd2 <= tx_data_2;
-  // source: <unknown>:99
       if (fabric_noc_router_0_n2_out) fabric_noc_router_0_sd2 <= fabric_noc_router_0_sd1;
     end
   end
@@ -6136,9 +4549,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd3 <= '0;
     end else begin
-  // source: <unknown>:111
       if (tx_valid_3_out) fabric_noc_router_0_sd3 <= tx_data_3;
-  // source: <unknown>:111
       if (fabric_noc_router_0_n3_out) fabric_noc_router_0_sd3 <= fabric_noc_router_0_sd2;
     end
   end
@@ -6148,9 +4559,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd4 <= '0;
     end else begin
-  // source: <unknown>:123
       if (tx_valid_4_out) fabric_noc_router_0_sd4 <= tx_data_4;
-  // source: <unknown>:123
       if (fabric_noc_router_0_n4_out) fabric_noc_router_0_sd4 <= fabric_noc_router_0_sd3;
     end
   end
@@ -6160,9 +4569,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd5 <= '0;
     end else begin
-  // source: <unknown>:135
       if (tx_valid_5_out) fabric_noc_router_0_sd5 <= tx_data_5;
-  // source: <unknown>:135
       if (fabric_noc_router_0_n5_out) fabric_noc_router_0_sd5 <= fabric_noc_router_0_sd4;
     end
   end
@@ -6172,9 +4579,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd6 <= '0;
     end else begin
-  // source: <unknown>:147
       if (tx_valid_6_out) fabric_noc_router_0_sd6 <= tx_data_6;
-  // source: <unknown>:147
       if (fabric_noc_router_0_n6_out) fabric_noc_router_0_sd6 <= fabric_noc_router_0_sd5;
     end
   end
@@ -6184,9 +4589,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd7 <= '0;
     end else begin
-  // source: <unknown>:159
       if (tx_valid_7_out) fabric_noc_router_0_sd7 <= tx_data_7;
-  // source: <unknown>:159
       if (fabric_noc_router_0_n7_out) fabric_noc_router_0_sd7 <= fabric_noc_router_0_sd6;
     end
   end
@@ -6196,9 +4599,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd8 <= '0;
     end else begin
-  // source: <unknown>:171
       if (tx_valid_8_out) fabric_noc_router_0_sd8 <= tx_data_8;
-  // source: <unknown>:171
       if (fabric_noc_router_0_n8_out) fabric_noc_router_0_sd8 <= fabric_noc_router_0_sd7;
     end
   end
@@ -6208,9 +4609,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sd9 <= '0;
     end else begin
-  // source: <unknown>:183
       if (tx_valid_9_out) fabric_noc_router_0_sd9 <= tx_data_9;
-  // source: <unknown>:183
       if (fabric_noc_router_0_n9_out) fabric_noc_router_0_sd9 <= fabric_noc_router_0_sd8;
     end
   end
@@ -6220,7 +4619,6 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv0 <= '0;
     end else begin
-  // source: <unknown>:78
       if (always_out) fabric_noc_router_0_sv0 <= tx_valid_0;
     end
   end
@@ -6230,9 +4628,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv1 <= '0;
     end else begin
-  // source: <unknown>:87
       if (tx_valid_1_out) fabric_noc_router_0_sv1 <= 1'b1;
-  // source: <unknown>:87
       if (fabric_noc_router_0_n1_out) fabric_noc_router_0_sv1 <= fabric_noc_router_0_sv0;
     end
   end
@@ -6242,9 +4638,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv10 <= '0;
     end else begin
-  // source: <unknown>:195
       if (tx_valid_10_out) fabric_noc_router_0_sv10 <= 1'b1;
-  // source: <unknown>:195
       if (fabric_noc_router_0_n10_out) fabric_noc_router_0_sv10 <= fabric_noc_router_0_sv9;
     end
   end
@@ -6254,9 +4648,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv11 <= '0;
     end else begin
-  // source: <unknown>:207
       if (tx_valid_11_out) fabric_noc_router_0_sv11 <= 1'b1;
-  // source: <unknown>:207
       if (fabric_noc_router_0_n11_out) fabric_noc_router_0_sv11 <= fabric_noc_router_0_sv10;
     end
   end
@@ -6266,9 +4658,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv12 <= '0;
     end else begin
-  // source: <unknown>:219
       if (tx_valid_12_out) fabric_noc_router_0_sv12 <= 1'b1;
-  // source: <unknown>:219
       if (fabric_noc_router_0_n12_out) fabric_noc_router_0_sv12 <= fabric_noc_router_0_sv11;
     end
   end
@@ -6278,9 +4668,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv13 <= '0;
     end else begin
-  // source: <unknown>:231
       if (tx_valid_13_out) fabric_noc_router_0_sv13 <= 1'b1;
-  // source: <unknown>:231
       if (fabric_noc_router_0_n13_out) fabric_noc_router_0_sv13 <= fabric_noc_router_0_sv12;
     end
   end
@@ -6290,9 +4678,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv14 <= '0;
     end else begin
-  // source: <unknown>:243
       if (tx_valid_14_out) fabric_noc_router_0_sv14 <= 1'b1;
-  // source: <unknown>:243
       if (fabric_noc_router_0_n14_out) fabric_noc_router_0_sv14 <= fabric_noc_router_0_sv13;
     end
   end
@@ -6302,10 +4688,18 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv15 <= '0;
     end else begin
-  // source: <unknown>:255
       if (tx_valid_15_out) fabric_noc_router_0_sv15 <= 1'b1;
-  // source: <unknown>:255
       if (fabric_noc_router_0_n15_out) fabric_noc_router_0_sv15 <= fabric_noc_router_0_sv14;
+    end
+  end
+
+  // Unified Reflex Block for: fabric_noc_router_0_sv16
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      fabric_noc_router_0_sv16 <= '0;
+    end else begin
+      if (stream_rx_valid_out) fabric_noc_router_0_sv16 <= 1'b1;
+      if (fabric_noc_router_0_n16_out) fabric_noc_router_0_sv16 <= fabric_noc_router_0_sv15;
     end
   end
 
@@ -6314,9 +4708,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv2 <= '0;
     end else begin
-  // source: <unknown>:99
       if (tx_valid_2_out) fabric_noc_router_0_sv2 <= 1'b1;
-  // source: <unknown>:99
       if (fabric_noc_router_0_n2_out) fabric_noc_router_0_sv2 <= fabric_noc_router_0_sv1;
     end
   end
@@ -6326,9 +4718,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv3 <= '0;
     end else begin
-  // source: <unknown>:111
       if (tx_valid_3_out) fabric_noc_router_0_sv3 <= 1'b1;
-  // source: <unknown>:111
       if (fabric_noc_router_0_n3_out) fabric_noc_router_0_sv3 <= fabric_noc_router_0_sv2;
     end
   end
@@ -6338,9 +4728,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv4 <= '0;
     end else begin
-  // source: <unknown>:123
       if (tx_valid_4_out) fabric_noc_router_0_sv4 <= 1'b1;
-  // source: <unknown>:123
       if (fabric_noc_router_0_n4_out) fabric_noc_router_0_sv4 <= fabric_noc_router_0_sv3;
     end
   end
@@ -6350,9 +4738,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv5 <= '0;
     end else begin
-  // source: <unknown>:135
       if (tx_valid_5_out) fabric_noc_router_0_sv5 <= 1'b1;
-  // source: <unknown>:135
       if (fabric_noc_router_0_n5_out) fabric_noc_router_0_sv5 <= fabric_noc_router_0_sv4;
     end
   end
@@ -6362,9 +4748,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv6 <= '0;
     end else begin
-  // source: <unknown>:147
       if (tx_valid_6_out) fabric_noc_router_0_sv6 <= 1'b1;
-  // source: <unknown>:147
       if (fabric_noc_router_0_n6_out) fabric_noc_router_0_sv6 <= fabric_noc_router_0_sv5;
     end
   end
@@ -6374,9 +4758,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv7 <= '0;
     end else begin
-  // source: <unknown>:159
       if (tx_valid_7_out) fabric_noc_router_0_sv7 <= 1'b1;
-  // source: <unknown>:159
       if (fabric_noc_router_0_n7_out) fabric_noc_router_0_sv7 <= fabric_noc_router_0_sv6;
     end
   end
@@ -6386,9 +4768,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv8 <= '0;
     end else begin
-  // source: <unknown>:171
       if (tx_valid_8_out) fabric_noc_router_0_sv8 <= 1'b1;
-  // source: <unknown>:171
       if (fabric_noc_router_0_n8_out) fabric_noc_router_0_sv8 <= fabric_noc_router_0_sv7;
     end
   end
@@ -6398,9 +4778,7 @@ module rspu_top (
     if (!rst_n) begin
       fabric_noc_router_0_sv9 <= '0;
     end else begin
-  // source: <unknown>:183
       if (tx_valid_9_out) fabric_noc_router_0_sv9 <= 1'b1;
-  // source: <unknown>:183
       if (fabric_noc_router_0_n9_out) fabric_noc_router_0_sv9 <= fabric_noc_router_0_sv8;
     end
   end
@@ -6410,168 +4788,7 @@ module rspu_top (
     if (!rst_n) begin
       global_trap <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) global_trap <= (((((((((((((((tx_valid_0 | tx_valid_1) | tx_valid_2) | tx_valid_3) | tx_valid_4) | tx_valid_5) | tx_valid_6) | tx_valid_7) | tx_valid_8) | tx_valid_9) | tx_valid_10) | tx_valid_11) | tx_valid_12) | tx_valid_13) | tx_valid_14) | tx_valid_15);
-    end
-  end
-
-  // Unified Reflex Block for: instr_0
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_0 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_0 <= 16777216;
-    end
-  end
-
-  // Unified Reflex Block for: instr_1
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_1 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_1 <= 16781312;
-    end
-  end
-
-  // Unified Reflex Block for: instr_10
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_10 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_10 <= 16818176;
-    end
-  end
-
-  // Unified Reflex Block for: instr_11
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_11 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_11 <= 16822272;
-    end
-  end
-
-  // Unified Reflex Block for: instr_12
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_12 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_12 <= 16826368;
-    end
-  end
-
-  // Unified Reflex Block for: instr_13
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_13 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_13 <= 16830464;
-    end
-  end
-
-  // Unified Reflex Block for: instr_14
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_14 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_14 <= 16834560;
-    end
-  end
-
-  // Unified Reflex Block for: instr_15
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_15 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_15 <= 16838656;
-    end
-  end
-
-  // Unified Reflex Block for: instr_2
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_2 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_2 <= 16785408;
-    end
-  end
-
-  // Unified Reflex Block for: instr_3
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_3 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_3 <= 16789504;
-    end
-  end
-
-  // Unified Reflex Block for: instr_4
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_4 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_4 <= 16793600;
-    end
-  end
-
-  // Unified Reflex Block for: instr_5
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_5 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_5 <= 16797696;
-    end
-  end
-
-  // Unified Reflex Block for: instr_6
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_6 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_6 <= 16801792;
-    end
-  end
-
-  // Unified Reflex Block for: instr_7
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_7 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_7 <= 16805888;
-    end
-  end
-
-  // Unified Reflex Block for: instr_8
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_8 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_8 <= 16809984;
-    end
-  end
-
-  // Unified Reflex Block for: instr_9
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      instr_9 <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (always_out) instr_9 <= 16814080;
     end
   end
 
@@ -6580,7 +4797,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_0 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_0 <= core_data_0;
     end
   end
@@ -6590,7 +4806,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_1 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_1 <= core_data_1;
     end
   end
@@ -6600,7 +4815,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_10 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_10 <= core_data_10;
     end
   end
@@ -6610,7 +4824,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_11 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_11 <= core_data_11;
     end
   end
@@ -6620,7 +4833,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_12 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_12 <= core_data_12;
     end
   end
@@ -6630,7 +4842,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_13 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_13 <= core_data_13;
     end
   end
@@ -6640,7 +4851,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_14 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_14 <= core_data_14;
     end
   end
@@ -6650,7 +4860,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_15 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_15 <= core_data_15;
     end
   end
@@ -6660,7 +4869,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_2 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_2 <= core_data_2;
     end
   end
@@ -6670,7 +4878,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_3 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_3 <= core_data_3;
     end
   end
@@ -6680,7 +4887,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_4 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_4 <= core_data_4;
     end
   end
@@ -6690,7 +4896,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_5 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_5 <= core_data_5;
     end
   end
@@ -6700,7 +4905,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_6 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_6 <= core_data_6;
     end
   end
@@ -6710,7 +4914,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_7 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_7 <= core_data_7;
     end
   end
@@ -6720,7 +4923,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_8 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_8 <= core_data_8;
     end
   end
@@ -6730,7 +4932,6 @@ module rspu_top (
     if (!rst_n) begin
       out_data_9 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_data_9 <= core_data_9;
     end
   end
@@ -6740,7 +4941,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_0 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_0 <= pc_0;
     end
   end
@@ -6750,7 +4950,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_1 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_1 <= pc_1;
     end
   end
@@ -6760,7 +4959,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_10 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_10 <= pc_10;
     end
   end
@@ -6770,7 +4968,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_11 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_11 <= pc_11;
     end
   end
@@ -6780,7 +4977,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_12 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_12 <= pc_12;
     end
   end
@@ -6790,7 +4986,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_13 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_13 <= pc_13;
     end
   end
@@ -6800,7 +4995,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_14 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_14 <= pc_14;
     end
   end
@@ -6810,7 +5004,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_15 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_15 <= pc_15;
     end
   end
@@ -6820,7 +5013,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_2 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_2 <= pc_2;
     end
   end
@@ -6830,7 +5022,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_3 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_3 <= pc_3;
     end
   end
@@ -6840,7 +5031,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_4 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_4 <= pc_4;
     end
   end
@@ -6850,7 +5040,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_5 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_5 <= pc_5;
     end
   end
@@ -6860,7 +5049,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_6 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_6 <= pc_6;
     end
   end
@@ -6870,7 +5058,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_7 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_7 <= pc_7;
     end
   end
@@ -6880,7 +5067,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_8 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_8 <= pc_8;
     end
   end
@@ -6890,7 +5076,6 @@ module rspu_top (
     if (!rst_n) begin
       out_pc_9 <= '0;
     end else begin
-  // source: <unknown>:53
       if (always_out) out_pc_9 <= pc_9;
     end
   end
@@ -6900,8 +5085,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_0 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_182_fetch_active_out) pc_0 <= pipe_rspu_pipeline_182_pc;
+      if (pipe_rspu_pipeline_182_fetch_active_out) pc_0 <= pipe_rspu_pipeline_182_pipe_pc;
     end
   end
 
@@ -6910,8 +5094,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_1 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_170_fetch_active_out) pc_1 <= pipe_rspu_pipeline_170_pc;
+      if (pipe_rspu_pipeline_170_fetch_active_out) pc_1 <= pipe_rspu_pipeline_170_pipe_pc;
     end
   end
 
@@ -6920,8 +5103,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_10 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_62_fetch_active_out) pc_10 <= pipe_rspu_pipeline_62_pc;
+      if (pipe_rspu_pipeline_62_fetch_active_out) pc_10 <= pipe_rspu_pipeline_62_pipe_pc;
     end
   end
 
@@ -6930,8 +5112,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_11 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_50_fetch_active_out) pc_11 <= pipe_rspu_pipeline_50_pc;
+      if (pipe_rspu_pipeline_50_fetch_active_out) pc_11 <= pipe_rspu_pipeline_50_pipe_pc;
     end
   end
 
@@ -6940,8 +5121,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_12 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_38_fetch_active_out) pc_12 <= pipe_rspu_pipeline_38_pc;
+      if (pipe_rspu_pipeline_38_fetch_active_out) pc_12 <= pipe_rspu_pipeline_38_pipe_pc;
     end
   end
 
@@ -6950,8 +5130,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_13 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_26_fetch_active_out) pc_13 <= pipe_rspu_pipeline_26_pc;
+      if (pipe_rspu_pipeline_26_fetch_active_out) pc_13 <= pipe_rspu_pipeline_26_pipe_pc;
     end
   end
 
@@ -6960,8 +5139,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_14 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_14_fetch_active_out) pc_14 <= pipe_rspu_pipeline_14_pc;
+      if (pipe_rspu_pipeline_14_fetch_active_out) pc_14 <= pipe_rspu_pipeline_14_pipe_pc;
     end
   end
 
@@ -6970,8 +5148,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_15 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_2_fetch_active_out) pc_15 <= pipe_rspu_pipeline_2_pc;
+      if (pipe_rspu_pipeline_2_fetch_active_out) pc_15 <= pipe_rspu_pipeline_2_pipe_pc;
     end
   end
 
@@ -6980,8 +5157,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_2 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_158_fetch_active_out) pc_2 <= pipe_rspu_pipeline_158_pc;
+      if (pipe_rspu_pipeline_158_fetch_active_out) pc_2 <= pipe_rspu_pipeline_158_pipe_pc;
     end
   end
 
@@ -6990,8 +5166,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_3 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_146_fetch_active_out) pc_3 <= pipe_rspu_pipeline_146_pc;
+      if (pipe_rspu_pipeline_146_fetch_active_out) pc_3 <= pipe_rspu_pipeline_146_pipe_pc;
     end
   end
 
@@ -7000,8 +5175,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_4 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_134_fetch_active_out) pc_4 <= pipe_rspu_pipeline_134_pc;
+      if (pipe_rspu_pipeline_134_fetch_active_out) pc_4 <= pipe_rspu_pipeline_134_pipe_pc;
     end
   end
 
@@ -7010,8 +5184,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_5 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_122_fetch_active_out) pc_5 <= pipe_rspu_pipeline_122_pc;
+      if (pipe_rspu_pipeline_122_fetch_active_out) pc_5 <= pipe_rspu_pipeline_122_pipe_pc;
     end
   end
 
@@ -7020,8 +5193,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_6 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_110_fetch_active_out) pc_6 <= pipe_rspu_pipeline_110_pc;
+      if (pipe_rspu_pipeline_110_fetch_active_out) pc_6 <= pipe_rspu_pipeline_110_pipe_pc;
     end
   end
 
@@ -7030,8 +5202,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_7 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_98_fetch_active_out) pc_7 <= pipe_rspu_pipeline_98_pc;
+      if (pipe_rspu_pipeline_98_fetch_active_out) pc_7 <= pipe_rspu_pipeline_98_pipe_pc;
     end
   end
 
@@ -7040,8 +5211,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_8 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_86_fetch_active_out) pc_8 <= pipe_rspu_pipeline_86_pc;
+      if (pipe_rspu_pipeline_86_fetch_active_out) pc_8 <= pipe_rspu_pipeline_86_pipe_pc;
     end
   end
 
@@ -7050,8 +5220,7 @@ module rspu_top (
     if (!rst_n) begin
       pc_9 <= '0;
     end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_74_fetch_active_out) pc_9 <= pipe_rspu_pipeline_74_pc;
+      if (pipe_rspu_pipeline_74_fetch_active_out) pc_9 <= pipe_rspu_pipeline_74_pipe_pc;
     end
   end
 
@@ -7060,7 +5229,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_108_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_108_MAX_GUARDS <= 32;
     end
   end
@@ -7070,7 +5238,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_108_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_108_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7080,7 +5247,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_108_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_108_MAX_REGISTERS <= 256;
     end
   end
@@ -7090,7 +5256,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_108_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_108_bounds_ok <= (((pipe_rspu_pipeline_98_cert_i <= pcc_pcc_verifier_108_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_98_cert_r <= pcc_pcc_verifier_108_MAX_REGISTERS)) & (pipe_rspu_pipeline_98_cert_g <= pcc_pcc_verifier_108_MAX_GUARDS));
     end
   end
@@ -7100,7 +5265,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_120_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_120_MAX_GUARDS <= 32;
     end
   end
@@ -7110,7 +5274,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_120_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_120_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7120,7 +5283,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_120_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_120_MAX_REGISTERS <= 256;
     end
   end
@@ -7130,7 +5292,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_120_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_120_bounds_ok <= (((pipe_rspu_pipeline_110_cert_i <= pcc_pcc_verifier_120_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_110_cert_r <= pcc_pcc_verifier_120_MAX_REGISTERS)) & (pipe_rspu_pipeline_110_cert_g <= pcc_pcc_verifier_120_MAX_GUARDS));
     end
   end
@@ -7140,7 +5301,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_12_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_12_MAX_GUARDS <= 32;
     end
   end
@@ -7150,7 +5310,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_12_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_12_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7160,7 +5319,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_12_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_12_MAX_REGISTERS <= 256;
     end
   end
@@ -7170,7 +5328,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_12_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_12_bounds_ok <= (((pipe_rspu_pipeline_2_cert_i <= pcc_pcc_verifier_12_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_2_cert_r <= pcc_pcc_verifier_12_MAX_REGISTERS)) & (pipe_rspu_pipeline_2_cert_g <= pcc_pcc_verifier_12_MAX_GUARDS));
     end
   end
@@ -7180,7 +5337,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_132_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_132_MAX_GUARDS <= 32;
     end
   end
@@ -7190,7 +5346,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_132_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_132_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7200,7 +5355,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_132_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_132_MAX_REGISTERS <= 256;
     end
   end
@@ -7210,7 +5364,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_132_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_132_bounds_ok <= (((pipe_rspu_pipeline_122_cert_i <= pcc_pcc_verifier_132_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_122_cert_r <= pcc_pcc_verifier_132_MAX_REGISTERS)) & (pipe_rspu_pipeline_122_cert_g <= pcc_pcc_verifier_132_MAX_GUARDS));
     end
   end
@@ -7220,7 +5373,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_144_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_144_MAX_GUARDS <= 32;
     end
   end
@@ -7230,7 +5382,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_144_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_144_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7240,7 +5391,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_144_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_144_MAX_REGISTERS <= 256;
     end
   end
@@ -7250,7 +5400,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_144_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_144_bounds_ok <= (((pipe_rspu_pipeline_134_cert_i <= pcc_pcc_verifier_144_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_134_cert_r <= pcc_pcc_verifier_144_MAX_REGISTERS)) & (pipe_rspu_pipeline_134_cert_g <= pcc_pcc_verifier_144_MAX_GUARDS));
     end
   end
@@ -7260,7 +5409,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_156_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_156_MAX_GUARDS <= 32;
     end
   end
@@ -7270,7 +5418,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_156_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_156_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7280,7 +5427,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_156_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_156_MAX_REGISTERS <= 256;
     end
   end
@@ -7290,7 +5436,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_156_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_156_bounds_ok <= (((pipe_rspu_pipeline_146_cert_i <= pcc_pcc_verifier_156_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_146_cert_r <= pcc_pcc_verifier_156_MAX_REGISTERS)) & (pipe_rspu_pipeline_146_cert_g <= pcc_pcc_verifier_156_MAX_GUARDS));
     end
   end
@@ -7300,7 +5445,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_168_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_168_MAX_GUARDS <= 32;
     end
   end
@@ -7310,7 +5454,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_168_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_168_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7320,7 +5463,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_168_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_168_MAX_REGISTERS <= 256;
     end
   end
@@ -7330,7 +5472,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_168_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_168_bounds_ok <= (((pipe_rspu_pipeline_158_cert_i <= pcc_pcc_verifier_168_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_158_cert_r <= pcc_pcc_verifier_168_MAX_REGISTERS)) & (pipe_rspu_pipeline_158_cert_g <= pcc_pcc_verifier_168_MAX_GUARDS));
     end
   end
@@ -7340,7 +5481,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_180_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_180_MAX_GUARDS <= 32;
     end
   end
@@ -7350,7 +5490,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_180_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_180_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7360,7 +5499,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_180_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_180_MAX_REGISTERS <= 256;
     end
   end
@@ -7370,7 +5508,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_180_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_180_bounds_ok <= (((pipe_rspu_pipeline_170_cert_i <= pcc_pcc_verifier_180_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_170_cert_r <= pcc_pcc_verifier_180_MAX_REGISTERS)) & (pipe_rspu_pipeline_170_cert_g <= pcc_pcc_verifier_180_MAX_GUARDS));
     end
   end
@@ -7380,7 +5517,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_192_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_192_MAX_GUARDS <= 32;
     end
   end
@@ -7390,7 +5526,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_192_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_192_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7400,7 +5535,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_192_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_192_MAX_REGISTERS <= 256;
     end
   end
@@ -7410,7 +5544,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_192_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_192_bounds_ok <= (((pipe_rspu_pipeline_182_cert_i <= pcc_pcc_verifier_192_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_182_cert_r <= pcc_pcc_verifier_192_MAX_REGISTERS)) & (pipe_rspu_pipeline_182_cert_g <= pcc_pcc_verifier_192_MAX_GUARDS));
     end
   end
@@ -7420,7 +5553,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_24_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_24_MAX_GUARDS <= 32;
     end
   end
@@ -7430,7 +5562,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_24_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_24_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7440,7 +5571,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_24_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_24_MAX_REGISTERS <= 256;
     end
   end
@@ -7450,7 +5580,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_24_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_24_bounds_ok <= (((pipe_rspu_pipeline_14_cert_i <= pcc_pcc_verifier_24_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_14_cert_r <= pcc_pcc_verifier_24_MAX_REGISTERS)) & (pipe_rspu_pipeline_14_cert_g <= pcc_pcc_verifier_24_MAX_GUARDS));
     end
   end
@@ -7460,7 +5589,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_36_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_36_MAX_GUARDS <= 32;
     end
   end
@@ -7470,7 +5598,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_36_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_36_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7480,7 +5607,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_36_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_36_MAX_REGISTERS <= 256;
     end
   end
@@ -7490,7 +5616,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_36_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_36_bounds_ok <= (((pipe_rspu_pipeline_26_cert_i <= pcc_pcc_verifier_36_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_26_cert_r <= pcc_pcc_verifier_36_MAX_REGISTERS)) & (pipe_rspu_pipeline_26_cert_g <= pcc_pcc_verifier_36_MAX_GUARDS));
     end
   end
@@ -7500,7 +5625,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_48_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_48_MAX_GUARDS <= 32;
     end
   end
@@ -7510,7 +5634,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_48_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_48_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7520,7 +5643,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_48_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_48_MAX_REGISTERS <= 256;
     end
   end
@@ -7530,7 +5652,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_48_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_48_bounds_ok <= (((pipe_rspu_pipeline_38_cert_i <= pcc_pcc_verifier_48_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_38_cert_r <= pcc_pcc_verifier_48_MAX_REGISTERS)) & (pipe_rspu_pipeline_38_cert_g <= pcc_pcc_verifier_48_MAX_GUARDS));
     end
   end
@@ -7540,7 +5661,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_60_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_60_MAX_GUARDS <= 32;
     end
   end
@@ -7550,7 +5670,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_60_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_60_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7560,7 +5679,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_60_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_60_MAX_REGISTERS <= 256;
     end
   end
@@ -7570,7 +5688,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_60_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_60_bounds_ok <= (((pipe_rspu_pipeline_50_cert_i <= pcc_pcc_verifier_60_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_50_cert_r <= pcc_pcc_verifier_60_MAX_REGISTERS)) & (pipe_rspu_pipeline_50_cert_g <= pcc_pcc_verifier_60_MAX_GUARDS));
     end
   end
@@ -7580,7 +5697,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_72_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_72_MAX_GUARDS <= 32;
     end
   end
@@ -7590,7 +5706,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_72_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_72_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7600,7 +5715,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_72_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_72_MAX_REGISTERS <= 256;
     end
   end
@@ -7610,7 +5724,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_72_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_72_bounds_ok <= (((pipe_rspu_pipeline_62_cert_i <= pcc_pcc_verifier_72_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_62_cert_r <= pcc_pcc_verifier_72_MAX_REGISTERS)) & (pipe_rspu_pipeline_62_cert_g <= pcc_pcc_verifier_72_MAX_GUARDS));
     end
   end
@@ -7620,7 +5733,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_84_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_84_MAX_GUARDS <= 32;
     end
   end
@@ -7630,7 +5742,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_84_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_84_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7640,7 +5751,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_84_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_84_MAX_REGISTERS <= 256;
     end
   end
@@ -7650,7 +5760,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_84_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_84_bounds_ok <= (((pipe_rspu_pipeline_74_cert_i <= pcc_pcc_verifier_84_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_74_cert_r <= pcc_pcc_verifier_84_MAX_REGISTERS)) & (pipe_rspu_pipeline_74_cert_g <= pcc_pcc_verifier_84_MAX_GUARDS));
     end
   end
@@ -7660,7 +5769,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_96_MAX_GUARDS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_96_MAX_GUARDS <= 32;
     end
   end
@@ -7670,7 +5778,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_96_MAX_INSTRUCTIONS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_96_MAX_INSTRUCTIONS <= 1024;
     end
   end
@@ -7680,7 +5787,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_96_MAX_REGISTERS <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_96_MAX_REGISTERS <= 256;
     end
   end
@@ -7690,7 +5796,6 @@ module rspu_top (
     if (!rst_n) begin
       pcc_pcc_verifier_96_bounds_ok <= '0;
     end else begin
-  // source: <unknown>:30
       if (always_out) pcc_pcc_verifier_96_bounds_ok <= (((pipe_rspu_pipeline_86_cert_i <= pcc_pcc_verifier_96_MAX_INSTRUCTIONS) & (pipe_rspu_pipeline_86_cert_r <= pcc_pcc_verifier_96_MAX_REGISTERS)) & (pipe_rspu_pipeline_86_cert_g <= pcc_pcc_verifier_96_MAX_GUARDS));
     end
   end
@@ -7700,7 +5805,6 @@ module rspu_top (
     if (!rst_n) begin
       physics_pendulum_194_angle_internal <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) physics_pendulum_194_angle_internal <= physics_pendulum_194_p_next;
     end
   end
@@ -7710,7 +5814,6 @@ module rspu_top (
     if (!rst_n) begin
       physics_pendulum_194_angular_velocity <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) physics_pendulum_194_angular_velocity <= physics_pendulum_194_v_next;
     end
   end
@@ -7720,7 +5823,6 @@ module rspu_top (
     if (!rst_n) begin
       physics_pendulum_194_p_next <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) physics_pendulum_194_p_next <= ((physics_pendulum_194_angle_internal_d1 + (physics_pendulum_194_angular_velocity >> 8)) & (-1));
     end
   end
@@ -7730,7 +5832,6 @@ module rspu_top (
     if (!rst_n) begin
       physics_pendulum_194_v_next <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) physics_pendulum_194_v_next <= ((physics_pendulum_194_angular_velocity_d1 + ((robot_torque >> 8) - ((physics_pendulum_194_angle_internal_d1 >> 8) * (-10)))) & (-1));
     end
   end
@@ -7740,8 +5841,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_110_alu_op <= (instr_6 & 255);
+      if (always_out) pipe_rspu_pipeline_110_alu_op <= (core_core_top_109_current_instr & 255);
     end
   end
 
@@ -7750,7 +5850,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_110_cert_g <= 0;
     end
   end
@@ -7760,7 +5859,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_110_cert_h <= 1'b1;
     end
   end
@@ -7770,7 +5868,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_110_cert_i <= 0;
     end
   end
@@ -7780,7 +5877,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_110_cert_r <= 0;
     end
   end
@@ -7790,7 +5886,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_110_cert_v <= 1'b1;
     end
   end
@@ -7800,7 +5895,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_110_ex_d1 <= (pipe_rspu_pipeline_110_id_val1 & 4294967295);
     end
   end
@@ -7810,7 +5904,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_110_ex_d2 <= (pipe_rspu_pipeline_110_id_val2 & 4294967295);
     end
   end
@@ -7820,7 +5913,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_110_ex_out_d <= (alu_alu_core_112_res_data & 4294967295);
     end
   end
@@ -7830,7 +5922,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_110_ex_out_p <= (alu_alu_core_112_res_prov & 15);
     end
   end
@@ -7840,7 +5931,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_110_ex_out_t <= (alu_alu_core_112_res_tag & 15);
     end
   end
@@ -7850,7 +5940,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_110_ex_p1 <= ((pipe_rspu_pipeline_110_id_val1 >> 36) & 15);
     end
   end
@@ -7860,7 +5949,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_110_ex_p2 <= ((pipe_rspu_pipeline_110_id_val2 >> 36) & 15);
     end
   end
@@ -7870,7 +5958,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_110_ex_packed <= ((((pipe_rspu_pipeline_110_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_110_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_110_ex_out_d & 4294967295));
     end
   end
@@ -7880,7 +5967,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_110_ex_t1 <= ((pipe_rspu_pipeline_110_id_val1 >> 32) & 15);
     end
   end
@@ -7890,7 +5976,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_110_ex_t2 <= ((pipe_rspu_pipeline_110_id_val2 >> 32) & 15);
     end
   end
@@ -7900,7 +5985,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_110_ex_trap <= alu_alu_core_112_is_trap;
     end
   end
@@ -7910,8 +5994,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_110_id_rd <= ((instr_6 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_110_id_rd <= ((core_core_top_109_current_instr >> 16) & 1023);
     end
   end
 
@@ -7920,8 +6003,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_110_id_rs1 <= ((instr_6 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_110_id_rs1 <= ((core_core_top_109_current_instr >> 48) & 1023);
     end
   end
 
@@ -7930,18 +6012,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_110_id_rs2 <= ((instr_6 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_110_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_110_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_110_fetch_active_out) pipe_rspu_pipeline_110_pc <= ((pipe_rspu_pipeline_110_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_110_id_rs2 <= ((core_core_top_109_current_instr >> 32) & 1023);
     end
   end
 
@@ -7950,7 +6021,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_110_pcc_fault <= 1'b0;
     end
   end
@@ -7960,8 +6030,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_110_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_110_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_110_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_110_fetch_active_out) pipe_rspu_pipeline_110_pipe_pc <= ((pipe_rspu_pipeline_110_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -7970,8 +6048,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_110_ram_addr <= (pipe_rspu_pipeline_110_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_110_ram_addr <= (pipe_rspu_pipeline_110_pipe_pc & 16383);
     end
   end
 
@@ -7980,7 +6057,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_110_reg_din <= pipe_rspu_pipeline_110_ex_packed;
     end
   end
@@ -7990,7 +6066,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_110_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_110_reg_we <= 1'b1;
     end
   end
@@ -8000,8 +6075,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_122_alu_op <= (instr_5 & 255);
+      if (always_out) pipe_rspu_pipeline_122_alu_op <= (core_core_top_121_current_instr & 255);
     end
   end
 
@@ -8010,7 +6084,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_122_cert_g <= 0;
     end
   end
@@ -8020,7 +6093,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_122_cert_h <= 1'b1;
     end
   end
@@ -8030,7 +6102,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_122_cert_i <= 0;
     end
   end
@@ -8040,7 +6111,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_122_cert_r <= 0;
     end
   end
@@ -8050,7 +6120,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_122_cert_v <= 1'b1;
     end
   end
@@ -8060,7 +6129,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_122_ex_d1 <= (pipe_rspu_pipeline_122_id_val1 & 4294967295);
     end
   end
@@ -8070,7 +6138,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_122_ex_d2 <= (pipe_rspu_pipeline_122_id_val2 & 4294967295);
     end
   end
@@ -8080,7 +6147,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_122_ex_out_d <= (alu_alu_core_124_res_data & 4294967295);
     end
   end
@@ -8090,7 +6156,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_122_ex_out_p <= (alu_alu_core_124_res_prov & 15);
     end
   end
@@ -8100,7 +6165,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_122_ex_out_t <= (alu_alu_core_124_res_tag & 15);
     end
   end
@@ -8110,7 +6174,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_122_ex_p1 <= ((pipe_rspu_pipeline_122_id_val1 >> 36) & 15);
     end
   end
@@ -8120,7 +6183,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_122_ex_p2 <= ((pipe_rspu_pipeline_122_id_val2 >> 36) & 15);
     end
   end
@@ -8130,7 +6192,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_122_ex_packed <= ((((pipe_rspu_pipeline_122_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_122_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_122_ex_out_d & 4294967295));
     end
   end
@@ -8140,7 +6201,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_122_ex_t1 <= ((pipe_rspu_pipeline_122_id_val1 >> 32) & 15);
     end
   end
@@ -8150,7 +6210,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_122_ex_t2 <= ((pipe_rspu_pipeline_122_id_val2 >> 32) & 15);
     end
   end
@@ -8160,7 +6219,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_122_ex_trap <= alu_alu_core_124_is_trap;
     end
   end
@@ -8170,8 +6228,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_122_id_rd <= ((instr_5 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_122_id_rd <= ((core_core_top_121_current_instr >> 16) & 1023);
     end
   end
 
@@ -8180,8 +6237,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_122_id_rs1 <= ((instr_5 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_122_id_rs1 <= ((core_core_top_121_current_instr >> 48) & 1023);
     end
   end
 
@@ -8190,18 +6246,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_122_id_rs2 <= ((instr_5 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_122_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_122_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_122_fetch_active_out) pipe_rspu_pipeline_122_pc <= ((pipe_rspu_pipeline_122_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_122_id_rs2 <= ((core_core_top_121_current_instr >> 32) & 1023);
     end
   end
 
@@ -8210,7 +6255,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_122_pcc_fault <= 1'b0;
     end
   end
@@ -8220,8 +6264,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_122_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_122_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_122_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_122_fetch_active_out) pipe_rspu_pipeline_122_pipe_pc <= ((pipe_rspu_pipeline_122_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -8230,8 +6282,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_122_ram_addr <= (pipe_rspu_pipeline_122_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_122_ram_addr <= (pipe_rspu_pipeline_122_pipe_pc & 16383);
     end
   end
 
@@ -8240,7 +6291,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_122_reg_din <= pipe_rspu_pipeline_122_ex_packed;
     end
   end
@@ -8250,7 +6300,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_122_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_122_reg_we <= 1'b1;
     end
   end
@@ -8260,8 +6309,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_134_alu_op <= (instr_4 & 255);
+      if (always_out) pipe_rspu_pipeline_134_alu_op <= (core_core_top_133_current_instr & 255);
     end
   end
 
@@ -8270,7 +6318,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_134_cert_g <= 0;
     end
   end
@@ -8280,7 +6327,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_134_cert_h <= 1'b1;
     end
   end
@@ -8290,7 +6336,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_134_cert_i <= 0;
     end
   end
@@ -8300,7 +6345,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_134_cert_r <= 0;
     end
   end
@@ -8310,7 +6354,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_134_cert_v <= 1'b1;
     end
   end
@@ -8320,7 +6363,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_134_ex_d1 <= (pipe_rspu_pipeline_134_id_val1 & 4294967295);
     end
   end
@@ -8330,7 +6372,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_134_ex_d2 <= (pipe_rspu_pipeline_134_id_val2 & 4294967295);
     end
   end
@@ -8340,7 +6381,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_134_ex_out_d <= (alu_alu_core_136_res_data & 4294967295);
     end
   end
@@ -8350,7 +6390,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_134_ex_out_p <= (alu_alu_core_136_res_prov & 15);
     end
   end
@@ -8360,7 +6399,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_134_ex_out_t <= (alu_alu_core_136_res_tag & 15);
     end
   end
@@ -8370,7 +6408,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_134_ex_p1 <= ((pipe_rspu_pipeline_134_id_val1 >> 36) & 15);
     end
   end
@@ -8380,7 +6417,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_134_ex_p2 <= ((pipe_rspu_pipeline_134_id_val2 >> 36) & 15);
     end
   end
@@ -8390,7 +6426,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_134_ex_packed <= ((((pipe_rspu_pipeline_134_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_134_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_134_ex_out_d & 4294967295));
     end
   end
@@ -8400,7 +6435,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_134_ex_t1 <= ((pipe_rspu_pipeline_134_id_val1 >> 32) & 15);
     end
   end
@@ -8410,7 +6444,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_134_ex_t2 <= ((pipe_rspu_pipeline_134_id_val2 >> 32) & 15);
     end
   end
@@ -8420,7 +6453,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_134_ex_trap <= alu_alu_core_136_is_trap;
     end
   end
@@ -8430,8 +6462,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_134_id_rd <= ((instr_4 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_134_id_rd <= ((core_core_top_133_current_instr >> 16) & 1023);
     end
   end
 
@@ -8440,8 +6471,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_134_id_rs1 <= ((instr_4 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_134_id_rs1 <= ((core_core_top_133_current_instr >> 48) & 1023);
     end
   end
 
@@ -8450,18 +6480,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_134_id_rs2 <= ((instr_4 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_134_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_134_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_134_fetch_active_out) pipe_rspu_pipeline_134_pc <= ((pipe_rspu_pipeline_134_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_134_id_rs2 <= ((core_core_top_133_current_instr >> 32) & 1023);
     end
   end
 
@@ -8470,7 +6489,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_134_pcc_fault <= 1'b0;
     end
   end
@@ -8480,8 +6498,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_134_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_134_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_134_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_134_fetch_active_out) pipe_rspu_pipeline_134_pipe_pc <= ((pipe_rspu_pipeline_134_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -8490,8 +6516,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_134_ram_addr <= (pipe_rspu_pipeline_134_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_134_ram_addr <= (pipe_rspu_pipeline_134_pipe_pc & 16383);
     end
   end
 
@@ -8500,7 +6525,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_134_reg_din <= pipe_rspu_pipeline_134_ex_packed;
     end
   end
@@ -8510,7 +6534,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_134_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_134_reg_we <= 1'b1;
     end
   end
@@ -8520,8 +6543,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_146_alu_op <= (instr_3 & 255);
+      if (always_out) pipe_rspu_pipeline_146_alu_op <= (core_core_top_145_current_instr & 255);
     end
   end
 
@@ -8530,7 +6552,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_146_cert_g <= 0;
     end
   end
@@ -8540,7 +6561,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_146_cert_h <= 1'b1;
     end
   end
@@ -8550,7 +6570,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_146_cert_i <= 0;
     end
   end
@@ -8560,7 +6579,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_146_cert_r <= 0;
     end
   end
@@ -8570,7 +6588,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_146_cert_v <= 1'b1;
     end
   end
@@ -8580,7 +6597,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_146_ex_d1 <= (pipe_rspu_pipeline_146_id_val1 & 4294967295);
     end
   end
@@ -8590,7 +6606,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_146_ex_d2 <= (pipe_rspu_pipeline_146_id_val2 & 4294967295);
     end
   end
@@ -8600,7 +6615,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_146_ex_out_d <= (alu_alu_core_148_res_data & 4294967295);
     end
   end
@@ -8610,7 +6624,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_146_ex_out_p <= (alu_alu_core_148_res_prov & 15);
     end
   end
@@ -8620,7 +6633,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_146_ex_out_t <= (alu_alu_core_148_res_tag & 15);
     end
   end
@@ -8630,7 +6642,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_146_ex_p1 <= ((pipe_rspu_pipeline_146_id_val1 >> 36) & 15);
     end
   end
@@ -8640,7 +6651,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_146_ex_p2 <= ((pipe_rspu_pipeline_146_id_val2 >> 36) & 15);
     end
   end
@@ -8650,7 +6660,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_146_ex_packed <= ((((pipe_rspu_pipeline_146_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_146_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_146_ex_out_d & 4294967295));
     end
   end
@@ -8660,7 +6669,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_146_ex_t1 <= ((pipe_rspu_pipeline_146_id_val1 >> 32) & 15);
     end
   end
@@ -8670,7 +6678,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_146_ex_t2 <= ((pipe_rspu_pipeline_146_id_val2 >> 32) & 15);
     end
   end
@@ -8680,7 +6687,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_146_ex_trap <= alu_alu_core_148_is_trap;
     end
   end
@@ -8690,8 +6696,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_146_id_rd <= ((instr_3 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_146_id_rd <= ((core_core_top_145_current_instr >> 16) & 1023);
     end
   end
 
@@ -8700,8 +6705,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_146_id_rs1 <= ((instr_3 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_146_id_rs1 <= ((core_core_top_145_current_instr >> 48) & 1023);
     end
   end
 
@@ -8710,18 +6714,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_146_id_rs2 <= ((instr_3 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_146_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_146_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_146_fetch_active_out) pipe_rspu_pipeline_146_pc <= ((pipe_rspu_pipeline_146_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_146_id_rs2 <= ((core_core_top_145_current_instr >> 32) & 1023);
     end
   end
 
@@ -8730,7 +6723,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_146_pcc_fault <= 1'b0;
     end
   end
@@ -8740,8 +6732,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_146_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_146_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_146_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_146_fetch_active_out) pipe_rspu_pipeline_146_pipe_pc <= ((pipe_rspu_pipeline_146_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -8750,8 +6750,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_146_ram_addr <= (pipe_rspu_pipeline_146_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_146_ram_addr <= (pipe_rspu_pipeline_146_pipe_pc & 16383);
     end
   end
 
@@ -8760,7 +6759,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_146_reg_din <= pipe_rspu_pipeline_146_ex_packed;
     end
   end
@@ -8770,7 +6768,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_146_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_146_reg_we <= 1'b1;
     end
   end
@@ -8780,8 +6777,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_14_alu_op <= (instr_14 & 255);
+      if (always_out) pipe_rspu_pipeline_14_alu_op <= (core_core_top_13_current_instr & 255);
     end
   end
 
@@ -8790,7 +6786,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_14_cert_g <= 0;
     end
   end
@@ -8800,7 +6795,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_14_cert_h <= 1'b1;
     end
   end
@@ -8810,7 +6804,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_14_cert_i <= 0;
     end
   end
@@ -8820,7 +6813,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_14_cert_r <= 0;
     end
   end
@@ -8830,7 +6822,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_14_cert_v <= 1'b1;
     end
   end
@@ -8840,7 +6831,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_14_ex_d1 <= (pipe_rspu_pipeline_14_id_val1 & 4294967295);
     end
   end
@@ -8850,7 +6840,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_14_ex_d2 <= (pipe_rspu_pipeline_14_id_val2 & 4294967295);
     end
   end
@@ -8860,7 +6849,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_14_ex_out_d <= (alu_alu_core_16_res_data & 4294967295);
     end
   end
@@ -8870,7 +6858,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_14_ex_out_p <= (alu_alu_core_16_res_prov & 15);
     end
   end
@@ -8880,7 +6867,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_14_ex_out_t <= (alu_alu_core_16_res_tag & 15);
     end
   end
@@ -8890,7 +6876,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_14_ex_p1 <= ((pipe_rspu_pipeline_14_id_val1 >> 36) & 15);
     end
   end
@@ -8900,7 +6885,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_14_ex_p2 <= ((pipe_rspu_pipeline_14_id_val2 >> 36) & 15);
     end
   end
@@ -8910,7 +6894,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_14_ex_packed <= ((((pipe_rspu_pipeline_14_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_14_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_14_ex_out_d & 4294967295));
     end
   end
@@ -8920,7 +6903,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_14_ex_t1 <= ((pipe_rspu_pipeline_14_id_val1 >> 32) & 15);
     end
   end
@@ -8930,7 +6912,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_14_ex_t2 <= ((pipe_rspu_pipeline_14_id_val2 >> 32) & 15);
     end
   end
@@ -8940,7 +6921,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_14_ex_trap <= alu_alu_core_16_is_trap;
     end
   end
@@ -8950,8 +6930,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_14_id_rd <= ((instr_14 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_14_id_rd <= ((core_core_top_13_current_instr >> 16) & 1023);
     end
   end
 
@@ -8960,8 +6939,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_14_id_rs1 <= ((instr_14 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_14_id_rs1 <= ((core_core_top_13_current_instr >> 48) & 1023);
     end
   end
 
@@ -8970,18 +6948,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_14_id_rs2 <= ((instr_14 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_14_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_14_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_14_fetch_active_out) pipe_rspu_pipeline_14_pc <= ((pipe_rspu_pipeline_14_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_14_id_rs2 <= ((core_core_top_13_current_instr >> 32) & 1023);
     end
   end
 
@@ -8990,7 +6957,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_14_pcc_fault <= 1'b0;
     end
   end
@@ -9000,8 +6966,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_14_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_14_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_14_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_14_fetch_active_out) pipe_rspu_pipeline_14_pipe_pc <= ((pipe_rspu_pipeline_14_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -9010,8 +6984,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_14_ram_addr <= (pipe_rspu_pipeline_14_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_14_ram_addr <= (pipe_rspu_pipeline_14_pipe_pc & 16383);
     end
   end
 
@@ -9020,7 +6993,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_14_reg_din <= pipe_rspu_pipeline_14_ex_packed;
     end
   end
@@ -9030,7 +7002,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_14_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_14_reg_we <= 1'b1;
     end
   end
@@ -9040,8 +7011,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_158_alu_op <= (instr_2 & 255);
+      if (always_out) pipe_rspu_pipeline_158_alu_op <= (core_core_top_157_current_instr & 255);
     end
   end
 
@@ -9050,7 +7020,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_158_cert_g <= 0;
     end
   end
@@ -9060,7 +7029,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_158_cert_h <= 1'b1;
     end
   end
@@ -9070,7 +7038,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_158_cert_i <= 0;
     end
   end
@@ -9080,7 +7047,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_158_cert_r <= 0;
     end
   end
@@ -9090,7 +7056,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_158_cert_v <= 1'b1;
     end
   end
@@ -9100,7 +7065,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_158_ex_d1 <= (pipe_rspu_pipeline_158_id_val1 & 4294967295);
     end
   end
@@ -9110,7 +7074,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_158_ex_d2 <= (pipe_rspu_pipeline_158_id_val2 & 4294967295);
     end
   end
@@ -9120,7 +7083,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_158_ex_out_d <= (alu_alu_core_160_res_data & 4294967295);
     end
   end
@@ -9130,7 +7092,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_158_ex_out_p <= (alu_alu_core_160_res_prov & 15);
     end
   end
@@ -9140,7 +7101,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_158_ex_out_t <= (alu_alu_core_160_res_tag & 15);
     end
   end
@@ -9150,7 +7110,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_158_ex_p1 <= ((pipe_rspu_pipeline_158_id_val1 >> 36) & 15);
     end
   end
@@ -9160,7 +7119,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_158_ex_p2 <= ((pipe_rspu_pipeline_158_id_val2 >> 36) & 15);
     end
   end
@@ -9170,7 +7128,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_158_ex_packed <= ((((pipe_rspu_pipeline_158_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_158_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_158_ex_out_d & 4294967295));
     end
   end
@@ -9180,7 +7137,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_158_ex_t1 <= ((pipe_rspu_pipeline_158_id_val1 >> 32) & 15);
     end
   end
@@ -9190,7 +7146,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_158_ex_t2 <= ((pipe_rspu_pipeline_158_id_val2 >> 32) & 15);
     end
   end
@@ -9200,7 +7155,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_158_ex_trap <= alu_alu_core_160_is_trap;
     end
   end
@@ -9210,8 +7164,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_158_id_rd <= ((instr_2 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_158_id_rd <= ((core_core_top_157_current_instr >> 16) & 1023);
     end
   end
 
@@ -9220,8 +7173,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_158_id_rs1 <= ((instr_2 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_158_id_rs1 <= ((core_core_top_157_current_instr >> 48) & 1023);
     end
   end
 
@@ -9230,18 +7182,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_158_id_rs2 <= ((instr_2 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_158_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_158_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_158_fetch_active_out) pipe_rspu_pipeline_158_pc <= ((pipe_rspu_pipeline_158_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_158_id_rs2 <= ((core_core_top_157_current_instr >> 32) & 1023);
     end
   end
 
@@ -9250,7 +7191,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_158_pcc_fault <= 1'b0;
     end
   end
@@ -9260,8 +7200,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_158_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_158_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_158_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_158_fetch_active_out) pipe_rspu_pipeline_158_pipe_pc <= ((pipe_rspu_pipeline_158_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -9270,8 +7218,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_158_ram_addr <= (pipe_rspu_pipeline_158_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_158_ram_addr <= (pipe_rspu_pipeline_158_pipe_pc & 16383);
     end
   end
 
@@ -9280,7 +7227,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_158_reg_din <= pipe_rspu_pipeline_158_ex_packed;
     end
   end
@@ -9290,7 +7236,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_158_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_158_reg_we <= 1'b1;
     end
   end
@@ -9300,8 +7245,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_170_alu_op <= (instr_1 & 255);
+      if (always_out) pipe_rspu_pipeline_170_alu_op <= (core_core_top_169_current_instr & 255);
     end
   end
 
@@ -9310,7 +7254,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_170_cert_g <= 0;
     end
   end
@@ -9320,7 +7263,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_170_cert_h <= 1'b1;
     end
   end
@@ -9330,7 +7272,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_170_cert_i <= 0;
     end
   end
@@ -9340,7 +7281,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_170_cert_r <= 0;
     end
   end
@@ -9350,7 +7290,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_170_cert_v <= 1'b1;
     end
   end
@@ -9360,7 +7299,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_170_ex_d1 <= (pipe_rspu_pipeline_170_id_val1 & 4294967295);
     end
   end
@@ -9370,7 +7308,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_170_ex_d2 <= (pipe_rspu_pipeline_170_id_val2 & 4294967295);
     end
   end
@@ -9380,7 +7317,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_170_ex_out_d <= (alu_alu_core_172_res_data & 4294967295);
     end
   end
@@ -9390,7 +7326,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_170_ex_out_p <= (alu_alu_core_172_res_prov & 15);
     end
   end
@@ -9400,7 +7335,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_170_ex_out_t <= (alu_alu_core_172_res_tag & 15);
     end
   end
@@ -9410,7 +7344,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_170_ex_p1 <= ((pipe_rspu_pipeline_170_id_val1 >> 36) & 15);
     end
   end
@@ -9420,7 +7353,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_170_ex_p2 <= ((pipe_rspu_pipeline_170_id_val2 >> 36) & 15);
     end
   end
@@ -9430,7 +7362,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_170_ex_packed <= ((((pipe_rspu_pipeline_170_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_170_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_170_ex_out_d & 4294967295));
     end
   end
@@ -9440,7 +7371,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_170_ex_t1 <= ((pipe_rspu_pipeline_170_id_val1 >> 32) & 15);
     end
   end
@@ -9450,7 +7380,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_170_ex_t2 <= ((pipe_rspu_pipeline_170_id_val2 >> 32) & 15);
     end
   end
@@ -9460,7 +7389,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_170_ex_trap <= alu_alu_core_172_is_trap;
     end
   end
@@ -9470,8 +7398,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_170_id_rd <= ((instr_1 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_170_id_rd <= ((core_core_top_169_current_instr >> 16) & 1023);
     end
   end
 
@@ -9480,8 +7407,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_170_id_rs1 <= ((instr_1 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_170_id_rs1 <= ((core_core_top_169_current_instr >> 48) & 1023);
     end
   end
 
@@ -9490,18 +7416,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_170_id_rs2 <= ((instr_1 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_170_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_170_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_170_fetch_active_out) pipe_rspu_pipeline_170_pc <= ((pipe_rspu_pipeline_170_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_170_id_rs2 <= ((core_core_top_169_current_instr >> 32) & 1023);
     end
   end
 
@@ -9510,7 +7425,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_170_pcc_fault <= 1'b0;
     end
   end
@@ -9520,8 +7434,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_170_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_170_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_170_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_170_fetch_active_out) pipe_rspu_pipeline_170_pipe_pc <= ((pipe_rspu_pipeline_170_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -9530,8 +7452,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_170_ram_addr <= (pipe_rspu_pipeline_170_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_170_ram_addr <= (pipe_rspu_pipeline_170_pipe_pc & 16383);
     end
   end
 
@@ -9540,7 +7461,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_170_reg_din <= pipe_rspu_pipeline_170_ex_packed;
     end
   end
@@ -9550,7 +7470,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_170_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_170_reg_we <= 1'b1;
     end
   end
@@ -9560,8 +7479,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_182_alu_op <= (instr_0 & 255);
+      if (always_out) pipe_rspu_pipeline_182_alu_op <= (core_core_top_181_current_instr & 255);
     end
   end
 
@@ -9570,7 +7488,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_182_cert_g <= 0;
     end
   end
@@ -9580,7 +7497,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_182_cert_h <= 1'b1;
     end
   end
@@ -9590,7 +7506,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_182_cert_i <= 0;
     end
   end
@@ -9600,7 +7515,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_182_cert_r <= 0;
     end
   end
@@ -9610,7 +7524,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_182_cert_v <= 1'b1;
     end
   end
@@ -9620,7 +7533,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_182_ex_d1 <= (pipe_rspu_pipeline_182_id_val1 & 4294967295);
     end
   end
@@ -9630,7 +7542,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_182_ex_d2 <= (pipe_rspu_pipeline_182_id_val2 & 4294967295);
     end
   end
@@ -9640,7 +7551,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_182_ex_out_d <= (alu_alu_core_184_res_data & 4294967295);
     end
   end
@@ -9650,7 +7560,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_182_ex_out_p <= (alu_alu_core_184_res_prov & 15);
     end
   end
@@ -9660,7 +7569,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_182_ex_out_t <= (alu_alu_core_184_res_tag & 15);
     end
   end
@@ -9670,7 +7578,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_182_ex_p1 <= ((pipe_rspu_pipeline_182_id_val1 >> 36) & 15);
     end
   end
@@ -9680,7 +7587,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_182_ex_p2 <= ((pipe_rspu_pipeline_182_id_val2 >> 36) & 15);
     end
   end
@@ -9690,7 +7596,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_182_ex_packed <= ((((pipe_rspu_pipeline_182_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_182_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_182_ex_out_d & 4294967295));
     end
   end
@@ -9700,7 +7605,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_182_ex_t1 <= ((pipe_rspu_pipeline_182_id_val1 >> 32) & 15);
     end
   end
@@ -9710,7 +7614,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_182_ex_t2 <= ((pipe_rspu_pipeline_182_id_val2 >> 32) & 15);
     end
   end
@@ -9720,7 +7623,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_182_ex_trap <= alu_alu_core_184_is_trap;
     end
   end
@@ -9730,8 +7632,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_182_id_rd <= ((instr_0 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_182_id_rd <= ((core_core_top_181_current_instr >> 16) & 1023);
     end
   end
 
@@ -9740,8 +7641,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_182_id_rs1 <= ((instr_0 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_182_id_rs1 <= ((core_core_top_181_current_instr >> 48) & 1023);
     end
   end
 
@@ -9750,18 +7650,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_182_id_rs2 <= ((instr_0 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_182_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_182_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_182_fetch_active_out) pipe_rspu_pipeline_182_pc <= ((pipe_rspu_pipeline_182_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_182_id_rs2 <= ((core_core_top_181_current_instr >> 32) & 1023);
     end
   end
 
@@ -9770,7 +7659,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_182_pcc_fault <= 1'b0;
     end
   end
@@ -9780,8 +7668,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_182_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_182_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_182_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_182_fetch_active_out) pipe_rspu_pipeline_182_pipe_pc <= ((pipe_rspu_pipeline_182_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -9790,8 +7686,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_182_ram_addr <= (pipe_rspu_pipeline_182_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_182_ram_addr <= (pipe_rspu_pipeline_182_pipe_pc & 16383);
     end
   end
 
@@ -9800,7 +7695,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_182_reg_din <= pipe_rspu_pipeline_182_ex_packed;
     end
   end
@@ -9810,7 +7704,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_182_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_182_reg_we <= 1'b1;
     end
   end
@@ -9820,8 +7713,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_26_alu_op <= (instr_13 & 255);
+      if (always_out) pipe_rspu_pipeline_26_alu_op <= (core_core_top_25_current_instr & 255);
     end
   end
 
@@ -9830,7 +7722,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_26_cert_g <= 0;
     end
   end
@@ -9840,7 +7731,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_26_cert_h <= 1'b1;
     end
   end
@@ -9850,7 +7740,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_26_cert_i <= 0;
     end
   end
@@ -9860,7 +7749,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_26_cert_r <= 0;
     end
   end
@@ -9870,7 +7758,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_26_cert_v <= 1'b1;
     end
   end
@@ -9880,7 +7767,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_26_ex_d1 <= (pipe_rspu_pipeline_26_id_val1 & 4294967295);
     end
   end
@@ -9890,7 +7776,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_26_ex_d2 <= (pipe_rspu_pipeline_26_id_val2 & 4294967295);
     end
   end
@@ -9900,7 +7785,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_26_ex_out_d <= (alu_alu_core_28_res_data & 4294967295);
     end
   end
@@ -9910,7 +7794,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_26_ex_out_p <= (alu_alu_core_28_res_prov & 15);
     end
   end
@@ -9920,7 +7803,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_26_ex_out_t <= (alu_alu_core_28_res_tag & 15);
     end
   end
@@ -9930,7 +7812,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_26_ex_p1 <= ((pipe_rspu_pipeline_26_id_val1 >> 36) & 15);
     end
   end
@@ -9940,7 +7821,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_26_ex_p2 <= ((pipe_rspu_pipeline_26_id_val2 >> 36) & 15);
     end
   end
@@ -9950,7 +7830,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_26_ex_packed <= ((((pipe_rspu_pipeline_26_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_26_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_26_ex_out_d & 4294967295));
     end
   end
@@ -9960,7 +7839,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_26_ex_t1 <= ((pipe_rspu_pipeline_26_id_val1 >> 32) & 15);
     end
   end
@@ -9970,7 +7848,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_26_ex_t2 <= ((pipe_rspu_pipeline_26_id_val2 >> 32) & 15);
     end
   end
@@ -9980,7 +7857,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_26_ex_trap <= alu_alu_core_28_is_trap;
     end
   end
@@ -9990,8 +7866,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_26_id_rd <= ((instr_13 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_26_id_rd <= ((core_core_top_25_current_instr >> 16) & 1023);
     end
   end
 
@@ -10000,8 +7875,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_26_id_rs1 <= ((instr_13 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_26_id_rs1 <= ((core_core_top_25_current_instr >> 48) & 1023);
     end
   end
 
@@ -10010,18 +7884,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_26_id_rs2 <= ((instr_13 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_26_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_26_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_26_fetch_active_out) pipe_rspu_pipeline_26_pc <= ((pipe_rspu_pipeline_26_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_26_id_rs2 <= ((core_core_top_25_current_instr >> 32) & 1023);
     end
   end
 
@@ -10030,7 +7893,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_26_pcc_fault <= 1'b0;
     end
   end
@@ -10040,8 +7902,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_26_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_26_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_26_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_26_fetch_active_out) pipe_rspu_pipeline_26_pipe_pc <= ((pipe_rspu_pipeline_26_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -10050,8 +7920,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_26_ram_addr <= (pipe_rspu_pipeline_26_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_26_ram_addr <= (pipe_rspu_pipeline_26_pipe_pc & 16383);
     end
   end
 
@@ -10060,7 +7929,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_26_reg_din <= pipe_rspu_pipeline_26_ex_packed;
     end
   end
@@ -10070,7 +7938,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_26_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_26_reg_we <= 1'b1;
     end
   end
@@ -10080,8 +7947,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_2_alu_op <= (instr_15 & 255);
+      if (always_out) pipe_rspu_pipeline_2_alu_op <= (core_core_top_1_current_instr & 255);
     end
   end
 
@@ -10090,7 +7956,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_2_cert_g <= 0;
     end
   end
@@ -10100,7 +7965,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_2_cert_h <= 1'b1;
     end
   end
@@ -10110,7 +7974,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_2_cert_i <= 0;
     end
   end
@@ -10120,7 +7983,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_2_cert_r <= 0;
     end
   end
@@ -10130,7 +7992,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_2_cert_v <= 1'b1;
     end
   end
@@ -10140,7 +8001,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_2_ex_d1 <= (pipe_rspu_pipeline_2_id_val1 & 4294967295);
     end
   end
@@ -10150,7 +8010,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_2_ex_d2 <= (pipe_rspu_pipeline_2_id_val2 & 4294967295);
     end
   end
@@ -10160,7 +8019,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_2_ex_out_d <= (alu_alu_core_4_res_data & 4294967295);
     end
   end
@@ -10170,7 +8028,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_2_ex_out_p <= (alu_alu_core_4_res_prov & 15);
     end
   end
@@ -10180,7 +8037,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_2_ex_out_t <= (alu_alu_core_4_res_tag & 15);
     end
   end
@@ -10190,7 +8046,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_2_ex_p1 <= ((pipe_rspu_pipeline_2_id_val1 >> 36) & 15);
     end
   end
@@ -10200,7 +8055,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_2_ex_p2 <= ((pipe_rspu_pipeline_2_id_val2 >> 36) & 15);
     end
   end
@@ -10210,7 +8064,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_2_ex_packed <= ((((pipe_rspu_pipeline_2_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_2_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_2_ex_out_d & 4294967295));
     end
   end
@@ -10220,7 +8073,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_2_ex_t1 <= ((pipe_rspu_pipeline_2_id_val1 >> 32) & 15);
     end
   end
@@ -10230,7 +8082,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_2_ex_t2 <= ((pipe_rspu_pipeline_2_id_val2 >> 32) & 15);
     end
   end
@@ -10240,7 +8091,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_2_ex_trap <= alu_alu_core_4_is_trap;
     end
   end
@@ -10250,8 +8100,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_2_id_rd <= ((instr_15 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_2_id_rd <= ((core_core_top_1_current_instr >> 16) & 1023);
     end
   end
 
@@ -10260,8 +8109,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_2_id_rs1 <= ((instr_15 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_2_id_rs1 <= ((core_core_top_1_current_instr >> 48) & 1023);
     end
   end
 
@@ -10270,18 +8118,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_2_id_rs2 <= ((instr_15 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_2_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_2_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_2_fetch_active_out) pipe_rspu_pipeline_2_pc <= ((pipe_rspu_pipeline_2_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_2_id_rs2 <= ((core_core_top_1_current_instr >> 32) & 1023);
     end
   end
 
@@ -10290,7 +8127,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_2_pcc_fault <= 1'b0;
     end
   end
@@ -10300,8 +8136,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_2_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_2_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_2_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_2_fetch_active_out) pipe_rspu_pipeline_2_pipe_pc <= ((pipe_rspu_pipeline_2_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -10310,8 +8154,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_2_ram_addr <= (pipe_rspu_pipeline_2_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_2_ram_addr <= (pipe_rspu_pipeline_2_pipe_pc & 16383);
     end
   end
 
@@ -10320,7 +8163,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_2_reg_din <= pipe_rspu_pipeline_2_ex_packed;
     end
   end
@@ -10330,7 +8172,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_2_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_2_reg_we <= 1'b1;
     end
   end
@@ -10340,8 +8181,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_38_alu_op <= (instr_12 & 255);
+      if (always_out) pipe_rspu_pipeline_38_alu_op <= (core_core_top_37_current_instr & 255);
     end
   end
 
@@ -10350,7 +8190,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_38_cert_g <= 0;
     end
   end
@@ -10360,7 +8199,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_38_cert_h <= 1'b1;
     end
   end
@@ -10370,7 +8208,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_38_cert_i <= 0;
     end
   end
@@ -10380,7 +8217,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_38_cert_r <= 0;
     end
   end
@@ -10390,7 +8226,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_38_cert_v <= 1'b1;
     end
   end
@@ -10400,7 +8235,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_38_ex_d1 <= (pipe_rspu_pipeline_38_id_val1 & 4294967295);
     end
   end
@@ -10410,7 +8244,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_38_ex_d2 <= (pipe_rspu_pipeline_38_id_val2 & 4294967295);
     end
   end
@@ -10420,7 +8253,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_38_ex_out_d <= (alu_alu_core_40_res_data & 4294967295);
     end
   end
@@ -10430,7 +8262,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_38_ex_out_p <= (alu_alu_core_40_res_prov & 15);
     end
   end
@@ -10440,7 +8271,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_38_ex_out_t <= (alu_alu_core_40_res_tag & 15);
     end
   end
@@ -10450,7 +8280,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_38_ex_p1 <= ((pipe_rspu_pipeline_38_id_val1 >> 36) & 15);
     end
   end
@@ -10460,7 +8289,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_38_ex_p2 <= ((pipe_rspu_pipeline_38_id_val2 >> 36) & 15);
     end
   end
@@ -10470,7 +8298,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_38_ex_packed <= ((((pipe_rspu_pipeline_38_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_38_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_38_ex_out_d & 4294967295));
     end
   end
@@ -10480,7 +8307,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_38_ex_t1 <= ((pipe_rspu_pipeline_38_id_val1 >> 32) & 15);
     end
   end
@@ -10490,7 +8316,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_38_ex_t2 <= ((pipe_rspu_pipeline_38_id_val2 >> 32) & 15);
     end
   end
@@ -10500,7 +8325,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_38_ex_trap <= alu_alu_core_40_is_trap;
     end
   end
@@ -10510,8 +8334,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_38_id_rd <= ((instr_12 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_38_id_rd <= ((core_core_top_37_current_instr >> 16) & 1023);
     end
   end
 
@@ -10520,8 +8343,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_38_id_rs1 <= ((instr_12 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_38_id_rs1 <= ((core_core_top_37_current_instr >> 48) & 1023);
     end
   end
 
@@ -10530,18 +8352,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_38_id_rs2 <= ((instr_12 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_38_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_38_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_38_fetch_active_out) pipe_rspu_pipeline_38_pc <= ((pipe_rspu_pipeline_38_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_38_id_rs2 <= ((core_core_top_37_current_instr >> 32) & 1023);
     end
   end
 
@@ -10550,7 +8361,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_38_pcc_fault <= 1'b0;
     end
   end
@@ -10560,8 +8370,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_38_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_38_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_38_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_38_fetch_active_out) pipe_rspu_pipeline_38_pipe_pc <= ((pipe_rspu_pipeline_38_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -10570,8 +8388,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_38_ram_addr <= (pipe_rspu_pipeline_38_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_38_ram_addr <= (pipe_rspu_pipeline_38_pipe_pc & 16383);
     end
   end
 
@@ -10580,7 +8397,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_38_reg_din <= pipe_rspu_pipeline_38_ex_packed;
     end
   end
@@ -10590,7 +8406,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_38_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_38_reg_we <= 1'b1;
     end
   end
@@ -10600,8 +8415,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_50_alu_op <= (instr_11 & 255);
+      if (always_out) pipe_rspu_pipeline_50_alu_op <= (core_core_top_49_current_instr & 255);
     end
   end
 
@@ -10610,7 +8424,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_50_cert_g <= 0;
     end
   end
@@ -10620,7 +8433,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_50_cert_h <= 1'b1;
     end
   end
@@ -10630,7 +8442,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_50_cert_i <= 0;
     end
   end
@@ -10640,7 +8451,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_50_cert_r <= 0;
     end
   end
@@ -10650,7 +8460,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_50_cert_v <= 1'b1;
     end
   end
@@ -10660,7 +8469,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_50_ex_d1 <= (pipe_rspu_pipeline_50_id_val1 & 4294967295);
     end
   end
@@ -10670,7 +8478,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_50_ex_d2 <= (pipe_rspu_pipeline_50_id_val2 & 4294967295);
     end
   end
@@ -10680,7 +8487,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_50_ex_out_d <= (alu_alu_core_52_res_data & 4294967295);
     end
   end
@@ -10690,7 +8496,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_50_ex_out_p <= (alu_alu_core_52_res_prov & 15);
     end
   end
@@ -10700,7 +8505,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_50_ex_out_t <= (alu_alu_core_52_res_tag & 15);
     end
   end
@@ -10710,7 +8514,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_50_ex_p1 <= ((pipe_rspu_pipeline_50_id_val1 >> 36) & 15);
     end
   end
@@ -10720,7 +8523,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_50_ex_p2 <= ((pipe_rspu_pipeline_50_id_val2 >> 36) & 15);
     end
   end
@@ -10730,7 +8532,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_50_ex_packed <= ((((pipe_rspu_pipeline_50_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_50_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_50_ex_out_d & 4294967295));
     end
   end
@@ -10740,7 +8541,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_50_ex_t1 <= ((pipe_rspu_pipeline_50_id_val1 >> 32) & 15);
     end
   end
@@ -10750,7 +8550,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_50_ex_t2 <= ((pipe_rspu_pipeline_50_id_val2 >> 32) & 15);
     end
   end
@@ -10760,7 +8559,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_50_ex_trap <= alu_alu_core_52_is_trap;
     end
   end
@@ -10770,8 +8568,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_50_id_rd <= ((instr_11 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_50_id_rd <= ((core_core_top_49_current_instr >> 16) & 1023);
     end
   end
 
@@ -10780,8 +8577,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_50_id_rs1 <= ((instr_11 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_50_id_rs1 <= ((core_core_top_49_current_instr >> 48) & 1023);
     end
   end
 
@@ -10790,18 +8586,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_50_id_rs2 <= ((instr_11 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_50_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_50_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_50_fetch_active_out) pipe_rspu_pipeline_50_pc <= ((pipe_rspu_pipeline_50_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_50_id_rs2 <= ((core_core_top_49_current_instr >> 32) & 1023);
     end
   end
 
@@ -10810,7 +8595,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_50_pcc_fault <= 1'b0;
     end
   end
@@ -10820,8 +8604,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_50_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_50_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_50_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_50_fetch_active_out) pipe_rspu_pipeline_50_pipe_pc <= ((pipe_rspu_pipeline_50_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -10830,8 +8622,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_50_ram_addr <= (pipe_rspu_pipeline_50_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_50_ram_addr <= (pipe_rspu_pipeline_50_pipe_pc & 16383);
     end
   end
 
@@ -10840,7 +8631,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_50_reg_din <= pipe_rspu_pipeline_50_ex_packed;
     end
   end
@@ -10850,7 +8640,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_50_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_50_reg_we <= 1'b1;
     end
   end
@@ -10860,8 +8649,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_62_alu_op <= (instr_10 & 255);
+      if (always_out) pipe_rspu_pipeline_62_alu_op <= (core_core_top_61_current_instr & 255);
     end
   end
 
@@ -10870,7 +8658,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_62_cert_g <= 0;
     end
   end
@@ -10880,7 +8667,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_62_cert_h <= 1'b1;
     end
   end
@@ -10890,7 +8676,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_62_cert_i <= 0;
     end
   end
@@ -10900,7 +8685,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_62_cert_r <= 0;
     end
   end
@@ -10910,7 +8694,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_62_cert_v <= 1'b1;
     end
   end
@@ -10920,7 +8703,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_62_ex_d1 <= (pipe_rspu_pipeline_62_id_val1 & 4294967295);
     end
   end
@@ -10930,7 +8712,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_62_ex_d2 <= (pipe_rspu_pipeline_62_id_val2 & 4294967295);
     end
   end
@@ -10940,7 +8721,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_62_ex_out_d <= (alu_alu_core_64_res_data & 4294967295);
     end
   end
@@ -10950,7 +8730,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_62_ex_out_p <= (alu_alu_core_64_res_prov & 15);
     end
   end
@@ -10960,7 +8739,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_62_ex_out_t <= (alu_alu_core_64_res_tag & 15);
     end
   end
@@ -10970,7 +8748,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_62_ex_p1 <= ((pipe_rspu_pipeline_62_id_val1 >> 36) & 15);
     end
   end
@@ -10980,7 +8757,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_62_ex_p2 <= ((pipe_rspu_pipeline_62_id_val2 >> 36) & 15);
     end
   end
@@ -10990,7 +8766,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_62_ex_packed <= ((((pipe_rspu_pipeline_62_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_62_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_62_ex_out_d & 4294967295));
     end
   end
@@ -11000,7 +8775,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_62_ex_t1 <= ((pipe_rspu_pipeline_62_id_val1 >> 32) & 15);
     end
   end
@@ -11010,7 +8784,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_62_ex_t2 <= ((pipe_rspu_pipeline_62_id_val2 >> 32) & 15);
     end
   end
@@ -11020,7 +8793,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_62_ex_trap <= alu_alu_core_64_is_trap;
     end
   end
@@ -11030,8 +8802,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_62_id_rd <= ((instr_10 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_62_id_rd <= ((core_core_top_61_current_instr >> 16) & 1023);
     end
   end
 
@@ -11040,8 +8811,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_62_id_rs1 <= ((instr_10 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_62_id_rs1 <= ((core_core_top_61_current_instr >> 48) & 1023);
     end
   end
 
@@ -11050,18 +8820,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_62_id_rs2 <= ((instr_10 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_62_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_62_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_62_fetch_active_out) pipe_rspu_pipeline_62_pc <= ((pipe_rspu_pipeline_62_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_62_id_rs2 <= ((core_core_top_61_current_instr >> 32) & 1023);
     end
   end
 
@@ -11070,7 +8829,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_62_pcc_fault <= 1'b0;
     end
   end
@@ -11080,8 +8838,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_62_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_62_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_62_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_62_fetch_active_out) pipe_rspu_pipeline_62_pipe_pc <= ((pipe_rspu_pipeline_62_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -11090,8 +8856,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_62_ram_addr <= (pipe_rspu_pipeline_62_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_62_ram_addr <= (pipe_rspu_pipeline_62_pipe_pc & 16383);
     end
   end
 
@@ -11100,7 +8865,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_62_reg_din <= pipe_rspu_pipeline_62_ex_packed;
     end
   end
@@ -11110,7 +8874,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_62_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_62_reg_we <= 1'b1;
     end
   end
@@ -11120,8 +8883,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_74_alu_op <= (instr_9 & 255);
+      if (always_out) pipe_rspu_pipeline_74_alu_op <= (core_core_top_73_current_instr & 255);
     end
   end
 
@@ -11130,7 +8892,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_74_cert_g <= 0;
     end
   end
@@ -11140,7 +8901,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_74_cert_h <= 1'b1;
     end
   end
@@ -11150,7 +8910,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_74_cert_i <= 0;
     end
   end
@@ -11160,7 +8919,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_74_cert_r <= 0;
     end
   end
@@ -11170,7 +8928,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_74_cert_v <= 1'b1;
     end
   end
@@ -11180,7 +8937,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_74_ex_d1 <= (pipe_rspu_pipeline_74_id_val1 & 4294967295);
     end
   end
@@ -11190,7 +8946,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_74_ex_d2 <= (pipe_rspu_pipeline_74_id_val2 & 4294967295);
     end
   end
@@ -11200,7 +8955,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_74_ex_out_d <= (alu_alu_core_76_res_data & 4294967295);
     end
   end
@@ -11210,7 +8964,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_74_ex_out_p <= (alu_alu_core_76_res_prov & 15);
     end
   end
@@ -11220,7 +8973,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_74_ex_out_t <= (alu_alu_core_76_res_tag & 15);
     end
   end
@@ -11230,7 +8982,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_74_ex_p1 <= ((pipe_rspu_pipeline_74_id_val1 >> 36) & 15);
     end
   end
@@ -11240,7 +8991,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_74_ex_p2 <= ((pipe_rspu_pipeline_74_id_val2 >> 36) & 15);
     end
   end
@@ -11250,7 +9000,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_74_ex_packed <= ((((pipe_rspu_pipeline_74_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_74_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_74_ex_out_d & 4294967295));
     end
   end
@@ -11260,7 +9009,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_74_ex_t1 <= ((pipe_rspu_pipeline_74_id_val1 >> 32) & 15);
     end
   end
@@ -11270,7 +9018,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_74_ex_t2 <= ((pipe_rspu_pipeline_74_id_val2 >> 32) & 15);
     end
   end
@@ -11280,7 +9027,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_74_ex_trap <= alu_alu_core_76_is_trap;
     end
   end
@@ -11290,8 +9036,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_74_id_rd <= ((instr_9 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_74_id_rd <= ((core_core_top_73_current_instr >> 16) & 1023);
     end
   end
 
@@ -11300,8 +9045,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_74_id_rs1 <= ((instr_9 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_74_id_rs1 <= ((core_core_top_73_current_instr >> 48) & 1023);
     end
   end
 
@@ -11310,18 +9054,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_74_id_rs2 <= ((instr_9 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_74_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_74_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_74_fetch_active_out) pipe_rspu_pipeline_74_pc <= ((pipe_rspu_pipeline_74_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_74_id_rs2 <= ((core_core_top_73_current_instr >> 32) & 1023);
     end
   end
 
@@ -11330,7 +9063,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_74_pcc_fault <= 1'b0;
     end
   end
@@ -11340,8 +9072,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_74_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_74_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_74_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_74_fetch_active_out) pipe_rspu_pipeline_74_pipe_pc <= ((pipe_rspu_pipeline_74_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -11350,8 +9090,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_74_ram_addr <= (pipe_rspu_pipeline_74_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_74_ram_addr <= (pipe_rspu_pipeline_74_pipe_pc & 16383);
     end
   end
 
@@ -11360,7 +9099,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_74_reg_din <= pipe_rspu_pipeline_74_ex_packed;
     end
   end
@@ -11370,7 +9108,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_74_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_74_reg_we <= 1'b1;
     end
   end
@@ -11380,8 +9117,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_86_alu_op <= (instr_8 & 255);
+      if (always_out) pipe_rspu_pipeline_86_alu_op <= (core_core_top_85_current_instr & 255);
     end
   end
 
@@ -11390,7 +9126,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_86_cert_g <= 0;
     end
   end
@@ -11400,7 +9135,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_86_cert_h <= 1'b1;
     end
   end
@@ -11410,7 +9144,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_86_cert_i <= 0;
     end
   end
@@ -11420,7 +9153,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_86_cert_r <= 0;
     end
   end
@@ -11430,7 +9162,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_86_cert_v <= 1'b1;
     end
   end
@@ -11440,7 +9171,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_86_ex_d1 <= (pipe_rspu_pipeline_86_id_val1 & 4294967295);
     end
   end
@@ -11450,7 +9180,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_86_ex_d2 <= (pipe_rspu_pipeline_86_id_val2 & 4294967295);
     end
   end
@@ -11460,7 +9189,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_86_ex_out_d <= (alu_alu_core_88_res_data & 4294967295);
     end
   end
@@ -11470,7 +9198,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_86_ex_out_p <= (alu_alu_core_88_res_prov & 15);
     end
   end
@@ -11480,7 +9207,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_86_ex_out_t <= (alu_alu_core_88_res_tag & 15);
     end
   end
@@ -11490,7 +9216,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_86_ex_p1 <= ((pipe_rspu_pipeline_86_id_val1 >> 36) & 15);
     end
   end
@@ -11500,7 +9225,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_86_ex_p2 <= ((pipe_rspu_pipeline_86_id_val2 >> 36) & 15);
     end
   end
@@ -11510,7 +9234,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_86_ex_packed <= ((((pipe_rspu_pipeline_86_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_86_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_86_ex_out_d & 4294967295));
     end
   end
@@ -11520,7 +9243,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_86_ex_t1 <= ((pipe_rspu_pipeline_86_id_val1 >> 32) & 15);
     end
   end
@@ -11530,7 +9252,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_86_ex_t2 <= ((pipe_rspu_pipeline_86_id_val2 >> 32) & 15);
     end
   end
@@ -11540,7 +9261,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_86_ex_trap <= alu_alu_core_88_is_trap;
     end
   end
@@ -11550,8 +9270,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_86_id_rd <= ((instr_8 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_86_id_rd <= ((core_core_top_85_current_instr >> 16) & 1023);
     end
   end
 
@@ -11560,8 +9279,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_86_id_rs1 <= ((instr_8 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_86_id_rs1 <= ((core_core_top_85_current_instr >> 48) & 1023);
     end
   end
 
@@ -11570,18 +9288,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_86_id_rs2 <= ((instr_8 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_86_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_86_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_86_fetch_active_out) pipe_rspu_pipeline_86_pc <= ((pipe_rspu_pipeline_86_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_86_id_rs2 <= ((core_core_top_85_current_instr >> 32) & 1023);
     end
   end
 
@@ -11590,7 +9297,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_86_pcc_fault <= 1'b0;
     end
   end
@@ -11600,8 +9306,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_86_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_86_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_86_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_86_fetch_active_out) pipe_rspu_pipeline_86_pipe_pc <= ((pipe_rspu_pipeline_86_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -11610,8 +9324,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_86_ram_addr <= (pipe_rspu_pipeline_86_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_86_ram_addr <= (pipe_rspu_pipeline_86_pipe_pc & 16383);
     end
   end
 
@@ -11620,7 +9333,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_86_reg_din <= pipe_rspu_pipeline_86_ex_packed;
     end
   end
@@ -11630,7 +9342,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_86_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_86_reg_we <= 1'b1;
     end
   end
@@ -11640,8 +9351,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_alu_op <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_98_alu_op <= (instr_7 & 255);
+      if (always_out) pipe_rspu_pipeline_98_alu_op <= (core_core_top_97_current_instr & 255);
     end
   end
 
@@ -11650,7 +9360,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_cert_g <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_98_cert_g <= 0;
     end
   end
@@ -11660,7 +9369,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_cert_h <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_98_cert_h <= 1'b1;
     end
   end
@@ -11670,7 +9378,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_cert_i <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_98_cert_i <= 0;
     end
   end
@@ -11680,7 +9387,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_cert_r <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_98_cert_r <= 0;
     end
   end
@@ -11690,7 +9396,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_cert_v <= '0;
     end else begin
-  // source: <unknown>:35
       if (always_out) pipe_rspu_pipeline_98_cert_v <= 1'b1;
     end
   end
@@ -11700,7 +9405,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_d1 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_98_ex_d1 <= (pipe_rspu_pipeline_98_id_val1 & 4294967295);
     end
   end
@@ -11710,7 +9414,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_d2 <= '0;
     end else begin
-  // source: <unknown>:10
       if (always_out) pipe_rspu_pipeline_98_ex_d2 <= (pipe_rspu_pipeline_98_id_val2 & 4294967295);
     end
   end
@@ -11720,7 +9423,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_out_d <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_98_ex_out_d <= (alu_alu_core_100_res_data & 4294967295);
     end
   end
@@ -11730,7 +9432,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_out_p <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_98_ex_out_p <= (alu_alu_core_100_res_prov & 15);
     end
   end
@@ -11740,7 +9441,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_out_t <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_98_ex_out_t <= (alu_alu_core_100_res_tag & 15);
     end
   end
@@ -11750,7 +9450,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_p1 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_98_ex_p1 <= ((pipe_rspu_pipeline_98_id_val1 >> 36) & 15);
     end
   end
@@ -11760,7 +9459,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_p2 <= '0;
     end else begin
-  // source: <unknown>:32
       if (always_out) pipe_rspu_pipeline_98_ex_p2 <= ((pipe_rspu_pipeline_98_id_val2 >> 36) & 15);
     end
   end
@@ -11770,7 +9468,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_packed <= '0;
     end else begin
-  // source: <unknown>:108
       if (always_out) pipe_rspu_pipeline_98_ex_packed <= ((((pipe_rspu_pipeline_98_ex_out_p & 15) << 36) | ((pipe_rspu_pipeline_98_ex_out_t & 15) << 32)) | (pipe_rspu_pipeline_98_ex_out_d & 4294967295));
     end
   end
@@ -11780,7 +9477,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_t1 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_98_ex_t1 <= ((pipe_rspu_pipeline_98_id_val1 >> 32) & 15);
     end
   end
@@ -11790,7 +9486,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_t2 <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) pipe_rspu_pipeline_98_ex_t2 <= ((pipe_rspu_pipeline_98_id_val2 >> 32) & 15);
     end
   end
@@ -11800,7 +9495,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ex_trap <= '0;
     end else begin
-  // source: <unknown>:89
       if (always_out) pipe_rspu_pipeline_98_ex_trap <= alu_alu_core_100_is_trap;
     end
   end
@@ -11810,8 +9504,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_id_rd <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_98_id_rd <= ((instr_7 >> 16) & 1023);
+      if (always_out) pipe_rspu_pipeline_98_id_rd <= ((core_core_top_97_current_instr >> 16) & 1023);
     end
   end
 
@@ -11820,8 +9513,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_id_rs1 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_98_id_rs1 <= ((instr_7 >> 48) & 1023);
+      if (always_out) pipe_rspu_pipeline_98_id_rs1 <= ((core_core_top_97_current_instr >> 48) & 1023);
     end
   end
 
@@ -11830,18 +9522,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_id_rs2 <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_98_id_rs2 <= ((instr_7 >> 32) & 1023);
-    end
-  end
-
-  // Unified Reflex Block for: pipe_rspu_pipeline_98_pc
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pipe_rspu_pipeline_98_pc <= '0;
-    end else begin
-  // source: <unknown>:53
-      if (pipe_rspu_pipeline_98_fetch_active_out) pipe_rspu_pipeline_98_pc <= ((pipe_rspu_pipeline_98_pc + 1) & 4294967295);
+      if (always_out) pipe_rspu_pipeline_98_id_rs2 <= ((core_core_top_97_current_instr >> 32) & 1023);
     end
   end
 
@@ -11850,7 +9531,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_pcc_fault <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_98_pcc_fault <= 1'b0;
     end
   end
@@ -11860,8 +9540,16 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_pcc_valid <= '0;
     end else begin
-  // source: <unknown>:42
       if (always_out) pipe_rspu_pipeline_98_pcc_valid <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: pipe_rspu_pipeline_98_pipe_pc
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pipe_rspu_pipeline_98_pipe_pc <= '0;
+    end else begin
+      if (pipe_rspu_pipeline_98_fetch_active_out) pipe_rspu_pipeline_98_pipe_pc <= ((pipe_rspu_pipeline_98_pipe_pc + 1) & 4294967295);
     end
   end
 
@@ -11870,8 +9558,7 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_ram_addr <= '0;
     end else begin
-  // source: <unknown>:118
-      if (always_out) pipe_rspu_pipeline_98_ram_addr <= (pipe_rspu_pipeline_98_pc & 16383);
+      if (always_out) pipe_rspu_pipeline_98_ram_addr <= (pipe_rspu_pipeline_98_pipe_pc & 16383);
     end
   end
 
@@ -11880,7 +9567,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_reg_din <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_98_reg_din <= pipe_rspu_pipeline_98_ex_packed;
     end
   end
@@ -11890,7 +9576,6 @@ module rspu_top (
     if (!rst_n) begin
       pipe_rspu_pipeline_98_reg_we <= '0;
     end else begin
-  // source: <unknown>:118
       if (always_out) pipe_rspu_pipeline_98_reg_we <= 1'b1;
     end
   end
@@ -11900,7 +9585,6 @@ module rspu_top (
     if (!rst_n) begin
       robot_angle <= '0;
     end else begin
-  // source: <unknown>:21
       if (always_out) robot_angle <= physics_pendulum_194_angle_internal;
     end
   end
@@ -11910,7 +9594,6 @@ module rspu_top (
     if (!rst_n) begin
       robot_torque <= '0;
     end else begin
-  // source: <unknown>:19
       if (always_out) robot_torque <= ctrl_controller_193_t_next;
     end
   end
@@ -11920,7 +9603,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_0 <= '0;
     end else begin
-  // source: <unknown>:275
       if (always_out) rx_data_0 <= fabric_noc_router_0_payload;
     end
   end
@@ -11930,7 +9612,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_1 <= '0;
     end else begin
-  // source: <unknown>:281
       if (always_out) rx_data_1 <= fabric_noc_router_0_payload;
     end
   end
@@ -11940,7 +9621,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_10 <= '0;
     end else begin
-  // source: <unknown>:335
       if (always_out) rx_data_10 <= fabric_noc_router_0_payload;
     end
   end
@@ -11950,7 +9630,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_11 <= '0;
     end else begin
-  // source: <unknown>:341
       if (always_out) rx_data_11 <= fabric_noc_router_0_payload;
     end
   end
@@ -11960,7 +9639,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_12 <= '0;
     end else begin
-  // source: <unknown>:347
       if (always_out) rx_data_12 <= fabric_noc_router_0_payload;
     end
   end
@@ -11970,7 +9648,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_13 <= '0;
     end else begin
-  // source: <unknown>:353
       if (always_out) rx_data_13 <= fabric_noc_router_0_payload;
     end
   end
@@ -11980,7 +9657,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_14 <= '0;
     end else begin
-  // source: <unknown>:359
       if (always_out) rx_data_14 <= fabric_noc_router_0_payload;
     end
   end
@@ -11990,7 +9666,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_15 <= '0;
     end else begin
-  // source: <unknown>:365
       if (always_out) rx_data_15 <= fabric_noc_router_0_payload;
     end
   end
@@ -12000,7 +9675,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_2 <= '0;
     end else begin
-  // source: <unknown>:287
       if (always_out) rx_data_2 <= fabric_noc_router_0_payload;
     end
   end
@@ -12010,7 +9684,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_3 <= '0;
     end else begin
-  // source: <unknown>:293
       if (always_out) rx_data_3 <= fabric_noc_router_0_payload;
     end
   end
@@ -12020,7 +9693,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_4 <= '0;
     end else begin
-  // source: <unknown>:299
       if (always_out) rx_data_4 <= fabric_noc_router_0_payload;
     end
   end
@@ -12030,7 +9702,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_5 <= '0;
     end else begin
-  // source: <unknown>:305
       if (always_out) rx_data_5 <= fabric_noc_router_0_payload;
     end
   end
@@ -12040,7 +9711,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_6 <= '0;
     end else begin
-  // source: <unknown>:311
       if (always_out) rx_data_6 <= fabric_noc_router_0_payload;
     end
   end
@@ -12050,7 +9720,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_7 <= '0;
     end else begin
-  // source: <unknown>:317
       if (always_out) rx_data_7 <= fabric_noc_router_0_payload;
     end
   end
@@ -12060,7 +9729,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_8 <= '0;
     end else begin
-  // source: <unknown>:323
       if (always_out) rx_data_8 <= fabric_noc_router_0_payload;
     end
   end
@@ -12070,7 +9738,6 @@ module rspu_top (
     if (!rst_n) begin
       rx_data_9 <= '0;
     end else begin
-  // source: <unknown>:329
       if (always_out) rx_data_9 <= fabric_noc_router_0_payload;
     end
   end
@@ -12080,8 +9747,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_0 <= '0;
     end else begin
-  // source: <unknown>:275
-      if (always_out) rx_valid_0 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 0));
+      if (always_out) rx_valid_0 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 0));
     end
   end
 
@@ -12090,8 +9756,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_1 <= '0;
     end else begin
-  // source: <unknown>:281
-      if (always_out) rx_valid_1 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 1));
+      if (always_out) rx_valid_1 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 1));
     end
   end
 
@@ -12100,8 +9765,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_10 <= '0;
     end else begin
-  // source: <unknown>:335
-      if (always_out) rx_valid_10 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 10));
+      if (always_out) rx_valid_10 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 10));
     end
   end
 
@@ -12110,8 +9774,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_11 <= '0;
     end else begin
-  // source: <unknown>:341
-      if (always_out) rx_valid_11 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 11));
+      if (always_out) rx_valid_11 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 11));
     end
   end
 
@@ -12120,8 +9783,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_12 <= '0;
     end else begin
-  // source: <unknown>:347
-      if (always_out) rx_valid_12 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 12));
+      if (always_out) rx_valid_12 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 12));
     end
   end
 
@@ -12130,8 +9792,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_13 <= '0;
     end else begin
-  // source: <unknown>:353
-      if (always_out) rx_valid_13 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 13));
+      if (always_out) rx_valid_13 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 13));
     end
   end
 
@@ -12140,8 +9801,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_14 <= '0;
     end else begin
-  // source: <unknown>:359
-      if (always_out) rx_valid_14 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 14));
+      if (always_out) rx_valid_14 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 14));
     end
   end
 
@@ -12150,8 +9810,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_15 <= '0;
     end else begin
-  // source: <unknown>:365
-      if (always_out) rx_valid_15 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 15));
+      if (always_out) rx_valid_15 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 15));
     end
   end
 
@@ -12160,8 +9819,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_2 <= '0;
     end else begin
-  // source: <unknown>:287
-      if (always_out) rx_valid_2 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 2));
+      if (always_out) rx_valid_2 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 2));
     end
   end
 
@@ -12170,8 +9828,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_3 <= '0;
     end else begin
-  // source: <unknown>:293
-      if (always_out) rx_valid_3 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 3));
+      if (always_out) rx_valid_3 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 3));
     end
   end
 
@@ -12180,8 +9837,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_4 <= '0;
     end else begin
-  // source: <unknown>:299
-      if (always_out) rx_valid_4 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 4));
+      if (always_out) rx_valid_4 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 4));
     end
   end
 
@@ -12190,8 +9846,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_5 <= '0;
     end else begin
-  // source: <unknown>:305
-      if (always_out) rx_valid_5 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 5));
+      if (always_out) rx_valid_5 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 5));
     end
   end
 
@@ -12200,8 +9855,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_6 <= '0;
     end else begin
-  // source: <unknown>:311
-      if (always_out) rx_valid_6 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 6));
+      if (always_out) rx_valid_6 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 6));
     end
   end
 
@@ -12210,8 +9864,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_7 <= '0;
     end else begin
-  // source: <unknown>:317
-      if (always_out) rx_valid_7 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 7));
+      if (always_out) rx_valid_7 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 7));
     end
   end
 
@@ -12220,8 +9873,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_8 <= '0;
     end else begin
-  // source: <unknown>:323
-      if (always_out) rx_valid_8 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 8));
+      if (always_out) rx_valid_8 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 8));
     end
   end
 
@@ -12230,8 +9882,7 @@ module rspu_top (
     if (!rst_n) begin
       rx_valid_9 <= '0;
     end else begin
-  // source: <unknown>:329
-      if (always_out) rx_valid_9 <= (fabric_noc_router_0_sv15 & (fabric_noc_router_0_dest_id == 9));
+      if (always_out) rx_valid_9 <= (fabric_noc_router_0_sv16 & (fabric_noc_router_0_dest_id == 9));
     end
   end
 
@@ -12240,9 +9891,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_0 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_0 <= 0;
-  // source: <unknown>:48
       if (core_core_top_181_trap_active_out) tx_data_0 <= ((9223372036854775808 | 60129542144) | pc_0);
     end
   end
@@ -12252,9 +9901,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_1 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_1 <= 0;
-  // source: <unknown>:48
       if (core_core_top_169_trap_active_out) tx_data_1 <= ((9223372036854775808 | 60129542144) | pc_1);
     end
   end
@@ -12264,9 +9911,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_10 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_10 <= 0;
-  // source: <unknown>:48
       if (core_core_top_61_trap_active_out) tx_data_10 <= ((9223372036854775808 | 60129542144) | pc_10);
     end
   end
@@ -12276,9 +9921,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_11 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_11 <= 0;
-  // source: <unknown>:48
       if (core_core_top_49_trap_active_out) tx_data_11 <= ((9223372036854775808 | 60129542144) | pc_11);
     end
   end
@@ -12288,9 +9931,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_12 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_12 <= 0;
-  // source: <unknown>:48
       if (core_core_top_37_trap_active_out) tx_data_12 <= ((9223372036854775808 | 60129542144) | pc_12);
     end
   end
@@ -12300,9 +9941,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_13 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_13 <= 0;
-  // source: <unknown>:48
       if (core_core_top_25_trap_active_out) tx_data_13 <= ((9223372036854775808 | 60129542144) | pc_13);
     end
   end
@@ -12312,9 +9951,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_14 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_14 <= 0;
-  // source: <unknown>:48
       if (core_core_top_13_trap_active_out) tx_data_14 <= ((9223372036854775808 | 60129542144) | pc_14);
     end
   end
@@ -12324,9 +9961,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_15 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_15 <= 0;
-  // source: <unknown>:48
       if (core_core_top_1_trap_active_out) tx_data_15 <= ((9223372036854775808 | 60129542144) | pc_15);
     end
   end
@@ -12336,9 +9971,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_2 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_2 <= 0;
-  // source: <unknown>:48
       if (core_core_top_157_trap_active_out) tx_data_2 <= ((9223372036854775808 | 60129542144) | pc_2);
     end
   end
@@ -12348,9 +9981,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_3 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_3 <= 0;
-  // source: <unknown>:48
       if (core_core_top_145_trap_active_out) tx_data_3 <= ((9223372036854775808 | 60129542144) | pc_3);
     end
   end
@@ -12360,9 +9991,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_4 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_4 <= 0;
-  // source: <unknown>:48
       if (core_core_top_133_trap_active_out) tx_data_4 <= ((9223372036854775808 | 60129542144) | pc_4);
     end
   end
@@ -12372,9 +10001,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_5 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_5 <= 0;
-  // source: <unknown>:48
       if (core_core_top_121_trap_active_out) tx_data_5 <= ((9223372036854775808 | 60129542144) | pc_5);
     end
   end
@@ -12384,9 +10011,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_6 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_6 <= 0;
-  // source: <unknown>:48
       if (core_core_top_109_trap_active_out) tx_data_6 <= ((9223372036854775808 | 60129542144) | pc_6);
     end
   end
@@ -12396,9 +10021,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_7 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_7 <= 0;
-  // source: <unknown>:48
       if (core_core_top_97_trap_active_out) tx_data_7 <= ((9223372036854775808 | 60129542144) | pc_7);
     end
   end
@@ -12408,9 +10031,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_8 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_8 <= 0;
-  // source: <unknown>:48
       if (core_core_top_85_trap_active_out) tx_data_8 <= ((9223372036854775808 | 60129542144) | pc_8);
     end
   end
@@ -12420,9 +10041,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_data_9 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_data_9 <= 0;
-  // source: <unknown>:48
       if (core_core_top_73_trap_active_out) tx_data_9 <= ((9223372036854775808 | 60129542144) | pc_9);
     end
   end
@@ -12432,9 +10051,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_0 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_0 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_181_trap_active_out) tx_valid_0 <= 1'b1;
     end
   end
@@ -12444,9 +10061,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_1 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_1 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_169_trap_active_out) tx_valid_1 <= 1'b1;
     end
   end
@@ -12456,9 +10071,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_10 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_10 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_61_trap_active_out) tx_valid_10 <= 1'b1;
     end
   end
@@ -12468,9 +10081,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_11 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_11 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_49_trap_active_out) tx_valid_11 <= 1'b1;
     end
   end
@@ -12480,9 +10091,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_12 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_12 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_37_trap_active_out) tx_valid_12 <= 1'b1;
     end
   end
@@ -12492,9 +10101,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_13 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_13 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_25_trap_active_out) tx_valid_13 <= 1'b1;
     end
   end
@@ -12504,9 +10111,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_14 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_14 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_13_trap_active_out) tx_valid_14 <= 1'b1;
     end
   end
@@ -12516,9 +10121,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_15 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_15 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_1_trap_active_out) tx_valid_15 <= 1'b1;
     end
   end
@@ -12528,9 +10131,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_2 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_2 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_157_trap_active_out) tx_valid_2 <= 1'b1;
     end
   end
@@ -12540,9 +10141,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_3 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_3 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_145_trap_active_out) tx_valid_3 <= 1'b1;
     end
   end
@@ -12552,9 +10151,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_4 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_4 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_133_trap_active_out) tx_valid_4 <= 1'b1;
     end
   end
@@ -12564,9 +10161,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_5 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_5 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_121_trap_active_out) tx_valid_5 <= 1'b1;
     end
   end
@@ -12576,9 +10171,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_6 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_6 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_109_trap_active_out) tx_valid_6 <= 1'b1;
     end
   end
@@ -12588,9 +10181,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_7 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_7 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_97_trap_active_out) tx_valid_7 <= 1'b1;
     end
   end
@@ -12600,9 +10191,7 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_8 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_8 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_85_trap_active_out) tx_valid_8 <= 1'b1;
     end
   end
@@ -12612,16 +10201,13 @@ module rspu_top (
     if (!rst_n) begin
       tx_valid_9 <= '0;
     end else begin
-  // source: <unknown>:40
       if (always_out) tx_valid_9 <= 1'b0;
-  // source: <unknown>:48
       if (core_core_top_73_trap_active_out) tx_valid_9 <= 1'b1;
     end
   end
 
   // ── Structural Module Instantiations ──
 
-  // source: <unknown>:133
   ram ram_0 (
     clk,
     pipe_rspu_pipeline_2_ram_addr,
@@ -12629,7 +10215,6 @@ module rspu_top (
     pipe_rspu_pipeline_2_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_1 (
     clk,
     pipe_rspu_pipeline_2_id_rs1,
@@ -12641,7 +10226,6 @@ module rspu_top (
     pipe_rspu_pipeline_2_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_2 (
     clk,
     pipe_rspu_pipeline_14_ram_addr,
@@ -12649,7 +10233,6 @@ module rspu_top (
     pipe_rspu_pipeline_14_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_3 (
     clk,
     pipe_rspu_pipeline_14_id_rs1,
@@ -12661,7 +10244,6 @@ module rspu_top (
     pipe_rspu_pipeline_14_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_4 (
     clk,
     pipe_rspu_pipeline_26_ram_addr,
@@ -12669,7 +10251,6 @@ module rspu_top (
     pipe_rspu_pipeline_26_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_5 (
     clk,
     pipe_rspu_pipeline_26_id_rs1,
@@ -12681,7 +10262,6 @@ module rspu_top (
     pipe_rspu_pipeline_26_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_6 (
     clk,
     pipe_rspu_pipeline_38_ram_addr,
@@ -12689,7 +10269,6 @@ module rspu_top (
     pipe_rspu_pipeline_38_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_7 (
     clk,
     pipe_rspu_pipeline_38_id_rs1,
@@ -12701,7 +10280,6 @@ module rspu_top (
     pipe_rspu_pipeline_38_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_8 (
     clk,
     pipe_rspu_pipeline_50_ram_addr,
@@ -12709,7 +10287,6 @@ module rspu_top (
     pipe_rspu_pipeline_50_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_9 (
     clk,
     pipe_rspu_pipeline_50_id_rs1,
@@ -12721,7 +10298,6 @@ module rspu_top (
     pipe_rspu_pipeline_50_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_10 (
     clk,
     pipe_rspu_pipeline_62_ram_addr,
@@ -12729,7 +10305,6 @@ module rspu_top (
     pipe_rspu_pipeline_62_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_11 (
     clk,
     pipe_rspu_pipeline_62_id_rs1,
@@ -12741,7 +10316,6 @@ module rspu_top (
     pipe_rspu_pipeline_62_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_12 (
     clk,
     pipe_rspu_pipeline_74_ram_addr,
@@ -12749,7 +10323,6 @@ module rspu_top (
     pipe_rspu_pipeline_74_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_13 (
     clk,
     pipe_rspu_pipeline_74_id_rs1,
@@ -12761,7 +10334,6 @@ module rspu_top (
     pipe_rspu_pipeline_74_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_14 (
     clk,
     pipe_rspu_pipeline_86_ram_addr,
@@ -12769,7 +10341,6 @@ module rspu_top (
     pipe_rspu_pipeline_86_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_15 (
     clk,
     pipe_rspu_pipeline_86_id_rs1,
@@ -12781,7 +10352,6 @@ module rspu_top (
     pipe_rspu_pipeline_86_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_16 (
     clk,
     pipe_rspu_pipeline_98_ram_addr,
@@ -12789,7 +10359,6 @@ module rspu_top (
     pipe_rspu_pipeline_98_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_17 (
     clk,
     pipe_rspu_pipeline_98_id_rs1,
@@ -12801,7 +10370,6 @@ module rspu_top (
     pipe_rspu_pipeline_98_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_18 (
     clk,
     pipe_rspu_pipeline_110_ram_addr,
@@ -12809,7 +10377,6 @@ module rspu_top (
     pipe_rspu_pipeline_110_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_19 (
     clk,
     pipe_rspu_pipeline_110_id_rs1,
@@ -12821,7 +10388,6 @@ module rspu_top (
     pipe_rspu_pipeline_110_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_20 (
     clk,
     pipe_rspu_pipeline_122_ram_addr,
@@ -12829,7 +10395,6 @@ module rspu_top (
     pipe_rspu_pipeline_122_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_21 (
     clk,
     pipe_rspu_pipeline_122_id_rs1,
@@ -12841,7 +10406,6 @@ module rspu_top (
     pipe_rspu_pipeline_122_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_22 (
     clk,
     pipe_rspu_pipeline_134_ram_addr,
@@ -12849,7 +10413,6 @@ module rspu_top (
     pipe_rspu_pipeline_134_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_23 (
     clk,
     pipe_rspu_pipeline_134_id_rs1,
@@ -12861,7 +10424,6 @@ module rspu_top (
     pipe_rspu_pipeline_134_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_24 (
     clk,
     pipe_rspu_pipeline_146_ram_addr,
@@ -12869,7 +10431,6 @@ module rspu_top (
     pipe_rspu_pipeline_146_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_25 (
     clk,
     pipe_rspu_pipeline_146_id_rs1,
@@ -12881,7 +10442,6 @@ module rspu_top (
     pipe_rspu_pipeline_146_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_26 (
     clk,
     pipe_rspu_pipeline_158_ram_addr,
@@ -12889,7 +10449,6 @@ module rspu_top (
     pipe_rspu_pipeline_158_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_27 (
     clk,
     pipe_rspu_pipeline_158_id_rs1,
@@ -12901,7 +10460,6 @@ module rspu_top (
     pipe_rspu_pipeline_158_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_28 (
     clk,
     pipe_rspu_pipeline_170_ram_addr,
@@ -12909,7 +10467,6 @@ module rspu_top (
     pipe_rspu_pipeline_170_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_29 (
     clk,
     pipe_rspu_pipeline_170_id_rs1,
@@ -12921,7 +10478,6 @@ module rspu_top (
     pipe_rspu_pipeline_170_id_val2
   );
 
-  // source: <unknown>:133
   ram ram_30 (
     clk,
     pipe_rspu_pipeline_182_ram_addr,
@@ -12929,7 +10485,6 @@ module rspu_top (
     pipe_rspu_pipeline_182_mem_out
   );
 
-  // source: <unknown>:76
   regfile regfile_31 (
     clk,
     pipe_rspu_pipeline_182_id_rs1,

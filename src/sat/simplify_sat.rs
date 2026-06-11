@@ -136,7 +136,8 @@ fn is_boolean_expr(expr: &Expr) -> bool {
             Expr::Unary { op, operand } => {
                 match op {
                     UnaryOp::Not => stack.push(operand),
-                    UnaryOp::Negate => return false, // Arithmetic negation.
+                    UnaryOp::Negate => return false,
+                    UnaryOp::ReductionOr => return false, // Arithmetic negation.
                 }
             }
             Expr::Binary { op, left, right } => {

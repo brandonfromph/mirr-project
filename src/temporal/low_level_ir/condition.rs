@@ -91,11 +91,35 @@ impl ConditionKind {
     pub fn try_from_expr(expr: &Expr) -> Result<Self, MirrError> {
         match expr {
             Expr::Signal(name) => Ok(ConditionKind::SimpleSignal(name.clone())),
+            Expr::ArrayIndex { array, index } => {
+                if let (Expr::Signal(arr), Expr::Literal(LiteralValue::Integer(idx))) =
+                    (array.as_ref(), index.as_ref())
+                {
+                    Ok(ConditionKind::SimpleSignal(format!("{}[{}]", arr, idx)))
+                } else {
+                    Err(mirrcode(
+                        ErrorCode::TemporalCondUnsupported,
+                        "unsupported condition expression form",
+                    ))
+                }
+            }
             Expr::Prev { signal, delay } => {
                 Ok(ConditionKind::PrevSignal { signal: signal.clone(), delay: *delay })
             }
             Expr::Unary { op: UnaryOp::Not, operand } => match operand.as_ref() {
                 Expr::Signal(name) => Ok(ConditionKind::NegatedSignal(name.clone())),
+                Expr::ArrayIndex { array, index } => {
+                    if let (Expr::Signal(arr), Expr::Literal(LiteralValue::Integer(idx))) =
+                        (array.as_ref(), index.as_ref())
+                    {
+                        Ok(ConditionKind::NegatedSignal(format!("{}[{}]", arr, idx)))
+                    } else {
+                        Err(mirrcode(
+                            ErrorCode::TemporalCondUnsupported,
+                            "negation of non-signal expressions is not supported",
+                        ))
+                    }
+                }
                 Expr::Prev { .. } => Err(mirrcode(
                     ErrorCode::TemporalCondUnsupported,
                     "negation of prev() is not yet supported in temporal guards",
@@ -122,6 +146,22 @@ impl ConditionKind {
                         op: *op,
                         value: v.clone(),
                     }),
+                    (Expr::ArrayIndex { array, index }, Expr::Literal(v)) => {
+                        if let (Expr::Signal(arr), Expr::Literal(LiteralValue::Integer(idx))) =
+                            (array.as_ref(), index.as_ref())
+                        {
+                            Ok(ConditionKind::Comparison {
+                                signal: format!("{}[{}]", arr, idx),
+                                op: *op,
+                                value: v.clone(),
+                            })
+                        } else {
+                            Err(mirrcode(
+                                ErrorCode::TemporalCondUnsupported,
+                                "comparisons must be of the form <signal> <op> <literal>",
+                            ))
+                        }
+                    }
                     _ => Err(mirrcode(
                         ErrorCode::TemporalCondUnsupported,
                         "comparisons must be of the form <signal> <op> <literal>",
@@ -160,37 +200,60 @@ impl ConditionKind {
             }
         }
 
-        if let Some(sig_ref) = &registry.signal_refs[idx] {
-            let name = registry.names[sig_ref.0 .0 as usize]
-                .as_ref()
-                .map(|n| n.0.clone())
-                .ok_or_else(|| {
-                    mirrcode(
+        // Helper to extract a signal name (either simple or array index)
+        let get_signal_name = |ent_idx: usize| -> Result<String, MirrError> {
+            if let Some(sig_ref) = &registry.signal_refs[ent_idx] {
+                registry.names[sig_ref.0 .0 as usize].as_ref().map(|n| n.0.clone()).ok_or_else(
+                    || {
+                        mirrcode(
+                            ErrorCode::TemporalCondLowerFailed,
+                            "Signal reference to unnamed entity",
+                        )
+                    },
+                )
+            } else if let Some(arr_idx) = &registry.array_indices[ent_idx] {
+                let arr_ent = arr_idx.array.0 as usize;
+                let arr_name = if let Some(sig_ref) = &registry.signal_refs[arr_ent] {
+                    registry.names[sig_ref.0 .0 as usize].as_ref().map(|n| n.0.clone())
+                } else {
+                    None
+                };
+                let index_val = if let Some(lit) = &registry.literals[arr_idx.index.0 as usize] {
+                    if let LiteralValue::Integer(idx_val) = lit.0 {
+                        Some(idx_val)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                if let (Some(name), Some(val)) = (arr_name, index_val) {
+                    Ok(format!("{}[{}]", name, val))
+                } else {
+                    Err(mirrcode(
                         ErrorCode::TemporalCondLowerFailed,
-                        "Signal reference to unnamed entity",
-                    )
-                })?;
+                        "Complex array index not supported in guards",
+                    ))
+                }
+            } else {
+                Err(mirrcode(ErrorCode::TemporalCondLowerFailed, "Expected signal or array index"))
+            }
+        };
+
+        if registry.signal_refs[idx].is_some() || registry.array_indices[idx].is_some() {
+            let name = get_signal_name(idx)?;
             Ok(ConditionKind::SimpleSignal(name))
         } else if let Some(prev) = &registry.prev_ops[idx] {
-            let name = registry.names[prev.signal.0 as usize]
-                .as_ref()
-                .map(|n| n.0.clone())
-                .ok_or_else(|| {
-                    mirrcode(ErrorCode::TemporalCondLowerFailed, "Prev reference to unnamed entity")
-                })?;
+            let name = get_signal_name(prev.signal.0 as usize)?;
             Ok(ConditionKind::PrevSignal { signal: name, delay: prev.delay })
         } else if let Some(unary) = &registry.unary_ops[idx] {
             if unary.op == UnaryOp::Not {
-                if let Some(sig_ref) = &registry.signal_refs[unary.operand.0 as usize] {
-                    let name = registry.names[sig_ref.0 .0 as usize]
-                        .as_ref()
-                        .map(|n| n.0.clone())
-                        .ok_or_else(|| {
-                            mirrcode(
-                                ErrorCode::TemporalCondLowerFailed,
-                                "Signal reference to unnamed entity",
-                            )
-                        })?;
+                let op_idx = unary.operand.0 as usize;
+                if registry.signal_refs[op_idx].is_some()
+                    || registry.array_indices[op_idx].is_some()
+                {
+                    let name = get_signal_name(op_idx)?;
                     Ok(ConditionKind::NegatedSignal(name))
                 } else {
                     Err(mirrcode(
@@ -215,20 +278,14 @@ impl ConditionKind {
                     let left_idx = binary.left.0 as usize;
                     let right_idx = binary.right.0 as usize;
 
-                    let signal_name = if let Some(sig_ref) = &registry.signal_refs[left_idx] {
-                        registry.names[sig_ref.0 .0 as usize]
-                            .as_ref()
-                            .map(|n| n.0.clone())
-                            .ok_or_else(|| {
-                                mirrcode(
-                                    ErrorCode::TemporalCondLowerFailed,
-                                    "Signal reference to unnamed entity",
-                                )
-                            })?
+                    let signal_name = if registry.signal_refs[left_idx].is_some()
+                        || registry.array_indices[left_idx].is_some()
+                    {
+                        get_signal_name(left_idx)?
                     } else {
                         return Err(mirrcode(
                             ErrorCode::TemporalCondUnsupported,
-                            "Comparisons must have a signal on the left-hand side",
+                            "Comparisons must have a signal or array index on the left-hand side",
                         ));
                     };
 

@@ -118,6 +118,16 @@ pub(super) fn parse_expr(sexpr: &SExpr) -> Result<Expr, MirrError> {
                             work_stack.push(ParseWork::BuildUnary(UnaryOp::Negate));
                             work_stack.push(ParseWork::Process(&items[1]));
                         }
+                        "reduce_or" => {
+                            if items.len() < 2 {
+                                return Err(sexpr_err(format!(
+                                    "{} reduce_or requires operand",
+                                    crate::error_codes::ec(806)
+                                )));
+                            }
+                            work_stack.push(ParseWork::BuildUnary(UnaryOp::ReductionOr));
+                            work_stack.push(ParseWork::Process(&items[1]));
+                        }
                         "aref" => {
                             if items.len() != 3 {
                                 return Err(sexpr_err(format!(

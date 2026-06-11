@@ -351,13 +351,14 @@ fn parse_on_block(
         )
     })?;
     let guards_part = after_on.trim_end_matches('{').trim();
+    let mut guards_str = guards_part;
+    if guards_str.starts_with('[') && guards_str.ends_with(']') {
+        guards_str = &guards_str[1..guards_str.len() - 1];
+    }
 
     // Simple space-separated guards for now
-    let guards: Vec<String> = guards_part
-        .split_whitespace()
-        .filter(|s| *s != "and")
-        .map(|s| s.trim_start_matches('[').trim_end_matches(']').to_string())
-        .collect();
+    let guards: Vec<String> =
+        guards_str.split_whitespace().filter(|s| *s != "and").map(|s| s.to_string()).collect();
 
     if guards.is_empty() {
         return Err(crate::error_codes::mirrcode(

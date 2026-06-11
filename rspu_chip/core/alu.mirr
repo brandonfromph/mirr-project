@@ -87,4 +87,19 @@ def alu_core(
     }
 }
 
-module alu {}
+module alu {
+    signal clk: in bool;
+    signal op: in u32;
+    signal d1: in u64;
+    signal t1: in u64;
+    signal p1: in u64;
+    signal d2: in u64;
+    signal t2: in u64;
+    signal p2: in u64;
+    signal out_data: out u64;
+    signal out_tag: out u64;
+    signal out_prov: out u64;
+    signal trap: out bool;
+
+    alu_core(clk, op, d1, t1, p1, d2, t2, p2, out_data, out_tag, out_prov, trap);
+}

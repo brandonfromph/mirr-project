@@ -23,140 +23,146 @@ use mirrc::pipeline::PipelineConfig;
 use mirrc::Workspace;
 
 #[derive(Parser, Debug)]
-#[command(
-    name = "mirr-compile",
-    author,
-    version,
-    about = "Unified MIRR compilation driver (Phase 6)"
-)]
-struct Cli {
+#[command(name = "compile", about = "Compile MIRR hardware descriptions to RTL or ASM")]
+pub struct Cli {
     /// Path to the root MIRR file
-    root_file: Option<String>,
+    pub root_file: Option<String>,
 
     /// Export CLI schema as JSON for tool integration
     #[arg(long, hide = true)]
-    help_json: bool,
+    pub help_json: bool,
 
     /// Output format: dot, verilog, sv, json, sva, firrtl, rspu, riscv, arm, testbench, scaffold, build-script, sexpr, mape-k-rtl, cert
-    #[arg(short, long)]
-    emit: Option<String>,
+    #[arg(
+        short,
+        long,
+        help_heading = "Output & Format",
+        long_help = "Target output format.\n- rspu: Emits MIRR R-SPU binary assembly.\n- verilog/sv: Emits synthesis-ready SystemVerilog.\n- dot: Emits AST dependency graph."
+    )]
+    pub emit: Option<String>,
 
     /// Write output to FILE
-    #[arg(short, long)]
-    output: Option<String>,
+    #[arg(short, long, help_heading = "Output & Format")]
+    pub output: Option<String>,
 
     /// FPGA target: generic, xilinx-7, xilinx-us, intel-cyclone, lattice-ice40, lattice-ecp5, lattice-nexus
-    #[arg(long, default_value = "generic")]
-    target: String,
+    #[arg(long, default_value = "generic", help_heading = "Synthesis Options")]
+    pub target: String,
 
     /// Input synchronizer stages
-    #[arg(long, default_value_t = 2)]
-    sync_stages: u32,
+    #[arg(long, default_value_t = 2, help_heading = "Synthesis Options")]
+    pub sync_stages: u32,
 
     /// Min operand bits for DSP inference
-    #[arg(long, default_value_t = 9)]
-    dsp_threshold: u32,
+    #[arg(long, default_value_t = 9, help_heading = "Synthesis Options")]
+    pub dsp_threshold: u32,
 
     /// Also emit self-checking testbench
-    #[arg(long)]
-    testbench: bool,
+    #[arg(long, help_heading = "Simulation Options")]
+    pub testbench: bool,
 
     /// Also emit FPGA constraint template and build script
-    #[arg(long)]
-    scaffold: bool,
+    #[arg(
+        long,
+        help_heading = "Synthesis Options",
+        long_help = "Generates IceStorm or NextPNR build scripts and pin constraint templates alongside the Verilog output."
+    )]
+    pub scaffold: bool,
 
     /// Omit SVA assertions from verilog output
-    #[arg(long)]
-    strip_sva: bool,
+    #[arg(long, help_heading = "Output & Format")]
+    pub strip_sva: bool,
 
     /// Write SVA properties to a separate bind file
-    #[arg(long)]
-    sva_file: Option<String>,
+    #[arg(long, help_heading = "Output & Format")]
+    pub sva_file: Option<String>,
 
     /// Show full AST trees in DOT output
-    #[arg(long)]
-    dot_detail: bool,
+    #[arg(long, help_heading = "Output & Format")]
+    pub dot_detail: bool,
 
     /// Print detailed pipeline statistics
-    #[arg(long)]
-    stats: bool,
+    #[arg(long, help_heading = "Diagnostics")]
+    pub stats: bool,
 
     /// Enable MEGA-4 totality check and generate proof certificate
-    #[arg(long)]
-    totality: bool,
+    #[arg(long, help_heading = "Formal Verification (MEGA)")]
+    pub totality: bool,
 
     /// Enable MEGA-5 symbolic interval analysis
-    #[arg(long)]
-    symbolic: bool,
+    #[arg(long, help_heading = "Formal Verification (MEGA)")]
+    pub symbolic: bool,
 
     /// Enable MEGA-12 High-Level Synthesis (HLS) optimizer
-    #[arg(long)]
-    hls: bool,
+    #[arg(
+        long,
+        help_heading = "Synthesis Options",
+        long_help = "Enables MEGA-12 HLS loop-unrolling and operator scheduling optimizations for DSPs."
+    )]
+    pub hls: bool,
 
     /// Run SymbiYosys formal verification
-    #[arg(long)]
-    formal: bool,
+    #[arg(long, help_heading = "Formal Verification (MEGA)")]
+    pub formal: bool,
 
     /// BMC depth
-    #[arg(long, default_value_t = 20)]
-    formal_depth: u32,
+    #[arg(long, default_value_t = 20, help_heading = "Formal Verification (MEGA)")]
+    pub formal_depth: u32,
 
     /// Also run k-induction prove
-    #[arg(long)]
-    formal_prove: bool,
+    #[arg(long, help_heading = "Formal Verification (MEGA)")]
+    pub formal_prove: bool,
 
     /// Solver: z3, yices, bitwuzla, btor
-    #[arg(long, default_value = "z3")]
-    formal_engine: String,
+    #[arg(long, default_value = "z3", help_heading = "Formal Verification (MEGA)")]
+    pub formal_engine: String,
 
     /// Run Verilator lint-only
-    #[arg(long)]
-    lint: bool,
+    #[arg(long, help_heading = "Simulation Options")]
+    pub lint: bool,
 
     /// Run Verilator compiled simulation
-    #[arg(long)]
-    simulate: bool,
+    #[arg(long, help_heading = "Simulation Options")]
+    pub simulate: bool,
 
     /// Run nextpnr place and route
-    #[arg(long)]
-    pnr: bool,
+    #[arg(long, help_heading = "Toolchain Execution")]
+    pub pnr: bool,
 
     /// Run icetime static timing analysis
-    #[arg(long)]
-    timing: bool,
+    #[arg(long, help_heading = "Toolchain Execution")]
+    pub timing: bool,
 
     /// Run EQY equivalence checking
-    #[arg(long)]
-    eqy: bool,
+    #[arg(long, help_heading = "Formal Verification (MEGA)")]
+    pub eqy: bool,
 
     /// Run post-synthesis logic optimization (Yosys ABC)
-    #[arg(short = 'O', long)]
-    optimize: bool,
+    #[arg(short = 'O', long, help_heading = "Synthesis Options")]
+    pub optimize: bool,
 
     /// Override oss-cad-suite root directory
-    #[arg(long)]
-    toolchain_path: Option<String>,
+    #[arg(long, help_heading = "Toolchain Execution")]
+    pub toolchain_path: Option<String>,
 
     /// Verify a proof certificate against the compiled R-SPU program
-    #[arg(long)]
-    verify: Option<String>,
+    #[arg(long, help_heading = "Formal Verification (MEGA)")]
+    pub verify: Option<String>,
 
     /// Extra Verilog files to link in formal verification
-    #[arg(long)]
-    link: Vec<String>,
+    #[arg(long, help_heading = "Toolchain Execution")]
+    pub link: Vec<String>,
 
-    /// Run S-Expression macro expansion pass
-    #[arg(long)]
-    macro_expand: bool,
+    /// Run S-Expression macro expansion pass (supports %for-generate, %let-bind)
+    #[arg(long, help_heading = "Output & Format")]
+    pub macro_expand: bool,
 
-    /// Dump the post-expansion macro AST to a file
-    #[arg(long)]
-    dump_macro_ast: bool,
+    /// Dump the post-expansion generative macro AST to a file
+    #[arg(long, help_heading = "Output & Format")]
+    pub dump_macro_ast: bool,
 }
 
-pub fn main() -> anyhow::Result<()> {
-    let args = Cli::parse();
-
+pub fn run(args: Cli) -> anyhow::Result<()> {
     if args.help_json {
         use clap::CommandFactory;
         fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {

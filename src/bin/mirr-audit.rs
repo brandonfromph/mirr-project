@@ -10,7 +10,7 @@ use mirrc::diagnostic::{render_diagnostic, Diagnostic};
 
 #[derive(Parser, Debug)]
 #[command(name = "mirr-audit", version, about = "MIRR Zero-Debt Compliance Engine", long_about = None)]
-struct Args {
+pub struct Args {
     #[command(subcommand)]
     command: Option<AuditCommand>,
 
@@ -67,9 +67,7 @@ struct AuditFinding {
     message: String,
 }
 
-fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
-
+pub fn run(args: Args) -> anyhow::Result<()> {
     if args.help_json {
         use clap::CommandFactory;
         fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {

@@ -55,6 +55,9 @@ pub(crate) fn expr_text_bounded(expr: &Expr, iters: &mut usize) -> String {
         Expr::Unary { op: UnaryOp::Negate, operand } => {
             format!("-{}", expr_text_bounded(operand, iters))
         }
+        Expr::Unary { op: UnaryOp::ReductionOr, operand } => {
+            format!("|{}", expr_text_bounded(operand, iters))
+        }
         Expr::Binary { op, left, right } => {
             let l = expr_text_bounded(left, iters);
             let r = expr_text_bounded(right, iters);

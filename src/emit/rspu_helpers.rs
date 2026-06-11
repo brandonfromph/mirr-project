@@ -194,10 +194,21 @@ pub(crate) fn emit_expr(
                     work.push(ExprWork::Eval(right));
                     work.push(ExprWork::Eval(left));
                 }
-                Expr::ArrayIndex { .. }
-                | Expr::FieldAccess { .. }
-                | Expr::ArrayLiteral(_)
-                | Expr::StructLiteral { .. } => {
+                Expr::ArrayIndex { array, index } => {
+                    if let (Expr::Signal(arr_name), Expr::Literal(LiteralValue::Integer(idx))) =
+                        (array.as_ref(), index.as_ref())
+                    {
+                        let flat_name = format!("{}[{}]", arr_name, idx);
+                        let r = regs.map.get(flat_name.as_str()).copied().unwrap_or(0);
+                        result_stack.push(r);
+                    } else {
+                        return Err(rspu_err(format!(
+                            "{} R-SPU does not support dynamic array indexing.",
+                            crate::error_codes::ec(720)
+                        )));
+                    }
+                }
+                Expr::FieldAccess { .. } | Expr::ArrayLiteral(_) | Expr::StructLiteral { .. } => {
                     return Err(rspu_err(format!(
                         "{} R-SPU does not support composite type expressions.",
                         crate::error_codes::ec(720)
@@ -221,6 +232,7 @@ pub(crate) fn emit_expr(
                 let alu_op = match op {
                     UnaryOp::Not => AluUnaryOp::Not,
                     UnaryOp::Negate => AluUnaryOp::Negate,
+                    UnaryOp::ReductionOr => AluUnaryOp::ReductionOr,
                 };
                 instrs.push(RspuInstruction::AluUnary { op: alu_op, dst: tmp, src });
                 result_stack.push(tmp);

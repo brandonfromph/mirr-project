@@ -14,10 +14,10 @@ use crate::ast::types::SignalKind;
 use crate::error::MirrError;
 
 /// Maximum number of parameters in a pattern definition.
-pub(crate) const MAX_PARAMS: usize = 128;
+pub(crate) const MAX_PARAMS: usize = 1024;
 
 /// Maximum number of arguments in a pattern call.
-const MAX_ARGS: usize = 128;
+const MAX_ARGS: usize = 1024;
 
 /// Maximum number of lines in a reflect body.
 pub(crate) const MAX_REFLECT_LINES: usize = 8192;
@@ -61,7 +61,9 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     let header = collect_def_header(lines, index)?;
 
     // Extract name and param string from header.
-    let after_def = header.strip_prefix("def ").ok_or_else(|| {
+    let is_flat_pattern = header.starts_with("pattern ");
+    let keyword_len = if is_flat_pattern { "pattern ".len() } else { "def ".len() };
+    let after_def = header.get(keyword_len..).ok_or_else(|| {
         pattern_err(format!("{} Malformed pattern definition.", crate::error_codes::ec(402)))
     })?;
 
@@ -85,36 +87,38 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
     let param_str = &after_def[open_paren + 1..close_paren];
     let params = parse_pattern_params(param_str, name)?;
 
-    // Now we should be inside the def body. Look for `reflect {`.
+    // Now we should be inside the body.
     skip_empty_and_comments(lines, index);
 
-    if *index >= lines.len() {
-        return Err(pattern_err(format!(
-            "{} Pattern '{name}' missing 'reflect' block.",
-            crate::error_codes::ec(406)
-        )));
-    }
-
-    let reflect_line = lines[*index].trim();
-    if !reflect_line.starts_with("reflect") {
-        return Err(pattern_err(format!(
-            "{} Pattern '{name}' expected 'reflect' block, found: {reflect_line}",
-            crate::error_codes::ec(407)
-        )));
-    }
-
-    // Check for opening brace on the reflect line or next line.
-    if !reflect_line.contains('{') {
-        *index += 1;
-        skip_empty_and_comments(lines, index);
-        if *index >= lines.len() || !lines[*index].trim().starts_with('{') {
+    if !is_flat_pattern {
+        if *index >= lines.len() {
             return Err(pattern_err(format!(
-                "{} Pattern '{name}' reflect block missing opening '{{'.",
-                crate::error_codes::ec(408)
+                "{} Pattern '{name}' missing 'reflect' block.",
+                crate::error_codes::ec(406)
             )));
         }
+
+        let reflect_line = lines[*index].trim();
+        if !reflect_line.starts_with("reflect") {
+            return Err(pattern_err(format!(
+                "{} Pattern '{name}' expected 'reflect' block, found: {reflect_line}",
+                crate::error_codes::ec(407)
+            )));
+        }
+
+        // Check for opening brace on the reflect line or next line.
+        if !reflect_line.contains('{') {
+            *index += 1;
+            skip_empty_and_comments(lines, index);
+            if *index >= lines.len() || !lines[*index].trim().starts_with('{') {
+                return Err(pattern_err(format!(
+                    "{} Pattern '{name}' reflect block missing opening '{{'.",
+                    crate::error_codes::ec(408)
+                )));
+            }
+        }
+        *index += 1;
     }
-    *index += 1;
 
     let prev = crate::parser::module_parser::macro_parser::IN_PATTERN_REFLECT.with(|flag| {
         let p = flag.get();
@@ -134,12 +138,14 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
         flag.set(prev);
     });
 
-    // Skip past the closing brace of the reflect block.
-    if *index < lines.len() && lines[*index].trim().starts_with('}') {
-        *index += 1;
+    if !is_flat_pattern {
+        // Skip past the closing brace of the reflect block.
+        if *index < lines.len() && lines[*index].trim().starts_with('}') {
+            *index += 1;
+        }
     }
 
-    // Now skip to the closing brace of the def block.
+    // Now skip to the closing brace of the def/pattern block.
     skip_empty_and_comments(lines, index);
     if *index < lines.len() && lines[*index].trim() == "}" {
         *index += 1;
@@ -156,7 +162,7 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
 /// Bounded: at most 64 lines for a header.
 fn collect_def_header(lines: &[&str], index: &mut usize) -> Result<String, MirrError> {
     let mut header = String::new();
-    let max_header_lines = 64usize;
+    let max_header_lines = 1024usize;
     let mut count = 0usize;
 
     while *index < lines.len() && count < max_header_lines {
@@ -421,7 +427,7 @@ fn parse_pattern_call_str(full_call: &str) -> Result<PatternCall, MirrError> {
 /// Bounded: at most 64 lines.
 fn collect_call_header(lines: &[&str], index: &mut usize) -> Result<String, MirrError> {
     let mut header = String::new();
-    let max_header_lines = 64usize;
+    let max_header_lines = 1024usize;
     let mut count = 0usize;
 
     while *index < lines.len() && count < max_header_lines {

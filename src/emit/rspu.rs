@@ -26,7 +26,6 @@ use super::rspu_isa::*;
 use super::rspu_regalloc::{allocate_registers, RegAllocResult};
 use crate::emit::rspu_helpers::{condition_to_reg, emit_expr, emit_properties};
 use crate::emit::rspu_opt::peephole_optimize;
-use crate::emit::rspu_tagged::tag_from_signal_type;
 
 /// Emit an R-SPU program from pipeline results.
 pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
@@ -65,24 +64,61 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     let mut port_idx: PortId = 0;
     for sig in &module.signals {
         if sig.kind == SignalKind::Input {
-            let r = regs.reg(&sig.name);
-            instrs.push(RspuInstruction::LoadInput { dst: r, port: port_idx });
-            port_idx += 1;
+            let size = match &sig.ty.core {
+                crate::ast::types::SignalType::Array { length, .. } => *length as usize,
+                _ => 1,
+            };
+            if size == 1 {
+                let r = regs.reg(&sig.name);
+                instrs.push(RspuInstruction::LoadInput { dst: r, port: port_idx });
+                port_idx += 1;
+            } else {
+                for i in 0..size {
+                    let r = regs.reg(&format!("{}[{}]", sig.name, i));
+                    instrs.push(RspuInstruction::LoadInput { dst: r, port: port_idx });
+                    port_idx += 1;
+                }
+            }
         }
     }
 
     // Step 3.5: Emit TAG_LOAD for each signal (type tag metadata).
     for sig in &module.signals {
-        let r = regs.reg(&sig.name);
-        let tag = tag_from_signal_type(&sig.ty.core);
-        let tag_byte = match tag {
-            crate::emit::rspu_tagged::TypeTag::Uninitialized => 0u8,
-            crate::emit::rspu_tagged::TypeTag::Bool => 1u8,
-            crate::emit::rspu_tagged::TypeTag::Unsigned { width } => width,
-            crate::emit::rspu_tagged::TypeTag::Signed { width } => width.saturating_add(128),
-            crate::emit::rspu_tagged::TypeTag::Interval { .. } => 2u8,
+        let (size, element_ty) = match &sig.ty.core {
+            crate::ast::types::SignalType::Array { length, element } => {
+                (*length as usize, &**element)
+            }
+            other => (1, other),
         };
-        instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
+
+        let tag = crate::emit::rspu_tagged::tag_from_signal_type(element_ty);
+        let tag_byte = match tag {
+            crate::emit::rspu_tagged::TypeTag::Bool => 1,
+            crate::emit::rspu_tagged::TypeTag::Unsigned { width } => {
+                if width == 64 {
+                    64
+                } else if width == 32 {
+                    32
+                } else if width == 16 {
+                    16
+                } else {
+                    0 // T0 placeholder for complex types
+                }
+            }
+            crate::emit::rspu_tagged::TypeTag::Signed { width: _ } => 128, // High bit set for signed
+            crate::emit::rspu_tagged::TypeTag::Uninitialized => 0,
+            crate::emit::rspu_tagged::TypeTag::Interval { .. } => 0,
+        };
+
+        if size == 1 {
+            let r = regs.reg(&sig.name);
+            instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
+        } else {
+            for i in 0..size {
+                let r = regs.reg(&format!("{}[{}]", sig.name, i));
+                instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
+            }
+        }
     }
 
     // Step 3.6: Initialize constant registers.
@@ -117,9 +153,21 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     let mut out_port_idx: PortId = 0;
     for sig in &module.signals {
         if sig.kind == SignalKind::Output {
-            let r = regs.reg(&sig.name);
-            instrs.push(RspuInstruction::StoreOutput { src: r, port: out_port_idx });
-            out_port_idx += 1;
+            let size = match &sig.ty.core {
+                crate::ast::types::SignalType::Array { length, .. } => *length as usize,
+                _ => 1,
+            };
+            if size == 1 {
+                let r = regs.reg(&sig.name);
+                instrs.push(RspuInstruction::StoreOutput { src: r, port: out_port_idx });
+                out_port_idx += 1;
+            } else {
+                for i in 0..size {
+                    let r = regs.reg(&format!("{}[{}]", sig.name, i));
+                    instrs.push(RspuInstruction::StoreOutput { src: r, port: out_port_idx });
+                    out_port_idx += 1;
+                }
+            }
         }
     }
 

@@ -98,9 +98,9 @@ fn empty_record_list_returns_ok() {
 
 #[test]
 fn parity_router_rejects_bare_run_parity_without_all_flag() {
-    let binary = env!("CARGO_BIN_EXE_mirr-general");
+    let binary = env!("CARGO_BIN_EXE_mirr");
     let output = Command::new(binary)
-        .args(["run", "parity"])
+        .args(["general", "run", "parity"])
         .output()
         .expect("mirr-general binary must run");
 

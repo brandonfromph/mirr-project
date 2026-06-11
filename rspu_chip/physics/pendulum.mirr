@@ -34,7 +34,7 @@ def pendulum(
         // Sanity check: If the angle exceeds 90 degrees (scaled), the robot has failed.
         // 90 degrees in radians is ~1.57. Scaled by 2^16 = 1.57 * 65536 = 102891
         property balance_limit {
-            always (angle_internal < (- -102891) && angle_internal > (-102891));
+            always ((-angle_internal) > (-102891) && angle_internal > (-102891));
         }
     }
 }

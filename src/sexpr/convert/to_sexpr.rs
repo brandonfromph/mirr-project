@@ -393,6 +393,7 @@ fn convert_expr(expr: &Expr) -> SExpr {
                     let op_sym = match op {
                         UnaryOp::Not => "not",
                         UnaryOp::Negate => "negate",
+                        UnaryOp::ReductionOr => "reduce_or",
                     };
                     work_stack.push(ConvertWork::BuildUnary(op_sym));
                     work_stack.push(ConvertWork::Process(operand));

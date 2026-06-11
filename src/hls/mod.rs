@@ -210,6 +210,7 @@ impl OpDag {
             let kind = match unary.op {
                 crate::ast::types::UnaryOp::Not => ResourceKind::Not,
                 crate::ast::types::UnaryOp::Negate => ResourceKind::Negate,
+                crate::ast::types::UnaryOp::ReductionOr => ResourceKind::Negate, /* Approximate */
             };
 
             let width = registry.types[idx].as_ref().map(|t| t.0.core.width()).unwrap_or(8);

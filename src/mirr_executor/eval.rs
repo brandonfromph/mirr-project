@@ -46,6 +46,7 @@ pub(super) fn eval_expr(e: &Expr, env_get: &impl Fn(&str) -> Value) -> Value {
             match op {
                 UnaryOp::Not => Value::Bool(!v.as_bool()),
                 UnaryOp::Negate => Value::Integer(0u64.wrapping_sub(v.as_int())),
+                UnaryOp::ReductionOr => Value::Bool(v.as_int() != 0),
             }
         }
         E::Binary { op, left, right } => {

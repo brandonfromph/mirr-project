@@ -41,7 +41,7 @@ const ENTRY_SOURCE: &str = "mirr-brain";
 
 #[derive(Parser, Debug)]
 #[command(name = "mirr-brain", version, about = "MIRR Knowledge Core")]
-struct Args {
+pub struct Args {
     #[command(subcommand)]
     command: Option<Commands>,
 
@@ -124,9 +124,7 @@ fn open_kb(kb_root: &Path) -> anyhow::Result<(Connection, PathBuf)> {
     Ok((conn, graph_db_path))
 }
 
-fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
-
+pub fn run(args: Args) -> anyhow::Result<()> {
     if args.help_json {
         use clap::CommandFactory;
         fn get_cmd_manifest(cmd: &clap::Command) -> serde_json::Value {

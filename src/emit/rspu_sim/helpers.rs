@@ -55,6 +55,13 @@ pub(super) fn execute_alu_unary(op: AluUnaryOp, a: u64, tag: TypeTag) -> u64 {
             }
             _ => (a as i64).wrapping_neg() as u64,
         },
+        AluUnaryOp::ReductionOr => {
+            if a != 0 {
+                1
+            } else {
+                0
+            }
+        }
     }
 }
 

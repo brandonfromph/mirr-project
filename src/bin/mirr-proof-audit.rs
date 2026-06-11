@@ -10,25 +10,25 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Audits MIRR compiler proofs coverage", long_about = None)]
-struct Args {
+#[command(about = "Audits MIRR compiler proofs coverage")]
+pub struct Args {
     #[arg(short, long, default_value = "src/ast")]
-    ast_dir: PathBuf,
+    pub ast_dir: PathBuf,
 
     #[arg(short, long, default_value = "src/emit")]
-    emit_dir: PathBuf,
+    pub emit_dir: PathBuf,
 
     #[arg(short, long, default_value = "src/mape_k")]
-    mape_k_dir: PathBuf,
+    pub mape_k_dir: PathBuf,
 
     #[arg(short, long, default_value = "src/cert")]
-    cert_dir: PathBuf,
+    pub cert_dir: PathBuf,
 
     #[arg(short, long, default_value = "proofs")]
-    proofs_dir: PathBuf,
+    pub proofs_dir: PathBuf,
 
     #[arg(short, long, default_value = "json")]
-    format: String,
+    pub format: String,
 }
 
 struct Symbol {
@@ -36,9 +36,7 @@ struct Symbol {
     file: PathBuf,
 }
 
-fn main() -> Result<()> {
-    let args = Args::parse();
-
+pub fn run(args: Args) -> Result<()> {
     let rust_symbols =
         collect_rust_symbols(&args.ast_dir, &args.emit_dir, &args.mape_k_dir, &args.cert_dir)?;
     let proof_symbols = collect_proof_symbols(&args.proofs_dir)?;

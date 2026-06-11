@@ -23,7 +23,7 @@ mirr-private/
 │   ├── temporal/             # Temporal lowering of hardware guards
 │   ├── symbolic/             # Hardware-preparatory symbolic evaluation engine
 │   ├── emit/                 # Emission backends (SystemVerilog, FIRRTL, R-SPU, etc.)
-│   ├── bin/                  # Executable entrypoints (mirr-compile, mirr-general, etc.)
+│   ├── bin/                  # Executable entrypoint (mirr.rs unified CLI router)
 │   └── lib.rs                # Public module exports
 ├── crates/                   # Consumer & Control Plane Surfaces
 │   ├── mirr-wasm/            # WASM compilation API (browser/JS consumers)
@@ -47,7 +47,8 @@ MIRR is a safety-critical compiler platform (61k+ LOC) with three distinct layer
 
 1. **Core Compiler Sub-Engines**: 14 specialized modules (Temporal, Symbolic, SAT, HLS, etc.) that perform rigorous behavioral-to-physical translation.
 2. **Control Planes**: MRT / Presidential Arsenal and KB-native (RAG) for autonomic governance and knowledge-backed synthesis.
-3. **Consumer Bridges**: WASM, LRA-CLI, and MCP-Control-Plane providing multi-surface accessibility.
+3. **Unified Interface**: The `mirr` CLI router integrates all toolchain functions (`compile`, `lsp`, `kb`) into a single cohesive UX surface.
+4. **Consumer Bridges**: WASM, LRA-CLI, and MCP-Control-Plane providing multi-surface accessibility.
 
 ### Project Specialization: The R-SPU Architecture
 MIRR is a specialized tool optimized for designing and verifying the **R-SPU (Reflexive Signal Processing Unit)**. It is intended for the high-assurance "brains" of robotic systems and autonomous medical/aerospace hardware.
@@ -81,6 +82,12 @@ The core of MIRR is partitioned into 14 high-assurance engines, each adhering to
 8.  **R-SPU Silicon Simulator** (`src/emit/rspu_sim/mod.rs`): Provides cycle-accurate, bit-precise simulation for 16-core R-SPU programs.
 
 ### Infrastructure & Orchestration
+8.5 **Unified CLI Router** (`src/bin/mirr.rs`): The single entrypoint for the hardware toolchain. Dispatches execution to compilation pipelines, LSP servers, specialized verification engines, and knowledge base tooling. It is broken into functional categories:
+    - **Core Systems**: `mirr compile` and `mirr lsp`
+    - **Verification & Assurance**: `mirr proof-audit` and `mirr audit`
+    - **Stress Testing**: `mirr generate-stress`
+    - **Orchestration**: `mirr general`
+    - **Knowledge Base**: `mirr brain`, `mirr kb`, `mirr kb-index`, `mirr kb-hydrate`
 9.  **ECS Registry** (`src/ecs/registry.rs`): A high-performance SoA (Structure of Arrays) registry managing up to 1M hardware entities. Currently serves as the final synthesis IR.
 10. **Cross-Module Symbol Resolver** (`src/symbols/resolver.rs`): Manages cross-crate namespace resolution and visibility.
 11. **S-Expression "Code as Data" Engine** (`src/sexpr/mod.rs`): A homoiconic IR with a bounded, iterative eval/apply core. **Current Status**: Not wired to the main pipeline. Used exclusively for self-hosting bootstrap and formal verification bridges.
@@ -98,6 +105,7 @@ The following pathways describe the lifecycle of a MIRR specification:
    - [Semantic Validation](../src/ecs/semantic_validate.rs) ensures entity integrity (Name and Kind constraints).
    - [Width Solver](../src/width/solver.rs) infers missing signal widths using SCC propagation. The ECS-native width inference system is the primary fully-functional engine.
    - [Temporal Lowering](../src/temporal/mod.rs) translates hardware guards into deterministic netlist primitives. This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes `TemporalNodeComponent` metadata for each guard entity, closing the "Temporal Seam".
+   - [Macro Engine Expansion](../src/sexpr/mod.rs) executes generative hardware directives (`%for-generate`, `%let-bind`). To support 64-core and massive MIMD unrolling, the semantic AST engine capacity has been massively expanded, supporting bounds up to **262,144 hardware nodes** seamlessly without stack exhaustion.
    - [Symbolic Evaluation Engine](../src/symbolic/mod.rs) provides abstract interpretation, discrete calculus approximations, anomaly signature fingerprinting, and a term rewriting engine for runtime logic optimization.
    - Finally, [Emission Backends](../src/emit/mod.rs) generate the target artifacts.
 
@@ -126,7 +134,7 @@ The following pathways describe the lifecycle of a MIRR specification:
    2.  **Homoiconicity Integration**: Implement a "Code as Data" core to enable autonomic self-healing and knowledge-backed synthesis.
    3.  **Scale-Blocker Debugging**: Perform a rigorous audit to identify and resolve logic bottlenecks that prevent scaling beyond 16-core designs.
    4.  **Engine Wiring**: Complete and wire the 14 identified sub-engines (Symbolic, SAT, MAPE-K, etc.) into a unified, high-assurance pipeline.
-   5.  **Compiler Ergonomics**: Improve the MIRR language syntax and CLI feedback loops to reduce the barrier to entry for hardware architects.
+   5.  ~~**Compiler Ergonomics**~~ *(Completed)*: Migrated the entire toolchain into the unified `mirr` CLI router with `clap` interface categorization to prevent binary sprawl and streamline the hardware architect UX.
    6.  **Clock Domain Crossing (CDC)**: Implement native support for multiple clock domains to support industrial-grade SoC designs.
    7.  ~~**Source-Level Debugger**~~ *(Completed)*: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
 

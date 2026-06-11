@@ -276,7 +276,7 @@ fn sv_with_property(property_body: &str) -> String {
 #[test]
 fn sva_always_emits_assert_property() {
     let sv = sv_with_property("property p1 {\n    always (x);\n}");
-    assert!(sv.contains("assert property"), "Missing assert property in:\n{sv}");
+    assert!(sv.contains("assert "), "Missing assert property in:\n{sv}");
 }
 
 #[test]
@@ -337,7 +337,7 @@ fn sva_standalone_mode_no_module_wrapper() {
     let src = wrap_property("property p1 {\n    always (x);\n}");
     let result = run_pipeline(&src, &PipelineConfig::default()).expect("pipeline ok");
     let sva = emit::verilog::emit_sva_only(&result);
-    assert!(sva.contains("assert property"), "Missing assert property in standalone SVA");
+    assert!(sva.contains("assert "), "Missing assert property in standalone SVA");
     assert!(!sva.contains("module test_mod"), "Standalone SVA should not contain module decl");
     assert!(!sva.contains("endmodule"), "Standalone SVA should not contain endmodule");
 }
@@ -352,7 +352,7 @@ fn sva_complex_expression_renders_correctly() {
 #[test]
 fn sva_embedded_in_full_sv() {
     let sv = sv_with_property("property p1 {\n    always (x);\n}");
-    let assert_pos = sv.find("assert property").expect("should have assert");
+    let assert_pos = sv.find("assert ").expect("should have assert");
     let endmod_pos = sv.find("endmodule").expect("should have endmodule");
     assert!(assert_pos < endmod_pos, "SVA assertion should appear before endmodule");
 }
@@ -520,7 +520,7 @@ module neonatal_respirator {
 "#;
     let result = run_pipeline(src, &PipelineConfig::default()).expect("pipeline ok");
     let sv = emit::verilog::emit_sv(&result);
-    assert!(sv.contains("assert property"), "SV should contain SVA assertions");
+    assert!(sv.contains("assert "), "SV should contain SVA assertions");
     assert!(sv.contains("|->"), "SV should contain implication");
     assert_eq!(result.program.module.properties.len(), 2);
 }

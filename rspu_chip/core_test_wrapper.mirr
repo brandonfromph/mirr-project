@@ -1,0 +1,17 @@
+import "core/core_top.mirr" as core;
+
+module core_test_wrapper {
+    signal clk: in bool;
+    signal rst_n: in bool;
+
+    signal instr_in: in u64;
+    signal pc_out: out u32;
+    signal data_out: out u64;
+
+    signal noc_rx_valid: in bool;
+    signal noc_rx_data: in u64;
+    signal noc_tx_valid: out bool;
+    signal noc_tx_data: out u64;
+
+    core::core_top(clk, rst_n, instr_in, pc_out, data_out, noc_rx_valid, noc_rx_data, noc_tx_valid, noc_tx_data);
+}

@@ -2,11 +2,12 @@ import "core/core_top.mirr" as core;
 import "interconnect/noc_router.mirr" as fabric;
 import "physics/pendulum.mirr" as physics;
 import "physics/controller.mirr" as ctrl;
-import "verification/pcc_verifier.mirr" as pcc;
 
 module rspu_top {
     signal clk: in bool;
     signal rst_n: in bool;
+    signal stream_rx_valid: in bool;
+    signal stream_rx_data: in u64;
 
     // --- Core Signals (Full 16-Core Design) ---
     for i in 0..16 {
@@ -34,7 +35,7 @@ module rspu_top {
 
     // --- 16-Core Integration ---
     for i in 0..16 {
-        core::core_top(clk, rst_n, instr[i], pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
+        core::core_top(clk, rst_n, pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
     }
 
     // --- NoC Interconnect ---
@@ -43,6 +44,7 @@ module rspu_top {
         tx_valid_4, tx_data_4, tx_valid_5, tx_data_5, tx_valid_6, tx_data_6, tx_valid_7, tx_data_7,
         tx_valid_8, tx_data_8, tx_valid_9, tx_data_9, tx_valid_10, tx_data_10, tx_valid_11, tx_data_11,
         tx_valid_12, tx_data_12, tx_valid_13, tx_data_13, tx_valid_14, tx_data_14, tx_valid_15, tx_data_15,
+        stream_rx_valid, stream_rx_data,
         rx_valid_0, rx_data_0, rx_valid_1, rx_data_1, rx_valid_2, rx_data_2, rx_valid_3, rx_data_3,
         rx_valid_4, rx_data_4, rx_valid_5, rx_data_5, rx_valid_6, rx_data_6, rx_valid_7, rx_data_7,
         rx_valid_8, rx_data_8, rx_valid_9, rx_data_9, rx_valid_10, rx_data_10, rx_valid_11, rx_data_11,
@@ -53,7 +55,7 @@ module rspu_top {
     reflex collect_diagnostics {
         on always {
             for i in 0..16 {
-                instr[i] = 16777216 + (i * 4096); 
+                // Remove hardcoded instruction to allow dynamic streaming
                 out_pc[i] = pc[i];
                 out_data[i] = core_data[i];
             }

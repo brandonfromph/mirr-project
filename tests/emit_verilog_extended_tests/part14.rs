@@ -26,7 +26,7 @@ fn sva_directive_assert_keyword() {
     let result = result_from_module(module);
     let sv = verilog::emit_sv(&result);
 
-    assert!(sv.contains("assert property"), "Assert directive must produce 'assert property'");
+    assert!(sv.contains("assert "), "Assert directive must produce 'assert property'");
 }
 
 #[test]

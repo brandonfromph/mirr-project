@@ -50,8 +50,8 @@ impl Drop for TempKbRoot {
 }
 
 fn run_mirr_brain(args: &[&str]) -> Output {
-    let binary = env!("CARGO_BIN_EXE_mirr-brain");
-    Command::new(binary).args(args).output().expect("run mirr-brain")
+    let binary = env!("CARGO_BIN_EXE_mirr");
+    Command::new(binary).arg("brain").args(args).output().expect("run mirr brain")
 }
 
 fn assert_success(output: &Output, context: &str) {

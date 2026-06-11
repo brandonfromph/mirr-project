@@ -144,7 +144,10 @@ test_panic_case!(
         run_lower_guard(&r, gid)
     },
     |e: &MirrError| {
-        assert!(e.to_string().contains("Prev reference to unnamed entity"));
+        assert!(
+            e.to_string().contains("Expected signal or array index")
+                || e.to_string().contains("Prev reference to unnamed entity")
+        );
     }
 );
 

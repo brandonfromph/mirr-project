@@ -517,8 +517,14 @@ fn expand_string(
     for (k, v) in signal_env {
         res = res.replace(&format!("${{{k}}}"), v);
         // ONLY replace exact identifier match if it's NOT a reserved literal/keyword
-        if &res == k && !matches!(k.as_str(), "true" | "false" | "clk" | "rst_n") {
-            res = v.clone();
+        if !matches!(k.as_str(), "true" | "false" | "clk" | "rst_n") {
+            if &res == k {
+                res = v.clone();
+            } else if let Some(bracket_idx) = res.find('[') {
+                if &res[..bracket_idx] == k {
+                    res = format!("{}{}", v, &res[bracket_idx..]);
+                }
+            }
         }
     }
 

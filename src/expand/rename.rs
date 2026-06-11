@@ -366,6 +366,17 @@ fn apply_template_substitution(target: &mut String, rename: &HashMap<String, Str
         return;
     }
 
+    // 1b. Array base identifier match (e.g. replacing `tx_valid` in `tx_valid[1]`)
+    if let Some(bracket_idx) = target.find('[') {
+        let base = &target[..bracket_idx];
+        if let Some(new_base) = rename.get(base) {
+            if !base.starts_with("${") && !base.starts_with('[') {
+                *target = format!("{}{}", new_base, &target[bracket_idx..]);
+                // Fallthrough to allow ${} replacements in the index part if any
+            }
+        }
+    }
+
     // 2. Substring substitution for ${var} and [var]
     // We sort keys by length descending to prevent partial match collisions.
     let mut keys: Vec<&String> =

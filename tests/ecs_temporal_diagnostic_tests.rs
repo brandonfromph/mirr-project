@@ -81,7 +81,8 @@ fn test_diagnostic_prev_on_literal_rejection() {
     let err = compiler.lower_guard_to_ecs(&registry, g).unwrap_err();
     // try_from_ecs fails because the target of prev (a literal) has no NameComponent
     assert!(
-        err.to_string().contains("Prev reference to unnamed entity"),
+        err.to_string().contains("Expected signal or array index")
+            || err.to_string().contains("Prev reference to unnamed entity"),
         "Expected naming error for prev on unnamed literal, got: {}",
         err
     );

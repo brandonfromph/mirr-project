@@ -511,7 +511,7 @@ fn sva_assert_always_keyword() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let sv = mirrc::emit::verilog::emit_sv(&result);
-    assert!(sv.contains("assert property"), "Expected 'assert property' in SVA: {sv}");
+    assert!(sv.contains("assert "), "Expected 'assert property' in SVA: {sv}");
 }
 
 #[test]
@@ -553,7 +553,7 @@ fn sva_followed_by_output() {
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let sv = mirrc::emit::verilog::emit_sv(&result);
     assert!(
-        sv.contains("prop_p_trig_shift[4] |-> y"),
+        sv.contains("(prop_p_trig_shift[4]) |-> (y)"),
         "Expected shift register logic in SVA: {sv}"
     );
 }

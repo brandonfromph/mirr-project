@@ -1,0 +1,140 @@
+//! Auto-generated L1 NoC Interconnect Router for 16 cores
+pattern noc_l1_router(
+    clk: signal in bool,
+    rst_n: signal in bool,
+    base_id: signal in u64,
+    tx_valid: signal in bool[16],
+    tx_data: signal in u64[16],
+    downlink_valid: signal in bool,
+    downlink_data: signal in u64,
+    rx_valid: signal out bool[16],
+    rx_data: signal out u64[16],
+    uplink_valid: signal out bool,
+    uplink_data: signal out u64
+) {
+    signal sv: internal bool[17];
+    signal sd: internal u64[17];
+
+    reflex r_dl { on always { sv[0] = downlink_valid; sd[0] = downlink_data; } }
+    guard n0(!tx_valid[0]) for 1 cycles;
+    reflex r0 { on tx_valid[0] { sv[1] = true; sd[1] = tx_data[0]; } on n0 { sv[1] = sv[0]; sd[1] = sd[0]; } }
+    guard n1(!tx_valid[1]) for 1 cycles;
+    reflex r1 { on tx_valid[1] { sv[2] = true; sd[2] = tx_data[1]; } on n1 { sv[2] = sv[1]; sd[2] = sd[1]; } }
+    guard n2(!tx_valid[2]) for 1 cycles;
+    reflex r2 { on tx_valid[2] { sv[3] = true; sd[3] = tx_data[2]; } on n2 { sv[3] = sv[2]; sd[3] = sd[2]; } }
+    guard n3(!tx_valid[3]) for 1 cycles;
+    reflex r3 { on tx_valid[3] { sv[4] = true; sd[4] = tx_data[3]; } on n3 { sv[4] = sv[3]; sd[4] = sd[3]; } }
+    guard n4(!tx_valid[4]) for 1 cycles;
+    reflex r4 { on tx_valid[4] { sv[5] = true; sd[5] = tx_data[4]; } on n4 { sv[5] = sv[4]; sd[5] = sd[4]; } }
+    guard n5(!tx_valid[5]) for 1 cycles;
+    reflex r5 { on tx_valid[5] { sv[6] = true; sd[6] = tx_data[5]; } on n5 { sv[6] = sv[5]; sd[6] = sd[5]; } }
+    guard n6(!tx_valid[6]) for 1 cycles;
+    reflex r6 { on tx_valid[6] { sv[7] = true; sd[7] = tx_data[6]; } on n6 { sv[7] = sv[6]; sd[7] = sd[6]; } }
+    guard n7(!tx_valid[7]) for 1 cycles;
+    reflex r7 { on tx_valid[7] { sv[8] = true; sd[8] = tx_data[7]; } on n7 { sv[8] = sv[7]; sd[8] = sd[7]; } }
+    guard n8(!tx_valid[8]) for 1 cycles;
+    reflex r8 { on tx_valid[8] { sv[9] = true; sd[9] = tx_data[8]; } on n8 { sv[9] = sv[8]; sd[9] = sd[8]; } }
+    guard n9(!tx_valid[9]) for 1 cycles;
+    reflex r9 { on tx_valid[9] { sv[10] = true; sd[10] = tx_data[9]; } on n9 { sv[10] = sv[9]; sd[10] = sd[9]; } }
+    guard n10(!tx_valid[10]) for 1 cycles;
+    reflex r10 { on tx_valid[10] { sv[11] = true; sd[11] = tx_data[10]; } on n10 { sv[11] = sv[10]; sd[11] = sd[10]; } }
+    guard n11(!tx_valid[11]) for 1 cycles;
+    reflex r11 { on tx_valid[11] { sv[12] = true; sd[12] = tx_data[11]; } on n11 { sv[12] = sv[11]; sd[12] = sd[11]; } }
+    guard n12(!tx_valid[12]) for 1 cycles;
+    reflex r12 { on tx_valid[12] { sv[13] = true; sd[13] = tx_data[12]; } on n12 { sv[13] = sv[12]; sd[13] = sd[12]; } }
+    guard n13(!tx_valid[13]) for 1 cycles;
+    reflex r13 { on tx_valid[13] { sv[14] = true; sd[14] = tx_data[13]; } on n13 { sv[14] = sv[13]; sd[14] = sd[13]; } }
+    guard n14(!tx_valid[14]) for 1 cycles;
+    reflex r14 { on tx_valid[14] { sv[15] = true; sd[15] = tx_data[14]; } on n14 { sv[15] = sv[14]; sd[15] = sd[14]; } }
+    guard n15(!tx_valid[15]) for 1 cycles;
+    reflex r15 { on tx_valid[15] { sv[16] = true; sd[16] = tx_data[15]; } on n15 { sv[16] = sv[15]; sd[16] = sd[15]; } }
+
+    signal dest_id: internal u64;
+    signal payload: internal u64;
+    signal is_local: internal bool;
+
+    reflex extract {
+        on always {
+            dest_id = (sd[16] >> 48) & 4095;
+            payload = sd[16] & 281474976710655; // (1<<48)-1
+            is_local = (dest_id >= base_id) && (dest_id < (base_id + 16));
+        }
+    }
+
+    // Default outputs
+    reflex defaults {
+        on always {
+            uplink_valid = false;
+            uplink_data = 0;
+            rx_valid[0] = false;
+            rx_data[0] = 0;
+            rx_valid[1] = false;
+            rx_data[1] = 0;
+            rx_valid[2] = false;
+            rx_data[2] = 0;
+            rx_valid[3] = false;
+            rx_data[3] = 0;
+            rx_valid[4] = false;
+            rx_data[4] = 0;
+            rx_valid[5] = false;
+            rx_data[5] = 0;
+            rx_valid[6] = false;
+            rx_data[6] = 0;
+            rx_valid[7] = false;
+            rx_data[7] = 0;
+            rx_valid[8] = false;
+            rx_data[8] = 0;
+            rx_valid[9] = false;
+            rx_data[9] = 0;
+            rx_valid[10] = false;
+            rx_data[10] = 0;
+            rx_valid[11] = false;
+            rx_data[11] = 0;
+            rx_valid[12] = false;
+            rx_data[12] = 0;
+            rx_valid[13] = false;
+            rx_data[13] = 0;
+            rx_valid[14] = false;
+            rx_data[14] = 0;
+            rx_valid[15] = false;
+            rx_data[15] = 0;
+        }
+    }
+    guard p0(dest_id == (base_id + 0)) for 1 cycles;
+    reflex out0 { on p0 { rx_valid[0] = sv[16]; rx_data[0] = payload; } }
+    guard p1(dest_id == (base_id + 1)) for 1 cycles;
+    reflex out1 { on p1 { rx_valid[1] = sv[16]; rx_data[1] = payload; } }
+    guard p2(dest_id == (base_id + 2)) for 1 cycles;
+    reflex out2 { on p2 { rx_valid[2] = sv[16]; rx_data[2] = payload; } }
+    guard p3(dest_id == (base_id + 3)) for 1 cycles;
+    reflex out3 { on p3 { rx_valid[3] = sv[16]; rx_data[3] = payload; } }
+    guard p4(dest_id == (base_id + 4)) for 1 cycles;
+    reflex out4 { on p4 { rx_valid[4] = sv[16]; rx_data[4] = payload; } }
+    guard p5(dest_id == (base_id + 5)) for 1 cycles;
+    reflex out5 { on p5 { rx_valid[5] = sv[16]; rx_data[5] = payload; } }
+    guard p6(dest_id == (base_id + 6)) for 1 cycles;
+    reflex out6 { on p6 { rx_valid[6] = sv[16]; rx_data[6] = payload; } }
+    guard p7(dest_id == (base_id + 7)) for 1 cycles;
+    reflex out7 { on p7 { rx_valid[7] = sv[16]; rx_data[7] = payload; } }
+    guard p8(dest_id == (base_id + 8)) for 1 cycles;
+    reflex out8 { on p8 { rx_valid[8] = sv[16]; rx_data[8] = payload; } }
+    guard p9(dest_id == (base_id + 9)) for 1 cycles;
+    reflex out9 { on p9 { rx_valid[9] = sv[16]; rx_data[9] = payload; } }
+    guard p10(dest_id == (base_id + 10)) for 1 cycles;
+    reflex out10 { on p10 { rx_valid[10] = sv[16]; rx_data[10] = payload; } }
+    guard p11(dest_id == (base_id + 11)) for 1 cycles;
+    reflex out11 { on p11 { rx_valid[11] = sv[16]; rx_data[11] = payload; } }
+    guard p12(dest_id == (base_id + 12)) for 1 cycles;
+    reflex out12 { on p12 { rx_valid[12] = sv[16]; rx_data[12] = payload; } }
+    guard p13(dest_id == (base_id + 13)) for 1 cycles;
+    reflex out13 { on p13 { rx_valid[13] = sv[16]; rx_data[13] = payload; } }
+    guard p14(dest_id == (base_id + 14)) for 1 cycles;
+    reflex out14 { on p14 { rx_valid[14] = sv[16]; rx_data[14] = payload; } }
+    guard p15(dest_id == (base_id + 15)) for 1 cycles;
+    reflex out15 { on p15 { rx_valid[15] = sv[16]; rx_data[15] = payload; } }
+
+    guard ext(!is_local) for 1 cycles;
+    reflex out_ext { on ext { uplink_valid = sv[16]; uplink_data = sd[16]; } }
+}
+
+module noc_l1_router {}

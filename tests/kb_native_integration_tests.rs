@@ -180,35 +180,41 @@ async fn test_kb_api_035() {
 }
 
 // --- Helper Functions for Category 4 (CLI binary execution) ---
-fn get_kb_bin_path(name: &str) -> std::path::PathBuf {
+fn get_kb_bin_path(_name: &str) -> std::path::PathBuf {
     let mut exe = std::env::current_exe().expect("Failed to get current executable path");
     exe.pop(); // remove test binary name
     exe.pop(); // remove 'deps' directory
-    let bin_name = if cfg!(windows) { format!("{}.exe", name) } else { name.to_string() };
+    let bin_name = if cfg!(windows) { "mirr.exe".to_string() } else { "mirr".to_string() };
     exe.join(bin_name)
 }
 
 fn run_kb_cli_no_file(args: &[&str]) -> Output {
-    let bin_path = get_kb_bin_path("mirr-kb-native");
+    let bin_path = get_kb_bin_path("mirr");
     std::process::Command::new(bin_path)
+        .arg("kb")
         .args(args)
         .output()
-        .expect("Failed to execute mirr-kb-native")
+        .expect("Failed to execute mirr kb")
 }
 
 fn run_kb_cli_with_env(args: &[&str], kb_root: &str) -> Output {
-    let bin_path = get_kb_bin_path("mirr-kb-native");
+    let bin_path = get_kb_bin_path("mirr");
     std::process::Command::new(bin_path)
+        .arg("kb")
         .args(args)
         .env("MIRR_KB_ROOT", kb_root)
         .output()
-        .expect("Failed to execute mirr-kb-native with env")
+        .expect("Failed to execute mirr kb with env")
 }
 
 // --- 036 - 050: CLI Binary Integration Tests ---
 #[test]
 fn test_kb_api_036() {
     let out = run_kb_cli_no_file(&["--help"]);
+    if !out.status.success() {
+        println!("stdout: {}", String::from_utf8_lossy(&out.stdout));
+        println!("stderr: {}", String::from_utf8_lossy(&out.stderr));
+    }
     assert!(out.status.success());
     assert!(String::from_utf8_lossy(&out.stdout).contains("MIRR Knowledge Base"));
 }
@@ -310,20 +316,22 @@ fn test_kb_api_048() {
 
 #[test]
 fn test_kb_api_049() {
-    let bin_path = get_kb_bin_path("mirr-kb-index");
+    let bin_path = get_kb_bin_path("mirr");
     let out = std::process::Command::new(bin_path)
+        .arg("kb-index")
         .arg("--help")
         .output()
-        .expect("Failed to execute mirr-kb-index");
+        .expect("Failed to execute mirr kb-index");
     assert!(out.status.success());
 }
 
 #[test]
 fn test_kb_api_050() {
-    let bin_path = get_kb_bin_path("mirr-kb-hydrate");
+    let bin_path = get_kb_bin_path("mirr");
     let out = std::process::Command::new(bin_path)
+        .arg("kb-hydrate")
         .arg("--help")
         .output()
-        .expect("Failed to execute mirr-kb-hydrate");
+        .expect("Failed to execute mirr kb-hydrate");
     assert!(out.status.success());
 }

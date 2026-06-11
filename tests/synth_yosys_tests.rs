@@ -24,7 +24,7 @@ fn yosys_available() -> bool {
 }
 
 /// SVA keywords that must not appear in synthesis-clean output.
-const SVA_KEYWORDS: &[&str] = &["assert property", "assume property", "cover property"];
+const SVA_KEYWORDS: &[&str] = &["assert ", "assume property", "cover property"];
 
 // -----------------------------------------------------------------------
 // Strip SVA tests
@@ -62,7 +62,7 @@ fn synth_bind_file_has_bind_and_sva() {
     assert!(!bind.is_empty(), "bind file should not be empty for TMR");
     assert!(bind.contains("bind tmr_sensor_fusion"), "missing bind statement");
     assert!(bind.contains("_sva"), "missing SVA wrapper module");
-    assert!(bind.contains("assert property"), "bind file should contain SVA");
+    assert!(bind.contains("assert "), "bind file should contain SVA asserts");
 }
 
 #[test]

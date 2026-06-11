@@ -163,6 +163,7 @@ pub(super) fn alu_unary_to_funct(op: AluUnaryOp) -> u8 {
     match op {
         AluUnaryOp::Not => 0,
         AluUnaryOp::Negate => 1,
+        AluUnaryOp::ReductionOr => 2,
     }
 }
 
@@ -170,6 +171,7 @@ pub(super) fn funct_to_alu_unary(f: u8) -> Result<AluUnaryOp, MirrError> {
     match f {
         0 => Ok(AluUnaryOp::Not),
         1 => Ok(AluUnaryOp::Negate),
+        2 => Ok(AluUnaryOp::ReductionOr),
         _ => Err(rspu_err(format!(
             "{} unknown unary ALU funct code {f}",
             crate::error_codes::ec(707)

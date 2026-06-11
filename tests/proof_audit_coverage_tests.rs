@@ -31,9 +31,10 @@ fn cleanup_temp_dir(rust_dir: &std::path::Path) {
 
 // Helper to invoke the compiled mirr-proof-audit binary.
 fn run_audit_bin(rust_dir: &PathBuf, proofs_dir: &PathBuf) -> String {
-    let bin_path = PathBuf::from(env!("CARGO_BIN_EXE_mirr-proof-audit"));
+    let bin_path = PathBuf::from(env!("CARGO_BIN_EXE_mirr"));
 
     let output = Command::new(bin_path)
+        .arg("proof-audit")
         .arg("--ast-dir")
         .arg(rust_dir)
         .arg("--emit-dir")

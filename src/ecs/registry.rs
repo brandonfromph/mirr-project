@@ -290,9 +290,12 @@ impl Registry {
         for reflex in reflexes {
             let mut guard_entities = Vec::new();
             for gname in &reflex.guard_names {
-                if let Some(g_ent) = self.get_entity_by_name(gname) {
+                let clean_gname =
+                    if let Some(pos) = gname.find('[') { &gname[..pos] } else { gname.as_str() };
+
+                if let Some(g_ent) = self.get_entity_by_name(clean_gname) {
                     guard_entities.push(g_ent);
-                } else if gname == "always" {
+                } else if clean_gname == "always" {
                     // Check if 'always' sentinel already exists (idempotent)
                     let always_ent = if let Some(ent) = self.get_entity_by_name("always") {
                         ent
@@ -505,13 +508,8 @@ impl Registry {
                         MirrError::InternalError("Result stack underflow (prev)".to_string())
                     })?;
                     let id = self.next_id();
-                    // Extract the signal entity from the signal ref component
-                    if let Some(SignalRefComponent(sig_ent)) =
-                        self.signal_refs[sig_ref_ent.0 as usize]
-                    {
-                        self.prev_ops[id.0 as usize] =
-                            Some(PrevComponent { signal: sig_ent, delay });
-                    }
+                    self.prev_ops[id.0 as usize] =
+                        Some(PrevComponent { signal: sig_ref_ent, delay });
                     results.push(id);
                 }
                 Work::FinishArrayIndex => {
@@ -661,14 +659,20 @@ impl Registry {
                         stack.push(Work::FinishUnary(*op));
                         stack.push(Work::Process(*operand, depth + 1));
                     } else if let Some(PrevComponent { signal, delay }) = &self.prev_ops[idx] {
-                        let sig_name = self.names[signal.0 as usize]
-                            .as_ref()
-                            .map(|n| n.0.clone())
-                            .ok_or_else(|| {
-                                MirrError::InternalError(
-                                    "Prev reference to unnamed entity".to_string(),
-                                )
-                            })?;
+                        let sig_name = if let Some(SignalRefComponent(decl)) =
+                            self.signal_refs[signal.0 as usize]
+                        {
+                            self.names[decl.0 as usize].as_ref().map(|n| n.0.clone())
+                        } else if let Some(PendingSignalRef(n)) =
+                            &self.pending_signal_refs[signal.0 as usize]
+                        {
+                            Some(n.clone())
+                        } else {
+                            None
+                        }
+                        .ok_or_else(|| {
+                            MirrError::InternalError("Prev reference to unnamed entity".to_string())
+                        })?;
                         let res = Expr::Prev { signal: sig_name, delay: *delay };
                         memo.insert(id, res.clone());
                         results.push(res);

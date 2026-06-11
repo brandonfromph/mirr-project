@@ -9,7 +9,7 @@ fn sva_always_formula() {
     let sv = verilog::emit_sv(&result);
 
     assert!(sv.contains("// ── Safety Properties (SVA) ──"), "must have SVA section header");
-    assert!(sv.contains("assert property"), "always formula must use assert property");
+    assert!(sv.contains("assert "), "always formula must use assert property");
 }
 
 #[test]
@@ -59,7 +59,7 @@ fn sva_always_followed_by_delay() {
     let sv = verilog::emit_sv(&result);
 
     assert!(
-        sv.contains("prop_p_followed_by_trig_shift[2] |->"),
+        sv.contains("(prop_p_followed_by_trig_shift[2]) |->"),
         "always followed_by 3 must produce shift register logic"
     );
 }

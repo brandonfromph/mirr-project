@@ -39,7 +39,9 @@ fn test_stress_nesting_depth_limit() {
 fn test_stress_adaptive_strategy_selection() {
     let mut registry = Registry::new();
     let sig_a = registry.create_entity("sig_a", KindComponent::SIGNAL);
-    let expr_a = registry.ingest_expr(&mirrc::ast::Expr::Signal("sig_a".to_string())).unwrap();
+
+    let expr_a = registry.next_id();
+    registry.signal_refs[expr_a.0 as usize] = Some(SignalRefComponent(sig_a));
 
     let mut compiler = TemporalCompiler::new();
 
@@ -61,7 +63,7 @@ fn test_stress_adaptive_strategy_selection() {
 
     // 3. Composite delay: prev(5) + 12 cycles = 17 (Counter)
     let prev_ent = registry.next_id();
-    registry.prev_ops[prev_ent.0 as usize] = Some(PrevComponent { signal: sig_a, delay: 5 });
+    registry.prev_ops[prev_ent.0 as usize] = Some(PrevComponent { signal: expr_a, delay: 5 });
     let g_prev = registry.create_entity("g_prev", KindComponent::GUARD);
     registry.cycles[g_prev.0 as usize] = Some(CyclesComponent(12));
     registry.conditions[g_prev.0 as usize] = Some(ConditionComponent(prev_ent));

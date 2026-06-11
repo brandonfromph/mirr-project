@@ -411,6 +411,10 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
             let inner = emit_expr_firrtl_bounded(operand, iterations);
             format!("not({})", inner)
         }
+        Expr::Unary { op: UnaryOp::ReductionOr, operand } => {
+            let inner = emit_expr_firrtl_bounded(operand, iterations);
+            format!("orr({})", inner)
+        }
         Expr::Unary { op: UnaryOp::Negate, operand } => {
             let inner = emit_expr_firrtl_bounded(operand, iterations);
             format!("neg({})", inner)

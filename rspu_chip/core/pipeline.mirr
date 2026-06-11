@@ -20,7 +20,7 @@ def rspu_pipeline(
 ) {
     reflect {
         // --- 1. Fetch Stage (IF) ---
-        signal pc: internal u32;
+        signal pipe_pc: internal u32;
         
         // PCC Verifier Integration
         signal pcc_valid: internal bool;
@@ -52,8 +52,8 @@ def rspu_pipeline(
 
         reflex fetch_normal {
             on fetch_active {
-                pc = (pc + 1) & 4294967295;
-                ${pc_out} = pc;
+                pipe_pc = (pipe_pc + 1) & 4294967295;
+                ${pc_out} = pipe_pc;
             }
         }
 
@@ -124,7 +124,7 @@ def rspu_pipeline(
                 alu_op = (${instr_in} & 255);
                 
                 // ram_addr is now u14 in ram module
-                ram_addr = (pc & 16383); 
+                ram_addr = (pipe_pc & 16383); 
                 reg_we = true;
                 reg_din = ex_packed;
             }

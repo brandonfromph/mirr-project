@@ -6,7 +6,7 @@ mod tests {
     use tempfile::tempdir;
 
     fn get_audit_bin() -> PathBuf {
-        PathBuf::from(env!("CARGO_BIN_EXE_mirr-audit"))
+        PathBuf::from(env!("CARGO_BIN_EXE_mirr"))
     }
 
     #[test]
@@ -31,9 +31,9 @@ mod tests {
         let src_path = src_dir.join("main.rs");
         fs::write(&src_path, "fn main() {}\n").expect("Failed to write src");
 
-        // 3. Run mirr-audit in refinement mode
+        // 3. Run mirr audit in refinement mode
         let output = Command::new(&bin)
-            .args(["refinement", "--glob", "src/**/*.rs"])
+            .args(["audit", "refinement", "--glob", "src/**/*.rs"])
             .current_dir(root)
             .output()
             .expect("Failed to run mirr-audit");
@@ -75,9 +75,9 @@ mod tests {
         fs::write(&src_path, "pub struct FoundStruct { pub field: u32 }\n")
             .expect("Failed to write src");
 
-        // 3. Run mirr-audit in refinement mode
+        // 3. Run mirr audit in refinement mode
         let output = Command::new(&bin)
-            .args(["refinement", "--glob", "src/**/*.rs"])
+            .args(["audit", "refinement", "--glob", "src/**/*.rs"])
             .current_dir(root)
             .output()
             .expect("Failed to run mirr-audit");

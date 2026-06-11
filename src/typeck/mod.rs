@@ -84,12 +84,18 @@ fn expr_node_budget_error(context_span: Option<Span>) -> MirrError {
     }
 }
 
-fn expr_inference_incomplete_error(context_span: Option<Span>) -> MirrError {
+fn expr_inference_incomplete_error(
+    context_span: Option<Span>,
+    missing_ptr: *const Expr,
+    expr: &Expr,
+) -> MirrError {
     MirrError::TypeError {
         message: format!(
-            "{} Expression type inference did not produce a root type within MAX_EXPR_NODES={}.",
+            "{} Expression type inference did not produce a root type within MAX_EXPR_NODES={}. Missing ptr: {:?}, root: {:?}",
             crate::error_codes::ec(607),
-            MAX_EXPR_NODES
+            MAX_EXPR_NODES,
+            missing_ptr,
+            expr
         ),
         span: context_span,
     }
@@ -342,15 +348,43 @@ fn infer_expr_type(
                 SignalType::Unsigned(bits)
             }
             // Signal → declared type.
-            Expr::Signal(name) => match signals.get(name.as_str()) {
-                Some(ty) => ty.clone(),
-                None => continue, // Undeclared — caught by semantic validation.
-            },
+            Expr::Signal(name) => {
+                let clean_name =
+                    if let Some(pos) = name.find('[') { &name[..pos] } else { name.as_str() };
+                match signals.get(clean_name) {
+                    Some(ty) => {
+                        if clean_name != name.as_str() {
+                            match ty {
+                                SignalType::Array { element, .. } => (**element).clone(),
+                                SignalType::Unsigned(_) | SignalType::Signed(_) => SignalType::Bool,
+                                _ => ty.clone(),
+                            }
+                        } else {
+                            ty.clone()
+                        }
+                    }
+                    None => continue, // Undeclared — caught by semantic validation.
+                }
+            }
             // T13: Prev preserves signal type.
-            Expr::Prev { signal, .. } => match signals.get(signal.as_str()) {
-                Some(ty) => ty.clone(),
-                None => continue, // Undeclared — caught by semantic validation.
-            },
+            Expr::Prev { signal, .. } => {
+                let clean_name =
+                    if let Some(pos) = signal.find('[') { &signal[..pos] } else { signal.as_str() };
+                match signals.get(clean_name) {
+                    Some(ty) => {
+                        if clean_name != signal.as_str() {
+                            match ty {
+                                SignalType::Array { element, .. } => (**element).clone(),
+                                SignalType::Unsigned(_) | SignalType::Signed(_) => SignalType::Bool,
+                                _ => ty.clone(),
+                            }
+                        } else {
+                            ty.clone()
+                        }
+                    }
+                    None => continue,
+                }
+            }
             // Unary operators.
             Expr::Unary { op, operand, .. } => {
                 let operand_ptr = operand.as_ref() as *const Expr;
@@ -376,6 +410,22 @@ fn infer_expr_type(
                     // Negate: Unsigned(N) → Signed(N+1), Signed(N) → Signed(N),
                     // Bool → error.
                     UnaryOp::Negate => infer_negate_type(operand_ty, context_span)?,
+                    // Reduction OR: evaluates if any element/bit is high. Returns Bool.
+                    UnaryOp::ReductionOr => match operand_ty {
+                        SignalType::Array { .. }
+                        | SignalType::Unsigned(_)
+                        | SignalType::Signed(_) => SignalType::Bool,
+                        _ => {
+                            return Err(MirrError::TypeError {
+                                message: format!(
+                                    "{} Operator '|' (reduction) requires an array or numeric operand, got {}.",
+                                    crate::error_codes::ec(226),
+                                    operand_ty
+                                ),
+                                span: context_span,
+                            });
+                        }
+                    },
                 }
             }
             // Binary operators.
@@ -466,10 +516,11 @@ fn infer_expr_type(
 
     // The root expression's type.
     let root_ptr = expr as *const Expr;
-    match types.get(&root_ptr) {
-        Some(ty) => Ok((ty.clone(), types)),
-        None => Err(expr_inference_incomplete_error(context_span)),
-    }
+    types
+        .get(&root_ptr)
+        .cloned()
+        .ok_or_else(|| expr_inference_incomplete_error(context_span, root_ptr, expr))
+        .map(|ty| (ty, types))
 }
 
 /// Infer the result type of a binary operation, or reject with a type error.

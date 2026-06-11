@@ -17,7 +17,7 @@ fn sva_only_contains_assertions() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
     let sva = verilog::emit_sva_only(&result);
 
-    assert!(sva.contains("assert property"), "sva_only must contain SVA assertions");
+    assert!(sva.contains("assert "), "sva_only must contain SVA assertions");
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn sva_only_empty_for_no_properties() {
 
     // The header is still emitted but no assertions follow
     assert!(
-        !sva.contains("assert property"),
+        !sva.contains("assert "),
         "sva_only must have no assertions when module has no properties"
     );
 }

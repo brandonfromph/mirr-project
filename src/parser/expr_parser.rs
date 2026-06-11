@@ -459,13 +459,18 @@ impl ExprParser {
             }
             Token::Bang => {
                 // Unary not: bind tighter than any binary operator.
-                let operand = self.parse_prefix(depth + 1)?;
+                let operand = self.parse_expr(100, depth + 1)?;
                 Ok(Expr::Unary { op: UnaryOp::Not, operand: Box::new(operand) })
             }
             Token::Minus => {
                 // Unary negate: bind tighter than any binary operator.
-                let operand = self.parse_prefix(depth + 1)?;
+                let operand = self.parse_expr(100, depth + 1)?;
                 Ok(Expr::Unary { op: UnaryOp::Negate, operand: Box::new(operand) })
+            }
+            Token::Pipe => {
+                // Vector reduction OR: binds tightly.
+                let operand = self.parse_expr(100, depth + 1)?;
+                Ok(Expr::Unary { op: UnaryOp::ReductionOr, operand: Box::new(operand) })
             }
             Token::LParen => {
                 let inner = self.parse_expr(0, depth + 1)?;

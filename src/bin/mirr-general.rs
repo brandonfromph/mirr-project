@@ -1272,9 +1272,7 @@ fn run_migrate(dry_run: bool) -> io::Result<i32> {
     }
 }
 
-fn main() -> anyhow::Result<()> {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-
+pub fn run(args: Vec<String>) -> anyhow::Result<()> {
     match dispatch(&args) {
         Ok(code) => {
             std::process::exit(code);
@@ -1299,6 +1297,7 @@ mod tests {
     use super::collect_bottleneck_tasks;
     use super::dispatch;
     use super::has_hashed_suffix;
+    use super::mirr_general::scheduler::{RunSummary, TaskResult, WaveKind, WaveResult};
     use super::parse_as_json;
     use super::parse_ci_profile;
     use super::parse_profile_alias;
@@ -1306,7 +1305,6 @@ mod tests {
     use super::workspace_selective_test_args;
     use super::CiProfile;
     use super::CommandRoute;
-    use crate::mirr_general::scheduler::{RunSummary, TaskResult, WaveKind, WaveResult};
 
     fn fake_task(package_name: &str, duration_ms: u64, skipped_by_cache: bool) -> TaskResult {
         TaskResult {

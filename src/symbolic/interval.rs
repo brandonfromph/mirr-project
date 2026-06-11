@@ -256,9 +256,7 @@ pub fn interval_unary(op: UnaryOp, val: SymValue) -> SymValue {
             }
             SymValue::Unknown { .. } | SymValue::Top => SymValue::Top,
         },
-        UnaryOp::Negate => {
-            // Negation of unsigned is semantically signed — punt to Unknown (v1).
-            SymValue::Unknown { width: 64 }
-        }
+        UnaryOp::Negate => SymValue::Unknown { width: 64 },
+        UnaryOp::ReductionOr => SymValue::Unknown { width: 64 },
     }
 }

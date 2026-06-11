@@ -127,6 +127,11 @@ fn emit_arm_instruction(
         RspuInstruction::AluUnary { op, dst, src } => match op {
             AluUnaryOp::Not => out.push_str(&format!("    mvn r{}, r{}\n", dst, src)),
             AluUnaryOp::Negate => out.push_str(&format!("    neg r{}, r{}\n", dst, src)),
+            AluUnaryOp::ReductionOr => {
+                out.push_str(&format!("    cmp r{}, #0\n", src));
+                out.push_str(&format!("    movne r{}, #1\n", dst));
+                out.push_str(&format!("    moveq r{}, #0\n", dst));
+            }
         },
 
         // Temporal tier — shift register emulation

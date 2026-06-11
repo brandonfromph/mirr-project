@@ -10,6 +10,11 @@ readme = "README.md"
 keywords = ["compiler", "hardware", "safety-critical", "verilog", "dsl"]
 categories = ["compilers", "embedded", "hardware-support"]
 rust-version = "1.70"
+autobins = false
+
+[[bin]]
+name = "mirr"
+path = "src/bin/mirr.rs"
 
 [dependencies]
 anyhow = "1.0.102"
@@ -51,25 +56,7 @@ opt-level = "s"
 panic = "abort"
 lto = "fat"
 
-[[bin]]
-name = "mirr-compile"
-path = "src/bin/mirr-compile/main.rs"
 
-[[bin]]
-name = "mirrc"
-path = "src/bin/mirrc.rs"
-
-[[bin]]
-name = "mirr-lsp"
-path = "src/bin/mirr-lsp.rs"
-
-[[bin]]
-name = "mirr-hydrate"
-path = "src/bin/mirr-hydrate.rs"
-
-[[bin]]
-name = "mirr-proof-audit"
-path = "src/bin/mirr-proof-audit.rs"
 
 [[bench]]
 name = "pipeline_bench"

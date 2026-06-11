@@ -116,6 +116,9 @@ where
                         constraints
                             .push(WidthConstraint::SameAs { node: node_id, source: *operand });
                     }
+                    crate::ast::types::UnaryOp::ReductionOr => {
+                        constraints.push(WidthConstraint::Fixed { node: node_id, width: 1 });
+                    }
                     crate::ast::types::UnaryOp::Negate => {
                         // Check signedness of operand to decide SameAs vs SameAsPlusOne
                         let is_signed = match nodes.get(*operand as usize) {

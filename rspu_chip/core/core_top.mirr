@@ -10,8 +10,7 @@ def core_top(
     clk: signal in bool,
     rst_n: signal in bool,
     
-    // Instruction Memory Interface
-    instr_in: signal in u64,
+    // Instruction Memory Interface (Internal 1-word Cache)
     pc_out:   signal out u32,
     data_out: signal out u64,
     
@@ -24,7 +23,22 @@ def core_top(
     reflect {
         // --- 1. 5-Stage Pipeline Instance ---
         signal trap_signal: internal bool;
-        pipe::rspu_pipeline(${clk}, ${rst_n}, ${instr_in}, ${pc_out}, ${data_out}, trap_signal);
+        
+        // Dynamic Instruction Latch (1-word I-Cache)
+        signal current_instr: internal u64;
+        
+        guard noc_rx_arrived {
+            when ${noc_rx_valid}
+            for 1 cycles;
+        }
+        
+        reflex update_instr {
+            on noc_rx_arrived {
+                current_instr = ${noc_rx_data};
+            }
+        }
+        
+        pipe::rspu_pipeline(${clk}, ${rst_n}, current_instr, ${pc_out}, ${data_out}, trap_signal);
 
         // --- 2. Exception Controller Logic ---
         // trap_active fires when the pipeline asserts a trap.

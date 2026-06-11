@@ -198,6 +198,8 @@ pub enum AluUnaryOp {
     Not,
     /// Arithmetic negation (two's complement).
     Negate,
+    /// Vectorized logical OR reduction.
+    ReductionOr,
 }
 
 // ---------------------------------------------------------------------------
@@ -536,5 +538,6 @@ fn alu_unary_str(op: AluUnaryOp) -> &'static str {
     match op {
         AluUnaryOp::Not => "NOT",
         AluUnaryOp::Negate => "NEG",
+        AluUnaryOp::ReductionOr => "R_OR",
     }
 }

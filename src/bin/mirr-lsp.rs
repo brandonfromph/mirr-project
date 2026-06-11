@@ -14,15 +14,14 @@ use clap::Parser;
 use std::io;
 
 #[derive(Parser, Debug)]
-#[command(name = "mirr-lsp", version, about = "MIRR LSP server entrypoint")]
-struct Args {
+#[command(name = "lsp", about = "MIRR LSP server entrypoint")]
+pub struct Args {
     /// Output mode for startup/runtime errors.
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
-    format: String,
+    pub format: String,
 }
 
-fn main() {
-    let args = Args::parse();
+pub fn run(args: Args) {
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut input = stdin.lock();

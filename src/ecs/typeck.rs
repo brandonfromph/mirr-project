@@ -142,18 +142,7 @@ impl Registry {
                         stack.push(Work::CombineFieldAccess(field.clone()));
                         stack.push(Work::Visit(*object));
                     } else if let Some(PrevComponent { signal, .. }) = self.prev_ops[idx] {
-                        let ty = self.types[signal.0 as usize]
-                            .as_ref()
-                            .map(|t| t.0.signal_type())
-                            .ok_or_else(|| MirrError::TypeError {
-                                message: format!(
-                                    "{} prev() target {} has no type.",
-                                    crate::error_codes::ec(699),
-                                    signal.0
-                                ),
-                                span: None,
-                            })?;
-                        results.push(ty);
+                        stack.push(Work::Visit(signal));
                     } else if let Some(ArrayLiteralComponent(elems)) = &self.array_literals[idx] {
                         stack.push(Work::CombineArrayLiteral(elems.len()));
                         for elem in elems.iter().rev() {
@@ -270,6 +259,7 @@ impl Registry {
                     })?;
                     results.push(match op {
                         UnaryOp::Not => op_ty.clone(),
+                        UnaryOp::ReductionOr => SignalType::Bool,
                         UnaryOp::Negate => match op_ty {
                             SignalType::Unsigned(w) => SignalType::Signed(w + 1),
                             SignalType::Signed(w) => SignalType::Signed(w),

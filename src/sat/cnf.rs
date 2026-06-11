@@ -164,6 +164,11 @@ pub fn expr_to_cnf(expr: &Expr) -> Option<CnfFormula> {
                             let v = formula.alloc_var()?;
                             var_stack.push(v);
                         }
+                        UnaryOp::ReductionOr => {
+                            // Bitwise OR reduction: treat as free variable.
+                            let v = formula.alloc_var()?;
+                            var_stack.push(v);
+                        }
                     }
                 }
                 Expr::Binary { op, left, right } => {

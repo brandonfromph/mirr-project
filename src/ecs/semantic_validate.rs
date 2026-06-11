@@ -284,15 +284,7 @@ impl Registry {
                         span: None,
                     });
                 }
-                if self.kinds[signal.0 as usize].is_none() {
-                    errors.push(MirrError::SemanticError {
-                        message: format!(
-                            "{} prev() references undeclared signal.",
-                            crate::error_codes::ec(204)
-                        ),
-                        span: None,
-                    });
-                }
+                stack.push(signal);
             } else if let Some(ArrayIndexComponent { array, index }) = &self.array_indices[idx] {
                 stack.push(*index);
                 stack.push(*array);

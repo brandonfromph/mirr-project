@@ -350,6 +350,7 @@ pub fn sym_eval_unary(op: UnaryOp, val: SymValue) -> SymValue {
         SymValue::Concrete(v) => match op {
             UnaryOp::Not => SymValue::Concrete(!v),
             UnaryOp::Negate => SymValue::Unknown { width: 64 },
+            UnaryOp::ReductionOr => SymValue::Concrete(if v != 0 { 1 } else { 0 }),
         },
         SymValue::Interval { .. } => interval::interval_unary(op, val),
     }

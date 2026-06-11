@@ -174,6 +174,7 @@ impl TemporalCompiler {
                 let op_str = match op {
                     crate::ast::types::UnaryOp::Not => "not",
                     crate::ast::types::UnaryOp::Negate => "neg",
+                    crate::ast::types::UnaryOp::ReductionOr => "reduce_or",
                 };
                 format!("{}_{}", op_str, self.format_expr_short(operand, depth + 1))
             }

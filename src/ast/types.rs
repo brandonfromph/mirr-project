@@ -234,6 +234,8 @@ pub enum UnaryOp {
     Not,
     /// Arithmetic negation (`-`). Unsigned(N) -> Signed(N+1), Signed(N) -> Signed(N).
     Negate,
+    /// Vectorized logical OR reduction (`|`). Evaluates if any bit is high.
+    ReductionOr,
 }
 
 /// Literal value in an expression.

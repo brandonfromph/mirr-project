@@ -236,6 +236,7 @@ fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
             match op {
                 UnaryOp::Not => format!("(!{inner})"),
                 UnaryOp::Negate => format!("(-{inner})"),
+                UnaryOp::ReductionOr => format!("(|{inner})"),
             }
         }
         Expr::Binary { op, left, right } => {

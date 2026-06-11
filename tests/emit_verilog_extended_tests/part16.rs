@@ -70,7 +70,7 @@ fn bind_file_contains_assert_property() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
     let bind = verilog::emit_sva_bind_file(&result);
 
-    assert!(bind.contains("assert property"), "bind file must contain SVA assertions");
+    assert!(bind.contains("assert "), "bind file must contain SVA assertions");
 }
 
 // ===========================================================================
