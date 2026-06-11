@@ -141,6 +141,8 @@ fn default_config() -> PipelineConfig {
         logic_optimize: false,
         base_dir: None,
         source_file: None,
+        macro_expand: false,
+        dump_macro_ast: false,
     }
 }
 

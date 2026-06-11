@@ -8,7 +8,7 @@ module my_mod {
     signal clk: in bool;
     signal internal_sig: internal bool;
 
-    guard g1 { always }
+    guard g1 { when true for 1 cycles; }
 
     reflex r1 {
         on g1 {
@@ -31,9 +31,9 @@ module my_mod {
     let sv = mirrc::emit::verilog::emit_sv(&result);
 
     // Verify source comments exist
-    assert!(sv.contains("// source: my_mod.mirr:3")); // module decl
-    assert!(sv.contains("// source: my_mod.mirr:5")); // internal_sig
-    assert!(sv.contains("// source: my_mod.mirr:7")); // guard g1
-    assert!(sv.contains("// source: my_mod.mirr:9")); // reflex r1
-    assert!(sv.contains("// source: my_mod.mirr:15")); // property p1
+    assert!(sv.contains("// source: my_mod.mirr:8")); // module decl
+    assert!(sv.contains("// source: my_mod.mirr:10")); // internal_sig
+    assert!(sv.contains("// source: my_mod.mirr:12")); // guard g1
+    assert!(sv.contains("// source: my_mod.mirr:16")); // reflex r1
+    assert!(sv.contains("// source: my_mod.mirr:22")); // property p1
 }

@@ -176,10 +176,16 @@ fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
                     statements.push(ModuleMacroStmt::Signal(parse_signal_decl(s)?));
                 }
             }
+            Some("signal") => {
+                statements.push(ModuleMacroStmt::Signal(parse_signal_decl(item)?));
+            }
             Some("guards") => {
                 for g in &inner[1..] {
                     statements.push(ModuleMacroStmt::Guard(parse_guard(g)?));
                 }
+            }
+            Some("guard") => {
+                statements.push(ModuleMacroStmt::Guard(parse_guard(item)?));
             }
             Some("reflexes") => {
                 for r in &inner[1..] {
@@ -197,15 +203,42 @@ fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
                     statements.push(ModuleMacroStmt::Reflex(unexp));
                 }
             }
+            Some("reflex") => {
+                let flat = parse_reflex(item)?;
+                let unexp = UnexpandedReflex {
+                    name: flat.name,
+                    guard_names: flat.guard_names,
+                    statements: flat
+                        .assignments
+                        .into_iter()
+                        .map(ReflexMacroStmt::Assignment)
+                        .collect(),
+                    span: flat.span,
+                };
+                statements.push(ModuleMacroStmt::Reflex(unexp));
+            }
             Some("properties") => {
                 for p in &inner[1..] {
                     statements.push(ModuleMacroStmt::Property(parse_property(p)?));
                 }
             }
+            Some("property") => {
+                statements.push(ModuleMacroStmt::Property(parse_property(item)?));
+            }
             Some("pattern-calls") => {
                 for c in &inner[1..] {
                     statements.push(ModuleMacroStmt::PatternCall(parse_pattern_call(c)?));
                 }
+            }
+            Some("pattern-call") => {
+                statements.push(ModuleMacroStmt::PatternCall(parse_pattern_call(item)?));
+            }
+            Some("for-generate") | Some("if-generate") | Some("let-bind") => {
+                return Err(sexpr_err(format!(
+                    "{} Unevaluated generative form '{}'",
+                    crate::error_codes::ec(815),
+                    inner[0].as_symbol().unwrap()
+                )));
             }
             _ => {}
         }
@@ -275,6 +308,13 @@ fn parse_module_section(sexpr: &SExpr) -> Result<Module, MirrError> {
                 for o in &inner[1..] {
                     pattern_origins.push(parse_pattern_origin(o)?);
                 }
+            }
+            Some("for-generate") | Some("if-generate") | Some("let-bind") => {
+                return Err(sexpr_err(format!(
+                    "{} Unevaluated generative form '{}'",
+                    crate::error_codes::ec(815),
+                    inner[0].as_symbol().unwrap()
+                )));
             }
             _ => {}
         }
@@ -615,9 +655,9 @@ fn parse_reflex(sexpr: &SExpr) -> Result<Reflex, MirrError> {
         sexpr_err(format!("{} Expected reflex list", crate::error_codes::ec(805)))
     })?;
     expect_head(items, "reflex")?;
-    if items.len() < 4 {
+    if items.len() < 3 {
         return Err(sexpr_err(format!(
-            "{} reflex requires name, on-clause, assignments",
+            "{} reflex requires name and on-clause",
             crate::error_codes::ec(806)
         )));
     }
@@ -642,6 +682,18 @@ fn parse_reflex(sexpr: &SExpr) -> Result<Reflex, MirrError> {
         let assign_list = item.as_list().ok_or_else(|| {
             sexpr_err(format!("{} Expected assign list", crate::error_codes::ec(805)))
         })?;
+        if assign_list.is_empty() {
+            continue;
+        }
+        let head = assign_list[0].as_symbol();
+        if matches!(head, Some("for-generate") | Some("if-generate") | Some("let-bind")) {
+            return Err(sexpr_err(format!(
+                "{} Unevaluated generative form '{}'",
+                crate::error_codes::ec(815),
+                head.unwrap()
+            )));
+        }
+
         expect_head(assign_list, "assign")?;
         if assign_list.len() < 3 {
             return Err(sexpr_err(format!(

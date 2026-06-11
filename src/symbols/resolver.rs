@@ -27,10 +27,74 @@ use std::path::PathBuf;
 use crate::ast::program::{MirrProgram, Module};
 use crate::ast::types::ExtendedType;
 use crate::error::MirrError;
-use crate::import::ImportContext;
 use crate::span::Span;
 
 use super::{ModuleSymbols, SymbolInfo, SymbolTable};
+
+/// Represents a resolved and parsed file for imports.
+#[derive(Debug)]
+pub struct ResolvedFile {
+    pub program: MirrProgram,
+}
+
+/// Context holding all resolved imported files.
+#[derive(Debug, Default)]
+pub struct ImportContext {
+    pub files: HashMap<PathBuf, ResolvedFile>,
+}
+
+impl ImportContext {
+    pub fn new() -> Self {
+        Self { files: HashMap::new() }
+    }
+}
+
+/// Helper function to recursively resolve imports and load them.
+pub fn resolve_imports(
+    program: &MirrProgram,
+    base_dir: &std::path::Path,
+) -> Result<ImportContext, MirrError> {
+    let mut ctx = ImportContext::new();
+    let mut loaded_paths = std::collections::HashSet::new();
+
+    fn load_recursive(
+        ctx: &mut ImportContext,
+        imports: &[crate::ast::program::ImportDecl],
+        current_dir: &std::path::Path,
+        loaded_paths: &mut std::collections::HashSet<PathBuf>,
+    ) -> Result<(), MirrError> {
+        for import in imports {
+            let import_path = current_dir.join(&import.path);
+            let canonical_path = import_path.canonicalize().unwrap_or_else(|_| import_path.clone());
+            if loaded_paths.contains(&canonical_path) {
+                continue;
+            }
+            loaded_paths.insert(canonical_path.clone());
+
+            let source =
+                std::fs::read_to_string(&import_path).map_err(|e| MirrError::ImportError {
+                    message: format!("Failed to read import file {:?}: {}", import_path, e),
+                    span: import.span,
+                })?;
+
+            let imported_prog =
+                crate::parser::parse_mirr(&source).map_err(|e| MirrError::ImportError {
+                    message: format!("Failed to parse imported file {:?}: {}", import_path, e),
+                    span: import.span,
+                })?;
+
+            if let Some(parent_dir) = import_path.parent() {
+                load_recursive(ctx, &imported_prog.imports, parent_dir, loaded_paths)?;
+            }
+
+            ctx.files.insert(canonical_path, ResolvedFile { program: imported_prog });
+        }
+        Ok(())
+    }
+
+    load_recursive(&mut ctx, &program.imports, base_dir, &mut loaded_paths)?;
+    Ok(ctx)
+}
 
 /// Symbol conflict information.
 #[derive(Debug, Clone, PartialEq)]
@@ -138,11 +202,12 @@ impl CrossModuleResolver {
         program: &MirrProgram,
         main_path: PathBuf,
     ) -> Result<Self, MirrError> {
-        use crate::import::resolve_imports;
-
         // First resolve all imports
         let base_dir = main_path.parent().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} Cannot determine base directory for import resolution.", crate::error_codes::ec(918)),
+            message: format!(
+                "{} Cannot determine base directory for import resolution.",
+                crate::error_codes::ec(918)
+            ),
             span: None,
         })?;
 
@@ -213,7 +278,10 @@ impl CrossModuleResolver {
         if let Ok(symbol) = self.symbol_table.resolve_local(symbol_name) {
             let current_module =
                 self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-                    message: format!("{} No current module set for symbol resolution.", crate::error_codes::ec(911)),
+                    message: format!(
+                        "{} No current module set for symbol resolution.",
+                        crate::error_codes::ec(911)
+                    ),
                     span,
                 })?;
 
@@ -229,8 +297,11 @@ impl CrossModuleResolver {
             let current = self.symbol_table.current_module().map(|m| &m.name).unwrap_or(&unknown);
 
             Err(MirrError::SymbolError {
-                message: format!("{} Symbol '{}' not found in current module '{}' or any imported modules.", crate::error_codes::ec(912),
-                    symbol_name, current
+                message: format!(
+                    "{} Symbol '{}' not found in current module '{}' or any imported modules.",
+                    crate::error_codes::ec(912),
+                    symbol_name,
+                    current
                 ),
                 span,
             })
@@ -279,7 +350,10 @@ impl CrossModuleResolver {
     /// Get all available symbols in the current module.
     pub fn list_local_symbols(&self) -> Result<Vec<&SymbolInfo>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} No current module set for symbol listing.", crate::error_codes::ec(913)),
+            message: format!(
+                "{} No current module set for symbol listing.",
+                crate::error_codes::ec(913)
+            ),
             span: None,
         })?;
 
@@ -289,7 +363,10 @@ impl CrossModuleResolver {
     /// Get all available imports in the current module.
     pub fn list_available_imports(&self) -> Result<Vec<String>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} No current module set for import listing.", crate::error_codes::ec(914)),
+            message: format!(
+                "{} No current module set for import listing.",
+                crate::error_codes::ec(914)
+            ),
             span: None,
         })?;
 
@@ -325,7 +402,9 @@ impl CrossModuleResolver {
             Ok(symbol.ty.clone())
         } else {
             Err(MirrError::SymbolError {
-                message: format!("{} Cannot determine type of unknown symbol '{}'.", crate::error_codes::ec(915),
+                message: format!(
+                    "{} Cannot determine type of unknown symbol '{}'.",
+                    crate::error_codes::ec(915),
                     symbol_name
                 ),
                 span: None,
@@ -377,7 +456,10 @@ impl CrossModuleResolver {
     /// Get all symbols visible from the current module.
     pub fn get_visible_symbols(&self) -> Result<Vec<ResolvedSymbol>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} No current module set for visibility check.", crate::error_codes::ec(919)),
+            message: format!(
+                "{} No current module set for visibility check.",
+                crate::error_codes::ec(919)
+            ),
             span: None,
         })?;
 
@@ -409,22 +491,30 @@ impl CrossModuleResolver {
     /// Get symbols by namespace (module alias).
     pub fn get_symbols_in_namespace(&self, alias: &str) -> Result<Vec<ResolvedSymbol>, MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} No current module set for namespace query.", crate::error_codes::ec(920)),
+            message: format!(
+                "{} No current module set for namespace query.",
+                crate::error_codes::ec(920)
+            ),
             span: None,
         })?;
 
         let import_scope = current.import_scope();
         let module_path =
             import_scope.resolve_alias(alias).ok_or_else(|| MirrError::SymbolError {
-                message: format!("{} Unknown import alias '{}' in module '{}'.", crate::error_codes::ec(907),
-                    alias, current.name
+                message: format!(
+                    "{} Unknown import alias '{}' in module '{}'.",
+                    crate::error_codes::ec(907),
+                    alias,
+                    current.name
                 ),
                 span: None,
             })?;
 
         let target_module =
             self.symbol_table.get_module(module_path).ok_or_else(|| MirrError::SymbolError {
-                message: format!("{} Imported module '{}' (alias '{}') not found in symbol table.", crate::error_codes::ec(908),
+                message: format!(
+                    "{} Imported module '{}' (alias '{}') not found in symbol table.",
+                    crate::error_codes::ec(908),
                     module_path.display(),
                     alias
                 ),
@@ -482,7 +572,10 @@ impl CrossModuleResolver {
     /// Validate that all imported modules are properly loaded.
     pub fn validate_imports(&self) -> Result<(), MirrError> {
         let current = self.symbol_table.current_module().ok_or_else(|| MirrError::SymbolError {
-            message: format!("{} No current module set for import validation.", crate::error_codes::ec(916)),
+            message: format!(
+                "{} No current module set for import validation.",
+                crate::error_codes::ec(916)
+            ),
             span: None,
         })?;
 
@@ -491,8 +584,11 @@ impl CrossModuleResolver {
 
             if self.symbol_table.get_module(&import_path).is_none() {
                 return Err(MirrError::SymbolError {
-                    message: format!("{} Imported module '{}' (alias '{}') is not loaded in symbol table.", crate::error_codes::ec(917),
-                        import.path, import.alias
+                    message: format!(
+                        "{} Imported module '{}' (alias '{}') is not loaded in symbol table.",
+                        crate::error_codes::ec(917),
+                        import.path,
+                        import.alias
                     ),
                     span: import.span,
                 });
@@ -618,8 +714,6 @@ mod tests {
             target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
-            struct_defs: Vec::new(),
-            interface_defs: Vec::new(),
             module: module.clone(),
         };
 
@@ -648,8 +742,6 @@ mod tests {
             target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
-            struct_defs: Vec::new(),
-            interface_defs: Vec::new(),
             module: module.clone(),
         };
 
@@ -683,8 +775,6 @@ mod tests {
             target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
-            struct_defs: Vec::new(),
-            interface_defs: Vec::new(),
             module: module.clone(),
         };
 
@@ -736,8 +826,6 @@ mod tests {
             target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
-            struct_defs: Vec::new(),
-            interface_defs: Vec::new(),
             module: module.clone(),
         };
 

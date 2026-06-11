@@ -899,16 +899,14 @@ module rspu_top_sva (
   input  logic signed [63:0] physics_pendulum_194_p_next
 );
 
+  // source: <unknown>:65
   // property: system_stability
-  always @(posedge clk) begin
-    if (rst_n) assert (((robot_angle < (-(-100000))) && (robot_angle > (-100000))));
-  end
+  assert property (@(posedge clk) disable iff (!rst_n) (((robot_angle < (-(-100000))) & (robot_angle > (-100000)))));
 
+  // source: <unknown>:38
   // Pattern: physics_pendulum_194
   // property: physics_pendulum_194_balance_limit
-  always @(posedge clk) begin
-    if (rst_n) assert (((physics_pendulum_194_angle_internal < (-(-102891))) && (physics_pendulum_194_angle_internal > (-102891))));
-  end
+  assert property (@(posedge clk) disable iff (!rst_n) (((physics_pendulum_194_angle_internal < (-(-102891))) & (physics_pendulum_194_angle_internal > (-102891)))));
 
 endmodule
 

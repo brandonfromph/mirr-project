@@ -144,6 +144,14 @@ struct Cli {
     /// Extra Verilog files to link in formal verification
     #[arg(long)]
     link: Vec<String>,
+
+    /// Run S-Expression macro expansion pass
+    #[arg(long)]
+    macro_expand: bool,
+
+    /// Dump the post-expansion macro AST to a file
+    #[arg(long)]
+    dump_macro_ast: bool,
 }
 
 pub fn main() -> anyhow::Result<()> {
@@ -217,6 +225,12 @@ pub fn main() -> anyhow::Result<()> {
         config.temporal = true;
         config.mape_k = true;
         config.emit_mape_k_rtl = true;
+    }
+    if args.macro_expand {
+        config.macro_expand = true;
+    }
+    if args.dump_macro_ast {
+        config.dump_macro_ast = true;
     }
 
     let root_path = Path::new(&root_file);

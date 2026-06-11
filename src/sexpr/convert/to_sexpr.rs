@@ -79,7 +79,7 @@ fn convert_pattern_def(p: &PatternDef) -> SExpr {
             }
             ModuleMacroStmt::Property(p) => properties.push(p.clone()),
             ModuleMacroStmt::PatternCall(c) => pattern_calls.push(c.clone()),
-            _ => {} // Skip complex macros in legacy S-Expr output
+            _ => {}
         }
     }
 
@@ -89,6 +89,34 @@ fn convert_pattern_def(p: &PatternDef) -> SExpr {
     reflect_items.push(convert_reflexes(&reflexes));
     reflect_items.push(convert_properties(&properties));
     reflect_items.push(convert_pattern_calls(&pattern_calls));
+
+    // Emit generative nodes inside the reflect block so they can be expanded
+    for stmt in &p.body.statements {
+        match stmt {
+            ModuleMacroStmt::ForLoop { var, start, end, body } => {
+                let body_items: Vec<SExpr> = body.iter().map(convert_module_macro_stmt).collect();
+                let for_gen = SExpr::list(vec![
+                    SExpr::sym("for-generate"),
+                    SExpr::str_val(var),
+                    SExpr::int(*start as u64),
+                    SExpr::int(*end as u64),
+                    SExpr::list(body_items),
+                ]);
+                reflect_items.push(for_gen);
+            }
+            ModuleMacroStmt::LetBinding { name, ty, value } => {
+                let let_node = SExpr::list(vec![
+                    SExpr::sym("let-bind"),
+                    SExpr::str_val(name),
+                    SExpr::str_val(ty),
+                    convert_expr(value),
+                ]);
+                reflect_items.push(let_node);
+            }
+            _ => {}
+        }
+    }
+
     items.push(SExpr::list(reflect_items));
 
     SExpr::list(items)
@@ -524,4 +552,136 @@ fn convert_pattern_origins(origins: &[PatternOrigin]) -> SExpr {
         ]));
     }
     SExpr::list(items)
+}
+
+/// Convert a `ModuleMacroStmt` into its S-expression form for generative bodies.
+fn convert_module_macro_stmt(stmt: &ModuleMacroStmt) -> SExpr {
+    match stmt {
+        ModuleMacroStmt::Signal(s) => {
+            let mut sig = vec![
+                SExpr::sym("signal"),
+                SExpr::str_val(&s.name),
+                convert_signal_kind(s.kind),
+                convert_signal_type(s.ty.core.clone()),
+            ];
+            if !s.ty.annotations.is_default() {
+                sig.push(convert_annotations(&s.ty.annotations));
+            }
+            SExpr::list(sig)
+        }
+        ModuleMacroStmt::Guard(g) => {
+            let mut g_list =
+                vec![SExpr::sym("guard"), SExpr::str_val(&g.name), convert_expr(&g.condition)];
+            if let Some(ref tc) = g.template_cycles {
+                g_list.push(SExpr::str_val(tc));
+            } else {
+                g_list.push(SExpr::int(g.cycles));
+            }
+            SExpr::list(g_list)
+        }
+        ModuleMacroStmt::Reflex(r) => {
+            let mut reflex_items = vec![SExpr::sym("reflex"), SExpr::str_val(&r.name)];
+            let mut on_items = vec![SExpr::sym("on")];
+            for gn in &r.guard_names {
+                on_items.push(SExpr::str_val(gn));
+            }
+            reflex_items.push(SExpr::list(on_items));
+            for s in &r.statements {
+                reflex_items.push(convert_reflex_macro_stmt(s));
+            }
+            SExpr::list(reflex_items)
+        }
+        ModuleMacroStmt::Property(p) => SExpr::list(vec![
+            SExpr::sym("property"),
+            SExpr::str_val(&p.name),
+            convert_directive(p.directive),
+            convert_formula(&p.formula),
+        ]),
+        ModuleMacroStmt::PatternCall(c) => {
+            let mut call_items = vec![SExpr::sym("pattern-call"), SExpr::str_val(&c.pattern_name)];
+            for arg in &c.arguments {
+                call_items.push(convert_pattern_arg(arg));
+            }
+            SExpr::list(call_items)
+        }
+        ModuleMacroStmt::ForLoop { var, start, end, body } => {
+            let body_items: Vec<SExpr> = body.iter().map(convert_module_macro_stmt).collect();
+            SExpr::list(vec![
+                SExpr::sym("for-generate"),
+                SExpr::str_val(var),
+                SExpr::int(*start as u64),
+                SExpr::int(*end as u64),
+                SExpr::list(body_items),
+            ])
+        }
+        ModuleMacroStmt::LetBinding { name, ty, value } => SExpr::list(vec![
+            SExpr::sym("let-bind"),
+            SExpr::str_val(name),
+            SExpr::str_val(ty),
+            convert_expr(value),
+        ]),
+    }
+}
+
+/// Convert a `ReflexMacroStmt` into its S-expression form for generative bodies.
+fn convert_reflex_macro_stmt(stmt: &ReflexMacroStmt) -> SExpr {
+    match stmt {
+        ReflexMacroStmt::Assignment(a) => SExpr::list(vec![
+            SExpr::sym("assign"),
+            SExpr::str_val(&a.target),
+            convert_expr(&a.value),
+        ]),
+        ReflexMacroStmt::LetBinding { name, ty, value, .. } => SExpr::list(vec![
+            SExpr::sym("let-bind"),
+            SExpr::str_val(name),
+            SExpr::str_val(ty),
+            convert_expr(value),
+        ]),
+        ReflexMacroStmt::OnBlock { guard_names, body } => {
+            let mut items = vec![SExpr::sym("on-block")];
+            let mut guard_list = vec![SExpr::sym("guards")];
+            for gn in guard_names {
+                guard_list.push(SExpr::str_val(gn));
+            }
+            items.push(SExpr::list(guard_list));
+            for s in body {
+                items.push(convert_reflex_macro_stmt(s));
+            }
+            SExpr::list(items)
+        }
+        ReflexMacroStmt::ForLoop { var, start, end, body } => {
+            let body_items: Vec<SExpr> = body.iter().map(convert_reflex_macro_stmt).collect();
+            SExpr::list(vec![
+                SExpr::sym("for-generate"),
+                SExpr::str_val(var),
+                SExpr::int(*start as u64),
+                SExpr::int(*end as u64),
+                SExpr::list(body_items),
+            ])
+        }
+        ReflexMacroStmt::IfElse { condition, true_branch, false_branch } => {
+            let then_items: Vec<SExpr> =
+                true_branch.iter().map(convert_reflex_macro_stmt).collect();
+            let else_items: Vec<SExpr> =
+                false_branch.iter().map(convert_reflex_macro_stmt).collect();
+            SExpr::list(vec![
+                SExpr::sym("if-generate"),
+                convert_expr(condition),
+                SExpr::list(then_items),
+                SExpr::list(else_items),
+            ])
+        }
+        ReflexMacroStmt::Match { expr, arms } => {
+            // Convert match to chained if-generate forms
+            let mut result_items = vec![SExpr::sym("match-generate")];
+            result_items.push(convert_expr(expr));
+            for arm in arms {
+                let body_items: Vec<SExpr> =
+                    arm.body.iter().map(convert_reflex_macro_stmt).collect();
+                result_items
+                    .push(SExpr::list(vec![SExpr::str_val(&arm.pattern), SExpr::list(body_items)]));
+            }
+            SExpr::list(result_items)
+        }
+    }
 }

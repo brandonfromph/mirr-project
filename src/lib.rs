@@ -58,6 +58,7 @@ pub mod simplify;
 pub mod span;
 pub mod suggest;
 pub mod symbolic;
+pub mod symbols;
 pub mod temporal;
 pub mod toolchain;
 pub mod totality;

@@ -64,6 +64,10 @@ pub struct PipelineConfig {
     /// Source file path for traceability (plumbed into Span.file_id).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_file: Option<String>,
+    /// Run S-Expression macro expansion pass.
+    pub macro_expand: bool,
+    /// Dump the post-expansion macro AST to a file.
+    pub dump_macro_ast: bool,
 }
 
 impl Default for PipelineConfig {
@@ -89,6 +93,8 @@ impl Default for PipelineConfig {
             logic_optimize: false,
             base_dir: None,
             source_file: None,
+            macro_expand: false,
+            dump_macro_ast: false,
         }
     }
 }
@@ -193,6 +199,92 @@ pub fn run_pipeline_on_program(
 
     // 3. Expand patterns in the AST using the Registry as a lookup.
     crate::expand::expand_patterns(&mut program, &registry)?;
+
+    // Stage 1.6: Macro Expansion (S-Expression Code as Data)
+    let sexpr = crate::sexpr::ast_to_sexpr(&program);
+    let needs_expansion = config.macro_expand || contains_generative_forms(&sexpr);
+
+    if needs_expansion {
+        let mut expander = crate::sexpr::MacroExpander::new();
+        let expanded_sexpr = expander.expand(&sexpr).map_err(|e| PipelineErrors {
+            errors: vec![crate::error::MirrError::parse_error(format!(
+                "Macro expansion failed: {}",
+                e
+            ))],
+        })?;
+
+        match crate::sexpr::sexpr_to_ast(&expanded_sexpr) {
+            Ok(mut new_program) => {
+                let original_file_id = program.module.span.and_then(|s| s.file_id);
+                if let Some(fid) = original_file_id {
+                    stamp_file_id(&mut new_program, fid);
+                }
+                program = new_program;
+            }
+            Err(e) => {
+                let raw_snippet = crate::sexpr::printer::print_sexpr(&expanded_sexpr);
+                let msg = format!("Macro reconversion failed: {}\nRaw generated snippet:\n{}\n\nNote: This occurred during macro expansion of the root program.", e, raw_snippet);
+                return Err(PipelineErrors {
+                    errors: vec![crate::error::MirrError::parse_error(msg)],
+                });
+            }
+        }
+
+        if config.dump_macro_ast {
+            if let Some(src_file) = &config.source_file {
+                let out_path = format!("{}.expanded.mirr", src_file);
+                let dump_str = crate::sexpr::printer::print_sexpr(&expanded_sexpr);
+                let _ = std::fs::write(&out_path, dump_str);
+            }
+        }
+    }
+
+    // ... helper at the bottom of the file or just inside the module ...
+    fn contains_generative_forms(expr: &crate::sexpr::types::SExpr) -> bool {
+        match expr {
+            crate::sexpr::types::SExpr::List(items) => {
+                if let Some(head) = items.first().and_then(|h| h.as_symbol()) {
+                    if matches!(
+                        head,
+                        "for-generate" | "if-generate" | "let-bind" | "match-generate"
+                    ) {
+                        return true;
+                    }
+                }
+                items.iter().any(contains_generative_forms)
+            }
+            _ => false,
+        }
+    }
+
+    // Stage 1.7: Cross-Module Validation
+    if let Some(dir) = config.base_dir.as_deref() {
+        let resolver = crate::symbols::resolver::CrossModuleResolver::from_program_with_imports(
+            &program,
+            dir.to_path_buf(),
+        )
+        .map_err(|e| PipelineErrors { errors: vec![e] })?;
+
+        resolver.validate_imports().map_err(|e| PipelineErrors { errors: vec![e] })?;
+
+        let conflicts =
+            resolver.check_symbol_conflicts().map_err(|e| PipelineErrors { errors: vec![e] })?;
+
+        if !conflicts.is_empty() {
+            let mut errors = vec![];
+            for c in conflicts {
+                errors.push(crate::error::MirrError::SemanticError {
+                    message: format!(
+                        "{} Cross-module symbol conflict: '{}' is defined multiple times.",
+                        crate::error_codes::ec(232),
+                        c.symbol_name
+                    ),
+                    span: None,
+                });
+            }
+            return Err(PipelineErrors { errors });
+        }
+    }
 
     // Stage 2: Semantic validation (Mandatory diagnostic gate).
     crate::validation::validate_module(&program.module)?;

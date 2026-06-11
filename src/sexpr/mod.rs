@@ -41,7 +41,7 @@ pub const MAX_SEXPR_DEPTH: usize = 64;
 
 /// Maximum number of nodes in a single S-expression tree.
 /// NASA Power-of-10: all collections bounded.
-pub const MAX_SEXPR_NODES: usize = 4096;
+pub const MAX_SEXPR_NODES: usize = 65536;
 
 /// Maximum input string length for S-expression parsing.
 pub const MAX_SEXPR_STRING_LEN: usize = 1_048_576; // 1 MB
@@ -57,3 +57,11 @@ pub const MAX_MACRO_EXPAND_DEPTH: usize = 8;
 
 /// Maximum number of registered reader macros.
 pub const MAX_READER_MACROS: usize = 32;
+
+/// Maximum iterations for a single compile-time generative loop (`for-generate`).
+/// NASA Power-of-10: all loops bounded.
+pub const MAX_LOOP_ITERATIONS: usize = 1024;
+
+/// Maximum total nodes generated across all compile-time generative expansions.
+/// Set to 4x MAX_SEXPR_NODES to accommodate multi-core hardware generation.
+pub const MAX_TOTAL_GENERATED_NODES: usize = 262_144;
