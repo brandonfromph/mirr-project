@@ -1,16 +1,19 @@
 import "core/core_top.mirr" as core;
-import "interconnect/noc_router.mirr" as fabric;
+import "interconnect/noc_l1_router_0.mirr" as l1_0;
+import "interconnect/noc_l1_router_1.mirr" as l1_1;
+import "interconnect/noc_l1_router_2.mirr" as l1_2;
+import "interconnect/noc_l1_router_3.mirr" as l1_3;
+import "interconnect/noc_l2_router.mirr" as l2;
 import "physics/pendulum.mirr" as physics;
 import "physics/controller.mirr" as ctrl;
+import "verification/pcc_verifier.mirr" as pcc;
 
 module rspu_top {
     signal clk: in bool;
     signal rst_n: in bool;
-    signal stream_rx_valid: in bool;
-    signal stream_rx_data: in u64;
 
-    // --- Core Signals (Full 16-Core Design) ---
-    for i in 0..16 {
+    // --- Core Signals (Full 64-Core Design) ---
+    for i in 0..64 {
         signal instr[i]: internal u64;
         signal pc[i]: internal u32;
         signal core_data[i]: internal u64;
@@ -33,33 +36,206 @@ module rspu_top {
     physics::pendulum(robot_torque, robot_angle);
     ctrl::controller(robot_angle, robot_torque);
 
-    // --- 16-Core Integration ---
-    for i in 0..16 {
+    // --- 64-Core Integration ---
+    for i in 0..64 {
         core::core_top(clk, rst_n, pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
     }
 
-    // --- NoC Interconnect ---
-    fabric::noc_router(clk, rst_n, 
-        tx_valid_0, tx_data_0, tx_valid_1, tx_data_1, tx_valid_2, tx_data_2, tx_valid_3, tx_data_3,
-        tx_valid_4, tx_data_4, tx_valid_5, tx_data_5, tx_valid_6, tx_data_6, tx_valid_7, tx_data_7,
-        tx_valid_8, tx_data_8, tx_valid_9, tx_data_9, tx_valid_10, tx_data_10, tx_valid_11, tx_data_11,
-        tx_valid_12, tx_data_12, tx_valid_13, tx_data_13, tx_valid_14, tx_data_14, tx_valid_15, tx_data_15,
-        stream_rx_valid, stream_rx_data,
-        rx_valid_0, rx_data_0, rx_valid_1, rx_data_1, rx_valid_2, rx_data_2, rx_valid_3, rx_data_3,
-        rx_valid_4, rx_data_4, rx_valid_5, rx_data_5, rx_valid_6, rx_data_6, rx_valid_7, rx_data_7,
-        rx_valid_8, rx_data_8, rx_valid_9, rx_data_9, rx_valid_10, rx_data_10, rx_valid_11, rx_data_11,
-        rx_valid_12, rx_data_12, rx_valid_13, rx_data_13, rx_valid_14, rx_data_14, rx_valid_15, rx_data_15
+    // --- Hierarchical NoC Interconnect ---
+    
+    // L1 to L2 Signals
+    for i in 0..4 {
+        signal uplink_valid[i]: internal bool;
+        signal uplink_data[i]: internal u64;
+        signal downlink_valid[i]: internal bool;
+        signal downlink_data[i]: internal u64;
+    }
+
+    // L2 Global Router
+    l2::noc_l2_router(
+        clk, rst_n,
+        uplink_valid_0, uplink_data_0,
+        uplink_valid_1, uplink_data_1,
+        uplink_valid_2, uplink_data_2,
+        uplink_valid_3, uplink_data_3,
+        downlink_valid_0, downlink_data_0,
+        downlink_valid_1, downlink_data_1,
+        downlink_valid_2, downlink_data_2,
+        downlink_valid_3, downlink_data_3
     );
 
+    // L1 Router 0 (Cores 0-15)
+    l1_0::noc_l1_router_0(
+        clk, rst_n,
+        tx_valid_0, tx_data_0,
+        tx_valid_1, tx_data_1,
+        tx_valid_2, tx_data_2,
+        tx_valid_3, tx_data_3,
+        tx_valid_4, tx_data_4,
+        tx_valid_5, tx_data_5,
+        tx_valid_6, tx_data_6,
+        tx_valid_7, tx_data_7,
+        tx_valid_8, tx_data_8,
+        tx_valid_9, tx_data_9,
+        tx_valid_10, tx_data_10,
+        tx_valid_11, tx_data_11,
+        tx_valid_12, tx_data_12,
+        tx_valid_13, tx_data_13,
+        tx_valid_14, tx_data_14,
+        tx_valid_15, tx_data_15,
+        downlink_valid_0, downlink_data_0,
+        rx_valid_0, rx_data_0,
+        rx_valid_1, rx_data_1,
+        rx_valid_2, rx_data_2,
+        rx_valid_3, rx_data_3,
+        rx_valid_4, rx_data_4,
+        rx_valid_5, rx_data_5,
+        rx_valid_6, rx_data_6,
+        rx_valid_7, rx_data_7,
+        rx_valid_8, rx_data_8,
+        rx_valid_9, rx_data_9,
+        rx_valid_10, rx_data_10,
+        rx_valid_11, rx_data_11,
+        rx_valid_12, rx_data_12,
+        rx_valid_13, rx_data_13,
+        rx_valid_14, rx_data_14,
+        rx_valid_15, rx_data_15,
+        uplink_valid_0, uplink_data_0
+    );
+
+    // L1 Router 1 (Cores 16-31)
+    l1_1::noc_l1_router_1(
+        clk, rst_n,
+        tx_valid_16, tx_data_16,
+        tx_valid_17, tx_data_17,
+        tx_valid_18, tx_data_18,
+        tx_valid_19, tx_data_19,
+        tx_valid_20, tx_data_20,
+        tx_valid_21, tx_data_21,
+        tx_valid_22, tx_data_22,
+        tx_valid_23, tx_data_23,
+        tx_valid_24, tx_data_24,
+        tx_valid_25, tx_data_25,
+        tx_valid_26, tx_data_26,
+        tx_valid_27, tx_data_27,
+        tx_valid_28, tx_data_28,
+        tx_valid_29, tx_data_29,
+        tx_valid_30, tx_data_30,
+        tx_valid_31, tx_data_31,
+        downlink_valid_1, downlink_data_1,
+        rx_valid_16, rx_data_16,
+        rx_valid_17, rx_data_17,
+        rx_valid_18, rx_data_18,
+        rx_valid_19, rx_data_19,
+        rx_valid_20, rx_data_20,
+        rx_valid_21, rx_data_21,
+        rx_valid_22, rx_data_22,
+        rx_valid_23, rx_data_23,
+        rx_valid_24, rx_data_24,
+        rx_valid_25, rx_data_25,
+        rx_valid_26, rx_data_26,
+        rx_valid_27, rx_data_27,
+        rx_valid_28, rx_data_28,
+        rx_valid_29, rx_data_29,
+        rx_valid_30, rx_data_30,
+        rx_valid_31, rx_data_31,
+        uplink_valid_1, uplink_data_1
+    );
+
+    // L1 Router 2 (Cores 32-47)
+    l1_2::noc_l1_router_2(
+        clk, rst_n,
+        tx_valid_32, tx_data_32,
+        tx_valid_33, tx_data_33,
+        tx_valid_34, tx_data_34,
+        tx_valid_35, tx_data_35,
+        tx_valid_36, tx_data_36,
+        tx_valid_37, tx_data_37,
+        tx_valid_38, tx_data_38,
+        tx_valid_39, tx_data_39,
+        tx_valid_40, tx_data_40,
+        tx_valid_41, tx_data_41,
+        tx_valid_42, tx_data_42,
+        tx_valid_43, tx_data_43,
+        tx_valid_44, tx_data_44,
+        tx_valid_45, tx_data_45,
+        tx_valid_46, tx_data_46,
+        tx_valid_47, tx_data_47,
+        downlink_valid_2, downlink_data_2,
+        rx_valid_32, rx_data_32,
+        rx_valid_33, rx_data_33,
+        rx_valid_34, rx_data_34,
+        rx_valid_35, rx_data_35,
+        rx_valid_36, rx_data_36,
+        rx_valid_37, rx_data_37,
+        rx_valid_38, rx_data_38,
+        rx_valid_39, rx_data_39,
+        rx_valid_40, rx_data_40,
+        rx_valid_41, rx_data_41,
+        rx_valid_42, rx_data_42,
+        rx_valid_43, rx_data_43,
+        rx_valid_44, rx_data_44,
+        rx_valid_45, rx_data_45,
+        rx_valid_46, rx_data_46,
+        rx_valid_47, rx_data_47,
+        uplink_valid_2, uplink_data_2
+    );
+
+    // L1 Router 3 (Cores 48-63)
+    l1_3::noc_l1_router_3(
+        clk, rst_n,
+        tx_valid_48, tx_data_48,
+        tx_valid_49, tx_data_49,
+        tx_valid_50, tx_data_50,
+        tx_valid_51, tx_data_51,
+        tx_valid_52, tx_data_52,
+        tx_valid_53, tx_data_53,
+        tx_valid_54, tx_data_54,
+        tx_valid_55, tx_data_55,
+        tx_valid_56, tx_data_56,
+        tx_valid_57, tx_data_57,
+        tx_valid_58, tx_data_58,
+        tx_valid_59, tx_data_59,
+        tx_valid_60, tx_data_60,
+        tx_valid_61, tx_data_61,
+        tx_valid_62, tx_data_62,
+        tx_valid_63, tx_data_63,
+        downlink_valid_3, downlink_data_3,
+        rx_valid_48, rx_data_48,
+        rx_valid_49, rx_data_49,
+        rx_valid_50, rx_data_50,
+        rx_valid_51, rx_data_51,
+        rx_valid_52, rx_data_52,
+        rx_valid_53, rx_data_53,
+        rx_valid_54, rx_data_54,
+        rx_valid_55, rx_data_55,
+        rx_valid_56, rx_data_56,
+        rx_valid_57, rx_data_57,
+        rx_valid_58, rx_data_58,
+        rx_valid_59, rx_data_59,
+        rx_valid_60, rx_data_60,
+        rx_valid_61, rx_data_61,
+        rx_valid_62, rx_data_62,
+        rx_valid_63, rx_data_63,
+        uplink_valid_3, uplink_data_3
+    );
+
+    signal trap_0: internal bool;
+    signal trap_1: internal bool;
+    signal trap_2: internal bool;
+    signal trap_3: internal bool;
     // --- Closed-Loop Verification Logic ---
     reflex collect_diagnostics {
         on always {
-            for i in 0..16 {
-                // Remove hardcoded instruction to allow dynamic streaming
+            for i in 0..64 {
                 out_pc[i] = pc[i];
                 out_data[i] = core_data[i];
             }
-            global_trap = tx_valid_0 || tx_valid_1 || tx_valid_2 || tx_valid_3 || tx_valid_4 || tx_valid_5 || tx_valid_6 || tx_valid_7 || tx_valid_8 || tx_valid_9 || tx_valid_10 || tx_valid_11 || tx_valid_12 || tx_valid_13 || tx_valid_14 || tx_valid_15;
+            trap_0 = tx_valid_0 || tx_valid_1 || tx_valid_2 || tx_valid_3 || tx_valid_4 || tx_valid_5 || tx_valid_6 || tx_valid_7 || tx_valid_8 || tx_valid_9 || tx_valid_10 || tx_valid_11 || tx_valid_12 || tx_valid_13 || tx_valid_14 || tx_valid_15;
+            trap_1 = tx_valid_16 || tx_valid_17 || tx_valid_18 || tx_valid_19 || tx_valid_20 || tx_valid_21 || tx_valid_22 || tx_valid_23 || tx_valid_24 || tx_valid_25 || tx_valid_26 || tx_valid_27 || tx_valid_28 || tx_valid_29 || tx_valid_30 || tx_valid_31;
+            trap_2 = tx_valid_32 || tx_valid_33 || tx_valid_34 || tx_valid_35 || tx_valid_36 || tx_valid_37 || tx_valid_38 || tx_valid_39 || tx_valid_40 || tx_valid_41 || tx_valid_42 || tx_valid_43 || tx_valid_44 || tx_valid_45 || tx_valid_46 || tx_valid_47;
+            trap_3 = tx_valid_48 || tx_valid_49 || tx_valid_50 || tx_valid_51 || tx_valid_52 || tx_valid_53 || tx_valid_54 || tx_valid_55 || tx_valid_56 || tx_valid_57 || tx_valid_58 || tx_valid_59 || tx_valid_60 || tx_valid_61 || tx_valid_62 || tx_valid_63;
+            global_trap = trap_0 || trap_1 || trap_2 || trap_3;
         }
     }
 

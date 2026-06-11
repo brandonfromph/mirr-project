@@ -45,8 +45,8 @@ const MAX_DFS_STACK: usize = 4096;
 /// Run all five totality analyses on a parsed MIRR module.
 ///
 /// Bounded: each sub-analysis has its own MAX_* iteration bounds.
-pub fn run_totality_check(module: &Module) -> TotalityResult {
-    let resource_bound = check_resource_bounds(module);
+pub fn run_totality_check(module: &Module, target: &crate::emit::rspu_isa::TargetSpec) -> TotalityResult {
+    let resource_bound = check_resource_bounds(module, target);
     let output_completeness = check_output_completeness(module);
     let guard_coverage = check_guard_coverage(module);
     let temporal_bound = check_temporal_bound(module);
@@ -342,7 +342,8 @@ mod tests {
             vec![make_guard("g1", 3)],
             vec![make_reflex("r1", "g1", "output_b")],
         );
-        let result = run_totality_check(&m);
+        let target = crate::emit::rspu_isa::TargetSpec::default();
+        let result = run_totality_check(&m, &target);
         assert!(result.is_total);
         assert!(result.resource_bound.pass);
         assert!(result.output_completeness.pass);
@@ -362,7 +363,8 @@ mod tests {
             vec![make_guard("g1", 3)],
             vec![make_reflex("r1", "g1", "output_b")],
         );
-        let result = run_totality_check(&m);
+        let target = crate::emit::rspu_isa::TargetSpec::default();
+        let result = run_totality_check(&m, &target);
         assert!(!result.is_total);
         assert!(!result.output_completeness.pass);
         assert_eq!(result.output_completeness.undriven_outputs, vec!["output_c"]);

@@ -113,7 +113,7 @@ pub(super) fn run_toolchain_operations(
     if formal {
         if registry.is_available(Tool::Sby) {
             let engine = mirrc::toolchain::sby::SbyEngine::from_str_name(formal_engine)
-                .unwrap_or(mirrc::toolchain::sby::SbyEngine::Z3);
+                .unwrap_or(mirrc::toolchain::sby::SbyEngine::Yices);
             let config = mirrc::toolchain::sby::SbyConfig {
                 bmc_depth: formal_depth,
                 prove: formal_prove,

@@ -25,16 +25,18 @@ pub struct RegAllocResult {
     pub total_used: usize,
     /// Next available temporary register index.
     pub next_temp: u16,
+    /// The actual hardware limit for the target profile.
+    pub max_regs: usize,
 }
 
 impl RegAllocResult {
     /// Allocate a temporary register for intermediate expression results.
-    /// Bounded by `MAX_REGISTERS`.
+    /// Bounded by `self.max_regs`.
     pub fn alloc_temp(&mut self) -> Option<RegId> {
-        if self.next_temp >= MAX_REGISTERS as u16 {
+        if self.next_temp as usize >= self.max_regs {
             eprintln!(
                 "R-SPU register allocation failed: exhausted all {} registers (at {}) {:?}",
-                MAX_REGISTERS, self.next_temp, self.map
+                self.max_regs, self.next_temp, self.map
             );
             return None;
         }
@@ -62,6 +64,8 @@ pub fn allocate_registers(
 ) -> Result<RegAllocResult, MirrError> {
     let mut map = HashMap::with_capacity(module.signals.len());
     let mut entries = Vec::with_capacity(module.signals.len());
+
+    println!("DEBUG TARGET SPEC: {:?}", target);
 
     let max_regs = target.max_registers();
     let (input_base, output_base, internal_base, temp_base) = target.partitions();
@@ -148,5 +152,5 @@ pub fn allocate_registers(
 
     let total_used = (true_reg as usize + 1).max(cursor as usize);
 
-    Ok(RegAllocResult { map, entries, total_used, next_temp: true_reg + 1 })
+    Ok(RegAllocResult { map, entries, total_used, next_temp: true_reg + 1, max_regs })
 }

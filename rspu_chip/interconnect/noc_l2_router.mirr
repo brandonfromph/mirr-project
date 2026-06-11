@@ -2,62 +2,81 @@
 pattern noc_l2_router(
     clk: signal in bool,
     rst_n: signal in bool,
-    uplink_valid: signal in bool[5],
-    uplink_data: signal in u64[5],
-    downlink_valid: signal out bool[4],
-    downlink_data: signal out u64[4]
+    uplink_valid_0: signal in bool,
+    uplink_data_0: signal in u64,
+    uplink_valid_1: signal in bool,
+    uplink_data_1: signal in u64,
+    uplink_valid_2: signal in bool,
+    uplink_data_2: signal in u64,
+    uplink_valid_3: signal in bool,
+    uplink_data_3: signal in u64,
+    downlink_valid_0: signal out bool,
+    downlink_data_0: signal out u64,
+    downlink_valid_1: signal out bool,
+    downlink_data_1: signal out u64,
+    downlink_valid_2: signal out bool,
+    downlink_data_2: signal out u64,
+    downlink_valid_3: signal out bool,
+    downlink_data_3: signal out u64
 ) {
-    signal sv: internal bool[6];
-    signal sd: internal u64[6];
+    signal sv_0: internal bool;
+    signal sd_0: internal u64;
+    signal sv_1: internal bool;
+    signal sd_1: internal u64;
+    signal sv_2: internal bool;
+    signal sd_2: internal u64;
+    signal sv_3: internal bool;
+    signal sd_3: internal u64;
+    signal sv_4: internal bool;
+    signal sd_4: internal u64;
+    signal sv_5: internal bool;
+    signal sd_5: internal u64;
 
-    reflex r_base { on always { sv[0] = false; sd[0] = 0; } }
-    guard n0(!uplink_valid[0]) for 1 cycles;
-    guard y0(uplink_valid[0]) for 1 cycles;
-    reflex r0 { on y0 { sv[1] = true; sd[1] = uplink_data[0]; } on n0 { sv[1] = sv[0]; sd[1] = sd[0]; } }
-    guard n1(!uplink_valid[1]) for 1 cycles;
-    guard y1(uplink_valid[1]) for 1 cycles;
-    reflex r1 { on y1 { sv[2] = true; sd[2] = uplink_data[1]; } on n1 { sv[2] = sv[1]; sd[2] = sd[1]; } }
-    guard n2(!uplink_valid[2]) for 1 cycles;
-    guard y2(uplink_valid[2]) for 1 cycles;
-    reflex r2 { on y2 { sv[3] = true; sd[3] = uplink_data[2]; } on n2 { sv[3] = sv[2]; sd[3] = sd[2]; } }
-    guard n3(!uplink_valid[3]) for 1 cycles;
-    guard y3(uplink_valid[3]) for 1 cycles;
-    reflex r3 { on y3 { sv[4] = true; sd[4] = uplink_data[3]; } on n3 { sv[4] = sv[3]; sd[4] = sd[3]; } }
-    guard n4(!uplink_valid[4]) for 1 cycles;
-    guard y4(uplink_valid[4]) for 1 cycles;
-    reflex r4 { on y4 { sv[5] = true; sd[5] = uplink_data[4]; } on n4 { sv[5] = sv[4]; sd[5] = sd[4]; } }
+    reflex r_base { on always { sv_0 = false; sd_0 = 0; } }
+    guard n0(!uplink_valid_0) for 1 cycles;
+    guard y0(uplink_valid_0) for 1 cycles;
+    reflex r0 { on y0 { sv_1 = true; sd_1 = uplink_data_0; } on n0 { sv_1 = sv_0; sd_1 = sd_0; } }
+    guard n1(!uplink_valid_1) for 1 cycles;
+    guard y1(uplink_valid_1) for 1 cycles;
+    reflex r1 { on y1 { sv_2 = true; sd_2 = uplink_data_1; } on n1 { sv_2 = sv_1; sd_2 = sd_1; } }
+    guard n2(!uplink_valid_2) for 1 cycles;
+    guard y2(uplink_valid_2) for 1 cycles;
+    reflex r2 { on y2 { sv_3 = true; sd_3 = uplink_data_2; } on n2 { sv_3 = sv_2; sd_3 = sd_2; } }
+    guard n3(!uplink_valid_3) for 1 cycles;
+    guard y3(uplink_valid_3) for 1 cycles;
+    reflex r3 { on y3 { sv_4 = true; sd_4 = uplink_data_3; } on n3 { sv_4 = sv_3; sd_4 = sd_3; } }
 
     signal dest_id: internal u64;
     signal payload: internal u64;
 
     reflex extract {
         on always {
-            dest_id = (sd[5] >> 48) & 4095;
-            payload = sd[5]; // Keep full payload including destination for L1
+            dest_id = (sd_4 >> 48) & 4095;
+            payload = sd_4; // Keep full payload including destination for L1
         }
     }
 
     reflex defaults {
         on always {
-            downlink_valid[0] = false;
-            downlink_data[0] = 0;
-            downlink_valid[1] = false;
-            downlink_data[1] = 0;
-            downlink_valid[2] = false;
-            downlink_data[2] = 0;
-            downlink_valid[3] = false;
-            downlink_data[3] = 0;
+            downlink_valid_0 = false;
+            downlink_data_0 = 0;
+            downlink_valid_1 = false;
+            downlink_data_1 = 0;
+            downlink_valid_2 = false;
+            downlink_data_2 = 0;
+            downlink_valid_3 = false;
+            downlink_data_3 = 0;
         }
     }
 
     guard p0((dest_id >= 0) && (dest_id < 16)) for 1 cycles;
-    reflex out0 { on p0 { downlink_valid[0] = sv[5]; downlink_data[0] = payload; } }
+    reflex out0 { on p0 { downlink_valid_0 = sv_4; downlink_data_0 = payload; } }
     guard p1((dest_id >= 16) && (dest_id < 32)) for 1 cycles;
-    reflex out1 { on p1 { downlink_valid[1] = sv[5]; downlink_data[1] = payload; } }
+    reflex out1 { on p1 { downlink_valid_1 = sv_4; downlink_data_1 = payload; } }
     guard p2((dest_id >= 32) && (dest_id < 48)) for 1 cycles;
-    reflex out2 { on p2 { downlink_valid[2] = sv[5]; downlink_data[2] = payload; } }
+    reflex out2 { on p2 { downlink_valid_2 = sv_4; downlink_data_2 = payload; } }
     guard p3((dest_id >= 48) && (dest_id < 64)) for 1 cycles;
-    reflex out3 { on p3 { downlink_valid[3] = sv[5]; downlink_data[3] = payload; } }
+    reflex out3 { on p3 { downlink_valid_3 = sv_4; downlink_data_3 = payload; } }
 }
 
 module noc_l2_router {}

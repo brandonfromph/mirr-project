@@ -62,10 +62,9 @@ impl TargetSpec {
         }
     }
 
-    /// Calculate register partition boundaries based on reg_bits.
     pub fn partitions(&self) -> (u16, u16, u16, u16) {
-        let total = 1u16 << self.reg_bits;
-        let p = total / 4;
+        let total = 1u32 << self.reg_bits;
+        let p = (total / 4) as u16;
         (0, p, p * 2, p * 3)
     }
 
@@ -82,8 +81,8 @@ impl TargetSpec {
 // Resource limits (NASA P10 bounded-resource model)
 // ---------------------------------------------------------------------------
 
-/// Maximum allocatable registers.
-pub const MAX_REGISTERS: usize = 1024;
+/// Maximum allocatable registers (Hardware limit for 16-bit RegId).
+pub const MAX_REGISTERS: usize = 65536;
 
 /// Maximum temporal guard hardware units.
 ///
@@ -131,7 +130,10 @@ pub type GuardId = u8;
 pub type PropertyId = u32;
 
 // ---------------------------------------------------------------------------
-// Register partition ranges
+// Legacy/Default Register partition ranges (for 10-bit Liquid-64)
+//
+// These are documented for reference but should NOT be used as hard bounds
+// in dynamic allocation. Instead, use `TargetSpec::partitions()`.
 // ---------------------------------------------------------------------------
 
 /// First register for input ports.

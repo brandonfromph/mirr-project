@@ -146,32 +146,32 @@ pub(super) fn emit_single_property(
     match &prop.formula {
         PropertyFormula::Always(expr) => {
             let sv_expr = super::emit_expr_inline(expr);
-            let disable = if has_rst_n { "disable iff (!rst_n) " } else { "" };
+            let cond = if has_rst_n { "if (rst_n) " } else { "" };
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk) {disable}({sv_expr}));\n\n"
+                "  always @(posedge clk) {cond}{sva_keyword} ({sv_expr});\n\n"
             ));
         }
         PropertyFormula::Never(expr) => {
             let sv_expr = super::emit_expr_inline(expr);
-            let disable = if has_rst_n { "disable iff (!rst_n) " } else { "" };
+            let cond = if has_rst_n { "if (rst_n) " } else { "" };
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk) {disable}(!({sv_expr})));\n\n"
+                "  always @(posedge clk) {cond}{sva_keyword} (!({sv_expr}));\n\n"
             ));
         }
         PropertyFormula::AlwaysImplies { antecedent, consequent } => {
             let ante_sv = super::emit_expr_inline(antecedent);
             let cons_sv = super::emit_expr_inline(consequent);
-            let disable = if has_rst_n { "disable iff (!rst_n) " } else { "" };
+            let cond = if has_rst_n { "if (rst_n) " } else { "" };
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk) {disable}({ante_sv}) |-> ({cons_sv}));\n\n"
+                "  always @(posedge clk) {cond}if ({ante_sv}) {sva_keyword} ({cons_sv});\n\n"
             ));
         }
         PropertyFormula::NeverImplies { antecedent, consequent } => {
             let ante_sv = super::emit_expr_inline(antecedent);
             let cons_sv = super::emit_expr_inline(consequent);
-            let disable = if has_rst_n { "disable iff (!rst_n) " } else { "" };
+            let cond = if has_rst_n { "if (rst_n) " } else { "" };
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk) {disable}({ante_sv}) |-> (!({cons_sv})));\n\n"
+                "  always @(posedge clk) {cond}if ({ante_sv}) {sva_keyword} (!({cons_sv}));\n\n"
             ));
         }
         PropertyFormula::EventuallyWithin { expr, cycles } => {
@@ -193,20 +193,20 @@ pub(super) fn emit_single_property(
                 ));
             }
             out.push_str("  end\n");
-            let disable = if has_rst_n { "disable iff (!rst_n) " } else { "" };
+            let cond = if has_rst_n { "if (rst_n) " } else { "" };
             out.push_str(&format!(
-                "  {sva_keyword} property (@(posedge clk) {disable}(prop_{prop_name}_timer < {cycles}));\n\n"
+                "  always @(posedge clk) {cond}{sva_keyword} (prop_{prop_name}_timer < {cycles});\n\n"
             ));
         }
         PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => {
             let trig_sv = super::emit_expr_inline(trigger);
             let resp_sv = super::emit_expr_inline(response);
             let prop_name = &prop.name;
-            let disable = if has_rst_n { "if (rst_n) " } else { "" };
+            let cond = if has_rst_n { "if (rst_n) " } else { "" };
 
             if *delay_cycles == 0 {
                 out.push_str(&format!(
-                    "  {sva_keyword} property (@(posedge clk) {disable}({trig_sv}) |-> ({resp_sv}));\n\n"
+                    "  always @(posedge clk) {cond}if ({trig_sv}) {sva_keyword} ({resp_sv});\n\n"
                 ));
             } else if *delay_cycles == 1 {
                 out.push_str(&format!("  reg prop_{prop_name}_trig_d1;\n"));
@@ -219,7 +219,7 @@ pub(super) fn emit_single_property(
                 }
                 out.push_str("  end\n");
                 out.push_str(&format!(
-                    "  {sva_keyword} property (@(posedge clk) {disable}(prop_{prop_name}_trig_d1) |-> ({resp_sv}));\n\n"
+                    "  always @(posedge clk) {cond}if (prop_{prop_name}_trig_d1) {sva_keyword} ({resp_sv});\n\n"
                 ));
             } else {
                 let msb = delay_cycles - 1;
@@ -240,7 +240,7 @@ pub(super) fn emit_single_property(
                 }
                 out.push_str("  end\n");
                 out.push_str(&format!(
-                    "  {sva_keyword} property (@(posedge clk) {disable}(prop_{prop_name}_trig_shift[{msb}]) |-> ({resp_sv}));\n\n"
+                    "  always @(posedge clk) {cond}if (prop_{prop_name}_trig_shift[{msb}]) {sva_keyword} ({resp_sv});\n\n"
                 ));
             }
         }

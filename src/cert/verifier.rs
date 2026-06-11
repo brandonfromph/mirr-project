@@ -7,8 +7,7 @@
 
 use super::ProofCertificate;
 use crate::emit::rspu_isa::{
-    RspuProgram, MAX_GUARDS, MAX_INSTRUCTIONS, MAX_REGISTERS, REG_INPUT_BASE, REG_INPUT_MAX,
-    REG_INTERNAL_BASE, REG_INTERNAL_MAX, REG_OUTPUT_BASE, REG_OUTPUT_MAX,
+    RspuProgram, TargetSpec, MAX_GUARDS, MAX_INSTRUCTIONS,
 };
 use crate::error::MirrError;
 use crate::error_codes::{mirrcode, ErrorCode};
@@ -21,6 +20,10 @@ pub fn verify_certificate(
     program: &RspuProgram,
     binary: &[u64],
 ) -> Result<(), MirrError> {
+    let target_spec = TargetSpec::from_config(&program.target);
+    let max_registers = target_spec.max_registers();
+    let (input_base, output_base, internal_base, temp_base) = target_spec.partitions();
+
     // 1. Verify program hash (SHA-256 match).
     let computed_hash = super::sha256::sha256_words(binary);
     if computed_hash != cert.program_hash {
@@ -54,12 +57,12 @@ pub fn verify_certificate(
 
     // 3. Verify physical hardware register limits.
     let regs_used = program.registers_used;
-    if regs_used > MAX_REGISTERS {
+    if regs_used > max_registers {
         return Err(mirrcode(
             ErrorCode::ReceiptGenerationFailed,
             format!(
                 "Register count {} exceeds physical hardware limit of {}",
-                regs_used, MAX_REGISTERS
+                regs_used, max_registers
             ),
         ));
     }
@@ -107,34 +110,34 @@ pub fn verify_certificate(
         if let Some(reg_id) = found_reg {
             match tw.kind {
                 0 => {
-                    if !(REG_INPUT_BASE..=REG_INPUT_MAX).contains(&reg_id) {
+                    if !(input_base..output_base).contains(&reg_id) {
                         return Err(mirrcode(
                             ErrorCode::ReceiptGenerationFailed,
                             format!(
                                 "Input signal '{}' is mapped to register R{}, which is outside the input partition (R{}-R{})",
-                                tw.name, reg_id, REG_INPUT_BASE, REG_INPUT_MAX
+                                tw.name, reg_id, input_base, output_base - 1
                             ),
                         ));
                     }
                 }
                 1 => {
-                    if !(REG_OUTPUT_BASE..=REG_OUTPUT_MAX).contains(&reg_id) {
+                    if !(output_base..internal_base).contains(&reg_id) {
                         return Err(mirrcode(
                             ErrorCode::ReceiptGenerationFailed,
                             format!(
                                 "Output signal '{}' is mapped to register R{}, which is outside the output partition (R{}-R{})",
-                                tw.name, reg_id, REG_OUTPUT_BASE, REG_OUTPUT_MAX
+                                tw.name, reg_id, output_base, internal_base - 1
                             ),
                         ));
                     }
                 }
                 2 => {
-                    if !(REG_INTERNAL_BASE..=REG_INTERNAL_MAX).contains(&reg_id) {
+                    if !(internal_base..temp_base).contains(&reg_id) {
                         return Err(mirrcode(
                             ErrorCode::ReceiptGenerationFailed,
                             format!(
                                 "Internal signal '{}' is mapped to register R{}, which is outside the internal partition (R{}-R{})",
-                                tw.name, reg_id, REG_INTERNAL_BASE, REG_INTERNAL_MAX
+                                tw.name, reg_id, internal_base, temp_base - 1
                             ),
                         ));
                     }

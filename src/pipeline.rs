@@ -219,6 +219,9 @@ pub fn run_pipeline_on_program(
                 if let Some(fid) = original_file_id {
                     stamp_file_id(&mut new_program, fid);
                 }
+                // Preserve target and imports which are not handled by sexpr expansion
+                new_program.target = program.target;
+                new_program.imports = program.imports;
                 program = new_program;
             }
             Err(e) => {
@@ -420,7 +423,8 @@ pub fn run_pipeline_on_program(
 
     // Stage 6.5: Totality check (optional, requires rspu program).
     if config.totality {
-        let totality = crate::totality::run_totality_check(&result.program.module);
+        let target_spec = crate::emit::rspu_isa::TargetSpec::from_config(&result.program.target);
+        let totality = crate::totality::run_totality_check(&result.program.module, &target_spec);
         if let Some(ref mut prog) = result.rspu_program {
             if let Ok(binary) = crate::emit::rspu_encoding::emit_binary(prog) {
                 let cert =

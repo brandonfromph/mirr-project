@@ -5,7 +5,7 @@
 
 use crate::ast::program::Module;
 use crate::ast::types::SignalKind;
-use crate::emit::rspu_isa::{MAX_GUARDS, MAX_INSTRUCTIONS, MAX_REGISTERS};
+use crate::emit::rspu_isa::{MAX_GUARDS, MAX_INSTRUCTIONS, TargetSpec};
 
 use super::types::{
     GuardCoverageResult, OutputCompletenessResult, ResourceBound, TemporalBoundResult,
@@ -16,7 +16,7 @@ use super::{MAX_DEP_NODES, MAX_REFLEXES, MAX_SIGNALS};
 /// MAX_GUARDS. Returns pass=true if all resources fit.
 ///
 /// Bounded: iterates over signals (≤ MAX_SIGNALS), guards, reflexes.
-pub fn check_resource_bounds(module: &Module) -> ResourceBound {
+pub fn check_resource_bounds(module: &Module, target: &TargetSpec) -> ResourceBound {
     let mut regs: u32 = 0;
     let mut i = 0;
     while i < module.signals.len() && i < MAX_SIGNALS {
@@ -52,7 +52,7 @@ pub fn check_resource_bounds(module: &Module) -> ResourceBound {
         gi += 1;
     }
 
-    let pass = (regs as usize) <= MAX_REGISTERS
+    let pass = (regs as usize) <= target.max_registers()
         && (instructions_estimate as usize) <= MAX_INSTRUCTIONS
         && (guards as usize) <= MAX_GUARDS;
 

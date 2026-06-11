@@ -1,144 +1,1106 @@
-//! Phase 2b: R-SPU NoC Interconnect Router (16-Core Liquid Architecture)
-//!
-//! Implements a high-throughput priority-based router for 16 processor cores.
-//! Dynamically routes tagged-word packets based on dest_id.
+// Automatically generated 64-port NoC Router
+module noc_router {
+    signal clk: in bool;
+    signal rst_n: in bool;
 
-def noc_router(
-    clk: signal in bool,
-    rst_n: signal in bool,
+    signal p0_tx_valid: in bool;
+    signal p0_tx_data: in u64;
+    signal p1_tx_valid: in bool;
+    signal p1_tx_data: in u64;
+    signal p2_tx_valid: in bool;
+    signal p2_tx_data: in u64;
+    signal p3_tx_valid: in bool;
+    signal p3_tx_data: in u64;
+    signal p4_tx_valid: in bool;
+    signal p4_tx_data: in u64;
+    signal p5_tx_valid: in bool;
+    signal p5_tx_data: in u64;
+    signal p6_tx_valid: in bool;
+    signal p6_tx_data: in u64;
+    signal p7_tx_valid: in bool;
+    signal p7_tx_data: in u64;
+    signal p8_tx_valid: in bool;
+    signal p8_tx_data: in u64;
+    signal p9_tx_valid: in bool;
+    signal p9_tx_data: in u64;
+    signal p10_tx_valid: in bool;
+    signal p10_tx_data: in u64;
+    signal p11_tx_valid: in bool;
+    signal p11_tx_data: in u64;
+    signal p12_tx_valid: in bool;
+    signal p12_tx_data: in u64;
+    signal p13_tx_valid: in bool;
+    signal p13_tx_data: in u64;
+    signal p14_tx_valid: in bool;
+    signal p14_tx_data: in u64;
+    signal p15_tx_valid: in bool;
+    signal p15_tx_data: in u64;
+    signal p16_tx_valid: in bool;
+    signal p16_tx_data: in u64;
+    signal p17_tx_valid: in bool;
+    signal p17_tx_data: in u64;
+    signal p18_tx_valid: in bool;
+    signal p18_tx_data: in u64;
+    signal p19_tx_valid: in bool;
+    signal p19_tx_data: in u64;
+    signal p20_tx_valid: in bool;
+    signal p20_tx_data: in u64;
+    signal p21_tx_valid: in bool;
+    signal p21_tx_data: in u64;
+    signal p22_tx_valid: in bool;
+    signal p22_tx_data: in u64;
+    signal p23_tx_valid: in bool;
+    signal p23_tx_data: in u64;
+    signal p24_tx_valid: in bool;
+    signal p24_tx_data: in u64;
+    signal p25_tx_valid: in bool;
+    signal p25_tx_data: in u64;
+    signal p26_tx_valid: in bool;
+    signal p26_tx_data: in u64;
+    signal p27_tx_valid: in bool;
+    signal p27_tx_data: in u64;
+    signal p28_tx_valid: in bool;
+    signal p28_tx_data: in u64;
+    signal p29_tx_valid: in bool;
+    signal p29_tx_data: in u64;
+    signal p30_tx_valid: in bool;
+    signal p30_tx_data: in u64;
+    signal p31_tx_valid: in bool;
+    signal p31_tx_data: in u64;
+    signal p32_tx_valid: in bool;
+    signal p32_tx_data: in u64;
+    signal p33_tx_valid: in bool;
+    signal p33_tx_data: in u64;
+    signal p34_tx_valid: in bool;
+    signal p34_tx_data: in u64;
+    signal p35_tx_valid: in bool;
+    signal p35_tx_data: in u64;
+    signal p36_tx_valid: in bool;
+    signal p36_tx_data: in u64;
+    signal p37_tx_valid: in bool;
+    signal p37_tx_data: in u64;
+    signal p38_tx_valid: in bool;
+    signal p38_tx_data: in u64;
+    signal p39_tx_valid: in bool;
+    signal p39_tx_data: in u64;
+    signal p40_tx_valid: in bool;
+    signal p40_tx_data: in u64;
+    signal p41_tx_valid: in bool;
+    signal p41_tx_data: in u64;
+    signal p42_tx_valid: in bool;
+    signal p42_tx_data: in u64;
+    signal p43_tx_valid: in bool;
+    signal p43_tx_data: in u64;
+    signal p44_tx_valid: in bool;
+    signal p44_tx_data: in u64;
+    signal p45_tx_valid: in bool;
+    signal p45_tx_data: in u64;
+    signal p46_tx_valid: in bool;
+    signal p46_tx_data: in u64;
+    signal p47_tx_valid: in bool;
+    signal p47_tx_data: in u64;
+    signal p48_tx_valid: in bool;
+    signal p48_tx_data: in u64;
+    signal p49_tx_valid: in bool;
+    signal p49_tx_data: in u64;
+    signal p50_tx_valid: in bool;
+    signal p50_tx_data: in u64;
+    signal p51_tx_valid: in bool;
+    signal p51_tx_data: in u64;
+    signal p52_tx_valid: in bool;
+    signal p52_tx_data: in u64;
+    signal p53_tx_valid: in bool;
+    signal p53_tx_data: in u64;
+    signal p54_tx_valid: in bool;
+    signal p54_tx_data: in u64;
+    signal p55_tx_valid: in bool;
+    signal p55_tx_data: in u64;
+    signal p56_tx_valid: in bool;
+    signal p56_tx_data: in u64;
+    signal p57_tx_valid: in bool;
+    signal p57_tx_data: in u64;
+    signal p58_tx_valid: in bool;
+    signal p58_tx_data: in u64;
+    signal p59_tx_valid: in bool;
+    signal p59_tx_data: in u64;
+    signal p60_tx_valid: in bool;
+    signal p60_tx_data: in u64;
+    signal p61_tx_valid: in bool;
+    signal p61_tx_data: in u64;
+    signal p62_tx_valid: in bool;
+    signal p62_tx_data: in u64;
+    signal p63_tx_valid: in bool;
+    signal p63_tx_data: in u64;
 
-    tx_valid_0: signal in bool, tx_data_0: signal in u64,
-    tx_valid_1: signal in bool, tx_data_1: signal in u64,
-    tx_valid_2: signal in bool, tx_data_2: signal in u64,
-    tx_valid_3: signal in bool, tx_data_3: signal in u64,
-    tx_valid_4: signal in bool, tx_data_4: signal in u64,
-    tx_valid_5: signal in bool, tx_data_5: signal in u64,
-    tx_valid_6: signal in bool, tx_data_6: signal in u64,
-    tx_valid_7: signal in bool, tx_data_7: signal in u64,
-    tx_valid_8: signal in bool, tx_data_8: signal in u64,
-    tx_valid_9: signal in bool, tx_data_9: signal in u64,
-    tx_valid_10: signal in bool, tx_data_10: signal in u64,
-    tx_valid_11: signal in bool, tx_data_11: signal in u64,
-    tx_valid_12: signal in bool, tx_data_12: signal in u64,
-    tx_valid_13: signal in bool, tx_data_13: signal in u64,
-    tx_valid_14: signal in bool, tx_data_14: signal in u64,
-    tx_valid_15: signal in bool, tx_data_15: signal in u64,
-    
-    stream_tx_valid: signal in bool, stream_tx_data: signal in u64,
+    signal p0_rx_valid: out bool;
+    signal p0_rx_data: out u64;
+    signal p1_rx_valid: out bool;
+    signal p1_rx_data: out u64;
+    signal p2_rx_valid: out bool;
+    signal p2_rx_data: out u64;
+    signal p3_rx_valid: out bool;
+    signal p3_rx_data: out u64;
+    signal p4_rx_valid: out bool;
+    signal p4_rx_data: out u64;
+    signal p5_rx_valid: out bool;
+    signal p5_rx_data: out u64;
+    signal p6_rx_valid: out bool;
+    signal p6_rx_data: out u64;
+    signal p7_rx_valid: out bool;
+    signal p7_rx_data: out u64;
+    signal p8_rx_valid: out bool;
+    signal p8_rx_data: out u64;
+    signal p9_rx_valid: out bool;
+    signal p9_rx_data: out u64;
+    signal p10_rx_valid: out bool;
+    signal p10_rx_data: out u64;
+    signal p11_rx_valid: out bool;
+    signal p11_rx_data: out u64;
+    signal p12_rx_valid: out bool;
+    signal p12_rx_data: out u64;
+    signal p13_rx_valid: out bool;
+    signal p13_rx_data: out u64;
+    signal p14_rx_valid: out bool;
+    signal p14_rx_data: out u64;
+    signal p15_rx_valid: out bool;
+    signal p15_rx_data: out u64;
+    signal p16_rx_valid: out bool;
+    signal p16_rx_data: out u64;
+    signal p17_rx_valid: out bool;
+    signal p17_rx_data: out u64;
+    signal p18_rx_valid: out bool;
+    signal p18_rx_data: out u64;
+    signal p19_rx_valid: out bool;
+    signal p19_rx_data: out u64;
+    signal p20_rx_valid: out bool;
+    signal p20_rx_data: out u64;
+    signal p21_rx_valid: out bool;
+    signal p21_rx_data: out u64;
+    signal p22_rx_valid: out bool;
+    signal p22_rx_data: out u64;
+    signal p23_rx_valid: out bool;
+    signal p23_rx_data: out u64;
+    signal p24_rx_valid: out bool;
+    signal p24_rx_data: out u64;
+    signal p25_rx_valid: out bool;
+    signal p25_rx_data: out u64;
+    signal p26_rx_valid: out bool;
+    signal p26_rx_data: out u64;
+    signal p27_rx_valid: out bool;
+    signal p27_rx_data: out u64;
+    signal p28_rx_valid: out bool;
+    signal p28_rx_data: out u64;
+    signal p29_rx_valid: out bool;
+    signal p29_rx_data: out u64;
+    signal p30_rx_valid: out bool;
+    signal p30_rx_data: out u64;
+    signal p31_rx_valid: out bool;
+    signal p31_rx_data: out u64;
+    signal p32_rx_valid: out bool;
+    signal p32_rx_data: out u64;
+    signal p33_rx_valid: out bool;
+    signal p33_rx_data: out u64;
+    signal p34_rx_valid: out bool;
+    signal p34_rx_data: out u64;
+    signal p35_rx_valid: out bool;
+    signal p35_rx_data: out u64;
+    signal p36_rx_valid: out bool;
+    signal p36_rx_data: out u64;
+    signal p37_rx_valid: out bool;
+    signal p37_rx_data: out u64;
+    signal p38_rx_valid: out bool;
+    signal p38_rx_data: out u64;
+    signal p39_rx_valid: out bool;
+    signal p39_rx_data: out u64;
+    signal p40_rx_valid: out bool;
+    signal p40_rx_data: out u64;
+    signal p41_rx_valid: out bool;
+    signal p41_rx_data: out u64;
+    signal p42_rx_valid: out bool;
+    signal p42_rx_data: out u64;
+    signal p43_rx_valid: out bool;
+    signal p43_rx_data: out u64;
+    signal p44_rx_valid: out bool;
+    signal p44_rx_data: out u64;
+    signal p45_rx_valid: out bool;
+    signal p45_rx_data: out u64;
+    signal p46_rx_valid: out bool;
+    signal p46_rx_data: out u64;
+    signal p47_rx_valid: out bool;
+    signal p47_rx_data: out u64;
+    signal p48_rx_valid: out bool;
+    signal p48_rx_data: out u64;
+    signal p49_rx_valid: out bool;
+    signal p49_rx_data: out u64;
+    signal p50_rx_valid: out bool;
+    signal p50_rx_data: out u64;
+    signal p51_rx_valid: out bool;
+    signal p51_rx_data: out u64;
+    signal p52_rx_valid: out bool;
+    signal p52_rx_data: out u64;
+    signal p53_rx_valid: out bool;
+    signal p53_rx_data: out u64;
+    signal p54_rx_valid: out bool;
+    signal p54_rx_data: out u64;
+    signal p55_rx_valid: out bool;
+    signal p55_rx_data: out u64;
+    signal p56_rx_valid: out bool;
+    signal p56_rx_data: out u64;
+    signal p57_rx_valid: out bool;
+    signal p57_rx_data: out u64;
+    signal p58_rx_valid: out bool;
+    signal p58_rx_data: out u64;
+    signal p59_rx_valid: out bool;
+    signal p59_rx_data: out u64;
+    signal p60_rx_valid: out bool;
+    signal p60_rx_data: out u64;
+    signal p61_rx_valid: out bool;
+    signal p61_rx_data: out u64;
+    signal p62_rx_valid: out bool;
+    signal p62_rx_data: out u64;
+    signal p63_rx_valid: out bool;
+    signal p63_rx_data: out u64;
 
-    rx_valid_0: signal out bool, rx_data_0: signal out u64,
-    rx_valid_1: signal out bool, rx_data_1: signal out u64,
-    rx_valid_2: signal out bool, rx_data_2: signal out u64,
-    rx_valid_3: signal out bool, rx_data_3: signal out u64,
-    rx_valid_4: signal out bool, rx_data_4: signal out u64,
-    rx_valid_5: signal out bool, rx_data_5: signal out u64,
-    rx_valid_6: signal out bool, rx_data_6: signal out u64,
-    rx_valid_7: signal out bool, rx_data_7: signal out u64,
-    rx_valid_8: signal out bool, rx_data_8: signal out u64,
-    rx_valid_9: signal out bool, rx_data_9: signal out u64,
-    rx_valid_10: signal out bool, rx_data_10: signal out u64,
-    rx_valid_11: signal out bool, rx_data_11: signal out u64,
-    rx_valid_12: signal out bool, rx_data_12: signal out u64,
-    rx_valid_13: signal out bool, rx_data_13: signal out u64,
-    rx_valid_14: signal out bool, rx_data_14: signal out u64,
-    rx_valid_15: signal out bool, rx_data_15: signal out u64
-) {
-    reflect {
-        signal sv0: internal bool; signal sd0: internal u64;
-        signal sv1: internal bool; signal sd1: internal u64;
-        signal sv2: internal bool; signal sd2: internal u64;
-        signal sv3: internal bool; signal sd3: internal u64;
-        signal sv4: internal bool; signal sd4: internal u64;
-        signal sv5: internal bool; signal sd5: internal u64;
-        signal sv6: internal bool; signal sd6: internal u64;
-        signal sv7: internal bool; signal sd7: internal u64;
-        signal sv8: internal bool; signal sd8: internal u64;
-        signal sv9: internal bool; signal sd9: internal u64;
-        signal sv10: internal bool; signal sd10: internal u64;
-        signal sv11: internal bool; signal sd11: internal u64;
-        signal sv12: internal bool; signal sd12: internal u64;
-        signal sv13: internal bool; signal sd13: internal u64;
-        signal sv14: internal bool; signal sd14: internal u64;
-        signal sv15: internal bool; signal sd15: internal u64;
-        signal sv16: internal bool; signal sd16: internal u64;
+    // --- Ring Buffer ---
+    signal ring_data: internal u64[64];
+    signal ring_valid: internal bool[64];
 
-        reflex r0 { on always { sv0 = ${tx_valid_0}; sd0 = ${tx_data_0}; } }
-
-        // Cascade with explicitly negated guards for each core
-        guard n1(!${tx_valid_1}) for 1 cycles;
-        reflex r1 { on ${tx_valid_1} { sv1 = true; sd1 = ${tx_data_1}; } on n1 { sv1 = sv0; sd1 = sd0; } }
-
-        guard n2(!${tx_valid_2}) for 1 cycles;
-        reflex r2 { on ${tx_valid_2} { sv2 = true; sd2 = ${tx_data_2}; } on n2 { sv2 = sv1; sd2 = sd1; } }
-
-        guard n3(!${tx_valid_3}) for 1 cycles;
-        reflex r3 { on ${tx_valid_3} { sv3 = true; sd3 = ${tx_data_3}; } on n3 { sv3 = sv2; sd3 = sd2; } }
-
-        guard n4(!${tx_valid_4}) for 1 cycles;
-        reflex r4 { on ${tx_valid_4} { sv4 = true; sd4 = ${tx_data_4}; } on n4 { sv4 = sv3; sd4 = sd3; } }
-
-        guard n5(!${tx_valid_5}) for 1 cycles;
-        reflex r5 { on ${tx_valid_5} { sv5 = true; sd5 = ${tx_data_5}; } on n5 { sv5 = sv4; sd5 = sd4; } }
-
-        guard n6(!${tx_valid_6}) for 1 cycles;
-        reflex r6 { on ${tx_valid_6} { sv6 = true; sd6 = ${tx_data_6}; } on n6 { sv6 = sv5; sd6 = sd5; } }
-
-        guard n7(!${tx_valid_7}) for 1 cycles;
-        reflex r7 { on ${tx_valid_7} { sv7 = true; sd7 = ${tx_data_7}; } on n7 { sv7 = sv6; sd7 = sd6; } }
-
-        guard n8(!${tx_valid_8}) for 1 cycles;
-        reflex r8 { on ${tx_valid_8} { sv8 = true; sd8 = ${tx_data_8}; } on n8 { sv8 = sv7; sd8 = sd7; } }
-
-        guard n9(!${tx_valid_9}) for 1 cycles;
-        reflex r9 { on ${tx_valid_9} { sv9 = true; sd9 = ${tx_data_9}; } on n9 { sv9 = sv8; sd9 = sd8; } }
-
-        guard n10(!${tx_valid_10}) for 1 cycles;
-        reflex r10 { on ${tx_valid_10} { sv10 = true; sd10 = ${tx_data_10}; } on n10 { sv10 = sv9; sd10 = sd9; } }
-
-        guard n11(!${tx_valid_11}) for 1 cycles;
-        reflex r11 { on ${tx_valid_11} { sv11 = true; sd11 = ${tx_data_11}; } on n11 { sv11 = sv10; sd11 = sd10; } }
-
-        guard n12(!${tx_valid_12}) for 1 cycles;
-        reflex r12 { on ${tx_valid_12} { sv12 = true; sd12 = ${tx_data_12}; } on n12 { sv12 = sv11; sd12 = sd11; } }
-
-        guard n13(!${tx_valid_13}) for 1 cycles;
-        reflex r13 { on ${tx_valid_13} { sv13 = true; sd13 = ${tx_data_13}; } on n13 { sv13 = sv12; sd13 = sd12; } }
-
-        guard n14(!${tx_valid_14}) for 1 cycles;
-        reflex r14 { on ${tx_valid_14} { sv14 = true; sd14 = ${tx_data_14}; } on n14 { sv14 = sv13; sd14 = sd13; } }
-
-        guard n15(!${tx_valid_15}) for 1 cycles;
-        reflex r15 { on ${tx_valid_15} { sv15 = true; sd15 = ${tx_data_15}; } on n15 { sv15 = sv14; sd15 = sd14; } }
-
-        guard n16(!${stream_tx_valid}) for 1 cycles;
-        reflex r16 { on ${stream_tx_valid} { sv16 = true; sd16 = ${stream_tx_data}; } on n16 { sv16 = sv15; sd16 = sd15; } }
-
-        signal dest_id: internal u64;
-        signal payload: internal u64;
-        reflex extract {
-            on always {
-                dest_id = (sd16 >> 48) & 4095;
-                payload = sd16 & 281474976710655;
-            }
+    reflex shift_ring {
+        on always {
+            ring_data[1] = ring_data[0];
+            ring_valid[1] = ring_valid[0];
+            ring_data[2] = ring_data[1];
+            ring_valid[2] = ring_valid[1];
+            ring_data[3] = ring_data[2];
+            ring_valid[3] = ring_valid[2];
+            ring_data[4] = ring_data[3];
+            ring_valid[4] = ring_valid[3];
+            ring_data[5] = ring_data[4];
+            ring_valid[5] = ring_valid[4];
+            ring_data[6] = ring_data[5];
+            ring_valid[6] = ring_valid[5];
+            ring_data[7] = ring_data[6];
+            ring_valid[7] = ring_valid[6];
+            ring_data[8] = ring_data[7];
+            ring_valid[8] = ring_valid[7];
+            ring_data[9] = ring_data[8];
+            ring_valid[9] = ring_valid[8];
+            ring_data[10] = ring_data[9];
+            ring_valid[10] = ring_valid[9];
+            ring_data[11] = ring_data[10];
+            ring_valid[11] = ring_valid[10];
+            ring_data[12] = ring_data[11];
+            ring_valid[12] = ring_valid[11];
+            ring_data[13] = ring_data[12];
+            ring_valid[13] = ring_valid[12];
+            ring_data[14] = ring_data[13];
+            ring_valid[14] = ring_valid[13];
+            ring_data[15] = ring_data[14];
+            ring_valid[15] = ring_valid[14];
+            ring_data[16] = ring_data[15];
+            ring_valid[16] = ring_valid[15];
+            ring_data[17] = ring_data[16];
+            ring_valid[17] = ring_valid[16];
+            ring_data[18] = ring_data[17];
+            ring_valid[18] = ring_valid[17];
+            ring_data[19] = ring_data[18];
+            ring_valid[19] = ring_valid[18];
+            ring_data[20] = ring_data[19];
+            ring_valid[20] = ring_valid[19];
+            ring_data[21] = ring_data[20];
+            ring_valid[21] = ring_valid[20];
+            ring_data[22] = ring_data[21];
+            ring_valid[22] = ring_valid[21];
+            ring_data[23] = ring_data[22];
+            ring_valid[23] = ring_valid[22];
+            ring_data[24] = ring_data[23];
+            ring_valid[24] = ring_valid[23];
+            ring_data[25] = ring_data[24];
+            ring_valid[25] = ring_valid[24];
+            ring_data[26] = ring_data[25];
+            ring_valid[26] = ring_valid[25];
+            ring_data[27] = ring_data[26];
+            ring_valid[27] = ring_valid[26];
+            ring_data[28] = ring_data[27];
+            ring_valid[28] = ring_valid[27];
+            ring_data[29] = ring_data[28];
+            ring_valid[29] = ring_valid[28];
+            ring_data[30] = ring_data[29];
+            ring_valid[30] = ring_valid[29];
+            ring_data[31] = ring_data[30];
+            ring_valid[31] = ring_valid[30];
+            ring_data[32] = ring_data[31];
+            ring_valid[32] = ring_valid[31];
+            ring_data[33] = ring_data[32];
+            ring_valid[33] = ring_valid[32];
+            ring_data[34] = ring_data[33];
+            ring_valid[34] = ring_valid[33];
+            ring_data[35] = ring_data[34];
+            ring_valid[35] = ring_valid[34];
+            ring_data[36] = ring_data[35];
+            ring_valid[36] = ring_valid[35];
+            ring_data[37] = ring_data[36];
+            ring_valid[37] = ring_valid[36];
+            ring_data[38] = ring_data[37];
+            ring_valid[38] = ring_valid[37];
+            ring_data[39] = ring_data[38];
+            ring_valid[39] = ring_valid[38];
+            ring_data[40] = ring_data[39];
+            ring_valid[40] = ring_valid[39];
+            ring_data[41] = ring_data[40];
+            ring_valid[41] = ring_valid[40];
+            ring_data[42] = ring_data[41];
+            ring_valid[42] = ring_valid[41];
+            ring_data[43] = ring_data[42];
+            ring_valid[43] = ring_valid[42];
+            ring_data[44] = ring_data[43];
+            ring_valid[44] = ring_valid[43];
+            ring_data[45] = ring_data[44];
+            ring_valid[45] = ring_valid[44];
+            ring_data[46] = ring_data[45];
+            ring_valid[46] = ring_valid[45];
+            ring_data[47] = ring_data[46];
+            ring_valid[47] = ring_valid[46];
+            ring_data[48] = ring_data[47];
+            ring_valid[48] = ring_valid[47];
+            ring_data[49] = ring_data[48];
+            ring_valid[49] = ring_valid[48];
+            ring_data[50] = ring_data[49];
+            ring_valid[50] = ring_valid[49];
+            ring_data[51] = ring_data[50];
+            ring_valid[51] = ring_valid[50];
+            ring_data[52] = ring_data[51];
+            ring_valid[52] = ring_valid[51];
+            ring_data[53] = ring_data[52];
+            ring_valid[53] = ring_valid[52];
+            ring_data[54] = ring_data[53];
+            ring_valid[54] = ring_valid[53];
+            ring_data[55] = ring_data[54];
+            ring_valid[55] = ring_valid[54];
+            ring_data[56] = ring_data[55];
+            ring_valid[56] = ring_valid[55];
+            ring_data[57] = ring_data[56];
+            ring_valid[57] = ring_valid[56];
+            ring_data[58] = ring_data[57];
+            ring_valid[58] = ring_valid[57];
+            ring_data[59] = ring_data[58];
+            ring_valid[59] = ring_valid[58];
+            ring_data[60] = ring_data[59];
+            ring_valid[60] = ring_valid[59];
+            ring_data[61] = ring_data[60];
+            ring_valid[61] = ring_valid[60];
+            ring_data[62] = ring_data[61];
+            ring_valid[62] = ring_valid[61];
+            ring_data[63] = ring_data[62];
+            ring_valid[63] = ring_valid[62];
+            ring_data[0] = ring_data[63];
+            ring_valid[0] = ring_valid[63];
         }
-
-        reflex out0 { on always { ${rx_valid_0} = sv16 && (dest_id == 0); ${rx_data_0} = payload; } }
-        reflex out1 { on always { ${rx_valid_1} = sv16 && (dest_id == 1); ${rx_data_1} = payload; } }
-        reflex out2 { on always { ${rx_valid_2} = sv16 && (dest_id == 2); ${rx_data_2} = payload; } }
-        reflex out3 { on always { ${rx_valid_3} = sv16 && (dest_id == 3); ${rx_data_3} = payload; } }
-        reflex out4 { on always { ${rx_valid_4} = sv16 && (dest_id == 4); ${rx_data_4} = payload; } }
-        reflex out5 { on always { ${rx_valid_5} = sv16 && (dest_id == 5); ${rx_data_5} = payload; } }
-        reflex out6 { on always { ${rx_valid_6} = sv16 && (dest_id == 6); ${rx_data_6} = payload; } }
-        reflex out7 { on always { ${rx_valid_7} = sv16 && (dest_id == 7); ${rx_data_7} = payload; } }
-        reflex out8 { on always { ${rx_valid_8} = sv16 && (dest_id == 8); ${rx_data_8} = payload; } }
-        reflex out9 { on always { ${rx_valid_9} = sv16 && (dest_id == 9); ${rx_data_9} = payload; } }
-        reflex out10 { on always { ${rx_valid_10} = sv16 && (dest_id == 10); ${rx_data_10} = payload; } }
-        reflex out11 { on always { ${rx_valid_11} = sv16 && (dest_id == 11); ${rx_data_11} = payload; } }
-        reflex out12 { on always { ${rx_valid_12} = sv16 && (dest_id == 12); ${rx_data_12} = payload; } }
-        reflex out13 { on always { ${rx_valid_13} = sv16 && (dest_id == 13); ${rx_data_13} = payload; } }
-        reflex out14 { on always { ${rx_valid_14} = sv16 && (dest_id == 14); ${rx_data_14} = payload; } }
-        reflex out15 { on always { ${rx_valid_15} = sv16 && (dest_id == 15); ${rx_data_15} = payload; } }
     }
-}
 
-module noc_router {}
+    // --- Port Inject/Eject ---
+    reflex port_0_logic {
+        on p0_tx_valid {
+            ring_data[0] = p0_tx_data;
+            ring_valid[0] = true;
+        }
+        on always {
+            p0_rx_valid = ring_valid[0];
+            p0_rx_data = ring_data[0];
+        }
+    }
+
+    reflex port_1_logic {
+        on p1_tx_valid {
+            ring_data[1] = p1_tx_data;
+            ring_valid[1] = true;
+        }
+        on always {
+            p1_rx_valid = ring_valid[1];
+            p1_rx_data = ring_data[1];
+        }
+    }
+
+    reflex port_2_logic {
+        on p2_tx_valid {
+            ring_data[2] = p2_tx_data;
+            ring_valid[2] = true;
+        }
+        on always {
+            p2_rx_valid = ring_valid[2];
+            p2_rx_data = ring_data[2];
+        }
+    }
+
+    reflex port_3_logic {
+        on p3_tx_valid {
+            ring_data[3] = p3_tx_data;
+            ring_valid[3] = true;
+        }
+        on always {
+            p3_rx_valid = ring_valid[3];
+            p3_rx_data = ring_data[3];
+        }
+    }
+
+    reflex port_4_logic {
+        on p4_tx_valid {
+            ring_data[4] = p4_tx_data;
+            ring_valid[4] = true;
+        }
+        on always {
+            p4_rx_valid = ring_valid[4];
+            p4_rx_data = ring_data[4];
+        }
+    }
+
+    reflex port_5_logic {
+        on p5_tx_valid {
+            ring_data[5] = p5_tx_data;
+            ring_valid[5] = true;
+        }
+        on always {
+            p5_rx_valid = ring_valid[5];
+            p5_rx_data = ring_data[5];
+        }
+    }
+
+    reflex port_6_logic {
+        on p6_tx_valid {
+            ring_data[6] = p6_tx_data;
+            ring_valid[6] = true;
+        }
+        on always {
+            p6_rx_valid = ring_valid[6];
+            p6_rx_data = ring_data[6];
+        }
+    }
+
+    reflex port_7_logic {
+        on p7_tx_valid {
+            ring_data[7] = p7_tx_data;
+            ring_valid[7] = true;
+        }
+        on always {
+            p7_rx_valid = ring_valid[7];
+            p7_rx_data = ring_data[7];
+        }
+    }
+
+    reflex port_8_logic {
+        on p8_tx_valid {
+            ring_data[8] = p8_tx_data;
+            ring_valid[8] = true;
+        }
+        on always {
+            p8_rx_valid = ring_valid[8];
+            p8_rx_data = ring_data[8];
+        }
+    }
+
+    reflex port_9_logic {
+        on p9_tx_valid {
+            ring_data[9] = p9_tx_data;
+            ring_valid[9] = true;
+        }
+        on always {
+            p9_rx_valid = ring_valid[9];
+            p9_rx_data = ring_data[9];
+        }
+    }
+
+    reflex port_10_logic {
+        on p10_tx_valid {
+            ring_data[10] = p10_tx_data;
+            ring_valid[10] = true;
+        }
+        on always {
+            p10_rx_valid = ring_valid[10];
+            p10_rx_data = ring_data[10];
+        }
+    }
+
+    reflex port_11_logic {
+        on p11_tx_valid {
+            ring_data[11] = p11_tx_data;
+            ring_valid[11] = true;
+        }
+        on always {
+            p11_rx_valid = ring_valid[11];
+            p11_rx_data = ring_data[11];
+        }
+    }
+
+    reflex port_12_logic {
+        on p12_tx_valid {
+            ring_data[12] = p12_tx_data;
+            ring_valid[12] = true;
+        }
+        on always {
+            p12_rx_valid = ring_valid[12];
+            p12_rx_data = ring_data[12];
+        }
+    }
+
+    reflex port_13_logic {
+        on p13_tx_valid {
+            ring_data[13] = p13_tx_data;
+            ring_valid[13] = true;
+        }
+        on always {
+            p13_rx_valid = ring_valid[13];
+            p13_rx_data = ring_data[13];
+        }
+    }
+
+    reflex port_14_logic {
+        on p14_tx_valid {
+            ring_data[14] = p14_tx_data;
+            ring_valid[14] = true;
+        }
+        on always {
+            p14_rx_valid = ring_valid[14];
+            p14_rx_data = ring_data[14];
+        }
+    }
+
+    reflex port_15_logic {
+        on p15_tx_valid {
+            ring_data[15] = p15_tx_data;
+            ring_valid[15] = true;
+        }
+        on always {
+            p15_rx_valid = ring_valid[15];
+            p15_rx_data = ring_data[15];
+        }
+    }
+
+    reflex port_16_logic {
+        on p16_tx_valid {
+            ring_data[16] = p16_tx_data;
+            ring_valid[16] = true;
+        }
+        on always {
+            p16_rx_valid = ring_valid[16];
+            p16_rx_data = ring_data[16];
+        }
+    }
+
+    reflex port_17_logic {
+        on p17_tx_valid {
+            ring_data[17] = p17_tx_data;
+            ring_valid[17] = true;
+        }
+        on always {
+            p17_rx_valid = ring_valid[17];
+            p17_rx_data = ring_data[17];
+        }
+    }
+
+    reflex port_18_logic {
+        on p18_tx_valid {
+            ring_data[18] = p18_tx_data;
+            ring_valid[18] = true;
+        }
+        on always {
+            p18_rx_valid = ring_valid[18];
+            p18_rx_data = ring_data[18];
+        }
+    }
+
+    reflex port_19_logic {
+        on p19_tx_valid {
+            ring_data[19] = p19_tx_data;
+            ring_valid[19] = true;
+        }
+        on always {
+            p19_rx_valid = ring_valid[19];
+            p19_rx_data = ring_data[19];
+        }
+    }
+
+    reflex port_20_logic {
+        on p20_tx_valid {
+            ring_data[20] = p20_tx_data;
+            ring_valid[20] = true;
+        }
+        on always {
+            p20_rx_valid = ring_valid[20];
+            p20_rx_data = ring_data[20];
+        }
+    }
+
+    reflex port_21_logic {
+        on p21_tx_valid {
+            ring_data[21] = p21_tx_data;
+            ring_valid[21] = true;
+        }
+        on always {
+            p21_rx_valid = ring_valid[21];
+            p21_rx_data = ring_data[21];
+        }
+    }
+
+    reflex port_22_logic {
+        on p22_tx_valid {
+            ring_data[22] = p22_tx_data;
+            ring_valid[22] = true;
+        }
+        on always {
+            p22_rx_valid = ring_valid[22];
+            p22_rx_data = ring_data[22];
+        }
+    }
+
+    reflex port_23_logic {
+        on p23_tx_valid {
+            ring_data[23] = p23_tx_data;
+            ring_valid[23] = true;
+        }
+        on always {
+            p23_rx_valid = ring_valid[23];
+            p23_rx_data = ring_data[23];
+        }
+    }
+
+    reflex port_24_logic {
+        on p24_tx_valid {
+            ring_data[24] = p24_tx_data;
+            ring_valid[24] = true;
+        }
+        on always {
+            p24_rx_valid = ring_valid[24];
+            p24_rx_data = ring_data[24];
+        }
+    }
+
+    reflex port_25_logic {
+        on p25_tx_valid {
+            ring_data[25] = p25_tx_data;
+            ring_valid[25] = true;
+        }
+        on always {
+            p25_rx_valid = ring_valid[25];
+            p25_rx_data = ring_data[25];
+        }
+    }
+
+    reflex port_26_logic {
+        on p26_tx_valid {
+            ring_data[26] = p26_tx_data;
+            ring_valid[26] = true;
+        }
+        on always {
+            p26_rx_valid = ring_valid[26];
+            p26_rx_data = ring_data[26];
+        }
+    }
+
+    reflex port_27_logic {
+        on p27_tx_valid {
+            ring_data[27] = p27_tx_data;
+            ring_valid[27] = true;
+        }
+        on always {
+            p27_rx_valid = ring_valid[27];
+            p27_rx_data = ring_data[27];
+        }
+    }
+
+    reflex port_28_logic {
+        on p28_tx_valid {
+            ring_data[28] = p28_tx_data;
+            ring_valid[28] = true;
+        }
+        on always {
+            p28_rx_valid = ring_valid[28];
+            p28_rx_data = ring_data[28];
+        }
+    }
+
+    reflex port_29_logic {
+        on p29_tx_valid {
+            ring_data[29] = p29_tx_data;
+            ring_valid[29] = true;
+        }
+        on always {
+            p29_rx_valid = ring_valid[29];
+            p29_rx_data = ring_data[29];
+        }
+    }
+
+    reflex port_30_logic {
+        on p30_tx_valid {
+            ring_data[30] = p30_tx_data;
+            ring_valid[30] = true;
+        }
+        on always {
+            p30_rx_valid = ring_valid[30];
+            p30_rx_data = ring_data[30];
+        }
+    }
+
+    reflex port_31_logic {
+        on p31_tx_valid {
+            ring_data[31] = p31_tx_data;
+            ring_valid[31] = true;
+        }
+        on always {
+            p31_rx_valid = ring_valid[31];
+            p31_rx_data = ring_data[31];
+        }
+    }
+
+    reflex port_32_logic {
+        on p32_tx_valid {
+            ring_data[32] = p32_tx_data;
+            ring_valid[32] = true;
+        }
+        on always {
+            p32_rx_valid = ring_valid[32];
+            p32_rx_data = ring_data[32];
+        }
+    }
+
+    reflex port_33_logic {
+        on p33_tx_valid {
+            ring_data[33] = p33_tx_data;
+            ring_valid[33] = true;
+        }
+        on always {
+            p33_rx_valid = ring_valid[33];
+            p33_rx_data = ring_data[33];
+        }
+    }
+
+    reflex port_34_logic {
+        on p34_tx_valid {
+            ring_data[34] = p34_tx_data;
+            ring_valid[34] = true;
+        }
+        on always {
+            p34_rx_valid = ring_valid[34];
+            p34_rx_data = ring_data[34];
+        }
+    }
+
+    reflex port_35_logic {
+        on p35_tx_valid {
+            ring_data[35] = p35_tx_data;
+            ring_valid[35] = true;
+        }
+        on always {
+            p35_rx_valid = ring_valid[35];
+            p35_rx_data = ring_data[35];
+        }
+    }
+
+    reflex port_36_logic {
+        on p36_tx_valid {
+            ring_data[36] = p36_tx_data;
+            ring_valid[36] = true;
+        }
+        on always {
+            p36_rx_valid = ring_valid[36];
+            p36_rx_data = ring_data[36];
+        }
+    }
+
+    reflex port_37_logic {
+        on p37_tx_valid {
+            ring_data[37] = p37_tx_data;
+            ring_valid[37] = true;
+        }
+        on always {
+            p37_rx_valid = ring_valid[37];
+            p37_rx_data = ring_data[37];
+        }
+    }
+
+    reflex port_38_logic {
+        on p38_tx_valid {
+            ring_data[38] = p38_tx_data;
+            ring_valid[38] = true;
+        }
+        on always {
+            p38_rx_valid = ring_valid[38];
+            p38_rx_data = ring_data[38];
+        }
+    }
+
+    reflex port_39_logic {
+        on p39_tx_valid {
+            ring_data[39] = p39_tx_data;
+            ring_valid[39] = true;
+        }
+        on always {
+            p39_rx_valid = ring_valid[39];
+            p39_rx_data = ring_data[39];
+        }
+    }
+
+    reflex port_40_logic {
+        on p40_tx_valid {
+            ring_data[40] = p40_tx_data;
+            ring_valid[40] = true;
+        }
+        on always {
+            p40_rx_valid = ring_valid[40];
+            p40_rx_data = ring_data[40];
+        }
+    }
+
+    reflex port_41_logic {
+        on p41_tx_valid {
+            ring_data[41] = p41_tx_data;
+            ring_valid[41] = true;
+        }
+        on always {
+            p41_rx_valid = ring_valid[41];
+            p41_rx_data = ring_data[41];
+        }
+    }
+
+    reflex port_42_logic {
+        on p42_tx_valid {
+            ring_data[42] = p42_tx_data;
+            ring_valid[42] = true;
+        }
+        on always {
+            p42_rx_valid = ring_valid[42];
+            p42_rx_data = ring_data[42];
+        }
+    }
+
+    reflex port_43_logic {
+        on p43_tx_valid {
+            ring_data[43] = p43_tx_data;
+            ring_valid[43] = true;
+        }
+        on always {
+            p43_rx_valid = ring_valid[43];
+            p43_rx_data = ring_data[43];
+        }
+    }
+
+    reflex port_44_logic {
+        on p44_tx_valid {
+            ring_data[44] = p44_tx_data;
+            ring_valid[44] = true;
+        }
+        on always {
+            p44_rx_valid = ring_valid[44];
+            p44_rx_data = ring_data[44];
+        }
+    }
+
+    reflex port_45_logic {
+        on p45_tx_valid {
+            ring_data[45] = p45_tx_data;
+            ring_valid[45] = true;
+        }
+        on always {
+            p45_rx_valid = ring_valid[45];
+            p45_rx_data = ring_data[45];
+        }
+    }
+
+    reflex port_46_logic {
+        on p46_tx_valid {
+            ring_data[46] = p46_tx_data;
+            ring_valid[46] = true;
+        }
+        on always {
+            p46_rx_valid = ring_valid[46];
+            p46_rx_data = ring_data[46];
+        }
+    }
+
+    reflex port_47_logic {
+        on p47_tx_valid {
+            ring_data[47] = p47_tx_data;
+            ring_valid[47] = true;
+        }
+        on always {
+            p47_rx_valid = ring_valid[47];
+            p47_rx_data = ring_data[47];
+        }
+    }
+
+    reflex port_48_logic {
+        on p48_tx_valid {
+            ring_data[48] = p48_tx_data;
+            ring_valid[48] = true;
+        }
+        on always {
+            p48_rx_valid = ring_valid[48];
+            p48_rx_data = ring_data[48];
+        }
+    }
+
+    reflex port_49_logic {
+        on p49_tx_valid {
+            ring_data[49] = p49_tx_data;
+            ring_valid[49] = true;
+        }
+        on always {
+            p49_rx_valid = ring_valid[49];
+            p49_rx_data = ring_data[49];
+        }
+    }
+
+    reflex port_50_logic {
+        on p50_tx_valid {
+            ring_data[50] = p50_tx_data;
+            ring_valid[50] = true;
+        }
+        on always {
+            p50_rx_valid = ring_valid[50];
+            p50_rx_data = ring_data[50];
+        }
+    }
+
+    reflex port_51_logic {
+        on p51_tx_valid {
+            ring_data[51] = p51_tx_data;
+            ring_valid[51] = true;
+        }
+        on always {
+            p51_rx_valid = ring_valid[51];
+            p51_rx_data = ring_data[51];
+        }
+    }
+
+    reflex port_52_logic {
+        on p52_tx_valid {
+            ring_data[52] = p52_tx_data;
+            ring_valid[52] = true;
+        }
+        on always {
+            p52_rx_valid = ring_valid[52];
+            p52_rx_data = ring_data[52];
+        }
+    }
+
+    reflex port_53_logic {
+        on p53_tx_valid {
+            ring_data[53] = p53_tx_data;
+            ring_valid[53] = true;
+        }
+        on always {
+            p53_rx_valid = ring_valid[53];
+            p53_rx_data = ring_data[53];
+        }
+    }
+
+    reflex port_54_logic {
+        on p54_tx_valid {
+            ring_data[54] = p54_tx_data;
+            ring_valid[54] = true;
+        }
+        on always {
+            p54_rx_valid = ring_valid[54];
+            p54_rx_data = ring_data[54];
+        }
+    }
+
+    reflex port_55_logic {
+        on p55_tx_valid {
+            ring_data[55] = p55_tx_data;
+            ring_valid[55] = true;
+        }
+        on always {
+            p55_rx_valid = ring_valid[55];
+            p55_rx_data = ring_data[55];
+        }
+    }
+
+    reflex port_56_logic {
+        on p56_tx_valid {
+            ring_data[56] = p56_tx_data;
+            ring_valid[56] = true;
+        }
+        on always {
+            p56_rx_valid = ring_valid[56];
+            p56_rx_data = ring_data[56];
+        }
+    }
+
+    reflex port_57_logic {
+        on p57_tx_valid {
+            ring_data[57] = p57_tx_data;
+            ring_valid[57] = true;
+        }
+        on always {
+            p57_rx_valid = ring_valid[57];
+            p57_rx_data = ring_data[57];
+        }
+    }
+
+    reflex port_58_logic {
+        on p58_tx_valid {
+            ring_data[58] = p58_tx_data;
+            ring_valid[58] = true;
+        }
+        on always {
+            p58_rx_valid = ring_valid[58];
+            p58_rx_data = ring_data[58];
+        }
+    }
+
+    reflex port_59_logic {
+        on p59_tx_valid {
+            ring_data[59] = p59_tx_data;
+            ring_valid[59] = true;
+        }
+        on always {
+            p59_rx_valid = ring_valid[59];
+            p59_rx_data = ring_data[59];
+        }
+    }
+
+    reflex port_60_logic {
+        on p60_tx_valid {
+            ring_data[60] = p60_tx_data;
+            ring_valid[60] = true;
+        }
+        on always {
+            p60_rx_valid = ring_valid[60];
+            p60_rx_data = ring_data[60];
+        }
+    }
+
+    reflex port_61_logic {
+        on p61_tx_valid {
+            ring_data[61] = p61_tx_data;
+            ring_valid[61] = true;
+        }
+        on always {
+            p61_rx_valid = ring_valid[61];
+            p61_rx_data = ring_data[61];
+        }
+    }
+
+    reflex port_62_logic {
+        on p62_tx_valid {
+            ring_data[62] = p62_tx_data;
+            ring_valid[62] = true;
+        }
+        on always {
+            p62_rx_valid = ring_valid[62];
+            p62_rx_data = ring_data[62];
+        }
+    }
+
+    reflex port_63_logic {
+        on p63_tx_valid {
+            ring_data[63] = p63_tx_data;
+            ring_valid[63] = true;
+        }
+        on always {
+            p63_rx_valid = ring_valid[63];
+            p63_rx_data = ring_data[63];
+        }
+    }
+
+}

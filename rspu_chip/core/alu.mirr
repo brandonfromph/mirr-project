@@ -45,6 +45,15 @@ def alu_core(
         guard is_relu_neg_g { when is_relu_neg for 1 cycles; }
         guard is_tag_gate_g { when is_tag_gate for 1 cycles; }
 
+        let is_invalid: bool = (${op} != 0) && (${op} != 1) && (${op} != 3) && (${op} != 5) && (${op} != 6);
+        guard is_invalid_g { when is_invalid for 1 cycles; }
+
+        reflex do_trap {
+            on is_invalid_g {
+                is_trap = true;
+            }
+        }
+
         reflex do_add {
             on is_add_g {
                 res_data = (d1 & 0xFFFFFFFF) + (d2 & 0xFFFFFFFF);

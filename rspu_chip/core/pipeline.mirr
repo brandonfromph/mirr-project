@@ -58,8 +58,8 @@ def rspu_pipeline(
         }
 
         reflex fetch_on_fault {
-            on fetch_fault {
-                ${trap_out} = pcc_fault;
+            on always {
+                ${trap_out} = pcc_fault || ex_trap;
             }
         }
 
@@ -105,8 +105,20 @@ def rspu_pipeline(
 
         // --- 4. Memory Stage (MEM) ---
         signal ex_packed: internal u64;
-        reflex pack_ex_result {
-            on always {
+        let is_load: bool = (alu_op == 6);
+        let is_not_load: bool = (alu_op != 6);
+
+        guard is_load_g { when is_load for 1 cycles; }
+        guard is_not_load_g { when is_not_load for 1 cycles; }
+
+        reflex pack_ex_result_load {
+            on is_load_g {
+                ${data_out} = mem_out;
+            }
+        }
+
+        reflex pack_ex_result_other {
+            on is_not_load_g {
                 ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
                 ${data_out} = ex_packed;
             }

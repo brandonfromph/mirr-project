@@ -224,6 +224,7 @@ fn allocate_guards(
             let name = guard_name(guard);
             if !map.contains_key(&name) {
                 if next_id as usize >= max_guards {
+                    println!("DEBUG GUARDS: {:?}", map.keys().collect::<Vec<_>>());
                     return Err(rspu_err(format!(
                         "{} R-SPU guard resource exhausted: {} guards > {}.",
                         crate::error_codes::ec(703),

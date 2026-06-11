@@ -41,7 +41,7 @@ impl Default for FormalConfig {
         Self {
             bmc_depth: 20,
             prove: false,
-            engine: SbyEngine::Z3,
+            engine: SbyEngine::Yices,
             sv_path: String::new(),
             bind_path: None,
             extra_files: Vec::new(),
@@ -219,7 +219,7 @@ mod tests {
         let cfg = FormalConfig::default();
         assert_eq!(cfg.bmc_depth, 20);
         assert!(!cfg.prove);
-        assert_eq!(cfg.engine, SbyEngine::Z3);
+        assert_eq!(cfg.engine, SbyEngine::Yices);
         assert!(cfg.sv_path.is_empty());
         assert!(cfg.bind_path.is_none());
     }

@@ -1,12 +1,15 @@
 [tasks]
 bmc
+prove
 
 [options]
 bmc: mode bmc
-bmc: depth 20
+bmc: depth 17
+prove: mode prove
+prove: depth 17
 
 [engines]
-smtbmc z3
+smtbmc bitwuzla
 
 [script]
 read_verilog -sv -formal ram.sv

@@ -20,7 +20,7 @@ pub struct Width(pub u32);
 
 impl Width {
     /// Maximum supported width (64-bit hardware registers).
-    pub const MAX: Width = Width(64);
+    pub const MAX: Width = Width(8192);
 
     /// Minimum bits required to represent the unsigned value `v`.
     /// Returns Width(1) for v == 0 (a single bit is needed to hold zero).

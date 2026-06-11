@@ -80,7 +80,7 @@ impl Default for SbyConfig {
             bmc_depth: DEFAULT_BMC_DEPTH,
             prove: false,
             cover: false,
-            engine: SbyEngine::Z3,
+            engine: SbyEngine::Yices,
             extra_files: Vec::new(),
         }
     }
@@ -309,7 +309,7 @@ mod tests {
         assert!(result.contains("bmc"));
         assert!(result.contains("mode bmc"));
         assert!(result.contains("depth 20"));
-        assert!(result.contains("smtbmc z3"));
+        assert!(result.contains("smtbmc yices"));
         assert!(result.contains("read_verilog -sv -formal test.sv"));
         assert!(result.contains("test.sv\n"));
         assert!(result.contains("-top test_module"));
