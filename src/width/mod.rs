@@ -117,10 +117,8 @@ where
     let mut all_diags = crate::width::constraint::generate_ecs_constraints(&mut registry, signal_widths);
 
     // Step 3: Run ECS Solver
-    let (_, solve_res, _, _) = crate::ecs::systems::parallel_width_inference_system(&mut registry);
-    for res in solve_res {
-        all_diags.extend(res.diagnostics);
-    }
+    let (solve_diags, ecs_rounds) = crate::ecs::systems::expression_width_inference_system(&mut registry);
+    all_diags.extend(solve_diags);
     
     // Step 4: Reconstruct AST WidthExpr
     let mut widths = vec![crate::width::types::Width(0); node_count];
@@ -140,7 +138,7 @@ where
 
     let stats = WidthStats {
         nodes_analyzed: node_count,
-        propagation_rounds: solve_result.rounds,
+        propagation_rounds: solve_result.rounds + ecs_rounds,
         diagnostics_count: all_diags.len(),
         scc_count: 0,
         expansive_count: 0,

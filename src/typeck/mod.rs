@@ -440,7 +440,7 @@ fn infer_expr_type(
                     Some(ty) => ty,
                     None => continue,
                 };
-                infer_binary_type(*op, left_ty, right_ty, context_span, mode)?
+                infer_binary_type(*op, left_ty, right_ty, left.as_ref(), right.as_ref(), context_span, mode)?
             }
             Expr::ArrayIndex { array, index } => {
                 let array_ptr = array.as_ref() as *const Expr;
@@ -528,14 +528,33 @@ fn infer_binary_type(
     op: BinaryOp,
     left: &SignalType,
     right: &SignalType,
+    left_expr: &Expr,
+    right_expr: &Expr,
     context_span: Option<Span>,
     mode: TypecheckMode,
 ) -> Result<SignalType, MirrError> {
+    // Attempt Literal Type Coercion.
+    let mut left_ty = left.clone();
+    let mut right_ty = right.clone();
+
+    // Promote left to match right signedness
+    if let Expr::Literal(LiteralValue::Integer(v)) = left_expr {
+        if let SignalType::Signed(_) = right_ty {
+            left_ty = SignalType::Signed(min_bits_for(*v));
+        }
+    }
+    // Promote right to match left signedness
+    if let Expr::Literal(LiteralValue::Integer(v)) = right_expr {
+        if let SignalType::Signed(_) = left_ty {
+            right_ty = SignalType::Signed(min_bits_for(*v));
+        }
+    }
+
     match op {
         // T2/T3: Arithmetic operators require numeric operands.
         BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul => {
-            let (left_w, left_signed) = require_numeric(op, left, right, context_span, mode)?;
-            let (right_w, right_signed) = require_numeric(op, right, left, context_span, mode)?;
+            let (left_w, left_signed) = require_numeric(op, &left_ty, &right_ty, context_span, mode)?;
+            let (right_w, right_signed) = require_numeric(op, &right_ty, &left_ty, context_span, mode)?;
             // Cross-category: reject mixed signed/unsigned arithmetic.
             if left_signed != right_signed {
                 return Err(MirrError::TypeError {
@@ -543,8 +562,8 @@ fn infer_binary_type(
                         "{} Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
                         crate::error_codes::ec(608),
                         op_symbol(op),
-                        left,
-                        right
+                        left_ty,
+                        right_ty
                     ),
                     span: context_span,
                 });
@@ -559,13 +578,13 @@ fn infer_binary_type(
 
         // T4: Bitwise shifts. Left must be numeric (or bool-as-u1), right must be numeric.
         BinaryOp::Shl | BinaryOp::Shr => {
-            let (left_w, left_signed) = match left {
+            let (left_w, left_signed) = match left_ty {
                 SignalType::Bool => (1, false),
-                _ => require_numeric(op, left, right, context_span, mode)?,
+                _ => require_numeric(op, &left_ty, &right_ty, context_span, mode)?,
             };
-            let (_right_w, _right_signed) = match right {
+            let (_right_w, _right_signed) = match right_ty {
                 SignalType::Bool => (1, false),
-                _ => require_numeric(op, right, left, context_span, mode)?,
+                _ => require_numeric(op, &right_ty, &left_ty, context_span, mode)?,
             };
 
             if left_signed {
@@ -577,7 +596,7 @@ fn infer_binary_type(
 
         // T8/T9: Logical/Bitwise AND/OR.
         BinaryOp::And | BinaryOp::Or => {
-            if left == &SignalType::Bool && right == &SignalType::Bool {
+            if left_ty == SignalType::Bool && right_ty == SignalType::Bool {
                 Ok(SignalType::Bool)
             } else {
                 if mode != TypecheckMode::Bootstrap {
@@ -586,21 +605,21 @@ fn infer_binary_type(
                             "{} Logical operator '{}' requires bool operands, got {} and {}.",
                             crate::error_codes::ec(604),
                             op_symbol(op),
-                            left,
-                            right
+                            left_ty,
+                            right_ty
                         ),
                         span: context_span,
                     });
                 }
 
                 // Support bitwise AND/OR for numeric types, including bool-as-u1.
-                let (left_w, left_signed) = match left {
+                let (left_w, left_signed) = match left_ty {
                     SignalType::Bool => (1, false),
-                    _ => require_numeric(op, left, right, context_span, mode)?,
+                    _ => require_numeric(op, &left_ty, &right_ty, context_span, mode)?,
                 };
-                let (right_w, right_signed) = match right {
+                let (right_w, right_signed) = match right_ty {
                     SignalType::Bool => (1, false),
-                    _ => require_numeric(op, right, left, context_span, mode)?,
+                    _ => require_numeric(op, &right_ty, &left_ty, context_span, mode)?,
                 };
                 if left_signed != right_signed {
                     return Err(MirrError::TypeError {
@@ -608,8 +627,8 @@ fn infer_binary_type(
                             "{} Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
                             crate::error_codes::ec(608),
                             op_symbol(op),
-                            left,
-                            right
+                            left_ty,
+                            right_ty
                         ),
                         span: context_span,
                     });
@@ -626,13 +645,13 @@ fn infer_binary_type(
         // Hardware bitwise integer operators: accept any numeric widths, return max-width.
         // These are explicit RTL operators (`|` and `&`) distinct from logical And/Or.
         BinaryOp::BitwiseOr | BinaryOp::BitwiseAnd => {
-            let (left_w, left_signed) = match left {
+            let (left_w, left_signed) = match left_ty {
                 SignalType::Bool => (1, false),
-                _ => require_numeric(op, left, right, context_span, mode)?,
+                _ => require_numeric(op, &left_ty, &right_ty, context_span, mode)?,
             };
-            let (right_w, right_signed) = match right {
+            let (right_w, right_signed) = match right_ty {
                 SignalType::Bool => (1, false),
-                _ => require_numeric(op, right, left, context_span, mode)?,
+                _ => require_numeric(op, &right_ty, &left_ty, context_span, mode)?,
             };
             if left_signed != right_signed {
                 return Err(MirrError::TypeError {
@@ -640,8 +659,8 @@ fn infer_binary_type(
                         "{} Operator '{}' cannot mix signed and unsigned operands: {} and {}.",
                         crate::error_codes::ec(608),
                         op_symbol(op),
-                        left,
-                        right
+                        left_ty,
+                        right_ty
                     ),
                     span: context_span,
                 });
@@ -656,69 +675,69 @@ fn infer_binary_type(
 
         // T10: XOR requires matching types. Reject composites.
         BinaryOp::Xor => {
-            if left.is_composite() || right.is_composite() {
+            if left_ty.is_composite() || right_ty.is_composite() {
                 return Err(MirrError::TypeError {
                     message: format!(
                         "{} Operator '^' cannot be applied to composite type '{}' and '{}'.",
                         crate::error_codes::ec(226),
-                        left,
-                        right
+                        left_ty,
+                        right_ty
                     ),
                     span: context_span,
                 });
             }
-            if left != right {
+            if left_ty != right_ty {
                 // Allow Bool ↔ Unsigned(1) for xor.
-                if !types_compatible(left, right) {
+                if !types_compatible(&left_ty, &right_ty) {
                     return Err(MirrError::TypeError {
                         message: format!(
                             "{} Operator '^' (xor) requires matching types, got {} and {}.",
                             crate::error_codes::ec(607),
-                            left,
-                            right
+                            left_ty,
+                            right_ty
                         ),
                         span: context_span,
                     });
                 }
             }
-            Ok(left.clone())
+            Ok(left_ty.clone())
         }
 
         // T5/T7: Ordering comparisons.
         BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
             // Reject composites for ordering.
-            if left.is_composite() || right.is_composite() {
+            if left_ty.is_composite() || right_ty.is_composite() {
                 return Err(MirrError::TypeError {
                     message: format!(
                         "{} Ordering operator '{}' cannot compare composite types '{}' and '{}'.",
                         crate::error_codes::ec(226),
                         op_symbol(op),
-                        left,
-                        right
+                        left_ty,
+                        right_ty
                     ),
                     span: context_span,
                 });
             }
             // T7: Ordering on Bool is an error.
-            if left == &SignalType::Bool || right == &SignalType::Bool {
+            if left_ty == SignalType::Bool || right_ty == SignalType::Bool {
                 return Err(MirrError::TypeError {
                     message: format!(
                         "{} Ordering operator '{}' cannot compare {} and {}.",
                         crate::error_codes::ec(605),
                         op_symbol(op),
-                        left,
-                        right
+                        left_ty,
+                        right_ty
                     ),
                     span: context_span,
                 });
             }
             // Cross-category: reject signed vs unsigned ordering.
-            let left_signed = matches!(left, SignalType::Signed(_));
-            let right_signed = matches!(right, SignalType::Signed(_));
+            let left_signed = matches!(left_ty, SignalType::Signed(_));
+            let right_signed = matches!(right_ty, SignalType::Signed(_));
             if left_signed != right_signed {
                 return Err(MirrError::TypeError {
                     message: format!("{} Ordering operator '{}' cannot compare {} and {} (signed/unsigned mismatch).", crate::error_codes::ec(605),
-                        op_symbol(op), left, right
+                        op_symbol(op), left_ty, right_ty
                     ),
                     span: context_span,
                 });
@@ -729,21 +748,21 @@ fn infer_binary_type(
         // T6: Equality comparisons.
         BinaryOp::Eq | BinaryOp::Ne => {
             // Reject composites for equality.
-            if left.is_composite() || right.is_composite() {
+            if left_ty.is_composite() || right_ty.is_composite() {
                 return Err(MirrError::TypeError {
                     message: format!(
                         "{} Equality operator '{}' cannot compare composite types '{}' and '{}'.",
                         crate::error_codes::ec(226),
                         op_symbol(op),
-                        left,
-                        right
+                        left_ty,
+                        right_ty
                     ),
                     span: context_span,
                 });
             }
             // Same category required (both bool, both unsigned, or both signed).
             let same_category = matches!(
-                (left, right),
+                (&left_ty, &right_ty),
                 (SignalType::Bool, SignalType::Bool)
                     | (SignalType::Unsigned(_), SignalType::Unsigned(_))
                     | (SignalType::Signed(_), SignalType::Signed(_))
@@ -754,8 +773,8 @@ fn infer_binary_type(
                         "{} Equality operator '{}' cannot compare {} and {}.",
                         crate::error_codes::ec(606),
                         op_symbol(op),
-                        left,
-                        right
+                        left_ty,
+                        right_ty
                     ),
                     span: context_span,
                 });

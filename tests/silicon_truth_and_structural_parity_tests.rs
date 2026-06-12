@@ -104,7 +104,8 @@ fn test_totality_engine_passes_valid_module() {
     let result = run_pipeline(source, &config).expect("Pipeline must succeed");
 
     // Run totality check on the parsed/resolved module AST
-    let totality = run_totality_check(&result.program.module);
+    let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
+    let totality = run_totality_check(&result.program.module, &target);
 
     assert!(totality.resource_bound.pass, "Resource check must pass");
     assert!(totality.output_completeness.pass, "Output completeness check must pass");
@@ -128,7 +129,8 @@ fn test_totality_engine_rejects_missing_output_driver() {
     let result = run_pipeline(source, &config).expect("Pipeline must parse");
 
     // The totality check should catch that 'actuator' is not driven
-    let totality = run_totality_check(&result.program.module);
+    let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
+    let totality = run_totality_check(&result.program.module, &target);
     assert!(
         !totality.output_completeness.pass,
         "Totality engine must fail output completeness if an output signal has no driving reflex"
@@ -159,7 +161,8 @@ fn test_totality_engine_rejects_combinational_feedback_loop() {
     let config = PipelineConfig::default();
     let result = run_pipeline(source, &config).expect("Pipeline must compile");
 
-    let totality = run_totality_check(&result.program.module);
+    let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
+    let totality = run_totality_check(&result.program.module, &target);
     assert!(
         !totality.acyclicity.pass,
         "Totality engine must fail acyclicity check when combinational feedback loop exists"

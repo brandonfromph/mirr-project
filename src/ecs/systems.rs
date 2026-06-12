@@ -6,7 +6,7 @@ use crate::ecs::registry::Registry;
 use crate::error::MirrError;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 use crate::width::scc_solver::SccSolveResult;
-use crate::width::types::{SccInfo, SccKind, WidthStats};
+use crate::width::types::{SccInfo, SccKind, WidthStats, WidthDiag};
 use crate::width::verify::VerifyResult;
 use rayon::prelude::*;
 
@@ -28,6 +28,164 @@ pub fn parallel_constant_folding_system(registry: &mut Registry) {
         let idx = id.0 as usize;
         registry.binary_ops[idx] = None;
         registry.literals[idx] = Some(LiteralComponent(value));
+    }
+}
+
+use crate::ecs::components::WidthConstraintComponent;
+
+/// ECS System: Expression Width Inference.
+/// Propagates width constraints to a fixpoint using monotonically increasing updates.
+pub fn expression_width_inference_system(registry: &mut Registry) -> (Vec<WidthDiag>, usize) {
+    const MAX_PROPAGATION_ROUNDS: usize = 16;
+    let next_id = registry.names.len();
+    let mut diagnostics: Vec<WidthDiag> = Vec::new();
+    let mut rounds = 0usize;
+
+    for _round in 0..MAX_PROPAGATION_ROUNDS {
+        rounds += 1;
+        let mut changed = false;
+
+        for i in 0..next_id {
+            if let Some(c) = &registry.width_constraints[i] {
+                let new_w = evaluate_ecs_constraint(c, registry);
+                if let Some(w) = new_w {
+                    let current_tc = registry.types[i].as_ref();
+                    let current_w = current_tc.map_or(0, |tc| tc.0.core.width());
+
+                    let is_narrowing = matches!(c, WidthConstraintComponent::Narrowed { .. });
+                    if is_narrowing {
+                        if w != current_w {
+                            registry.set_type(
+                                EntityId(i as u32),
+                                crate::ecs::components::TypeComponent::signal(
+                                    crate::ast::types::ExtendedType::new(
+                                        crate::ast::types::SignalType::Unsigned(w),
+                                        Default::default(),
+                                    )
+                                )
+                            );
+                            changed = true;
+                        }
+                    } else if w > current_w {
+                        registry.set_type(
+                            EntityId(i as u32),
+                            crate::ecs::components::TypeComponent::signal(
+                                crate::ast::types::ExtendedType::new(
+                                    crate::ast::types::SignalType::Unsigned(w),
+                                    Default::default(),
+                                )
+                            )
+                        );
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        if !changed {
+            break; // Fixpoint reached.
+        }
+    }
+
+    // Post-solve validation
+    for i in 0..next_id {
+        // Only validate entities that have a width constraint
+        if registry.width_constraints[i].is_some() {
+            let tc = registry.types[i].as_ref();
+            let w = tc.map_or(0, |tc| tc.0.core.width());
+            
+            if w == 0 {
+                let desc = format!("entity {}", i);
+                diagnostics.push(
+                    WidthDiag::error(format!(
+                        "{} {} ({}) has unresolved width",
+                        crate::error_codes::ec(503),
+                        i,
+                        desc
+                    ))
+                    .with_code("E503"),
+                );
+            }
+            if w > crate::width::types::Width::MAX.0 {
+                let desc = format!("entity {}", i);
+                diagnostics.push(
+                    WidthDiag::error(format!(
+                        "{} {} ({}) requires {} bits, exceeding maximum of {}",
+                        crate::error_codes::ec(504),
+                        i,
+                        desc,
+                        w,
+                        crate::width::types::Width::MAX.0
+                    ))
+                    .with_code("E504"),
+                );
+            }
+        }
+    }
+
+    (diagnostics, rounds)
+}
+
+fn evaluate_ecs_constraint(c: &WidthConstraintComponent, registry: &Registry) -> Option<u32> {
+    let get_w = |idx: EntityId| -> u32 {
+        registry.types[idx.0 as usize]
+            .as_ref()
+            .map(|tc| tc.0.core.width())
+            .unwrap_or(0)
+    };
+
+    match c {
+        WidthConstraintComponent::Fixed(width) => Some(*width),
+        WidthConstraintComponent::Boolean => Some(1),
+        WidthConstraintComponent::MaxPlusOne { left, right } => {
+            let lw = get_w(*left);
+            let rw = get_w(*right);
+            Some(lw.max(rw).saturating_add(1))
+        }
+        WidthConstraintComponent::MaxOf { left, right } => {
+            let lw = get_w(*left);
+            let rw = get_w(*right);
+            Some(lw.max(rw))
+        }
+        WidthConstraintComponent::SumOf { left, right } => {
+            let lw = get_w(*left);
+            let rw = get_w(*right);
+            Some(lw.saturating_add(rw))
+        }
+        WidthConstraintComponent::SumAll { elements } => {
+            let mut total = 0u32;
+            for elem in elements {
+                total = total.saturating_add(get_w(*elem));
+            }
+            Some(total)
+        }
+        WidthConstraintComponent::LeftPlusConst { left, shift_amount } => {
+            let lw = get_w(*left);
+            Some(lw.saturating_add(*shift_amount))
+        }
+        WidthConstraintComponent::LeftPlusMaxShift { left } => {
+            let lw = get_w(*left);
+            Some(lw.saturating_add(crate::width::types::Width::MAX.0 - 1))
+        }
+        WidthConstraintComponent::LeftMinusConst { left, shift_amount } => {
+            let lw = get_w(*left);
+            Some(lw.saturating_sub(*shift_amount).max(1))
+        }
+        WidthConstraintComponent::SameAs { source } => {
+            Some(get_w(*source))
+        }
+        WidthConstraintComponent::SameAsPlusOne { source } => {
+            let sw = get_w(*source);
+            Some(sw.saturating_add(1))
+        }
+        WidthConstraintComponent::Narrowed { source, narrow_width } => {
+            let sw = get_w(*source);
+            if sw == 0 {
+                Some(*narrow_width)
+            } else {
+                Some(sw.min(*narrow_width))
+            }
+        }
     }
 }
 

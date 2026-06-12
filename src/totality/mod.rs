@@ -342,7 +342,7 @@ mod tests {
             vec![make_guard("g1", 3)],
             vec![make_reflex("r1", "g1", "output_b")],
         );
-        let target = crate::emit::rspu_isa::TargetSpec::default();
+        let target = crate::emit::rspu_isa::TargetSpec::from_config(&None);
         let result = run_totality_check(&m, &target);
         assert!(result.is_total);
         assert!(result.resource_bound.pass);
@@ -363,7 +363,7 @@ mod tests {
             vec![make_guard("g1", 3)],
             vec![make_reflex("r1", "g1", "output_b")],
         );
-        let target = crate::emit::rspu_isa::TargetSpec::default();
+        let target = crate::emit::rspu_isa::TargetSpec::from_config(&None);
         let result = run_totality_check(&m, &target);
         assert!(!result.is_total);
         assert!(!result.output_completeness.pass);

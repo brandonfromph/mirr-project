@@ -217,7 +217,7 @@ fn constraint_left_plus_const_shl_semantics() {
 
 #[test]
 fn constraint_left_plus_max_shift_worst_case() {
-    // Variable shift left: result = left_width + 63 = 8 + 63 = 71 (exceeds 64)
+    // Variable shift left: result = left_width + 8191 = 8 + 8191 = 8199 (exceeds 8192)
     let nodes = vec![
         FlatNode::Signal { name: "a".to_string(), signed: false },
         FlatNode::Signal { name: "k".to_string(), signed: false },
@@ -225,14 +225,14 @@ fn constraint_left_plus_max_shift_worst_case() {
     ];
     let constraints = vec![
         WidthConstraint::Fixed { node: 0, width: 8 },
-        WidthConstraint::Fixed { node: 1, width: 6 },
+        WidthConstraint::Fixed { node: 1, width: 13 },
         WidthConstraint::LeftPlusMaxShift { node: 2, left: 0 },
     ];
     let result = solve(&nodes, &constraints);
-    assert_eq!(result.widths[2].0, 71, "variable Shl should produce left_width + 63");
+    assert_eq!(result.widths[2].0, 8199, "variable Shl should produce left_width + 8191");
     assert!(
-        has_diag_containing(&result.diagnostics, "exceeding maximum of 64"),
-        "width 71 should trigger E504 overflow diagnostic"
+        has_diag_containing(&result.diagnostics, "exceeding maximum of 8192"),
+        "width 8199 should trigger E504 overflow diagnostic"
     );
 }
 
@@ -446,46 +446,46 @@ fn unresolved_node_emits_e503() {
 
 #[test]
 fn overflow_node_emits_e504() {
-    // Force a width > 64 via SumOf: 32 + 33 = 65 > 64.
+    // Force a width > 8192 via SumOf: 4096 + 4097 = 8193 > 8192.
     let nodes = vec![
         FlatNode::Signal { name: "a".to_string(), signed: false },
         FlatNode::Signal { name: "b".to_string(), signed: false },
         FlatNode::Binary { op: BinaryOp::Mul, left: 0, right: 1 },
     ];
     let constraints = vec![
-        WidthConstraint::Fixed { node: 0, width: 32 },
-        WidthConstraint::Fixed { node: 1, width: 33 },
+        WidthConstraint::Fixed { node: 0, width: 4096 },
+        WidthConstraint::Fixed { node: 1, width: 4097 },
         WidthConstraint::SumOf { node: 2, left: 0, right: 1 },
     ];
     let result = solve(&nodes, &constraints);
     assert!(
         has_diag_containing(&result.diagnostics, "E504"),
-        "width > 64 should produce E504 diagnostic"
+        "width > 8192 should produce E504 diagnostic"
     );
     assert!(
-        has_diag_containing(&result.diagnostics, "exceeding maximum of 64"),
+        has_diag_containing(&result.diagnostics, "exceeding maximum of 8192"),
         "E504 message should explain the overflow"
     );
 }
 
 #[test]
-fn width_exactly_64_no_overflow() {
-    // 32 + 32 = 64, which is the maximum — no error.
+fn width_exactly_8192_no_overflow() {
+    // 4096 + 4096 = 8192, which is the maximum — no error.
     let nodes = vec![
         FlatNode::Signal { name: "a".to_string(), signed: false },
         FlatNode::Signal { name: "b".to_string(), signed: false },
         FlatNode::Binary { op: BinaryOp::Mul, left: 0, right: 1 },
     ];
     let constraints = vec![
-        WidthConstraint::Fixed { node: 0, width: 32 },
-        WidthConstraint::Fixed { node: 1, width: 32 },
+        WidthConstraint::Fixed { node: 0, width: 4096 },
+        WidthConstraint::Fixed { node: 1, width: 4096 },
         WidthConstraint::SumOf { node: 2, left: 0, right: 1 },
     ];
     let result = solve(&nodes, &constraints);
-    assert_eq!(result.widths[2], Width(64), "32+32=64 should be exactly at the limit");
+    assert_eq!(result.widths[2], Width(8192), "4096+4096=8192 should be exactly at the limit");
     assert!(
         !has_diag_containing(&result.diagnostics, "E504"),
-        "width == 64 should not trigger overflow"
+        "width == 8192 should not trigger overflow"
     );
 }
 
@@ -905,6 +905,6 @@ fn max_flat_nodes_constant_is_512() {
 }
 
 #[test]
-fn width_max_is_64() {
-    assert_eq!(Width::MAX, Width(64), "Width::MAX should be 64");
+fn width_max_is_8192() {
+    assert_eq!(Width::MAX, Width(8192), "Width::MAX should be 8192");
 }

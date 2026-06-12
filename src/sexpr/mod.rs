@@ -37,7 +37,7 @@ pub use types::SExpr;
 
 /// Maximum nesting depth for S-expression parsing/printing.
 /// NASA Power-of-10: all recursion replaced with bounded iteration.
-pub const MAX_SEXPR_DEPTH: usize = 64;
+pub const MAX_SEXPR_DEPTH: usize = 512;
 
 /// Maximum number of nodes in a single S-expression tree.
 /// NASA Power-of-10: all collections bounded.
@@ -47,7 +47,7 @@ pub const MAX_SEXPR_NODES: usize = 65536;
 pub const MAX_SEXPR_STRING_LEN: usize = 1_048_576; // 1 MB
 
 /// Maximum evaluation depth for the eval/apply core.
-pub const MAX_EVAL_DEPTH: usize = 32;
+pub const MAX_EVAL_DEPTH: usize = 256;
 
 /// Maximum evaluation steps for the eval/apply core.
 pub const MAX_EVAL_STEPS: usize = 10_000;

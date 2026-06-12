@@ -306,13 +306,13 @@ fn mul_u32_u32_needs_u64() {
 }
 
 #[test]
-fn mul_u32_u33_exceeds_64_bits_error() {
-    // u32 * u33 = u65 > 64 -> hard error
-    let sigs = [sig("a", SignalType::Unsigned(32)), sig("b", SignalType::Unsigned(33))];
+fn mul_u4096_u4097_exceeds_8192_bits_error() {
+    // u4096 * u4097 = u8193 > 8192 -> hard error
+    let sigs = [sig("a", SignalType::Unsigned(4096)), sig("b", SignalType::Unsigned(4097))];
     let e = binary(BinaryOp::Mul, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
     assert!(r.has_errors());
-    assert!(has_error_containing(&r, "exceeding maximum of 64"));
+    assert!(has_error_containing(&r, "exceeding maximum of 8192"));
 }
 
 #[test]
@@ -351,13 +351,13 @@ fn shl_u8_by_0_needs_u8() {
 }
 
 #[test]
-fn shl_by_63_clamped() {
+fn shl_by_8191_clamped() {
     let sigs = [sig("a", SignalType::Unsigned(8))];
-    let e = binary(BinaryOp::Shl, signal("a"), lit(100));
+    let e = binary(BinaryOp::Shl, signal("a"), lit(10000));
     let r = infer(&e, &sigs);
-    // 100 clamped to 63, 8 + 63 = 71 > 64 -> error
+    // 10000 clamped to 8191, 8 + 8191 = 8199 > 8192 -> error
     assert!(r.has_errors());
-    assert!(has_error_containing(&r, "exceeding maximum of 64"));
+    assert!(has_error_containing(&r, "exceeding maximum of 8192"));
 }
 
 #[test]
@@ -365,7 +365,7 @@ fn shl_variable_shift_uses_worst_case() {
     let sigs = [sig("a", SignalType::Unsigned(8)), sig("b", SignalType::Unsigned(6))];
     let e = binary(BinaryOp::Shl, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
-    // Variable shift: worst case = a_width + 63 = 71 > 64 -> error
+    // Variable shift: worst case = a_width + 8191 = 8199 > 8192 -> error
     assert!(r.has_errors());
 }
 
@@ -614,41 +614,41 @@ fn single_literal_node() {
 }
 
 #[test]
-fn width_64_is_maximum_allowed() {
-    let sigs = [sig("a", SignalType::Unsigned(64))];
+fn width_8192_is_maximum_allowed() {
+    let sigs = [sig("a", SignalType::Unsigned(8192))];
     let r = infer(&signal("a"), &sigs);
-    assert_eq!(root_width(&r), 64);
+    assert_eq!(root_width(&r), 8192);
     assert!(!r.has_errors());
 }
 
 #[test]
-fn add_at_u64_boundary() {
-    // u63 + u63 = u64 (ok)
-    let sigs = [sig("a", SignalType::Unsigned(63)), sig("b", SignalType::Unsigned(63))];
+fn add_at_u8192_boundary() {
+    // u8191 + u8191 = u8192 (ok)
+    let sigs = [sig("a", SignalType::Unsigned(8191)), sig("b", SignalType::Unsigned(8191))];
     let e = binary(BinaryOp::Add, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
-    assert_eq!(root_width(&r), 64);
+    assert_eq!(root_width(&r), 8192);
     assert!(!r.has_errors());
 }
 
 #[test]
-fn add_exceeds_u64_boundary() {
-    // u64 + u64 = u65 -> hard error
-    let sigs = [sig("a", SignalType::Unsigned(64)), sig("b", SignalType::Unsigned(64))];
+fn add_exceeds_u8192_boundary() {
+    // u8192 + u8192 = u8193 -> hard error
+    let sigs = [sig("a", SignalType::Unsigned(8192)), sig("b", SignalType::Unsigned(8192))];
     let e = binary(BinaryOp::Add, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
     assert!(r.has_errors());
-    assert!(has_error_containing(&r, "exceeding maximum of 64"));
+    assert!(has_error_containing(&r, "exceeding maximum of 8192"));
 }
 
 #[test]
-fn add_exceeds_u64_exact_diagnostic_text() {
-    let sigs = [sig("a", SignalType::Unsigned(64)), sig("b", SignalType::Unsigned(64))];
+fn add_exceeds_u8192_exact_diagnostic_text() {
+    let sigs = [sig("a", SignalType::Unsigned(8192)), sig("b", SignalType::Unsigned(8192))];
     let e = binary(BinaryOp::Add, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
     let errs = error_messages(&r);
-    // Should contain a message about exceeding 64 bits at the Add node
-    assert!(errs.iter().any(|m| m.contains("requires") && m.contains("65 bits")));
+    // Should contain a message about exceeding 8192 bits at the Add node
+    assert!(errs.iter().any(|m| m.contains("requires") && m.contains("8193 bits")));
 }
 
 #[test]

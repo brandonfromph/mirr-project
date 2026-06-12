@@ -139,7 +139,7 @@ fn evaluate_constraint(c: &WidthConstraint, widths: &[u32]) -> Option<(usize, u3
         }
         WidthConstraint::LeftPlusMaxShift { node, left } => {
             let lw = get_w(widths, *left);
-            let w = lw.saturating_add(63);
+            let w = lw.saturating_add(Width::MAX.0 - 1);
             Some((*node as usize, w))
         }
         WidthConstraint::LeftMinusConst { node, left, shift_amount } => {
@@ -199,11 +199,12 @@ fn validate_widths(widths: &[u32], nodes: &[FlatNode], diagnostics: &mut Vec<Wid
             let desc = node_description(i, nodes);
             diagnostics.push(
                 WidthDiag::error(format!(
-                    "{} node {} ({}) requires {} bits, exceeding maximum of 64",
+                    "{} node {} ({}) requires {} bits, exceeding maximum of {}",
                     crate::error_codes::ec(504),
                     i,
                     desc,
-                    w
+                    w,
+                    Width::MAX.0
                 ))
                 .with_code("E504"),
             );

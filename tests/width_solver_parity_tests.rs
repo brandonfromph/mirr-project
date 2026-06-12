@@ -180,14 +180,14 @@ fn test_parity_bit_width_capping() {
     let mut constraints = Vec::new();
 
     nodes.push(FlatNode::Signal { name: "large_sig".to_string(), signed: false });
-    constraints.push(WidthConstraint::Fixed { node: 0, width: 64 });
+    constraints.push(WidthConstraint::Fixed { node: 0, width: 8192 });
 
     nodes.push(FlatNode::Binary { op: BinaryOp::Add, left: 0, right: 0 });
     constraints.push(WidthConstraint::MaxPlusOne { node: 1, left: 0, right: 0 });
 
     let result = solve(&nodes, &constraints);
 
-    // Capped at 64 bits or reports overflow diagnostic E504
+    // Capped at 8192 bits or reports overflow diagnostic E504
     assert!(!result.diagnostics.is_empty());
     let error_codes: Vec<String> =
         result.diagnostics.iter().map(|d| d.code.clone().unwrap_or_default()).collect();

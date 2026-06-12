@@ -732,7 +732,7 @@ impl RspuSimulator {
             self.history_cursor = 0;
         }
 
-        let start = self.history_cursor * MAX_REGISTERS;
+        let start = self.history_cursor * self.registers.len();
         for (i, val) in values.iter().enumerate() {
             self.history[start + i] = val.clone();
         }
@@ -760,7 +760,7 @@ impl RspuSimulator {
         let offset = (delay - 1) as usize;
         let index = (self.history_cursor + MAX_REG_HISTORY - offset) % MAX_REG_HISTORY;
         // println!("DEBUG: get_prev_value delay={} cursor={} index={}", delay, self.history_cursor, index);
-        let start = index * MAX_REGISTERS;
+        let start = index * self.registers.len();
         Ok(self.history[start + reg as usize].clone())
     }
 
