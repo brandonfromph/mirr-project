@@ -8,7 +8,7 @@ use crate::error::{MirrError, PipelineErrors};
 impl Registry {
     /// Perform type checking on the entire registry.
     /// Operates directly on ECS components.
-    pub fn typecheck(&mut self) -> Result<(), PipelineErrors> {
+    pub fn typecheck(&mut self, bootstrap_mode: bool) -> Result<(), PipelineErrors> {
         let mut errors = PipelineErrors::new();
         let max_id = self.next_id as usize;
 
@@ -16,7 +16,8 @@ impl Registry {
         for i in 0..max_id {
             if let Some(ConditionComponent(cond_ent)) = self.conditions[i] {
                 if let Some(KindComponent(EntityKind::GUARD)) = self.kinds[i] {
-                    match self.infer_type(cond_ent) {
+                    let context_span = self.spans[i].as_ref().map(|s| s.0);
+                    match self.infer_type(cond_ent, bootstrap_mode, context_span) {
                         Ok(ty) => {
                             // Persist inferred type
                             self.types[cond_ent.0 as usize] =
@@ -34,7 +35,7 @@ impl Registry {
                                         name,
                                         ty
                                     ),
-                                    span: self.spans[i].as_ref().map(|s| s.0),
+                                    span: context_span,
                                 });
                             }
                         }
@@ -51,7 +52,8 @@ impl Registry {
                     Some(TypeComponent(et)) => et.signal_type(),
                     None => continue,
                 };
-                match self.infer_type(value) {
+                let context_span = self.spans[i].as_ref().map(|s| s.0);
+                match self.infer_type(value, bootstrap_mode, context_span) {
                     Ok(expr_ty) => {
                         // Persist inferred type
                         self.types[value.0 as usize] =
@@ -65,7 +67,7 @@ impl Registry {
                                 .map(|n| n.0.clone())
                                 .unwrap_or_default();
                             errors.push(MirrError::TypeError {
-                                message: format!("{} Assignment to '{}' ({}): expression type {} is not compatible.", crate::error_codes::ec(602),
+                                message: format!("{} Assignment to '{}' ({}): expression type {} is not compatible.", crate::error_codes::ec(601),
                                     target_name, target_ty, expr_ty
                                 ),
                                 span: self.spans[i].as_ref().map(|s| s.0),
@@ -84,7 +86,12 @@ impl Registry {
         }
     }
 
-    pub fn infer_type(&self, root_ent: EntityId) -> Result<SignalType, MirrError> {
+    pub fn infer_type(
+        &self,
+        root_ent: EntityId,
+        bootstrap_mode: bool,
+        context_span: Option<crate::span::Span>,
+    ) -> Result<SignalType, MirrError> {
         #[derive(Debug)]
         enum Work {
             Visit(EntityId),
@@ -114,6 +121,15 @@ impl Registry {
                         let ty = self.types[sig_ent.0 as usize]
                             .as_ref()
                             .map(|t| t.0.signal_type())
+                            .or_else(|| {
+                                if let Some(KindComponent(EntityKind::GUARD)) =
+                                    self.kinds[sig_ent.0 as usize]
+                                {
+                                    Some(SignalType::Bool)
+                                } else {
+                                    None
+                                }
+                            })
                             .ok_or_else(|| MirrError::TypeError {
                                 message: format!(
                                     "{} Signal entity {} has no type component.",
@@ -170,53 +186,186 @@ impl Registry {
                     let left_ty = results.pop().ok_or_else(|| {
                         MirrError::InternalError("Type stack underflow (left)".to_string())
                     })?;
+
+                    let require_numeric =
+                        |ty: &SignalType, op_sym: &str| -> Result<(u32, bool), MirrError> {
+                            match ty {
+                                SignalType::Unsigned(w) => Ok((*w, false)),
+                                SignalType::Signed(w) => Ok((*w, true)),
+                                SignalType::Bool => {
+                                    if bootstrap_mode {
+                                        Ok((1, false))
+                                    } else {
+                                        Err(MirrError::TypeError {
+                                            message: format!(
+                                                "{} Operator '{}' requires numeric operands.",
+                                                crate::error_codes::ec(603),
+                                                op_sym
+                                            ),
+                                            span: context_span,
+                                        })
+                                    }
+                                }
+                                _ => Err(MirrError::TypeError {
+                                    message: format!(
+                                        "{} Operator '{}' cannot be applied to composite type.",
+                                        crate::error_codes::ec(607),
+                                        op_sym
+                                    ),
+                                    span: context_span,
+                                }),
+                            }
+                        };
+
+                    let check_mixed_sign = |left_signed: bool,
+                                            right_signed: bool,
+                                            op_sym: &str|
+                     -> Result<(), MirrError> {
+                        if left_signed != right_signed {
+                            Err(MirrError::TypeError {
+                                message: format!(
+                                    "{} Operator '{}' cannot mix signed and unsigned operands.",
+                                    crate::error_codes::ec(608),
+                                    op_sym
+                                ),
+                                span: context_span,
+                            })
+                        } else {
+                            Ok(())
+                        }
+                    };
+
                     results.push(match op {
                         BinaryOp::And | BinaryOp::Or => {
                             if left_ty == SignalType::Bool && right_ty == SignalType::Bool {
                                 SignalType::Bool
-                            } else {
+                            } else if bootstrap_mode {
+                                let op_sym = if op == BinaryOp::And { "&&" } else { "||" };
                                 let (w1, s1) = match left_ty {
-                                    SignalType::Unsigned(w) => (w, false),
-                                    SignalType::Signed(w) => (w, true),
                                     SignalType::Bool => (1, false),
-                                    _ => (1, false),
+                                    _ => require_numeric(&left_ty, op_sym)?,
                                 };
                                 let (w2, s2) = match right_ty {
-                                    SignalType::Unsigned(w) => (w, false),
-                                    SignalType::Signed(w) => (w, true),
                                     SignalType::Bool => (1, false),
-                                    _ => (1, false),
+                                    _ => require_numeric(&right_ty, op_sym)?,
                                 };
-                                if s1 != s2 {
-                                    SignalType::Bool // Mixed signedness error
-                                } else if s1 {
-                                    SignalType::Signed(w1.max(w2))
+                                check_mixed_sign(s1, s2, op_sym)?;
+                                let max_w = w1.max(w2);
+                                if s1 {
+                                    SignalType::Signed(max_w)
                                 } else {
-                                    SignalType::Unsigned(w1.max(w2))
+                                    SignalType::Unsigned(max_w)
                                 }
+                            } else {
+                                let op_sym = if op == BinaryOp::And { "&&" } else { "||" };
+                                return Err(MirrError::TypeError {
+                                    message: format!(
+                                        "{} Logical operator '{}' requires bool operands, got {} and {}.",
+                                        crate::error_codes::ec(604),
+                                        op_sym,
+                                        left_ty,
+                                        right_ty
+                                    ),
+                                    span: context_span,
+                                });
                             }
                         }
+                        BinaryOp::BitwiseAnd | BinaryOp::BitwiseOr => {
+                            let op_sym = if op == BinaryOp::BitwiseAnd { "&" } else { "|" };
+                            let (w1, s1) = match left_ty {
+                                SignalType::Bool => (1, false),
+                                _ => require_numeric(&left_ty, op_sym)?,
+                            };
+                            let (w2, s2) = match right_ty {
+                                SignalType::Bool => (1, false),
+                                _ => require_numeric(&right_ty, op_sym)?,
+                            };
+                            check_mixed_sign(s1, s2, op_sym)?;
+                            let max_w = w1.max(w2);
+                            if s1 {
+                                SignalType::Signed(max_w)
+                            } else {
+                                SignalType::Unsigned(max_w)
+                            }
+                        }
+                        BinaryOp::Xor => {
+                            if left_ty.is_composite() || right_ty.is_composite() {
+                                return Err(MirrError::TypeError {
+                                    message: format!(
+                                        "{} Operator '^' cannot be applied to composite type '{}' and '{}'.",
+                                        crate::error_codes::ec(226),
+                                        left_ty,
+                                        right_ty
+                                    ),
+                                    span: context_span,
+                                });
+                            }
+                            if left_ty != right_ty {
+                                let compatible = match (&left_ty, &right_ty) {
+                                    (SignalType::Bool, SignalType::Unsigned(1)) |
+                                    (SignalType::Unsigned(1), SignalType::Bool) => true,
+                                    (SignalType::Unsigned(w1), SignalType::Unsigned(w2)) => w1 == w2,
+                                    (SignalType::Signed(w1), SignalType::Signed(w2)) => w1 == w2,
+                                    _ => false,
+                                };
+                                if !compatible {
+                                    return Err(MirrError::TypeError {
+                                        message: format!(
+                                            "{} Operator '^' (xor) requires matching types, got {} and {}.",
+                                            crate::error_codes::ec(607),
+                                            left_ty,
+                                            right_ty
+                                        ),
+                                        span: context_span,
+                                    });
+                                }
+                            }
+                            left_ty.clone()
+                        }
                         BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul => {
-                            let w1 = match left_ty {
-                                SignalType::Unsigned(w) | SignalType::Signed(w) => w,
-                                _ => 1,
+                            let op_sym = match op {
+                                BinaryOp::Add => "+",
+                                BinaryOp::Sub => "-",
+                                _ => "*",
                             };
-                            let w2 = match right_ty {
-                                SignalType::Unsigned(w) | SignalType::Signed(w) => w,
-                                _ => 1,
-                            };
-                            if matches!(left_ty, SignalType::Signed(_)) {
+                            let (w1, s1) = require_numeric(&left_ty, op_sym)?;
+                            let (w2, s2) = require_numeric(&right_ty, op_sym)?;
+                            check_mixed_sign(s1, s2, op_sym)?;
+                            if s1 {
                                 SignalType::Signed(w1.max(w2))
                             } else {
                                 SignalType::Unsigned(w1.max(w2))
                             }
                         }
-                        BinaryOp::Shl | BinaryOp::Shr => {
-                            let (w1, s1) = match left_ty {
-                                SignalType::Unsigned(w) => (w, false),
-                                SignalType::Signed(w) => (w, true),
+                        BinaryOp::Eq | BinaryOp::Ne | BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
+                            let op_sym = match op {
+                                BinaryOp::Eq => "==",
+                                BinaryOp::Ne => "!=",
+                                BinaryOp::Lt => "<",
+                                BinaryOp::Le => "<=",
+                                BinaryOp::Gt => ">",
+                                _ => ">=",
+                            };
+                            let (_w1, s1) = match left_ty {
                                 SignalType::Bool => (1, false),
-                                _ => (1, false),
+                                _ => require_numeric(&left_ty, op_sym)?,
+                            };
+                            let (_w2, s2) = match right_ty {
+                                SignalType::Bool => (1, false),
+                                _ => require_numeric(&right_ty, op_sym)?,
+                            };
+                            check_mixed_sign(s1, s2, op_sym)?;
+                            SignalType::Bool
+                        }
+                        BinaryOp::Shl | BinaryOp::Shr => {
+                            let op_sym = if op == BinaryOp::Shl { "<<" } else { ">>" };
+                            let (w1, s1) = match left_ty {
+                                SignalType::Bool => (1, false),
+                                _ => require_numeric(&left_ty, op_sym)?,
+                            };
+                            let (_w2, _s2) = match right_ty {
+                                SignalType::Bool => (1, false),
+                                _ => require_numeric(&right_ty, op_sym)?,
                             };
                             if s1 {
                                 SignalType::Signed(w1)
@@ -224,7 +373,6 @@ impl Registry {
                                 SignalType::Unsigned(w1)
                             }
                         }
-                        _ => SignalType::Bool,
                     });
                 }
                 Work::CombineArrayIndex => {

@@ -96,7 +96,7 @@ mod tests {
         let mut reg_mut = Registry::new();
         let lit = Expr::Literal(LiteralValue::Integer(255));
         let ent = reg_mut.ingest_expr(&lit).expect("Ingestion failed");
-        let ty = reg_mut.infer_type(ent).unwrap();
+        let ty = reg_mut.infer_type(ent, false, None).unwrap();
         assert_eq!(ty, SignalType::Unsigned(8));
     }
 
@@ -122,7 +122,7 @@ mod tests {
         reg.kinds[g_ent.0 as usize] = Some(KindComponent::GUARD);
         reg.conditions[g_ent.0 as usize] = Some(ConditionComponent(cond_ent));
 
-        let res = reg.typecheck();
+        let res = reg.typecheck(false);
         assert!(res.is_err()); // E601: Guard must be bool
     }
 
@@ -279,7 +279,7 @@ mod tests {
         assert_eq!(expr, reified);
 
         // 3. Verify type checking / inference
-        let ty = reg.infer_type(ent).expect("Type inference failed");
+        let ty = reg.infer_type(ent, false, None).expect("Type inference failed");
         assert!(matches!(ty, SignalType::Array { .. }));
         if let SignalType::Array { element, length } = ty {
             assert_eq!(length, 2);
@@ -312,7 +312,7 @@ mod tests {
         assert_eq!(expr, reified);
 
         // 3. Verify type checking / inference
-        let ty = reg.infer_type(ent).expect("Type inference failed");
+        let ty = reg.infer_type(ent, false, None).expect("Type inference failed");
         assert!(matches!(ty, SignalType::Struct { .. }));
         if let SignalType::Struct { name, fields } = ty {
             assert_eq!(name, "Coord");
@@ -340,7 +340,7 @@ mod tests {
         assert_eq!(expr, reified);
 
         // 3. Verify type checking / inference
-        let ty = reg.infer_type(ent).expect("Type inference failed");
+        let ty = reg.infer_type(ent, false, None).expect("Type inference failed");
         assert_eq!(ty, SignalType::Unsigned(32)); // UnfoldIndex infers as u32
     }
 
