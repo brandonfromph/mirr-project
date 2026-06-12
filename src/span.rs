@@ -19,7 +19,7 @@ const MAX_SOURCE_FILES: usize = 4096;
 
 /// String-interned table of source file paths.
 ///
-/// During parsing, each unique file path is registered once via [`intern`].
+/// During parsing, each unique file path is registered once via [`FileTable::intern`].
 /// The returned `u32` index is stored in [`Span::file_id`], avoiding
 /// per-node heap allocation of the full path string.
 #[derive(Debug, Clone, Default)]
@@ -36,7 +36,7 @@ impl FileTable {
     /// Intern a file path, returning its index.
     ///
     /// If the path was already interned, returns the existing index.
-    /// Bounded to [`MAX_SOURCE_FILES`] entries.
+    /// Bounded to `MAX_SOURCE_FILES` entries.
     pub fn intern(&mut self, path: &str) -> u32 {
         // Check for existing entry first (bounded linear scan).
         for (i, existing) in self.paths.iter().enumerate().take(MAX_SOURCE_FILES) {

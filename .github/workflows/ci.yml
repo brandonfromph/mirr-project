@@ -129,9 +129,9 @@ jobs:
                 ;;
             esac
             echo "COMPILE: $f"
-            if ! cargo run --bin mirr-compile -- --emit verilog "$f" > /dev/null 2>&1; then
+            if ! cargo run --bin mirr -- compile --emit verilog "$f" > /dev/null 2>&1; then
               echo "FAIL: $f"
-              cargo run --bin mirr-compile -- --emit verilog "$f" 2>&1 || true
+              cargo run --bin mirr -- compile --emit verilog "$f" 2>&1 || true
               failed=1
             fi
           done
