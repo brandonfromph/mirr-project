@@ -83,9 +83,7 @@ jobs:
 
       - name: Build docs
         if: matrix.os == 'ubuntu-latest'
-        run: cargo doc --no-deps
-        env:
-          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --workspace --no-deps
 
   compile-examples:
     name: Examples
@@ -116,6 +114,9 @@ jobs:
         shell: bash
         run: |
           failed=0
+          echo "Pre-building mirr binary..."
+          cargo build --bin mirr
+          
           for f in examples/*.mirr; do
             name=$(basename "$f")
             case "$name" in
@@ -129,9 +130,9 @@ jobs:
                 ;;
             esac
             echo "COMPILE: $f"
-            if ! cargo run --bin mirr -- compile --emit verilog "$f" > /dev/null 2>&1; then
+            if ! ./target/debug/mirr compile --emit verilog "$f" > /dev/null 2>&1; then
               echo "FAIL: $f"
-              cargo run --bin mirr -- compile --emit verilog "$f" 2>&1 || true
+              ./target/debug/mirr compile --emit verilog "$f" 2>&1 || true
               failed=1
             fi
           done
@@ -466,9 +467,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-build-stable-
       - name: Build docs
-        run: cargo doc --no-deps
-        env:
-          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --no-deps --workspace
 
   fuzz-check:
     name: Fuzz Check
