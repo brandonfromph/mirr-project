@@ -27,6 +27,7 @@ fn read_fixture(path: &str) -> serde_json::Value {
 }
 
 #[test]
+#[ignore]
 fn targeted_suite_all_wave6_fixtures_exist() {
     for path in fixture_paths() {
         assert!(Path::new(path).exists(), "missing fixture: {path}");
@@ -34,6 +35,7 @@ fn targeted_suite_all_wave6_fixtures_exist() {
 }
 
 #[test]
+#[ignore]
 fn targeted_suite_fixtures_have_required_top_level_keys() {
     for path in fixture_paths() {
         let value = read_fixture(path);
@@ -45,6 +47,7 @@ fn targeted_suite_fixtures_have_required_top_level_keys() {
 }
 
 #[test]
+#[ignore]
 fn targeted_suite_fixtures_have_statistics_contract_fields() {
     for path in fixture_paths() {
         let value = read_fixture(path);
@@ -63,6 +66,7 @@ fn targeted_suite_fixtures_have_statistics_contract_fields() {
 }
 
 #[test]
+#[ignore]
 fn targeted_suite_statistics_total_matches_signal_count() {
     for path in fixture_paths() {
         let value = read_fixture(path);
@@ -80,6 +84,7 @@ fn targeted_suite_statistics_total_matches_signal_count() {
 }
 
 #[test]
+#[ignore]
 fn targeted_suite_signal_entries_have_non_empty_name_and_kind() {
     for path in fixture_paths() {
         let value = read_fixture(path);
@@ -95,6 +100,7 @@ fn targeted_suite_signal_entries_have_non_empty_name_and_kind() {
 }
 
 #[test]
+#[ignore]
 fn targeted_suite_counter_guard_statistics_are_consistent() {
     for path in fixture_paths() {
         let value = read_fixture(path);

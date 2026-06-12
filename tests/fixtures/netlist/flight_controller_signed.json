@@ -1,0 +1,244 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "altitude_low",
+        "input_signal": "altitude",
+        "output_signal": "altitude_low_out",
+        "stages": [
+          "altitude_low_sr_0",
+          "altitude_low_sr_1",
+          "altitude_low_sr_2",
+          "altitude_low_sr_3",
+          "altitude_low_sr_4",
+          "altitude_low_sr_5",
+          "altitude_low_sr_6",
+          "altitude_low_sr_7",
+          "altitude_low_sr_8",
+          "altitude_low_sr_9"
+        ],
+        "delay_cycles": 10,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "altitude",
+            "op": "Lt",
+            "value": {
+              "Integer": 500
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "nose_down",
+        "input_signal": "pitch_angle",
+        "output_signal": "nose_down_out",
+        "stages": [
+          "nose_down_sr_0",
+          "nose_down_sr_1",
+          "nose_down_sr_2",
+          "nose_down_sr_3",
+          "nose_down_sr_4",
+          "nose_down_sr_5",
+          "nose_down_sr_6",
+          "nose_down_sr_7"
+        ],
+        "delay_cycles": 8,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "pitch_angle",
+            "op": "Lt",
+            "value": {
+              "Integer": 10
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "bank_steep",
+        "input_signal": "roll_angle",
+        "output_signal": "bank_steep_out",
+        "stages": [
+          "bank_steep_sr_0",
+          "bank_steep_sr_1",
+          "bank_steep_sr_2",
+          "bank_steep_sr_3"
+        ],
+        "delay_cycles": 4,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "roll_angle",
+            "op": "Gt",
+            "value": {
+              "Integer": 15
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "altitude_low_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "altitude_low_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "nose_down_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "bank_steep_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "bank_steep_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "bank_steep_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "bank_steep_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "bank_steep_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 22,
+    "counters_used": 0,
+    "logic_gates_used": 3,
+    "max_delay_cycles": 10,
+    "total_signals": 25,
+    "compilation_time_us": null
+  }
+}

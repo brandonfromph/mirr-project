@@ -356,11 +356,8 @@ pub fn run_pipeline_on_program(
     // We re-hydrate the registry here to ensure it represents the absolute
     // final state of the program (after simplification and width inference).
     let mut final_registry = crate::ecs::Registry::new();
-    if let Err(e) = crate::ecs::adapter::ingest_program(
-        &mut final_registry,
-        program.clone(),
-        config.base_dir.as_deref(),
-    ) {
+    if let Err(e) = crate::ecs::adapter::ingest_program(&mut final_registry, program.clone(), None)
+    {
         return Err(PipelineErrors { errors: vec![e] });
     }
 

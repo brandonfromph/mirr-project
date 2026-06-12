@@ -39,9 +39,9 @@ pub struct FormalConfig {
 impl Default for FormalConfig {
     fn default() -> Self {
         Self {
-            bmc_depth: 20,
+            bmc_depth: 50,
             prove: false,
-            engine: SbyEngine::Yices,
+            engine: SbyEngine::Bitwuzla,
             sv_path: String::new(),
             bind_path: None,
             extra_files: Vec::new(),
@@ -217,9 +217,9 @@ mod tests {
     #[test]
     fn test_default_config() {
         let cfg = FormalConfig::default();
-        assert_eq!(cfg.bmc_depth, 20);
+        assert_eq!(cfg.bmc_depth, 50);
         assert!(!cfg.prove);
-        assert_eq!(cfg.engine, SbyEngine::Yices);
+        assert_eq!(cfg.engine, SbyEngine::Bitwuzla);
         assert!(cfg.sv_path.is_empty());
         assert!(cfg.bind_path.is_none());
     }

@@ -1,0 +1,242 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "flight_controller",
+    "signals": [
+      {
+        "name": "altitude",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "airspeed",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "pitch_angle",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "roll_angle",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "throttle_cut",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "stabilise",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "terrain_warn",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "status_code",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "altitude_low",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "altitude"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 500
+              }
+            }
+          }
+        },
+        "cycles": 10
+      },
+      {
+        "name": "overspeed",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "airspeed"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 340
+              }
+            }
+          }
+        },
+        "cycles": 5
+      },
+      {
+        "name": "excessive_pitch",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "pitch_angle"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 30
+              }
+            }
+          }
+        },
+        "cycles": 8
+      },
+      {
+        "name": "excessive_roll",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "roll_angle"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 60
+              }
+            }
+          }
+        },
+        "cycles": 4
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "terrain_alert",
+        "guard_names": [
+          "altitude_low"
+        ],
+        "assignments": [
+          {
+            "target": "terrain_warn",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "cut_throttle",
+        "guard_names": [
+          "overspeed"
+        ],
+        "assignments": [
+          {
+            "target": "throttle_cut",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "auto_stabilise",
+        "guard_names": [
+          "excessive_pitch",
+          "excessive_roll"
+        ],
+        "assignments": [
+          {
+            "target": "stabilise",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "speed_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "airspeed"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 400
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "low_alt_warns",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "altitude"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 500
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "terrain_warn"
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

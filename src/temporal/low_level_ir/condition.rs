@@ -90,6 +90,7 @@ impl ConditionKind {
     /// The caller embeds the guard name in diagnostics.
     pub fn try_from_expr(expr: &Expr) -> Result<Self, MirrError> {
         match expr {
+            Expr::Literal(LiteralValue::Bool(true)) => Ok(ConditionKind::AlwaysTrue),
             Expr::Signal(name) => Ok(ConditionKind::SimpleSignal(name.clone())),
             Expr::ArrayIndex { array, index } => {
                 if let (Expr::Signal(arr), Expr::Literal(LiteralValue::Integer(idx))) =

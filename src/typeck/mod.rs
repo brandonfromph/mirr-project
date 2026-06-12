@@ -440,7 +440,15 @@ fn infer_expr_type(
                     Some(ty) => ty,
                     None => continue,
                 };
-                infer_binary_type(*op, left_ty, right_ty, left.as_ref(), right.as_ref(), context_span, mode)?
+                infer_binary_type(
+                    *op,
+                    left_ty,
+                    right_ty,
+                    left.as_ref(),
+                    right.as_ref(),
+                    context_span,
+                    mode,
+                )?
             }
             Expr::ArrayIndex { array, index } => {
                 let array_ptr = array.as_ref() as *const Expr;
@@ -553,8 +561,10 @@ fn infer_binary_type(
     match op {
         // T2/T3: Arithmetic operators require numeric operands.
         BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul => {
-            let (left_w, left_signed) = require_numeric(op, &left_ty, &right_ty, context_span, mode)?;
-            let (right_w, right_signed) = require_numeric(op, &right_ty, &left_ty, context_span, mode)?;
+            let (left_w, left_signed) =
+                require_numeric(op, &left_ty, &right_ty, context_span, mode)?;
+            let (right_w, right_signed) =
+                require_numeric(op, &right_ty, &left_ty, context_span, mode)?;
             // Cross-category: reject mixed signed/unsigned arithmetic.
             if left_signed != right_signed {
                 return Err(MirrError::TypeError {

@@ -1,0 +1,153 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "comm_watchdog",
+    "signals": [
+      {
+        "name": "heartbeat",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "link_quality",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "fallback_mode",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "link_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "heartbeat_lost",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "heartbeat"
+            }
+          }
+        },
+        "cycles": 500
+      },
+      {
+        "name": "quality_low",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "link_quality"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 50
+              }
+            }
+          }
+        },
+        "cycles": 100
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "activate_fallback",
+        "guard_names": [
+          "heartbeat_lost"
+        ],
+        "assignments": [
+          {
+            "target": "fallback_mode",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "link_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "quality_warning",
+        "guard_names": [
+          "quality_low"
+        ],
+        "assignments": [
+          {
+            "target": "link_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "fallback_on_timeout",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Unary": {
+                "op": "Not",
+                "operand": {
+                  "Signal": "heartbeat"
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "fallback_mode"
+            }
+          }
+        }
+      },
+      {
+        "name": "quality_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Le",
+              "left": {
+                "Signal": "link_quality"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

@@ -1,0 +1,538 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "medical_ventilator",
+    "signals": [
+      {
+        "name": "airway_pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "oxygen_saturation",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "tidal_volume",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "respiratory_rate",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "system_enabled",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "manual_override",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "clamp_valve",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "alarm_pressure",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "alarm_oxygen",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "alarm_volume",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "safety_shutdown",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "status_code",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "sustained_low_pressure",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "airway_pressure"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 20
+              }
+            }
+          }
+        },
+        "cycles": 1000
+      },
+      {
+        "name": "sustained_high_pressure",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "airway_pressure"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 800
+              }
+            }
+          }
+        },
+        "cycles": 200
+      },
+      {
+        "name": "low_oxygen",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "oxygen_saturation"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 85
+              }
+            }
+          }
+        },
+        "cycles": 300
+      },
+      {
+        "name": "critical_oxygen",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "oxygen_saturation"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 70
+              }
+            }
+          }
+        },
+        "cycles": 60
+      },
+      {
+        "name": "over_volume",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "tidal_volume"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 500
+              }
+            }
+          }
+        },
+        "cycles": 50
+      },
+      {
+        "name": "under_volume",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "tidal_volume"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 5
+              }
+            }
+          }
+        },
+        "cycles": 200
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "emergency_clamp",
+        "guard_names": [
+          "sustained_low_pressure"
+        ],
+        "assignments": [
+          {
+            "target": "clamp_valve",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "alarm_pressure",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "pressure_relief",
+        "guard_names": [
+          "sustained_high_pressure"
+        ],
+        "assignments": [
+          {
+            "target": "alarm_pressure",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "safety_shutdown",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "oxygen_alarm",
+        "guard_names": [
+          "low_oxygen"
+        ],
+        "assignments": [
+          {
+            "target": "alarm_oxygen",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "oxygen_emergency",
+        "guard_names": [
+          "critical_oxygen"
+        ],
+        "assignments": [
+          {
+            "target": "alarm_oxygen",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "safety_shutdown",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "volume_alarm",
+        "guard_names": [
+          "over_volume"
+        ],
+        "assignments": [
+          {
+            "target": "alarm_volume",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "volume_low_alarm",
+        "guard_names": [
+          "under_volume"
+        ],
+        "assignments": [
+          {
+            "target": "alarm_volume",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "pressure_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "airway_pressure"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 1000
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "oxygen_safe",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Gt",
+              "left": {
+                "Signal": "oxygen_saturation"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 60
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "low_pressure_detected",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "airway_pressure"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 20
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "alarm_pressure"
+            }
+          }
+        }
+      },
+      {
+        "name": "high_pressure_shutdown",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Gt",
+                "left": {
+                  "Signal": "airway_pressure"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 800
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "safety_shutdown"
+            }
+          }
+        }
+      },
+      {
+        "name": "critical_oxygen_emergency",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "oxygen_saturation"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 70
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "safety_shutdown"
+            }
+          }
+        }
+      },
+      {
+        "name": "clamp_on_low_pressure",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "airway_pressure"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 20
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "clamp_valve"
+            }
+          }
+        }
+      },
+      {
+        "name": "volume_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "tidal_volume"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 600
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_shutdown",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Binary": {
+                  "op": "And",
+                  "left": {
+                    "Binary": {
+                      "op": "And",
+                      "left": {
+                        "Signal": "safety_shutdown"
+                      },
+                      "right": {
+                        "Signal": "system_enabled"
+                      }
+                    }
+                  },
+                  "right": {
+                    "Binary": {
+                      "op": "Gt",
+                      "left": {
+                        "Signal": "airway_pressure"
+                      },
+                      "right": {
+                        "Literal": {
+                          "Integer": 20
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "right": {
+                "Binary": {
+                  "op": "Lt",
+                  "left": {
+                    "Signal": "airway_pressure"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 800
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

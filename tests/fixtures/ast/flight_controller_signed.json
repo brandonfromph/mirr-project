@@ -1,0 +1,180 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "flight_controller_signed",
+    "signals": [
+      {
+        "name": "altitude",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "pitch_angle",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Signed": 16
+          }
+        }
+      },
+      {
+        "name": "roll_angle",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Signed": 16
+          }
+        }
+      },
+      {
+        "name": "pitch_threshold",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Signed": 16
+          }
+        }
+      },
+      {
+        "name": "roll_threshold",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Signed": 16
+          }
+        }
+      },
+      {
+        "name": "correct_pitch",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "correct_roll",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "terrain_warn",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "altitude_low",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "altitude"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 500
+              }
+            }
+          }
+        },
+        "cycles": 10
+      },
+      {
+        "name": "nose_down",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "pitch_angle"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 10
+              }
+            }
+          }
+        },
+        "cycles": 8
+      },
+      {
+        "name": "bank_steep",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "roll_angle"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 15
+              }
+            }
+          }
+        },
+        "cycles": 4
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "pitch_correction",
+        "guard_names": [
+          "nose_down"
+        ],
+        "assignments": [
+          {
+            "target": "correct_pitch",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "roll_correction",
+        "guard_names": [
+          "bank_steep"
+        ],
+        "assignments": [
+          {
+            "target": "correct_roll",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "terrain_alert",
+        "guard_names": [
+          "altitude_low"
+        ],
+        "assignments": [
+          {
+            "target": "terrain_warn",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "duplicate_signals",
+    "signals": [
+      {
+        "name": "sensor_a",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "sensor_a",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "output_x",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "undefined_ref",
+        "condition": {
+          "Signal": "nonexistent_signal"
+        },
+        "cycles": 5
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "bad_guard_ref",
+        "guard_names": [
+          "no_such_guard"
+        ],
+        "assignments": [
+          {
+            "target": "output_x",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

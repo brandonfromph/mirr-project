@@ -1,0 +1,239 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "power_supply_monitor",
+    "signals": [
+      {
+        "name": "voltage",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "current",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "overvoltage",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "undervoltage",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "overcurrent",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "shutdown",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "over_v",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "voltage"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 1400
+              }
+            }
+          }
+        },
+        "cycles": 10
+      },
+      {
+        "name": "under_v",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "voltage"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 900
+              }
+            }
+          }
+        },
+        "cycles": 50
+      },
+      {
+        "name": "over_i",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "current"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 500
+              }
+            }
+          }
+        },
+        "cycles": 20
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "ov_alarm",
+        "guard_names": [
+          "over_v"
+        ],
+        "assignments": [
+          {
+            "target": "overvoltage",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "shutdown",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "uv_alarm",
+        "guard_names": [
+          "under_v"
+        ],
+        "assignments": [
+          {
+            "target": "undervoltage",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "oc_alarm",
+        "guard_names": [
+          "over_i"
+        ],
+        "assignments": [
+          {
+            "target": "overcurrent",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "shutdown",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "voltage_safe",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "voltage"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 1500
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "current_safe",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "current"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 600
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "shutdown_on_overvoltage",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Gt",
+                "left": {
+                  "Signal": "voltage"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 1400
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "shutdown"
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

@@ -106,7 +106,7 @@ fn make_result(
 #[test]
 fn formal_config_default_bmc_depth() {
     let cfg = FormalConfig::default();
-    assert_eq!(cfg.bmc_depth, 20, "default bmc_depth should be 20");
+    assert_eq!(cfg.bmc_depth, 50, "default bmc_depth should be 20");
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn formal_config_default_prove_false() {
 #[test]
 fn formal_config_default_engine_z3() {
     let cfg = FormalConfig::default();
-    assert_eq!(cfg.engine, SbyEngine::Z3, "default engine should be Z3");
+    assert_eq!(cfg.engine, SbyEngine::Bitwuzla, "default engine should be Z3");
 }
 
 #[test]
@@ -233,7 +233,8 @@ fn formal_config_debug_format_includes_fields() {
 
 #[test]
 fn formal_config_all_engine_variants_constructible() {
-    let engines = [SbyEngine::Z3, SbyEngine::Yices, SbyEngine::Bitwuzla, SbyEngine::Boolector];
+    let engines =
+        [SbyEngine::Bitwuzla, SbyEngine::Yices, SbyEngine::Bitwuzla, SbyEngine::Boolector];
     for i in 0..MAX_TEST_ENGINES {
         if i >= engines.len() {
             break;
@@ -599,7 +600,8 @@ fn run_formal_pipeline_with_over_max_depth_still_fails_without_sby() {
 
 #[test]
 fn run_formal_pipeline_all_engines_fail_without_sby() {
-    let engines = [SbyEngine::Z3, SbyEngine::Yices, SbyEngine::Bitwuzla, SbyEngine::Boolector];
+    let engines =
+        [SbyEngine::Bitwuzla, SbyEngine::Yices, SbyEngine::Bitwuzla, SbyEngine::Boolector];
     let registry = empty_registry();
     for i in 0..MAX_TEST_ENGINES {
         if i >= engines.len() {
@@ -809,7 +811,7 @@ fn formal_config_from_pipeline_output_path() {
     let cfg = FormalConfig {
         bmc_depth: 30,
         prove: true,
-        engine: SbyEngine::Z3,
+        engine: SbyEngine::Bitwuzla,
         sv_path: sv_path.to_string(),
         bind_path: Some(bind_path.to_string()),
         extra_files: Vec::new(),
@@ -942,7 +944,7 @@ fn formal_config_struct_update_only_depth() {
     let cfg = FormalConfig { bmc_depth: 42, ..base };
     assert_eq!(cfg.bmc_depth, 42, "only bmc_depth should differ");
     assert!(!cfg.prove, "prove should still be default (false)");
-    assert_eq!(cfg.engine, SbyEngine::Z3, "engine should still be default (Z3)");
+    assert_eq!(cfg.engine, SbyEngine::Bitwuzla, "engine should still be default (Z3)");
 }
 
 #[test]
@@ -950,7 +952,7 @@ fn formal_config_struct_update_only_prove() {
     let base = FormalConfig::default();
     let cfg = FormalConfig { prove: true, ..base };
     assert!(cfg.prove, "prove should be true");
-    assert_eq!(cfg.bmc_depth, 20, "bmc_depth should remain default");
+    assert_eq!(cfg.bmc_depth, 50, "bmc_depth should remain default");
 }
 
 #[test]
@@ -958,7 +960,7 @@ fn formal_config_struct_update_only_engine() {
     let base = FormalConfig::default();
     let cfg = FormalConfig { engine: SbyEngine::Boolector, ..base };
     assert_eq!(cfg.engine, SbyEngine::Boolector, "engine should be Boolector");
-    assert_eq!(cfg.bmc_depth, 20, "bmc_depth should remain default");
+    assert_eq!(cfg.bmc_depth, 50, "bmc_depth should remain default");
     assert!(!cfg.prove, "prove should remain default");
 }
 

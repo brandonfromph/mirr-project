@@ -1,0 +1,128 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "e_stop_pressed",
+        "input_signal": "e_stop",
+        "output_signal": "e_stop_pressed_out",
+        "stages": [
+          "e_stop_pressed_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "e_stop"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "curtain_broken",
+        "input_signal": "light_curtain_1",
+        "output_signal": "curtain_broken_out",
+        "stages": [
+          "curtain_broken_sr_0",
+          "curtain_broken_sr_1"
+        ],
+        "delay_cycles": 2,
+        "condition_kind": {
+          "NegatedSignal": "light_curtain_1"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "door_open",
+        "input_signal": "door_closed",
+        "output_signal": "door_open_out",
+        "stages": [
+          "door_open_sr_0",
+          "door_open_sr_1",
+          "door_open_sr_2",
+          "door_open_sr_3",
+          "door_open_sr_4"
+        ],
+        "delay_cycles": 5,
+        "condition_kind": {
+          "NegatedSignal": "door_closed"
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "e_stop_pressed_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "e_stop_pressed_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "curtain_broken_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "curtain_broken_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "curtain_broken_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "door_open_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "door_open_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "door_open_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "door_open_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "door_open_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "door_open_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 8,
+    "counters_used": 0,
+    "logic_gates_used": 3,
+    "max_delay_cycles": 5,
+    "total_signals": 11,
+    "compilation_time_us": null
+  }
+}

@@ -1,21 +1,67 @@
 {
   "ir_version": "2.0",
-  "guards": [],
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "read_cycle",
+        "input_signal": "write_en",
+        "output_signal": "read_cycle_out",
+        "stages": [
+          "read_cycle_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "NegatedSignal": "write_en"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "write_cycle",
+        "input_signal": "write_en",
+        "output_signal": "write_cycle_out",
+        "stages": [
+          "write_cycle_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "write_en"
+        }
+      }
+    }
+  ],
   "signals": [
     {
-      "name": "regfile_read_data",
-      "ty": {
-        "Unsigned": 8
-      },
-      "kind": "LogicGate"
+      "name": "read_cycle_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "read_cycle_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "write_cycle_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "write_cycle_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
     }
   ],
   "statistics": {
-    "shift_registers_used": 0,
+    "shift_registers_used": 2,
     "counters_used": 0,
-    "logic_gates_used": 1,
-    "max_delay_cycles": 0,
-    "total_signals": 1,
-    "compilation_time_us": 0
+    "logic_gates_used": 2,
+    "max_delay_cycles": 1,
+    "total_signals": 4,
+    "compilation_time_us": null
   }
 }

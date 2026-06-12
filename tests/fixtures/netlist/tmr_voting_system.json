@@ -1,0 +1,171 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "sensor_a_failed",
+        "input_signal": "sensor_a",
+        "output_signal": "sensor_a_failed_out",
+        "counter_signal": "sensor_a_failed_counter",
+        "comparator_signal": "sensor_a_failed_cmp",
+        "target_count": 50,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "sensor_a",
+            "op": "Lt",
+            "value": {
+              "Integer": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "sensor_b_failed",
+        "input_signal": "sensor_b",
+        "output_signal": "sensor_b_failed_out",
+        "counter_signal": "sensor_b_failed_counter",
+        "comparator_signal": "sensor_b_failed_cmp",
+        "target_count": 50,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "sensor_b",
+            "op": "Lt",
+            "value": {
+              "Integer": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "sensor_c_failed",
+        "input_signal": "sensor_c",
+        "output_signal": "sensor_c_failed_out",
+        "counter_signal": "sensor_c_failed_counter",
+        "comparator_signal": "sensor_c_failed_cmp",
+        "target_count": 50,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "sensor_c",
+            "op": "Lt",
+            "value": {
+              "Integer": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "triple_fault",
+        "input_signal": "sensor_a",
+        "output_signal": "triple_fault_out",
+        "counter_signal": "triple_fault_counter",
+        "comparator_signal": "triple_fault_cmp",
+        "target_count": 100,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "sensor_a",
+            "op": "Lt",
+            "value": {
+              "Integer": 5
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "sensor_a_failed_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "sensor_a_failed_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "sensor_a_failed_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "sensor_b_failed_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "sensor_b_failed_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "sensor_b_failed_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "sensor_c_failed_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "sensor_c_failed_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "sensor_c_failed_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "triple_fault_counter",
+      "ty": {
+        "Unsigned": 8
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "triple_fault_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "triple_fault_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 0,
+    "counters_used": 4,
+    "logic_gates_used": 4,
+    "max_delay_cycles": 100,
+    "total_signals": 12,
+    "compilation_time_us": null
+  }
+}

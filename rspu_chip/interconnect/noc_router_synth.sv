@@ -2,9 +2,3167 @@
 // Do not edit — regenerate from .mirr source.
 // Target: SystemVerilog (.sv)
 
+  // source: <unknown>:2
 module noc_router (
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic        p0_tx_valid,
+  input  logic [63:0] p0_tx_data,
+  input  logic        p1_tx_valid,
+  input  logic [63:0] p1_tx_data,
+  input  logic        p2_tx_valid,
+  input  logic [63:0] p2_tx_data,
+  input  logic        p3_tx_valid,
+  input  logic [63:0] p3_tx_data,
+  input  logic        p4_tx_valid,
+  input  logic [63:0] p4_tx_data,
+  input  logic        p5_tx_valid,
+  input  logic [63:0] p5_tx_data,
+  input  logic        p6_tx_valid,
+  input  logic [63:0] p6_tx_data,
+  input  logic        p7_tx_valid,
+  input  logic [63:0] p7_tx_data,
+  input  logic        p8_tx_valid,
+  input  logic [63:0] p8_tx_data,
+  input  logic        p9_tx_valid,
+  input  logic [63:0] p9_tx_data,
+  input  logic        p10_tx_valid,
+  input  logic [63:0] p10_tx_data,
+  input  logic        p11_tx_valid,
+  input  logic [63:0] p11_tx_data,
+  input  logic        p12_tx_valid,
+  input  logic [63:0] p12_tx_data,
+  input  logic        p13_tx_valid,
+  input  logic [63:0] p13_tx_data,
+  input  logic        p14_tx_valid,
+  input  logic [63:0] p14_tx_data,
+  input  logic        p15_tx_valid,
+  input  logic [63:0] p15_tx_data,
+  input  logic        p16_tx_valid,
+  input  logic [63:0] p16_tx_data,
+  input  logic        p17_tx_valid,
+  input  logic [63:0] p17_tx_data,
+  input  logic        p18_tx_valid,
+  input  logic [63:0] p18_tx_data,
+  input  logic        p19_tx_valid,
+  input  logic [63:0] p19_tx_data,
+  input  logic        p20_tx_valid,
+  input  logic [63:0] p20_tx_data,
+  input  logic        p21_tx_valid,
+  input  logic [63:0] p21_tx_data,
+  input  logic        p22_tx_valid,
+  input  logic [63:0] p22_tx_data,
+  input  logic        p23_tx_valid,
+  input  logic [63:0] p23_tx_data,
+  input  logic        p24_tx_valid,
+  input  logic [63:0] p24_tx_data,
+  input  logic        p25_tx_valid,
+  input  logic [63:0] p25_tx_data,
+  input  logic        p26_tx_valid,
+  input  logic [63:0] p26_tx_data,
+  input  logic        p27_tx_valid,
+  input  logic [63:0] p27_tx_data,
+  input  logic        p28_tx_valid,
+  input  logic [63:0] p28_tx_data,
+  input  logic        p29_tx_valid,
+  input  logic [63:0] p29_tx_data,
+  input  logic        p30_tx_valid,
+  input  logic [63:0] p30_tx_data,
+  input  logic        p31_tx_valid,
+  input  logic [63:0] p31_tx_data,
+  input  logic        p32_tx_valid,
+  input  logic [63:0] p32_tx_data,
+  input  logic        p33_tx_valid,
+  input  logic [63:0] p33_tx_data,
+  input  logic        p34_tx_valid,
+  input  logic [63:0] p34_tx_data,
+  input  logic        p35_tx_valid,
+  input  logic [63:0] p35_tx_data,
+  input  logic        p36_tx_valid,
+  input  logic [63:0] p36_tx_data,
+  input  logic        p37_tx_valid,
+  input  logic [63:0] p37_tx_data,
+  input  logic        p38_tx_valid,
+  input  logic [63:0] p38_tx_data,
+  input  logic        p39_tx_valid,
+  input  logic [63:0] p39_tx_data,
+  input  logic        p40_tx_valid,
+  input  logic [63:0] p40_tx_data,
+  input  logic        p41_tx_valid,
+  input  logic [63:0] p41_tx_data,
+  input  logic        p42_tx_valid,
+  input  logic [63:0] p42_tx_data,
+  input  logic        p43_tx_valid,
+  input  logic [63:0] p43_tx_data,
+  input  logic        p44_tx_valid,
+  input  logic [63:0] p44_tx_data,
+  input  logic        p45_tx_valid,
+  input  logic [63:0] p45_tx_data,
+  input  logic        p46_tx_valid,
+  input  logic [63:0] p46_tx_data,
+  input  logic        p47_tx_valid,
+  input  logic [63:0] p47_tx_data,
+  input  logic        p48_tx_valid,
+  input  logic [63:0] p48_tx_data,
+  input  logic        p49_tx_valid,
+  input  logic [63:0] p49_tx_data,
+  input  logic        p50_tx_valid,
+  input  logic [63:0] p50_tx_data,
+  input  logic        p51_tx_valid,
+  input  logic [63:0] p51_tx_data,
+  input  logic        p52_tx_valid,
+  input  logic [63:0] p52_tx_data,
+  input  logic        p53_tx_valid,
+  input  logic [63:0] p53_tx_data,
+  input  logic        p54_tx_valid,
+  input  logic [63:0] p54_tx_data,
+  input  logic        p55_tx_valid,
+  input  logic [63:0] p55_tx_data,
+  input  logic        p56_tx_valid,
+  input  logic [63:0] p56_tx_data,
+  input  logic        p57_tx_valid,
+  input  logic [63:0] p57_tx_data,
+  input  logic        p58_tx_valid,
+  input  logic [63:0] p58_tx_data,
+  input  logic        p59_tx_valid,
+  input  logic [63:0] p59_tx_data,
+  input  logic        p60_tx_valid,
+  input  logic [63:0] p60_tx_data,
+  input  logic        p61_tx_valid,
+  input  logic [63:0] p61_tx_data,
+  input  logic        p62_tx_valid,
+  input  logic [63:0] p62_tx_data,
+  input  logic        p63_tx_valid,
+  input  logic [63:0] p63_tx_data,
+  output logic        p0_rx_valid,
+  output logic [63:0] p0_rx_data,
+  output logic        p1_rx_valid,
+  output logic [63:0] p1_rx_data,
+  output logic        p2_rx_valid,
+  output logic [63:0] p2_rx_data,
+  output logic        p3_rx_valid,
+  output logic [63:0] p3_rx_data,
+  output logic        p4_rx_valid,
+  output logic [63:0] p4_rx_data,
+  output logic        p5_rx_valid,
+  output logic [63:0] p5_rx_data,
+  output logic        p6_rx_valid,
+  output logic [63:0] p6_rx_data,
+  output logic        p7_rx_valid,
+  output logic [63:0] p7_rx_data,
+  output logic        p8_rx_valid,
+  output logic [63:0] p8_rx_data,
+  output logic        p9_rx_valid,
+  output logic [63:0] p9_rx_data,
+  output logic        p10_rx_valid,
+  output logic [63:0] p10_rx_data,
+  output logic        p11_rx_valid,
+  output logic [63:0] p11_rx_data,
+  output logic        p12_rx_valid,
+  output logic [63:0] p12_rx_data,
+  output logic        p13_rx_valid,
+  output logic [63:0] p13_rx_data,
+  output logic        p14_rx_valid,
+  output logic [63:0] p14_rx_data,
+  output logic        p15_rx_valid,
+  output logic [63:0] p15_rx_data,
+  output logic        p16_rx_valid,
+  output logic [63:0] p16_rx_data,
+  output logic        p17_rx_valid,
+  output logic [63:0] p17_rx_data,
+  output logic        p18_rx_valid,
+  output logic [63:0] p18_rx_data,
+  output logic        p19_rx_valid,
+  output logic [63:0] p19_rx_data,
+  output logic        p20_rx_valid,
+  output logic [63:0] p20_rx_data,
+  output logic        p21_rx_valid,
+  output logic [63:0] p21_rx_data,
+  output logic        p22_rx_valid,
+  output logic [63:0] p22_rx_data,
+  output logic        p23_rx_valid,
+  output logic [63:0] p23_rx_data,
+  output logic        p24_rx_valid,
+  output logic [63:0] p24_rx_data,
+  output logic        p25_rx_valid,
+  output logic [63:0] p25_rx_data,
+  output logic        p26_rx_valid,
+  output logic [63:0] p26_rx_data,
+  output logic        p27_rx_valid,
+  output logic [63:0] p27_rx_data,
+  output logic        p28_rx_valid,
+  output logic [63:0] p28_rx_data,
+  output logic        p29_rx_valid,
+  output logic [63:0] p29_rx_data,
+  output logic        p30_rx_valid,
+  output logic [63:0] p30_rx_data,
+  output logic        p31_rx_valid,
+  output logic [63:0] p31_rx_data,
+  output logic        p32_rx_valid,
+  output logic [63:0] p32_rx_data,
+  output logic        p33_rx_valid,
+  output logic [63:0] p33_rx_data,
+  output logic        p34_rx_valid,
+  output logic [63:0] p34_rx_data,
+  output logic        p35_rx_valid,
+  output logic [63:0] p35_rx_data,
+  output logic        p36_rx_valid,
+  output logic [63:0] p36_rx_data,
+  output logic        p37_rx_valid,
+  output logic [63:0] p37_rx_data,
+  output logic        p38_rx_valid,
+  output logic [63:0] p38_rx_data,
+  output logic        p39_rx_valid,
+  output logic [63:0] p39_rx_data,
+  output logic        p40_rx_valid,
+  output logic [63:0] p40_rx_data,
+  output logic        p41_rx_valid,
+  output logic [63:0] p41_rx_data,
+  output logic        p42_rx_valid,
+  output logic [63:0] p42_rx_data,
+  output logic        p43_rx_valid,
+  output logic [63:0] p43_rx_data,
+  output logic        p44_rx_valid,
+  output logic [63:0] p44_rx_data,
+  output logic        p45_rx_valid,
+  output logic [63:0] p45_rx_data,
+  output logic        p46_rx_valid,
+  output logic [63:0] p46_rx_data,
+  output logic        p47_rx_valid,
+  output logic [63:0] p47_rx_data,
+  output logic        p48_rx_valid,
+  output logic [63:0] p48_rx_data,
+  output logic        p49_rx_valid,
+  output logic [63:0] p49_rx_data,
+  output logic        p50_rx_valid,
+  output logic [63:0] p50_rx_data,
+  output logic        p51_rx_valid,
+  output logic [63:0] p51_rx_data,
+  output logic        p52_rx_valid,
+  output logic [63:0] p52_rx_data,
+  output logic        p53_rx_valid,
+  output logic [63:0] p53_rx_data,
+  output logic        p54_rx_valid,
+  output logic [63:0] p54_rx_data,
+  output logic        p55_rx_valid,
+  output logic [63:0] p55_rx_data,
+  output logic        p56_rx_valid,
+  output logic [63:0] p56_rx_data,
+  output logic        p57_rx_valid,
+  output logic [63:0] p57_rx_data,
+  output logic        p58_rx_valid,
+  output logic [63:0] p58_rx_data,
+  output logic        p59_rx_valid,
+  output logic [63:0] p59_rx_data,
+  output logic        p60_rx_valid,
+  output logic [63:0] p60_rx_data,
+  output logic        p61_rx_valid,
+  output logic [63:0] p61_rx_data,
+  output logic        p62_rx_valid,
+  output logic [63:0] p62_rx_data,
+  output logic        p63_rx_valid,
+  output logic [63:0] p63_rx_data
 );
 
+  // Internal signals
+  // source: <unknown>:265
+  logic [4095:0] ring_data;
+  // source: <unknown>:266
+  logic [63:0] ring_valid;
+
+  // Temporal signals
+  logic        always_out;
+
   // ── Temporal Guards ──
+
+
+  // Guard: always — always for 0 cycle (combinational)
+  logic always_cond;
+  assign always_cond = 1'b1;
+  assign always_out = always_cond;
+
+  // ── Reflex Assignments ──
+
+  logic always_out;
+  logic p0_tx_valid_out;
+  logic p1_tx_valid_out;
+  logic p2_tx_valid_out;
+  logic p3_tx_valid_out;
+  logic p4_tx_valid_out;
+  logic p5_tx_valid_out;
+  logic p6_tx_valid_out;
+  logic p7_tx_valid_out;
+  logic p8_tx_valid_out;
+  logic p9_tx_valid_out;
+  logic p10_tx_valid_out;
+  logic p11_tx_valid_out;
+  logic p12_tx_valid_out;
+  logic p13_tx_valid_out;
+  logic p14_tx_valid_out;
+  logic p15_tx_valid_out;
+  logic p16_tx_valid_out;
+  logic p17_tx_valid_out;
+  logic p18_tx_valid_out;
+  logic p19_tx_valid_out;
+  logic p20_tx_valid_out;
+  logic p21_tx_valid_out;
+  logic p22_tx_valid_out;
+  logic p23_tx_valid_out;
+  logic p24_tx_valid_out;
+  logic p25_tx_valid_out;
+  logic p26_tx_valid_out;
+  logic p27_tx_valid_out;
+  logic p28_tx_valid_out;
+  logic p29_tx_valid_out;
+  logic p30_tx_valid_out;
+  logic p31_tx_valid_out;
+  logic p32_tx_valid_out;
+  logic p33_tx_valid_out;
+  logic p34_tx_valid_out;
+  logic p35_tx_valid_out;
+  logic p36_tx_valid_out;
+  logic p37_tx_valid_out;
+  logic p38_tx_valid_out;
+  logic p39_tx_valid_out;
+  logic p40_tx_valid_out;
+  logic p41_tx_valid_out;
+  logic p42_tx_valid_out;
+  logic p43_tx_valid_out;
+  logic p44_tx_valid_out;
+  logic p45_tx_valid_out;
+  logic p46_tx_valid_out;
+  logic p47_tx_valid_out;
+  logic p48_tx_valid_out;
+  logic p49_tx_valid_out;
+  logic p50_tx_valid_out;
+  logic p51_tx_valid_out;
+  logic p52_tx_valid_out;
+  logic p53_tx_valid_out;
+  logic p54_tx_valid_out;
+  logic p55_tx_valid_out;
+  logic p56_tx_valid_out;
+  logic p57_tx_valid_out;
+  logic p58_tx_valid_out;
+  logic p59_tx_valid_out;
+  logic p60_tx_valid_out;
+  logic p61_tx_valid_out;
+  logic p62_tx_valid_out;
+  logic p63_tx_valid_out;
+
+  // Unified Reflex Block for: p0_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p0_rx_data <= '0;
+    end else begin
+  // source: <unknown>:402
+      if (always_out) p0_rx_data <= ring_data[0];
+    end
+  end
+
+  // Unified Reflex Block for: p0_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p0_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:402
+      if (always_out) p0_rx_valid <= ring_valid[0];
+    end
+  end
+
+  // Unified Reflex Block for: p10_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p10_rx_data <= '0;
+    end else begin
+  // source: <unknown>:512
+      if (always_out) p10_rx_data <= ring_data[10];
+    end
+  end
+
+  // Unified Reflex Block for: p10_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p10_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:512
+      if (always_out) p10_rx_valid <= ring_valid[10];
+    end
+  end
+
+  // Unified Reflex Block for: p11_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p11_rx_data <= '0;
+    end else begin
+  // source: <unknown>:523
+      if (always_out) p11_rx_data <= ring_data[11];
+    end
+  end
+
+  // Unified Reflex Block for: p11_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p11_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:523
+      if (always_out) p11_rx_valid <= ring_valid[11];
+    end
+  end
+
+  // Unified Reflex Block for: p12_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p12_rx_data <= '0;
+    end else begin
+  // source: <unknown>:534
+      if (always_out) p12_rx_data <= ring_data[12];
+    end
+  end
+
+  // Unified Reflex Block for: p12_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p12_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:534
+      if (always_out) p12_rx_valid <= ring_valid[12];
+    end
+  end
+
+  // Unified Reflex Block for: p13_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p13_rx_data <= '0;
+    end else begin
+  // source: <unknown>:545
+      if (always_out) p13_rx_data <= ring_data[13];
+    end
+  end
+
+  // Unified Reflex Block for: p13_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p13_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:545
+      if (always_out) p13_rx_valid <= ring_valid[13];
+    end
+  end
+
+  // Unified Reflex Block for: p14_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p14_rx_data <= '0;
+    end else begin
+  // source: <unknown>:556
+      if (always_out) p14_rx_data <= ring_data[14];
+    end
+  end
+
+  // Unified Reflex Block for: p14_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p14_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:556
+      if (always_out) p14_rx_valid <= ring_valid[14];
+    end
+  end
+
+  // Unified Reflex Block for: p15_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p15_rx_data <= '0;
+    end else begin
+  // source: <unknown>:567
+      if (always_out) p15_rx_data <= ring_data[15];
+    end
+  end
+
+  // Unified Reflex Block for: p15_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p15_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:567
+      if (always_out) p15_rx_valid <= ring_valid[15];
+    end
+  end
+
+  // Unified Reflex Block for: p16_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p16_rx_data <= '0;
+    end else begin
+  // source: <unknown>:578
+      if (always_out) p16_rx_data <= ring_data[16];
+    end
+  end
+
+  // Unified Reflex Block for: p16_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p16_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:578
+      if (always_out) p16_rx_valid <= ring_valid[16];
+    end
+  end
+
+  // Unified Reflex Block for: p17_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p17_rx_data <= '0;
+    end else begin
+  // source: <unknown>:589
+      if (always_out) p17_rx_data <= ring_data[17];
+    end
+  end
+
+  // Unified Reflex Block for: p17_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p17_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:589
+      if (always_out) p17_rx_valid <= ring_valid[17];
+    end
+  end
+
+  // Unified Reflex Block for: p18_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p18_rx_data <= '0;
+    end else begin
+  // source: <unknown>:600
+      if (always_out) p18_rx_data <= ring_data[18];
+    end
+  end
+
+  // Unified Reflex Block for: p18_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p18_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:600
+      if (always_out) p18_rx_valid <= ring_valid[18];
+    end
+  end
+
+  // Unified Reflex Block for: p19_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p19_rx_data <= '0;
+    end else begin
+  // source: <unknown>:611
+      if (always_out) p19_rx_data <= ring_data[19];
+    end
+  end
+
+  // Unified Reflex Block for: p19_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p19_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:611
+      if (always_out) p19_rx_valid <= ring_valid[19];
+    end
+  end
+
+  // Unified Reflex Block for: p1_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p1_rx_data <= '0;
+    end else begin
+  // source: <unknown>:413
+      if (always_out) p1_rx_data <= ring_data[1];
+    end
+  end
+
+  // Unified Reflex Block for: p1_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p1_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:413
+      if (always_out) p1_rx_valid <= ring_valid[1];
+    end
+  end
+
+  // Unified Reflex Block for: p20_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p20_rx_data <= '0;
+    end else begin
+  // source: <unknown>:622
+      if (always_out) p20_rx_data <= ring_data[20];
+    end
+  end
+
+  // Unified Reflex Block for: p20_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p20_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:622
+      if (always_out) p20_rx_valid <= ring_valid[20];
+    end
+  end
+
+  // Unified Reflex Block for: p21_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p21_rx_data <= '0;
+    end else begin
+  // source: <unknown>:633
+      if (always_out) p21_rx_data <= ring_data[21];
+    end
+  end
+
+  // Unified Reflex Block for: p21_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p21_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:633
+      if (always_out) p21_rx_valid <= ring_valid[21];
+    end
+  end
+
+  // Unified Reflex Block for: p22_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p22_rx_data <= '0;
+    end else begin
+  // source: <unknown>:644
+      if (always_out) p22_rx_data <= ring_data[22];
+    end
+  end
+
+  // Unified Reflex Block for: p22_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p22_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:644
+      if (always_out) p22_rx_valid <= ring_valid[22];
+    end
+  end
+
+  // Unified Reflex Block for: p23_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p23_rx_data <= '0;
+    end else begin
+  // source: <unknown>:655
+      if (always_out) p23_rx_data <= ring_data[23];
+    end
+  end
+
+  // Unified Reflex Block for: p23_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p23_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:655
+      if (always_out) p23_rx_valid <= ring_valid[23];
+    end
+  end
+
+  // Unified Reflex Block for: p24_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p24_rx_data <= '0;
+    end else begin
+  // source: <unknown>:666
+      if (always_out) p24_rx_data <= ring_data[24];
+    end
+  end
+
+  // Unified Reflex Block for: p24_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p24_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:666
+      if (always_out) p24_rx_valid <= ring_valid[24];
+    end
+  end
+
+  // Unified Reflex Block for: p25_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p25_rx_data <= '0;
+    end else begin
+  // source: <unknown>:677
+      if (always_out) p25_rx_data <= ring_data[25];
+    end
+  end
+
+  // Unified Reflex Block for: p25_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p25_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:677
+      if (always_out) p25_rx_valid <= ring_valid[25];
+    end
+  end
+
+  // Unified Reflex Block for: p26_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p26_rx_data <= '0;
+    end else begin
+  // source: <unknown>:688
+      if (always_out) p26_rx_data <= ring_data[26];
+    end
+  end
+
+  // Unified Reflex Block for: p26_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p26_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:688
+      if (always_out) p26_rx_valid <= ring_valid[26];
+    end
+  end
+
+  // Unified Reflex Block for: p27_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p27_rx_data <= '0;
+    end else begin
+  // source: <unknown>:699
+      if (always_out) p27_rx_data <= ring_data[27];
+    end
+  end
+
+  // Unified Reflex Block for: p27_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p27_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:699
+      if (always_out) p27_rx_valid <= ring_valid[27];
+    end
+  end
+
+  // Unified Reflex Block for: p28_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p28_rx_data <= '0;
+    end else begin
+  // source: <unknown>:710
+      if (always_out) p28_rx_data <= ring_data[28];
+    end
+  end
+
+  // Unified Reflex Block for: p28_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p28_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:710
+      if (always_out) p28_rx_valid <= ring_valid[28];
+    end
+  end
+
+  // Unified Reflex Block for: p29_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p29_rx_data <= '0;
+    end else begin
+  // source: <unknown>:721
+      if (always_out) p29_rx_data <= ring_data[29];
+    end
+  end
+
+  // Unified Reflex Block for: p29_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p29_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:721
+      if (always_out) p29_rx_valid <= ring_valid[29];
+    end
+  end
+
+  // Unified Reflex Block for: p2_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p2_rx_data <= '0;
+    end else begin
+  // source: <unknown>:424
+      if (always_out) p2_rx_data <= ring_data[2];
+    end
+  end
+
+  // Unified Reflex Block for: p2_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p2_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:424
+      if (always_out) p2_rx_valid <= ring_valid[2];
+    end
+  end
+
+  // Unified Reflex Block for: p30_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p30_rx_data <= '0;
+    end else begin
+  // source: <unknown>:732
+      if (always_out) p30_rx_data <= ring_data[30];
+    end
+  end
+
+  // Unified Reflex Block for: p30_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p30_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:732
+      if (always_out) p30_rx_valid <= ring_valid[30];
+    end
+  end
+
+  // Unified Reflex Block for: p31_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p31_rx_data <= '0;
+    end else begin
+  // source: <unknown>:743
+      if (always_out) p31_rx_data <= ring_data[31];
+    end
+  end
+
+  // Unified Reflex Block for: p31_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p31_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:743
+      if (always_out) p31_rx_valid <= ring_valid[31];
+    end
+  end
+
+  // Unified Reflex Block for: p32_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p32_rx_data <= '0;
+    end else begin
+  // source: <unknown>:754
+      if (always_out) p32_rx_data <= ring_data[32];
+    end
+  end
+
+  // Unified Reflex Block for: p32_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p32_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:754
+      if (always_out) p32_rx_valid <= ring_valid[32];
+    end
+  end
+
+  // Unified Reflex Block for: p33_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p33_rx_data <= '0;
+    end else begin
+  // source: <unknown>:765
+      if (always_out) p33_rx_data <= ring_data[33];
+    end
+  end
+
+  // Unified Reflex Block for: p33_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p33_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:765
+      if (always_out) p33_rx_valid <= ring_valid[33];
+    end
+  end
+
+  // Unified Reflex Block for: p34_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p34_rx_data <= '0;
+    end else begin
+  // source: <unknown>:776
+      if (always_out) p34_rx_data <= ring_data[34];
+    end
+  end
+
+  // Unified Reflex Block for: p34_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p34_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:776
+      if (always_out) p34_rx_valid <= ring_valid[34];
+    end
+  end
+
+  // Unified Reflex Block for: p35_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p35_rx_data <= '0;
+    end else begin
+  // source: <unknown>:787
+      if (always_out) p35_rx_data <= ring_data[35];
+    end
+  end
+
+  // Unified Reflex Block for: p35_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p35_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:787
+      if (always_out) p35_rx_valid <= ring_valid[35];
+    end
+  end
+
+  // Unified Reflex Block for: p36_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p36_rx_data <= '0;
+    end else begin
+  // source: <unknown>:798
+      if (always_out) p36_rx_data <= ring_data[36];
+    end
+  end
+
+  // Unified Reflex Block for: p36_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p36_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:798
+      if (always_out) p36_rx_valid <= ring_valid[36];
+    end
+  end
+
+  // Unified Reflex Block for: p37_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p37_rx_data <= '0;
+    end else begin
+  // source: <unknown>:809
+      if (always_out) p37_rx_data <= ring_data[37];
+    end
+  end
+
+  // Unified Reflex Block for: p37_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p37_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:809
+      if (always_out) p37_rx_valid <= ring_valid[37];
+    end
+  end
+
+  // Unified Reflex Block for: p38_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p38_rx_data <= '0;
+    end else begin
+  // source: <unknown>:820
+      if (always_out) p38_rx_data <= ring_data[38];
+    end
+  end
+
+  // Unified Reflex Block for: p38_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p38_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:820
+      if (always_out) p38_rx_valid <= ring_valid[38];
+    end
+  end
+
+  // Unified Reflex Block for: p39_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p39_rx_data <= '0;
+    end else begin
+  // source: <unknown>:831
+      if (always_out) p39_rx_data <= ring_data[39];
+    end
+  end
+
+  // Unified Reflex Block for: p39_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p39_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:831
+      if (always_out) p39_rx_valid <= ring_valid[39];
+    end
+  end
+
+  // Unified Reflex Block for: p3_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p3_rx_data <= '0;
+    end else begin
+  // source: <unknown>:435
+      if (always_out) p3_rx_data <= ring_data[3];
+    end
+  end
+
+  // Unified Reflex Block for: p3_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p3_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:435
+      if (always_out) p3_rx_valid <= ring_valid[3];
+    end
+  end
+
+  // Unified Reflex Block for: p40_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p40_rx_data <= '0;
+    end else begin
+  // source: <unknown>:842
+      if (always_out) p40_rx_data <= ring_data[40];
+    end
+  end
+
+  // Unified Reflex Block for: p40_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p40_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:842
+      if (always_out) p40_rx_valid <= ring_valid[40];
+    end
+  end
+
+  // Unified Reflex Block for: p41_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p41_rx_data <= '0;
+    end else begin
+  // source: <unknown>:853
+      if (always_out) p41_rx_data <= ring_data[41];
+    end
+  end
+
+  // Unified Reflex Block for: p41_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p41_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:853
+      if (always_out) p41_rx_valid <= ring_valid[41];
+    end
+  end
+
+  // Unified Reflex Block for: p42_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p42_rx_data <= '0;
+    end else begin
+  // source: <unknown>:864
+      if (always_out) p42_rx_data <= ring_data[42];
+    end
+  end
+
+  // Unified Reflex Block for: p42_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p42_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:864
+      if (always_out) p42_rx_valid <= ring_valid[42];
+    end
+  end
+
+  // Unified Reflex Block for: p43_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p43_rx_data <= '0;
+    end else begin
+  // source: <unknown>:875
+      if (always_out) p43_rx_data <= ring_data[43];
+    end
+  end
+
+  // Unified Reflex Block for: p43_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p43_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:875
+      if (always_out) p43_rx_valid <= ring_valid[43];
+    end
+  end
+
+  // Unified Reflex Block for: p44_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p44_rx_data <= '0;
+    end else begin
+  // source: <unknown>:886
+      if (always_out) p44_rx_data <= ring_data[44];
+    end
+  end
+
+  // Unified Reflex Block for: p44_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p44_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:886
+      if (always_out) p44_rx_valid <= ring_valid[44];
+    end
+  end
+
+  // Unified Reflex Block for: p45_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p45_rx_data <= '0;
+    end else begin
+  // source: <unknown>:897
+      if (always_out) p45_rx_data <= ring_data[45];
+    end
+  end
+
+  // Unified Reflex Block for: p45_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p45_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:897
+      if (always_out) p45_rx_valid <= ring_valid[45];
+    end
+  end
+
+  // Unified Reflex Block for: p46_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p46_rx_data <= '0;
+    end else begin
+  // source: <unknown>:908
+      if (always_out) p46_rx_data <= ring_data[46];
+    end
+  end
+
+  // Unified Reflex Block for: p46_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p46_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:908
+      if (always_out) p46_rx_valid <= ring_valid[46];
+    end
+  end
+
+  // Unified Reflex Block for: p47_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p47_rx_data <= '0;
+    end else begin
+  // source: <unknown>:919
+      if (always_out) p47_rx_data <= ring_data[47];
+    end
+  end
+
+  // Unified Reflex Block for: p47_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p47_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:919
+      if (always_out) p47_rx_valid <= ring_valid[47];
+    end
+  end
+
+  // Unified Reflex Block for: p48_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p48_rx_data <= '0;
+    end else begin
+  // source: <unknown>:930
+      if (always_out) p48_rx_data <= ring_data[48];
+    end
+  end
+
+  // Unified Reflex Block for: p48_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p48_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:930
+      if (always_out) p48_rx_valid <= ring_valid[48];
+    end
+  end
+
+  // Unified Reflex Block for: p49_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p49_rx_data <= '0;
+    end else begin
+  // source: <unknown>:941
+      if (always_out) p49_rx_data <= ring_data[49];
+    end
+  end
+
+  // Unified Reflex Block for: p49_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p49_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:941
+      if (always_out) p49_rx_valid <= ring_valid[49];
+    end
+  end
+
+  // Unified Reflex Block for: p4_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p4_rx_data <= '0;
+    end else begin
+  // source: <unknown>:446
+      if (always_out) p4_rx_data <= ring_data[4];
+    end
+  end
+
+  // Unified Reflex Block for: p4_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p4_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:446
+      if (always_out) p4_rx_valid <= ring_valid[4];
+    end
+  end
+
+  // Unified Reflex Block for: p50_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p50_rx_data <= '0;
+    end else begin
+  // source: <unknown>:952
+      if (always_out) p50_rx_data <= ring_data[50];
+    end
+  end
+
+  // Unified Reflex Block for: p50_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p50_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:952
+      if (always_out) p50_rx_valid <= ring_valid[50];
+    end
+  end
+
+  // Unified Reflex Block for: p51_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p51_rx_data <= '0;
+    end else begin
+  // source: <unknown>:963
+      if (always_out) p51_rx_data <= ring_data[51];
+    end
+  end
+
+  // Unified Reflex Block for: p51_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p51_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:963
+      if (always_out) p51_rx_valid <= ring_valid[51];
+    end
+  end
+
+  // Unified Reflex Block for: p52_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p52_rx_data <= '0;
+    end else begin
+  // source: <unknown>:974
+      if (always_out) p52_rx_data <= ring_data[52];
+    end
+  end
+
+  // Unified Reflex Block for: p52_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p52_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:974
+      if (always_out) p52_rx_valid <= ring_valid[52];
+    end
+  end
+
+  // Unified Reflex Block for: p53_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p53_rx_data <= '0;
+    end else begin
+  // source: <unknown>:985
+      if (always_out) p53_rx_data <= ring_data[53];
+    end
+  end
+
+  // Unified Reflex Block for: p53_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p53_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:985
+      if (always_out) p53_rx_valid <= ring_valid[53];
+    end
+  end
+
+  // Unified Reflex Block for: p54_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p54_rx_data <= '0;
+    end else begin
+  // source: <unknown>:996
+      if (always_out) p54_rx_data <= ring_data[54];
+    end
+  end
+
+  // Unified Reflex Block for: p54_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p54_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:996
+      if (always_out) p54_rx_valid <= ring_valid[54];
+    end
+  end
+
+  // Unified Reflex Block for: p55_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p55_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1007
+      if (always_out) p55_rx_data <= ring_data[55];
+    end
+  end
+
+  // Unified Reflex Block for: p55_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p55_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1007
+      if (always_out) p55_rx_valid <= ring_valid[55];
+    end
+  end
+
+  // Unified Reflex Block for: p56_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p56_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1018
+      if (always_out) p56_rx_data <= ring_data[56];
+    end
+  end
+
+  // Unified Reflex Block for: p56_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p56_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1018
+      if (always_out) p56_rx_valid <= ring_valid[56];
+    end
+  end
+
+  // Unified Reflex Block for: p57_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p57_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1029
+      if (always_out) p57_rx_data <= ring_data[57];
+    end
+  end
+
+  // Unified Reflex Block for: p57_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p57_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1029
+      if (always_out) p57_rx_valid <= ring_valid[57];
+    end
+  end
+
+  // Unified Reflex Block for: p58_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p58_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1040
+      if (always_out) p58_rx_data <= ring_data[58];
+    end
+  end
+
+  // Unified Reflex Block for: p58_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p58_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1040
+      if (always_out) p58_rx_valid <= ring_valid[58];
+    end
+  end
+
+  // Unified Reflex Block for: p59_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p59_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1051
+      if (always_out) p59_rx_data <= ring_data[59];
+    end
+  end
+
+  // Unified Reflex Block for: p59_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p59_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1051
+      if (always_out) p59_rx_valid <= ring_valid[59];
+    end
+  end
+
+  // Unified Reflex Block for: p5_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p5_rx_data <= '0;
+    end else begin
+  // source: <unknown>:457
+      if (always_out) p5_rx_data <= ring_data[5];
+    end
+  end
+
+  // Unified Reflex Block for: p5_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p5_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:457
+      if (always_out) p5_rx_valid <= ring_valid[5];
+    end
+  end
+
+  // Unified Reflex Block for: p60_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p60_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1062
+      if (always_out) p60_rx_data <= ring_data[60];
+    end
+  end
+
+  // Unified Reflex Block for: p60_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p60_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1062
+      if (always_out) p60_rx_valid <= ring_valid[60];
+    end
+  end
+
+  // Unified Reflex Block for: p61_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p61_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1073
+      if (always_out) p61_rx_data <= ring_data[61];
+    end
+  end
+
+  // Unified Reflex Block for: p61_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p61_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1073
+      if (always_out) p61_rx_valid <= ring_valid[61];
+    end
+  end
+
+  // Unified Reflex Block for: p62_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p62_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1084
+      if (always_out) p62_rx_data <= ring_data[62];
+    end
+  end
+
+  // Unified Reflex Block for: p62_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p62_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1084
+      if (always_out) p62_rx_valid <= ring_valid[62];
+    end
+  end
+
+  // Unified Reflex Block for: p63_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p63_rx_data <= '0;
+    end else begin
+  // source: <unknown>:1095
+      if (always_out) p63_rx_data <= ring_data[63];
+    end
+  end
+
+  // Unified Reflex Block for: p63_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p63_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:1095
+      if (always_out) p63_rx_valid <= ring_valid[63];
+    end
+  end
+
+  // Unified Reflex Block for: p6_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p6_rx_data <= '0;
+    end else begin
+  // source: <unknown>:468
+      if (always_out) p6_rx_data <= ring_data[6];
+    end
+  end
+
+  // Unified Reflex Block for: p6_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p6_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:468
+      if (always_out) p6_rx_valid <= ring_valid[6];
+    end
+  end
+
+  // Unified Reflex Block for: p7_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p7_rx_data <= '0;
+    end else begin
+  // source: <unknown>:479
+      if (always_out) p7_rx_data <= ring_data[7];
+    end
+  end
+
+  // Unified Reflex Block for: p7_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p7_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:479
+      if (always_out) p7_rx_valid <= ring_valid[7];
+    end
+  end
+
+  // Unified Reflex Block for: p8_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p8_rx_data <= '0;
+    end else begin
+  // source: <unknown>:490
+      if (always_out) p8_rx_data <= ring_data[8];
+    end
+  end
+
+  // Unified Reflex Block for: p8_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p8_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:490
+      if (always_out) p8_rx_valid <= ring_valid[8];
+    end
+  end
+
+  // Unified Reflex Block for: p9_rx_data
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p9_rx_data <= '0;
+    end else begin
+  // source: <unknown>:501
+      if (always_out) p9_rx_data <= ring_data[9];
+    end
+  end
+
+  // Unified Reflex Block for: p9_rx_valid
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      p9_rx_valid <= '0;
+    end else begin
+  // source: <unknown>:501
+      if (always_out) p9_rx_valid <= ring_valid[9];
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[0]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[0] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[0] <= ring_data[63];
+  // source: <unknown>:402
+      if (p0_tx_valid_out) ring_data[0] <= p0_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[10]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[10] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[10] <= ring_data[9];
+  // source: <unknown>:512
+      if (p10_tx_valid_out) ring_data[10] <= p10_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[11]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[11] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[11] <= ring_data[10];
+  // source: <unknown>:523
+      if (p11_tx_valid_out) ring_data[11] <= p11_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[12]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[12] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[12] <= ring_data[11];
+  // source: <unknown>:534
+      if (p12_tx_valid_out) ring_data[12] <= p12_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[13]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[13] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[13] <= ring_data[12];
+  // source: <unknown>:545
+      if (p13_tx_valid_out) ring_data[13] <= p13_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[14]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[14] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[14] <= ring_data[13];
+  // source: <unknown>:556
+      if (p14_tx_valid_out) ring_data[14] <= p14_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[15]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[15] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[15] <= ring_data[14];
+  // source: <unknown>:567
+      if (p15_tx_valid_out) ring_data[15] <= p15_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[16]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[16] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[16] <= ring_data[15];
+  // source: <unknown>:578
+      if (p16_tx_valid_out) ring_data[16] <= p16_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[17]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[17] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[17] <= ring_data[16];
+  // source: <unknown>:589
+      if (p17_tx_valid_out) ring_data[17] <= p17_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[18]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[18] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[18] <= ring_data[17];
+  // source: <unknown>:600
+      if (p18_tx_valid_out) ring_data[18] <= p18_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[19]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[19] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[19] <= ring_data[18];
+  // source: <unknown>:611
+      if (p19_tx_valid_out) ring_data[19] <= p19_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[1]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[1] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[1] <= ring_data[0];
+  // source: <unknown>:413
+      if (p1_tx_valid_out) ring_data[1] <= p1_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[20]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[20] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[20] <= ring_data[19];
+  // source: <unknown>:622
+      if (p20_tx_valid_out) ring_data[20] <= p20_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[21]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[21] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[21] <= ring_data[20];
+  // source: <unknown>:633
+      if (p21_tx_valid_out) ring_data[21] <= p21_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[22]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[22] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[22] <= ring_data[21];
+  // source: <unknown>:644
+      if (p22_tx_valid_out) ring_data[22] <= p22_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[23]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[23] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[23] <= ring_data[22];
+  // source: <unknown>:655
+      if (p23_tx_valid_out) ring_data[23] <= p23_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[24]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[24] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[24] <= ring_data[23];
+  // source: <unknown>:666
+      if (p24_tx_valid_out) ring_data[24] <= p24_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[25]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[25] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[25] <= ring_data[24];
+  // source: <unknown>:677
+      if (p25_tx_valid_out) ring_data[25] <= p25_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[26]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[26] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[26] <= ring_data[25];
+  // source: <unknown>:688
+      if (p26_tx_valid_out) ring_data[26] <= p26_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[27]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[27] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[27] <= ring_data[26];
+  // source: <unknown>:699
+      if (p27_tx_valid_out) ring_data[27] <= p27_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[28]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[28] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[28] <= ring_data[27];
+  // source: <unknown>:710
+      if (p28_tx_valid_out) ring_data[28] <= p28_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[29]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[29] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[29] <= ring_data[28];
+  // source: <unknown>:721
+      if (p29_tx_valid_out) ring_data[29] <= p29_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[2]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[2] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[2] <= ring_data[1];
+  // source: <unknown>:424
+      if (p2_tx_valid_out) ring_data[2] <= p2_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[30]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[30] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[30] <= ring_data[29];
+  // source: <unknown>:732
+      if (p30_tx_valid_out) ring_data[30] <= p30_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[31]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[31] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[31] <= ring_data[30];
+  // source: <unknown>:743
+      if (p31_tx_valid_out) ring_data[31] <= p31_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[32]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[32] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[32] <= ring_data[31];
+  // source: <unknown>:754
+      if (p32_tx_valid_out) ring_data[32] <= p32_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[33]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[33] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[33] <= ring_data[32];
+  // source: <unknown>:765
+      if (p33_tx_valid_out) ring_data[33] <= p33_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[34]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[34] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[34] <= ring_data[33];
+  // source: <unknown>:776
+      if (p34_tx_valid_out) ring_data[34] <= p34_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[35]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[35] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[35] <= ring_data[34];
+  // source: <unknown>:787
+      if (p35_tx_valid_out) ring_data[35] <= p35_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[36]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[36] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[36] <= ring_data[35];
+  // source: <unknown>:798
+      if (p36_tx_valid_out) ring_data[36] <= p36_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[37]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[37] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[37] <= ring_data[36];
+  // source: <unknown>:809
+      if (p37_tx_valid_out) ring_data[37] <= p37_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[38]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[38] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[38] <= ring_data[37];
+  // source: <unknown>:820
+      if (p38_tx_valid_out) ring_data[38] <= p38_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[39]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[39] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[39] <= ring_data[38];
+  // source: <unknown>:831
+      if (p39_tx_valid_out) ring_data[39] <= p39_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[3]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[3] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[3] <= ring_data[2];
+  // source: <unknown>:435
+      if (p3_tx_valid_out) ring_data[3] <= p3_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[40]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[40] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[40] <= ring_data[39];
+  // source: <unknown>:842
+      if (p40_tx_valid_out) ring_data[40] <= p40_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[41]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[41] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[41] <= ring_data[40];
+  // source: <unknown>:853
+      if (p41_tx_valid_out) ring_data[41] <= p41_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[42]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[42] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[42] <= ring_data[41];
+  // source: <unknown>:864
+      if (p42_tx_valid_out) ring_data[42] <= p42_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[43]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[43] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[43] <= ring_data[42];
+  // source: <unknown>:875
+      if (p43_tx_valid_out) ring_data[43] <= p43_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[44]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[44] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[44] <= ring_data[43];
+  // source: <unknown>:886
+      if (p44_tx_valid_out) ring_data[44] <= p44_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[45]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[45] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[45] <= ring_data[44];
+  // source: <unknown>:897
+      if (p45_tx_valid_out) ring_data[45] <= p45_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[46]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[46] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[46] <= ring_data[45];
+  // source: <unknown>:908
+      if (p46_tx_valid_out) ring_data[46] <= p46_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[47]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[47] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[47] <= ring_data[46];
+  // source: <unknown>:919
+      if (p47_tx_valid_out) ring_data[47] <= p47_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[48]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[48] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[48] <= ring_data[47];
+  // source: <unknown>:930
+      if (p48_tx_valid_out) ring_data[48] <= p48_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[49]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[49] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[49] <= ring_data[48];
+  // source: <unknown>:941
+      if (p49_tx_valid_out) ring_data[49] <= p49_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[4]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[4] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[4] <= ring_data[3];
+  // source: <unknown>:446
+      if (p4_tx_valid_out) ring_data[4] <= p4_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[50]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[50] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[50] <= ring_data[49];
+  // source: <unknown>:952
+      if (p50_tx_valid_out) ring_data[50] <= p50_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[51]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[51] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[51] <= ring_data[50];
+  // source: <unknown>:963
+      if (p51_tx_valid_out) ring_data[51] <= p51_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[52]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[52] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[52] <= ring_data[51];
+  // source: <unknown>:974
+      if (p52_tx_valid_out) ring_data[52] <= p52_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[53]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[53] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[53] <= ring_data[52];
+  // source: <unknown>:985
+      if (p53_tx_valid_out) ring_data[53] <= p53_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[54]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[54] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[54] <= ring_data[53];
+  // source: <unknown>:996
+      if (p54_tx_valid_out) ring_data[54] <= p54_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[55]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[55] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[55] <= ring_data[54];
+  // source: <unknown>:1007
+      if (p55_tx_valid_out) ring_data[55] <= p55_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[56]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[56] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[56] <= ring_data[55];
+  // source: <unknown>:1018
+      if (p56_tx_valid_out) ring_data[56] <= p56_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[57]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[57] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[57] <= ring_data[56];
+  // source: <unknown>:1029
+      if (p57_tx_valid_out) ring_data[57] <= p57_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[58]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[58] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[58] <= ring_data[57];
+  // source: <unknown>:1040
+      if (p58_tx_valid_out) ring_data[58] <= p58_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[59]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[59] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[59] <= ring_data[58];
+  // source: <unknown>:1051
+      if (p59_tx_valid_out) ring_data[59] <= p59_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[5]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[5] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[5] <= ring_data[4];
+  // source: <unknown>:457
+      if (p5_tx_valid_out) ring_data[5] <= p5_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[60]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[60] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[60] <= ring_data[59];
+  // source: <unknown>:1062
+      if (p60_tx_valid_out) ring_data[60] <= p60_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[61]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[61] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[61] <= ring_data[60];
+  // source: <unknown>:1073
+      if (p61_tx_valid_out) ring_data[61] <= p61_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[62]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[62] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[62] <= ring_data[61];
+  // source: <unknown>:1084
+      if (p62_tx_valid_out) ring_data[62] <= p62_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[63]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[63] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[63] <= ring_data[62];
+  // source: <unknown>:1095
+      if (p63_tx_valid_out) ring_data[63] <= p63_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[6]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[6] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[6] <= ring_data[5];
+  // source: <unknown>:468
+      if (p6_tx_valid_out) ring_data[6] <= p6_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[7]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[7] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[7] <= ring_data[6];
+  // source: <unknown>:479
+      if (p7_tx_valid_out) ring_data[7] <= p7_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[8]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[8] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[8] <= ring_data[7];
+  // source: <unknown>:490
+      if (p8_tx_valid_out) ring_data[8] <= p8_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_data[9]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_data[9] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_data[9] <= ring_data[8];
+  // source: <unknown>:501
+      if (p9_tx_valid_out) ring_data[9] <= p9_tx_data;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[0]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[0] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[0] <= ring_valid[63];
+  // source: <unknown>:402
+      if (p0_tx_valid_out) ring_valid[0] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[10]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[10] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[10] <= ring_valid[9];
+  // source: <unknown>:512
+      if (p10_tx_valid_out) ring_valid[10] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[11]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[11] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[11] <= ring_valid[10];
+  // source: <unknown>:523
+      if (p11_tx_valid_out) ring_valid[11] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[12]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[12] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[12] <= ring_valid[11];
+  // source: <unknown>:534
+      if (p12_tx_valid_out) ring_valid[12] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[13]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[13] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[13] <= ring_valid[12];
+  // source: <unknown>:545
+      if (p13_tx_valid_out) ring_valid[13] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[14]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[14] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[14] <= ring_valid[13];
+  // source: <unknown>:556
+      if (p14_tx_valid_out) ring_valid[14] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[15]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[15] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[15] <= ring_valid[14];
+  // source: <unknown>:567
+      if (p15_tx_valid_out) ring_valid[15] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[16]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[16] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[16] <= ring_valid[15];
+  // source: <unknown>:578
+      if (p16_tx_valid_out) ring_valid[16] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[17]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[17] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[17] <= ring_valid[16];
+  // source: <unknown>:589
+      if (p17_tx_valid_out) ring_valid[17] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[18]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[18] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[18] <= ring_valid[17];
+  // source: <unknown>:600
+      if (p18_tx_valid_out) ring_valid[18] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[19]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[19] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[19] <= ring_valid[18];
+  // source: <unknown>:611
+      if (p19_tx_valid_out) ring_valid[19] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[1]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[1] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[1] <= ring_valid[0];
+  // source: <unknown>:413
+      if (p1_tx_valid_out) ring_valid[1] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[20]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[20] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[20] <= ring_valid[19];
+  // source: <unknown>:622
+      if (p20_tx_valid_out) ring_valid[20] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[21]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[21] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[21] <= ring_valid[20];
+  // source: <unknown>:633
+      if (p21_tx_valid_out) ring_valid[21] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[22]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[22] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[22] <= ring_valid[21];
+  // source: <unknown>:644
+      if (p22_tx_valid_out) ring_valid[22] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[23]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[23] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[23] <= ring_valid[22];
+  // source: <unknown>:655
+      if (p23_tx_valid_out) ring_valid[23] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[24]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[24] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[24] <= ring_valid[23];
+  // source: <unknown>:666
+      if (p24_tx_valid_out) ring_valid[24] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[25]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[25] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[25] <= ring_valid[24];
+  // source: <unknown>:677
+      if (p25_tx_valid_out) ring_valid[25] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[26]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[26] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[26] <= ring_valid[25];
+  // source: <unknown>:688
+      if (p26_tx_valid_out) ring_valid[26] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[27]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[27] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[27] <= ring_valid[26];
+  // source: <unknown>:699
+      if (p27_tx_valid_out) ring_valid[27] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[28]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[28] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[28] <= ring_valid[27];
+  // source: <unknown>:710
+      if (p28_tx_valid_out) ring_valid[28] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[29]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[29] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[29] <= ring_valid[28];
+  // source: <unknown>:721
+      if (p29_tx_valid_out) ring_valid[29] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[2]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[2] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[2] <= ring_valid[1];
+  // source: <unknown>:424
+      if (p2_tx_valid_out) ring_valid[2] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[30]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[30] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[30] <= ring_valid[29];
+  // source: <unknown>:732
+      if (p30_tx_valid_out) ring_valid[30] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[31]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[31] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[31] <= ring_valid[30];
+  // source: <unknown>:743
+      if (p31_tx_valid_out) ring_valid[31] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[32]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[32] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[32] <= ring_valid[31];
+  // source: <unknown>:754
+      if (p32_tx_valid_out) ring_valid[32] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[33]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[33] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[33] <= ring_valid[32];
+  // source: <unknown>:765
+      if (p33_tx_valid_out) ring_valid[33] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[34]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[34] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[34] <= ring_valid[33];
+  // source: <unknown>:776
+      if (p34_tx_valid_out) ring_valid[34] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[35]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[35] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[35] <= ring_valid[34];
+  // source: <unknown>:787
+      if (p35_tx_valid_out) ring_valid[35] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[36]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[36] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[36] <= ring_valid[35];
+  // source: <unknown>:798
+      if (p36_tx_valid_out) ring_valid[36] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[37]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[37] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[37] <= ring_valid[36];
+  // source: <unknown>:809
+      if (p37_tx_valid_out) ring_valid[37] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[38]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[38] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[38] <= ring_valid[37];
+  // source: <unknown>:820
+      if (p38_tx_valid_out) ring_valid[38] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[39]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[39] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[39] <= ring_valid[38];
+  // source: <unknown>:831
+      if (p39_tx_valid_out) ring_valid[39] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[3]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[3] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[3] <= ring_valid[2];
+  // source: <unknown>:435
+      if (p3_tx_valid_out) ring_valid[3] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[40]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[40] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[40] <= ring_valid[39];
+  // source: <unknown>:842
+      if (p40_tx_valid_out) ring_valid[40] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[41]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[41] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[41] <= ring_valid[40];
+  // source: <unknown>:853
+      if (p41_tx_valid_out) ring_valid[41] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[42]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[42] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[42] <= ring_valid[41];
+  // source: <unknown>:864
+      if (p42_tx_valid_out) ring_valid[42] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[43]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[43] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[43] <= ring_valid[42];
+  // source: <unknown>:875
+      if (p43_tx_valid_out) ring_valid[43] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[44]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[44] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[44] <= ring_valid[43];
+  // source: <unknown>:886
+      if (p44_tx_valid_out) ring_valid[44] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[45]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[45] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[45] <= ring_valid[44];
+  // source: <unknown>:897
+      if (p45_tx_valid_out) ring_valid[45] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[46]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[46] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[46] <= ring_valid[45];
+  // source: <unknown>:908
+      if (p46_tx_valid_out) ring_valid[46] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[47]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[47] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[47] <= ring_valid[46];
+  // source: <unknown>:919
+      if (p47_tx_valid_out) ring_valid[47] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[48]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[48] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[48] <= ring_valid[47];
+  // source: <unknown>:930
+      if (p48_tx_valid_out) ring_valid[48] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[49]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[49] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[49] <= ring_valid[48];
+  // source: <unknown>:941
+      if (p49_tx_valid_out) ring_valid[49] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[4]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[4] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[4] <= ring_valid[3];
+  // source: <unknown>:446
+      if (p4_tx_valid_out) ring_valid[4] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[50]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[50] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[50] <= ring_valid[49];
+  // source: <unknown>:952
+      if (p50_tx_valid_out) ring_valid[50] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[51]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[51] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[51] <= ring_valid[50];
+  // source: <unknown>:963
+      if (p51_tx_valid_out) ring_valid[51] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[52]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[52] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[52] <= ring_valid[51];
+  // source: <unknown>:974
+      if (p52_tx_valid_out) ring_valid[52] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[53]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[53] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[53] <= ring_valid[52];
+  // source: <unknown>:985
+      if (p53_tx_valid_out) ring_valid[53] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[54]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[54] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[54] <= ring_valid[53];
+  // source: <unknown>:996
+      if (p54_tx_valid_out) ring_valid[54] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[55]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[55] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[55] <= ring_valid[54];
+  // source: <unknown>:1007
+      if (p55_tx_valid_out) ring_valid[55] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[56]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[56] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[56] <= ring_valid[55];
+  // source: <unknown>:1018
+      if (p56_tx_valid_out) ring_valid[56] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[57]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[57] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[57] <= ring_valid[56];
+  // source: <unknown>:1029
+      if (p57_tx_valid_out) ring_valid[57] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[58]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[58] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[58] <= ring_valid[57];
+  // source: <unknown>:1040
+      if (p58_tx_valid_out) ring_valid[58] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[59]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[59] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[59] <= ring_valid[58];
+  // source: <unknown>:1051
+      if (p59_tx_valid_out) ring_valid[59] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[5]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[5] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[5] <= ring_valid[4];
+  // source: <unknown>:457
+      if (p5_tx_valid_out) ring_valid[5] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[60]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[60] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[60] <= ring_valid[59];
+  // source: <unknown>:1062
+      if (p60_tx_valid_out) ring_valid[60] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[61]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[61] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[61] <= ring_valid[60];
+  // source: <unknown>:1073
+      if (p61_tx_valid_out) ring_valid[61] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[62]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[62] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[62] <= ring_valid[61];
+  // source: <unknown>:1084
+      if (p62_tx_valid_out) ring_valid[62] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[63]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[63] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[63] <= ring_valid[62];
+  // source: <unknown>:1095
+      if (p63_tx_valid_out) ring_valid[63] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[6]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[6] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[6] <= ring_valid[5];
+  // source: <unknown>:468
+      if (p6_tx_valid_out) ring_valid[6] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[7]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[7] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[7] <= ring_valid[6];
+  // source: <unknown>:479
+      if (p7_tx_valid_out) ring_valid[7] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[8]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[8] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[8] <= ring_valid[7];
+  // source: <unknown>:490
+      if (p8_tx_valid_out) ring_valid[8] <= 1'b1;
+    end
+  end
+
+  // Unified Reflex Block for: ring_valid[9]
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ring_valid[9] <= '0;
+    end else begin
+  // source: <unknown>:268
+      if (always_out) ring_valid[9] <= ring_valid[8];
+  // source: <unknown>:501
+      if (p9_tx_valid_out) ring_valid[9] <= 1'b1;
+    end
+  end
 
 endmodule

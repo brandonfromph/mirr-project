@@ -45,7 +45,10 @@ const MAX_DFS_STACK: usize = 4096;
 /// Run all five totality analyses on a parsed MIRR module.
 ///
 /// Bounded: each sub-analysis has its own MAX_* iteration bounds.
-pub fn run_totality_check(module: &Module, target: &crate::emit::rspu_isa::TargetSpec) -> TotalityResult {
+pub fn run_totality_check(
+    module: &Module,
+    target: &crate::emit::rspu_isa::TargetSpec,
+) -> TotalityResult {
     let resource_bound = check_resource_bounds(module, target);
     let output_completeness = check_output_completeness(module);
     let guard_coverage = check_guard_coverage(module);

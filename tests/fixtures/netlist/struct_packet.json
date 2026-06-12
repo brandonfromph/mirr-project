@@ -1,21 +1,41 @@
 {
   "ir_version": "2.0",
-  "guards": [],
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "process",
+        "input_signal": "valid",
+        "output_signal": "process_out",
+        "stages": [
+          "process_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "valid"
+        }
+      }
+    }
+  ],
   "signals": [
     {
-      "name": "packet_valid",
-      "ty": {
-        "Unsigned": 1
-      },
-      "kind": "LogicGate"
+      "name": "process_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "process_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
     }
   ],
   "statistics": {
-    "shift_registers_used": 0,
+    "shift_registers_used": 1,
     "counters_used": 0,
     "logic_gates_used": 1,
-    "max_delay_cycles": 0,
-    "total_signals": 1,
-    "compilation_time_us": 0
+    "max_delay_cycles": 1,
+    "total_signals": 2,
+    "compilation_time_us": null
   }
 }

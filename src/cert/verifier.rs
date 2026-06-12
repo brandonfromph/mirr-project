@@ -6,9 +6,7 @@
 #![forbid(unsafe_code)]
 
 use super::ProofCertificate;
-use crate::emit::rspu_isa::{
-    RspuProgram, TargetSpec, MAX_GUARDS, MAX_INSTRUCTIONS,
-};
+use crate::emit::rspu_isa::{RspuProgram, TargetSpec, MAX_GUARDS, MAX_INSTRUCTIONS};
 use crate::error::MirrError;
 use crate::error_codes::{mirrcode, ErrorCode};
 

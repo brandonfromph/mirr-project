@@ -223,7 +223,6 @@ pub enum WidthConstraintComponent {
     SumAll { elements: Vec<EntityId> },
 }
 
-
 /// The hardware implementation strategy chosen during temporal synthesis.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TemporalStrategy {

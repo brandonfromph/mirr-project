@@ -81,3 +81,46 @@ impl Default for TemporalGuardCompiler {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::expr::Expr;
+    use crate::ast::program::Guard;
+    use crate::ast::types::LiteralValue;
+
+    #[test]
+    fn test_temporal_guard_compiler() {
+        let mut compiler = TemporalGuardCompiler;
+        let guard = Guard {
+            name: "g".to_string(),
+            condition: Expr::Literal(LiteralValue::Bool(true)),
+            cycles: 5,
+            template_cycles: None,
+            origin: None,
+            span: None,
+        };
+        let module = Module {
+            name: "test".to_string(),
+            signals: vec![],
+            guards: vec![guard],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+            pattern_origins: vec![],
+            span: None,
+        };
+
+        let netlist = compiler.compile_temporal_guards(&module).expect("compile failed");
+
+        // Test format emitters
+        let json = compiler.emit_netlist_json(&netlist).expect("json emit failed");
+        assert!(json.contains("ShiftRegister"));
+
+        let dot = compiler.emit_netlist_dot(&netlist).expect("dot emit failed");
+        assert!(dot.contains("digraph"));
+
+        let verilog = compiler.emit_netlist_verilog(&netlist).expect("verilog emit failed");
+        assert!(verilog.contains("module"));
+    }
+}

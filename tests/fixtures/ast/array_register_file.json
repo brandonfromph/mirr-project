@@ -1,0 +1,114 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "array_register_file",
+    "signals": [
+      {
+        "name": "reg_data",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "read_addr",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "write_addr",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "write_data",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "write_en",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "read_data",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "read_cycle",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "write_en"
+            }
+          }
+        },
+        "cycles": 1
+      },
+      {
+        "name": "write_cycle",
+        "condition": {
+          "Signal": "write_en"
+        },
+        "cycles": 1
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "read",
+        "guard_names": [
+          "read_cycle"
+        ],
+        "assignments": [
+          {
+            "target": "read_data",
+            "value": {
+              "Signal": "reg_data"
+            }
+          }
+        ]
+      },
+      {
+        "name": "write",
+        "guard_names": [
+          "write_cycle"
+        ],
+        "assignments": [
+          {
+            "target": "reg_data",
+            "value": {
+              "Signal": "write_data"
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

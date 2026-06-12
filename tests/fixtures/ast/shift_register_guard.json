@@ -1,0 +1,52 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "short_delay_monitor",
+    "signals": [
+      {
+        "name": "sensor_active",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "alert_lamp",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "brief_activation",
+        "condition": {
+          "Signal": "sensor_active"
+        },
+        "cycles": 8
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "activate_alert",
+        "guard_names": [
+          "brief_activation"
+        ],
+        "assignments": [
+          {
+            "target": "alert_lamp",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

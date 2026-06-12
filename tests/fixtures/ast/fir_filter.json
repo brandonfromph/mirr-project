@@ -1,0 +1,148 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "fir_filter",
+    "signals": [
+      {
+        "name": "coeff_0",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "coeff_1",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "coeff_2",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "coeff_3",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "sample_in",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "sample_valid",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "filter_out",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "tap_0",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "new_sample",
+        "condition": {
+          "Signal": "sample_valid"
+        },
+        "cycles": 1
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "compute_tap0",
+        "guard_names": [
+          "new_sample"
+        ],
+        "assignments": [
+          {
+            "target": "tap_0",
+            "value": {
+              "Binary": {
+                "op": "Mul",
+                "left": {
+                  "Signal": "sample_in"
+                },
+                "right": {
+                  "Signal": "coeff_0"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "output_sum",
+        "guard_names": [
+          "new_sample"
+        ],
+        "assignments": [
+          {
+            "target": "filter_out",
+            "value": {
+              "Signal": "tap_0"
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "output_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "filter_out"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 4294967295
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "patient_monitor",
+    "signals": [
+      {
+        "name": "heart_rate",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "blood_pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "alarm_active",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "pump_override",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "status_flag",
+        "kind": "Internal",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "bradycardia",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "heart_rate"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 60
+              }
+            }
+          }
+        },
+        "cycles": 500
+      },
+      {
+        "name": "hypotension",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "blood_pressure"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 90
+              }
+            }
+          }
+        },
+        "cycles": 12
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "cardiac_alarm",
+        "guard_names": [
+          "bradycardia"
+        ],
+        "assignments": [
+          {
+            "target": "alarm_active",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "emergency_override",
+        "guard_names": [
+          "bradycardia",
+          "hypotension"
+        ],
+        "assignments": [
+          {
+            "target": "pump_override",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "bradycardia",
+        "input_signal": "heart_rate",
+        "output_signal": "bradycardia_out",
+        "counter_signal": "bradycardia_counter",
+        "comparator_signal": "bradycardia_cmp",
+        "target_count": 500,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "heart_rate",
+            "op": "Lt",
+            "value": {
+              "Integer": 60
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "hypotension",
+        "input_signal": "blood_pressure",
+        "output_signal": "hypotension_out",
+        "stages": [
+          "hypotension_sr_0",
+          "hypotension_sr_1",
+          "hypotension_sr_2",
+          "hypotension_sr_3",
+          "hypotension_sr_4",
+          "hypotension_sr_5",
+          "hypotension_sr_6",
+          "hypotension_sr_7",
+          "hypotension_sr_8",
+          "hypotension_sr_9",
+          "hypotension_sr_10",
+          "hypotension_sr_11"
+        ],
+        "delay_cycles": 12,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "blood_pressure",
+            "op": "Lt",
+            "value": {
+              "Integer": 90
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "bradycardia_counter",
+      "ty": {
+        "Unsigned": 10
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "bradycardia_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "bradycardia_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_10",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_sr_11",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hypotension_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 12,
+    "counters_used": 1,
+    "logic_gates_used": 2,
+    "max_delay_cycles": 500,
+    "total_signals": 16,
+    "compilation_time_us": null
+  }
+}

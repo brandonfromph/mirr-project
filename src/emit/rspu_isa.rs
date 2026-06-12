@@ -81,8 +81,8 @@ impl TargetSpec {
 // Resource limits (NASA P10 bounded-resource model)
 // ---------------------------------------------------------------------------
 
-/// Maximum allocatable registers (Hardware limit for 16-bit RegId).
-pub const MAX_REGISTERS: usize = 65536;
+/// Maximum allocatable registers (Hardware limit for 10-bit RegId).
+pub const MAX_REGISTERS: usize = 1024;
 
 /// Maximum temporal guard hardware units.
 ///

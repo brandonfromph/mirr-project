@@ -1,0 +1,262 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "wheel_lock_fl",
+        "input_signal": "wheel_speed_fl",
+        "output_signal": "wheel_lock_fl_out",
+        "stages": [
+          "wheel_lock_fl_sr_0",
+          "wheel_lock_fl_sr_1",
+          "wheel_lock_fl_sr_2"
+        ],
+        "delay_cycles": 3,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "wheel_speed_fl",
+            "op": "Lt",
+            "value": {
+              "Integer": 10
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "wheel_lock_fr",
+        "input_signal": "wheel_speed_fr",
+        "output_signal": "wheel_lock_fr_out",
+        "stages": [
+          "wheel_lock_fr_sr_0",
+          "wheel_lock_fr_sr_1",
+          "wheel_lock_fr_sr_2"
+        ],
+        "delay_cycles": 3,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "wheel_speed_fr",
+            "op": "Lt",
+            "value": {
+              "Integer": 10
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "overspeed",
+        "input_signal": "vehicle_speed",
+        "output_signal": "overspeed_out",
+        "stages": [
+          "overspeed_sr_0",
+          "overspeed_sr_1",
+          "overspeed_sr_2",
+          "overspeed_sr_3",
+          "overspeed_sr_4"
+        ],
+        "delay_cycles": 5,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "vehicle_speed",
+            "op": "Gt",
+            "value": {
+              "Integer": 200
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "low_pressure",
+        "input_signal": "brake_pressure",
+        "output_signal": "low_pressure_out",
+        "stages": [
+          "low_pressure_sr_0",
+          "low_pressure_sr_1",
+          "low_pressure_sr_2",
+          "low_pressure_sr_3",
+          "low_pressure_sr_4",
+          "low_pressure_sr_5",
+          "low_pressure_sr_6",
+          "low_pressure_sr_7",
+          "low_pressure_sr_8",
+          "low_pressure_sr_9"
+        ],
+        "delay_cycles": 10,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "brake_pressure",
+            "op": "Lt",
+            "value": {
+              "Integer": 20
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "wheel_lock_fl_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "wheel_lock_fl_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "wheel_lock_fl_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "wheel_lock_fl_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "wheel_lock_fr_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "wheel_lock_fr_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "wheel_lock_fr_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "wheel_lock_fr_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "overspeed_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "overspeed_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "overspeed_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "overspeed_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "overspeed_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "overspeed_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_pressure_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 21,
+    "counters_used": 0,
+    "logic_gates_used": 4,
+    "max_delay_cycles": 10,
+    "total_signals": 25,
+    "compilation_time_us": null
+  }
+}

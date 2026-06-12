@@ -3,9 +3,29 @@
   "module": {
     "name": "neonatal_respirator",
     "signals": [
-      { "name": "respirator_enable", "kind": "Input",  "ty": { "core": "Bool" } },
-      { "name": "airway_pressure",   "kind": "Input",  "ty": { "core": { "Unsigned": 16 } } },
-      { "name": "clamp_valve",       "kind": "Output", "ty": { "core": "Bool" } }
+      {
+        "name": "respirator_enable",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "airway_pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "clamp_valve",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
     ],
     "guards": [
       {
@@ -13,8 +33,14 @@
         "condition": {
           "Binary": {
             "op": "Lt",
-            "left":  { "Signal": "airway_pressure" },
-            "right": { "Literal": { "Integer": 50 } }
+            "left": {
+              "Signal": "airway_pressure"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 50
+              }
+            }
           }
         },
         "cycles": 1000
@@ -23,14 +49,23 @@
     "reflexes": [
       {
         "name": "emergency_clamp",
-        "guard_names": [ "sustained_pressure_drop" ],
+        "guard_names": [
+          "sustained_pressure_drop"
+        ],
         "assignments": [
           {
             "target": "clamp_valve",
-            "value": { "Literal": { "Bool": true } }
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
           }
         ]
       }
-    ]
+    ],
+    "properties": [],
+    "pattern_calls": [],
+    "pattern_origins": []
   }
 }

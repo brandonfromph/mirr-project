@@ -1,0 +1,172 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "pressure_monitor",
+    "signals": [
+      {
+        "name": "airway_pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "clamp_valve",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "pressure_low",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "airway_pressure"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 50
+              }
+            }
+          }
+        },
+        "cycles": 3
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "engage_clamp",
+        "guard_names": [
+          "pressure_low"
+        ],
+        "assignments": [
+          {
+            "target": "clamp_valve",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "pressure_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Gt",
+              "left": {
+                "Signal": "airway_pressure"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 10
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_clamp",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Signal": "clamp_valve"
+              },
+              "right": {
+                "Binary": {
+                  "op": "Gt",
+                  "left": {
+                    "Signal": "airway_pressure"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 200
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "low_triggers_clamp",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "airway_pressure"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 50
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "clamp_valve"
+            }
+          }
+        }
+      },
+      {
+        "name": "clamp_reachable",
+        "directive": "Cover",
+        "formula": {
+          "EventuallyWithin": {
+            "expr": {
+              "Signal": "clamp_valve"
+            },
+            "cycles": 100
+          }
+        }
+      },
+      {
+        "name": "clamp_follows_drop",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysFollowedBy": {
+            "trigger": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "airway_pressure"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 50
+                  }
+                }
+              }
+            },
+            "response": {
+              "Signal": "clamp_valve"
+            },
+            "delay_cycles": 5
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

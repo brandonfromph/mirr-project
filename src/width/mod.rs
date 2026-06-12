@@ -9,10 +9,12 @@
 
 pub mod constraint;
 pub mod display;
+#[allow(dead_code, deprecated)]
 pub mod flatten;
 pub mod graph;
 pub mod scc;
 pub mod scc_solver;
+#[allow(dead_code, deprecated)]
 pub mod solver;
 pub mod types;
 pub mod verify;
@@ -55,21 +57,21 @@ impl WidthInferenceResult {
 /// Pipeline: flatten -> generate constraints -> solve -> reconstruct.
 /// All steps are iterative with bounded loops.
 pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult {
-    let signal_widths = signal_width_map(signals);
-    infer_widths_with_signal_widths(expr, signals, &signal_widths)
+    let signal_info = signal_info_map(signals);
+    infer_widths_with_signal_info(expr, signals, &signal_info)
 }
 
-fn infer_widths_with_signal_widths<K>(
+fn infer_widths_with_signal_info<K>(
     expr: &Expr,
-    signals: &[SignalDecl],
-    signal_widths: &HashMap<K, u32>,
+    _signals: &[SignalDecl],
+    signal_info: &HashMap<K, (u32, bool)>,
 ) -> WidthInferenceResult
 where
     K: Eq + Hash + Borrow<str>,
 {
     // ECS Phase 2 & 3: Use Registry instead of FlatNode array
     let mut registry = crate::ecs::registry::Registry::new();
-    
+
     // Step 1: Lower expression to ECS
     let _root_id = match registry.ingest_expr(expr) {
         Ok(id) => id,
@@ -97,48 +99,43 @@ where
     let mut to_update = Vec::new();
     for (i, name_opt) in registry.names.iter().enumerate() {
         if let Some(name) = name_opt {
-            if let Some(&w) = signal_widths.get(name.0.as_str()) {
-                to_update.push((i, w));
+            if let Some(&(w, is_signed)) = signal_info.get(name.0.as_str()) {
+                to_update.push((i, w, is_signed));
             }
         }
     }
-    for (i, w) in to_update {
-        registry.set_type(crate::ecs::components::EntityId(i as u32), crate::ecs::components::TypeComponent::signal(
-            crate::ast::types::ExtendedType::new(
-                crate::ast::types::SignalType::Unsigned(w), 
-                Default::default()
-            )
-        ));
+    for (i, w, is_signed) in to_update {
+        let ty = if is_signed {
+            crate::ast::types::SignalType::Signed(w)
+        } else {
+            crate::ast::types::SignalType::Unsigned(w)
+        };
+        registry.set_type(
+            crate::ecs::components::EntityId(i as u32),
+            crate::ecs::components::TypeComponent::signal(crate::ast::types::ExtendedType::new(
+                ty,
+                Default::default(),
+            )),
+        );
     }
 
-    let node_count = registry.names.len();
+    let node_count = registry.active_entities();
 
     // Step 2: Generate constraints in ECS
-    let mut all_diags = crate::width::constraint::generate_ecs_constraints(&mut registry, signal_widths);
+    let mut all_diags =
+        crate::width::constraint::generate_ecs_constraints(&mut registry, signal_info);
 
     // Step 3: Run ECS Solver
-    let (solve_diags, ecs_rounds) = crate::ecs::systems::expression_width_inference_system(&mut registry);
+    let (solve_diags, ecs_rounds) =
+        crate::ecs::systems::expression_width_inference_system(&mut registry);
     all_diags.extend(solve_diags);
-    
-    // Step 4: Reconstruct AST WidthExpr
-    let mut widths = vec![crate::width::types::Width(0); node_count];
-    for i in 0..node_count {
-        if let Some(tc) = &registry.types[i] {
-            widths[i] = crate::width::types::Width(tc.0.core.width());
-        }
-    }
-    
-    // Fallback temporarily to FlatNode reconstruction until fully migrated
-    let flat_nodes = crate::width::flatten::flatten_expr(expr, signals).unwrap_or_default();
-    
-    let solve_result = crate::width::solver::solve(&flat_nodes, &crate::width::constraint::generate_constraints_with_index(&flat_nodes, signal_widths).constraints);
-    all_diags.extend(solve_result.diagnostics);
-    
-    let width_expr = crate::width::flatten::reconstruct_width_expr(&flat_nodes, &solve_result.widths);
+
+    // Step 4: Reconstruct AST WidthExpr from ECS
+    let width_expr = ecs_reconstruct_width_expr(&registry, _root_id);
 
     let stats = WidthStats {
         nodes_analyzed: node_count,
-        propagation_rounds: solve_result.rounds + ecs_rounds,
+        propagation_rounds: ecs_rounds,
         diagnostics_count: all_diags.len(),
         scc_count: 0,
         expansive_count: 0,
@@ -146,6 +143,73 @@ where
     };
 
     WidthInferenceResult { expr: width_expr, diagnostics: all_diags, stats }
+}
+
+fn ecs_reconstruct_width_expr(
+    registry: &crate::ecs::registry::Registry,
+    id: crate::ecs::components::EntityId,
+) -> Option<crate::width::types::WidthExpr> {
+    let w = registry.types[id.0 as usize]
+        .as_ref()
+        .map(|tc| crate::width::types::Width(tc.0.core.width()))
+        .unwrap_or(crate::width::types::Width(0));
+
+    if let Some(lit) = &registry.literals[id.0 as usize] {
+        let value = match lit.0 {
+            crate::ast::types::LiteralValue::Bool(b) => {
+                if b {
+                    1
+                } else {
+                    0
+                }
+            }
+            crate::ast::types::LiteralValue::Integer(v) => v,
+        };
+        return Some(crate::width::types::WidthExpr::Literal { value, width: w });
+    }
+    if let Some(sig) = &registry.signal_refs[id.0 as usize] {
+        if let Some(name) = &registry.names[sig.0 .0 as usize] {
+            return Some(crate::width::types::WidthExpr::Signal { name: name.0.clone(), width: w });
+        }
+    }
+    if let Some(psig) = &registry.pending_signal_refs[id.0 as usize] {
+        return Some(crate::width::types::WidthExpr::Signal { name: psig.0.clone(), width: w });
+    }
+    if let Some(un) = &registry.unary_ops[id.0 as usize] {
+        let operand = ecs_reconstruct_width_expr(registry, un.operand)?;
+        return Some(crate::width::types::WidthExpr::Unary {
+            op: un.op,
+            operand: Box::new(operand),
+            width: w,
+        });
+    }
+    if let Some(bin) = &registry.binary_ops[id.0 as usize] {
+        let left = ecs_reconstruct_width_expr(registry, bin.left)?;
+        let right = ecs_reconstruct_width_expr(registry, bin.right)?;
+        return Some(crate::width::types::WidthExpr::Binary {
+            op: bin.op,
+            left: Box::new(left),
+            right: Box::new(right),
+            width: w,
+        });
+    }
+    if let Some(prev) = &registry.prev_ops[id.0 as usize] {
+        if let Some(name) = &registry.names[prev.signal.0 as usize] {
+            return Some(crate::width::types::WidthExpr::Prev {
+                signal: name.0.clone(),
+                delay: prev.delay,
+                width: w,
+            });
+        } else if let Some(psig) = &registry.pending_signal_refs[prev.signal.0 as usize] {
+            return Some(crate::width::types::WidthExpr::Prev {
+                signal: psig.0.clone(),
+                delay: prev.delay,
+                width: w,
+            });
+        }
+    }
+    // Fallback for arrays/structs/etc
+    Some(crate::width::types::WidthExpr::Literal { value: 0, width: w })
 }
 
 // ---------------------------------------------------------------------------
@@ -170,7 +234,7 @@ pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<
 
     if let (Some(we), Some((tw, ts))) = (&result.expr, target_info) {
         let expr_w = we.width();
-        let trunc_diags = solver::check_truncation(&assignment.target, tw, expr_w, ts);
+        let trunc_diags = check_truncation(&assignment.target, tw, expr_w, ts);
         diags.extend(trunc_diags);
     }
 
@@ -233,7 +297,6 @@ impl ProgramWidthResult {
 /// Bounded: iterates over guards + reflexes (finite, from parsed program).
 pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthResult {
     let signals = &program.module.signals;
-    let signal_widths = signal_width_map(signals);
     let signal_info = signal_info_map(signals);
     let mut guard_results: Vec<(String, WidthInferenceResult)> = Vec::new();
     let mut assignment_results: Vec<(String, Vec<WidthDiag>)> = Vec::new();
@@ -248,7 +311,7 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
 
     // Infer widths for guard conditions.
     for g in &program.module.guards {
-        let result = infer_widths_with_signal_widths(&g.condition, signals, &signal_widths);
+        let result = infer_widths_with_signal_info(&g.condition, signals, &signal_info);
         total_stats.nodes_analyzed += result.stats.nodes_analyzed;
         total_stats.propagation_rounds += result.stats.propagation_rounds;
         total_stats.diagnostics_count += result.stats.diagnostics_count;
@@ -260,7 +323,7 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
     // propagation_rounds are accumulated alongside diagnostics_count.
     for r in &program.module.reflexes {
         for a in &r.assignments {
-            let rhs_result = infer_widths_with_signal_widths(&a.value, signals, &signal_widths);
+            let rhs_result = infer_widths_with_signal_info(&a.value, signals, &signal_info);
             total_stats.nodes_analyzed += rhs_result.stats.nodes_analyzed;
             total_stats.propagation_rounds += rhs_result.stats.propagation_rounds;
 
@@ -269,7 +332,7 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
             // Perform the truncation check inline.
             let target_info = signal_info.get(a.target.as_str()).copied();
             if let (Some(we), Some((tw, ts))) = (&rhs_result.expr, target_info) {
-                diags.extend(solver::check_truncation(&a.target, tw, we.width(), ts));
+                diags.extend(check_truncation(&a.target, tw, we.width(), ts));
             }
 
             total_stats.diagnostics_count += diags.len();
@@ -425,10 +488,6 @@ pub fn infer_program_widths_with_scc(
     }
 }
 
-fn signal_width_map(signals: &[SignalDecl]) -> HashMap<String, u32> {
-    signals.iter().map(|signal| (signal.name.clone(), signal.ty.signal_type().width())).collect()
-}
-
 fn signal_info_map(signals: &[SignalDecl]) -> HashMap<&str, (u32, bool)> {
     signals
         .iter()
@@ -437,4 +496,212 @@ fn signal_info_map(signals: &[SignalDecl]) -> HashMap<&str, (u32, bool)> {
             (signal.name.as_str(), ty.width_and_signed())
         })
         .collect()
+}
+
+pub fn check_truncation(
+    target_name: &str,
+    target_width: u32,
+    expr_width: crate::width::types::Width,
+    target_signed: bool,
+) -> Vec<crate::width::types::WidthDiag> {
+    let mut diags = Vec::new();
+    if expr_width.0 > target_width {
+        let category = if target_signed { "signed" } else { "unsigned" };
+        diags.push(
+            crate::width::types::WidthDiag::error(format!(
+                "{} assignment to '{}' truncates {} {} bits to {} bits",
+                crate::error_codes::ec(505),
+                target_name,
+                category,
+                expr_width.0,
+                target_width
+            ))
+            .with_code("E505")
+            .with_signal(target_name),
+        );
+    }
+    diags
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::expr::Expr;
+    use crate::ast::program::{MirrProgram, Module};
+    use crate::ast::types::{SignalKind, SignalType};
+    // Unused width types removed
+    use std::collections::HashSet;
+
+    fn make_signal(name: &str, width: u32, is_signed: bool) -> SignalDecl {
+        SignalDecl {
+            name: name.to_string(),
+            kind: SignalKind::Internal,
+            ty: if is_signed {
+                SignalType::Signed(width).into()
+            } else {
+                SignalType::Unsigned(width).into()
+            },
+            origin: None,
+            span: None,
+        }
+    }
+
+    #[test]
+    fn test_width_infer_with_unresolved_names_and_prev() {
+        let signals = vec![make_signal("x", 8, false), make_signal("y", 16, true)];
+        let signal_info = signal_info_map(&signals);
+
+        let expr = Expr::Binary {
+            op: crate::ast::types::BinaryOp::Add,
+            left: Box::new(Expr::Signal("y".to_string())),
+            right: Box::new(Expr::Prev { signal: "y".to_string(), delay: 1 }),
+        };
+        let res = infer_widths_with_signal_info(&expr, &signals, &signal_info);
+        assert!(!res.has_errors());
+    }
+
+    #[test]
+    fn test_width_infer_with_pending_signal_and_unop() {
+        let signals = vec![make_signal("x", 8, false)];
+        let signal_info = signal_info_map(&signals);
+
+        // This simulates a pending signal or unknown name.
+        let expr = Expr::Unary {
+            op: crate::ast::types::UnaryOp::Not,
+            operand: Box::new(Expr::Signal("z".to_string())),
+        };
+        let res = infer_widths_with_signal_info(&expr, &signals, &signal_info);
+        // It now emits an undeclared signal error, but still infers a fallback width.
+        assert!(res.has_errors());
+    }
+
+    #[test]
+    fn test_width_result_has_errors() {
+        let mut pwr = ProgramWidthResult {
+            guard_results: vec![],
+            assignment_results: vec![],
+            stats: WidthStats {
+                nodes_analyzed: 0,
+                propagation_rounds: 0,
+                diagnostics_count: 0,
+                scc_count: 0,
+                expansive_count: 0,
+                nonexpansive_count: 0,
+            },
+        };
+        assert!(!pwr.has_errors());
+
+        let bad_diag = WidthDiag::error("bad");
+        pwr.guard_results.push((
+            "g".to_string(),
+            WidthInferenceResult {
+                expr: None,
+                diagnostics: vec![bad_diag.clone()],
+                stats: WidthStats {
+                    nodes_analyzed: 0,
+                    propagation_rounds: 0,
+                    diagnostics_count: 0,
+                    scc_count: 0,
+                    expansive_count: 0,
+                    nonexpansive_count: 0,
+                },
+            },
+        ));
+        assert!(pwr.has_errors());
+        assert_eq!(pwr.all_diagnostics().len(), 1);
+
+        let pwr2 = ProgramWidthResult {
+            guard_results: vec![],
+            assignment_results: vec![("a.b".to_string(), vec![bad_diag.clone()])],
+            stats: WidthStats {
+                nodes_analyzed: 0,
+                propagation_rounds: 0,
+                diagnostics_count: 0,
+                scc_count: 0,
+                expansive_count: 0,
+                nonexpansive_count: 0,
+            },
+        };
+        assert!(pwr2.has_errors());
+        assert_eq!(pwr2.all_diagnostics().len(), 1);
+    }
+
+    #[test]
+    fn test_scc_width_result_has_errors() {
+        let mut res = SccWidthResult {
+            phase4a: ProgramWidthResult {
+                guard_results: vec![],
+                assignment_results: vec![],
+                stats: WidthStats {
+                    nodes_analyzed: 0,
+                    propagation_rounds: 0,
+                    diagnostics_count: 0,
+                    scc_count: 0,
+                    expansive_count: 0,
+                    nonexpansive_count: 0,
+                },
+            },
+            sccs: vec![],
+            scc_solves: vec![],
+            verification: crate::width::verify::VerifyResult {
+                is_minimal: true,
+                diagnostics: vec![],
+            },
+            stats: WidthStats {
+                nodes_analyzed: 0,
+                propagation_rounds: 0,
+                diagnostics_count: 0,
+                scc_count: 0,
+                expansive_count: 0,
+                nonexpansive_count: 0,
+            },
+            scc_diagnostics: vec![],
+            scc_member_names: HashSet::new(),
+        };
+        assert!(!res.has_errors());
+
+        // Add scc_diagnostics error
+        res.scc_diagnostics.push(WidthDiag::error("scc err"));
+        assert!(res.has_errors());
+        res.scc_diagnostics.clear();
+
+        // Add verification error
+        res.verification.diagnostics.push(WidthDiag::error("verify err"));
+        assert!(res.has_errors());
+        res.verification.diagnostics.clear();
+
+        // Add suppressed truncation error
+        res.scc_member_names.insert("a".to_string());
+        res.phase4a
+            .assignment_results
+            .push(("x.a".to_string(), vec![WidthDiag::error("truncates")]));
+        assert!(!res.has_errors()); // suppressed
+
+        // Add unsuppressed assignment error
+        res.phase4a.assignment_results.push(("x.b".to_string(), vec![WidthDiag::error("bad")]));
+        assert!(res.has_errors()); // not suppressed
+    }
+
+    #[test]
+    fn test_infer_program_widths_with_scc_bad_module() {
+        // If ingest_module fails, it drops to fallback
+        // We can just construct an empty module
+        let prog = MirrProgram {
+            imports: vec![],
+            patterns: vec![],
+            target: None,
+            module: Module {
+                name: "m".to_string(),
+                signals: vec![],
+                guards: vec![],
+                reflexes: vec![],
+                properties: vec![],
+                pattern_calls: vec![],
+                pattern_origins: vec![],
+                span: None,
+            },
+        };
+        let res = infer_program_widths_with_scc(&prog, None);
+        assert!(!res.has_errors());
+    }
 }

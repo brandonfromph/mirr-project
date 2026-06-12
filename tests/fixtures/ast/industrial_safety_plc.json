@@ -1,0 +1,263 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "industrial_safety_plc",
+    "signals": [
+      {
+        "name": "e_stop",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "light_curtain_1",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "light_curtain_2",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "light_curtain_3",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "door_closed",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "motor_enable",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "safety_relay",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "e_stop_pressed",
+        "condition": {
+          "Signal": "e_stop"
+        },
+        "cycles": 1
+      },
+      {
+        "name": "curtain_broken",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "light_curtain_1"
+            }
+          }
+        },
+        "cycles": 2
+      },
+      {
+        "name": "door_open",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "door_closed"
+            }
+          }
+        },
+        "cycles": 5
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "emergency_stop",
+        "guard_names": [
+          "e_stop_pressed"
+        ],
+        "assignments": [
+          {
+            "target": "motor_enable",
+            "value": {
+              "Literal": {
+                "Bool": false
+              }
+            }
+          },
+          {
+            "target": "safety_relay",
+            "value": {
+              "Literal": {
+                "Bool": false
+              }
+            }
+          },
+          {
+            "target": "alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "curtain_trip",
+        "guard_names": [
+          "curtain_broken"
+        ],
+        "assignments": [
+          {
+            "target": "motor_enable",
+            "value": {
+              "Literal": {
+                "Bool": false
+              }
+            }
+          },
+          {
+            "target": "alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "door_interlock",
+        "guard_names": [
+          "door_open"
+        ],
+        "assignments": [
+          {
+            "target": "motor_enable",
+            "value": {
+              "Literal": {
+                "Bool": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "e_stop_kills_motor",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Signal": "e_stop"
+            },
+            "consequent": {
+              "Unary": {
+                "op": "Not",
+                "operand": {
+                  "Signal": "motor_enable"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "curtain_protects",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Unary": {
+                "op": "Not",
+                "operand": {
+                  "Signal": "light_curtain_1"
+                }
+              }
+            },
+            "consequent": {
+              "Unary": {
+                "op": "Not",
+                "operand": {
+                  "Signal": "motor_enable"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_alarm",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Binary": {
+                  "op": "And",
+                  "left": {
+                    "Signal": "alarm"
+                  },
+                  "right": {
+                    "Binary": {
+                      "op": "Eq",
+                      "left": {
+                        "Signal": "e_stop"
+                      },
+                      "right": {
+                        "Literal": {
+                          "Bool": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "right": {
+                "Binary": {
+                  "op": "Eq",
+                  "left": {
+                    "Signal": "light_curtain_1"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Bool": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

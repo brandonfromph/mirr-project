@@ -1,0 +1,294 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "automotive_brake",
+    "signals": [
+      {
+        "name": "wheel_speed_fl",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "wheel_speed_fr",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "wheel_speed_rl",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "wheel_speed_rr",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "brake_pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "vehicle_speed",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "abs_active",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "stability_ctrl",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "brake_warning",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "wheel_lock_fl",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "wheel_speed_fl"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 10
+              }
+            }
+          }
+        },
+        "cycles": 3
+      },
+      {
+        "name": "wheel_lock_fr",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "wheel_speed_fr"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 10
+              }
+            }
+          }
+        },
+        "cycles": 3
+      },
+      {
+        "name": "overspeed",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "vehicle_speed"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 200
+              }
+            }
+          }
+        },
+        "cycles": 5
+      },
+      {
+        "name": "low_pressure",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "brake_pressure"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 20
+              }
+            }
+          }
+        },
+        "cycles": 10
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "abs_engage",
+        "guard_names": [
+          "wheel_lock_fl"
+        ],
+        "assignments": [
+          {
+            "target": "abs_active",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "abs_engage_fr",
+        "guard_names": [
+          "wheel_lock_fr"
+        ],
+        "assignments": [
+          {
+            "target": "abs_active",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "speed_warning",
+        "guard_names": [
+          "overspeed"
+        ],
+        "assignments": [
+          {
+            "target": "brake_warning",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "stability",
+        "guard_names": [
+          "wheel_lock_fl",
+          "wheel_lock_fr"
+        ],
+        "assignments": [
+          {
+            "target": "stability_ctrl",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "speed_limit_enforced",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "vehicle_speed"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 250
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_abs",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Signal": "abs_active"
+              },
+              "right": {
+                "Binary": {
+                  "op": "Gt",
+                  "left": {
+                    "Signal": "wheel_speed_fl"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 50
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "brake_responsive",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Gt",
+                "left": {
+                  "Signal": "brake_pressure"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 100
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "abs_active"
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

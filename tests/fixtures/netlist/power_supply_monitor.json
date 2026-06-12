@@ -1,0 +1,188 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "over_v",
+        "input_signal": "voltage",
+        "output_signal": "over_v_out",
+        "stages": [
+          "over_v_sr_0",
+          "over_v_sr_1",
+          "over_v_sr_2",
+          "over_v_sr_3",
+          "over_v_sr_4",
+          "over_v_sr_5",
+          "over_v_sr_6",
+          "over_v_sr_7",
+          "over_v_sr_8",
+          "over_v_sr_9"
+        ],
+        "delay_cycles": 10,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "voltage",
+            "op": "Gt",
+            "value": {
+              "Integer": 1400
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "under_v",
+        "input_signal": "voltage",
+        "output_signal": "under_v_out",
+        "counter_signal": "under_v_counter",
+        "comparator_signal": "under_v_cmp",
+        "target_count": 50,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "voltage",
+            "op": "Lt",
+            "value": {
+              "Integer": 900
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "over_i",
+        "input_signal": "current",
+        "output_signal": "over_i_out",
+        "counter_signal": "over_i_counter",
+        "comparator_signal": "over_i_cmp",
+        "target_count": 20,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "current",
+            "op": "Gt",
+            "value": {
+              "Integer": 500
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "over_v_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_v_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "under_v_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "under_v_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "under_v_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "over_i_counter",
+      "ty": {
+        "Unsigned": 6
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "over_i_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "over_i_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 10,
+    "counters_used": 2,
+    "logic_gates_used": 3,
+    "max_delay_cycles": 50,
+    "total_signals": 17,
+    "compilation_time_us": null
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "dual_sensor",
+    "signals": [
+      {
+        "name": "temperature",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "temp_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "pressure_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "manual_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "manual_check",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temperature"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 0
+              }
+            }
+          }
+        },
+        "cycles": 1
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "manual_response",
+        "guard_names": [
+          "manual_check"
+        ],
+        "assignments": [
+          {
+            "target": "manual_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [],
+    "pattern_calls": [
+      {
+        "pattern_name": "threshold_guard",
+        "arguments": [
+          {
+            "SignalRef": "temperature"
+          },
+          {
+            "ConstInt": 100
+          },
+          {
+            "ConstInt": 5
+          },
+          {
+            "SignalRef": "temp_alarm"
+          }
+        ]
+      },
+      {
+        "pattern_name": "threshold_guard",
+        "arguments": [
+          {
+            "SignalRef": "pressure"
+          },
+          {
+            "ConstInt": 300
+          },
+          {
+            "ConstInt": 3
+          },
+          {
+            "SignalRef": "pressure_alarm"
+          }
+        ]
+      }
+    ],
+    "pattern_origins": []
+  }
+}

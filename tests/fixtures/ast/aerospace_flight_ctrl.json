@@ -1,0 +1,395 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "aerospace_flight_ctrl",
+    "signals": [
+      {
+        "name": "altitude",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "roll_angle",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "pitch_angle",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "yaw_rate",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "battery_level",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "motor_1",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "motor_2",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "motor_3",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "motor_4",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "emergency_land",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "attitude_warn",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "battery_warn",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "altitude_low",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "altitude"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 100
+              }
+            }
+          }
+        },
+        "cycles": 50
+      },
+      {
+        "name": "altitude_high",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "altitude"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 5000
+              }
+            }
+          }
+        },
+        "cycles": 20
+      },
+      {
+        "name": "roll_excessive",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "roll_angle"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 45
+              }
+            }
+          }
+        },
+        "cycles": 10
+      },
+      {
+        "name": "pitch_excessive",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "pitch_angle"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 45
+              }
+            }
+          }
+        },
+        "cycles": 10
+      },
+      {
+        "name": "battery_critical",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "battery_level"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 10
+              }
+            }
+          }
+        },
+        "cycles": 100
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "low_altitude_land",
+        "guard_names": [
+          "altitude_low"
+        ],
+        "assignments": [
+          {
+            "target": "emergency_land",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "high_altitude_limit",
+        "guard_names": [
+          "altitude_high"
+        ],
+        "assignments": [
+          {
+            "target": "emergency_land",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "roll_warning",
+        "guard_names": [
+          "roll_excessive"
+        ],
+        "assignments": [
+          {
+            "target": "attitude_warn",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "pitch_warning",
+        "guard_names": [
+          "pitch_excessive"
+        ],
+        "assignments": [
+          {
+            "target": "attitude_warn",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "battery_emergency",
+        "guard_names": [
+          "battery_critical"
+        ],
+        "assignments": [
+          {
+            "target": "battery_warn",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "emergency_land",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "altitude_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "altitude"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 10000
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "attitude_safe",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Binary": {
+                  "op": "Lt",
+                  "left": {
+                    "Signal": "roll_angle"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 90
+                    }
+                  }
+                }
+              },
+              "right": {
+                "Binary": {
+                  "op": "Lt",
+                  "left": {
+                    "Signal": "pitch_angle"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 90
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "low_battery_warns",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "battery_level"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 20
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "battery_warn"
+            }
+          }
+        }
+      },
+      {
+        "name": "emergency_land_on_critical",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "battery_level"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 10
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "emergency_land"
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

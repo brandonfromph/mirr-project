@@ -1,5 +1,4 @@
 {
-  "schema_version": "0.3.0",
   "ir_version": "2.0",
   "guards": [
     {
@@ -14,7 +13,9 @@
           "Comparison": {
             "signal": "airway_pressure",
             "op": "Lt",
-            "value": { "Integer": 50 }
+            "value": {
+              "Integer": 50
+            }
           }
         }
       }
@@ -23,7 +24,9 @@
   "signals": [
     {
       "name": "sustained_pressure_drop_counter",
-      "ty": { "Unsigned": 11 },
+      "ty": {
+        "Unsigned": 11
+      },
       "kind": "Counter",
       "source": null
     },

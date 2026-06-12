@@ -13,17 +13,17 @@ module flight_controller_signed {
     signal terrain_warn:    out bool;
 
     guard altitude_low {
-        when altitude < 500
+        when altitude < -50
         for 10 cycles;
     }
 
     guard nose_down {
-        when pitch_angle < pitch_threshold
+        when pitch_angle < 10
         for 8 cycles;
     }
 
     guard bank_steep {
-        when roll_angle > roll_threshold
+        when roll_angle > 15
         for 4 cycles;
     }
 

@@ -1,0 +1,90 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "brief_activation",
+        "input_signal": "sensor_active",
+        "output_signal": "brief_activation_out",
+        "stages": [
+          "brief_activation_sr_0",
+          "brief_activation_sr_1",
+          "brief_activation_sr_2",
+          "brief_activation_sr_3",
+          "brief_activation_sr_4",
+          "brief_activation_sr_5",
+          "brief_activation_sr_6",
+          "brief_activation_sr_7"
+        ],
+        "delay_cycles": 8,
+        "condition_kind": {
+          "SimpleSignal": "sensor_active"
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "brief_activation_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "brief_activation_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 8,
+    "counters_used": 0,
+    "logic_gates_used": 1,
+    "max_delay_cycles": 8,
+    "total_signals": 9,
+    "compilation_time_us": null
+  }
+}

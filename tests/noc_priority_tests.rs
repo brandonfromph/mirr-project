@@ -23,7 +23,12 @@ fn test_noc_router_priority_scheduling() {
     let prog = snapshot.pipeline.rspu_program.clone().expect("RSPU program not generated");
     println!("Compiled NoC Router successfully!");
 
-    let num_ports = snapshot.pipeline.program.module.signals.iter()
+    let num_ports = snapshot
+        .pipeline
+        .program
+        .module
+        .signals
+        .iter()
         .filter(|s| s.name.starts_with("port_tx_valid_") || s.name.starts_with("port_tx_valid["))
         .count() as u16;
     let num_ports = if num_ports > 0 { num_ports } else { 16 };

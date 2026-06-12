@@ -6,7 +6,7 @@ use crate::ecs::registry::Registry;
 use crate::error::MirrError;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 use crate::width::scc_solver::SccSolveResult;
-use crate::width::types::{SccInfo, SccKind, WidthStats, WidthDiag};
+use crate::width::types::{SccInfo, SccKind, WidthDiag, WidthStats};
 use crate::width::verify::VerifyResult;
 use rayon::prelude::*;
 
@@ -61,8 +61,8 @@ pub fn expression_width_inference_system(registry: &mut Registry) -> (Vec<WidthD
                                     crate::ast::types::ExtendedType::new(
                                         crate::ast::types::SignalType::Unsigned(w),
                                         Default::default(),
-                                    )
-                                )
+                                    ),
+                                ),
                             );
                             changed = true;
                         }
@@ -73,8 +73,8 @@ pub fn expression_width_inference_system(registry: &mut Registry) -> (Vec<WidthD
                                 crate::ast::types::ExtendedType::new(
                                     crate::ast::types::SignalType::Unsigned(w),
                                     Default::default(),
-                                )
-                            )
+                                ),
+                            ),
                         );
                         changed = true;
                     }
@@ -93,7 +93,7 @@ pub fn expression_width_inference_system(registry: &mut Registry) -> (Vec<WidthD
         if registry.width_constraints[i].is_some() {
             let tc = registry.types[i].as_ref();
             let w = tc.map_or(0, |tc| tc.0.core.width());
-            
+
             if w == 0 {
                 let desc = format!("entity {}", i);
                 diagnostics.push(
@@ -128,10 +128,7 @@ pub fn expression_width_inference_system(registry: &mut Registry) -> (Vec<WidthD
 
 fn evaluate_ecs_constraint(c: &WidthConstraintComponent, registry: &Registry) -> Option<u32> {
     let get_w = |idx: EntityId| -> u32 {
-        registry.types[idx.0 as usize]
-            .as_ref()
-            .map(|tc| tc.0.core.width())
-            .unwrap_or(0)
+        registry.types[idx.0 as usize].as_ref().map(|tc| tc.0.core.width()).unwrap_or(0)
     };
 
     match c {
@@ -171,9 +168,7 @@ fn evaluate_ecs_constraint(c: &WidthConstraintComponent, registry: &Registry) ->
             let lw = get_w(*left);
             Some(lw.saturating_sub(*shift_amount).max(1))
         }
-        WidthConstraintComponent::SameAs { source } => {
-            Some(get_w(*source))
-        }
+        WidthConstraintComponent::SameAs { source } => Some(get_w(*source)),
         WidthConstraintComponent::SameAsPlusOne { source } => {
             let sw = get_w(*source);
             Some(sw.saturating_add(1))

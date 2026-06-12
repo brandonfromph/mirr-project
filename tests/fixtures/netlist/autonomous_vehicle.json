@@ -1,0 +1,262 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "lidar_close",
+        "input_signal": "lidar_range",
+        "output_signal": "lidar_close_out",
+        "stages": [
+          "lidar_close_sr_0",
+          "lidar_close_sr_1",
+          "lidar_close_sr_2"
+        ],
+        "delay_cycles": 3,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "lidar_range",
+            "op": "Lt",
+            "value": {
+              "Integer": 500
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "radar_close",
+        "input_signal": "radar_range",
+        "output_signal": "radar_close_out",
+        "stages": [
+          "radar_close_sr_0",
+          "radar_close_sr_1",
+          "radar_close_sr_2"
+        ],
+        "delay_cycles": 3,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "radar_range",
+            "op": "Lt",
+            "value": {
+              "Integer": 800
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "low_confidence",
+        "input_signal": "camera_conf",
+        "output_signal": "low_confidence_out",
+        "stages": [
+          "low_confidence_sr_0",
+          "low_confidence_sr_1",
+          "low_confidence_sr_2",
+          "low_confidence_sr_3",
+          "low_confidence_sr_4",
+          "low_confidence_sr_5",
+          "low_confidence_sr_6",
+          "low_confidence_sr_7",
+          "low_confidence_sr_8",
+          "low_confidence_sr_9"
+        ],
+        "delay_cycles": 10,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "camera_conf",
+            "op": "Lt",
+            "value": {
+              "Integer": 40
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "over_speed_limit",
+        "input_signal": "vehicle_speed",
+        "output_signal": "over_speed_limit_out",
+        "stages": [
+          "over_speed_limit_sr_0",
+          "over_speed_limit_sr_1",
+          "over_speed_limit_sr_2",
+          "over_speed_limit_sr_3",
+          "over_speed_limit_sr_4"
+        ],
+        "delay_cycles": 5,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "vehicle_speed",
+            "op": "Gt",
+            "value": {
+              "Integer": 120
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "lidar_close_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "lidar_close_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "lidar_close_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "lidar_close_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "radar_close_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "radar_close_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "radar_close_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "radar_close_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "low_confidence_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "over_speed_limit_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_speed_limit_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_speed_limit_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_speed_limit_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_speed_limit_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_speed_limit_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 21,
+    "counters_used": 0,
+    "logic_gates_used": 4,
+    "max_delay_cycles": 10,
+    "total_signals": 25,
+    "compilation_time_us": null
+  }
+}

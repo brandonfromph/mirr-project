@@ -1,0 +1,139 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "watchdog_timer",
+    "signals": [
+      {
+        "name": "heartbeat",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "watchdog_reset",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "system_alive",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "heartbeat_missing",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "heartbeat"
+            }
+          }
+        },
+        "cycles": 1000
+      },
+      {
+        "name": "heartbeat_slow",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "heartbeat"
+            }
+          }
+        },
+        "cycles": 500
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "trigger_reset",
+        "guard_names": [
+          "heartbeat_missing"
+        ],
+        "assignments": [
+          {
+            "target": "watchdog_reset",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "warning_slow",
+        "guard_names": [
+          "heartbeat_slow"
+        ],
+        "assignments": [
+          {
+            "target": "system_alive",
+            "value": {
+              "Literal": {
+                "Bool": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "reset_on_timeout",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Unary": {
+                "op": "Not",
+                "operand": {
+                  "Signal": "heartbeat"
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "watchdog_reset"
+            }
+          }
+        }
+      },
+      {
+        "name": "no_hang",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Unary": {
+                  "op": "Not",
+                  "operand": {
+                    "Signal": "heartbeat"
+                  }
+                }
+              },
+              "right": {
+                "Unary": {
+                  "op": "Not",
+                  "operand": {
+                    "Signal": "watchdog_reset"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

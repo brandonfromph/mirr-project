@@ -1,0 +1,47 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "manual_check",
+        "input_signal": "temperature",
+        "output_signal": "manual_check_out",
+        "stages": [
+          "manual_check_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "temperature",
+            "op": "Gt",
+            "value": {
+              "Integer": 0
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "manual_check_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "manual_check_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 1,
+    "counters_used": 0,
+    "logic_gates_used": 1,
+    "max_delay_cycles": 1,
+    "total_signals": 2,
+    "compilation_time_us": null
+  }
+}

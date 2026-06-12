@@ -142,4 +142,38 @@ mod tests {
         assert!(result.is_minimal);
         assert!(result.diagnostics.is_empty());
     }
+
+    #[test]
+    fn test_verify_max_signals_bound() {
+        // Create an SCC with > MAX_SIGNALS widths to trigger the bound break.
+        let scc =
+            SccInfo { signal_indices: (0..MAX_SIGNALS + 5).collect(), kind: SccKind::Nonexpansive };
+        let solve = SccSolveResult { widths: vec![8; MAX_SIGNALS + 5], diagnostics: vec![] };
+        let signals = vec![make_signal("x", 8); MAX_SIGNALS + 5];
+
+        let result = verify_least_solution(&[(scc, solve)], &signals);
+        assert!(result.is_minimal); // Break stops early, defaults to minimal
+    }
+
+    #[test]
+    fn test_verify_missing_signal_index() {
+        // An SCC where solve result has more widths than signal_indices provided.
+        let scc = SccInfo { signal_indices: vec![], kind: SccKind::Nonexpansive };
+        let solve = SccSolveResult { widths: vec![8], diagnostics: vec![] };
+        let signals = vec![make_signal("x", 8)];
+
+        let result = verify_least_solution(&[(scc, solve)], &signals);
+        assert!(result.is_minimal); // Missed index triggers continue
+    }
+
+    #[test]
+    fn test_verify_missing_signal() {
+        // An SCC pointing to an index that doesn't exist in signals.
+        let scc = SccInfo { signal_indices: vec![100], kind: SccKind::Nonexpansive };
+        let solve = SccSolveResult { widths: vec![8], diagnostics: vec![] };
+        let signals = vec![make_signal("x", 8)];
+
+        let result = verify_least_solution(&[(scc, solve)], &signals);
+        assert!(result.is_minimal); // Missed signal triggers continue
+    }
 }

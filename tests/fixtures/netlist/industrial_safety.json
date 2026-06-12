@@ -1,21 +1,283 @@
 {
   "ir_version": "2.0",
-  "guards": [],
+  "guards": [
+    {
+      "Counter": {
+        "name": "over_temp",
+        "input_signal": "temperature",
+        "output_signal": "over_temp_out",
+        "counter_signal": "over_temp_counter",
+        "comparator_signal": "over_temp_cmp",
+        "target_count": 20,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "temperature",
+            "op": "Gt",
+            "value": {
+              "Integer": 450
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "over_pressure",
+        "input_signal": "pressure",
+        "output_signal": "over_pressure_out",
+        "stages": [
+          "over_pressure_sr_0",
+          "over_pressure_sr_1",
+          "over_pressure_sr_2",
+          "over_pressure_sr_3",
+          "over_pressure_sr_4"
+        ],
+        "delay_cycles": 5,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "pressure",
+            "op": "Gt",
+            "value": {
+              "Integer": 10000
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "high_vibration",
+        "input_signal": "vibration",
+        "output_signal": "high_vibration_out",
+        "stages": [
+          "high_vibration_sr_0",
+          "high_vibration_sr_1",
+          "high_vibration_sr_2",
+          "high_vibration_sr_3",
+          "high_vibration_sr_4",
+          "high_vibration_sr_5",
+          "high_vibration_sr_6",
+          "high_vibration_sr_7",
+          "high_vibration_sr_8",
+          "high_vibration_sr_9",
+          "high_vibration_sr_10",
+          "high_vibration_sr_11",
+          "high_vibration_sr_12",
+          "high_vibration_sr_13",
+          "high_vibration_sr_14"
+        ],
+        "delay_cycles": 15,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "vibration",
+            "op": "Gt",
+            "value": {
+              "Integer": 800
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "low_flow",
+        "input_signal": "flow_rate",
+        "output_signal": "low_flow_out",
+        "counter_signal": "low_flow_counter",
+        "comparator_signal": "low_flow_cmp",
+        "target_count": 30,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "flow_rate",
+            "op": "Lt",
+            "value": {
+              "Integer": 10
+            }
+          }
+        }
+      }
+    }
+  ],
   "signals": [
     {
-      "name": "e_stop_latched",
+      "name": "over_temp_counter",
       "ty": {
-        "Unsigned": 1
+        "Unsigned": 6
       },
-      "kind": "LogicGate"
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "over_temp_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "over_temp_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "over_pressure_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_pressure_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_pressure_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_pressure_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_pressure_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "over_pressure_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_10",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_11",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_12",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_13",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_sr_14",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "high_vibration_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "low_flow_counter",
+      "ty": {
+        "Unsigned": 6
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "low_flow_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "low_flow_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
     }
   ],
   "statistics": {
-    "shift_registers_used": 0,
-    "counters_used": 0,
-    "logic_gates_used": 1,
-    "max_delay_cycles": 0,
-    "total_signals": 1,
-    "compilation_time_us": 0
+    "shift_registers_used": 20,
+    "counters_used": 2,
+    "logic_gates_used": 4,
+    "max_delay_cycles": 30,
+    "total_signals": 28,
+    "compilation_time_us": null
   }
 }

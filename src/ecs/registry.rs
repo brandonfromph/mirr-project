@@ -174,6 +174,10 @@ impl Registry {
         id
     }
 
+    pub fn active_entities(&self) -> usize {
+        self.next_id as usize
+    }
+
     /// Create a new Knowledge Base Chunk Entity
     pub fn create_kb_chunk(
         &mut self,

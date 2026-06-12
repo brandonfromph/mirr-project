@@ -1,0 +1,171 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "bradycardia",
+        "input_signal": "heart_rate",
+        "output_signal": "bradycardia_out",
+        "counter_signal": "bradycardia_counter",
+        "comparator_signal": "bradycardia_cmp",
+        "target_count": 300,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "heart_rate",
+            "op": "Lt",
+            "value": {
+              "Integer": 50
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "tachycardia",
+        "input_signal": "heart_rate",
+        "output_signal": "tachycardia_out",
+        "counter_signal": "tachycardia_counter",
+        "comparator_signal": "tachycardia_cmp",
+        "target_count": 120,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "heart_rate",
+            "op": "Gt",
+            "value": {
+              "Integer": 150
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "low_spo2",
+        "input_signal": "spo2",
+        "output_signal": "low_spo2_out",
+        "counter_signal": "low_spo2_counter",
+        "comparator_signal": "low_spo2_cmp",
+        "target_count": 60,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "spo2",
+            "op": "Lt",
+            "value": {
+              "Integer": 90
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "hypotension",
+        "input_signal": "systolic_bp",
+        "output_signal": "hypotension_out",
+        "counter_signal": "hypotension_counter",
+        "comparator_signal": "hypotension_cmp",
+        "target_count": 200,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "systolic_bp",
+            "op": "Lt",
+            "value": {
+              "Integer": 80
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "bradycardia_counter",
+      "ty": {
+        "Unsigned": 10
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "bradycardia_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "bradycardia_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "tachycardia_counter",
+      "ty": {
+        "Unsigned": 8
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "tachycardia_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "tachycardia_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "low_spo2_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "low_spo2_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "low_spo2_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "hypotension_counter",
+      "ty": {
+        "Unsigned": 9
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "hypotension_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "hypotension_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 0,
+    "counters_used": 4,
+    "logic_gates_used": 4,
+    "max_delay_cycles": 300,
+    "total_signals": 12,
+    "compilation_time_us": null
+  }
+}

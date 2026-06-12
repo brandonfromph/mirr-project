@@ -1,0 +1,329 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "sensor_fusion_advanced",
+    "signals": [
+      {
+        "name": "temp_1",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "temp_2",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "temp_3",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "pressure_1",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "pressure_2",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "pressure_3",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "vibration_1",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "vibration_2",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "vibration_3",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "fusion_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "anomaly_detect",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "shutdown",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "temp_disagreement",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temp_1"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 100
+              }
+            }
+          }
+        },
+        "cycles": 20
+      },
+      {
+        "name": "pressure_spike",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "pressure_1"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 5000
+              }
+            }
+          }
+        },
+        "cycles": 5
+      },
+      {
+        "name": "vibration_high",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "vibration_1"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 800
+              }
+            }
+          }
+        },
+        "cycles": 10
+      },
+      {
+        "name": "multi_sensor_fault",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temp_1"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 150
+              }
+            }
+          }
+        },
+        "cycles": 30
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "temp_anomaly",
+        "guard_names": [
+          "temp_disagreement"
+        ],
+        "assignments": [
+          {
+            "target": "anomaly_detect",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "fusion_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "pressure_emergency",
+        "guard_names": [
+          "pressure_spike"
+        ],
+        "assignments": [
+          {
+            "target": "fusion_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "vibration_warning",
+        "guard_names": [
+          "vibration_high"
+        ],
+        "assignments": [
+          {
+            "target": "anomaly_detect",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "multi_fault_shutdown",
+        "guard_names": [
+          "multi_sensor_fault"
+        ],
+        "assignments": [
+          {
+            "target": "shutdown",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "temp_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "temp_1"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 200
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "pressure_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "pressure_1"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 10000
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "vibration_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "vibration_1"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 1000
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "anomaly_triggers_alarm",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Signal": "anomaly_detect"
+            },
+            "consequent": {
+              "Signal": "fusion_alarm"
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

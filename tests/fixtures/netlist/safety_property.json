@@ -1,0 +1,61 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "pressure_low",
+        "input_signal": "airway_pressure",
+        "output_signal": "pressure_low_out",
+        "stages": [
+          "pressure_low_sr_0",
+          "pressure_low_sr_1",
+          "pressure_low_sr_2"
+        ],
+        "delay_cycles": 3,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "airway_pressure",
+            "op": "Lt",
+            "value": {
+              "Integer": 50
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "pressure_low_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_low_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_low_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_low_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 3,
+    "counters_used": 0,
+    "logic_gates_used": 1,
+    "max_delay_cycles": 3,
+    "total_signals": 4,
+    "compilation_time_us": null
+  }
+}

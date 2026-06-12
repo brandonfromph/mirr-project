@@ -5,7 +5,7 @@
 
 use crate::ast::program::Module;
 use crate::ast::types::SignalKind;
-use crate::emit::rspu_isa::{MAX_GUARDS, MAX_INSTRUCTIONS, TargetSpec};
+use crate::emit::rspu_isa::{TargetSpec, MAX_GUARDS, MAX_INSTRUCTIONS};
 
 use super::types::{
     GuardCoverageResult, OutputCompletenessResult, ResourceBound, TemporalBoundResult,

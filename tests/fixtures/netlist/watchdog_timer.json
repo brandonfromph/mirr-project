@@ -3,33 +3,79 @@
   "guards": [
     {
       "Counter": {
-        "name": "watchdog_timeout",
-        "input_signal": "kick",
-        "output_signal": "watchdog_timeout_out",
-        "counter_signal": "watchdog_timeout_counter",
-        "comparator_signal": "watchdog_timeout_cmp",
-        "target_count": 32,
+        "name": "heartbeat_missing",
+        "input_signal": "heartbeat",
+        "output_signal": "heartbeat_missing_out",
+        "counter_signal": "heartbeat_missing_counter",
+        "comparator_signal": "heartbeat_missing_cmp",
+        "target_count": 1000,
         "condition_kind": {
-          "SimpleSignal": "kick"
+          "NegatedSignal": "heartbeat"
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "heartbeat_slow",
+        "input_signal": "heartbeat",
+        "output_signal": "heartbeat_slow_out",
+        "counter_signal": "heartbeat_slow_counter",
+        "comparator_signal": "heartbeat_slow_cmp",
+        "target_count": 500,
+        "condition_kind": {
+          "NegatedSignal": "heartbeat"
         }
       }
     }
   ],
   "signals": [
     {
-      "name": "watchdog_timeout_counter",
+      "name": "heartbeat_missing_counter",
       "ty": {
-        "Unsigned": 6
+        "Unsigned": 11
       },
-      "kind": "Counter"
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "heartbeat_missing_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "heartbeat_missing_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "heartbeat_slow_counter",
+      "ty": {
+        "Unsigned": 10
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "heartbeat_slow_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "heartbeat_slow_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
     }
   ],
   "statistics": {
     "shift_registers_used": 0,
-    "counters_used": 1,
-    "logic_gates_used": 1,
-    "max_delay_cycles": 32,
-    "total_signals": 1,
-    "compilation_time_us": 0
+    "counters_used": 2,
+    "logic_gates_used": 2,
+    "max_delay_cycles": 1000,
+    "total_signals": 6,
+    "compilation_time_us": null
   }
 }

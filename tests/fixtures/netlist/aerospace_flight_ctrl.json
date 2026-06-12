@@ -1,0 +1,322 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "altitude_low",
+        "input_signal": "altitude",
+        "output_signal": "altitude_low_out",
+        "counter_signal": "altitude_low_counter",
+        "comparator_signal": "altitude_low_cmp",
+        "target_count": 50,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "altitude",
+            "op": "Lt",
+            "value": {
+              "Integer": 100
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "altitude_high",
+        "input_signal": "altitude",
+        "output_signal": "altitude_high_out",
+        "counter_signal": "altitude_high_counter",
+        "comparator_signal": "altitude_high_cmp",
+        "target_count": 20,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "altitude",
+            "op": "Gt",
+            "value": {
+              "Integer": 5000
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "roll_excessive",
+        "input_signal": "roll_angle",
+        "output_signal": "roll_excessive_out",
+        "stages": [
+          "roll_excessive_sr_0",
+          "roll_excessive_sr_1",
+          "roll_excessive_sr_2",
+          "roll_excessive_sr_3",
+          "roll_excessive_sr_4",
+          "roll_excessive_sr_5",
+          "roll_excessive_sr_6",
+          "roll_excessive_sr_7",
+          "roll_excessive_sr_8",
+          "roll_excessive_sr_9"
+        ],
+        "delay_cycles": 10,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "roll_angle",
+            "op": "Gt",
+            "value": {
+              "Integer": 45
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "pitch_excessive",
+        "input_signal": "pitch_angle",
+        "output_signal": "pitch_excessive_out",
+        "stages": [
+          "pitch_excessive_sr_0",
+          "pitch_excessive_sr_1",
+          "pitch_excessive_sr_2",
+          "pitch_excessive_sr_3",
+          "pitch_excessive_sr_4",
+          "pitch_excessive_sr_5",
+          "pitch_excessive_sr_6",
+          "pitch_excessive_sr_7",
+          "pitch_excessive_sr_8",
+          "pitch_excessive_sr_9"
+        ],
+        "delay_cycles": 10,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "pitch_angle",
+            "op": "Gt",
+            "value": {
+              "Integer": 45
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "battery_critical",
+        "input_signal": "battery_level",
+        "output_signal": "battery_critical_out",
+        "counter_signal": "battery_critical_counter",
+        "comparator_signal": "battery_critical_cmp",
+        "target_count": 100,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "battery_level",
+            "op": "Lt",
+            "value": {
+              "Integer": 10
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "altitude_low_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "altitude_low_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "altitude_low_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "altitude_high_counter",
+      "ty": {
+        "Unsigned": 6
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "altitude_high_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "altitude_high_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "roll_excessive_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pitch_excessive_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "battery_critical_counter",
+      "ty": {
+        "Unsigned": 8
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "battery_critical_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "battery_critical_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 20,
+    "counters_used": 3,
+    "logic_gates_used": 5,
+    "max_delay_cycles": 100,
+    "total_signals": 31,
+    "compilation_time_us": null
+  }
+}

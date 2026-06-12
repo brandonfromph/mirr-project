@@ -1,21 +1,619 @@
 {
   "ir_version": "2.0",
-  "guards": [],
+  "guards": [
+    {
+      "ShiftRegister": {
+        "name": "a_healthy",
+        "input_signal": "sensor_a_ok",
+        "output_signal": "a_healthy_out",
+        "stages": [
+          "a_healthy_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "sensor_a_ok"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "b_healthy",
+        "input_signal": "sensor_b_ok",
+        "output_signal": "b_healthy_out",
+        "stages": [
+          "b_healthy_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "sensor_b_ok"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "c_healthy",
+        "input_signal": "sensor_c_ok",
+        "output_signal": "c_healthy_out",
+        "stages": [
+          "c_healthy_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "sensor_c_ok"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "a_sick",
+        "input_signal": "sensor_a_ok",
+        "output_signal": "a_sick_out",
+        "stages": [
+          "a_sick_sr_0",
+          "a_sick_sr_1",
+          "a_sick_sr_2",
+          "a_sick_sr_3",
+          "a_sick_sr_4",
+          "a_sick_sr_5",
+          "a_sick_sr_6",
+          "a_sick_sr_7"
+        ],
+        "delay_cycles": 8,
+        "condition_kind": {
+          "NegatedSignal": "sensor_a_ok"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "b_sick",
+        "input_signal": "sensor_b_ok",
+        "output_signal": "b_sick_out",
+        "stages": [
+          "b_sick_sr_0",
+          "b_sick_sr_1",
+          "b_sick_sr_2",
+          "b_sick_sr_3",
+          "b_sick_sr_4",
+          "b_sick_sr_5",
+          "b_sick_sr_6",
+          "b_sick_sr_7"
+        ],
+        "delay_cycles": 8,
+        "condition_kind": {
+          "NegatedSignal": "sensor_b_ok"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "c_sick",
+        "input_signal": "sensor_c_ok",
+        "output_signal": "c_sick_out",
+        "stages": [
+          "c_sick_sr_0",
+          "c_sick_sr_1",
+          "c_sick_sr_2",
+          "c_sick_sr_3",
+          "c_sick_sr_4",
+          "c_sick_sr_5",
+          "c_sick_sr_6",
+          "c_sick_sr_7"
+        ],
+        "delay_cycles": 8,
+        "condition_kind": {
+          "NegatedSignal": "sensor_c_ok"
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "no_heartbeat",
+        "input_signal": "heartbeat",
+        "output_signal": "no_heartbeat_out",
+        "counter_signal": "no_heartbeat_counter",
+        "comparator_signal": "no_heartbeat_cmp",
+        "target_count": 64,
+        "condition_kind": {
+          "NegatedSignal": "heartbeat"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "temp_high",
+        "input_signal": "temperature",
+        "output_signal": "temp_high_out",
+        "stages": [
+          "temp_high_sr_0",
+          "temp_high_sr_1",
+          "temp_high_sr_2",
+          "temp_high_sr_3"
+        ],
+        "delay_cycles": 4,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "temperature",
+            "op": "Gt",
+            "value": {
+              "Integer": 800
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "is_armed",
+        "input_signal": "system_armed",
+        "output_signal": "is_armed_out",
+        "stages": [
+          "is_armed_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "system_armed"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "fault_held",
+        "input_signal": "fault_detected",
+        "output_signal": "fault_held_out",
+        "stages": [
+          "fault_held_sr_0",
+          "fault_held_sr_1",
+          "fault_held_sr_2",
+          "fault_held_sr_3",
+          "fault_held_sr_4",
+          "fault_held_sr_5",
+          "fault_held_sr_6",
+          "fault_held_sr_7",
+          "fault_held_sr_8",
+          "fault_held_sr_9",
+          "fault_held_sr_10",
+          "fault_held_sr_11",
+          "fault_held_sr_12",
+          "fault_held_sr_13",
+          "fault_held_sr_14",
+          "fault_held_sr_15"
+        ],
+        "delay_cycles": 16,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "fault_detected",
+            "op": "Eq",
+            "value": {
+              "Bool": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "override_on",
+        "input_signal": "manual_override",
+        "output_signal": "override_on_out",
+        "stages": [
+          "override_on_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "manual_override"
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "hb_alive",
+        "input_signal": "heartbeat",
+        "output_signal": "hb_alive_out",
+        "stages": [
+          "hb_alive_sr_0"
+        ],
+        "delay_cycles": 1,
+        "condition_kind": {
+          "SimpleSignal": "heartbeat"
+        }
+      }
+    }
+  ],
   "signals": [
     {
-      "name": "tmr_vote_ok",
+      "name": "a_healthy_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_healthy_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "b_healthy_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_healthy_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "c_healthy_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_healthy_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "a_sick_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "b_sick_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "c_sick_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "no_heartbeat_counter",
       "ty": {
-        "Unsigned": 1
+        "Unsigned": 7
       },
-      "kind": "LogicGate"
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "no_heartbeat_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "no_heartbeat_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "temp_high_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "temp_high_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "temp_high_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "temp_high_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "temp_high_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "is_armed_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "is_armed_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_10",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_11",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_12",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_13",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_14",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_sr_15",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "fault_held_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "override_on_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "override_on_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "hb_alive_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "hb_alive_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
     }
   ],
   "statistics": {
-    "shift_registers_used": 0,
-    "counters_used": 0,
-    "logic_gates_used": 1,
-    "max_delay_cycles": 0,
-    "total_signals": 1,
-    "compilation_time_us": 0
+    "shift_registers_used": 50,
+    "counters_used": 1,
+    "logic_gates_used": 12,
+    "max_delay_cycles": 64,
+    "total_signals": 64,
+    "compilation_time_us": null
   }
 }

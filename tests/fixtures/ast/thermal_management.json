@@ -1,0 +1,334 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "thermal_management",
+    "signals": [
+      {
+        "name": "temp_zone_1",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "temp_zone_2",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "temp_zone_3",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "temp_zone_4",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "fan_speed_1",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "fan_speed_2",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "fan_speed_3",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "fan_speed_4",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "thermal_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "thermal_shutdown",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "zone_1_hot",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temp_zone_1"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 85
+              }
+            }
+          }
+        },
+        "cycles": 30
+      },
+      {
+        "name": "zone_2_hot",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temp_zone_2"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 85
+              }
+            }
+          }
+        },
+        "cycles": 30
+      },
+      {
+        "name": "zone_3_hot",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temp_zone_3"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 85
+              }
+            }
+          }
+        },
+        "cycles": 30
+      },
+      {
+        "name": "zone_4_hot",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temp_zone_4"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 85
+              }
+            }
+          }
+        },
+        "cycles": 30
+      },
+      {
+        "name": "critical_temp",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temp_zone_1"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 100
+              }
+            }
+          }
+        },
+        "cycles": 10
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "alarm_zone_1",
+        "guard_names": [
+          "zone_1_hot"
+        ],
+        "assignments": [
+          {
+            "target": "thermal_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "alarm_zone_2",
+        "guard_names": [
+          "zone_2_hot"
+        ],
+        "assignments": [
+          {
+            "target": "thermal_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "alarm_zone_3",
+        "guard_names": [
+          "zone_3_hot"
+        ],
+        "assignments": [
+          {
+            "target": "thermal_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "alarm_zone_4",
+        "guard_names": [
+          "zone_4_hot"
+        ],
+        "assignments": [
+          {
+            "target": "thermal_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "emergency_cooling",
+        "guard_names": [
+          "critical_temp"
+        ],
+        "assignments": [
+          {
+            "target": "thermal_shutdown",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "temp_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "temp_zone_1"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 120
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "alarm_on_hot",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Gt",
+                "left": {
+                  "Signal": "temp_zone_1"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 85
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "thermal_alarm"
+            }
+          }
+        }
+      },
+      {
+        "name": "shutdown_on_critical",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Gt",
+                "left": {
+                  "Signal": "temp_zone_1"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 100
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "thermal_shutdown"
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

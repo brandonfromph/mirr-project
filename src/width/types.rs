@@ -87,37 +87,39 @@ impl WidthExpr {
 // FlatNode — linearized representation for constraint solving
 // ---------------------------------------------------------------------------
 
-/// Maximum number of flat nodes the width pass will process.
-/// Matches MAX_SIMPLIFY_DEPTH * 4 from the simplifier (128 * 4 = 512).
-pub const MAX_FLAT_NODES: usize = 512;
-
-/// A flattened expression node assigned a `NodeId` for constraint solving.
-///
-/// The tree is linearized in post-order so that children always have
-/// lower indices than their parent.
-#[derive(Debug, Clone)]
-pub enum FlatNode {
-    /// Literal constant value.
-    Literal { value: u64 },
-    /// Signal reference with signedness flag.
-    Signal { name: String, signed: bool },
-    /// Unary operation referencing operand by node index.
-    Unary { op: UnaryOp, operand: u32 },
-    /// Binary operation referencing operands by node indices.
-    Binary { op: BinaryOp, left: u32, right: u32 },
-    /// Previous-tick reference with signedness flag.
-    Prev { signal: String, delay: u64, signed: bool },
-    /// Array indexing referencing array and index nodes.
-    ArrayIndex { array: u32, index: u32, width: u32, signed: bool },
-    /// Struct field access referencing object node.
-    FieldAccess { object: u32, field: String, width: u32, signed: bool },
-    /// Array literal with element node indices. Width = element_width * length.
-    ArrayLiteral { elements: Vec<u32>, width: u32 },
-    /// Struct literal with field node indices. Width = sum of field widths.
-    StructLiteral { name: String, fields: Vec<(String, u32)>, width: u32 },
-    /// Meta-stage unfolding index.
-    UnfoldIndex { name: String },
-}
+// #[allow(dead_code, deprecated)]
+// #[deprecated]
+// /// Maximum number of flat nodes the width pass will process.
+// /// Matches MAX_SIMPLIFY_DEPTH * 4 from the simplifier (128 * 4 = 512).
+// pub const MAX_FLAT_NODES: usize = 512;
+//
+// /// A flattened expression node assigned a `NodeId` for constraint solving.
+// ///
+// /// The tree is linearized in post-order so that children always have
+// /// lower indices than their parent.
+// #[derive(Debug, Clone)]
+// pub enum FlatNode {
+//     /// Literal constant value.
+//     Literal { value: u64 },
+//     /// Signal reference with signedness flag.
+//     Signal { name: String, signed: bool },
+//     /// Unary operation referencing operand by node index.
+//     Unary { op: UnaryOp, operand: u32 },
+//     /// Binary operation referencing operands by node indices.
+//     Binary { op: BinaryOp, left: u32, right: u32 },
+//     /// Previous-tick reference with signedness flag.
+//     Prev { signal: String, delay: u64, signed: bool },
+//     /// Array indexing referencing array and index nodes.
+//     ArrayIndex { array: u32, index: u32, width: u32, signed: bool },
+//     /// Struct field access referencing object node.
+//     FieldAccess { object: u32, field: String, width: u32, signed: bool },
+//     /// Array literal with element node indices. Width = element_width * length.
+//     ArrayLiteral { elements: Vec<u32>, width: u32 },
+//     /// Struct literal with field node indices. Width = sum of field widths.
+//     StructLiteral { name: String, fields: Vec<(String, u32)>, width: u32 },
+//     /// Meta-stage unfolding index.
+//     UnfoldIndex { name: String },
+// }
 
 // ---------------------------------------------------------------------------
 // SCC types for Phase 4b

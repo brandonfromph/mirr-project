@@ -1,0 +1,248 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "temp_disagreement",
+        "input_signal": "temp_1",
+        "output_signal": "temp_disagreement_out",
+        "counter_signal": "temp_disagreement_counter",
+        "comparator_signal": "temp_disagreement_cmp",
+        "target_count": 20,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "temp_1",
+            "op": "Gt",
+            "value": {
+              "Integer": 100
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "pressure_spike",
+        "input_signal": "pressure_1",
+        "output_signal": "pressure_spike_out",
+        "stages": [
+          "pressure_spike_sr_0",
+          "pressure_spike_sr_1",
+          "pressure_spike_sr_2",
+          "pressure_spike_sr_3",
+          "pressure_spike_sr_4"
+        ],
+        "delay_cycles": 5,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "pressure_1",
+            "op": "Gt",
+            "value": {
+              "Integer": 5000
+            }
+          }
+        }
+      }
+    },
+    {
+      "ShiftRegister": {
+        "name": "vibration_high",
+        "input_signal": "vibration_1",
+        "output_signal": "vibration_high_out",
+        "stages": [
+          "vibration_high_sr_0",
+          "vibration_high_sr_1",
+          "vibration_high_sr_2",
+          "vibration_high_sr_3",
+          "vibration_high_sr_4",
+          "vibration_high_sr_5",
+          "vibration_high_sr_6",
+          "vibration_high_sr_7",
+          "vibration_high_sr_8",
+          "vibration_high_sr_9"
+        ],
+        "delay_cycles": 10,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "vibration_1",
+            "op": "Gt",
+            "value": {
+              "Integer": 800
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "multi_sensor_fault",
+        "input_signal": "temp_1",
+        "output_signal": "multi_sensor_fault_out",
+        "counter_signal": "multi_sensor_fault_counter",
+        "comparator_signal": "multi_sensor_fault_cmp",
+        "target_count": 30,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "temp_1",
+            "op": "Gt",
+            "value": {
+              "Integer": 150
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "temp_disagreement_counter",
+      "ty": {
+        "Unsigned": 6
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "temp_disagreement_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "temp_disagreement_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "pressure_spike_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_spike_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_spike_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_spike_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_spike_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "pressure_spike_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_0",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_1",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_2",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_3",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_4",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_5",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_6",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_7",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_8",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_sr_9",
+      "ty": "Bool",
+      "kind": "ShiftRegisterStage",
+      "source": null
+    },
+    {
+      "name": "vibration_high_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "multi_sensor_fault_counter",
+      "ty": {
+        "Unsigned": 6
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "multi_sensor_fault_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "multi_sensor_fault_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 15,
+    "counters_used": 2,
+    "logic_gates_used": 4,
+    "max_delay_cycles": 30,
+    "total_signals": 23,
+    "compilation_time_us": null
+  }
+}

@@ -1,0 +1,310 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "tmr_voting_system",
+    "signals": [
+      {
+        "name": "sensor_a",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "sensor_b",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "sensor_c",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "voted_value",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "fault_a",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "fault_b",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "fault_c",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "safe_state",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "sensor_a_failed",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "sensor_a"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 5
+              }
+            }
+          }
+        },
+        "cycles": 50
+      },
+      {
+        "name": "sensor_b_failed",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "sensor_b"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 5
+              }
+            }
+          }
+        },
+        "cycles": 50
+      },
+      {
+        "name": "sensor_c_failed",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "sensor_c"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 5
+              }
+            }
+          }
+        },
+        "cycles": 50
+      },
+      {
+        "name": "triple_fault",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "sensor_a"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 5
+              }
+            }
+          }
+        },
+        "cycles": 100
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "flag_fault_a",
+        "guard_names": [
+          "sensor_a_failed"
+        ],
+        "assignments": [
+          {
+            "target": "fault_a",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flag_fault_b",
+        "guard_names": [
+          "sensor_b_failed"
+        ],
+        "assignments": [
+          {
+            "target": "fault_b",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flag_fault_c",
+        "guard_names": [
+          "sensor_c_failed"
+        ],
+        "assignments": [
+          {
+            "target": "fault_c",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "enter_safe_state",
+        "guard_names": [
+          "triple_fault"
+        ],
+        "assignments": [
+          {
+            "target": "safe_state",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "voted_valid",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Or",
+              "left": {
+                "Binary": {
+                  "op": "Or",
+                  "left": {
+                    "Binary": {
+                      "op": "Eq",
+                      "left": {
+                        "Signal": "voted_value"
+                      },
+                      "right": {
+                        "Signal": "sensor_a"
+                      }
+                    }
+                  },
+                  "right": {
+                    "Binary": {
+                      "op": "Eq",
+                      "left": {
+                        "Signal": "voted_value"
+                      },
+                      "right": {
+                        "Signal": "sensor_b"
+                      }
+                    }
+                  }
+                }
+              },
+              "right": {
+                "Binary": {
+                  "op": "Eq",
+                  "left": {
+                    "Signal": "voted_value"
+                  },
+                  "right": {
+                    "Signal": "sensor_c"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "fault_detected",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "sensor_a"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 5
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "fault_a"
+            }
+          }
+        }
+      },
+      {
+        "name": "no_triple_fault",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Binary": {
+                  "op": "And",
+                  "left": {
+                    "Signal": "fault_a"
+                  },
+                  "right": {
+                    "Signal": "fault_b"
+                  }
+                }
+              },
+              "right": {
+                "Signal": "fault_c"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

@@ -1,0 +1,306 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "icu_monitor",
+    "signals": [
+      {
+        "name": "heart_rate",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "spo2",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "systolic_bp",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "diastolic_bp",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "cardiac_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "tachy_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "hypoxia_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "bp_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "code_blue",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "bradycardia",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "heart_rate"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 50
+              }
+            }
+          }
+        },
+        "cycles": 300
+      },
+      {
+        "name": "tachycardia",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "heart_rate"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 150
+              }
+            }
+          }
+        },
+        "cycles": 120
+      },
+      {
+        "name": "low_spo2",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "spo2"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 90
+              }
+            }
+          }
+        },
+        "cycles": 60
+      },
+      {
+        "name": "hypotension",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "systolic_bp"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 80
+              }
+            }
+          }
+        },
+        "cycles": 200
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "cardiac_alert",
+        "guard_names": [
+          "bradycardia"
+        ],
+        "assignments": [
+          {
+            "target": "cardiac_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "tachy_alert",
+        "guard_names": [
+          "tachycardia"
+        ],
+        "assignments": [
+          {
+            "target": "tachy_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hypoxia_alert",
+        "guard_names": [
+          "low_spo2"
+        ],
+        "assignments": [
+          {
+            "target": "hypoxia_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "bp_alert",
+        "guard_names": [
+          "hypotension"
+        ],
+        "assignments": [
+          {
+            "target": "bp_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "code_blue_alert",
+        "guard_names": [
+          "bradycardia",
+          "low_spo2"
+        ],
+        "assignments": [
+          {
+            "target": "code_blue",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "spo2_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "spo2"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 101
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "no_silent_hypoxia",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Lt",
+                "left": {
+                  "Signal": "spo2"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 90
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "hypoxia_alarm"
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_code_blue",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Signal": "code_blue"
+              },
+              "right": {
+                "Binary": {
+                  "op": "Gt",
+                  "left": {
+                    "Signal": "heart_rate"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 60
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

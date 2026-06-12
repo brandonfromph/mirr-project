@@ -1,0 +1,105 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "struct_packet",
+    "signals": [
+      {
+        "name": "header_version",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 4
+          }
+        }
+      },
+      {
+        "name": "header_length",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 12
+          }
+        }
+      },
+      {
+        "name": "header_checksum",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "payload_byte",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "valid",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "process",
+        "condition": {
+          "Signal": "valid"
+        },
+        "cycles": 1
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "update_header",
+        "guard_names": [
+          "process"
+        ],
+        "assignments": [
+          {
+            "target": "header_version",
+            "value": {
+              "Literal": {
+                "Integer": 1
+              }
+            }
+          },
+          {
+            "target": "header_length",
+            "value": {
+              "Literal": {
+                "Integer": 64
+              }
+            }
+          },
+          {
+            "target": "header_checksum",
+            "value": {
+              "Literal": {
+                "Integer": 43981
+              }
+            }
+          },
+          {
+            "target": "payload_byte",
+            "value": {
+              "Literal": {
+                "Integer": 0
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

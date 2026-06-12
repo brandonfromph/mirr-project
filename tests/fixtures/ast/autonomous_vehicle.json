@@ -1,0 +1,241 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "autonomous_vehicle",
+    "signals": [
+      {
+        "name": "lidar_range",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "radar_range",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "camera_conf",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "vehicle_speed",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "brake_cmd",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "lane_alert",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "speed_reduce",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "lidar_close",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "lidar_range"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 500
+              }
+            }
+          }
+        },
+        "cycles": 3
+      },
+      {
+        "name": "radar_close",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "radar_range"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 800
+              }
+            }
+          }
+        },
+        "cycles": 3
+      },
+      {
+        "name": "low_confidence",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "camera_conf"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 40
+              }
+            }
+          }
+        },
+        "cycles": 10
+      },
+      {
+        "name": "over_speed_limit",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "vehicle_speed"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 120
+              }
+            }
+          }
+        },
+        "cycles": 5
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "emergency_brake",
+        "guard_names": [
+          "lidar_close",
+          "radar_close"
+        ],
+        "assignments": [
+          {
+            "target": "brake_cmd",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "reduce_speed",
+        "guard_names": [
+          "over_speed_limit"
+        ],
+        "assignments": [
+          {
+            "target": "speed_reduce",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "lane_departure",
+        "guard_names": [
+          "low_confidence"
+        ],
+        "assignments": [
+          {
+            "target": "lane_alert",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "speed_limit_enforced",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Gt",
+                "left": {
+                  "Signal": "vehicle_speed"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 120
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "speed_reduce"
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_brake",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Signal": "brake_cmd"
+              },
+              "right": {
+                "Binary": {
+                  "op": "Gt",
+                  "left": {
+                    "Signal": "lidar_range"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 1000
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

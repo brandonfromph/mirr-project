@@ -1,0 +1,712 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "tmr_sensor_fusion",
+    "signals": [
+      {
+        "name": "sensor_a",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "sensor_b",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "sensor_c",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "sensor_a_ok",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "sensor_b_ok",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "sensor_c_ok",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "heartbeat",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "system_armed",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "manual_override",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "rst_n",
+        "kind": "Input",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "temperature",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "voted_value",
+        "kind": "Output",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "fault_detected",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "sensor_a_failed",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "sensor_b_failed",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "sensor_c_failed",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "watchdog_timeout",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "safety_shutdown",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "pressure_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "temp_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "vote_select",
+        "kind": "Internal",
+        "ty": {
+          "core": {
+            "Unsigned": 8
+          }
+        }
+      },
+      {
+        "name": "fault_latch",
+        "kind": "Internal",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "shutdown_latch",
+        "kind": "Internal",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "armed_status",
+        "kind": "Internal",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "override_active",
+        "kind": "Internal",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "hb_status",
+        "kind": "Internal",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "a_healthy",
+        "condition": {
+          "Signal": "sensor_a_ok"
+        },
+        "cycles": 1
+      },
+      {
+        "name": "b_healthy",
+        "condition": {
+          "Signal": "sensor_b_ok"
+        },
+        "cycles": 1
+      },
+      {
+        "name": "c_healthy",
+        "condition": {
+          "Signal": "sensor_c_ok"
+        },
+        "cycles": 1
+      },
+      {
+        "name": "a_sick",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "sensor_a_ok"
+            }
+          }
+        },
+        "cycles": 8
+      },
+      {
+        "name": "b_sick",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "sensor_b_ok"
+            }
+          }
+        },
+        "cycles": 8
+      },
+      {
+        "name": "c_sick",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "sensor_c_ok"
+            }
+          }
+        },
+        "cycles": 8
+      },
+      {
+        "name": "no_heartbeat",
+        "condition": {
+          "Unary": {
+            "op": "Not",
+            "operand": {
+              "Signal": "heartbeat"
+            }
+          }
+        },
+        "cycles": 64
+      },
+      {
+        "name": "temp_high",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temperature"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 800
+              }
+            }
+          }
+        },
+        "cycles": 4
+      },
+      {
+        "name": "is_armed",
+        "condition": {
+          "Signal": "system_armed"
+        },
+        "cycles": 1
+      },
+      {
+        "name": "fault_held",
+        "condition": {
+          "Binary": {
+            "op": "Eq",
+            "left": {
+              "Signal": "fault_detected"
+            },
+            "right": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        },
+        "cycles": 16
+      },
+      {
+        "name": "override_on",
+        "condition": {
+          "Signal": "manual_override"
+        },
+        "cycles": 1
+      },
+      {
+        "name": "hb_alive",
+        "condition": {
+          "Signal": "heartbeat"
+        },
+        "cycles": 1
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "vote_a",
+        "guard_names": [
+          "a_healthy"
+        ],
+        "assignments": [
+          {
+            "target": "voted_value",
+            "value": {
+              "Signal": "sensor_a"
+            }
+          },
+          {
+            "target": "vote_select",
+            "value": {
+              "Literal": {
+                "Integer": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flag_a_failed",
+        "guard_names": [
+          "a_sick"
+        ],
+        "assignments": [
+          {
+            "target": "sensor_a_failed",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "fault_latch",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flag_b_failed",
+        "guard_names": [
+          "b_sick"
+        ],
+        "assignments": [
+          {
+            "target": "sensor_b_failed",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flag_c_failed",
+        "guard_names": [
+          "c_sick"
+        ],
+        "assignments": [
+          {
+            "target": "sensor_c_failed",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "set_fault",
+        "guard_names": [
+          "a_sick"
+        ],
+        "assignments": [
+          {
+            "target": "fault_detected",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "trigger_watchdog",
+        "guard_names": [
+          "no_heartbeat"
+        ],
+        "assignments": [
+          {
+            "target": "watchdog_timeout",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "trip_temp",
+        "guard_names": [
+          "temp_high"
+        ],
+        "assignments": [
+          {
+            "target": "temp_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "engage_shutdown",
+        "guard_names": [
+          "is_armed",
+          "fault_held"
+        ],
+        "assignments": [
+          {
+            "target": "safety_shutdown",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          },
+          {
+            "target": "shutdown_latch",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "track_override",
+        "guard_names": [
+          "override_on"
+        ],
+        "assignments": [
+          {
+            "target": "override_active",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "track_armed",
+        "guard_names": [
+          "is_armed"
+        ],
+        "assignments": [
+          {
+            "target": "armed_status",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "track_hb",
+        "guard_names": [
+          "hb_alive"
+        ],
+        "assignments": [
+          {
+            "target": "hb_status",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "vote_integrity",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Or",
+              "left": {
+                "Binary": {
+                  "op": "Or",
+                  "left": {
+                    "Binary": {
+                      "op": "Eq",
+                      "left": {
+                        "Signal": "voted_value"
+                      },
+                      "right": {
+                        "Signal": "sensor_a"
+                      }
+                    }
+                  },
+                  "right": {
+                    "Binary": {
+                      "op": "Eq",
+                      "left": {
+                        "Signal": "voted_value"
+                      },
+                      "right": {
+                        "Signal": "sensor_b"
+                      }
+                    }
+                  }
+                }
+              },
+              "right": {
+                "Binary": {
+                  "op": "Eq",
+                  "left": {
+                    "Signal": "voted_value"
+                  },
+                  "right": {
+                    "Signal": "sensor_c"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_shutdown",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Signal": "safety_shutdown"
+            },
+            "consequent": {
+              "Signal": "fault_detected"
+            }
+          }
+        }
+      },
+      {
+        "name": "not_triple_failure",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Binary": {
+                  "op": "And",
+                  "left": {
+                    "Signal": "sensor_a_failed"
+                  },
+                  "right": {
+                    "Signal": "sensor_b_failed"
+                  }
+                }
+              },
+              "right": {
+                "Signal": "sensor_c_failed"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "fault_latency_bound",
+        "directive": "Assert",
+        "formula": {
+          "EventuallyWithin": {
+            "expr": {
+              "Signal": "fault_detected"
+            },
+            "cycles": 16
+          }
+        }
+      },
+      {
+        "name": "shutdown_follows_fault",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysFollowedBy": {
+            "trigger": {
+              "Signal": "fault_detected"
+            },
+            "response": {
+              "Signal": "safety_shutdown"
+            },
+            "delay_cycles": 32
+          }
+        }
+      },
+      {
+        "name": "healthy_env",
+        "directive": "Assume",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Or",
+              "left": {
+                "Binary": {
+                  "op": "Or",
+                  "left": {
+                    "Signal": "sensor_a_ok"
+                  },
+                  "right": {
+                    "Signal": "sensor_b_ok"
+                  }
+                }
+              },
+              "right": {
+                "Signal": "sensor_c_ok"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "pressure_alarm_reachable",
+        "directive": "Cover",
+        "formula": {
+          "EventuallyWithin": {
+            "expr": {
+              "Signal": "pressure_alarm"
+            },
+            "cycles": 100
+          }
+        }
+      }
+    ],
+    "pattern_calls": [
+      {
+        "pattern_name": "threshold_alarm",
+        "arguments": [
+          {
+            "SignalRef": "pressure"
+          },
+          {
+            "ConstInt": 4000
+          },
+          {
+            "ConstInt": 4
+          },
+          {
+            "SignalRef": "pressure_alarm"
+          }
+        ]
+      }
+    ],
+    "pattern_origins": []
+  }
+}

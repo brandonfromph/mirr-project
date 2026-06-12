@@ -1,0 +1,249 @@
+{
+  "ir_version": "2.0",
+  "guards": [
+    {
+      "Counter": {
+        "name": "sustained_low_pressure",
+        "input_signal": "airway_pressure",
+        "output_signal": "sustained_low_pressure_out",
+        "counter_signal": "sustained_low_pressure_counter",
+        "comparator_signal": "sustained_low_pressure_cmp",
+        "target_count": 1000,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "airway_pressure",
+            "op": "Lt",
+            "value": {
+              "Integer": 20
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "sustained_high_pressure",
+        "input_signal": "airway_pressure",
+        "output_signal": "sustained_high_pressure_out",
+        "counter_signal": "sustained_high_pressure_counter",
+        "comparator_signal": "sustained_high_pressure_cmp",
+        "target_count": 200,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "airway_pressure",
+            "op": "Gt",
+            "value": {
+              "Integer": 800
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "low_oxygen",
+        "input_signal": "oxygen_saturation",
+        "output_signal": "low_oxygen_out",
+        "counter_signal": "low_oxygen_counter",
+        "comparator_signal": "low_oxygen_cmp",
+        "target_count": 300,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "oxygen_saturation",
+            "op": "Lt",
+            "value": {
+              "Integer": 85
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "critical_oxygen",
+        "input_signal": "oxygen_saturation",
+        "output_signal": "critical_oxygen_out",
+        "counter_signal": "critical_oxygen_counter",
+        "comparator_signal": "critical_oxygen_cmp",
+        "target_count": 60,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "oxygen_saturation",
+            "op": "Lt",
+            "value": {
+              "Integer": 70
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "over_volume",
+        "input_signal": "tidal_volume",
+        "output_signal": "over_volume_out",
+        "counter_signal": "over_volume_counter",
+        "comparator_signal": "over_volume_cmp",
+        "target_count": 50,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "tidal_volume",
+            "op": "Gt",
+            "value": {
+              "Integer": 500
+            }
+          }
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "under_volume",
+        "input_signal": "tidal_volume",
+        "output_signal": "under_volume_out",
+        "counter_signal": "under_volume_counter",
+        "comparator_signal": "under_volume_cmp",
+        "target_count": 200,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "tidal_volume",
+            "op": "Lt",
+            "value": {
+              "Integer": 5
+            }
+          }
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "sustained_low_pressure_counter",
+      "ty": {
+        "Unsigned": 11
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "sustained_low_pressure_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "sustained_low_pressure_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "sustained_high_pressure_counter",
+      "ty": {
+        "Unsigned": 9
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "sustained_high_pressure_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "sustained_high_pressure_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "low_oxygen_counter",
+      "ty": {
+        "Unsigned": 10
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "low_oxygen_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "low_oxygen_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "critical_oxygen_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "critical_oxygen_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "critical_oxygen_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "over_volume_counter",
+      "ty": {
+        "Unsigned": 7
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "over_volume_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "over_volume_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "under_volume_counter",
+      "ty": {
+        "Unsigned": 9
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "under_volume_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "under_volume_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    }
+  ],
+  "statistics": {
+    "shift_registers_used": 0,
+    "counters_used": 6,
+    "logic_gates_used": 6,
+    "max_delay_cycles": 1000,
+    "total_signals": 18,
+    "compilation_time_us": null
+  }
+}

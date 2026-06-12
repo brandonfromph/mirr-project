@@ -1,0 +1,283 @@
+{
+  "ir_version": "2.0",
+  "module": {
+    "name": "industrial_safety",
+    "signals": [
+      {
+        "name": "temperature",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "pressure",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 32
+          }
+        }
+      },
+      {
+        "name": "vibration",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "flow_rate",
+        "kind": "Input",
+        "ty": {
+          "core": {
+            "Unsigned": 16
+          }
+        }
+      },
+      {
+        "name": "shutdown_cmd",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "pressure_relief",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "vibration_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      },
+      {
+        "name": "flow_alarm",
+        "kind": "Output",
+        "ty": {
+          "core": "Bool"
+        }
+      }
+    ],
+    "guards": [
+      {
+        "name": "over_temp",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "temperature"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 450
+              }
+            }
+          }
+        },
+        "cycles": 20
+      },
+      {
+        "name": "over_pressure",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "pressure"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 10000
+              }
+            }
+          }
+        },
+        "cycles": 5
+      },
+      {
+        "name": "high_vibration",
+        "condition": {
+          "Binary": {
+            "op": "Gt",
+            "left": {
+              "Signal": "vibration"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 800
+              }
+            }
+          }
+        },
+        "cycles": 15
+      },
+      {
+        "name": "low_flow",
+        "condition": {
+          "Binary": {
+            "op": "Lt",
+            "left": {
+              "Signal": "flow_rate"
+            },
+            "right": {
+              "Literal": {
+                "Integer": 10
+              }
+            }
+          }
+        },
+        "cycles": 30
+      }
+    ],
+    "reflexes": [
+      {
+        "name": "emergency_shutdown",
+        "guard_names": [
+          "over_temp",
+          "over_pressure"
+        ],
+        "assignments": [
+          {
+            "target": "shutdown_cmd",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "relief_valve",
+        "guard_names": [
+          "over_pressure"
+        ],
+        "assignments": [
+          {
+            "target": "pressure_relief",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "vibration_alert",
+        "guard_names": [
+          "high_vibration"
+        ],
+        "assignments": [
+          {
+            "target": "vibration_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "flow_alert",
+        "guard_names": [
+          "low_flow"
+        ],
+        "assignments": [
+          {
+            "target": "flow_alarm",
+            "value": {
+              "Literal": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "properties": [
+      {
+        "name": "pressure_triggers_relief",
+        "directive": "Assert",
+        "formula": {
+          "AlwaysImplies": {
+            "antecedent": {
+              "Binary": {
+                "op": "Gt",
+                "left": {
+                  "Signal": "pressure"
+                },
+                "right": {
+                  "Literal": {
+                    "Integer": 10000
+                  }
+                }
+              }
+            },
+            "consequent": {
+              "Signal": "pressure_relief"
+            }
+          }
+        }
+      },
+      {
+        "name": "temp_bounded",
+        "directive": "Assert",
+        "formula": {
+          "Always": {
+            "Binary": {
+              "op": "Lt",
+              "left": {
+                "Signal": "temperature"
+              },
+              "right": {
+                "Literal": {
+                  "Integer": 600
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "no_spurious_shutdown",
+        "directive": "Assert",
+        "formula": {
+          "Never": {
+            "Binary": {
+              "op": "And",
+              "left": {
+                "Signal": "shutdown_cmd"
+              },
+              "right": {
+                "Binary": {
+                  "op": "Lt",
+                  "left": {
+                    "Signal": "temperature"
+                  },
+                  "right": {
+                    "Literal": {
+                      "Integer": 400
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pattern_calls": [],
+    "pattern_origins": []
+  }
+}

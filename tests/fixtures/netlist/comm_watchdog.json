@@ -3,33 +3,85 @@
   "guards": [
     {
       "Counter": {
-        "name": "comm_timeout",
-        "input_signal": "rx_seen",
-        "output_signal": "comm_timeout_out",
-        "counter_signal": "comm_timeout_counter",
-        "comparator_signal": "comm_timeout_cmp",
-        "target_count": 64,
+        "name": "heartbeat_lost",
+        "input_signal": "heartbeat",
+        "output_signal": "heartbeat_lost_out",
+        "counter_signal": "heartbeat_lost_counter",
+        "comparator_signal": "heartbeat_lost_cmp",
+        "target_count": 500,
         "condition_kind": {
-          "SimpleSignal": "rx_seen"
+          "NegatedSignal": "heartbeat"
+        }
+      }
+    },
+    {
+      "Counter": {
+        "name": "quality_low",
+        "input_signal": "link_quality",
+        "output_signal": "quality_low_out",
+        "counter_signal": "quality_low_counter",
+        "comparator_signal": "quality_low_cmp",
+        "target_count": 100,
+        "condition_kind": {
+          "Comparison": {
+            "signal": "link_quality",
+            "op": "Lt",
+            "value": {
+              "Integer": 50
+            }
+          }
         }
       }
     }
   ],
   "signals": [
     {
-      "name": "comm_timeout_counter",
+      "name": "heartbeat_lost_counter",
       "ty": {
-        "Unsigned": 7
+        "Unsigned": 10
       },
-      "kind": "Counter"
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "heartbeat_lost_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "heartbeat_lost_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
+    },
+    {
+      "name": "quality_low_counter",
+      "ty": {
+        "Unsigned": 8
+      },
+      "kind": "Counter",
+      "source": null
+    },
+    {
+      "name": "quality_low_cmp",
+      "ty": "Bool",
+      "kind": "Comparator",
+      "source": null
+    },
+    {
+      "name": "quality_low_out",
+      "ty": "Bool",
+      "kind": "LogicGate",
+      "source": null
     }
   ],
   "statistics": {
     "shift_registers_used": 0,
-    "counters_used": 1,
-    "logic_gates_used": 1,
-    "max_delay_cycles": 64,
-    "total_signals": 1,
-    "compilation_time_us": 0
+    "counters_used": 2,
+    "logic_gates_used": 2,
+    "max_delay_cycles": 500,
+    "total_signals": 6,
+    "compilation_time_us": null
   }
 }
