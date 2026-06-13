@@ -171,7 +171,10 @@ fn c2_signed_assigned_to_unsigned_passes() {
         Expr::Signal("si16".to_string()),
     );
     validate_module(&m).expect("must pass semantic validation");
-    assert!(typecheck_module(&m).is_ok(), "signed to unsigned of equal width must pass structural bitcast");
+    assert!(
+        typecheck_module(&m).is_ok(),
+        "signed to unsigned of equal width must pass structural bitcast"
+    );
 }
 
 #[test]
@@ -179,7 +182,10 @@ fn c2_unsigned_to_signed_passes() {
     let m =
         module_with_assignment("out_si", SignalType::Signed(16), Expr::Signal("u16".to_string()));
     validate_module(&m).expect("must pass semantic validation");
-    assert!(typecheck_module(&m).is_ok(), "unsigned to signed of equal width must pass structural bitcast");
+    assert!(
+        typecheck_module(&m).is_ok(),
+        "unsigned to signed of equal width must pass structural bitcast"
+    );
 }
 
 #[test]

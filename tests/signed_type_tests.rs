@@ -515,7 +515,8 @@ fn signed_xor_cross_category_passes() {
     };
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
-    typecheck_module(&m).expect("Structural bitcast allows XOR between identical width Signed/Unsigned");
+    typecheck_module(&m)
+        .expect("Structural bitcast allows XOR between identical width Signed/Unsigned");
 }
 
 // ---------------------------------------------------------------------------
