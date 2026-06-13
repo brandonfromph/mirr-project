@@ -172,6 +172,7 @@ pub struct AssignmentComponent {
 /// Component: Property assertion
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PropertyComponent {
+    pub formula: crate::ast::property::PropertyFormula,
     pub formula_exprs: Vec<EntityId>,
 }
 

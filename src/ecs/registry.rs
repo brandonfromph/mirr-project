@@ -19,7 +19,7 @@ pub const MAX_ENTITIES: usize = 1_000_000;
 
 /// The Registry: The Data-Oriented "World" of the MIRR Compiler.
 /// Refactored to Vec-based storage for O(1) access and cache locality.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Registry {
     pub(super) next_id: u32,
 
@@ -395,7 +395,7 @@ impl Registry {
 
             self.names[p_idx] = Some(NameComponent(prop.name.clone()));
             self.kinds[p_idx] = Some(KindComponent(EntityKind::PROPERTY));
-            self.property_comps[p_idx] = Some(PropertyComponent { formula_exprs });
+            self.property_comps[p_idx] = Some(PropertyComponent { formula: prop.formula.clone(), formula_exprs });
             if let Some(span) = prop.span {
                 self.spans[p_idx] = Some(SpanComponent(span));
             }

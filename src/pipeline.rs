@@ -134,6 +134,8 @@ pub struct PipelineResult {
     pub hls_result: Option<crate::hls::HlsResult>,
     /// String-interned file path table for source traceability.
     pub file_table: FileTable,
+    /// The final fully-populated ECS registry.
+    pub ecs_registry: Option<crate::ecs::Registry>,
 }
 
 impl PipelineResult {
@@ -344,7 +346,16 @@ pub fn run_pipeline_on_program(
         if config.symbolic { crate::symbolic::analyze_module(&program.module).ok() } else { None };
 
     // Stage 3: Simplify (optional).
-    let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
+    // ECS-native simplification (Phase 3 ECS Transition).
+    let simplify_stats = if config.simplify {
+        Some(crate::ecs::systems::simplifier_system(&mut registry))
+    } else {
+        None
+    };
+
+    /* --- LEGACY AST SIMPLIFIER (PHASE 3 ARCHIVED) ---
+    let _legacy_simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
+    */
 
     // Stage 3b: SAT-based simplification (optional, runs after heuristic).
     // Now executed natively in Phase 3 ECS Systems.
@@ -413,6 +424,7 @@ pub fn run_pipeline_on_program(
         mape_k_rtl: None,
         hls_result: None,
         file_table: FileTable::new(),
+        ecs_registry: Some(final_registry.clone()),
     };
 
     // Stage 5c: HLS pass (optional, MEGA-12).
@@ -486,6 +498,7 @@ pub fn run_pipeline_on_program(
 /// Run Phase 3 simplification on all expressions in the program.
 ///
 /// Returns aggregate stats. Bounded: iterates over guards + reflexes.
+#[allow(dead_code)]
 fn simplify_program(program: &mut MirrProgram) -> SimplifyStats {
     let mut total = SimplifyStats { rules_applied: 0, nodes_before: 0, nodes_after: 0 };
 
@@ -513,6 +526,7 @@ fn simplify_program(program: &mut MirrProgram) -> SimplifyStats {
 }
 
 /// Simplify expressions inside property formulas.
+#[allow(dead_code)]
 fn simplify_properties(
     properties: &mut [crate::ast::property::PropertyDecl],
     total: &mut SimplifyStats,
@@ -524,6 +538,7 @@ fn simplify_properties(
     }
 }
 
+#[allow(dead_code)]
 fn simplify_one(expr: &mut crate::ast::Expr, total: &mut SimplifyStats) {
     let (simplified, stats) = crate::simplify::simplify_expr_with_stats(expr.clone());
     *expr = simplified;

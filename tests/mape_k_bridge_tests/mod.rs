@@ -48,7 +48,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         span: None,
     };
     PipelineResult {
-        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
+        program: MirrProgram { target: None, patterns: vec![], imports: vec![], module },
         simplify_stats: None,
         width_result: None,
         temporal_netlist: None,
@@ -63,6 +63,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         symbolic_result: None,
         mape_k_rtl: None,
         hls_result: None,
+        ecs_registry: Some(mirrc::ecs::Registry::default()),
         file_table: mirrc::span::FileTable::new(),
     }
 }
@@ -86,6 +87,7 @@ fn parse_to_pipeline(source: &str) -> PipelineResult {
         symbolic_result: None,
         mape_k_rtl: None,
         hls_result: None,
+        ecs_registry: Some(mirrc::ecs::Registry::default()),
         file_table: mirrc::span::FileTable::new(),
     }
 }

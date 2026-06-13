@@ -8,10 +8,11 @@
 
 use std::collections::HashMap;
 
-use crate::ast::program::Module;
 use crate::ast::types::SignalKind;
+use crate::ecs::EntityKind;
+use crate::ecs::Registry;
 use crate::emit::rspu::rspu_err;
-use crate::emit::rspu_isa::*;
+use crate::emit::rspu_isa::{RegId, TargetSpec};
 use crate::error::MirrError;
 
 /// Result of register allocation.
@@ -54,16 +55,16 @@ impl RegAllocResult {
     }
 }
 
-/// Perform bounded linear-scan register allocation for a MIRR module.
+/// Perform bounded linear-scan register allocation for an ECS Registry.
 ///
-/// Iterates once over `module.signals` (bounded by parser limit).
+/// Iterates once over `registry.kinds` (bounded by parser limit).
 /// Returns `Err(E701)` if the total hardware limit is exceeded.
 pub fn allocate_registers(
-    module: &Module,
+    registry: &Registry,
     target: &TargetSpec,
 ) -> Result<RegAllocResult, MirrError> {
-    let mut map = HashMap::with_capacity(module.signals.len());
-    let mut entries = Vec::with_capacity(module.signals.len());
+    let mut map = HashMap::with_capacity(registry.names.len());
+    let mut entries = Vec::with_capacity(registry.names.len());
 
     println!("DEBUG TARGET SPEC: {:?}", target);
 
@@ -75,27 +76,32 @@ pub fn allocate_registers(
     let mut outputs = Vec::new();
     let mut internals = Vec::new();
 
-    for sig in &module.signals {
-        match sig.kind {
-            SignalKind::Input => inputs.push(sig),
-            SignalKind::Output => outputs.push(sig),
-            SignalKind::Internal => internals.push(sig),
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) = (
+            &registry.names[i],
+            &registry.kinds[i],
+            &registry.types[i],
+        ) {
+            if let EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
+                let name = &name_comp.0;
+                let size = match &type_comp.0.core {
+                    crate::ast::types::SignalType::Array { length, .. } => *length as u16,
+                    _ => 1,
+                };
+                let sig_tuple = (name.clone(), size);
+                match sig_kind {
+                    SignalKind::Input => inputs.push(sig_tuple),
+                    SignalKind::Output => outputs.push(sig_tuple),
+                    SignalKind::Internal => internals.push(sig_tuple),
+                }
+            }
         }
     }
 
     let mut cursor: u16 = input_base;
 
     // Helper closure to allocate a signal (either scalar or flattened array)
-    let allocate_signal = |sig: &crate::ast::program::SignalDecl,
-                           cursor: &mut u16,
-                           map: &mut HashMap<String, RegId>,
-                           entries: &mut Vec<(String, RegId)>|
-     -> Result<(), MirrError> {
-        let size = match &sig.ty.core {
-            crate::ast::types::SignalType::Array { length, .. } => *length as u16,
-            _ => 1,
-        };
-
+    let mut allocate_signal = |cursor: &mut u16, name: String, size: u16| -> Result<(), MirrError> {
         if *cursor as usize + size as usize > max_regs {
             return Err(rspu_err(
                 "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
@@ -104,13 +110,13 @@ pub fn allocate_registers(
 
         if size == 1 {
             let reg = *cursor as RegId;
-            map.insert(sig.name.clone(), reg);
-            entries.push((sig.name.clone(), reg));
+            map.insert(name.clone(), reg);
+            entries.push((name, reg));
             *cursor += 1;
         } else {
             for i in 0..size {
                 let reg = *cursor as RegId;
-                let flat_name = format!("{}[{}]", sig.name, i);
+                let flat_name = format!("{}[{}]", name, i);
                 map.insert(flat_name.clone(), reg);
                 entries.push((flat_name, reg));
                 *cursor += 1;
@@ -120,20 +126,20 @@ pub fn allocate_registers(
     };
 
     // 1. Allocate Inputs
-    for sig in inputs {
-        allocate_signal(sig, &mut cursor, &mut map, &mut entries)?;
+    for (name, size) in inputs {
+        allocate_signal(&mut cursor, name, size)?;
     }
 
     // 2. Allocate Outputs (Start at output_base unless inputs overflowed into it)
     cursor = cursor.max(output_base);
-    for sig in outputs {
-        allocate_signal(sig, &mut cursor, &mut map, &mut entries)?;
+    for (name, size) in outputs {
+        allocate_signal(&mut cursor, name, size)?;
     }
 
     // 3. Allocate Internals (Start at internal_base unless outputs overflowed into it)
     cursor = cursor.max(internal_base);
-    for sig in internals {
-        allocate_signal(sig, &mut cursor, &mut map, &mut entries)?;
+    for (name, size) in internals {
+        allocate_signal(&mut cursor, name, size)?;
     }
 
     // 4. Reserve 'true' constant and setup Temporaries

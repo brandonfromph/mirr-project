@@ -65,6 +65,7 @@ fn result_with_many_temporal_guards() -> PipelineResult {
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
+        ecs_registry: Some(mirrc::ecs::Registry::default()),
         file_table: mirrc::span::FileTable::new(),
     }
 }
