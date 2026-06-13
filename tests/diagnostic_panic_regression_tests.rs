@@ -9,7 +9,6 @@ use mirrc::error::MirrError;
 use mirrc::parser::expr_parser::parse_expression;
 use mirrc::parser::module_parser::parse_mirr;
 use mirrc::temporal::compiler::TemporalCompiler;
-use mirrc::width::infer_widths;
 
 // Helper to run temporal lower and return Result
 fn run_lower_guard(registry: &Registry, gid: EntityId) -> Result<(), MirrError> {
@@ -18,12 +17,22 @@ fn run_lower_guard(registry: &Registry, gid: EntityId) -> Result<(), MirrError> 
     Ok(())
 }
 
-// Helper to run width inference and return Result
+// Helper to run width inference natively in ECS and return Result
 fn run_width_infer(expr_str: &str) -> Result<(), MirrError> {
     let expr = parse_expression(expr_str)?;
-    let result = infer_widths(&expr, &[]);
-    if result.has_errors() {
-        let diag = &result.diagnostics[0];
+    let mut registry = Registry::new();
+    if registry.ingest_expr(&expr).is_err() {
+        return Err(MirrError::WidthError {
+            message: "exceeds maximum node count".to_string(),
+            span: None,
+        });
+    }
+    let signal_info = std::collections::HashMap::<&str, (u32, bool)>::new();
+    let mut diags = mirrc::width::constraint::generate_ecs_constraints(&mut registry, &signal_info);
+    let (solve_diags, _) = mirrc::ecs::systems::expression_width_inference_system(&mut registry);
+    diags.extend(solve_diags);
+    if diags.iter().any(|d| d.severity == mirrc::width::types::DiagSeverity::Error) {
+        let diag = &diags[0];
         return Err(MirrError::WidthError { message: diag.message.clone(), span: diag.span });
     }
     Ok(())
@@ -264,10 +273,12 @@ macro_rules! gen_width_node_limit_test {
                         right: Box::new(current),
                     };
                 }
-                let result = infer_widths(&current, &[]);
-                if result.has_errors() {
-                    let diag = &result.diagnostics[0];
-                    Err(MirrError::WidthError { message: diag.message.clone(), span: diag.span })
+                let mut registry = Registry::new();
+                if let Err(_) = registry.ingest_expr(&current) {
+                    Err(MirrError::WidthError {
+                        message: "exceeds maximum node count".to_string(),
+                        span: None,
+                    })
                 } else {
                     Ok(())
                 }

@@ -529,11 +529,28 @@ The `reflect` primitive used a Shadow Register Chain (scan chain) to capture reg
   - Tape-out preparation: GDS-II generation, DRC (Design Rule Check), LVS (Layout vs Schematic).
   - Power/performance/area (PPA) characterization from post-synthesis and post-layout data.
 
-**Result artifact:** Multi-core R-SPU fabric tape-out-ready design with FPGA prototype validation.
+**Result artifact:** Multi-core R-SPU IP ready for fabrication or FPGA deployment.
 
 ---
 
-## Phase 9 — Production Deployment & Certification (Not Started)
+## Phase 9 — 3D Spatial Silicon & The Cube Architecture (Exploratory)
+
+- **Goal:** Explore hybrid 3D structural logic stacking utilizing concepts from Huawei's LogicFolding, Tau (τ) Scaling, and Minecraft Redstone spatial architecture.
+- **Scope:**
+  - Simultaneous Horizontal and Vertical Stacking: Mapping spatial MIRR constructs onto multi-layer physical silicon substrates.
+  - Tau (τ) Scaling / Temporal Scaling: Exploiting z-axis connections for near-instant signal propagation to bypass traditional RC delay constraints.
+  - Thermal-Aware "Cube" Compilation: Co-designing logic paths alongside internal micro-fluidic two-phase immersion cooling channels (e.g. data-center grade liquid cooling) to enable high-density 3D thermal survival.
+  - Ultra-Efficient Heterogeneous Integration: Targeting extreme performance-per-watt efficiency models (similar to Apple Silicon methodology) to minimize internal volume heat generation.
+
+**Result artifact:** Proof-of-concept synthesis targets generating z-aware 3D netlists, expanding the EDA pipeline beyond 2D planar constraints.
+
+### The Minecraft Redstone Concept
+
+The physical and structural goals of Phase 9 can be directly compared to the mechanics of **Minecraft Redstone** logic. In Redstone engineering, standard 2D logic builds quickly become limited by rendering distance and horizontal delay. To optimize speed, engineers route logic vertically (3D stacking), taking advantage of true spatial computing. The MIRR compiler’s pursuit of the "Cube Architecture" is the physical realization of this exact paradigm: routing and compiling hard real-time logic seamlessly across the Z-axis in physical silicon.
+
+---
+
+## Phase 10 — Production Deployment & Certification (Not Started)
 
 > [!NOTE]
 > Phase 9 is a forward-looking design goal. It describes the

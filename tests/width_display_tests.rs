@@ -93,17 +93,23 @@ fn test_format_stats() {
 #[test]
 fn test_format_scc_report_empty() {
     let sccs = vec![];
-    let names = vec!["a".to_string(), "b".to_string()];
+    let names = std::collections::HashMap::new();
     assert_eq!(format_scc_report(&sccs, &names), "No non-trivial SCCs detected.");
 }
 
 #[test]
 fn test_format_scc_report_nonempty() {
     let sccs = vec![
-        SccInfo { signal_indices: vec![0, 1], kind: SccKind::Expansive },
-        SccInfo { signal_indices: vec![2], kind: SccKind::Nonexpansive },
+        SccInfo {
+            signals: vec![mirrc::ecs::components::EntityId(0), mirrc::ecs::components::EntityId(1)],
+            kind: SccKind::Expansive,
+        },
+        SccInfo { signals: vec![mirrc::ecs::components::EntityId(2)], kind: SccKind::Nonexpansive },
     ];
-    let names = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+    let mut names = std::collections::HashMap::new();
+    names.insert(0, "a".to_string());
+    names.insert(1, "b".to_string());
+    names.insert(2, "c".to_string());
     let out = format_scc_report(&sccs, &names);
     assert!(out.contains("SCCs detected: 2"));
     assert!(out.contains("SCC 0: expansive [a, b]"));
@@ -114,9 +120,13 @@ fn test_format_scc_report_nonempty() {
 fn test_format_scc_report_truncated() {
     let mut sccs = vec![];
     for _ in 0..300 {
-        sccs.push(SccInfo { signal_indices: vec![0], kind: SccKind::Nonexpansive });
+        sccs.push(SccInfo {
+            signals: vec![mirrc::ecs::components::EntityId(0)],
+            kind: SccKind::Nonexpansive,
+        });
     }
-    let names = vec!["a".to_string()];
+    let mut names = std::collections::HashMap::new();
+    names.insert(0, "a".to_string());
     let out = format_scc_report(&sccs, &names);
     assert!(out.contains("... (truncated)"));
 }

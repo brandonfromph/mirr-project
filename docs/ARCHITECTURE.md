@@ -156,3 +156,16 @@ A 1-Billion Transistor R-SPU would likely consist of:
 **The Ultimate Goal:**
 A sprawling grid of thousands of tiny, hyper-efficient, jitter-free cores swimming in a sea of local memory, communicating over a massive NoC router, and processing thousands of physical reflexes simultaneously without dropping a single frame.
 
+## 7. The Cube Architecture (3D Spatial Silicon)
+
+Moving beyond planar 2D scaling, the architecture roadmap includes exploratory support for **3D Spatial Silicon** (internally referred to as "The Cube"). 
+
+Drawing inspiration from techniques like Huawei's LogicFolding and Tau (τ) Scaling, this methodology allows the MIRR compiler to synthesize logic that spans both horizontal and vertical silicon layers simultaneously. By utilizing ultra-efficient cores (similar to Apple Silicon's performance-per-watt optimization) and internal micro-fluidic liquid cooling (data-center grade two-phase immersion), the R-SPU can achieve staggering logic density without thermal throttling, paving the way for the ultimate cubic processor.
+
+## 8. The Minecraft Redstone Paradigm
+
+To conceptualize the R-SPU and the future 3D Spatial Silicon architectures, it is highly accurate to draw a direct architectural parallel to **Minecraft Redstone** computers.
+
+Standard von Neumann CPUs process instructions sequentially, utilizing software loops and threading overhead to emulate parallelism. In contrast, both the R-SPU and Minecraft Redstone computers embody true **Spatial Computing**. Logic is laid out as physical gates in space, and data flows through them continuously and asynchronously. 
+
+Furthermore, Redstone architectures naturally evolve into vertical stacking (3D structures) to minimize signal delay and bypass horizontal rendering distances. This 3D spatial logic routing is precisely the goal of MIRR's future Cube Architecture, mirroring the real-world engineering challenge of minimizing resistive-capacitive (RC) delay by stacking logic blocks vertically.

@@ -143,8 +143,8 @@ pub enum SccKind {
 /// Information about a detected SCC in the width dependency graph.
 #[derive(Debug, Clone, Serialize)]
 pub struct SccInfo {
-    /// Indices of signals in this SCC (into the signal declarations array).
-    pub signal_indices: Vec<usize>,
+    /// Entities belonging to this SCC in the ECS registry.
+    pub signals: Vec<crate::ecs::components::EntityId>,
     /// Classification of this SCC.
     pub kind: SccKind,
 }

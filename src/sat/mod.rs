@@ -17,5 +17,5 @@ pub mod simplify_sat;
 pub mod solver;
 
 pub use cnf::CnfFormula;
-pub use simplify_sat::simplify_with_sat;
+pub use simplify_sat::simplify_entity_with_sat;
 pub use solver::{SatResult, SatSolver};

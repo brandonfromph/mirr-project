@@ -110,7 +110,10 @@ pub fn format_stats(stats: &WidthStats) -> String {
 ///
 /// `signal_names` maps signal indices to their declared names.
 /// Bounded: iterates once over SCCs (max MAX_SIGNALS).
-pub fn format_scc_report(sccs: &[SccInfo], signal_names: &[String]) -> String {
+pub fn format_scc_report(
+    sccs: &[SccInfo],
+    scc_names: &std::collections::HashMap<u32, String>,
+) -> String {
     if sccs.is_empty() {
         return "No non-trivial SCCs detected.".to_string();
     }
@@ -126,9 +129,9 @@ pub fn format_scc_report(sccs: &[SccInfo], signal_names: &[String]) -> String {
             SccKind::Nonexpansive => "nonexpansive",
         };
         let names: Vec<&str> = scc
-            .signal_indices
+            .signals
             .iter()
-            .filter_map(|&idx| signal_names.get(idx).map(|s| s.as_str()))
+            .filter_map(|&idx| scc_names.get(&idx.0).map(|s| s.as_str()))
             .collect();
         out.push_str(&format!("  SCC {}: {} [{}]\n", i, kind_str, names.join(", ")));
     }

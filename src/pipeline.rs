@@ -297,6 +297,12 @@ pub fn run_pipeline_on_program(
     registry.ingest_module(&program.module)?;
     registry.semantic_validate()?;
 
+    // Phase 3 ECS Systems: Semantic Validation & Typechecking (Shadow Gate)
+    if config.typecheck {
+        registry.typecheck(config.bootstrap_mode)?;
+    }
+
+    // [LEGACY AST TYPECHECKER]
     // ECS-native typechecking complete. Maintaining AST-based type_map for
     // downstream emitters until Phase 3 (R-SPU Emission).
     let type_map = if config.typecheck {
@@ -341,8 +347,9 @@ pub fn run_pipeline_on_program(
     let simplify_stats = if config.simplify { Some(simplify_program(&mut program)) } else { None };
 
     // Stage 3b: SAT-based simplification (optional, runs after heuristic).
-    let sat_stats =
-        if config.sat_simplify { Some(sat_simplify_program(&mut program)) } else { None };
+    // Now executed natively in Phase 3 ECS Systems.
+    // We declare it here but populate it after building the final registry.
+    let mut sat_stats = None;
 
     // Stage 4: Width inference (optional). Always includes SCC.
     let width_result = if config.width {
@@ -363,7 +370,10 @@ pub fn run_pipeline_on_program(
 
     // Phase 3 ECS Systems: Semantic Validation & Typechecking (Shadow Gate)
     // Runs alongside AST-based gates to ensure ECS parity during transition.
-    let _ = crate::ecs::systems::run_compilation_pipeline(&mut final_registry);
+    let (_, ecs_sat_stats) = crate::ecs::systems::run_compilation_pipeline(&mut final_registry);
+    if config.sat_simplify {
+        sat_stats = Some(ecs_sat_stats);
+    }
 
     let mut temporal_netlist = if config.temporal {
         Some(
@@ -533,32 +543,31 @@ pub struct SatSimplifyPipelineStats {
     pub had_unknown: bool,
 }
 
-/// Run SAT-based simplification on all guard conditions and reflex assignments.
-///
-/// Bounded: delegates to `sat::simplify_with_sat` which has internal bounds.
+/* LEGACY AST ENGINE (PHASE 3b ARCHIVED)
 fn sat_simplify_program(program: &mut MirrProgram) -> SatSimplifyPipelineStats {
     let mut total = SatSimplifyPipelineStats::default();
 
     for g in &mut program.module.guards {
-        let result = crate::sat::simplify_with_sat(g.condition.clone());
-        g.condition = result.expr;
-        total.checks_performed += result.checks_performed;
-        total.equivalences_confirmed += result.equivalences_confirmed;
-        total.had_unknown |= result.had_unknown;
+        // let result = crate::sat::simplify_with_sat(g.condition.clone());
+        // g.condition = result.expr;
+        // total.checks_performed += result.checks_performed;
+        // total.equivalences_confirmed += result.equivalences_confirmed;
+        // total.had_unknown |= result.had_unknown;
     }
 
     for r in &mut program.module.reflexes {
         for a in &mut r.assignments {
-            let result = crate::sat::simplify_with_sat(a.value.clone());
-            a.value = result.expr;
-            total.checks_performed += result.checks_performed;
-            total.equivalences_confirmed += result.equivalences_confirmed;
-            total.had_unknown |= result.had_unknown;
+            // let result = crate::sat::simplify_with_sat(a.value.clone());
+            // a.value = result.expr;
+            // total.checks_performed += result.checks_performed;
+            // total.equivalences_confirmed += result.equivalences_confirmed;
+            // total.had_unknown |= result.had_unknown;
         }
     }
 
     total
 }
+*/
 
 fn load_imports_recursive_for_pipeline(
     registry: &mut crate::ecs::Registry,

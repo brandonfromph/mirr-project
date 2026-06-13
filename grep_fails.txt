@@ -1,0 +1,55 @@
+Test (macos-latest)	Run clippy	2026-05-29T09:42:24.3267930Z     ^[[1m^[[94m|^[[0m             ^[[1m^[[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[[0m ^[[1m^[[91mhelp: using `!is_empty` is clearer and more explicit: `!result.diagnostics.is_empty()`^[[0m
+Test (macos-latest)	Run clippy	2026-05-29T09:42:24.3268550Z     ^[[1m^[[94m|^[[0m
+Test (macos-latest)	Run clippy	2026-05-29T09:42:24.3269130Z     ^[[1m^[[94m= ^[[0m^[[1mhelp^[[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_zero
+Test (macos-latest)	Run clippy	2026-05-29T09:42:24.3269630Z 
+Test (macos-latest)	Run clippy	2026-05-29T09:42:24.3270060Z ^[[1m^[[91merror^[[0m: could not compile `nasa-rust-project` (test "width_solver_parity_tests") due to 2 previous errors
+Test (macos-latest)	Run clippy	2026-05-29T09:42:24.3270780Z ^[[1m^[[33mwarning^[[0m: build failed, waiting for other jobs to finish...
+Test (macos-latest)	Run clippy	2026-05-29T09:42:24.5347560Z ##[error]Process completed with exit code 101.
+Test (ubuntu-latest)	Check formatting	﻿2026-05-29T09:42:10.6720036Z ##[group]Run cargo fmt --all -- --check
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:10.6720696Z ^[[36;1mcargo fmt --all -- --check^[[0m
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:10.6759318Z shell: /usr/bin/bash -e {0}
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:10.6759837Z env:
+--
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8410967Z      // The reflect body should contain the guard line, not be empty from premature termination.
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8513789Z Diff in /home/runner/work/mirr-project/mirr-project/tests/debug_source_tests.rs:1:
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8514944Z -
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8515181Z  #[test]
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8515437Z  fn test_print_expanded_source() {
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8515980Z      let source = std::fs::read_to_string("rspu_chip/rspu_top.mirr").expect("failed to read");
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8632367Z Diff in /home/runner/work/mirr-project/mirr-project/tests/dummy_test.rs:1:
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8633038Z  #[test]
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8633328Z  fn scratch_test() {
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8634109Z      let src = "module m { signal s1: internal bool; reflex r1 { on always { s1 = true; } } }";
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.8635241Z -    let res = nasa_rust_project::pipeline::run_pipeline(src, &nasa_rust_project::pipeline::PipelineConfig::default());
+--
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9100113Z +            );
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9100487Z              let res = run_expand_only(src);
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9101020Z              assert!(res.is_ok(), "{:?}", res.err());
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9101508Z          }
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9397417Z Diff in /home/runner/work/mirr-project/mirr-project/tests/kb_native_integration_tests.rs:183:
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9398648Z      let mut exe = std::env::current_exe().expect("Failed to get current executable path");
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9399452Z      exe.pop(); // remove test binary name
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9399968Z      exe.pop(); // remove 'deps' directory
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9400504Z -    let bin_name = if cfg!(windows) {
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9401387Z -        format!("{}.exe", name)
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:23.9401812Z -    } else {
+--
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1810033Z +            );
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1810356Z          }
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1810657Z      };
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1810960Z  }
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1811626Z Diff in /home/runner/work/mirr-project/mirr-project/tests/validation/signal_rules_tests.rs:11:
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1812880Z      let p = parse_mirr(src).expect("Parse failed, expected semantic error");
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1813598Z      match validate_module(&p.module) {
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1814391Z          Ok(_) => panic!("Expected error '{}', but got Ok", msg),
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1815275Z -        Err(e) => assert!(e.to_string().contains(msg), "Expected '{}', got '{}'", msg, e.to_string()),
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1816046Z +        Err(e) => {
+Test (ubuntu-latest)	Check formatting	2026-05-29T09:42:24.1816670Z +            assert!(e.to_string().contains(msg), "Expected '{}', got '{}'", msg, e.to_string())
+--
+Test (windows-latest)	Run clippy	2026-05-29T09:44:28.1270221Z ^[[1m^[[96m27^[[0m ^[[91m- ^[[0mfn cleanup_temp_dir(rust_dir: ^[[91m&PathBuf^[[0m) {
+Test (windows-latest)	Run clippy	2026-05-29T09:44:28.1279028Z ^[[1m^[[96m27^[[0m ^[[92m+ ^[[0mfn cleanup_temp_dir(rust_dir: ^[[92m&Path^[[0m) {
+Test (windows-latest)	Run clippy	2026-05-29T09:44:28.1281185Z    ^[[1m^[[96m|^[[0m
+Test (windows-latest)	Run clippy	2026-05-29T09:44:28.1282083Z 
+Test (windows-latest)	Run clippy	2026-05-29T09:44:28.1323358Z ^[[1m^[[91merror^[[0m: could not compile `nasa-rust-project` (test "proof_audit_coverage_tests") due to 1 previous error
+Test (windows-latest)	Run clippy	2026-05-29T09:44:28.1332447Z ^[[1m^[[93mwarning^[[0m: build failed, waiting for other jobs to finish...
+Test (windows-latest)	Run clippy	2026-05-29T09:44:29.0356374Z ##[error]Process completed with exit code 1.

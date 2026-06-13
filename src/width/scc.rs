@@ -38,7 +38,7 @@ fn pop_until(stack: &mut Vec<usize>, on_stack: &mut [bool], root: usize) -> Vec<
 ///
 /// Uses iterative Tarjan's algorithm with an explicit call stack.
 /// Bounded: at most MAX_SIGNALS * 3 total iterations.
-pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
+pub fn find_sccs(graph: &WidthDepGraph, registry: &crate::ecs::registry::Registry) -> SccResult {
     let n = graph.node_count.min(MAX_SIGNALS);
     let mut diagnostics: Vec<WidthDiag> = Vec::new();
 
@@ -144,7 +144,7 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
             let names: Vec<&str> = members
                 .iter()
                 .take(5)
-                .filter_map(|&i| graph.signal_names.get(i).map(|s| s.as_str()))
+                .filter_map(|&i| registry.names[i].as_ref().map(|s| s.0.as_str()))
                 .collect();
             diagnostics.push(
                 WidthDiag::error(format!(
@@ -160,7 +160,9 @@ pub fn find_sccs(graph: &WidthDepGraph) -> SccResult {
         }
 
         let kind = classify_scc(&members, graph);
-        sccs.push(SccInfo { signal_indices: members, kind });
+        let entity_members =
+            members.into_iter().map(|idx| crate::ecs::components::EntityId(idx as u32)).collect();
+        sccs.push(SccInfo { signals: entity_members, kind });
     }
 
     SccResult { sccs, diagnostics }

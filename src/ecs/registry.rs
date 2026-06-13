@@ -45,6 +45,7 @@ pub struct Registry {
     pub array_literals: Vec<Option<ArrayLiteralComponent>>,
     pub struct_literals: Vec<Option<StructLiteralComponent>>,
     pub unfold_indices: Vec<Option<UnfoldIndexComponent>>,
+    pub muxes: Vec<Option<MuxComponent>>,
 
     // Phase 4: Width Inference Components
     pub width_constraints: Vec<Option<WidthConstraintComponent>>,
@@ -119,6 +120,7 @@ impl Registry {
             array_literals: vec![None; cap],
             struct_literals: vec![None; cap],
             unfold_indices: vec![None; cap],
+            muxes: vec![None; cap],
             width_constraints: vec![None; cap],
             symbol_to_entity: HashMap::with_capacity(cap),
         }
@@ -168,6 +170,7 @@ impl Registry {
             self.array_literals.resize(new_cap, None);
             self.struct_literals.resize(new_cap, None);
             self.unfold_indices.resize(new_cap, None);
+            self.muxes.resize(new_cap, None);
             self.width_constraints.resize(new_cap, None);
         }
 

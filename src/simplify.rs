@@ -10,16 +10,16 @@
 #![forbid(unsafe_code)]
 
 use crate::ast::expr::Expr;
-use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
 use serde::Serialize;
 
 /// Maximum expression tree depth the simplifier will traverse.
 /// Matches the parser's MAX_EXPR_DEPTH to guarantee we never exceed stack budget.
+#[allow(dead_code)]
 const MAX_SIMPLIFY_DEPTH: usize = 128;
 
 /// Maximum number of fixpoint passes before stopping.
 /// Each pass reduces the tree; 8 passes handles any realistic cascade chain.
-const MAX_PASSES: usize = 8;
+pub const MAX_PASSES: usize = 8;
 
 // ---------------------------------------------------------------------------
 // Statistics
@@ -40,6 +40,7 @@ pub struct SimplifyStats {
 // Node counting
 // ---------------------------------------------------------------------------
 
+/* --- LEGACY AST ENGINE (PHASE 3 ARCHIVED) ---
 /// Count AST nodes iteratively (bounded).
 fn count_nodes(expr: &Expr) -> usize {
     let mut stack: Vec<&Expr> = Vec::with_capacity(MAX_SIMPLIFY_DEPTH);
@@ -415,4 +416,42 @@ pub fn simplify_expr_with_stats(expr: Expr) -> (Expr, SimplifyStats) {
     let nodes_after = count_nodes(&current);
     let stats = SimplifyStats { rules_applied: total_rules, nodes_before, nodes_after };
     (current, stats)
+}
+*/
+
+// ---------------------------------------------------------------------------
+// ECS Fallback API (Phase 3 Migration)
+// ---------------------------------------------------------------------------
+
+pub fn simplify_expr(expr: Expr) -> Expr {
+    simplify_expr_with_stats(expr).0
+}
+
+pub fn simplify_expr_with_stats(expr: Expr) -> (Expr, SimplifyStats) {
+    let mut registry = crate::ecs::Registry::new();
+    let root_id = match registry.ingest_expr(&expr) {
+        Ok(id) => id,
+        Err(_) => {
+            return (expr, SimplifyStats { rules_applied: 0, nodes_before: 0, nodes_after: 0 })
+        }
+    };
+
+    // approximate nodes before
+    let nodes_before = registry.next_id();
+    let stats = crate::ecs::systems::simplifier_system(&mut registry);
+
+    let result = match registry.reify_expr(root_id) {
+        Ok(e) => e,
+        Err(_) => return (expr, stats),
+    };
+
+    let mut stats_out = stats.clone();
+    stats_out.nodes_before = nodes_before.0 as usize;
+    stats_out.nodes_after = if stats.rules_applied > 0 {
+        (nodes_before.0 - 1) as usize
+    } else {
+        nodes_before.0 as usize
+    };
+
+    (result, stats_out)
 }

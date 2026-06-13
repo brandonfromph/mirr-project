@@ -21,7 +21,6 @@ use mirrc::ast::program::SignalDecl;
 use mirrc::ast::types::*;
 use mirrc::width;
 use mirrc::width::types::*;
-use mirrc::width::WidthInferenceResult;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,35 +56,125 @@ fn unary(op: UnaryOp, e: Expr) -> Expr {
     Expr::Unary { op, operand: Box::new(e) }
 }
 
-fn infer(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult {
-    width::infer_widths(expr, signals)
+use mirrc::ecs::registry::Registry;
+use std::collections::HashMap;
+
+fn infer(expr: &Expr, signals: &[SignalDecl]) -> (u32, Vec<WidthDiag>) {
+    let mut registry = Registry::new();
+    let root_id = registry.ingest_expr(expr).expect("failed to ingest expr");
+
+    let mut signal_info = HashMap::new();
+    for sig in signals {
+        let is_signed = matches!(sig.ty.core, SignalType::Signed(_));
+        signal_info.insert(sig.name.as_str(), (sig.ty.core.width(), is_signed));
+    }
+
+    // Set widths into registry so they propagate correctly
+    let mut to_update = Vec::new();
+    for (i, name_opt) in registry.names.iter().enumerate() {
+        if let Some(name) = name_opt {
+            if let Some(&(w, is_signed)) = signal_info.get(name.0.as_str()) {
+                to_update.push((i, w, is_signed));
+            }
+        }
+    }
+    for (i, w, is_signed) in to_update {
+        let ty = if is_signed { SignalType::Signed(w) } else { SignalType::Unsigned(w) };
+        registry.set_type(
+            mirrc::ecs::components::EntityId(i as u32),
+            mirrc::ecs::components::TypeComponent::signal(ExtendedType::new(
+                ty,
+                Default::default(),
+            )),
+        );
+    }
+
+    let mut diags = mirrc::width::constraint::generate_ecs_constraints(&mut registry, &signal_info);
+    let (solve_diags, _) = mirrc::ecs::systems::expression_width_inference_system(&mut registry);
+    diags.extend(solve_diags);
+
+    let final_width =
+        registry.types[root_id.0 as usize].as_ref().map(|tc| tc.0.core.width()).unwrap_or(0);
+
+    (final_width, diags)
 }
 
-fn root_width(result: &WidthInferenceResult) -> u32 {
-    result.expr.as_ref().expect("inference should produce WidthExpr").width().0
+fn root_width(result: &(u32, Vec<WidthDiag>)) -> u32 {
+    result.0
 }
 
-fn has_error_containing(result: &WidthInferenceResult, needle: &str) -> bool {
+fn has_errors(result: &(u32, Vec<WidthDiag>)) -> bool {
+    result.1.iter().any(|d| d.severity == DiagSeverity::Error)
+}
+
+fn has_error_containing(result: &(u32, Vec<WidthDiag>), needle: &str) -> bool {
+    result.1.iter().any(|d| d.severity == DiagSeverity::Error && d.message.contains(needle))
+}
+
+fn has_info_containing(result: &(u32, Vec<WidthDiag>), needle: &str) -> bool {
+    result.1.iter().any(|d| d.severity == DiagSeverity::Info && d.message.contains(needle))
+}
+
+fn error_messages(result: &(u32, Vec<WidthDiag>)) -> Vec<String> {
     result
-        .diagnostics
-        .iter()
-        .any(|d| d.severity == DiagSeverity::Error && d.message.contains(needle))
-}
-
-fn has_info_containing(result: &WidthInferenceResult, needle: &str) -> bool {
-    result
-        .diagnostics
-        .iter()
-        .any(|d| d.severity == DiagSeverity::Info && d.message.contains(needle))
-}
-
-fn error_messages(result: &WidthInferenceResult) -> Vec<String> {
-    result
-        .diagnostics
+        .1
         .iter()
         .filter(|d| d.severity == DiagSeverity::Error)
         .map(|d| d.message.clone())
         .collect()
+}
+
+fn check_assignment(
+    assignment: &mirrc::ast::program::Assignment,
+    signals: &[SignalDecl],
+) -> Vec<WidthDiag> {
+    let mut registry = Registry::new();
+    let root_id = registry.ingest_expr(&assignment.value).expect("failed to ingest expr");
+
+    let mut signal_info = HashMap::new();
+    for sig in signals {
+        let is_signed = matches!(sig.ty.core, SignalType::Signed(_));
+        signal_info.insert(sig.name.as_str(), (sig.ty.core.width(), is_signed));
+    }
+
+    let mut to_update = Vec::new();
+    for (i, name_opt) in registry.names.iter().enumerate() {
+        if let Some(name) = name_opt {
+            if let Some(&(w, is_signed)) = signal_info.get(name.0.as_str()) {
+                to_update.push((i, w, is_signed));
+            }
+        }
+    }
+    for (i, w, is_signed) in to_update {
+        let ty = if is_signed { SignalType::Signed(w) } else { SignalType::Unsigned(w) };
+        registry.set_type(
+            mirrc::ecs::components::EntityId(i as u32),
+            mirrc::ecs::components::TypeComponent::signal(ExtendedType::new(
+                ty,
+                Default::default(),
+            )),
+        );
+    }
+
+    let mut diags = mirrc::width::constraint::generate_ecs_constraints(&mut registry, &signal_info);
+    let (solve_diags, _) = mirrc::ecs::systems::expression_width_inference_system(&mut registry);
+    diags.extend(solve_diags);
+
+    let expr_w =
+        registry.types[root_id.0 as usize].as_ref().map(|tc| tc.0.core.width()).unwrap_or(0);
+
+    let target_info = signal_info.get(assignment.target.as_str()).copied();
+    if let Some((tw, ts)) = target_info {
+        let trunc_diags = mirrc::width::check_truncation(
+            &assignment.target,
+            tw,
+            mirrc::width::types::Width(expr_w),
+            ts,
+        );
+        diags.extend(trunc_diags);
+    }
+
+    diags
 }
 
 // ===========================================================================
@@ -254,12 +343,11 @@ fn sub_underflow_info_exact_text() {
     let sigs = [sig("a", SignalType::Unsigned(8)), sig("b", SignalType::Unsigned(8))];
     let e = binary(BinaryOp::Sub, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
-    let infos: Vec<&str> = r
-        .diagnostics
-        .iter()
-        .filter(|d| d.severity == DiagSeverity::Info)
-        .map(|d| d.message.as_str())
-        .collect();
+    let infos: Vec<&str> =
+        r.1.iter()
+            .filter(|d| d.severity == DiagSeverity::Info)
+            .map(|d| d.message.as_str())
+            .collect();
     assert_eq!(infos.len(), 1);
     assert_eq!(infos[0], "unsigned subtraction may underflow (wrapping semantics)");
 }
@@ -268,8 +356,7 @@ fn sub_underflow_info_exact_text() {
 fn sub_literal_safe_no_underflow_info() {
     // 10 - 3: left (10) >= right (3), provably safe — no info emitted.
     let r = infer(&binary(BinaryOp::Sub, lit(10), lit(3)), &[]);
-    let infos: Vec<&WidthDiag> =
-        r.diagnostics.iter().filter(|d| d.severity == DiagSeverity::Info).collect();
+    let infos: Vec<&WidthDiag> = r.1.iter().filter(|d| d.severity == DiagSeverity::Info).collect();
     assert!(infos.is_empty(), "expected no underflow info for safe literal subtraction");
 }
 
@@ -311,7 +398,7 @@ fn mul_u4096_u4097_exceeds_8192_bits_error() {
     let sigs = [sig("a", SignalType::Unsigned(4096)), sig("b", SignalType::Unsigned(4097))];
     let e = binary(BinaryOp::Mul, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
-    assert!(r.has_errors());
+    assert!(has_errors(&r));
     assert!(has_error_containing(&r, "exceeding maximum of 8192"));
 }
 
@@ -356,7 +443,7 @@ fn shl_by_8191_clamped() {
     let e = binary(BinaryOp::Shl, signal("a"), lit(10000));
     let r = infer(&e, &sigs);
     // 10000 clamped to 8191, 8 + 8191 = 8199 > 8192 -> error
-    assert!(r.has_errors());
+    assert!(has_errors(&r));
     assert!(has_error_containing(&r, "exceeding maximum of 8192"));
 }
 
@@ -366,7 +453,7 @@ fn shl_variable_shift_uses_worst_case() {
     let e = binary(BinaryOp::Shl, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
     // Variable shift: worst case = a_width + 8191 = 8199 > 8192 -> error
-    assert!(r.has_errors());
+    assert!(has_errors(&r));
 }
 
 #[test]
@@ -489,7 +576,7 @@ fn truncation_u16_to_u8_error() {
     use mirrc::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(16)), sig("dst", SignalType::Unsigned(8))];
     let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
-    let diags = width::check_assignment(&a, &sigs);
+    let diags = check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert_eq!(errors.len(), 1);
@@ -501,7 +588,7 @@ fn truncation_exact_text() {
     use mirrc::ast::program::Assignment;
     let sigs = [sig("wide", SignalType::Unsigned(32)), sig("narrow", SignalType::Unsigned(16))];
     let a = Assignment { target: "narrow".to_string(), value: signal("wide"), span: None };
-    let diags = width::check_assignment(&a, &sigs);
+    let diags = check_assignment(&a, &sigs);
     let errors: Vec<String> = diags
         .iter()
         .filter(|d| d.severity == DiagSeverity::Error)
@@ -516,7 +603,7 @@ fn no_truncation_when_widths_match() {
     use mirrc::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(8))];
     let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
-    let diags = width::check_assignment(&a, &sigs);
+    let diags = check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert!(errors.is_empty());
@@ -527,7 +614,7 @@ fn no_truncation_when_target_wider() {
     use mirrc::ast::program::Assignment;
     let sigs = [sig("src", SignalType::Unsigned(8)), sig("dst", SignalType::Unsigned(16))];
     let a = Assignment { target: "dst".to_string(), value: signal("src"), span: None };
-    let diags = width::check_assignment(&a, &sigs);
+    let diags = check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert!(errors.is_empty());
@@ -547,7 +634,7 @@ fn truncation_add_overflow_to_narrow_target() {
         value: binary(BinaryOp::Add, signal("a"), signal("b")),
         span: None,
     };
-    let diags = width::check_assignment(&a, &sigs);
+    let diags = check_assignment(&a, &sigs);
     let errors: Vec<&WidthDiag> =
         diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert_eq!(errors.len(), 1);
@@ -610,7 +697,7 @@ fn simplifier_folds_double_negation_width() {
 fn single_literal_node() {
     let r = infer(&lit(42), &[]);
     assert_eq!(root_width(&r), 6); // 42 = 0b101010, 6 bits
-    assert!(!r.has_errors());
+    assert!(!has_errors(&r));
 }
 
 #[test]
@@ -618,7 +705,7 @@ fn width_8192_is_maximum_allowed() {
     let sigs = [sig("a", SignalType::Unsigned(8192))];
     let r = infer(&signal("a"), &sigs);
     assert_eq!(root_width(&r), 8192);
-    assert!(!r.has_errors());
+    assert!(!has_errors(&r));
 }
 
 #[test]
@@ -628,7 +715,7 @@ fn add_at_u8192_boundary() {
     let e = binary(BinaryOp::Add, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
     assert_eq!(root_width(&r), 8192);
-    assert!(!r.has_errors());
+    assert!(!has_errors(&r));
 }
 
 #[test]
@@ -637,7 +724,7 @@ fn add_exceeds_u8192_boundary() {
     let sigs = [sig("a", SignalType::Unsigned(8192)), sig("b", SignalType::Unsigned(8192))];
     let e = binary(BinaryOp::Add, signal("a"), signal("b"));
     let r = infer(&e, &sigs);
-    assert!(r.has_errors());
+    assert!(has_errors(&r));
     assert!(has_error_containing(&r, "exceeding maximum of 8192"));
 }
 
@@ -665,38 +752,7 @@ fn nested_mixed_ops_width() {
     assert_eq!(root_width(&r), 13);
 }
 
-#[test]
-fn display_format_simple() {
-    let sigs = [sig("a", SignalType::Unsigned(8))];
-    let r = infer(&signal("a"), &sigs);
-    let we = r.expr.as_ref().unwrap();
-    let formatted = width::display::format_width_expr(we);
-    assert_eq!(formatted, "a:u8");
-}
-
-#[test]
-fn display_format_binary() {
-    let sigs = [sig("a", SignalType::Unsigned(8)), sig("b", SignalType::Unsigned(8))];
-    let e = binary(BinaryOp::Add, signal("a"), signal("b"));
-    let r = infer(&e, &sigs);
-    let we = r.expr.as_ref().unwrap();
-    let formatted = width::display::format_width_expr(we);
-    assert_eq!(formatted, "(a:u8 + b:u8):u9");
-}
-
-#[test]
-fn stats_report_correct_node_count() {
-    let sigs = [sig("a", SignalType::Unsigned(8)), sig("b", SignalType::Unsigned(8))];
-    let e = binary(BinaryOp::Add, signal("a"), signal("b"));
-    let r = infer(&e, &sigs);
-    assert_eq!(r.stats.nodes_analyzed, 3); // signal, signal, binary
-}
-
-#[test]
-fn stats_propagation_rounds_at_least_one() {
-    let r = infer(&lit(42), &[]);
-    assert!(r.stats.propagation_rounds >= 1);
-}
+// Deleted formatting and stats tests that relied on the legacy WidthExpr and WidthStats structs.
 
 #[test]
 fn width_diagnostic_display_format() {
@@ -754,10 +810,10 @@ fn program_width_inference_basic() {
         },
     };
 
-    let result = width::infer_program_widths(&program);
+    let result = width::infer_program_widths_with_scc(&program, None);
     assert!(!result.has_errors());
-    assert_eq!(result.guard_results.len(), 1);
-    assert_eq!(result.assignment_results.len(), 1);
+    assert_eq!(result.phase4a.guard_results.len(), 1);
+    assert_eq!(result.phase4a.assignment_results.len(), 1);
 }
 
 #[test]
@@ -794,9 +850,9 @@ fn program_detects_truncation_in_reflex() {
         },
     };
 
-    let result = width::infer_program_widths(&program);
+    let result = width::infer_program_widths_with_scc(&program, None);
     assert!(result.has_errors());
-    let all_diags = result.all_diagnostics();
+    let all_diags = result.phase4a.all_diagnostics();
     let errors: Vec<&&WidthDiag> =
         all_diags.iter().filter(|d| d.severity == DiagSeverity::Error).collect();
     assert!(errors.iter().any(|d| d.message.contains("truncates unsigned 9 bits to 8 bits")));

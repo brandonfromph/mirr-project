@@ -19,13 +19,10 @@ pub mod solver;
 pub mod types;
 pub mod verify;
 
-use crate::ast::expr::Expr;
-use crate::ast::program::{Assignment, SignalDecl};
+use crate::ast::program::SignalDecl;
 
 use serde::Serialize;
-use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::hash::Hash;
 use types::{DiagSeverity, WidthDiag, WidthExpr, WidthStats};
 
 // ---------------------------------------------------------------------------
@@ -50,17 +47,20 @@ impl WidthInferenceResult {
     }
 }
 
-/// Infer bit-widths for a single expression tree.
-///
-/// `signals` provides the declared widths for Signal nodes.
-///
-/// Pipeline: flatten -> generate constraints -> solve -> reconstruct.
-/// All steps are iterative with bounded loops.
+// Infer bit-widths for a single expression tree.
+//
+// `signals` provides the declared widths for Signal nodes.
+//
+// Pipeline: flatten -> generate constraints -> solve -> reconstruct.
+// All steps are iterative with bounded loops.
+/* --- LEGACY AST ENGINE (KEPT FOR SAFE MIGRATION REFERENCE) ---
 pub fn infer_widths(expr: &Expr, signals: &[SignalDecl]) -> WidthInferenceResult {
     let signal_info = signal_info_map(signals);
     infer_widths_with_signal_info(expr, signals, &signal_info)
 }
+*/
 
+/*
 fn infer_widths_with_signal_info<K>(
     expr: &Expr,
     _signals: &[SignalDecl],
@@ -144,7 +144,9 @@ where
 
     WidthInferenceResult { expr: width_expr, diagnostics: all_diags, stats }
 }
+*/
 
+/*
 fn ecs_reconstruct_width_expr(
     registry: &crate::ecs::registry::Registry,
     id: crate::ecs::components::EntityId,
@@ -211,20 +213,21 @@ fn ecs_reconstruct_width_expr(
     // Fallback for arrays/structs/etc
     Some(crate::width::types::WidthExpr::Literal { value: 0, width: w })
 }
-
+*/
 // ---------------------------------------------------------------------------
 // Public API: single-assignment truncation check (test + diagnostic use)
 // ---------------------------------------------------------------------------
 
-/// Check a single assignment for unsafe truncation.
-///
-/// Runs width inference on the RHS expression, then compares the inferred
-/// width against the target signal's declared width.
-///
-/// The main pipeline uses [`infer_program_widths`] instead, which inlines this
-/// logic to accumulate per-node statistics. This entry point exists for
-/// integration tests and external tooling that need to check one assignment
-/// in isolation without constructing a full `MirrProgram`.
+// Check a single assignment for unsafe truncation.
+//
+// Runs width inference on the RHS expression, then compares the inferred
+// width against the target signal's declared width.
+//
+// The main pipeline uses [`infer_program_widths`] instead, which inlines this
+// logic to accumulate per-node statistics. This entry point exists for
+// integration tests and external tooling that need to check one assignment
+// in isolation without constructing a full `MirrProgram`.
+/*
 pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<WidthDiag> {
     let result = infer_widths(&assignment.value, signals);
     let mut diags = result.diagnostics;
@@ -240,7 +243,7 @@ pub fn check_assignment(assignment: &Assignment, signals: &[SignalDecl]) -> Vec<
 
     diags
 }
-
+*/
 // ---------------------------------------------------------------------------
 // Public API: full program
 // ---------------------------------------------------------------------------
@@ -289,12 +292,13 @@ impl ProgramWidthResult {
     }
 }
 
-/// Run width inference over an entire MIRR module.
-///
-/// Infers widths for all guard conditions and all reflex assignment RHS,
-/// checking for truncations at every assignment site.
-///
-/// Bounded: iterates over guards + reflexes (finite, from parsed program).
+// Run width inference over an entire MIRR module.
+//
+// Infers widths for all guard conditions and all reflex assignment RHS,
+// checking for truncations at every assignment site.
+//
+// Bounded: iterates over guards + reflexes (finite, from parsed program).
+/*
 pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthResult {
     let signals = &program.module.signals;
     let signal_info = signal_info_map(signals);
@@ -343,7 +347,7 @@ pub fn infer_program_widths(program: &crate::ast::MirrProgram) -> ProgramWidthRe
 
     ProgramWidthResult { guard_results, assignment_results, stats: total_stats }
 }
-
+*/
 // ---------------------------------------------------------------------------
 // Public API: Phase 4b — SCC-based width inference
 // ---------------------------------------------------------------------------
@@ -424,30 +428,87 @@ pub fn infer_program_widths_with_scc(
         // We will map this properly once the entire pipeline requires the ECS registry.
     }
 
-    // Step 1: Run Phase 4a (per-expression inference).
-    let phase4a = infer_program_widths(program);
+    // Step 1: Run Phase 4a (natively in ECS).
+    let signals = &program.module.signals;
+    let signal_info = signal_info_map(signals);
+    let mut all_diags =
+        crate::width::constraint::generate_ecs_constraints(&mut registry, &signal_info);
+    let (solve_diags, ecs_rounds) =
+        crate::ecs::systems::expression_width_inference_system(&mut registry);
+    all_diags.extend(solve_diags);
+
+    let mut assignment_diags = Vec::new();
+    let mut assignment_results = Vec::new();
+    for (i, assign_opt) in registry.assignment_comps.iter().enumerate() {
+        if let Some(assign) = assign_opt {
+            let target_name = registry.names[assign.target.0 as usize]
+                .as_ref()
+                .map(|n| n.0.clone())
+                .unwrap_or_default();
+            let target_info = signal_info.get(target_name.as_str()).copied();
+            let rhs_id = assign.value;
+            let tw = target_info.map(|t| t.0).unwrap_or(0);
+            let ts = target_info.map(|t| t.1).unwrap_or(false);
+            let ew =
+                registry.types[rhs_id.0 as usize].as_ref().map(|tc| tc.0.core.width()).unwrap_or(0);
+            let mut diags = Vec::new();
+            if tw > 0 && ew > 0 {
+                let truncs = check_truncation(&target_name, tw, crate::width::types::Width(ew), ts);
+                diags.extend(truncs.clone());
+                assignment_diags.extend(truncs);
+            }
+            // Use generic name since we don't have AST reflex names attached to assignments in ECS yet
+            assignment_results.push((format!("assignment_{}", i), diags));
+        }
+    }
+
+    // Aggregate diagnostics into a synthesized ProgramWidthResult
+    let phase4a = ProgramWidthResult {
+        guard_results: vec![(
+            "ecs_solver".to_string(),
+            WidthInferenceResult {
+                expr: None,
+                diagnostics: all_diags,
+                stats: WidthStats {
+                    nodes_analyzed: registry.active_entities(),
+                    propagation_rounds: ecs_rounds,
+                    diagnostics_count: 0,
+                    scc_count: 0,
+                    expansive_count: 0,
+                    nonexpansive_count: 0,
+                },
+            },
+        )],
+        assignment_results,
+        stats: WidthStats {
+            nodes_analyzed: registry.active_entities(),
+            propagation_rounds: ecs_rounds,
+            diagnostics_count: 0,
+            scc_count: 0,
+            expansive_count: 0,
+            nonexpansive_count: 0,
+        },
+    };
 
     // Step 2: Build width dependency graph.
-    let dep_graph = graph::build_graph(program);
+    let dep_graph = graph::build_graph(&registry);
 
     // Step 3: Find SCCs.
-    let scc_result = scc::find_sccs(&dep_graph);
+    let scc_result = scc::find_sccs(&dep_graph, &registry);
     let mut scc_diags = scc_result.diagnostics;
 
     // Step 4: Solve each SCC.
-    let signals = &program.module.signals;
-    let guards = &program.module.guards;
     let mut scc_solves: Vec<(types::SccInfo, scc_solver::SccSolveResult)> =
         Vec::with_capacity(scc_result.sccs.len());
 
     for scc_info in scc_result.sccs {
-        let solve_result = scc_solver::solve_scc(&scc_info, signals, guards, program);
+        let solve_result = scc_solver::solve_scc(&scc_info, &registry);
         scc_diags.extend(solve_result.diagnostics.iter().cloned());
         scc_solves.push((scc_info, solve_result));
     }
 
     // Step 5: Verify least solution.
-    let verification = verify::verify_least_solution(&scc_solves, signals);
+    let verification = verify::verify_least_solution(&scc_solves, &registry);
     scc_diags.extend(verification.diagnostics.iter().cloned());
 
     // Aggregate stats.
@@ -470,9 +531,9 @@ pub fn infer_program_widths_with_scc(
     // Collect SCC member signal names for truncation suppression.
     let mut scc_member_names = std::collections::HashSet::new();
     for (scc_info, _) in &scc_solves {
-        for &idx in &scc_info.signal_indices {
-            if let Some(s) = signals.get(idx) {
-                scc_member_names.insert(s.name.clone());
+        for &entity_id in &scc_info.signals {
+            if let Some(name) = &registry.names[entity_id.0 as usize] {
+                scc_member_names.insert(name.0.clone());
             }
         }
     }
@@ -526,12 +587,12 @@ pub fn check_truncation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::Expr;
+
     use crate::ast::program::{MirrProgram, Module};
-    use crate::ast::types::{SignalKind, SignalType};
     // Unused width types removed
     use std::collections::HashSet;
 
+    /*
     fn make_signal(name: &str, width: u32, is_signed: bool) -> SignalDecl {
         SignalDecl {
             name: name.to_string(),
@@ -545,7 +606,9 @@ mod tests {
             span: None,
         }
     }
+    */
 
+    /*
     #[test]
     fn test_width_infer_with_unresolved_names_and_prev() {
         let signals = vec![make_signal("x", 8, false), make_signal("y", 16, true)];
@@ -574,6 +637,7 @@ mod tests {
         // It now emits an undeclared signal error, but still infers a fallback width.
         assert!(res.has_errors());
     }
+    */
 
     #[test]
     fn test_width_result_has_errors() {

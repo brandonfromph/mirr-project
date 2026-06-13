@@ -425,8 +425,8 @@ macro_rules! test_pipeline_orchestration_case {
                 );
             }
 
-            let stats = run_compilation_pipeline(&mut registry);
-            assert_eq!(stats.nodes_analyzed, $sig_count);
+            let (width_stats, _sat_stats) = run_compilation_pipeline(&mut registry);
+            assert_eq!(width_stats.nodes_analyzed, $sig_count);
             // Verify that constant folding worked (the binary_ops should be None now)
             assert_eq!(registry.binary_ops.iter().filter(|b| b.is_some()).count(), 0);
         }

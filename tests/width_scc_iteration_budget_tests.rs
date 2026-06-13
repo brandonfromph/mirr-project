@@ -6,8 +6,7 @@ use mirrc::pipeline::PipelineConfig;
 fn run_pipeline(
     source: &str,
 ) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
-    let mut config = PipelineConfig::default();
-    config.temporal = false;
+    let config = PipelineConfig { temporal: false, ..Default::default() };
     mirrc::pipeline::run_pipeline_with_file(source, "test.mirr", &config)
 }
 

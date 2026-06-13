@@ -139,6 +139,14 @@ pub struct StructLiteralComponent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnfoldIndexComponent(pub String);
 
+/// Component: Multiplexer (SmaRTLy Optimization Target)
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct MuxComponent {
+    pub select: EntityId,
+    pub true_val: EntityId,
+    pub false_val: EntityId,
+}
+
 /// Component: Source code span for diagnostic tracing.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SpanComponent(pub crate::span::Span);

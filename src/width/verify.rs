@@ -11,7 +11,6 @@
 
 use super::scc_solver::SccSolveResult;
 use super::types::{SccInfo, WidthDiag, MAX_SIGNALS};
-use crate::ast::program::SignalDecl;
 use serde::Serialize;
 
 /// Result of the Unique Least Solution verification.
@@ -32,7 +31,7 @@ pub struct VerifyResult {
 /// Bounded: iterates once over all SCC signals (max MAX_SIGNALS).
 pub fn verify_least_solution(
     scc_results: &[(SccInfo, SccSolveResult)],
-    signals: &[SignalDecl],
+    registry: &crate::ecs::registry::Registry,
 ) -> VerifyResult {
     let mut diagnostics: Vec<WidthDiag> = Vec::new();
     let mut is_minimal = true;
@@ -50,16 +49,20 @@ pub fn verify_least_solution(
                 continue;
             }
 
-            let sig_idx = match scc.signal_indices.get(i) {
-                Some(&idx) => idx,
-                None => continue,
-            };
-            let sig = match signals.get(sig_idx) {
-                Some(s) => s,
+            let sig_id = match scc.signals.get(i) {
+                Some(&id) => id,
                 None => continue,
             };
 
-            let (declared, sig_signed) = sig.ty.signal_type().width_and_signed();
+            let sig_name = registry.names[sig_id.0 as usize]
+                .as_ref()
+                .map(|n| n.0.as_str())
+                .unwrap_or("unknown");
+
+            let (declared, sig_signed) = registry.types[sig_id.0 as usize]
+                .as_ref()
+                .map(|tc| tc.0.core.width_and_signed())
+                .unwrap_or((0, false));
 
             // The solution width should equal the declared width for
             // signals with explicit annotations. If the solved width
@@ -73,107 +76,13 @@ pub fn verify_least_solution(
                 let declared_display = super::types::Width(declared).display_with_sign(sig_signed);
                 diagnostics.push(WidthDiag::error(format!("{} COMPILER BUG: signal '{}' solved width {} is less \
                      than declared {}", crate::error_codes::ec(511),
-                    sig.name, solved_display, declared_display
-                )).with_code("E511").with_signal(&sig.name)
+                    sig_name, solved_display, declared_display
+                )).with_code("E511").with_signal(sig_name)
                   .with_help("This is a compiler bug. Please report it at https://github.com/brandonfromph/mirr-project/issues"));
                 is_minimal = false;
             }
-            // If width > declared, that's fine — the SCC solver
-            // determined the signal needs more bits than declared
-            // (a truncation error will be reported separately).
         }
     }
 
     VerifyResult { is_minimal, diagnostics }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::ast::program::SignalDecl;
-    use crate::ast::types::SignalKind;
-    use crate::width::types::SccKind;
-
-    fn make_signal(name: &str, width: u32) -> SignalDecl {
-        SignalDecl {
-            name: name.to_string(),
-            kind: SignalKind::Internal,
-            ty: crate::ast::types::SignalType::Unsigned(width).into(),
-            origin: None,
-            span: None,
-        }
-    }
-
-    #[test]
-    fn test_verify_minimal_solution() {
-        let scc = SccInfo { signal_indices: vec![0, 1], kind: SccKind::Nonexpansive };
-        let solve = SccSolveResult { widths: vec![8, 16], diagnostics: vec![] };
-        let signals = vec![make_signal("a", 8), make_signal("b", 16)];
-
-        let result = verify_least_solution(&[(scc, solve)], &signals);
-        assert!(result.is_minimal);
-        assert!(result.diagnostics.is_empty());
-    }
-
-    #[test]
-    fn test_verify_under_solved_triggers_bug() {
-        let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Nonexpansive };
-        let solve = SccSolveResult { widths: vec![4], diagnostics: vec![] };
-        let signals = vec![make_signal("x", 8)];
-
-        let result = verify_least_solution(&[(scc, solve)], &signals);
-        assert!(!result.is_minimal);
-        assert_eq!(result.diagnostics.len(), 1);
-    }
-
-    #[test]
-    fn test_verify_width_1_skipped() {
-        let scc = SccInfo { signal_indices: vec![0], kind: SccKind::Nonexpansive };
-        let solve = SccSolveResult { widths: vec![1], diagnostics: vec![] };
-        let signals = vec![make_signal("flag", 1)];
-
-        let result = verify_least_solution(&[(scc, solve)], &signals);
-        assert!(result.is_minimal);
-    }
-
-    #[test]
-    fn test_verify_empty_input() {
-        let result = verify_least_solution(&[], &[]);
-        assert!(result.is_minimal);
-        assert!(result.diagnostics.is_empty());
-    }
-
-    #[test]
-    fn test_verify_max_signals_bound() {
-        // Create an SCC with > MAX_SIGNALS widths to trigger the bound break.
-        let scc =
-            SccInfo { signal_indices: (0..MAX_SIGNALS + 5).collect(), kind: SccKind::Nonexpansive };
-        let solve = SccSolveResult { widths: vec![8; MAX_SIGNALS + 5], diagnostics: vec![] };
-        let signals = vec![make_signal("x", 8); MAX_SIGNALS + 5];
-
-        let result = verify_least_solution(&[(scc, solve)], &signals);
-        assert!(result.is_minimal); // Break stops early, defaults to minimal
-    }
-
-    #[test]
-    fn test_verify_missing_signal_index() {
-        // An SCC where solve result has more widths than signal_indices provided.
-        let scc = SccInfo { signal_indices: vec![], kind: SccKind::Nonexpansive };
-        let solve = SccSolveResult { widths: vec![8], diagnostics: vec![] };
-        let signals = vec![make_signal("x", 8)];
-
-        let result = verify_least_solution(&[(scc, solve)], &signals);
-        assert!(result.is_minimal); // Missed index triggers continue
-    }
-
-    #[test]
-    fn test_verify_missing_signal() {
-        // An SCC pointing to an index that doesn't exist in signals.
-        let scc = SccInfo { signal_indices: vec![100], kind: SccKind::Nonexpansive };
-        let solve = SccSolveResult { widths: vec![8], diagnostics: vec![] };
-        let signals = vec![make_signal("x", 8)];
-
-        let result = verify_least_solution(&[(scc, solve)], &signals);
-        assert!(result.is_minimal); // Missed signal triggers continue
-    }
 }

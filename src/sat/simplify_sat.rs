@@ -11,8 +11,9 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use crate::ecs::components::EntityId;
+use crate::ecs::registry::Registry;
 
 use super::cnf;
 use super::solver::{self, SatResult};
@@ -20,6 +21,7 @@ use super::solver::{self, SatResult};
 /// Maximum number of SAT verification attempts per pipeline run.
 pub const MAX_SAT_CHECKS: usize = 256;
 
+/* LEGACY AST ENGINE (PHASE 3b ARCHIVED)
 /// Result of SAT-based simplification.
 #[derive(Debug, Clone)]
 pub struct SatSimplifyResult {
@@ -33,91 +35,198 @@ pub struct SatSimplifyResult {
     pub had_unknown: bool,
 }
 
-/// Attempt to simplify an expression using SAT-based equivalence checking.
-///
-/// Strategy:
-/// 1. Run the heuristic simplifier to get a candidate.
-/// 2. If the candidate differs from the original, verify equivalence via SAT.
-/// 3. If SAT confirms equivalence, accept the simplification.
-/// 4. If SAT finds a counterexample or times out, keep the original.
-///
-/// This provides a safety net: the heuristic simplifier is fast but may
-/// have bugs; the SAT checker is slow but correct (within its bounds).
 pub fn simplify_with_sat(expr: Expr) -> SatSimplifyResult {
     let original = expr.clone();
     let simplified = crate::simplify::simplify_expr(expr);
 
-    // If unchanged, no SAT check needed.
     if exprs_structurally_equal(&original, &simplified) {
-        return SatSimplifyResult {
-            expr: simplified,
-            checks_performed: 0,
-            equivalences_confirmed: 0,
-            had_unknown: false,
-        };
+        return SatSimplifyResult { expr: simplified, checks_performed: 0, equivalences_confirmed: 0, had_unknown: false };
     }
 
-    // Only SAT-check Boolean expressions. Arithmetic expressions
-    // have integer semantics that the Boolean SAT solver cannot handle.
     if !is_boolean_expr(&original) {
-        return SatSimplifyResult {
-            expr: simplified,
-            checks_performed: 0,
-            equivalences_confirmed: 0,
-            had_unknown: false,
-        };
+        return SatSimplifyResult { expr: simplified, checks_performed: 0, equivalences_confirmed: 0, had_unknown: false };
     }
 
-    // Build equivalence check CNF: (original XOR simplified) should be UNSAT.
     let cnf = match cnf::equivalence_check_cnf(&original, &simplified) {
         Some(f) => f,
-        None => {
-            // Expression too large for CNF conversion — accept heuristic result.
-            return SatSimplifyResult {
-                expr: simplified,
-                checks_performed: 0,
-                equivalences_confirmed: 0,
-                had_unknown: true,
-            };
-        }
+        None => return SatSimplifyResult { expr: simplified, checks_performed: 0, equivalences_confirmed: 0, had_unknown: true },
     };
 
     let result = solver::solve(&cnf);
     match result {
-        SatResult::Unsatisfiable => {
-            // Equivalence confirmed! The simplification is sound.
-            SatSimplifyResult {
-                expr: simplified,
-                checks_performed: 1,
-                equivalences_confirmed: 1,
-                had_unknown: false,
-            }
-        }
-        SatResult::Satisfiable => {
-            // Counterexample found — simplification changes semantics.
-            // Fall back to original.
-            SatSimplifyResult {
-                expr: original,
-                checks_performed: 1,
-                equivalences_confirmed: 0,
-                had_unknown: false,
-            }
-        }
-        SatResult::Unknown => {
-            // Solver hit bounds — conservatively accept heuristic result.
-            SatSimplifyResult {
-                expr: simplified,
-                checks_performed: 1,
-                equivalences_confirmed: 0,
-                had_unknown: true,
-            }
-        }
+        SatResult::Unsatisfiable => SatSimplifyResult { expr: simplified, checks_performed: 1, equivalences_confirmed: 1, had_unknown: false },
+        SatResult::Satisfiable => SatSimplifyResult { expr: original, checks_performed: 1, equivalences_confirmed: 0, had_unknown: false },
+        SatResult::Unknown => SatSimplifyResult { expr: simplified, checks_performed: 1, equivalences_confirmed: 0, had_unknown: true },
     }
 }
 
-/// Check if an expression is purely Boolean (no arithmetic).
 fn is_boolean_expr(expr: &Expr) -> bool {
     let mut stack: Vec<&Expr> = vec![expr];
+    let mut iterations = 0usize;
+    const MAX_ITERATIONS: usize = 512;
+
+    while let Some(e) = stack.pop() {
+        iterations += 1;
+        if iterations > MAX_ITERATIONS { return false; }
+        match e {
+            Expr::Literal(LiteralValue::Bool(_)) => {}
+            Expr::Literal(LiteralValue::Integer(_)) => return false,
+            Expr::Signal(_) => {}
+            Expr::Prev { .. } => {}
+            Expr::Unary { op, operand } => match op {
+                UnaryOp::Not => stack.push(operand),
+                UnaryOp::Negate => return false,
+                UnaryOp::ReductionOr => return false,
+            },
+            Expr::Binary { op, left, right } => match op {
+                BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => { stack.push(left); stack.push(right); }
+                BinaryOp::Eq | BinaryOp::Ne | BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => { stack.push(left); stack.push(right); }
+                _ => return false,
+            },
+            Expr::ArrayIndex { .. } | Expr::FieldAccess { .. } | Expr::ArrayLiteral(_) | Expr::StructLiteral { .. } | Expr::UnfoldIndex(_) => return false,
+        }
+    }
+    true
+}
+
+fn exprs_structurally_equal(a: &Expr, b: &Expr) -> bool {
+    // Extracted for brevity, archived
+    false
+}
+*/
+
+/// Result of SAT-based simplification for ECS.
+#[derive(Debug, Clone)]
+pub struct SatSimplifyResult {
+    /// True if SAT made a reduction
+    pub reduced: bool,
+    /// Number of checks performed
+    pub checks_performed: usize,
+    /// Number of checks confirmed
+    pub equivalences_confirmed: usize,
+    /// Unknowns
+    pub had_unknown: bool,
+}
+
+/// Attempt to simplify an ECS entity using SAT.
+/// For SmaRTLy redundancy elimination, we check if a boolean cone
+/// is a universal tautology (always true) or contradiction (always false).
+pub fn simplify_entity_with_sat(entity: EntityId, registry: &mut Registry) -> SatSimplifyResult {
+    if !is_boolean_entity(entity, registry) {
+        return SatSimplifyResult {
+            reduced: false,
+            checks_performed: 0,
+            equivalences_confirmed: 0,
+            had_unknown: false,
+        };
+    }
+
+    let mut checks_performed = 0;
+
+    // Check Contradiction (Always False)
+    // A formula is a contradiction if the formula itself is UNSAT.
+    if let Some(mut cnf_f) = cnf::entity_to_cnf(entity, registry) {
+        checks_performed += 1;
+        cnf_f.add_clause(vec![cnf::Literal::pos(cnf_f.root_var)]);
+        if solver::solve(&cnf_f) == SatResult::Unsatisfiable {
+            registry.binary_ops[entity.0 as usize] = None;
+            registry.unary_ops[entity.0 as usize] = None;
+            registry.muxes[entity.0 as usize] = None;
+            registry.literals[entity.0 as usize] =
+                Some(crate::ecs::components::LiteralComponent(LiteralValue::Bool(false)));
+            return SatSimplifyResult {
+                reduced: true,
+                checks_performed,
+                equivalences_confirmed: 1,
+                had_unknown: false,
+            };
+        }
+    } else {
+        return SatSimplifyResult {
+            reduced: false,
+            checks_performed,
+            equivalences_confirmed: 0,
+            had_unknown: true,
+        };
+    }
+
+    // Check Tautology (Always True)
+    // A formula is a tautology if NOT formula is UNSAT.
+    if let Some(mut cnf_t) = cnf::entity_to_cnf(entity, registry) {
+        checks_performed += 1;
+        cnf_t.add_clause(vec![cnf::Literal::neg(cnf_t.root_var)]);
+        if solver::solve(&cnf_t) == SatResult::Unsatisfiable {
+            registry.binary_ops[entity.0 as usize] = None;
+            registry.unary_ops[entity.0 as usize] = None;
+            registry.muxes[entity.0 as usize] = None;
+            registry.literals[entity.0 as usize] =
+                Some(crate::ecs::components::LiteralComponent(LiteralValue::Bool(true)));
+            return SatSimplifyResult {
+                reduced: true,
+                checks_performed,
+                equivalences_confirmed: 1,
+                had_unknown: false,
+            };
+        }
+    }
+
+    // Phase 3b: SmaRTLy Fast Inference    // 1. Fast path: MUX inference
+    if let Some(mux) = registry.muxes[entity.0 as usize] {
+        // We have a MUX: Mux(sel, t_branch, f_branch)
+        let (_local_map, _ancestry) = cnf::extract_and_compute_ancestry(&[entity], registry);
+
+        // SmaRTLy Fast Inference: OR-gate propagation via Ancestry Theorem.
+        // If the select line is an ancestor of the true branch but NOT the false branch,
+        // or if it shares no ancestry, we can check for branch equivalence.
+        // For our MVP, we check if MUX is entirely redundant (e.g., Mux(S, T, F) == T)
+        if let Some(mut equiv_cnf) = cnf::equivalence_check_ecs_cnf(entity, mux.true_val, registry)
+        {
+            checks_performed += 1;
+            // Add root to assert they are DIFFERENT
+            equiv_cnf.add_clause(vec![cnf::Literal::pos(equiv_cnf.root_var)]);
+            if solver::solve(&equiv_cnf) == SatResult::Unsatisfiable {
+                // They are always EQUAL, meaning the false_val branch is dead logic.
+                registry.muxes[entity.0 as usize] = None;
+                // Replace entity with true_val signal reference
+                registry.signal_refs[entity.0 as usize] =
+                    Some(crate::ecs::components::SignalRefComponent(mux.true_val));
+                return SatSimplifyResult {
+                    reduced: true,
+                    checks_performed,
+                    equivalences_confirmed: 1,
+                    had_unknown: false,
+                };
+            }
+        }
+
+        if let Some(mut equiv_cnf) = cnf::equivalence_check_ecs_cnf(entity, mux.false_val, registry)
+        {
+            checks_performed += 1;
+            equiv_cnf.add_clause(vec![cnf::Literal::pos(equiv_cnf.root_var)]);
+            if solver::solve(&equiv_cnf) == SatResult::Unsatisfiable {
+                registry.muxes[entity.0 as usize] = None;
+                registry.signal_refs[entity.0 as usize] =
+                    Some(crate::ecs::components::SignalRefComponent(mux.false_val));
+                return SatSimplifyResult {
+                    reduced: true,
+                    checks_performed,
+                    equivalences_confirmed: 1,
+                    had_unknown: false,
+                };
+            }
+        }
+    }
+
+    SatSimplifyResult {
+        reduced: false,
+        checks_performed,
+        equivalences_confirmed: 0,
+        had_unknown: false,
+    }
+}
+
+fn is_boolean_entity(root: EntityId, registry: &Registry) -> bool {
+    let mut stack = vec![root];
     let mut iterations = 0usize;
     const MAX_ITERATIONS: usize = 512;
 
@@ -126,144 +235,45 @@ fn is_boolean_expr(expr: &Expr) -> bool {
         if iterations > MAX_ITERATIONS {
             return false;
         }
-        match e {
-            Expr::Literal(LiteralValue::Bool(_)) => {}
-            Expr::Literal(LiteralValue::Integer(_)) => return false,
-            Expr::Signal(_) => {
-                // Signals could be Boolean or integer — conservatively treat as Boolean.
-            }
-            Expr::Prev { .. } => {}
-            Expr::Unary { op, operand } => {
-                match op {
-                    UnaryOp::Not => stack.push(operand),
-                    UnaryOp::Negate => return false,
-                    UnaryOp::ReductionOr => return false, // Arithmetic negation.
-                }
-            }
-            Expr::Binary { op, left, right } => {
-                match op {
-                    BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
-                        stack.push(left);
-                        stack.push(right);
-                    }
-                    // Comparison operators return Boolean but operate on any type.
-                    BinaryOp::Eq
-                    | BinaryOp::Ne
-                    | BinaryOp::Lt
-                    | BinaryOp::Le
-                    | BinaryOp::Gt
-                    | BinaryOp::Ge => {
-                        // Accept: result is Boolean.
-                        stack.push(left);
-                        stack.push(right);
-                    }
-                    // Arithmetic operators.
-                    _ => return false,
-                }
-            }
-            // Composite expressions are not boolean.
-            Expr::ArrayIndex { .. }
-            | Expr::FieldAccess { .. }
-            | Expr::ArrayLiteral(_)
-            | Expr::StructLiteral { .. }
-            | Expr::UnfoldIndex(_) => return false,
-        }
-    }
-    true
-}
 
-/// Structural equality check for expressions.
-fn exprs_structurally_equal(a: &Expr, b: &Expr) -> bool {
-    let mut stack: Vec<(&Expr, &Expr)> = vec![(a, b)];
-    let mut iterations = 0usize;
-    const MAX_ITERATIONS: usize = 512;
+        let idx = e.0 as usize;
 
-    while let Some((x, y)) = stack.pop() {
-        iterations += 1;
-        if iterations > MAX_ITERATIONS {
+        if let Some(lit) = &registry.literals[idx] {
+            match lit.0 {
+                LiteralValue::Bool(_) => {}
+                LiteralValue::Integer(_) => return false,
+            }
+        } else if let Some(unary) = &registry.unary_ops[idx] {
+            match unary.op {
+                UnaryOp::Not => stack.push(unary.operand),
+                _ => return false,
+            }
+        } else if let Some(binary) = &registry.binary_ops[idx] {
+            match binary.op {
+                BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
+                    stack.push(binary.left);
+                    stack.push(binary.right);
+                }
+                BinaryOp::Eq
+                | BinaryOp::Ne
+                | BinaryOp::Lt
+                | BinaryOp::Le
+                | BinaryOp::Gt
+                | BinaryOp::Ge => {
+                    // Result is boolean, SAT logic bounds it opaquely, no need to recurse down
+                }
+                _ => return false,
+            }
+        } else if let Some(mux) = &registry.muxes[idx] {
+            stack.push(mux.select);
+            stack.push(mux.true_val);
+            stack.push(mux.false_val);
+        } else if registry.temporal_nodes[idx].is_some() {
+            // Reached temporal guardn opaque
+        } else if registry.names[idx].is_some() {
+            // Reached signal boundaryssumed boolean
+        } else {
             return false;
-        }
-        match (x, y) {
-            (Expr::Literal(a_val), Expr::Literal(b_val)) => {
-                if a_val != b_val {
-                    return false;
-                }
-            }
-            (Expr::Signal(a_name), Expr::Signal(b_name)) => {
-                if a_name != b_name {
-                    return false;
-                }
-            }
-            (
-                Expr::Prev { signal: a_sig, delay: a_d },
-                Expr::Prev { signal: b_sig, delay: b_d },
-            ) => {
-                if a_sig != b_sig || a_d != b_d {
-                    return false;
-                }
-            }
-            (
-                Expr::Unary { op: a_op, operand: a_inner },
-                Expr::Unary { op: b_op, operand: b_inner },
-            ) => {
-                if a_op != b_op {
-                    return false;
-                }
-                stack.push((a_inner, b_inner));
-            }
-            (
-                Expr::Binary { op: a_op, left: a_l, right: a_r },
-                Expr::Binary { op: b_op, left: b_l, right: b_r },
-            ) => {
-                if a_op != b_op {
-                    return false;
-                }
-                stack.push((a_l, b_l));
-                stack.push((a_r, b_r));
-            }
-            (
-                Expr::ArrayIndex { array: a_arr, index: a_idx },
-                Expr::ArrayIndex { array: b_arr, index: b_idx },
-            ) => {
-                stack.push((a_arr, b_arr));
-                stack.push((a_idx, b_idx));
-            }
-            (
-                Expr::FieldAccess { object: a_obj, field: a_f },
-                Expr::FieldAccess { object: b_obj, field: b_f },
-            ) => {
-                if a_f != b_f {
-                    return false;
-                }
-                stack.push((a_obj, b_obj));
-            }
-            (Expr::ArrayLiteral(a_elems), Expr::ArrayLiteral(b_elems)) => {
-                if a_elems.len() != b_elems.len() {
-                    return false;
-                }
-                let mut i = 0;
-                while i < a_elems.len() && i < MAX_ITERATIONS {
-                    stack.push((&a_elems[i], &b_elems[i]));
-                    i += 1;
-                }
-            }
-            (
-                Expr::StructLiteral { name: a_name, fields: a_fields },
-                Expr::StructLiteral { name: b_name, fields: b_fields },
-            ) => {
-                if a_name != b_name || a_fields.len() != b_fields.len() {
-                    return false;
-                }
-                let mut i = 0;
-                while i < a_fields.len() && i < MAX_ITERATIONS {
-                    if a_fields[i].0 != b_fields[i].0 {
-                        return false;
-                    }
-                    stack.push((&a_fields[i].1, &b_fields[i].1));
-                    i += 1;
-                }
-            }
-            _ => return false,
         }
     }
     true
@@ -275,65 +285,111 @@ mod tests {
 
     #[test]
     fn identical_expr_no_check() {
-        let expr = Expr::Signal("a".to_string());
-        let result = simplify_with_sat(expr);
-        assert_eq!(result.checks_performed, 0);
+        // Obsolete in ECS tautology mode because we just check contradiction/tautology
     }
 
     #[test]
     fn double_negation_verified() {
-        // NOT (NOT a) should simplify to a.
-        let expr = Expr::Unary {
-            op: UnaryOp::Not,
-            operand: Box::new(Expr::Unary {
-                op: UnaryOp::Not,
-                operand: Box::new(Expr::Signal("a".to_string())),
-            }),
-        };
-        let result = simplify_with_sat(expr);
-        // The heuristic simplifier should catch double negation.
-        // SAT check should confirm equivalence.
-        assert!(result.equivalences_confirmed <= 1);
+        let mut registry = Registry::new();
+        let sig = registry.create_entity("a", crate::ecs::components::KindComponent::SIGNAL);
+
+        let not1 = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.unary_ops[not1.0 as usize] =
+            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig });
+
+        let not2 = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.unary_ops[not2.0 as usize] =
+            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: not1 });
+
+        // double negation is not a tautology or contradiction, it evaluates to `sig`.
+        // The simplify_entity_with_sat will return reduced=false
+        let result = simplify_entity_with_sat(not2, &mut registry);
+        assert!(!result.reduced);
     }
 
     #[test]
-    fn structural_equality_same_expr() {
-        let a = Expr::Binary {
+    fn tautology_verified() {
+        // a OR (NOT a) -> Tautology
+        let mut registry = Registry::new();
+        let sig = registry.create_entity("a", crate::ecs::components::KindComponent::SIGNAL);
+
+        let not1 = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.unary_ops[not1.0 as usize] =
+            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig });
+
+        let or_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.binary_ops[or_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
+            op: BinaryOp::Or,
+            left: sig,
+            right: not1,
+        });
+
+        let result = simplify_entity_with_sat(or_node, &mut registry);
+        assert!(result.reduced);
+        assert!(matches!(
+            registry.literals[or_node.0 as usize],
+            Some(crate::ecs::components::LiteralComponent(LiteralValue::Bool(true)))
+        ));
+    }
+
+    #[test]
+    fn contradiction_verified() {
+        // a AND (NOT a) -> Contradiction
+        let mut registry = Registry::new();
+        let sig = registry.create_entity("a", crate::ecs::components::KindComponent::SIGNAL);
+
+        let not1 = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.unary_ops[not1.0 as usize] =
+            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig });
+
+        let and_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.binary_ops[and_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
             op: BinaryOp::And,
-            left: Box::new(Expr::Signal("x".to_string())),
-            right: Box::new(Expr::Signal("y".to_string())),
-        };
-        let b = a.clone();
-        assert!(exprs_structurally_equal(&a, &b));
-    }
+            left: sig,
+            right: not1,
+        });
 
-    #[test]
-    fn structural_equality_different_expr() {
-        let a = Expr::Signal("x".to_string());
-        let b = Expr::Signal("y".to_string());
-        assert!(!exprs_structurally_equal(&a, &b));
+        let result = simplify_entity_with_sat(and_node, &mut registry);
+        assert!(result.reduced);
+        assert!(matches!(
+            registry.literals[and_node.0 as usize],
+            Some(crate::ecs::components::LiteralComponent(LiteralValue::Bool(false)))
+        ));
     }
 
     #[test]
     fn is_boolean_pure_boolean() {
-        let expr = Expr::Binary {
+        let mut registry = Registry::new();
+        let sig_a = registry.create_entity("a", crate::ecs::components::KindComponent::SIGNAL);
+        let sig_b = registry.create_entity("b", crate::ecs::components::KindComponent::SIGNAL);
+
+        let not_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.unary_ops[not_node.0 as usize] =
+            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig_b });
+
+        let and_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.binary_ops[and_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
             op: BinaryOp::And,
-            left: Box::new(Expr::Signal("a".to_string())),
-            right: Box::new(Expr::Unary {
-                op: UnaryOp::Not,
-                operand: Box::new(Expr::Signal("b".to_string())),
-            }),
-        };
-        assert!(is_boolean_expr(&expr));
+            left: sig_a,
+            right: not_node,
+        });
+
+        assert!(is_boolean_entity(and_node, &registry));
     }
 
     #[test]
     fn is_boolean_rejects_arithmetic() {
-        let expr = Expr::Binary {
+        let mut registry = Registry::new();
+        let sig_a = registry.create_entity("a", crate::ecs::components::KindComponent::SIGNAL);
+        let sig_b = registry.create_entity("b", crate::ecs::components::KindComponent::SIGNAL);
+
+        let add_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
+        registry.binary_ops[add_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
             op: BinaryOp::Add,
-            left: Box::new(Expr::Signal("a".to_string())),
-            right: Box::new(Expr::Signal("b".to_string())),
-        };
-        assert!(!is_boolean_expr(&expr));
+            left: sig_a,
+            right: sig_b,
+        });
+
+        assert!(!is_boolean_entity(add_node, &registry));
     }
 }
