@@ -243,6 +243,9 @@ fn types_compatible(target: &SignalType, expr: &SignalType) -> bool {
         (SignalType::Unsigned(target_w), SignalType::Unsigned(expr_w)) => expr_w <= target_w,
         // Safe signed widening: narrower fits in wider via sign-extension.
         (SignalType::Signed(target_w), SignalType::Signed(expr_w)) => expr_w <= target_w,
+        // Structural Bitcast: Signed ↔ Unsigned of identical physical width are just wires.
+        (SignalType::Unsigned(target_w), SignalType::Signed(expr_w)) if target_w == expr_w => true,
+        (SignalType::Signed(target_w), SignalType::Unsigned(expr_w)) if target_w == expr_w => true,
         _ => false,
     }
 }

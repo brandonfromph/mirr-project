@@ -253,29 +253,25 @@ fn signed_narrowing_i16_to_i8_rejected() {
 }
 
 #[test]
-fn signed_to_unsigned_cross_assign_rejected() {
+fn signed_to_unsigned_cross_assign_passes() {
     let m = signed_module_with_assignment(
         "out_u16",
         SignalType::Unsigned(16),
         Expr::Signal("si".to_string()), // si is i16
     );
     validate_module(&m).unwrap();
-    let errs = typecheck_module(&m).unwrap_err();
-    let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E601]"), "Expected E601 for cross-category, got: {}", err);
+    typecheck_module(&m).expect("Structural bitcast allows Signed(16) -> Unsigned(16)");
 }
 
 #[test]
-fn unsigned_to_signed_cross_assign_rejected() {
+fn unsigned_to_signed_cross_assign_passes() {
     let m = signed_module_with_assignment(
         "out_i16",
         SignalType::Signed(16),
         Expr::Signal("su".to_string()), // su is u16
     );
     validate_module(&m).unwrap();
-    let errs = typecheck_module(&m).unwrap_err();
-    let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E601]"), "Expected E601 for cross-category, got: {}", err);
+    typecheck_module(&m).expect("Structural bitcast allows Unsigned(16) -> Signed(16)");
 }
 
 // ---------------------------------------------------------------------------
@@ -511,21 +507,15 @@ fn signed_xor_same_type_passes() {
 }
 
 #[test]
-fn signed_xor_cross_category_rejected() {
+fn signed_xor_cross_category_passes() {
     let expr = Expr::Binary {
         op: BinaryOp::Xor,
-        left: Box::new(Expr::Signal("si".to_string())),
-        right: Box::new(Expr::Signal("su".to_string())),
+        left: Box::new(Expr::Signal("si".to_string())), // i16
+        right: Box::new(Expr::Signal("su".to_string())), // u16
     };
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
-    let errs = typecheck_module(&m).unwrap_err();
-    let err = errs.errors.first().expect("should have at least one error");
-    assert!(
-        err.to_string().contains("[E607]"),
-        "Expected E607 for cross-category xor, got: {}",
-        err
-    );
+    typecheck_module(&m).expect("Structural bitcast allows XOR between identical width Signed/Unsigned");
 }
 
 // ---------------------------------------------------------------------------

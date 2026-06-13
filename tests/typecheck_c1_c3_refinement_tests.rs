@@ -164,33 +164,22 @@ fn c1_pipeline_multi_signal_module() {
 // ===========================================================================
 
 #[test]
-fn c2_signed_assigned_to_unsigned_fails() {
+fn c2_signed_assigned_to_unsigned_passes() {
     let m = module_with_assignment(
         "out_u16",
         SignalType::Unsigned(16),
         Expr::Signal("si16".to_string()),
     );
     validate_module(&m).expect("must pass semantic validation");
-    let errs = typecheck_module(&m).expect_err("signed to unsigned must fail");
-    let any_e60x = errs.errors.iter().take(MAX_ERR_SCAN).any(|e| {
-        let s = e.to_string();
-        s.contains("E608")
-            || s.contains("E602")
-            || s.contains("signed")
-            || s.contains("mismatch")
-            || s.contains("not compatible")
-    });
-    assert!(any_e60x, "must produce E602/E608 or mismatch error, got: {:?}", errs.errors);
+    assert!(typecheck_module(&m).is_ok(), "signed to unsigned of equal width must pass structural bitcast");
 }
 
 #[test]
-fn c2_unsigned_to_signed_fails() {
+fn c2_unsigned_to_signed_passes() {
     let m =
         module_with_assignment("out_si", SignalType::Signed(16), Expr::Signal("u16".to_string()));
     validate_module(&m).expect("must pass semantic validation");
-    let errs = typecheck_module(&m).expect_err("unsigned to signed must fail");
-    let has_err = !errs.errors.is_empty();
-    assert!(has_err, "unsigned to signed must produce errors");
+    assert!(typecheck_module(&m).is_ok(), "unsigned to signed of equal width must pass structural bitcast");
 }
 
 #[test]
