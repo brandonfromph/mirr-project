@@ -37,12 +37,15 @@ def pcc_verifier(
             }
         }
 
+        signal is_valid: internal bool;
+
         // Main verification latch
         // code_valid asserts only when all checks pass simultaneously.
         reflex update_verification {
             on always {
-                ${code_valid} = true;
-                ${verify_fault} = false;
+                is_valid = bounds_ok && ${cert_hash_match} && ${cert_valid_sig};
+                ${code_valid} = is_valid;
+                ${verify_fault} = !is_valid;
             }
         }
     }

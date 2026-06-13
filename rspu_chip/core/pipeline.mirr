@@ -19,6 +19,26 @@ def rspu_pipeline(
     trap_out: signal out bool
 ) {
     reflect {
+        // --- Pipeline Registers ---
+        signal if_id_pc: internal u32;
+        signal if_id_instr: internal u64;
+
+        signal id_ex_pc: internal u32;
+        signal id_ex_rs1: internal u64;
+        signal id_ex_rs2: internal u64;
+        signal id_ex_rd: internal u64;
+        signal id_ex_val1: internal u64;
+        signal id_ex_val2: internal u64;
+        signal id_ex_op: internal u64;
+
+        signal ex_mem_rd: internal u64;
+        signal ex_mem_res: internal u64;
+        signal ex_mem_op: internal u64;
+
+        signal mem_wb_rd: internal u64;
+        signal mem_wb_res: internal u64;
+        signal mem_wb_we: internal bool;
+
         // --- 1. Fetch Stage (IF) ---
         signal pipe_pc: internal u32;
         
@@ -54,6 +74,10 @@ def rspu_pipeline(
             on fetch_active {
                 pipe_pc = (pipe_pc + 1) & 4294967295;
                 ${pc_out} = pipe_pc;
+                
+                // Advance IF/ID
+                if_id_pc = pipe_pc;
+                if_id_instr = ${instr_in};
             }
         }
 
@@ -64,16 +88,34 @@ def rspu_pipeline(
         }
 
         // --- 2. Decode Stage (ID) ---
-        signal id_rs1: internal u16;
-        signal id_rs2: internal u16;
-        signal id_rd:  internal u16;
         signal id_val1: internal u64;
         signal id_val2: internal u64;
-        signal reg_we: internal bool;
-        signal reg_din: internal u64;
         
+        signal dec_rs1: internal u64;
+        signal dec_rs2: internal u64;
+        signal dec_rd: internal u64;
+        signal dec_op: internal u64;
+
+        reflex do_decode {
+            on fetch_active {
+                dec_rs1 = (if_id_instr >> 48) & 1023;
+                dec_rs2 = (if_id_instr >> 32) & 1023;
+                dec_rd  = (if_id_instr >> 16) & 1023;
+                dec_op  = (if_id_instr & 255);
+
+                // Advance ID/EX
+                id_ex_pc = if_id_pc;
+                id_ex_rs1 = dec_rs1;
+                id_ex_rs2 = dec_rs2;
+                id_ex_rd = dec_rd;
+                id_ex_val1 = id_val1;
+                id_ex_val2 = id_val2;
+                id_ex_op = dec_op;
+            }
+        }
+
         // regfile ports are now u10
-        reg::regfile(${clk}, id_rs1, id_rs2, id_rd, reg_we, reg_din, id_val1, id_val2);
+        reg::regfile(${clk}, dec_rs1, dec_rs2, mem_wb_rd, mem_wb_we, mem_wb_res, id_val1, id_val2);
 
         // --- 3. Execute Stage (EX) ---
         signal ex_d1: internal u64;
@@ -87,61 +129,76 @@ def rspu_pipeline(
         signal ex_out_t: internal u64;
         signal ex_out_p: internal u64;
         signal ex_trap:  internal bool;
-        signal alu_op:   internal u16;
+        
+        types::extract_data(id_ex_val1, ex_d1);
+        types::extract_tag(id_ex_val1, ex_t1);
+        types::extract_provenance(id_ex_val1, ex_p1);
 
-        types::extract_data(id_val1, ex_d1);
-        types::extract_tag(id_val1, ex_t1);
-        types::extract_provenance(id_val1, ex_p1);
+        types::extract_data(id_ex_val2, ex_d2);
+        types::extract_tag(id_ex_val2, ex_t2);
+        types::extract_provenance(id_ex_val2, ex_p2);
 
-        types::extract_data(id_val2, ex_d2);
-        types::extract_tag(id_val2, ex_t2);
-        types::extract_provenance(id_val2, ex_p2);
-
-        alu::alu_core(${clk}, alu_op, 
+        alu::alu_core(${clk}, id_ex_op, 
             ex_d1, ex_t1, ex_p1,
             ex_d2, ex_t2, ex_p2,
             ex_out_d, ex_out_t, ex_out_p, ex_trap
         );
 
-        // --- 4. Memory Stage (MEM) ---
         signal ex_packed: internal u64;
-        let is_load: bool = (alu_op == 6);
-        let is_not_load: bool = (alu_op != 6);
+
+        reflex do_execute {
+            on fetch_active {
+                ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
+
+                // Advance EX/MEM
+                ex_mem_rd = id_ex_rd;
+                ex_mem_res = ex_packed;
+                ex_mem_op = id_ex_op;
+            }
+        }
+
+        // --- 4. Memory Stage (MEM) ---
+        signal mem_out: internal u64;
+        signal ram_addr: internal u32;
+        
+        let is_load: bool = (ex_mem_op == 6);
+        let is_not_load: bool = (ex_mem_op != 6);
 
         guard is_load_g { when is_load for 1 cycles; }
         guard is_not_load_g { when is_not_load for 1 cycles; }
 
-        reflex pack_ex_result_load {
+        reflex advance_mem_wb_load {
             on is_load_g {
-                ${data_out} = mem_out;
+                mem_wb_res = mem_out;
             }
         }
 
-        reflex pack_ex_result_other {
+        reflex advance_mem_wb_other {
             on is_not_load_g {
-                ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
-                ${data_out} = ex_packed;
+                mem_wb_res = ex_mem_res;
             }
         }
 
-        signal mem_out: internal u64;
-        signal ram_addr: internal u32;
-
-        reflex decode_instr {
-            on always {
-                // R-SPU 2.0: 64-bit instructions, 10-bit registers
-                id_rs1 = (${instr_in} >> 48) & 1023;
-                id_rs2 = (${instr_in} >> 32) & 1023;
-                id_rd  = (${instr_in} >> 16) & 1023;
-                alu_op = (${instr_in} & 255);
-                
+        reflex do_memory {
+            on fetch_active {
                 // ram_addr is now u14 in ram module
-                ram_addr = (pipe_pc & 16383); 
-                reg_we = true;
-                reg_din = ex_packed;
+                ram_addr = (id_ex_pc & 16383);
+                
+                // Advance MEM/WB structural metadata
+                mem_wb_rd = ex_mem_rd;
+                mem_wb_we = true; 
             }
         }
-        ram::ram(${clk}, ram_addr, ex_packed, mem_out);
+
+        ram::ram(${clk}, ram_addr, ex_mem_res, mem_out);
+
+        // --- 5. Write-Back Stage (WB) ---
+        // mem_wb_rd, mem_wb_we, and mem_wb_res are hooked directly to reg::regfile.
+        reflex pack_output {
+            on always {
+                ${data_out} = mem_wb_res;
+            }
+        }
     }
 }
 
