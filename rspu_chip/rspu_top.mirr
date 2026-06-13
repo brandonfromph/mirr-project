@@ -22,6 +22,10 @@ module rspu_top {
         signal tx_valid[i]: internal bool;
         signal tx_data[i]: internal u64;
 
+        // Physical I/O Subsystem
+        signal core_io_in[i]: internal u64;
+        signal core_io_out[i]: internal u64;
+
         // Physical Outputs
         signal out_pc[i]: out u32;
         signal out_data[i]: out u64;
@@ -32,13 +36,29 @@ module rspu_top {
     // --- Digital Twin: Physics & Control ---
     signal robot_angle:  internal i64;
     signal robot_torque: internal i64;
+    signal core_0_torque: internal u64; // Dummy actuator for Core 0
 
     physics::pendulum(robot_torque, robot_angle);
     ctrl::controller(robot_angle, robot_torque);
 
     // --- 64-Core Integration ---
     for i in 0..64 {
-        core::core_top(clk, rst_n, pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
+        core::core_top(clk, rst_n, core_io_in[i], core_io_out[i], pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
+    }
+
+    // --- I/O Subsystem Wiring ---
+    reflex wire_io {
+        on always {
+            // Core 0 connects to the physical digital twin
+            // compiler lacks i64 -> u64 cast support, temporarily grounding
+            core_io_in_0 = 0;
+            core_0_torque = core_io_out_0;
+            
+            // Ground Cores 1-63 I/O ports
+            for i in 1..64 {
+                core_io_in[i] = 0;
+            }
+        }
     }
 
     // --- Hierarchical NoC Interconnect ---

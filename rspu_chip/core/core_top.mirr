@@ -10,6 +10,10 @@ def core_top(
     clk: signal in bool,
     rst_n: signal in bool,
     
+    // Physical I/O Interface
+    io_in_0:  signal in u64,
+    io_out_0: signal out u64,
+    
     // Instruction Memory Interface (Internal 1-word Cache)
     pc_out:   signal out u32,
     data_out: signal out u64,
@@ -38,7 +42,7 @@ def core_top(
             }
         }
         
-        pipe::rspu_pipeline(${clk}, ${rst_n}, current_instr, ${pc_out}, ${data_out}, trap_signal);
+        pipe::rspu_pipeline(${clk}, ${rst_n}, current_instr, ${io_in_0}, ${io_out_0}, ${pc_out}, ${data_out}, trap_signal);
 
         // --- 2. Exception Controller Logic ---
         // trap_active fires when the pipeline asserts a trap.

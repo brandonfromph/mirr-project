@@ -14,6 +14,8 @@ def rspu_pipeline(
     clk: signal in bool,
     rst_n: signal in bool,
     instr_in: signal in u64,
+    io_in_0: signal in u64,
+    io_out_0: signal out u64,
     pc_out: signal out u32,
     data_out: signal out u64,
     trap_out: signal out bool
@@ -146,10 +148,35 @@ def rspu_pipeline(
 
         signal ex_packed: internal u64;
 
+        let is_load_in: bool = (id_ex_op == 0);
+        let is_store_out: bool = (id_ex_op == 1);
+        let is_normal_ex: bool = (id_ex_op != 0);
+
+        guard is_load_in_g { when is_load_in for 1 cycles; }
+        guard is_store_out_g { when is_store_out for 1 cycles; }
+        guard is_normal_ex_g { when is_normal_ex for 1 cycles; }
+
+        reflex do_ex_packed_normal {
+            on is_normal_ex_g {
+                ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
+            }
+        }
+
+        reflex do_ex_packed_load {
+            on is_load_in_g {
+                // TAG_UNSIGNED = 1
+                ex_packed = (1 << 32) | (${io_in_0} & 4294967295);
+            }
+        }
+
+        reflex do_store_out {
+            on is_store_out_g {
+                ${io_out_0} = id_ex_val1;
+            }
+        }
+
         reflex do_execute {
             on fetch_active {
-                ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
-
                 // Advance EX/MEM
                 ex_mem_rd = id_ex_rd;
                 ex_mem_res = ex_packed;
