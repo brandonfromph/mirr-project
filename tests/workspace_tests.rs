@@ -132,7 +132,7 @@ fn test_workspace_pattern_merging() {
     let mut workspace = Workspace::new(tmp.path());
     let snapshot = workspace.compile_snapshot(&root, &basic_config()).unwrap();
 
-    let prog = &snapshot.pipeline.program;
+    let prog = &snapshot.pipeline.program.as_ref().unwrap();
     assert_eq!(prog.patterns.len(), 2);
 
     let names: Vec<_> = prog.patterns.iter().map(|p| p.name.as_str()).collect();

@@ -136,9 +136,13 @@ fn make_property(
 
 /// Build a PipelineResult from a programmatic Module (bypasses parser/validation).
 fn result_from_module(module: Module) -> PipelineResult {
+    let program = MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
+    let mut reg = mirrc::ecs::Registry::new();
+    mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
+        program: Some(program),
         simplify_stats: None,
         width_stats: None,
         width_diagnostics: Vec::new(),
@@ -152,16 +156,20 @@ fn result_from_module(module: Module) -> PipelineResult {
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
-        ecs_registry: Some(mirrc::ecs::Registry::default()),
+        ecs_registry: Some(reg),
         file_table: mirrc::span::FileTable::new(),
     }
 }
 
 /// Build a PipelineResult from a Module with a custom temporal netlist.
 fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResult {
+    let program = MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
+    let mut reg = mirrc::ecs::Registry::new();
+    mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
+        program: Some(program),
         simplify_stats: None,
         width_stats: None,
         width_diagnostics: Vec::new(),
@@ -175,7 +183,7 @@ fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResu
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
-        ecs_registry: Some(mirrc::ecs::Registry::default()),
+        ecs_registry: Some(reg),
         file_table: mirrc::span::FileTable::new(),
     }
 }

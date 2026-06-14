@@ -24,7 +24,7 @@ pub use checks::{
 };
 pub use types::*;
 
-use crate::ast::program::Module;
+use crate::ecs::components;
 
 /// Maximum signals in a module (NASA P10 iteration bound).
 pub(super) const MAX_SIGNALS: usize = 4096;
@@ -46,16 +46,16 @@ const MAX_DFS_STACK: usize = 4096;
 ///
 /// Bounded: each sub-analysis has its own MAX_* iteration bounds.
 pub fn run_totality_check(
-    module: &Module,
+    registry: &crate::ecs::Registry,
     target: &crate::emit::rspu_isa::TargetSpec,
 ) -> TotalityResult {
-    let resource_bound = check_resource_bounds(module, target);
-    let output_completeness = check_output_completeness(module);
-    let guard_coverage = check_guard_coverage(module);
-    let temporal_bound = check_temporal_bound(module);
-    let acyclicity = check_dependency_acyclicity(module);
+    let resource_bound = check_resource_bounds(registry, target);
+    let output_completeness = check_output_completeness(registry);
+    let guard_coverage = check_guard_coverage(registry);
+    let temporal_bound = check_temporal_bound(registry);
+    let acyclicity = check_dependency_acyclicity(registry);
 
-    let property_summary = build_property_summary(module);
+    let property_summary = build_property_summary(registry);
 
     let is_total = resource_bound.pass
         && output_completeness.pass
@@ -74,6 +74,16 @@ pub fn run_totality_check(
     }
 }
 
+/// Run all five totality analyses on a parsed MIRR module (Compatibility Helper).
+pub fn run_totality_check_on_module(
+    module: &crate::ast::program::Module,
+    target: &crate::emit::rspu_isa::TargetSpec,
+) -> TotalityResult {
+    let mut reg = crate::ecs::Registry::new();
+    reg.ingest_module(module).unwrap();
+    run_totality_check(&reg, target)
+}
+
 // ---------------------------------------------------------------------------
 // Analysis 5: Dependency acyclicity
 // ---------------------------------------------------------------------------
@@ -86,13 +96,22 @@ pub fn run_totality_check(
 /// followed (they break cycles via temporal delay).
 ///
 /// Bounded: MAX_DFS_STACK for the work stack. MAX_SIGNALS for signal count.
-pub fn check_dependency_acyclicity(module: &Module) -> AcyclicityResult {
+pub fn check_dependency_acyclicity(registry: &crate::ecs::Registry) -> AcyclicityResult {
     let mut names: Vec<&str> = Vec::new();
     let mut ni = 0;
-    while ni < module.signals.len() && ni < MAX_SIGNALS {
-        names.push(&module.signals[ni].name);
-        ni += 1;
+
+    for i in 0..registry.names.len() {
+        if let (Some(name), Some(kind)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::components::EntityKind::SIGNAL(_) = kind.0 {
+                names.push(&name.0);
+                ni += 1;
+                if ni >= MAX_SIGNALS {
+                    break;
+                }
+            }
+        }
     }
+
     let n = names.len();
     if n == 0 {
         return AcyclicityResult { pass: true, cycle_witness: None };
@@ -105,39 +124,47 @@ pub fn check_dependency_acyclicity(module: &Module) -> AcyclicityResult {
         ai += 1;
     }
 
-    let mut ri = 0;
-    while ri < module.reflexes.len() && ri < MAX_REFLEXES {
-        let mut asgn_i = 0;
-        while asgn_i < module.reflexes[ri].assignments.len() && asgn_i < MAX_REFLEXES {
-            let target = &module.reflexes[ri].assignments[asgn_i].target;
-            let target_idx = find_signal_index(&names, target);
-            if let Some(ti) = target_idx {
-                let mut deps = collect_signal_deps(&module.reflexes[ri].assignments[asgn_i].value);
-
-                // MEGA-10: Guard dependencies. If a reflex triggers on a guard,
-                // the assigned signal combinationally depends on the signals in that guard.
-                for g_name in &module.reflexes[ri].guard_names {
-                    // Note: 'always' and 'never' have no signal dependencies.
-                    if g_name == "always" || g_name == "never" {
-                        continue;
-                    }
-
-                    if let Some(guard) = module.guards.iter().find(|g| g.name == *g_name) {
-                        deps.extend(collect_signal_deps(&guard.condition));
-                    }
+    for (ri, reflex_opt) in registry.reflex_comps.iter().enumerate() {
+        if let Some(reflex) = reflex_opt {
+            for (asgn_idx, asgn_ent) in reflex.assignments.iter().enumerate() {
+                if asgn_idx >= MAX_REFLEXES {
+                    break;
                 }
+                if let Some(assign) = &registry.assignment_comps[asgn_ent.0 as usize] {
+                    if let Some(t_name_comp) = &registry.names[assign.target.0 as usize] {
+                        let target_idx = find_signal_index(&names, &t_name_comp.0);
+                        if let Some(ti) = target_idx {
+                            let mut deps = collect_signal_deps_ecs(assign.value, registry);
 
-                let mut di = 0;
-                while di < deps.len() && di < MAX_DEP_NODES {
-                    if let Some(dep_idx) = find_signal_index(&names, &deps[di]) {
-                        adj[ti].push(dep_idx);
+                            // MEGA-10: Guard dependencies.
+                            for guard_ent in &reflex.guards {
+                                if let Some(g_name_comp) = &registry.names[guard_ent.0 as usize] {
+                                    if g_name_comp.0 == "always" || g_name_comp.0 == "never" {
+                                        continue;
+                                    }
+                                    if let Some(cond_comp) =
+                                        &registry.conditions[guard_ent.0 as usize]
+                                    {
+                                        deps.extend(collect_signal_deps_ecs(cond_comp.0, registry));
+                                    }
+                                }
+                            }
+
+                            let mut di = 0;
+                            while di < deps.len() && di < MAX_DEP_NODES {
+                                if let Some(dep_idx) = find_signal_index(&names, &deps[di]) {
+                                    adj[ti].push(dep_idx);
+                                }
+                                di += 1;
+                            }
+                        }
                     }
-                    di += 1;
                 }
             }
-            asgn_i += 1;
+            if ri >= MAX_REFLEXES {
+                break;
+            }
         }
-        ri += 1;
     }
 
     let mut color: Vec<u8> = Vec::new();
@@ -193,21 +220,32 @@ pub fn check_dependency_acyclicity(module: &Module) -> AcyclicityResult {
 /// Build a summary of all declared properties for the certificate.
 ///
 /// Bounded: iterates over properties (≤ MAX_SIGNALS).
-fn build_property_summary(module: &Module) -> Vec<PropertySummary> {
+fn build_property_summary(registry: &crate::ecs::Registry) -> Vec<PropertySummary> {
     let mut summaries: Vec<PropertySummary> = Vec::new();
     let mut pi = 0;
-    while pi < module.properties.len() && pi < MAX_SIGNALS {
-        let p = &module.properties[pi];
-        let kind = match &p.formula {
-            crate::ast::PropertyFormula::Always(_) => "always",
-            crate::ast::PropertyFormula::Never(_) => "never",
-            crate::ast::PropertyFormula::AlwaysImplies { .. } => "always_implies",
-            crate::ast::PropertyFormula::NeverImplies { .. } => "never_implies",
-            crate::ast::PropertyFormula::EventuallyWithin { .. } => "eventually_within",
-            crate::ast::PropertyFormula::AlwaysFollowedBy { .. } => "always_followed_by",
-        };
-        summaries.push(PropertySummary { name: p.name.clone(), kind: kind.to_string() });
-        pi += 1;
+
+    for i in 0..registry.property_comps.len() {
+        if let (Some(name_comp), Some(prop_comp)) =
+            (&registry.names[i], &registry.property_comps[i])
+        {
+            let kind = match &prop_comp.formula {
+                crate::ast::property::PropertyFormula::Always(_) => "always",
+                crate::ast::property::PropertyFormula::Never(_) => "never",
+                crate::ast::property::PropertyFormula::AlwaysImplies { .. } => "always_implies",
+                crate::ast::property::PropertyFormula::NeverImplies { .. } => "never_implies",
+                crate::ast::property::PropertyFormula::EventuallyWithin { .. } => {
+                    "eventually_within"
+                }
+                crate::ast::property::PropertyFormula::AlwaysFollowedBy { .. } => {
+                    "always_followed_by"
+                }
+            };
+            summaries.push(PropertySummary { name: name_comp.0.clone(), kind: kind.to_string() });
+            pi += 1;
+            if pi >= MAX_SIGNALS {
+                break;
+            }
+        }
     }
     summaries
 }
@@ -224,52 +262,82 @@ fn find_signal_index(names: &[&str], target: &str) -> Option<usize> {
     None
 }
 
-/// Collect signal names referenced in an expression (excluding Prev references).
-///
-/// Bounded: explicit stack with MAX_DEP_NODES limit.
-fn collect_signal_deps(expr: &crate::ast::Expr) -> Vec<String> {
+/// Collect signal names referenced in an ECS expression (excluding Prev references).
+fn collect_signal_deps_ecs(
+    root: crate::ecs::EntityId,
+    registry: &crate::ecs::Registry,
+) -> Vec<String> {
     let mut deps: Vec<String> = Vec::new();
-    let mut stack: Vec<&crate::ast::Expr> = Vec::new();
-    stack.push(expr);
+    let mut stack: Vec<crate::ecs::EntityId> = Vec::new();
+    stack.push(root);
 
     let mut visited = 0usize;
-    while let Some(e) = stack.pop() {
+    while let Some(ent) = stack.pop() {
         visited += 1;
-        if visited > MAX_DEP_NODES {
+        if visited >= MAX_DEP_NODES {
             break;
         }
-        match e {
-            crate::ast::Expr::Signal(name) => {
-                deps.push(name.clone());
+        let i = ent.0 as usize;
+        if i >= registry.names.len() {
+            continue;
+        }
+
+        // Signal reference
+        if let Some(components::SignalRefComponent(sig_ent)) = &registry.signal_refs[i] {
+            if let Some(name) = &registry.names[sig_ent.0 as usize] {
+                deps.push(name.0.clone());
             }
-            crate::ast::Expr::Unary { operand, .. } => {
-                stack.push(operand);
+            continue;
+        }
+
+        // Skip Prev references (temporal boundary)
+        if registry.prev_ops[i].is_some() {
+            continue;
+        }
+
+        // Binary Ops
+        if let Some(components::BinaryComponent { left, right, .. }) = &registry.binary_ops[i] {
+            stack.push(*left);
+            stack.push(*right);
+        }
+
+        // Unary Ops
+        if let Some(components::UnaryComponent { operand, .. }) = &registry.unary_ops[i] {
+            stack.push(*operand);
+        }
+
+        // Mux
+        if let Some(components::MuxComponent { select, true_val, false_val }) = &registry.muxes[i] {
+            stack.push(*select);
+            stack.push(*true_val);
+            stack.push(*false_val);
+        }
+
+        // Struct literals
+        if let Some(components::StructLiteralComponent { fields, .. }) =
+            &registry.struct_literals[i]
+        {
+            for field in fields {
+                stack.push(field.1);
             }
-            crate::ast::Expr::Binary { left, right, .. } => {
-                stack.push(left);
-                stack.push(right);
+        }
+
+        // Array literals
+        if let Some(components::ArrayLiteralComponent(elements)) = &registry.array_literals[i] {
+            for el in elements {
+                stack.push(*el);
             }
-            crate::ast::Expr::Prev { .. } | crate::ast::Expr::Literal(_) => {}
-            crate::ast::Expr::ArrayIndex { array, index } => {
-                stack.push(array);
-                stack.push(index);
-            }
-            crate::ast::Expr::FieldAccess { object, .. } => {
-                stack.push(object);
-            }
-            crate::ast::Expr::ArrayLiteral(elems) => {
-                for e in elems {
-                    stack.push(e);
-                }
-            }
-            crate::ast::Expr::StructLiteral { fields, .. } => {
-                for (_, v) in fields {
-                    stack.push(v);
-                }
-            }
-            crate::ast::Expr::UnfoldIndex(_) => {
-                // Unresolved meta-stage index is not a signal dependency.
-            }
+        }
+
+        // Array index
+        if let Some(components::ArrayIndexComponent { array, index }) = &registry.array_indices[i] {
+            stack.push(*array);
+            stack.push(*index);
+        }
+
+        // Field access
+        if let Some(components::FieldAccessComponent { object, .. }) = &registry.field_accesses[i] {
+            stack.push(*object);
         }
     }
     deps
@@ -335,6 +403,13 @@ mod tests {
         }
     }
 
+    fn run_totality_on_module(m: &Module) -> TotalityResult {
+        let mut reg = crate::ecs::Registry::new();
+        reg.ingest_module(m).unwrap();
+        let target = crate::emit::rspu_isa::TargetSpec::from_config(&None);
+        run_totality_check(&reg, &target)
+    }
+
     #[test]
     fn test_total_module_passes_all() {
         let m = make_module(
@@ -345,8 +420,7 @@ mod tests {
             vec![make_guard("g1", 3)],
             vec![make_reflex("r1", "g1", "output_b")],
         );
-        let target = crate::emit::rspu_isa::TargetSpec::from_config(&None);
-        let result = run_totality_check(&m, &target);
+        let result = run_totality_on_module(&m);
         assert!(result.is_total);
         assert!(result.resource_bound.pass);
         assert!(result.output_completeness.pass);
@@ -366,8 +440,7 @@ mod tests {
             vec![make_guard("g1", 3)],
             vec![make_reflex("r1", "g1", "output_b")],
         );
-        let target = crate::emit::rspu_isa::TargetSpec::from_config(&None);
-        let result = run_totality_check(&m, &target);
+        let result = run_totality_on_module(&m);
         assert!(!result.is_total);
         assert!(!result.output_completeness.pass);
         assert_eq!(result.output_completeness.undriven_outputs, vec!["output_c"]);
@@ -383,7 +456,9 @@ mod tests {
             vec![make_guard("g1", 10), make_guard("g2", 25)],
             vec![make_reflex("r1", "g1", "output_b")],
         );
-        let result = check_temporal_bound(&m);
+        let mut reg = crate::ecs::Registry::new();
+        reg.ingest_module(&m).unwrap();
+        let result = check_temporal_bound(&reg);
         assert_eq!(result.max_guard_cycles, 25);
         assert!(result.pass);
     }
@@ -405,7 +480,9 @@ mod tests {
                 span: None,
             }],
         );
-        let result = check_dependency_acyclicity(&m);
+        let mut reg = crate::ecs::Registry::new();
+        reg.ingest_module(&m).unwrap();
+        let result = check_dependency_acyclicity(&reg);
         assert!(!result.pass);
         assert_eq!(result.cycle_witness.as_deref(), Some("output_b"));
     }
@@ -427,7 +504,9 @@ mod tests {
                 span: None,
             }],
         );
-        let result = check_dependency_acyclicity(&m);
+        let mut reg = crate::ecs::Registry::new();
+        reg.ingest_module(&m).unwrap();
+        let result = check_dependency_acyclicity(&reg);
         assert!(result.pass);
     }
 }

@@ -64,6 +64,9 @@ pub(super) fn run_toolchain_operations(
         }
     }
 
+    let ecs = result.ecs_registry.as_ref().expect("ECS registry required");
+    let module_name = ecs.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
+
     // Generate synthesis-clean SV for toolchain operations
     let t = if *fpga_target == FpgaTarget::Generic { None } else { Some(*fpga_target) };
     let sv_content = emit::verilog::emit_sv_synthesis(result, t, dsp_threshold);
@@ -79,7 +82,7 @@ pub(super) fn run_toolchain_operations(
             match mirrc::toolchain::optimize::run_logic_optimization(
                 &registry,
                 std::path::Path::new(&sv_path),
-                &result.program.module.name,
+                &module_name,
                 std::path::Path::new("."),
             ) {
                 Ok(res) => {
@@ -122,7 +125,7 @@ pub(super) fn run_toolchain_operations(
                 extra_files: link.to_vec(),
             };
             let sby_content = mirrc::toolchain::sby::generate_sby_config(
-                &result.program.module.name,
+                &module_name,
                 std::path::Path::new(&sv_path),
                 bind_path.as_ref().map(|p| std::path::Path::new(p.as_str())),
                 &config,
@@ -186,7 +189,7 @@ pub(super) fn run_toolchain_operations(
             eprintln!("  [simulate] Running Verilator simulation...");
             match mirrc::toolchain::verilator::run_simulation(
                 std::path::Path::new(&sv_path),
-                &result.program.module.name,
+                &module_name,
                 std::path::Path::new("."),
                 &registry,
             ) {

@@ -29,7 +29,7 @@ fn result_with_many_temporal_guards() -> PipelineResult {
 
     PipelineResult {
         hls_result: None,
-        program: MirrProgram {
+        program: Some(MirrProgram {
             target: None,
             patterns: Vec::new(),
             imports: Vec::new(),
@@ -51,7 +51,7 @@ fn result_with_many_temporal_guards() -> PipelineResult {
                 pattern_origins: Vec::new(),
                 span: None,
             },
-        },
+        }),
         simplify_stats: None,
         sat_stats: None,
         width_stats: None,
@@ -65,7 +65,7 @@ fn result_with_many_temporal_guards() -> PipelineResult {
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
-        ecs_registry: Some(mirrc::ecs::Registry::default()),
+        ecs_registry: Some(mirrc::ecs::Registry::new()),
         file_table: mirrc::span::FileTable::new(),
     }
 }

@@ -101,8 +101,8 @@ impl Default for PipelineConfig {
 /// Collected results from every pipeline stage.
 #[derive(Debug)]
 pub struct PipelineResult {
-    /// The parsed (and possibly simplified) program.
-    pub program: MirrProgram,
+    /// The parsed (and possibly simplified) program (retained for Stage 1-5 only).
+    pub program: Option<MirrProgram>,
     /// Simplification stats (None if stage was skipped).
     pub simplify_stats: Option<SimplifyStats>,
     /// SAT simplification stats (None if stage was skipped).
@@ -395,7 +395,7 @@ pub fn run_pipeline_on_program(
     };
 
     let mut result = PipelineResult {
-        program,
+        program: Some(program),
         simplify_stats,
         sat_stats,
         width_stats,
@@ -430,12 +430,12 @@ pub fn run_pipeline_on_program(
 
     // Stage 6.5: Totality check (optional, requires rspu program).
     if config.totality {
-        let target_spec = crate::emit::rspu_isa::TargetSpec::from_config(&result.program.target);
-        let totality = crate::totality::run_totality_check(&result.program.module, &target_spec);
+        let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+        let target_spec = crate::emit::rspu_isa::TargetSpec::from_config(&registry.target_config);
+        let totality = crate::totality::run_totality_check(registry, &target_spec);
         if let Some(ref mut prog) = result.rspu_program {
             if let Ok(binary) = crate::emit::rspu_encoding::emit_binary(prog) {
-                let cert =
-                    crate::cert::build_certificate(&totality, &binary, &result.program.module);
+                let cert = crate::cert::build_certificate(&totality, &binary, registry);
                 if let Ok(bytes) = crate::cert::serialize_certificate(&cert) {
                     prog.certificate = Some(bytes);
                 }

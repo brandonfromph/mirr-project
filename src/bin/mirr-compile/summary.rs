@@ -3,14 +3,24 @@
 #![forbid(unsafe_code)]
 
 pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, show_stats: bool) {
-    let module = &result.program.module;
-    eprintln!("MIRR Compile: {}", module.name);
-    eprintln!(
-        "  Signals: {}  Guards: {}  Reflexes: {}",
-        module.signals.len(),
-        module.guards.len(),
-        module.reflexes.len(),
-    );
+    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+    let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
+
+    let mut signal_count = 0;
+    let mut guard_count = 0;
+    let mut reflex_count = 0;
+
+    for kind_comp in registry.kinds.iter().flatten() {
+        match kind_comp.0 {
+            mirrc::ecs::EntityKind::SIGNAL(_) => signal_count += 1,
+            mirrc::ecs::EntityKind::GUARD => guard_count += 1,
+            mirrc::ecs::EntityKind::REFLEX => reflex_count += 1,
+            _ => {}
+        }
+    }
+
+    eprintln!("MIRR Compile: {}", module_name);
+    eprintln!("  Signals: {}  Guards: {}  Reflexes: {}", signal_count, guard_count, reflex_count,);
 
     if let Some(ss) = &result.simplify_stats {
         eprintln!(

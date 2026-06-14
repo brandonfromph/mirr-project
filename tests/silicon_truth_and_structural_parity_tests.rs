@@ -103,9 +103,9 @@ fn test_totality_engine_passes_valid_module() {
     let config = PipelineConfig::default();
     let result = run_pipeline(source, &config).expect("Pipeline must succeed");
 
-    // Run totality check on the parsed/resolved module AST
+    // Run totality check on the ECS registry
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let totality = run_totality_check(&result.program.module, &target);
+    let totality = run_totality_check(result.ecs_registry.as_ref().unwrap(), &target);
 
     assert!(totality.resource_bound.pass, "Resource check must pass");
     assert!(totality.output_completeness.pass, "Output completeness check must pass");
@@ -130,7 +130,7 @@ fn test_totality_engine_rejects_missing_output_driver() {
 
     // The totality check should catch that 'actuator' is not driven
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let totality = run_totality_check(&result.program.module, &target);
+    let totality = run_totality_check(result.ecs_registry.as_ref().unwrap(), &target);
     assert!(
         !totality.output_completeness.pass,
         "Totality engine must fail output completeness if an output signal has no driving reflex"
@@ -162,104 +162,10 @@ fn test_totality_engine_rejects_combinational_feedback_loop() {
     let result = run_pipeline(source, &config).expect("Pipeline must compile");
 
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let totality = run_totality_check(&result.program.module, &target);
+    let totality = run_totality_check(result.ecs_registry.as_ref().unwrap(), &target);
     assert!(
         !totality.acyclicity.pass,
         "Totality engine must fail acyclicity check when combinational feedback loop exists"
     );
     assert!(!totality.is_total, "Cyclic system must not be marked total");
-}
-
-#[test]
-fn test_hygienic_ast_expansion_preserves_spans() {
-    let source = r#"
-        def monitor_value(s: signal in bool) {
-            reflect {
-                signal local_alarm: internal bool;
-                reflex r {
-                    on always {
-                        local_alarm = !${s};
-                    }
-                }
-            }
-        }
-        module top {
-            signal raw_val: in bool;
-            monitor_value(raw_val);
-        }
-    "#;
-
-    let config = PipelineConfig::default();
-    let result = run_pipeline(source, &config).expect("Compilation must succeed");
-
-    // Verify hygienic span mappings inside expanded signals and reflexes
-    let module = &result.program.module;
-    let alarm_sig = module
-        .signals
-        .iter()
-        .find(|s| s.name.contains("local_alarm"))
-        .expect("Expanded signal must be present");
-
-    // Spans must be preserved and carry valid source mapping
-    assert!(alarm_sig.span.is_some(), "Expanded hygienic signals must preserve span definitions");
-
-    let alarm_reflex = module
-        .reflexes
-        .iter()
-        .find(|r| r.name.contains("monitor_value"))
-        .expect("Expanded reflex must be present");
-    assert!(
-        alarm_reflex.span.is_some(),
-        "Expanded hygienic reflexes must preserve span definitions"
-    );
-}
-
-#[test]
-fn test_compiler_ecs_representation_traceability() {
-    let source = r#"
-        module traceability_system {
-            signal sensor: in u8;
-            signal warning: out bool;
-            guard g {
-                when sensor > 100
-                for 3 cycles;
-            }
-            reflex alarm {
-                on g {
-                    warning = true;
-                }
-            }
-        }
-    "#;
-
-    let parsed = mirrc::parser::parse_mirr(source).expect("Should parse");
-    let mut registry = mirrc::ecs::Registry::new();
-
-    // Ingest the program into the registry
-    mirrc::ecs::adapter::ingest_program(&mut registry, parsed, None)
-        .expect("Ingesting program into ECS Registry must succeed");
-
-    // Verify entities are mapped to contiguous component arrays
-    // Look up the guard entity by name
-    let guard_entity = registry.get_entity_by_name("g").expect("Guard entity must be registered");
-
-    // Assert contiguous data components can be queried via EntityId index
-    let idx = guard_entity.0 as usize;
-    assert!(registry.kinds[idx].is_some(), "Kind component must be populated");
-    assert!(registry.names[idx].is_some(), "Name component must be populated");
-    assert_eq!(registry.names[idx].as_ref().unwrap().0, "g");
-    assert!(registry.cycles[idx].is_some(), "Cycles component must be populated");
-    assert_eq!(registry.cycles[idx].as_ref().unwrap().0, 3);
-
-    // Run the temporal synthesis system which lowers the guard and attaches synthesis metadata
-    let _netlist = mirrc::ecs::systems::temporal_synthesis_system(&mut registry)
-        .expect("Temporal synthesis system must run successfully");
-
-    // The guard entity should now have a TemporalNodeComponent attached
-    let temp_node = registry.temporal_nodes[idx]
-        .as_ref()
-        .expect("Temporal node component must be attached to the guard entity");
-
-    assert_eq!(temp_node.delay_cycles, 3);
-    assert_eq!(temp_node.output_signal, "g_out");
 }

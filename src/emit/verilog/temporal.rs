@@ -3,7 +3,6 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::program::Module;
 use crate::ast::types::BinaryOp;
 use crate::emit::verilog::emit_source_comment;
 use crate::span::FileTable;
@@ -11,8 +10,39 @@ use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
 use super::MAX_SR_STAGES_INLINE;
 
-pub(super) fn emit_temporal_logic(
-    module: &Module,
+pub(super) fn emit_temporal_logic_standalone(
+    netlist: &TemporalNetlist,
+    _ft: &FileTable,
+    out: &mut String,
+) {
+    out.push_str("  // ── Temporal Guards ──\n\n");
+
+    for guard in &netlist.guards {
+        match guard {
+            CompiledGuard::ShiftRegister(sr) => {
+                emit_shift_register_guard(sr, out);
+            }
+            CompiledGuard::Counter(cg) => {
+                emit_counter_guard(cg, out);
+            }
+            CompiledGuard::Complex(cx) => {
+                out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
+                out.push_str(&format!("  logic {};\n", cx.output_signal));
+                out.push_str(&format!(
+                    "  assign {} = {};\n\n",
+                    cx.output_signal,
+                    super::emit_expr_ast_legacy(&cx.combination_logic),
+                ));
+            }
+            CompiledGuard::DynamicCounter(dc) => {
+                emit_dynamic_counter_guard(dc, out);
+            }
+        }
+    }
+}
+
+pub(super) fn emit_temporal_logic_ecs(
+    registry: &crate::ecs::Registry,
     netlist: &TemporalNetlist,
     ft: &FileTable,
     out: &mut String,
@@ -21,46 +51,41 @@ pub(super) fn emit_temporal_logic(
 
     // Declare registers for ALL prev() back-references found in the module
     let mut seen_prevs = std::collections::HashSet::new();
-    for reflex in &module.reflexes {
-        for assignment in &reflex.assignments {
-            // Helper to find Prev nodes in expressions
-            fn collect_prevs(
-                expr: &crate::ast::Expr,
-                seen: &mut std::collections::HashSet<(String, u64)>,
-            ) {
-                match expr {
-                    crate::ast::Expr::Prev { signal, delay } => {
-                        seen.insert((signal.clone(), *delay));
-                    }
-                    crate::ast::Expr::Unary { operand, .. } => collect_prevs(operand, seen),
-                    crate::ast::Expr::Binary { left, right, .. } => {
-                        collect_prevs(left, seen);
-                        collect_prevs(right, seen);
-                    }
-                    crate::ast::Expr::ArrayIndex { array, index } => {
-                        collect_prevs(array, seen);
-                        collect_prevs(index, seen);
-                    }
-                    _ => {}
+    for i in 0..registry.reflex_comps.len() {
+        if let Some(reflex) = &registry.reflex_comps[i] {
+            for asgn_ent in &reflex.assignments {
+                if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
+                    collect_prevs_ecs(asgn.value, registry, &mut seen_prevs);
                 }
             }
-            collect_prevs(&assignment.value, &mut seen_prevs);
         }
     }
 
-    for (sig_name, delay) in seen_prevs {
-        // Find the original signal to get its type
-        if let Some(sig) = module.signals.iter().find(|s| s.name == sig_name) {
-            let type_str = crate::emit::sv_type(&sig.ty.signal_type());
-            out.push_str(&format!("  {} {}_d{};\n", type_str, sig_name, delay));
+    let mut sorted_prevs: Vec<_> = seen_prevs.into_iter().collect();
+    sorted_prevs.sort();
+
+    for (sig_ent, delay) in sorted_prevs {
+        if let Some(name_comp) = &registry.names[sig_ent.0 as usize] {
+            if let Some(type_comp) = &registry.types[sig_ent.0 as usize] {
+                let sig_name = &name_comp.0;
+                let type_str = crate::emit::sv_type(&type_comp.0.signal_type());
+                out.push_str(&format!("  {} {}_d{};\n", type_str, sig_name, delay));
+            }
         }
     }
     out.push('\n');
 
     for guard in &netlist.guards {
-        // Find the AST guard to get its span
-        let ast_guard = module.guards.iter().find(|g| g.name == guard.name());
-        let span = ast_guard.and_then(|g| g.span.as_ref());
+        // Find the guard entity to get its span
+        let mut span = None;
+        for i in 0..registry.names.len() {
+            if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+                if name_comp.0 == guard.name() && kind_comp.0 == crate::ecs::EntityKind::GUARD {
+                    span = registry.spans[i].as_ref().map(|s| &s.0);
+                    break;
+                }
+            }
+        }
 
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
@@ -85,6 +110,160 @@ pub(super) fn emit_temporal_logic(
                 emit_source_comment(span, ft, out);
                 emit_dynamic_counter_guard(dc, out);
             }
+        }
+    }
+}
+
+fn collect_prevs_ecs(
+    root: crate::ecs::EntityId,
+    registry: &crate::ecs::Registry,
+    seen: &mut std::collections::HashSet<(crate::ecs::EntityId, u64)>,
+) {
+    let mut stack = Vec::new();
+    stack.push(root);
+    let mut visited = 0;
+    while let Some(id) = stack.pop() {
+        visited += 1;
+        if visited > 512 {
+            break;
+        }
+        let idx = id.0 as usize;
+        if let Some(p) = &registry.prev_ops[idx] {
+            seen.insert((p.signal, p.delay));
+            stack.push(p.signal);
+        } else if let Some(b) = &registry.binary_ops[idx] {
+            stack.push(b.left);
+            stack.push(b.right);
+        } else if let Some(u) = &registry.unary_ops[idx] {
+            stack.push(u.operand);
+        } else if let Some(m) = &registry.muxes[idx] {
+            stack.push(m.select);
+            stack.push(m.true_val);
+            stack.push(m.false_val);
+        }
+    }
+}
+
+pub(super) fn emit_reflex_logic_ecs(
+    registry: &crate::ecs::Registry,
+    dsp_reflexes: &std::collections::HashSet<String>,
+    dsp_attr: Option<&str>,
+    hls: Option<&crate::hls::HlsResult>,
+    ft: &FileTable,
+    out: &mut String,
+) {
+    // Group assignments by target signal
+    let mut signal_to_reflexes: std::collections::HashMap<String, Vec<usize>> =
+        std::collections::HashMap::new();
+
+    // Track guard names used in reflexes to declare their _out wires
+    let mut guard_names_used: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    for i in 0..registry.reflex_comps.len() {
+        if let Some(reflex) = &registry.reflex_comps[i] {
+            for g_ent in &reflex.guards {
+                if let Some(name_comp) = &registry.names[g_ent.0 as usize] {
+                    if name_comp.0 != "always" {
+                        guard_names_used.insert(name_comp.0.clone());
+                    }
+                }
+            }
+            for asgn_ent in &reflex.assignments {
+                if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
+                    if let Some(target_name) = &registry.names[asgn.target.0 as usize] {
+                        signal_to_reflexes.entry(target_name.0.clone()).or_default().push(i);
+                    }
+                }
+            }
+        }
+    }
+
+    if signal_to_reflexes.is_empty() && guard_names_used.is_empty() {
+        return;
+    }
+
+    out.push_str("  // ── Reflex Assignments ──\n\n");
+
+    // Declare wires for guard outputs used in reflexes
+    let mut sorted_guards: Vec<_> = guard_names_used.into_iter().collect();
+    sorted_guards.sort();
+    for gname in sorted_guards {
+        out.push_str(&format!("  logic {}_out;\n", gname));
+    }
+    if !signal_to_reflexes.is_empty() {
+        out.push('\n');
+    }
+
+    out.push_str("  // ── Reflex Signal Drivers ──\n\n");
+
+    if let Some(_hls) = hls {
+        // HLS logic remains unchanged for now, but we'd need an ECS-native way to handle it later.
+        out.push_str("  // HLS logic (AST-based, pending ECS migration)\n");
+    } else {
+        // Sort signals by name for deterministic emission.
+        let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
+        signals.sort();
+
+        for sig_name in signals {
+            let reflex_indices = &signal_to_reflexes[&sig_name];
+
+            // Emit DSP synthesis attribute if ANY reflex for this signal contains a multiply.
+            if let Some(attr) = dsp_attr {
+                let mut has_dsp = false;
+                for &ri in reflex_indices {
+                    if let Some(name_comp) = &registry.names[ri] {
+                        if dsp_reflexes.contains(&name_comp.0) {
+                            has_dsp = true;
+                            break;
+                        }
+                    }
+                }
+                if has_dsp {
+                    out.push_str(&format!("  {attr}\n"));
+                }
+            }
+
+            out.push_str(&format!("  // Unified Reflex Block for: {sig_name}\n"));
+            out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+            out.push_str("    if (!rst_n) begin\n");
+            out.push_str(&format!("      {} <= '0;\n", sig_name));
+            out.push_str("    end else begin\n");
+
+            // Priority-ordered assignments
+            for &ri in reflex_indices {
+                if let Some(reflex) = &registry.reflex_comps[ri] {
+                    let mut guard_parts = Vec::new();
+                    for g_ent in &reflex.guards {
+                        if let Some(g_name) = &registry.names[g_ent.0 as usize] {
+                            guard_parts.push(format!("{}_out", g_name.0));
+                        }
+                    }
+                    let guard_cond = if guard_parts.is_empty() {
+                        "1'b1".to_string()
+                    } else {
+                        guard_parts.join(" && ")
+                    };
+
+                    for asgn_ent in &reflex.assignments {
+                        if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
+                            if let Some(target_name) = &registry.names[asgn.target.0 as usize] {
+                                if target_name.0 == sig_name {
+                                    let span = registry.spans[ri].as_ref().map(|s| &s.0);
+                                    emit_source_comment(span, ft, out);
+                                    out.push_str(&format!(
+                                        "      if ({}) {} <= {};\n",
+                                        guard_cond,
+                                        sig_name,
+                                        super::emit_expr_inline(asgn.value, registry),
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            out.push_str("    end\n");
+            out.push_str("  end\n\n");
         }
     }
 }
@@ -224,187 +403,6 @@ fn emit_dynamic_counter_guard(
         "  assign {} = ({} >= {});\n\n",
         dc.output_signal, dc.counter_signal, target_signal
     ));
-}
-
-pub(super) fn emit_reflex_logic(
-    module: &Module,
-    dsp_reflexes: &std::collections::HashSet<String>,
-    dsp_attr: Option<&str>,
-    hls_result: Option<&crate::hls::HlsResult>,
-    ft: &FileTable,
-    out: &mut String,
-) {
-    if module.reflexes.is_empty() {
-        return;
-    }
-
-    out.push_str("  // ── Reflex Assignments ──\n\n");
-
-    // Declare guard _out wires used in reflex combinational logic.
-    let mut declared_outs = std::collections::HashSet::new();
-    for r in &module.reflexes {
-        for g in &r.guard_names {
-            let wire_name = format!("{g}_out");
-            if declared_outs.insert(wire_name.clone()) {
-                out.push_str(&format!("  logic {};\n", wire_name));
-            }
-        }
-    }
-    out.push('\n');
-
-    // Group reflexes by their target signals to prevent multiple-driver conflicts.
-    let mut signal_to_reflexes: std::collections::HashMap<
-        String,
-        Vec<&crate::ast::program::Reflex>,
-    > = std::collections::HashMap::new();
-
-    for r in &module.reflexes {
-        for a in &r.assignments {
-            signal_to_reflexes.entry(a.target.clone()).or_default().push(r);
-        }
-    }
-
-    if let Some(hls) = hls_result {
-        out.push_str("  // ── HLS Finite State Machine ──\n");
-        out.push_str("  logic [31:0] hls_state;\n");
-        out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
-        out.push_str("    if (!rst_n) begin\n");
-        out.push_str("      hls_state <= 0;\n");
-
-        let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
-        signals.sort();
-        for sig in &signals {
-            out.push_str(&format!("      {} <= '0;\n", sig));
-        }
-
-        out.push_str("    end else begin\n");
-        out.push_str("      case (hls_state)\n");
-
-        let mut target_to_cycle: std::collections::HashMap<String, u32> =
-            std::collections::HashMap::new();
-        let mut max_cycle = 0;
-        for op in &hls.schedule {
-            if let Some(target) = hls.target_signals.get(&op.op_id) {
-                target_to_cycle.insert(target.clone(), op.earliest);
-                if op.earliest > max_cycle {
-                    max_cycle = op.earliest;
-                }
-            }
-        }
-
-        // We want to group by cycle for the FSM states
-        let mut cycle_to_signals: std::collections::HashMap<u32, Vec<String>> =
-            std::collections::HashMap::new();
-        for sig in &signals {
-            let cycle = target_to_cycle.get(sig).copied().unwrap_or(0);
-            cycle_to_signals.entry(cycle).or_default().push(sig.clone());
-        }
-
-        for cycle in 0..=max_cycle {
-            out.push_str(&format!("        {}: begin\n", cycle));
-            if let Some(sigs) = cycle_to_signals.get(&cycle) {
-                for sig in sigs {
-                    let refs = &signal_to_reflexes[sig];
-                    for r in refs {
-                        let guard_cond = if r.guard_names.len() == 1 {
-                            format!("{}_out", r.guard_names[0])
-                        } else {
-                            let parts: Vec<String> =
-                                r.guard_names.iter().map(|g| format!("{g}_out")).collect();
-                            parts.join(" && ")
-                        };
-                        for a in &r.assignments {
-                            if a.target == *sig {
-                                emit_source_comment(r.span.as_ref(), ft, out);
-                                out.push_str(&format!(
-                                    "          if ({}) {} <= {};\n",
-                                    guard_cond,
-                                    sig,
-                                    super::emit_expr_ast_legacy(&a.value),
-                                ));
-                            }
-                        }
-                    }
-                }
-            }
-            if cycle == max_cycle {
-                out.push_str("          hls_state <= 0;\n");
-            } else {
-                out.push_str(&format!("          hls_state <= {};\n", cycle + 1));
-            }
-            out.push_str("        end\n");
-        }
-        out.push_str("      endcase\n");
-        out.push_str("    end\n");
-        out.push_str("  end\n\n");
-
-        // Emit FIFOs if there are any
-        if !hls.fifos.is_empty() {
-            out.push_str("  // ── HLS FIFOs ──\n");
-            for fifo in &hls.fifos {
-                out.push_str(&format!(
-                    "  // FIFO: {} (depth: {}, width: {})\n",
-                    fifo.name, fifo.depth, fifo.elem_width
-                ));
-                out.push_str(&format!(
-                    "  logic [{}:0] {}_buffer [0:{}];\n",
-                    fifo.elem_width.saturating_sub(1),
-                    fifo.name,
-                    fifo.depth.saturating_sub(1)
-                ));
-                out.push_str(&format!("  logic [31:0] {}_head, {}_tail;\n", fifo.name, fifo.name));
-            }
-            out.push('\n');
-        }
-    } else {
-        // Sort signals by name for deterministic emission.
-        let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
-        signals.sort();
-
-        for sig in signals {
-            let refs = &signal_to_reflexes[&sig];
-
-            // Emit DSP synthesis attribute if ANY reflex for this signal contains a multiply.
-            if let Some(attr) = dsp_attr {
-                let has_dsp = refs.iter().any(|r| dsp_reflexes.contains(&r.name));
-                if has_dsp {
-                    out.push_str(&format!("  {attr}\n"));
-                }
-            }
-
-            out.push_str(&format!("  // Unified Reflex Block for: {sig}\n"));
-            out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
-            out.push_str("    if (!rst_n) begin\n");
-            out.push_str(&format!("      {} <= '0;\n", sig));
-            out.push_str("    end else begin\n");
-
-            // Priority-ordered assignments: later reflexes in the module override earlier ones.
-            for r in refs {
-                let guard_cond = if r.guard_names.len() == 1 {
-                    format!("{}_out", r.guard_names[0])
-                } else {
-                    let parts: Vec<String> =
-                        r.guard_names.iter().map(|g| format!("{g}_out")).collect();
-                    parts.join(" && ")
-                };
-
-                // Find the assignment to THIS signal in this reflex.
-                for a in &r.assignments {
-                    if a.target == sig {
-                        emit_source_comment(r.span.as_ref(), ft, out);
-                        out.push_str(&format!(
-                            "      if ({}) {} <= {};\n",
-                            guard_cond,
-                            sig,
-                            super::emit_expr_ast_legacy(&a.value),
-                        ));
-                    }
-                }
-            }
-            out.push_str("    end\n");
-            out.push_str("  end\n\n");
-        }
-    }
 }
 
 /// Emit a ConditionKind as an inline SystemVerilog expression.

@@ -333,6 +333,15 @@ fn find_push<'a>(
     pushes.iter().take(MAX_PUSH_SCAN).find(|p| p.kind == kind)
 }
 
+fn drive_prog(
+    prog: &mirrc::ast::MirrProgram,
+    input: &[u8],
+) -> Vec<mirrc::mirr_driver::ObservedPush> {
+    let mut reg = mirrc::ecs::Registry::new();
+    mirrc::ecs::adapter::ingest_program(&mut reg, prog.clone(), None).unwrap();
+    drive_parsed_module_with_interpreter(&reg, input)
+}
+
 // ===========================================================================
 // Section 1: Empty / whitespace / invalid input
 // ===========================================================================
@@ -340,7 +349,7 @@ fn find_push<'a>(
 #[test]
 fn empty_input_returns_empty_pushes() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"");
+    let pushes = drive_prog(&prog, b"");
 
     assert!(pushes.is_empty(), "empty input must produce zero pushes, got {}", pushes.len());
 }
@@ -348,7 +357,7 @@ fn empty_input_returns_empty_pushes() {
 #[test]
 fn whitespace_only_input_returns_empty_pushes() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"   \t\n\r  ");
+    let pushes = drive_prog(&prog, b"   \t\n\r  ");
 
     assert!(
         pushes.is_empty(),
@@ -360,7 +369,7 @@ fn whitespace_only_input_returns_empty_pushes() {
 #[test]
 fn invalid_utf8_returns_empty_pushes() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, &[0xFF, 0xFE]);
+    let pushes = drive_prog(&prog, &[0xFF, 0xFE]);
 
     assert!(
         pushes.is_empty(),
@@ -376,7 +385,7 @@ fn invalid_utf8_returns_empty_pushes() {
 #[test]
 fn digit_input_triggers_integer_push() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"42");
+    let pushes = drive_prog(&prog, b"42");
 
     assert!(
         count_pushes(&pushes, "emit_push_integer") >= 1,
@@ -387,7 +396,7 @@ fn digit_input_triggers_integer_push() {
 #[test]
 fn integer_push_carries_parsed_value() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"99");
+    let pushes = drive_prog(&prog, b"99");
 
     let p = find_push(&pushes, "emit_push_integer");
     assert!(p.is_some(), "must find integer push for '99'");
@@ -397,7 +406,7 @@ fn integer_push_carries_parsed_value() {
 #[test]
 fn zero_integer_parsed_correctly() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"0");
+    let pushes = drive_prog(&prog, b"0");
 
     let p = find_push(&pushes, "emit_push_integer");
     assert!(p.is_some(), "input '0' must produce an integer push");
@@ -407,7 +416,7 @@ fn zero_integer_parsed_correctly() {
 #[test]
 fn multiple_separate_digits() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"1 2 3");
+    let pushes = drive_prog(&prog, b"1 2 3");
 
     let count = count_pushes(&pushes, "emit_push_integer");
     assert!(count >= 3, "'1 2 3' must produce at least 3 integer pushes, got {}", count);
@@ -420,7 +429,7 @@ fn multiple_separate_digits() {
 #[test]
 fn two_char_eq_eq_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"==");
+    let pushes = drive_prog(&prog, b"==");
 
     assert!(find_push(&pushes, "emit_push_eq_eq").is_some(), "'==' must trigger emit_push_eq_eq");
 }
@@ -428,7 +437,7 @@ fn two_char_eq_eq_recognized() {
 #[test]
 fn two_char_ne_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"!=");
+    let pushes = drive_prog(&prog, b"!=");
 
     assert!(
         find_push(&pushes, "emit_push_excl_eq").is_some(),
@@ -439,7 +448,7 @@ fn two_char_ne_recognized() {
 #[test]
 fn two_char_le_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"<=");
+    let pushes = drive_prog(&prog, b"<=");
 
     assert!(find_push(&pushes, "emit_push_le").is_some(), "'<=' must trigger emit_push_le");
 }
@@ -447,7 +456,7 @@ fn two_char_le_recognized() {
 #[test]
 fn two_char_ge_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b">=");
+    let pushes = drive_prog(&prog, b">=");
 
     assert!(find_push(&pushes, "emit_push_ge").is_some(), "'>=' must trigger emit_push_ge");
 }
@@ -455,7 +464,7 @@ fn two_char_ge_recognized() {
 #[test]
 fn two_char_arrow_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"->");
+    let pushes = drive_prog(&prog, b"->");
 
     assert!(find_push(&pushes, "emit_push_arrow").is_some(), "'->' must trigger emit_push_arrow");
 }
@@ -463,7 +472,7 @@ fn two_char_arrow_recognized() {
 #[test]
 fn two_char_dotdot_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"..");
+    let pushes = drive_prog(&prog, b"..");
 
     assert!(
         find_push(&pushes, "emit_push_dot_dot").is_some(),
@@ -474,7 +483,7 @@ fn two_char_dotdot_recognized() {
 #[test]
 fn single_eq_does_not_trigger_eq_eq() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"=");
+    let pushes = drive_prog(&prog, b"=");
 
     assert!(
         find_push(&pushes, "emit_push_eq_eq").is_none(),
@@ -489,7 +498,7 @@ fn single_eq_does_not_trigger_eq_eq() {
 #[test]
 fn keyword_guard_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"guard");
+    let pushes = drive_prog(&prog, b"guard");
 
     assert!(
         find_push(&pushes, "emit_push_kw_guard").is_some(),
@@ -500,7 +509,7 @@ fn keyword_guard_recognized() {
 #[test]
 fn keyword_module_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"module");
+    let pushes = drive_prog(&prog, b"module");
 
     assert!(
         find_push(&pushes, "emit_push_kw_module").is_some(),
@@ -511,7 +520,7 @@ fn keyword_module_recognized() {
 #[test]
 fn keyword_signal_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"signal");
+    let pushes = drive_prog(&prog, b"signal");
 
     assert!(
         find_push(&pushes, "emit_push_kw_signal").is_some(),
@@ -522,7 +531,7 @@ fn keyword_signal_recognized() {
 #[test]
 fn keyword_reflex_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"reflex");
+    let pushes = drive_prog(&prog, b"reflex");
 
     assert!(
         find_push(&pushes, "emit_push_kw_reflex").is_some(),
@@ -533,7 +542,7 @@ fn keyword_reflex_recognized() {
 #[test]
 fn keyword_false_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"false");
+    let pushes = drive_prog(&prog, b"false");
 
     assert!(
         find_push(&pushes, "emit_push_tok_false").is_some(),
@@ -544,7 +553,7 @@ fn keyword_false_recognized() {
 #[test]
 fn keyword_while_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"while");
+    let pushes = drive_prog(&prog, b"while");
 
     assert!(
         find_push(&pushes, "emit_push_kw_while").is_some(),
@@ -555,7 +564,7 @@ fn keyword_while_recognized() {
 #[test]
 fn keyword_const_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"const");
+    let pushes = drive_prog(&prog, b"const");
 
     assert!(
         find_push(&pushes, "emit_push_kw_const").is_some(),
@@ -566,7 +575,7 @@ fn keyword_const_recognized() {
 #[test]
 fn keyword_return_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"return");
+    let pushes = drive_prog(&prog, b"return");
 
     assert!(
         find_push(&pushes, "emit_push_kw_return").is_some(),
@@ -577,7 +586,7 @@ fn keyword_return_recognized() {
 #[test]
 fn keyword_cycles_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"cycles");
+    let pushes = drive_prog(&prog, b"cycles");
 
     assert!(
         find_push(&pushes, "emit_push_kw_cycles").is_some(),
@@ -588,7 +597,7 @@ fn keyword_cycles_recognized() {
 #[test]
 fn keyword_internal_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"internal");
+    let pushes = drive_prog(&prog, b"internal");
 
     assert!(
         find_push(&pushes, "emit_push_kw_internal").is_some(),
@@ -599,7 +608,7 @@ fn keyword_internal_recognized() {
 #[test]
 fn keyword_break_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"break");
+    let pushes = drive_prog(&prog, b"break");
 
     assert!(
         find_push(&pushes, "emit_push_kw_break").is_some(),
@@ -610,7 +619,7 @@ fn keyword_break_recognized() {
 #[test]
 fn keyword_match_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"match");
+    let pushes = drive_prog(&prog, b"match");
 
     assert!(
         find_push(&pushes, "emit_push_kw_match").is_some(),
@@ -621,7 +630,7 @@ fn keyword_match_recognized() {
 #[test]
 fn keyword_struct_recognized() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"struct");
+    let pushes = drive_prog(&prog, b"struct");
 
     assert!(
         find_push(&pushes, "emit_push_kw_struct").is_some(),
@@ -636,7 +645,7 @@ fn keyword_struct_recognized() {
 #[test]
 fn mixed_keywords_and_digits() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"module 42 module");
+    let pushes = drive_prog(&prog, b"module 42 module");
 
     assert!(
         count_pushes(&pushes, "emit_push_kw_module") >= 2,
@@ -651,7 +660,7 @@ fn mixed_keywords_and_digits() {
 #[test]
 fn operators_and_keywords_interleaved() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"guard == signal");
+    let pushes = drive_prog(&prog, b"guard == signal");
 
     assert!(find_push(&pushes, "emit_push_kw_guard").is_some(), "'guard' must be recognized");
     assert!(find_push(&pushes, "emit_push_eq_eq").is_some(), "'==' must be recognized");
@@ -739,7 +748,7 @@ module no_guard_mod {
 }
 "#;
     let prog = parse_ok(src);
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"hello 123");
+    let pushes = drive_prog(&prog, b"hello 123");
 
     assert!(
         pushes.is_empty(),
@@ -764,7 +773,7 @@ fn stress_many_digit_tokens_bounded() {
         input.push_str(&i.to_string());
     }
 
-    let pushes = drive_parsed_module_with_interpreter(&prog, input.as_bytes());
+    let pushes = drive_prog(&prog, input.as_bytes());
 
     let count = count_pushes(&pushes, "emit_push_integer");
     assert!(
@@ -787,7 +796,7 @@ fn stress_many_keywords_bounded() {
         input.push_str(keywords[i % keywords.len()]);
     }
 
-    let pushes = drive_parsed_module_with_interpreter(&prog, input.as_bytes());
+    let pushes = drive_prog(&prog, input.as_bytes());
 
     assert!(
         pushes.len() >= 32,
@@ -812,7 +821,7 @@ fn alloc_hook_invoked_on_drive() {
     mirrc::mirr_executor::set_alloc_hook(hook);
 
     let prog = parse_comprehensive();
-    let _pushes = drive_parsed_module_with_interpreter(&prog, b"42");
+    let _pushes = drive_prog(&prog, b"42");
 
     let count = HOOK_COUNT.load(Ordering::SeqCst);
     assert!(
@@ -829,7 +838,7 @@ fn alloc_hook_invoked_on_drive() {
 #[test]
 fn unknown_identifier_no_keyword_push() {
     let prog = parse_comprehensive();
-    let pushes = drive_parsed_module_with_interpreter(&prog, b"foobar");
+    let pushes = drive_prog(&prog, b"foobar");
 
     // "foobar" is not a recognized keyword, so no keyword push should fire.
     // (It may produce length-class matches but NOT keyword-specific pushes.)

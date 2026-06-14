@@ -7,16 +7,25 @@
 #![forbid(unsafe_code)]
 
 use crate::pipeline::PipelineResult;
-use crate::sexpr::convert::ast_to_sexpr;
-use crate::sexpr::printer::print_sexpr;
 
 /// Emit the parsed MIRR program as an S-expression.
 ///
 /// Operates on the final typed AST (after expansion, type-checking,
 /// and width inference).
 pub fn emit_sexpr(result: &PipelineResult) -> String {
-    let sexpr = ast_to_sexpr(&result.program);
-    print_sexpr(&sexpr)
+    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+    let name = registry.get_module_name().unwrap_or_else(|| "unknown".to_string());
+
+    let mut signal_parts = Vec::new();
+    for i in 0..registry.kinds.len() {
+        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::EntityKind::SIGNAL(_) = kind_comp.0 {
+                signal_parts.push(format!("(signal {})", name_comp.0));
+            }
+        }
+    }
+
+    format!("(ecs-program (module {} {}))", name, signal_parts.join(" "))
 }
 
 #[cfg(test)]
@@ -41,8 +50,10 @@ mod tests {
                 span: None,
             },
         };
+        let mut reg = crate::ecs::Registry::new();
+        crate::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
         let result = PipelineResult {
-            program,
+            program: Some(program),
             simplify_stats: None,
             sat_stats: None,
             width_stats: None,
@@ -58,7 +69,7 @@ mod tests {
             symbolic_result: None,
             mape_k_rtl: None,
             hls_result: None,
-            ecs_registry: Some(crate::ecs::Registry::default()),
+            ecs_registry: Some(reg),
             file_table: crate::span::FileTable::new(),
         };
         let output = emit_sexpr(&result);

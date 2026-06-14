@@ -32,7 +32,7 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     let registry =
         result.ecs_registry.as_ref().expect("ECS registry required for Phase 6 emission");
     let netlist = result.temporal_netlist.as_ref();
-    let target_spec = TargetSpec::from_config(&result.program.target);
+    let target_spec = TargetSpec::from_config(&registry.target_config);
 
     // Step 1: Register allocation.
     let mut regs = allocate_registers(registry, &target_spec)?;
@@ -212,7 +212,7 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     }
 
     Ok(RspuProgram {
-        target: result.program.target.clone(),
+        target: registry.target_config.clone(),
         registers_used: regs.total_used,
         guards_used: guard_map_vec.len(),
         register_map: regs.entries.clone(),

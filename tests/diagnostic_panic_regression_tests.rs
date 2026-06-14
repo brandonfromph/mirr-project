@@ -264,15 +264,13 @@ macro_rules! gen_width_node_limit_test {
         test_panic_case!(
             $name,
             {
-                // Create an expression that exceeds 512 nodes limit.
-                let mut current = mirrc::ast::Expr::Signal("a".to_string());
-                for _ in 0..520 {
-                    current = mirrc::ast::Expr::Binary {
-                        op: BinaryOp::And,
-                        left: Box::new(mirrc::ast::Expr::Signal("a".to_string())),
-                        right: Box::new(current),
-                    };
+                // Create an expression that exceeds the nodes limit.
+                // Use a wide array literal to avoid stack overflow during drop.
+                let mut elems = Vec::new();
+                for _ in 0..8500 {
+                    elems.push(mirrc::ast::Expr::Literal(mirrc::ast::LiteralValue::Bool(true)));
                 }
+                let current = mirrc::ast::Expr::ArrayLiteral(elems);
                 let mut registry = Registry::new();
                 if let Err(_) = registry.ingest_expr(&current) {
                     Err(MirrError::WidthError {

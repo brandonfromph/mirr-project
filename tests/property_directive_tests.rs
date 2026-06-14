@@ -304,38 +304,56 @@ fn exprs_mut_always_followed_by_modifiable() {
 fn parse_assert_always_default() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Assert);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Assert
+    );
 }
 
 #[test]
 fn parse_cover_always() {
     let src = mirr_with_property("cover always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Cover);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Cover
+    );
 }
 
 #[test]
 fn parse_assume_always() {
     let src = mirr_with_property("assume always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Assume);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Assume
+    );
 }
 
 #[test]
 fn parse_cover_never() {
     let src = mirr_with_property("cover never (x > 100);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Cover);
-    assert!(matches!(result.program.module.properties[0].formula, PropertyFormula::Never(_)));
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Cover
+    );
+    assert!(matches!(
+        result.program.as_ref().unwrap().module.properties[0].formula,
+        PropertyFormula::Never(_)
+    ));
 }
 
 #[test]
 fn parse_assume_implies() {
     let src = mirr_with_property("assume always (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Assume);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Assume
+    );
     assert!(matches!(
-        result.program.module.properties[0].formula,
+        result.program.as_ref().unwrap().module.properties[0].formula,
         PropertyFormula::AlwaysImplies { .. }
     ));
 }
@@ -344,8 +362,14 @@ fn parse_assume_implies() {
 fn parse_cover_shorthand_parens() {
     let src = mirr_with_property("cover (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Cover);
-    assert!(matches!(result.program.module.properties[0].formula, PropertyFormula::Always(_)));
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Cover
+    );
+    assert!(matches!(
+        result.program.as_ref().unwrap().module.properties[0].formula,
+        PropertyFormula::Always(_)
+    ));
 }
 
 // ===========================================================================
@@ -357,7 +381,7 @@ fn parse_never_implies() {
     let src = mirr_with_property("never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert!(matches!(
-        result.program.module.properties[0].formula,
+        result.program.as_ref().unwrap().module.properties[0].formula,
         PropertyFormula::NeverImplies { .. }
     ));
 }
@@ -366,9 +390,12 @@ fn parse_never_implies() {
 fn parse_cover_never_implies() {
     let src = mirr_with_property("cover never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Cover);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Cover
+    );
     assert!(matches!(
-        result.program.module.properties[0].formula,
+        result.program.as_ref().unwrap().module.properties[0].formula,
         PropertyFormula::NeverImplies { .. }
     ));
 }
@@ -393,7 +420,7 @@ fn never_implies_validation_passes() {
 fn parse_eventually_within() {
     let src = mirr_with_property("eventually within 10 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    match &result.program.module.properties[0].formula {
+    match &result.program.as_ref().unwrap().module.properties[0].formula {
         PropertyFormula::EventuallyWithin { cycles, .. } => {
             assert_eq!(*cycles, 10);
         }
@@ -405,9 +432,12 @@ fn parse_eventually_within() {
 fn parse_cover_eventually_within() {
     let src = mirr_with_property("cover eventually within 5 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Cover);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Cover
+    );
     assert!(matches!(
-        result.program.module.properties[0].formula,
+        result.program.as_ref().unwrap().module.properties[0].formula,
         PropertyFormula::EventuallyWithin { .. }
     ));
 }
@@ -448,7 +478,7 @@ fn eventually_within_validation_passes() {
 fn parse_always_followed_by() {
     let src = mirr_with_property("always (x > 100 followed_by 5 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    match &result.program.module.properties[0].formula {
+    match &result.program.as_ref().unwrap().module.properties[0].formula {
         PropertyFormula::AlwaysFollowedBy { delay_cycles, .. } => {
             assert_eq!(*delay_cycles, 5);
         }
@@ -460,9 +490,12 @@ fn parse_always_followed_by() {
 fn parse_assume_always_followed_by() {
     let src = mirr_with_property("assume always (x > 100 followed_by 3 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Assume);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Assume
+    );
     assert!(matches!(
-        result.program.module.properties[0].formula,
+        result.program.as_ref().unwrap().module.properties[0].formula,
         PropertyFormula::AlwaysFollowedBy { .. }
     ));
 }
@@ -709,24 +742,30 @@ module m {
 }
 "#;
     let result = run_pipeline(src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties.len(), 6);
+    assert_eq!(result.program.as_ref().unwrap().module.properties.len(), 6);
 
-    assert!(matches!(result.program.module.properties[0].formula, PropertyFormula::Always(_)));
-    assert!(matches!(result.program.module.properties[1].formula, PropertyFormula::Never(_)));
     assert!(matches!(
-        result.program.module.properties[2].formula,
+        result.program.as_ref().unwrap().module.properties[0].formula,
+        PropertyFormula::Always(_)
+    ));
+    assert!(matches!(
+        result.program.as_ref().unwrap().module.properties[1].formula,
+        PropertyFormula::Never(_)
+    ));
+    assert!(matches!(
+        result.program.as_ref().unwrap().module.properties[2].formula,
         PropertyFormula::AlwaysImplies { .. }
     ));
     assert!(matches!(
-        result.program.module.properties[3].formula,
+        result.program.as_ref().unwrap().module.properties[3].formula,
         PropertyFormula::NeverImplies { .. }
     ));
     assert!(matches!(
-        result.program.module.properties[4].formula,
+        result.program.as_ref().unwrap().module.properties[4].formula,
         PropertyFormula::EventuallyWithin { .. }
     ));
     assert!(matches!(
-        result.program.module.properties[5].formula,
+        result.program.as_ref().unwrap().module.properties[5].formula,
         PropertyFormula::AlwaysFollowedBy { .. }
     ));
 }
@@ -739,10 +778,19 @@ fn full_pipeline_mixed_directives() {
         ("p3", "assume always (x < 1000);"),
     ]);
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    assert_eq!(result.program.module.properties.len(), 3);
-    assert_eq!(result.program.module.properties[0].directive, PropertyDirective::Assert);
-    assert_eq!(result.program.module.properties[1].directive, PropertyDirective::Cover);
-    assert_eq!(result.program.module.properties[2].directive, PropertyDirective::Assume);
+    assert_eq!(result.program.as_ref().unwrap().module.properties.len(), 3);
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[0].directive,
+        PropertyDirective::Assert
+    );
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[1].directive,
+        PropertyDirective::Cover
+    );
+    assert_eq!(
+        result.program.as_ref().unwrap().module.properties[2].directive,
+        PropertyDirective::Assume
+    );
 }
 
 #[test]

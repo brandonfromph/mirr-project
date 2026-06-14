@@ -81,6 +81,6 @@ module m { signal x: in bool; }"#;
 #[test]
 fn pipeline_plain_module_no_patterns() {
     if let Ok(pr) = run_src("module p { signal x: in u8; signal y: out bool; }") {
-        assert!(pr.program.patterns.is_empty());
+        assert!(pr.program.as_ref().unwrap().patterns.is_empty());
     }
 }

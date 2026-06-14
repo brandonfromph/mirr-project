@@ -17,9 +17,11 @@ use std::collections::HashMap;
 /// Max capacity for compiler entities (NASA P10 Rule #2: Fixed bounds)
 pub const MAX_ENTITIES: usize = 1_000_000;
 
+use serde::{Deserialize, Serialize};
+
 /// The Registry: The Data-Oriented "World" of the MIRR Compiler.
 /// Refactored to Vec-based storage for O(1) access and cache locality.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Registry {
     pub(super) next_id: u32,
 
@@ -49,6 +51,12 @@ pub struct Registry {
 
     // Phase 4: Width Inference Components
     pub width_constraints: Vec<Option<WidthConstraintComponent>>,
+
+    // Pattern Traceability (Phase 7b)
+    pub pattern_origins: Vec<crate::ast::pattern::PatternOrigin>,
+
+    // Target Hardware Configuration
+    pub target_config: Option<crate::ast::program::TargetConfig>,
 
     // Knowledge Base Component Tables (Phase 2)
     pub vectors: Vec<Option<VectorComponent>>,
@@ -122,6 +130,8 @@ impl Registry {
             unfold_indices: vec![None; cap],
             muxes: vec![None; cap],
             width_constraints: vec![None; cap],
+            pattern_origins: Vec::new(),
+            target_config: None,
             symbol_to_entity: HashMap::with_capacity(cap),
         }
     }
@@ -226,6 +236,14 @@ impl Registry {
         self.modules[entity.0 as usize] = Some(ModuleComponent(parent));
     }
 
+    pub fn ingest_program(
+        &mut self,
+        program: &crate::ast::program::MirrProgram,
+    ) -> Result<EntityId, MirrError> {
+        self.target_config = program.target.clone();
+        self.ingest_module(&program.module)
+    }
+
     pub fn ingest_module(&mut self, module: &Module) -> Result<EntityId, MirrError> {
         let mod_id = self.next_id();
         let idx = mod_id.0 as usize;
@@ -239,6 +257,8 @@ impl Registry {
         self.ingest_guards(mod_id, &module.name, &module.guards)?;
         self.ingest_reflexes(mod_id, &module.name, &module.reflexes)?;
         self.ingest_properties(mod_id, &module.name, &module.properties)?;
+
+        self.pattern_origins = module.pattern_origins.clone();
 
         Ok(mod_id)
     }

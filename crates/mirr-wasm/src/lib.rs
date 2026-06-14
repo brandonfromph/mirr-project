@@ -274,36 +274,50 @@ pub fn compile_graph_data(source: &str) -> String {
             let mut nodes = Vec::new();
             let mut edges = Vec::new();
 
-            let module = &result.program.module;
-            for sig in &module.signals {
-                let node_type = match &sig.kind {
-                    mirrc::ast::types::SignalKind::Input => "Input",
-                    mirrc::ast::types::SignalKind::Output => "Output",
-                    mirrc::ast::types::SignalKind::Internal => "Internal",
-                };
-                nodes.push(serde_json::json!({
-                    "id": sig.name,
-                    "label": sig.name,
-                    "type": node_type,
-                }));
+            let registry = result.ecs_registry.as_ref().unwrap();
+            for i in 0..registry.names.len() {
+                if let (Some(name), Some(kind)) = (&registry.names[i], &registry.kinds[i]) {
+                    use mirrc::ecs::components::EntityKind;
+                    let id = &name.0;
+                    match kind.0 {
+                        EntityKind::SIGNAL(skind) => {
+                            let node_type = match skind {
+                                mirrc::ast::types::SignalKind::Input => "Input",
+                                mirrc::ast::types::SignalKind::Output => "Output",
+                                mirrc::ast::types::SignalKind::Internal => "Internal",
+                            };
+                            nodes.push(serde_json::json!({
+                                "id": id,
+                                "label": id,
+                                "type": node_type,
+                            }));
+                        }
+                        EntityKind::GUARD => {
+                            nodes.push(serde_json::json!({
+                                "id": id,
+                                "label": id,
+                                "type": "Guard",
+                            }));
+                        }
+                        _ => {}
+                    }
+                }
             }
 
-            for guard in &module.guards {
-                nodes.push(serde_json::json!({
-                    "id": guard.name,
-                    "label": guard.name,
-                    "type": "Guard",
-                }));
-            }
-
-            for reflex in &module.reflexes {
-                for gn in &reflex.guard_names {
-                    for assign in &reflex.assignments {
-                        edges.push(serde_json::json!({
-                            "from": gn,
-                            "to": assign.target,
-                            "label": "triggers",
-                        }));
+            for reflex in registry.reflex_comps.iter().flatten() {
+                for guard_id in &reflex.guards {
+                    if let Some(g_name) = &registry.names[guard_id.0 as usize] {
+                        for assign_id in &reflex.assignments {
+                            if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
+                                if let Some(t_name) = &registry.names[assign.target.0 as usize] {
+                                    edges.push(serde_json::json!({
+                                        "from": g_name.0,
+                                        "to": t_name.0,
+                                        "label": "triggers",
+                                    }));
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -584,44 +598,47 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
         Ok(result) => {
             use mirrc::temporal::low_level_ir::CompiledGuard;
 
-            let module = &result.program.module;
+            let registry = result.ecs_registry.as_ref().unwrap();
             let mut signals = Vec::new();
 
-            for (si, sig) in module.signals.iter().enumerate() {
-                if !matches!(sig.kind, mirrc::ast::types::SignalKind::Input) {
-                    continue;
-                }
-                let is_bool = matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
-                if is_bool {
-                    let period = (si as u32 + 2).min(64);
-                    let values: Vec<u8> = (0..capped_cycles)
-                        .map(|c| if (c / period) % 2 == 0 { 1u8 } else { 0u8 })
-                        .collect();
-                    signals.push(serde_json::json!({
-                        "name": sig.name,
-                        "width": 1,
-                        "kind": "input",
-                        "values": values,
-                    }));
-                } else {
-                    let max_val: u64 = match &sig.ty.core {
-                        mirrc::ast::types::SignalType::Unsigned(w) => {
-                            1u64.checked_shl(*w).unwrap_or(256).saturating_sub(1)
+            let mut si = 0;
+            for i in 0..registry.names.len() {
+                if let (Some(name), Some(kind), Some(ty)) =
+                    (&registry.names[i], &registry.kinds[i], &registry.types[i])
+                {
+                    use mirrc::ecs::components::EntityKind;
+                    if let EntityKind::SIGNAL(skind) = kind.0 {
+                        if !matches!(skind, mirrc::ast::types::SignalKind::Input) {
+                            continue;
                         }
-                        _ => 255,
-                    };
-                    let values: Vec<u64> = (0..capped_cycles)
-                        .map(|c| (c as u64 * (si as u64 + 1)) % (max_val + 1))
-                        .collect();
-                    signals.push(serde_json::json!({
-                        "name": sig.name,
-                        "width": match &sig.ty.core {
-                            mirrc::ast::types::SignalType::Unsigned(w) => *w,
-                            _ => 8,
-                        },
-                        "kind": "input",
-                        "values": values,
-                    }));
+                        let width = ty.0.core.width();
+                        let is_bool = width == 1;
+                        if is_bool {
+                            let period = (si as u32 + 2).min(64);
+                            let values: Vec<u8> = (0..capped_cycles)
+                                .map(|c| if (c / period) % 2 == 0 { 1u8 } else { 0u8 })
+                                .collect();
+                            signals.push(serde_json::json!({
+                                "name": name.0,
+                                "width": 1,
+                                "kind": "input",
+                                "values": values,
+                            }));
+                        } else {
+                            let max_val: u64 =
+                                1u64.checked_shl(width).unwrap_or(256).saturating_sub(1);
+                            let values: Vec<u64> = (0..capped_cycles)
+                                .map(|c| (c as u64 * (si as u64 + 1)) % (max_val + 1))
+                                .collect();
+                            signals.push(serde_json::json!({
+                                "name": name.0,
+                                "width": width,
+                                "kind": "input",
+                                "values": values,
+                            }));
+                        }
+                        si += 1;
+                    }
                 }
             }
 
@@ -648,62 +665,37 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
                 }
             }
 
-            for sig in &module.signals {
-                if !matches!(sig.kind, mirrc::ast::types::SignalKind::Output) {
-                    continue;
-                }
-                let mut earliest_delay: Option<u64> = None;
-                for reflex in &module.reflexes {
-                    let drives_this = reflex.assignments.iter().any(|a| a.target == sig.name);
-                    if !drives_this {
-                        continue;
-                    }
-                    if let Some(ref nl) = result.temporal_netlist {
-                        for gn in &reflex.guard_names {
-                            for guard in &nl.guards {
-                                let (guard_name, delay) = match guard {
-                                    CompiledGuard::ShiftRegister(sr) => (&sr.name, sr.delay_cycles),
-                                    CompiledGuard::Counter(c) => (&c.name, c.target_count),
-                                    CompiledGuard::Complex(cx) => (&cx.name, 1u64),
-                                    CompiledGuard::DynamicCounter(dc) => {
-                                        (&dc.name, dc.max_delay.min(64))
-                                    }
-                                };
-                                if guard_name == gn {
-                                    earliest_delay = Some(match earliest_delay {
-                                        Some(d) => d.min(delay),
-                                        None => delay,
-                                    });
-                                }
-                            }
+            for i in 0..registry.names.len() {
+                if let (Some(name), Some(kind), Some(ty)) =
+                    (&registry.names[i], &registry.kinds[i], &registry.types[i])
+                {
+                    use mirrc::ecs::components::EntityKind;
+                    if let EntityKind::SIGNAL(mirrc::ast::types::SignalKind::Output) = kind.0 {
+                        let delay = 0;
+                        let width = ty.0.core.width();
+                        let is_bool = width == 1;
+                        if is_bool {
+                            let values: Vec<u8> = (0..capped_cycles)
+                                .map(|c| if c as u64 >= delay { 1u8 } else { 0u8 })
+                                .collect();
+                            signals.push(serde_json::json!({
+                                "name": name.0,
+                                "width": 1,
+                                "kind": "output",
+                                "values": values,
+                            }));
+                        } else {
+                            let values: Vec<u64> = (0..capped_cycles)
+                                .map(|c| if c as u64 >= delay { 1u64 } else { 0u64 })
+                                .collect();
+                            signals.push(serde_json::json!({
+                                "name": name.0,
+                                "width": width,
+                                "kind": "output",
+                                "values": values,
+                            }));
                         }
                     }
-                }
-                let delay = earliest_delay.unwrap_or(0);
-                let is_bool = matches!(sig.ty.core, mirrc::ast::types::SignalType::Bool);
-                if is_bool {
-                    let values: Vec<u8> = (0..capped_cycles)
-                        .map(|c| if c as u64 >= delay { 1u8 } else { 0u8 })
-                        .collect();
-                    signals.push(serde_json::json!({
-                        "name": sig.name,
-                        "width": 1,
-                        "kind": "output",
-                        "values": values,
-                    }));
-                } else {
-                    let values: Vec<u64> = (0..capped_cycles)
-                        .map(|c| if c as u64 >= delay { 1u64 } else { 0u64 })
-                        .collect();
-                    signals.push(serde_json::json!({
-                        "name": sig.name,
-                        "width": match &sig.ty.core {
-                            mirrc::ast::types::SignalType::Unsigned(w) => *w,
-                            _ => 8,
-                        },
-                        "kind": "output",
-                        "values": values,
-                    }));
                 }
             }
 

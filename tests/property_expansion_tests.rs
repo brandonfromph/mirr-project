@@ -229,12 +229,18 @@ module m {
         ..PipelineConfig::default()
     };
     let result = run_pipeline(src, &config).expect("Pipeline should succeed");
-    assert_eq!(result.program.module.properties.len(), 3);
+    assert_eq!(result.program.as_ref().unwrap().module.properties.len(), 3);
 
-    assert!(matches!(result.program.module.properties[0].formula, PropertyFormula::Always(_)));
-    assert!(matches!(result.program.module.properties[1].formula, PropertyFormula::Never(_)));
     assert!(matches!(
-        result.program.module.properties[2].formula,
+        result.program.as_ref().unwrap().module.properties[0].formula,
+        PropertyFormula::Always(_)
+    ));
+    assert!(matches!(
+        result.program.as_ref().unwrap().module.properties[1].formula,
+        PropertyFormula::Never(_)
+    ));
+    assert!(matches!(
+        result.program.as_ref().unwrap().module.properties[2].formula,
         PropertyFormula::AlwaysImplies { .. }
     ));
 }

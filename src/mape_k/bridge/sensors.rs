@@ -2,7 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::types::{SignalKind, SignalType};
+use crate::ast::types::SignalType;
 use crate::mape_k::error::MapeKError;
 use crate::mape_k::sensor::SensorConfig;
 use crate::pipeline::PipelineResult;
@@ -27,9 +27,15 @@ pub(super) fn extract_sensors(
     result: &PipelineResult,
     errors: &mut Vec<MapeKError>,
 ) -> Vec<SensorConfig> {
-    let signals = &result.program.module.signals;
+    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
 
-    let signal_count = signals.len().min(MAX_BRIDGE_SIGNALS.saturating_add(1));
+    let mut signal_count = 0;
+    for kind_comp in registry.kinds.iter().flatten() {
+        if let crate::ecs::components::EntityKind::SIGNAL(_) = kind_comp.0 {
+            signal_count += 1;
+        }
+    }
+
     if signal_count > MAX_BRIDGE_SIGNALS {
         errors.push(MapeKError::BridgeConfigError(format!(
             "too many signals: {} > {}",
@@ -39,25 +45,31 @@ pub(super) fn extract_sensors(
     }
 
     let mut sensors = Vec::with_capacity(signal_count);
-    let mut idx: usize = 0;
+    let mut sensor_idx = 0;
 
-    for sig in signals.iter().take(MAX_BRIDGE_SIGNALS) {
-        let (base_value, noise_amplitude) = heuristic_sensor_defaults(&sig.ty.core);
+    for i in 0..registry.names.len() {
+        if let (Some(name), Some(kind), Some(ty)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::components::EntityKind::SIGNAL(skind) = kind.0 {
+                let (base_value, noise_amplitude) = heuristic_sensor_defaults(&ty.0.core);
 
-        sensors.push(SensorConfig {
-            name: sig.name.clone(),
-            base_value,
-            noise_amplitude,
-            fault_at_tick: None,
-            fault_value: 0,
-            fault_end_tick: None,
-            seed: SEED_BASE.wrapping_add(idx as u64),
-            is_observable: sig.kind == SignalKind::Input,
-        });
+                sensors.push(SensorConfig {
+                    name: name.0.clone(),
+                    base_value,
+                    noise_amplitude,
+                    fault_at_tick: None,
+                    fault_value: 0,
+                    fault_end_tick: None,
+                    seed: SEED_BASE.wrapping_add(sensor_idx as u64),
+                    is_observable: skind == crate::ast::types::SignalKind::Input,
+                });
 
-        idx = idx.saturating_add(1);
-        if idx >= MAX_BRIDGE_SIGNALS {
-            break;
+                sensor_idx += 1;
+                if sensor_idx >= MAX_BRIDGE_SIGNALS {
+                    break;
+                }
+            }
         }
     }
 

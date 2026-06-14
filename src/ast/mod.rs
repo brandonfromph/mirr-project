@@ -30,4 +30,4 @@ pub use types::{
 };
 
 /// Maximum expression nodes to visit during bounded traversal (NASA P10).
-pub(crate) const MAX_EXPR_NODES: usize = 512;
+pub(crate) const MAX_EXPR_NODES: usize = 8192;

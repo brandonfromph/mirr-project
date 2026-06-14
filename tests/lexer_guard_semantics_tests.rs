@@ -75,7 +75,9 @@ fn test_guard_counter_lifetime() {
     // Input: a digit followed by two identifier tokens to drive total 3 ticks.
     // The guard has cycles = 3, so we expect 3 emit_push_integer events.
     let input = b"4 a b";
-    let pushes = drive_parsed_module_with_interpreter(&prog, input);
+    let mut reg = mirrc::ecs::Registry::new();
+    mirrc::ecs::adapter::ingest_program(&mut reg, prog.clone(), None).unwrap();
+    let pushes = drive_parsed_module_with_interpreter(&reg, input);
 
     // Count integer push events and verify payload
     let int_pushes: Vec<_> = pushes.iter().filter(|p| p.kind == "emit_push_integer").collect();

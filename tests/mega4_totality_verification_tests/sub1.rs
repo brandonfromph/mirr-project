@@ -4,7 +4,7 @@ use super::*;
 fn f1_total_module_passes_resource_bounds() {
     let m = total_module();
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.resource_bound.pass, "Total module must pass resource bounds");
 }
 
@@ -20,7 +20,7 @@ fn f1_registers_count_matches_signal_count() {
         vec![make_reflex("r", "g", "c")],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert_eq!(result.resource_bound.registers, 3, "3 signals need 3 registers");
 }
 
@@ -32,7 +32,7 @@ fn f1_guard_count_matches_guard_decls() {
         vec![make_reflex("r1", "g1", "out")],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert_eq!(result.resource_bound.guards, 3, "3 guard decls need 3 guard units");
 }
 
@@ -44,7 +44,7 @@ fn f1_max_cycles_is_highest_guard() {
         vec![make_reflex("r1", "g1", "out")],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert_eq!(
         result.resource_bound.max_cycles, 100,
         "Max cycles must be highest guard cycle count"
@@ -66,7 +66,7 @@ fn f1_resource_limits_constants() {
 fn f2_all_outputs_driven_passes() {
     let m = total_module();
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.output_completeness.pass, "All outputs driven must pass");
     assert!(result.output_completeness.undriven_outputs.is_empty(), "No undriven outputs expected");
 }
@@ -83,7 +83,7 @@ fn f2_undriven_output_fails() {
         vec![make_reflex("r1", "g1", "out1")], // only drives out1
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(!result.output_completeness.pass, "Undriven output must fail completeness");
     assert_eq!(
         result.output_completeness.undriven_outputs,
@@ -105,7 +105,7 @@ fn f2_multiple_undriven_outputs() {
         vec![make_reflex("r1", "g1", "out1")],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(!result.output_completeness.pass);
     assert_eq!(result.output_completeness.undriven_outputs.len(), 2, "out2 and out3 undriven");
 }
@@ -119,7 +119,7 @@ fn f2_input_signals_not_checked() {
         vec![],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.output_completeness.pass, "No outputs means completeness passes");
 }
 
@@ -131,7 +131,7 @@ fn f2_internal_signals_not_checked() {
         vec![],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.output_completeness.pass, "Internal signals not subject to output completeness");
 }
 
@@ -143,7 +143,7 @@ fn f2_internal_signals_not_checked() {
 fn f3_covered_outputs_pass() {
     let m = total_module();
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.guard_coverage.pass, "All outputs with guards must pass coverage");
     assert_eq!(result.guard_coverage.covered_outputs, 1);
     assert_eq!(result.guard_coverage.total_outputs, 1);
@@ -153,7 +153,7 @@ fn f3_covered_outputs_pass() {
 fn f3_no_outputs_means_trivially_covered() {
     let m = make_module(vec![make_signal("a", SignalKind::Input)], vec![], vec![]);
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.guard_coverage.pass, "No outputs means coverage passes trivially");
 }
 
@@ -169,7 +169,7 @@ fn f4_temporal_bound_is_max_guard_cycles() {
         vec![make_reflex("r1", "g1", "out")],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert_eq!(result.temporal_bound.max_guard_cycles, 25);
     assert!(result.temporal_bound.pass, "Temporal bound always passes (finite cycles)");
 }
@@ -188,7 +188,7 @@ fn f4_prev_delay_contributes_to_latency() {
         )],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert_eq!(result.temporal_bound.max_prev_delay, 5);
     assert_eq!(result.temporal_bound.worst_case_latency, 15, "10 guard + 5 prev = 15");
 }
@@ -197,7 +197,7 @@ fn f4_prev_delay_contributes_to_latency() {
 fn f4_zero_guards_zero_latency() {
     let m = make_module(vec![make_signal("a", SignalKind::Input)], vec![], vec![]);
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert_eq!(result.temporal_bound.max_guard_cycles, 0);
     assert_eq!(result.temporal_bound.worst_case_latency, 0);
 }
@@ -210,7 +210,7 @@ fn f4_zero_guards_zero_latency() {
 fn f5_acyclic_module_passes() {
     let m = total_module();
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.acyclicity.pass, "Acyclic module must pass");
     assert!(result.acyclicity.cycle_witness.is_none());
 }
@@ -228,7 +228,7 @@ fn f5_self_referencing_output_is_cycle() {
         )],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(!result.acyclicity.pass, "Self-referencing signal must be a cycle");
     assert_eq!(
         result.acyclicity.cycle_witness.as_deref(),
@@ -250,7 +250,7 @@ fn f5_prev_breaks_cycle() {
         )],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.acyclicity.pass, "Prev must break the combinational cycle");
 }
 
@@ -258,7 +258,7 @@ fn f5_prev_breaks_cycle() {
 fn f5_empty_module_acyclic() {
     let m = make_module(vec![], vec![], vec![]);
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.acyclicity.pass, "Empty module has no cycles");
 }
 
@@ -270,7 +270,7 @@ fn f5_input_to_output_no_cycle() {
         vec![make_reflex_with_expr("r1", "g1", "out_b", Expr::Signal("in_a".to_string()))],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.acyclicity.pass, "Input→output is not a cycle");
 }
 
@@ -282,7 +282,7 @@ fn f5_input_to_output_no_cycle() {
 fn f6_total_module_is_total() {
     let m = total_module();
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.is_total, "Well-formed module must pass all 5 totality checks");
 }
 
@@ -298,7 +298,7 @@ fn f6_undriven_output_makes_not_total() {
         vec![make_reflex("r1", "g1", "out1")],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(!result.is_total, "Undriven output must make module non-total");
 }
 
@@ -310,7 +310,7 @@ fn f6_cycle_makes_not_total() {
         vec![make_reflex_with_expr("r", "g", "s", Expr::Signal("s".to_string()))],
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(!result.is_total, "Cyclic module must not be total");
 }
 
@@ -343,7 +343,7 @@ fn f7_properties_captured_in_summary() {
         props,
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert_eq!(result.property_summary.len(), 2, "Two properties must be summarized");
     assert_eq!(result.property_summary[0].name, "p1");
     assert_eq!(result.property_summary[0].kind, "always");
@@ -355,7 +355,7 @@ fn f7_properties_captured_in_summary() {
 fn f7_empty_properties_returns_empty_summary() {
     let m = total_module();
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     assert!(result.property_summary.is_empty(), "No properties means empty summary");
 }
 
@@ -394,7 +394,7 @@ fn f7_all_property_kinds_recognized() {
         props,
     );
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&m, &target);
+    let result = run_totality_check_on_module(&m, &target);
     let kinds: Vec<&str> = result.property_summary.iter().map(|p| p.kind.as_str()).collect();
     assert!(kinds.contains(&"always"), "Must recognize 'always' kind");
     assert!(kinds.contains(&"never"), "Must recognize 'never' kind");

@@ -47,8 +47,12 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         pattern_origins: Vec::new(),
         span: None,
     };
+    let program = MirrProgram { target: None, patterns: vec![], imports: vec![], module };
+    let mut reg = mirrc::ecs::Registry::new();
+    mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+
     PipelineResult {
-        program: MirrProgram { target: None, patterns: vec![], imports: vec![], module },
+        program: Some(program),
         simplify_stats: None,
         width_stats: None,
         width_diagnostics: Vec::new(),
@@ -63,7 +67,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         symbolic_result: None,
         mape_k_rtl: None,
         hls_result: None,
-        ecs_registry: Some(mirrc::ecs::Registry::default()),
+        ecs_registry: Some(reg),
         file_table: mirrc::span::FileTable::new(),
     }
 }
@@ -71,8 +75,11 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
 /// Parse a MIRR source string into a `PipelineResult` suitable for bridge testing.
 fn parse_to_pipeline(source: &str) -> PipelineResult {
     let program = parse_mirr(source).expect("MIRR parse should succeed");
+    let mut reg = mirrc::ecs::Registry::new();
+    mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+
     PipelineResult {
-        program,
+        program: Some(program),
         simplify_stats: None,
         width_stats: None,
         width_diagnostics: Vec::new(),
@@ -87,7 +94,7 @@ fn parse_to_pipeline(source: &str) -> PipelineResult {
         symbolic_result: None,
         mape_k_rtl: None,
         hls_result: None,
-        ecs_registry: Some(mirrc::ecs::Registry::default()),
+        ecs_registry: Some(reg),
         file_table: mirrc::span::FileTable::new(),
     }
 }

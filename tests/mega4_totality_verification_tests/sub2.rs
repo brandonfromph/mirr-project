@@ -143,7 +143,7 @@ fn integration_parse_and_totality_check() {
 }"#;
     let parsed = parse_mirr(src).expect("Must parse");
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&parsed.module, &target);
+    let result = run_totality_check_on_module(&parsed.module, &target);
     assert!(result.is_total, "Well-formed parsed module must be total");
     assert_eq!(result.resource_bound.registers, 4, "4 signals = 4 registers");
     assert_eq!(result.resource_bound.guards, 2, "2 guards");
@@ -170,7 +170,7 @@ fn integration_undriven_output_from_parse() {
 }"#;
     let parsed = parse_mirr(src).expect("Must parse");
     let target = mirrc::emit::rspu_isa::TargetSpec::from_config(&None);
-    let result = run_totality_check(&parsed.module, &target);
+    let result = run_totality_check_on_module(&parsed.module, &target);
     assert!(!result.is_total, "Module with undriven output c must not be total");
     assert!(
         result.output_completeness.undriven_outputs.contains(&"c".to_string()),

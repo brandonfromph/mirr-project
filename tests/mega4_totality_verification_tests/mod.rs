@@ -29,7 +29,7 @@ use mirrc::emit::rspu_isa::{MAX_GUARDS, MAX_INSTRUCTIONS, MAX_REGISTERS};
 use mirrc::error::MirrError;
 use mirrc::parse_mirr;
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
-use mirrc::totality::run_totality_check;
+use mirrc::totality::{run_totality_check, run_totality_check_on_module};
 
 // ---------------------------------------------------------------------------
 // Bounded iteration constants (NASA P10)

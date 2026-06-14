@@ -23,14 +23,24 @@ fn test_noc_router_priority_scheduling() {
     let prog = snapshot.pipeline.rspu_program.clone().expect("RSPU program not generated");
     println!("Compiled NoC Router successfully!");
 
-    let num_ports = snapshot
-        .pipeline
-        .program
-        .module
-        .signals
+    let reg = snapshot.pipeline.ecs_registry.as_ref().expect("Registry required");
+    let num_ports = reg
+        .kinds
         .iter()
-        .filter(|s| s.name.starts_with("port_tx_valid_") || s.name.starts_with("port_tx_valid["))
+        .flatten()
+        .filter(|k| {
+            if let mirrc::ecs::EntityKind::SIGNAL(_) = k.0 {
+                let idx = (k as *const _ as usize - reg.kinds.as_ptr() as usize)
+                    / std::mem::size_of::<Option<mirrc::ecs::components::KindComponent>>();
+                if let Some(name) = &reg.names[idx] {
+                    return name.0.starts_with("port_tx_valid_")
+                        || name.0.starts_with("port_tx_valid[");
+                }
+            }
+            false
+        })
         .count() as u16;
+
     let num_ports = if num_ports > 0 { num_ports } else { 16 };
     println!("=== RSPU ALL INSTRUCTIONS ===");
     let asm = prog.emit_asm();

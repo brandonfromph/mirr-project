@@ -1,0 +1,1 @@
+   Compiling mirrc v0.3.0 (/Users/brandonc.blay/projects/mirr-private)

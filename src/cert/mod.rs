@@ -113,7 +113,7 @@ pub struct ProofCertificate {
 pub fn build_certificate(
     totality: &crate::totality::TotalityResult,
     program_binary: &[u64],
-    module: &crate::ast::program::Module,
+    registry: &crate::ecs::Registry,
 ) -> ProofCertificate {
     use crate::ast::types::SignalKind;
 
@@ -123,21 +123,30 @@ pub fn build_certificate(
     // Build type witnesses from module signals.
     let mut type_witnesses: Vec<TypeWitness> = Vec::new();
     let mut si = 0;
-    while si < module.signals.len() && si < MAX_TYPE_WITNESSES {
-        let sig = &module.signals[si];
-        let kind = match sig.kind {
-            SignalKind::Input => 0,
-            SignalKind::Output => 1,
-            SignalKind::Internal => 2,
-        };
-        let (width, is_signed) = sig.ty.core.width_and_signed();
-        type_witnesses.push(TypeWitness {
-            name: sig.name.clone(),
-            kind,
-            width,
-            signed: if is_signed { 1 } else { 0 },
-        });
-        si += 1;
+
+    for i in 0..registry.names.len() {
+        if let (Some(name), Some(kind), Some(ty)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::components::EntityKind::SIGNAL(skind) = kind.0 {
+                let kind_val = match skind {
+                    SignalKind::Input => 0,
+                    SignalKind::Output => 1,
+                    SignalKind::Internal => 2,
+                };
+                let (width, is_signed) = ty.0.core.width_and_signed();
+                type_witnesses.push(TypeWitness {
+                    name: name.0.clone(),
+                    kind: kind_val,
+                    width,
+                    signed: if is_signed { 1 } else { 0 },
+                });
+                si += 1;
+                if si >= MAX_TYPE_WITNESSES {
+                    break;
+                }
+            }
+        }
     }
 
     // Build property verdicts from totality summary.

@@ -19,6 +19,8 @@ module m {
     let result = pipeline_ok(src);
     let expanded_guard = result
         .program
+        .as_ref()
+        .unwrap()
         .module
         .guards
         .iter()
@@ -61,12 +63,18 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let has_prefixed =
-        result.program.module.guards.iter().any(|g| g.name == "simple_guard_0_check");
+    let has_prefixed = result
+        .program
+        .as_ref()
+        .unwrap()
+        .module
+        .guards
+        .iter()
+        .any(|g| g.name == "simple_guard_0_check");
     assert!(
         has_prefixed,
         "Guard should be prefixed: {:?}",
-        result.program.module.guards.iter().map(|g| &g.name).collect::<Vec<_>>()
+        result.program.as_ref().unwrap().module.guards.iter().map(|g| &g.name).collect::<Vec<_>>()
     );
 }
 
@@ -74,7 +82,7 @@ module m {
 fn prefix_two_calls_get_different_indices() {
     let result = pipeline_ok(&ventilator_source());
     let guard_names: Vec<&str> =
-        result.program.module.guards.iter().map(|g| g.name.as_str()).collect();
+        result.program.as_ref().unwrap().module.guards.iter().map(|g| g.name.as_str()).collect();
     let has_0 = guard_names.iter().any(|n| n.contains("_0_"));
     let has_1 = guard_names.iter().any(|n| n.contains("_1_"));
     assert!(has_0, "First call should have index 0: {guard_names:?}");
@@ -86,6 +94,8 @@ fn prefix_internal_signals_get_prefixed() {
     let result = pipeline_ok(&ventilator_source());
     let internal_sigs: Vec<&str> = result
         .program
+        .as_ref()
+        .unwrap()
         .module
         .signals
         .iter()
@@ -100,7 +110,7 @@ fn prefix_internal_signals_get_prefixed() {
 #[test]
 fn origin_tag_set_on_expanded_nodes() {
     let result = pipeline_ok(&ventilator_source());
-    let m = &result.program.module;
+    let m = &result.program.as_ref().unwrap().module;
     for guard in &m.guards {
         assert!(guard.origin.is_some(), "Expanded guard '{}' should have origin", guard.name);
     }
@@ -141,6 +151,8 @@ module m {
     let result = pipeline_ok(src);
     let manual_g = result
         .program
+        .as_ref()
+        .unwrap()
         .module
         .guards
         .iter()
@@ -149,6 +161,8 @@ module m {
     assert!(manual_g.origin.is_none(), "Hand-written guard should have origin: None");
     let manual_r = result
         .program
+        .as_ref()
+        .unwrap()
         .module
         .reflexes
         .iter()
@@ -160,13 +174,14 @@ module m {
 #[test]
 fn expanded_module_passes_validation() {
     let result = pipeline_ok(&ventilator_source());
-    validate_module(&result.program.module).expect("Post-expansion module should pass validation");
+    validate_module(&result.program.as_ref().unwrap().module)
+        .expect("Post-expansion module should pass validation");
 }
 
 #[test]
 fn expanded_properties_reference_prefixed_signals() {
     let result = pipeline_ok(&ventilator_source());
-    let props = &result.program.module.properties;
+    let props = &result.program.as_ref().unwrap().module.properties;
     assert!(!props.is_empty(), "Should have expanded properties");
     for prop in props {
         assert!(prop.origin.is_some(), "Expanded property should have origin");
@@ -245,7 +260,10 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    assert!(result.program.module.guards.len() >= 3, "Should have inner + outer + manual guard");
+    assert!(
+        result.program.as_ref().unwrap().module.guards.len() >= 3,
+        "Should have inner + outer + manual guard"
+    );
 }
 
 #[test]
@@ -305,7 +323,10 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    assert!(result.program.module.guards.len() >= 5, "Should have 4 expanded + 1 manual guard");
+    assert!(
+        result.program.as_ref().unwrap().module.guards.len() >= 5,
+        "Should have 4 expanded + 1 manual guard"
+    );
 }
 
 #[test]
@@ -375,6 +396,8 @@ module m {
     let result = pipeline_ok(src);
     let internal_sigs: Vec<&str> = result
         .program
+        .as_ref()
+        .unwrap()
         .module
         .signals
         .iter()
@@ -540,7 +563,10 @@ fn full_pipeline_ventilator_e2e() {
     assert!(sv.contains("module ventilator"), "Should have module declaration");
     assert!(sv.contains("endmodule"), "Should have endmodule");
     assert!(sv.contains("assert "), "Should have SVA assertions from expanded properties");
-    assert!(!result.program.module.properties.is_empty(), "Should have properties");
+    assert!(
+        !result.program.as_ref().unwrap().module.properties.is_empty(),
+        "Should have properties"
+    );
 }
 
 #[test]
@@ -566,15 +592,22 @@ fn multiple_calls_produce_distinct_blocks() {
 #[test]
 fn pattern_with_property_always_implies() {
     let result = pipeline_ok(&ventilator_source());
-    let props = &result.program.module.properties;
+    let props = &result.program.as_ref().unwrap().module.properties;
     assert!(props.len() >= 2, "Should have at least 2 properties from 2 calls");
 }
 
 #[test]
 fn pattern_origin_has_correct_format() {
     let result = pipeline_ok(&ventilator_source());
-    let origins: Vec<&str> =
-        result.program.module.pattern_origins.iter().map(|o| o.pattern_name.as_str()).collect();
+    let origins: Vec<&str> = result
+        .program
+        .as_ref()
+        .unwrap()
+        .module
+        .pattern_origins
+        .iter()
+        .map(|o| o.pattern_name.as_str())
+        .collect();
     assert!(origins.contains(&"monitor_sensor"), "Should record monitor_sensor as origin");
 }
 

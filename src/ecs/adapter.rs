@@ -25,6 +25,7 @@ pub fn ingest_program(
     }
 
     // 2. Ingest module structure
+    registry.target_config = program.target.clone();
     registry.ingest_module(&program.module)?;
 
     // 3. Final structural validation (The Gate)

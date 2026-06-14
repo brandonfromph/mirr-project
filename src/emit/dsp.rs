@@ -37,12 +37,69 @@ pub struct DspAnalysis {
     pub threshold_bits: u32,
 }
 
+/// Analyze a module for multiply operations suitable for DSP inference using the ECS Registry.
+pub fn analyze_dsp_ecs(registry: &crate::ecs::Registry, threshold: u32) -> DspAnalysis {
+    let mut candidates = Vec::new();
+
+    for i in 0..registry.reflex_comps.len() {
+        if let Some(reflex) = &registry.reflex_comps[i] {
+            if candidates.len() >= MAX_DSP_CANDIDATES {
+                break;
+            }
+
+            for asgn_ent in &reflex.assignments {
+                if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
+                    if has_multiply_ecs(asgn.value, registry) {
+                        let reflex_name = registry.names[i]
+                            .as_ref()
+                            .map(|n| n.0.clone())
+                            .unwrap_or_else(|| "unnamed_reflex".to_string());
+                        let target_name = registry.names[asgn.target.0 as usize]
+                            .as_ref()
+                            .map(|n| n.0.clone())
+                            .unwrap_or_else(|| "unnamed_target".to_string());
+                        candidates.push(DspCandidate { reflex_name, target_signal: target_name });
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    DspAnalysis { candidates, threshold_bits: threshold }
+}
+
+fn has_multiply_ecs(root: crate::ecs::EntityId, registry: &crate::ecs::Registry) -> bool {
+    let mut stack = Vec::new();
+    stack.push(root);
+
+    let mut visited = 0;
+    while let Some(ent) = stack.pop() {
+        visited += 1;
+        if visited > MAX_EXPR_NODES {
+            break;
+        }
+
+        let i = ent.0 as usize;
+        if let Some(bin) = &registry.binary_ops[i] {
+            if bin.op == BinaryOp::Mul {
+                return true;
+            }
+            stack.push(bin.left);
+            stack.push(bin.right);
+        } else if let Some(un) = &registry.unary_ops[i] {
+            stack.push(un.operand);
+        } else if let Some(m) = &registry.muxes[i] {
+            stack.push(m.select);
+            stack.push(m.true_val);
+            stack.push(m.false_val);
+        }
+        // ... other expression nodes if needed, but Mul is usually binary
+    }
+    false
+}
+
 /// Analyze a module for multiply operations suitable for DSP inference.
-///
-/// Walks each reflex's assignments looking for `Expr::Binary { op: Mul, .. }`.
-/// Returns candidates where the multiply is present (regardless of operand width,
-/// since width information lives in the width inference stage — we conservatively
-/// mark all multiplies above the expression-level heuristic).
 pub fn analyze_dsp(module: &Module, threshold: u32) -> DspAnalysis {
     let mut candidates = Vec::new();
 

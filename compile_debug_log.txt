@@ -1,0 +1,7 @@
+   Compiling mirrc v0.3.0 (/Users/brandonc.blay/projects/mirr-private)
+error[E0425]: cannot find function `check_module` in module `crate::typeck::extended`
+   --> src/pipeline.rs:268:40
+    |
+268 |         match crate::typeck::extended::check_module(&program.module) {
+    |                                        ^^^^^^^^^^^^ not found in `crate::typeck::extended`
+

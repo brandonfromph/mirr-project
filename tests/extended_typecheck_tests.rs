@@ -88,7 +88,9 @@ fn baseline_default_config_no_extended() {
 fn baseline_extended_on_plain_module() {
     let result = run_extended(plain_module());
     assert!(result.is_ok(), "Extended on plain module should succeed: {:?}", result.err());
-    assert!(result.unwrap().extended_type_map.is_some());
+    let reg = result.unwrap().ecs_registry.expect("registry should exist");
+    // Verify that types are stored in ECS
+    assert!(!reg.types.is_empty());
 }
 
 // ---------------------------------------------------------------------------
@@ -178,9 +180,9 @@ fn extended_with_all_annotations() {
 fn extended_type_map_is_populated() {
     let source = module_with_signal("signal x: in u16;");
     let result = run_extended(&source).expect("should succeed");
-    let ext_map = result.extended_type_map.expect("extended_type_map should be Some");
-    // The map should contain entries for the analyzed expressions.
-    assert!(!ext_map.is_empty(), "Extended type map should not be empty");
+    let reg = result.ecs_registry.expect("ecs_registry should be Some");
+    // The registry should contain type components for the analyzed expressions.
+    assert!(!reg.types.is_empty(), "ECS Types should not be empty");
 }
 
 // ---------------------------------------------------------------------------

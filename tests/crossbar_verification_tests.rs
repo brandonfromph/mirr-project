@@ -14,7 +14,7 @@ fn test_crossbar_static_routing_integrity() {
         workspace.compile_snapshot(&root_path, &config).expect("Crossbar failed to compile");
 
     // 3. Verify Static Route Integrity
-    let signals = &snapshot.pipeline.program.module.signals;
+    let signals = &snapshot.pipeline.program.as_ref().unwrap().module.signals;
 
     // Dynamically determine the number of ports by counting data_out_N signals
     let num_ports = signals.iter().filter(|s| s.name.starts_with("data_out_")).count();

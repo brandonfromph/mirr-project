@@ -37,10 +37,10 @@ fn test_macro_expansion_provenance_tracing() {
     let result = run_pipeline(source, &config).expect("Pipeline must succeed");
 
     // After expansion, the pattern calls themselves must be erased
-    assert!(result.program.module.pattern_calls.is_empty());
+    assert!(result.program.as_ref().unwrap().module.pattern_calls.is_empty());
 
     // Provenance (origins) must be recorded for each call
-    let origins = &result.program.module.pattern_origins;
+    let origins = &result.program.as_ref().unwrap().module.pattern_origins;
     assert_eq!(origins.len(), 2, "Expected exactly two pattern expansion origins");
     assert_eq!(origins[0].pattern_name, "monitor_val");
     assert!(origins[0].call_args_summary.contains("sensor_b"));

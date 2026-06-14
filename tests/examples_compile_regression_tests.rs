@@ -36,7 +36,9 @@ fn compile_regression_examples_through_pipeline() {
 
         match run_pipeline(&source, &PipelineConfig::default()) {
             Ok(result) => {
-                if let Err(err) = mirrc::validation::validate_module(&result.program.module) {
+                if let Err(err) =
+                    mirrc::validation::validate_module(&result.program.as_ref().unwrap().module)
+                {
                     failures.push(format!("{example_path} (validation): {err}"));
                 }
             }

@@ -107,8 +107,11 @@ fn test_emit_dot_max_node_truncation() {
     };
 
     let mut result = compile(include_str!("../examples/shift_register_guard.mirr"));
-    // Inject our massive module to test the truncation limit.
-    result.program.module = module;
+    // Inject our massive module via the Registry to test the truncation limit.
+    let mut reg = mirrc::ecs::Registry::new();
+    let prog = mirrc::MirrProgram { target: None, patterns: vec![], imports: vec![], module };
+    reg.ingest_program(&prog).unwrap();
+    result.ecs_registry = Some(reg);
 
     // Run expr dot and module dot to ensure we hit truncation paths without panic.
     let _expr_dot = emit_expr_dot(&result);

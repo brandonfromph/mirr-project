@@ -6,7 +6,6 @@
 #![forbid(unsafe_code)]
 
 use mirrc::ecs::components::EntityKind;
-use mirrc::ecs::Registry;
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
@@ -23,14 +22,12 @@ fn test_ecs_span_linkage_integrity() {
 
     let config = PipelineConfig::default();
     let res = run_pipeline(source, &config).expect("Pipeline failed");
-
-    let mut reg = Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None).expect("Ingest failed");
+    let reg = res.ecs_registry.as_ref().expect("Registry required");
 
     // Every signal entity in the Registry MUST have a valid Span
-    let next_id = reg.next_id();
+    let next_id = reg.active_entities();
     let mut signal_count = 0;
-    for i in 1..next_id.0 {
+    for i in 0..next_id {
         let idx = i as usize;
         if let Some(kind) = &reg.kinds[idx] {
             if let EntityKind::SIGNAL(_) = kind.0 {
@@ -85,13 +82,12 @@ fn test_internal_wiring_consistency() {
     "#;
 
     let res = run_pipeline(source, &PipelineConfig::default()).expect("Pipeline failed");
-    let mut reg = Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut reg, res.program, None).expect("Ingest failed");
+    let reg = res.ecs_registry.as_ref().expect("Registry required");
 
     // Verify binary operator wiring
-    let next_id = reg.next_id();
+    let next_id = reg.active_entities();
     let mut bin_op_found = false;
-    for i in 1..next_id.0 {
+    for i in 0..next_id {
         let idx = i as usize;
         if let Some(bin) = &reg.binary_ops[idx] {
             bin_op_found = true;

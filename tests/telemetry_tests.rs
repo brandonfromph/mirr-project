@@ -11,10 +11,13 @@ mod tests {
 
         // Phase 1: Verify node density tracking via parsed program stats
         assert!(
-            !result.program.module.signals.is_empty(),
+            !result.program.as_ref().unwrap().module.signals.is_empty(),
             "Module should have at least one signal"
         );
-        println!("[TELEMETRY] Node Density: {}", result.program.module.signals.len());
+        println!(
+            "[TELEMETRY] Node Density: {}",
+            result.program.as_ref().unwrap().module.signals.len()
+        );
     }
 
     #[test]

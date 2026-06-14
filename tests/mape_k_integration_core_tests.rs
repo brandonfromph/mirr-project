@@ -50,7 +50,12 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
     };
     PipelineResult {
         hls_result: None,
-        program: MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module },
+        program: Some(MirrProgram {
+            target: None,
+            patterns: Vec::new(),
+            imports: Vec::new(),
+            module,
+        }),
         simplify_stats: None,
         width_stats: None,
         width_diagnostics: Vec::new(),
@@ -64,7 +69,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
-        ecs_registry: Some(mirrc::ecs::Registry::default()),
+        ecs_registry: Some(mirrc::ecs::Registry::new()),
         file_table: mirrc::span::FileTable::new(),
     }
 }

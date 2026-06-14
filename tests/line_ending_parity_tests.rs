@@ -13,9 +13,18 @@ fn parse_and_pipeline_match_for_lf_and_crlf() {
     let lf = run_pipeline(LF_SRC, &cfg).expect("LF pipeline should succeed");
     let crlf = run_pipeline(CRLF_SRC, &cfg).expect("CRLF pipeline should succeed");
 
-    assert_eq!(lf.program.module.name, crlf.program.module.name);
-    assert_eq!(lf.program.module.guards.len(), crlf.program.module.guards.len());
-    assert_eq!(lf.program.module.reflexes.len(), crlf.program.module.reflexes.len());
+    assert_eq!(
+        lf.program.as_ref().unwrap().module.name,
+        crlf.program.as_ref().unwrap().module.name
+    );
+    assert_eq!(
+        lf.program.as_ref().unwrap().module.guards.len(),
+        crlf.program.as_ref().unwrap().module.guards.len()
+    );
+    assert_eq!(
+        lf.program.as_ref().unwrap().module.reflexes.len(),
+        crlf.program.as_ref().unwrap().module.reflexes.len()
+    );
 }
 
 #[test]

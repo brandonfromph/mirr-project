@@ -509,31 +509,31 @@ module m {{
     );
     let result = pipeline_ok(&src);
     let has_sensor_guard =
-        result.program.module.guards.iter().any(|g| g.name.contains("my_sensor"));
+        result.program.as_ref().unwrap().module.guards.iter().any(|g| g.name.contains("my_sensor"));
     assert!(
         has_sensor_guard,
         "Guard names should contain substituted signal name: {:?}",
-        result.program.module.guards.iter().map(|g| &g.name).collect::<Vec<_>>()
+        result.program.as_ref().unwrap().module.guards.iter().map(|g| &g.name).collect::<Vec<_>>()
     );
 }
 
 #[test]
 fn substitution_integer_literal_replaced() {
     let result = pipeline_ok(&ventilator_source());
-    let guard_count = result.program.module.guards.len();
+    let guard_count = result.program.as_ref().unwrap().module.guards.len();
     assert!(guard_count >= 4, "Should have at least 4 guards from 2 calls, got {guard_count}");
 }
 
 #[test]
 fn substitution_multiple_params_same_line() {
     let result = pipeline_ok(&ventilator_source());
-    assert!(!result.program.module.guards.is_empty());
+    assert!(!result.program.as_ref().unwrap().module.guards.is_empty());
 }
 
 #[test]
 fn substitution_in_guard_reflex_property_names() {
     let result = pipeline_ok(&ventilator_source());
-    let m = &result.program.module;
+    let m = &result.program.as_ref().unwrap().module;
     let guard_names: Vec<&str> = m.guards.iter().map(|g| g.name.as_str()).collect();
     assert!(guard_names.iter().any(|n| n.contains("too_low")), "Guards={guard_names:?}");
     assert!(guard_names.iter().any(|n| n.contains("too_high")), "Guards={guard_names:?}");
@@ -608,6 +608,8 @@ module m {
     let result = pipeline_ok(src);
     let expanded_guard = result
         .program
+        .as_ref()
+        .unwrap()
         .module
         .guards
         .iter()

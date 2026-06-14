@@ -173,13 +173,12 @@ mod tests {
             pattern_origins: Vec::new(),
             span: None,
         };
+        let program =
+            MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
+        let mut reg = crate::ecs::Registry::new();
+        crate::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
         PipelineResult {
-            program: MirrProgram {
-                target: None,
-                patterns: Vec::new(),
-                imports: Vec::new(),
-                module,
-            },
+            program: Some(program),
             simplify_stats: None,
             sat_stats: None,
             width_stats: None,
@@ -194,7 +193,7 @@ mod tests {
             symbolic_result: None,
             mape_k_rtl: None,
             hls_result: None,
-            ecs_registry: Some(crate::ecs::Registry::default()),
+            ecs_registry: Some(reg),
             file_table: crate::span::FileTable::new(),
         }
     }
@@ -278,9 +277,10 @@ mod tests {
 
     #[test]
     fn always_signal_lowers_to_always_is_true() {
+        let signals = vec![input_signal("alive", SignalType::Bool)];
         let props =
             vec![assert_property("p1", PropertyFormula::Always(Expr::Signal("alive".to_string())))];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -291,11 +291,12 @@ mod tests {
 
     #[test]
     fn never_signal_lowers_to_always_less_than_one() {
+        let signals = vec![input_signal("fault", SignalType::Bool)];
         let props = vec![assert_property(
             "p_never",
             PropertyFormula::Never(Expr::Signal("fault".to_string())),
         )];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -306,6 +307,7 @@ mod tests {
 
     #[test]
     fn eventually_within_lowers_correctly() {
+        let signals = vec![input_signal("ready", SignalType::Bool)];
         let props = vec![assert_property(
             "p_ev",
             PropertyFormula::EventuallyWithin {
@@ -313,7 +315,7 @@ mod tests {
                 cycles: 10,
             },
         )];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -324,6 +326,8 @@ mod tests {
 
     #[test]
     fn cover_and_assume_are_skipped() {
+        let signals =
+            vec![input_signal("x", SignalType::Bool), input_signal("y", SignalType::Bool)];
         let props = vec![
             PropertyDecl {
                 name: "c1".to_string(),
@@ -340,7 +344,7 @@ mod tests {
                 span: None,
             },
         ];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert!(config.properties.is_empty());
         assert!(config.action_table.is_empty());
@@ -348,6 +352,8 @@ mod tests {
 
     #[test]
     fn always_implies_lowers_to_temporal_property() {
+        let signals =
+            vec![input_signal("a", SignalType::Bool), input_signal("b", SignalType::Bool)];
         let props = vec![assert_property(
             "p_impl",
             PropertyFormula::AlwaysImplies {
@@ -355,7 +361,7 @@ mod tests {
                 consequent: Expr::Signal("b".to_string()),
             },
         )];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("AlwaysImplies should lower");
         assert_eq!(config.properties.len(), 1);
         assert_eq!(
@@ -369,6 +375,8 @@ mod tests {
 
     #[test]
     fn action_table_graduated_by_property_kind() {
+        let signals =
+            vec![input_signal("a", SignalType::Bool), input_signal("b", SignalType::Bool)];
         let props = vec![
             assert_property("p1", PropertyFormula::Always(Expr::Signal("a".to_string()))),
             assert_property(
@@ -379,7 +387,7 @@ mod tests {
                 },
             ),
         ];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.action_table.len(), 2);
         assert_eq!(config.action_table[0].trigger_property_idx, 0);
@@ -392,6 +400,8 @@ mod tests {
 
     #[test]
     fn action_table_reduces_on_implies_properties() {
+        let signals =
+            vec![input_signal("a", SignalType::Bool), input_signal("b", SignalType::Bool)];
         let props = vec![assert_property(
             "p_impl",
             PropertyFormula::AlwaysImplies {
@@ -399,7 +409,7 @@ mod tests {
                 consequent: Expr::Signal("b".to_string()),
             },
         )];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(config.action_table.len(), 1);
         assert_eq!(config.action_table[0].action, AdaptationAction::Reduce);
@@ -438,7 +448,31 @@ mod tests {
             }),
         };
 
-        let name = properties::extract_signal_name(&expr).expect("should find signal");
+        let program = MirrProgram {
+            target: None,
+            patterns: vec![],
+            imports: vec![],
+            module: Module {
+                name: "m".to_string(),
+                signals: vec![input_signal("deep_signal", SignalType::Bool)],
+                guards: vec![],
+                reflexes: vec![],
+                properties: vec![],
+                pattern_calls: vec![],
+                pattern_origins: vec![],
+                span: None,
+            },
+        };
+
+        let mut reg = crate::ecs::Registry::new();
+        crate::ecs::adapter::ingest_program(&mut reg, program, None).unwrap();
+
+        // Find the expression entity (it was ingested as part of the program, but we don't have its ID easily)
+        // Actually, let's just ingest the expr again, now that "deep_signal" is in the registry's name index.
+        // Wait, ingest_expr uses the current symbol table state? No, Registry doesn't have one.
+        // I'll just use the program ingestion to get the entity.
+        let ent = reg.ingest_expr(&expr).expect("should ingest now that signal is declared");
+        let name = properties::extract_signal_name_ecs(ent, &reg).expect("should find signal");
         assert_eq!(name, "deep_signal");
     }
 
@@ -446,6 +480,7 @@ mod tests {
     fn binary_lt_lowers_to_less_than() {
         use crate::ast::types::BinaryOp;
 
+        let signals = vec![input_signal("pressure", SignalType::Unsigned(8))];
         let props = vec![assert_property(
             "p_lt",
             PropertyFormula::Always(Expr::Binary {
@@ -454,7 +489,7 @@ mod tests {
                 right: Box::new(Expr::Literal(crate::ast::types::LiteralValue::Integer(100))),
             }),
         )];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(
             config.properties[0],
@@ -466,6 +501,7 @@ mod tests {
     fn binary_gt_lowers_to_greater_than() {
         use crate::ast::types::BinaryOp;
 
+        let signals = vec![input_signal("rate", SignalType::Unsigned(8))];
         let props = vec![assert_property(
             "p_gt",
             PropertyFormula::Always(Expr::Binary {
@@ -474,7 +510,7 @@ mod tests {
                 right: Box::new(Expr::Literal(crate::ast::types::LiteralValue::Integer(50))),
             }),
         )];
-        let result = synthesize_test_pipeline(Vec::new(), props);
+        let result = synthesize_test_pipeline(signals, props);
         let config = bridge_from_pipeline(&result).expect("should succeed");
         assert_eq!(
             config.properties[0],

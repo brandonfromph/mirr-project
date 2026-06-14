@@ -425,6 +425,7 @@ mod tests {
         let snapshot = workspace.compile_snapshot(&root, &root_config()).unwrap();
 
         assert_eq!(snapshot.metadata.loaded_files, 1);
-        assert_eq!(snapshot.pipeline.program.module.name, "test");
+        let reg = snapshot.pipeline.ecs_registry.as_ref().unwrap();
+        assert_eq!(reg.get_module_name().unwrap(), "test");
     }
 }

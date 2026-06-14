@@ -1,0 +1,42 @@
+=== REGISTERED PATTERNS ===
+===========================
+digraph pressure_monitor {
+  rankdir=LR;
+  node [fontname="monospace"];
+
+  // Signals
+  airway_pressure [label="airway_pressure: u16" shape=invhouse];
+  clamp_valve [label="clamp_valve: bool" shape=house];
+
+  // Guards
+  guard_pressure_low [label="pressure_low (3c)" shape=diamond style=filled fillcolor=lightyellow];
+
+  // Guard inputs
+  airway_pressure -> guard_pressure_low;
+
+  // Reflex assignments
+  guard_pressure_low -> clamp_valve [label="engage_clamp"];
+
+  // ── Safety Properties ──
+  prop_pressure_bounded [shape=note style=filled fillcolor=lightblue label="pressure_bounded"];
+  airway_pressure -> prop_pressure_bounded [style=dotted color=blue];
+  prop_no_spurious_clamp [shape=note style=filled fillcolor=lightblue label="no_spurious_clamp"];
+  airway_pressure -> prop_no_spurious_clamp [style=dotted color=blue];
+  clamp_valve -> prop_no_spurious_clamp [style=dotted color=blue];
+  prop_low_triggers_clamp [shape=note style=filled fillcolor=lightblue label="low_triggers_clamp"];
+  airway_pressure -> prop_low_triggers_clamp [style=dotted color=blue];
+  clamp_valve -> prop_low_triggers_clamp [style=dotted color=blue];
+  prop_clamp_reachable [shape=note style=filled fillcolor=lightyellow label="clamp_reachable"];
+  clamp_valve -> prop_clamp_reachable [style=dotted color=blue];
+  prop_clamp_follows_drop [shape=note style=filled fillcolor=lightblue label="clamp_follows_drop"];
+  airway_pressure -> prop_clamp_follows_drop [style=dotted color=blue];
+  clamp_valve -> prop_clamp_follows_drop [style=dotted color=blue];
+
+  subgraph cluster_temporal {
+    label="Temporal Hardware";
+    style=dashed;
+    color=blue;
+    pressure_low_out [label="SR: pressure_low (3c)" shape=record];
+  }
+
+}

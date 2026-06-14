@@ -8,12 +8,12 @@ use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 use mirrc::ecs::Registry;
 /// Structural sanity check: verify every entity in the Registry is well-formed.
-fn verify_registry_integrity(registry: &mut Registry) {
-    let next_id = registry.next_id();
-    if next_id.0 <= 1 {
+fn verify_registry_integrity(registry: &Registry) {
+    let next_id = registry.active_entities();
+    if next_id == 0 {
         return;
     }
-    for i in 1..next_id.0 {
+    for i in 0..next_id {
         let idx = i as usize;
 
         // Skip 'holes' in the registry if ingestion was sparse
@@ -76,10 +76,8 @@ fn test_industrial_operator_matrix() {
                 let res = run_pipeline(&source, &config).expect("Pipeline failed");
 
                 // Perform structural sanity check on the final Registry
-                let mut reg = Registry::new();
-                mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
-                    .expect("Ingest failed");
-                verify_registry_integrity(&mut reg);
+                let reg = res.ecs_registry.as_ref().expect("Registry required");
+                verify_registry_integrity(reg);
 
                 count += 1;
             }
@@ -111,10 +109,8 @@ fn test_hyper_scale_random_logic_matrix() {
         );
 
         let res = run_pipeline(&source, &PipelineConfig::default()).expect("Hyper-scale failed");
-        let mut reg = Registry::new();
-        mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
-            .expect("Ingest failed");
-        verify_registry_integrity(&mut reg);
+        let reg = res.ecs_registry.as_ref().expect("Registry required");
+        verify_registry_integrity(reg);
 
         count += 1;
     }
@@ -166,10 +162,8 @@ fn test_industrial_mux_matrix() {
             );
 
             let res = run_pipeline(&source, &PipelineConfig::default()).expect("MUX matrix failed");
-            let mut reg = Registry::new();
-            mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
-                .expect("Ingest failed");
-            verify_registry_integrity(&mut reg);
+            let reg = res.ecs_registry.as_ref().expect("Registry required");
+            verify_registry_integrity(reg);
             count += 1;
         }
     }
@@ -199,10 +193,8 @@ fn test_hyper_scale_shift_matrix() {
             );
             let res =
                 run_pipeline(&source, &PipelineConfig::default()).expect("Shift hyper failed");
-            let mut reg = Registry::new();
-            mirrc::ecs::adapter::ingest_program(&mut reg, res.program.clone(), None)
-                .expect("Ingest failed");
-            verify_registry_integrity(&mut reg);
+            let reg = res.ecs_registry.as_ref().expect("Registry required");
+            verify_registry_integrity(reg);
             count += 1;
         }
     }

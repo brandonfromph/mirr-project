@@ -318,7 +318,7 @@ fn sat_disabled_produces_no_stats() {
 #[test]
 fn sat_minimal_bool_succeeds() {
     let result = run_pipeline(MINIMAL_BOOL, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "minimal_bool");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "minimal_bool");
     assert!(result.sat_stats.is_some());
 }
 
@@ -326,7 +326,7 @@ fn sat_minimal_bool_succeeds() {
 fn sat_double_negation_simplifies() {
     let result =
         run_pipeline(DOUBLE_NEGATION, &sat_only_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "double_neg");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "double_neg");
     let stats = result.sat_stats.as_ref().unwrap();
     // Double negation is simplified by heuristic simplifier; SAT verifies it.
     // At minimum, the pipeline ran without error.
@@ -336,7 +336,7 @@ fn sat_double_negation_simplifies() {
 #[test]
 fn sat_and_guard_succeeds() {
     let result = run_pipeline(AND_GUARD, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "and_guard");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "and_guard");
     assert!(result.sat_stats.is_some());
     assert!(result.temporal_netlist.is_some());
 }
@@ -344,14 +344,14 @@ fn sat_and_guard_succeeds() {
 #[test]
 fn sat_or_guard_succeeds() {
     let result = run_pipeline(OR_GUARD, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "or_guard");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "or_guard");
     assert!(result.sat_stats.is_some());
 }
 
 #[test]
 fn sat_comparison_guard_runs() {
     let result = run_pipeline(COMPARISON_GUARD, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "comparison");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "comparison");
     let stats = result.sat_stats.as_ref().unwrap();
     // Comparison guard contains non-boolean ops; SAT module should handle gracefully.
     assert!(!stats.had_unknown);
@@ -362,14 +362,14 @@ fn sat_arithmetic_reflex_bypassed() {
     // Arithmetic expressions (a + b) are not boolean; SAT checker should skip them.
     let result =
         run_pipeline(ARITHMETIC_REFLEX, &sat_only_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "arith");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "arith");
     assert!(result.sat_stats.is_some());
 }
 
 #[test]
 fn sat_multi_guard_reflex() {
     let result = run_pipeline(MULTI_GUARD, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "multi_guard");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "multi_guard");
     assert!(result.sat_stats.is_some());
     assert!(result.temporal_netlist.is_some());
     let netlist = result.temporal_netlist.as_ref().unwrap();
@@ -379,7 +379,7 @@ fn sat_multi_guard_reflex() {
 #[test]
 fn sat_nested_bool_expression() {
     let result = run_pipeline(NESTED_BOOL_EXPR, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "nested_bool");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "nested_bool");
     let stats = result.sat_stats.as_ref().unwrap();
     assert!(!stats.had_unknown, "nested bool should not exhaust solver");
 }
@@ -387,21 +387,21 @@ fn sat_nested_bool_expression() {
 #[test]
 fn sat_trivial_assign_handled() {
     let result = run_pipeline(TRIVIAL_ASSIGN, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "prev_ref");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "prev_ref");
     assert!(result.sat_stats.is_some());
 }
 
 #[test]
 fn sat_internal_signal_module() {
     let result = run_pipeline(INTERNAL_SIGNAL, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "internal_sig");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "internal_sig");
     assert!(result.sat_stats.is_some());
 }
 
 #[test]
 fn sat_complex_nested_no_unknown() {
     let result = run_pipeline(COMPLEX_NESTED, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "complex_nested");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "complex_nested");
     let stats = result.sat_stats.as_ref().unwrap();
     assert!(!stats.had_unknown, "complex nested bool should stay within bounds");
 }
@@ -409,14 +409,14 @@ fn sat_complex_nested_no_unknown() {
 #[test]
 fn sat_negated_bool_guard() {
     let result = run_pipeline(NEGATED_BOOL, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "neg_cmp");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "neg_cmp");
     assert!(result.sat_stats.is_some());
 }
 
 #[test]
 fn sat_long_cycle_guard_succeeds() {
     let result = run_pipeline(LONG_CYCLE_GUARD, &sat_config()).expect("pipeline should succeed");
-    assert_eq!(result.program.module.name, "long_cycle");
+    assert_eq!(result.program.as_ref().unwrap().module.name, "long_cycle");
     assert!(result.sat_stats.is_some());
     // Verify temporal netlist compiled the 1000-cycle guard.
     let netlist = result.temporal_netlist.as_ref().unwrap();

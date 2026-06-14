@@ -140,7 +140,7 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let module = &result.program.module;
+    let module = &result.program.as_ref().unwrap().module;
 
     // The inner pattern should have expanded through the outer.
     assert!(
@@ -187,7 +187,7 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    let module = &result.program.module;
+    let module = &result.program.as_ref().unwrap().module;
 
     // At least one origin should exist from the expansion chain.
     assert!(
@@ -423,7 +423,7 @@ module system {
 }
 "#;
     let result = pipeline_ok(src);
-    let module = &result.program.module;
+    let module = &result.program.as_ref().unwrap().module;
 
     // After composition: should have the expanded guard + reflex from inner pattern.
     assert!(module.guards.iter().any(|g| g.name.contains("high")), "should find monitor's guard");
@@ -496,7 +496,10 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    assert!(!result.program.module.guards.is_empty(), "should have expanded guard");
+    assert!(
+        !result.program.as_ref().unwrap().module.guards.is_empty(),
+        "should have expanded guard"
+    );
 }
 
 #[test]
@@ -540,5 +543,8 @@ module m {
 }
 "#;
     let result = pipeline_ok(src);
-    assert!(result.program.module.guards.len() >= 2, "should have guards from both wrappers");
+    assert!(
+        result.program.as_ref().unwrap().module.guards.len() >= 2,
+        "should have guards from both wrappers"
+    );
 }

@@ -126,7 +126,7 @@ fn synth_yosys_all_examples() {
         let sv_path = tmp_dir.join(format!("mirr_synth_test_{name}.sv"));
         std::fs::write(&sv_path, &sv).expect("failed to write temp SV file");
 
-        let module_name = &result.program.module.name;
+        let module_name = &result.program.as_ref().unwrap().module.name;
         // Yosys (MinGW) requires forward slashes on Windows.
         let sv_path_str = sv_path.display().to_string().replace('\\', "/");
         let yosys_cmd = format!("read_verilog -sv {sv_path_str}; synth -top {module_name}; stat");

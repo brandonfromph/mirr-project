@@ -20,13 +20,13 @@ pub(super) fn emit_header(out: &mut String) {
     out.push_str("// Target: SystemVerilog (.sv)\n\n");
 }
 
-/// Emit pattern expansion annotations as SV comments.
-pub(super) fn emit_pattern_annotations(module: &crate::ast::program::Module, out: &mut String) {
-    if module.pattern_origins.is_empty() {
+/// Emit pattern expansion annotations as SV comments using the registry.
+pub(super) fn emit_pattern_annotations_ecs(registry: &crate::ecs::Registry, out: &mut String) {
+    if registry.pattern_origins.is_empty() {
         return;
     }
     out.push_str("// ── Pattern Expansions ──\n");
-    for origin in &module.pattern_origins {
+    for origin in &registry.pattern_origins {
         out.push_str(&format!(
             "// Pattern: {}({})\n",
             origin.pattern_name, origin.call_args_summary
@@ -379,7 +379,7 @@ pub fn emit_synchronizer_chains(
 /// Used by `--emit sva` standalone mode.
 pub fn emit_sva_only(result: &PipelineResult) -> String {
     let registry = result.ecs_registry.as_ref().expect("ECS registry required");
-    let module_name = &result.program.module.name;
+    let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
     let ft = &result.file_table;
     let mut out = String::with_capacity(1024);
 

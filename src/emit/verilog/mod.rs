@@ -54,25 +54,25 @@ fn emit_sv_full(
     dsp_threshold: u32,
     strip_sva: bool,
 ) -> String {
-    let module = &result.program.module;
     let mut out = String::with_capacity(4096);
+
+    let ft = &result.file_table;
+    let registry = result.ecs_registry.as_ref().unwrap();
+    let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
 
     // Determine which reflexes contain DSP-eligible multiplies.
     // threshold=0 means DSP inference is disabled.
     let dsp_reflexes = if target.is_some() && dsp_threshold > 0 {
-        let analysis = crate::emit::dsp::analyze_dsp(module, dsp_threshold);
+        let analysis = crate::emit::dsp::analyze_dsp_ecs(registry, dsp_threshold);
         analysis.candidates.into_iter().map(|c| c.reflex_name).collect()
     } else {
         std::collections::HashSet::new()
     };
     let dsp_attr = if dsp_threshold > 0 { target.map(|t| t.dsp_attribute()) } else { None };
 
-    let ft = &result.file_table;
-    let registry = result.ecs_registry.as_ref().unwrap();
-
     sva::emit_header(&mut out);
-    sva::emit_pattern_annotations(module, &mut out);
-    sva::emit_module_decl(&module.name, registry, ft, &mut out, module.span.as_ref());
+    sva::emit_pattern_annotations_ecs(registry, &mut out);
+    sva::emit_module_decl(&module_name, registry, ft, &mut out, None);
     sva::emit_internal_signals(registry, ft, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
@@ -84,11 +84,11 @@ fn emit_sv_full(
             }
             out.push('\n');
         }
-        temporal::emit_temporal_logic(module, netlist, ft, &mut out);
+        temporal::emit_temporal_logic_ecs(registry, netlist, ft, &mut out);
     }
 
-    temporal::emit_reflex_logic(
-        module,
+    temporal::emit_reflex_logic_ecs(
+        registry,
         &dsp_reflexes,
         dsp_attr,
         result.hls_result.as_ref(),
@@ -96,33 +96,10 @@ fn emit_sv_full(
         &mut out,
     );
 
-    if !module.pattern_calls.is_empty() {
+    let pattern_call_count = registry.pattern_defs.iter().flatten().count();
+    if pattern_call_count > 0 {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
-        for (i, call) in module.pattern_calls.iter().enumerate() {
-            emit_source_comment(call.span.as_ref(), ft, &mut out);
-            // Use the unqualified name for the module instantiation (e.g. 'ram' from 'ram::ram')
-            let mod_name = call.pattern_name.split("::").last().unwrap_or(&call.pattern_name);
-            let inst_name = format!("{}_{}", mod_name, i);
-            out.push_str(&format!("  {mod_name} {inst_name} (\n"));
-            let arg_count = call.arguments.len();
-            for (j, arg) in call.arguments.iter().enumerate() {
-                let comma = if j + 1 < arg_count { "," } else { "" };
-                let val = match arg {
-                    crate::ast::pattern::PatternArg::SignalRef(name) => name.clone(),
-                    crate::ast::pattern::PatternArg::ConstInt(n) => format!("{n}"),
-                    crate::ast::pattern::PatternArg::ConstBool(b) => {
-                        if *b {
-                            "1'b1".to_string()
-                        } else {
-                            "1'b0".to_string()
-                        }
-                    }
-                    crate::ast::pattern::PatternArg::PatternRef(p) => p.clone(),
-                };
-                out.push_str(&format!("    {}{}\n", val, comma));
-            }
-            out.push_str("  );\n\n");
-        }
+        out.push_str("  // (Pattern calls are expanded into reflexes/guards in ECS)\n\n");
     }
 
     if !strip_sva {
@@ -135,6 +112,34 @@ fn emit_sv_full(
     out
 }
 
+pub fn emit_sv_standalone(result: &PipelineResult) -> String {
+    let mut out = String::with_capacity(1024);
+    let ft = &result.file_table;
+    let registry = result.ecs_registry.as_ref().unwrap();
+    let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
+
+    sva::emit_header(&mut out);
+    sva::emit_pattern_annotations_ecs(registry, &mut out);
+    sva::emit_module_decl(&module_name, registry, ft, &mut out, None);
+    sva::emit_internal_signals(registry, ft, &mut out);
+
+    if let Some(netlist) = &result.temporal_netlist {
+        temporal::emit_temporal_logic_standalone(netlist, ft, &mut out);
+    }
+
+    temporal::emit_reflex_logic_ecs(
+        registry,
+        &std::collections::HashSet::new(),
+        None,
+        result.hls_result.as_ref(),
+        ft,
+        &mut out,
+    );
+
+    out.push_str("endmodule\n");
+    out
+}
+
 /// Emit a SystemVerilog bind file containing only SVA properties.
 ///
 /// This produces a standalone module with the same port list as the
@@ -142,42 +147,62 @@ fn emit_sv_full(
 /// connects it to the DUT for formal verification while keeping RTL
 /// synthesis-clean.
 pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
-    let module = &result.program.module;
+    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+    let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
 
-    if module.properties.is_empty() {
+    let property_count = registry.property_comps.iter().flatten().count();
+    if property_count == 0 {
         return String::new();
     }
 
-    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
     let has_rst_n = sva::module_has_rst_n(registry);
 
     let mut out = String::with_capacity(2048);
     out.push_str("// Auto-generated SVA bind file from MIRR compiler\n");
-    out.push_str(&format!("// Bind target: {}\n", module.name));
+    out.push_str(&format!("// Bind target: {}\n", module_name));
     out.push_str("// Use with: read_verilog -sv <this_file> (formal verification only)\n\n");
 
     // Emit the SVA wrapper module with the same ports.
-    let sva_mod_name = format!("{}_sva", module.name);
+    let sva_mod_name = format!("{}_sva", module_name);
     out.push_str(&format!("module {sva_mod_name} (\n"));
 
-    let needs_temporal = !module.guards.is_empty() || !module.properties.is_empty();
-    let has_clk = module.signals.iter().any(|s| s.name == "clk");
-    let has_rst = module.signals.iter().any(|s| s.name == "rst_n");
+    let needs_temporal =
+        registry.kinds.iter().flatten().any(|k| k.0 == crate::ecs::EntityKind::GUARD)
+            || property_count > 0;
 
+    let mut has_clk = false;
+    let mut has_rst = false;
     let mut ports: Vec<String> = Vec::new();
+
+    for i in 0..registry.names.len() {
+        if let (Some(name), Some(kind), Some(ty)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(_) = kind.0 {
+                if name.0 == "clk" {
+                    has_clk = true;
+                }
+                if name.0 == "rst_n" {
+                    has_rst = true;
+                }
+                let dir = "input ";
+                let type_str = super::sv_type(&ty.0.signal_type());
+                ports.push(format!("  {dir} {type_str} {}", name.0));
+            }
+        }
+    }
+
+    let mut final_ports = Vec::new();
     if needs_temporal && !has_clk {
-        ports.push("  input  logic        clk".to_string());
+        final_ports.push("  input  logic        clk".to_string());
     }
     if needs_temporal && !has_rst {
-        ports.push("  input  logic        rst_n".to_string());
+        final_ports.push("  input  logic        rst_n".to_string());
     }
-    for s in &module.signals {
-        let dir = "input ";
-        let type_str = super::sv_type(&s.ty.signal_type());
-        ports.push(format!("  {dir} {type_str} {}", s.name));
-    }
-    let port_count = ports.len();
-    for (i, port) in ports.iter().enumerate() {
+    final_ports.extend(ports);
+
+    let port_count = final_ports.len();
+    for (i, port) in final_ports.iter().enumerate() {
         let comma = if i + 1 < port_count { "," } else { "" };
         out.push_str(&format!("{port}{comma}\n"));
     }
@@ -207,7 +232,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
     out.push_str("endmodule\n\n");
 
     // Emit the bind statement.
-    out.push_str(&format!("bind {} {sva_mod_name} u_sva (.*);\n", module.name));
+    out.push_str(&format!("bind {} {sva_mod_name} u_sva (.*);\n", module_name));
 
     out
 }

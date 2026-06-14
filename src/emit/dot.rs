@@ -35,6 +35,8 @@ pub fn emit_module_dot(result: &PipelineResult) -> String {
     emit_reflex_edges(registry, &mut out);
     emit_property_nodes(registry, &mut out);
 
+    emit_pattern_origins_ecs(registry, &mut out);
+
     if let Some(netlist) = &result.temporal_netlist {
         emit_temporal_subgraph(netlist, &mut out);
     }
@@ -122,7 +124,7 @@ fn emit_pattern_origin_comments(registry: &crate::ecs::Registry, out: &mut Strin
     out.push_str("  // ── Pattern Definitions ──\n");
     for i in 0..registry.names.len() {
         if let (Some(name_comp), Some(_)) = (&registry.names[i], &registry.pattern_defs[i]) {
-            out.push_str(&format!("  // Pattern available: {}\n", name_comp.0));
+            out.push_str(&format!("  // Pattern: {}\n", name_comp.0));
         }
     }
     out.push('\n');
@@ -548,6 +550,22 @@ fn emit_expr_nodes_ecs(
             stack.push((*select, c_id));
         }
     }
+}
+
+/// Emit comments describing which signals/guards originated from which patterns.
+fn emit_pattern_origins_ecs(registry: &crate::ecs::Registry, out: &mut String) {
+    if registry.pattern_origins.is_empty() {
+        return;
+    }
+
+    out.push_str("  // ── Pattern Origins ──\n");
+    for origin in &registry.pattern_origins {
+        out.push_str(&format!(
+            "  // Pattern expanded: {} with args ({})\n",
+            origin.pattern_name, origin.call_args_summary
+        ));
+    }
+    out.push('\n');
 }
 
 /// Sanitize a name for use as a DOT identifier.
