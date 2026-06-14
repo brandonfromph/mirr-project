@@ -243,6 +243,18 @@ impl Registry {
         Ok(mod_id)
     }
 
+    /// Retrieve the root module name from the registry.
+    pub fn get_module_name(&self) -> Option<String> {
+        for (i, kind_comp) in self.kinds.iter().enumerate() {
+            if let Some(KindComponent(EntityKind::MODULE)) = kind_comp {
+                if let Some(name_comp) = &self.names[i] {
+                    return Some(name_comp.0.clone());
+                }
+            }
+        }
+        None
+    }
+
     fn ingest_signals(
         &mut self,
         mod_id: EntityId,
@@ -395,7 +407,12 @@ impl Registry {
 
             self.names[p_idx] = Some(NameComponent(prop.name.clone()));
             self.kinds[p_idx] = Some(KindComponent(EntityKind::PROPERTY));
-            self.property_comps[p_idx] = Some(PropertyComponent { formula: prop.formula.clone(), formula_exprs });
+            self.property_comps[p_idx] = Some(PropertyComponent {
+                directive: prop.directive,
+                formula: prop.formula.clone(),
+                formula_exprs,
+                origin: prop.origin.clone(),
+            });
             if let Some(span) = prop.span {
                 self.spans[p_idx] = Some(SpanComponent(span));
             }

@@ -22,7 +22,15 @@ fn synchronizer_chains_header_comment() {
     };
 
     let mut out = String::new();
-    let mappings = verilog::emit_synchronizer_chains(&module, 2, &mut out);
+    let mappings = verilog::emit_synchronizer_chains(
+        &{
+            let mut r = mirrc::ecs::Registry::new();
+            r.ingest_module(&module).unwrap();
+            r
+        },
+        2,
+        &mut out,
+    );
 
     assert!(
         out.contains("// ── Input Synchronizer Chains ──"),
@@ -49,7 +57,15 @@ fn synchronizer_chains_skip_clk_rst() {
     };
 
     let mut out = String::new();
-    let mappings = verilog::emit_synchronizer_chains(&module, 2, &mut out);
+    let mappings = verilog::emit_synchronizer_chains(
+        &{
+            let mut r = mirrc::ecs::Registry::new();
+            r.ingest_module(&module).unwrap();
+            r
+        },
+        2,
+        &mut out,
+    );
 
     // Only data should be synchronized, not clk or rst_n
     let mut found_clk_sync = false;
@@ -89,7 +105,15 @@ fn synchronizer_chains_produces_sync_register() {
     };
 
     let mut out = String::new();
-    verilog::emit_synchronizer_chains(&module, 2, &mut out);
+    verilog::emit_synchronizer_chains(
+        &{
+            let mut r = mirrc::ecs::Registry::new();
+            r.ingest_module(&module).unwrap();
+            r
+        },
+        2,
+        &mut out,
+    );
 
     assert!(out.contains("sig_in_sync"), "must declare synchronizer register");
     assert!(out.contains("sig_in_s"), "must declare synchronized output signal");
@@ -110,7 +134,9 @@ fn synchronizer_chains_zero_stages_returns_empty() {
     };
 
     let mut out = String::new();
-    let mappings = verilog::emit_synchronizer_chains(&module, 0, &mut out);
+    let mut registry = mirrc::ecs::Registry::new();
+    registry.ingest_module(&module).unwrap();
+    let mappings = verilog::emit_synchronizer_chains(&registry, 0, &mut out);
 
     assert!(mappings.is_empty(), "zero sync stages must return empty mappings");
     assert!(out.is_empty(), "zero sync stages must produce no output");
@@ -135,7 +161,15 @@ fn synchronizer_chains_skip_output_signals() {
     };
 
     let mut out = String::new();
-    let mappings = verilog::emit_synchronizer_chains(&module, 2, &mut out);
+    let mappings = verilog::emit_synchronizer_chains(
+        &{
+            let mut r = mirrc::ecs::Registry::new();
+            r.ingest_module(&module).unwrap();
+            r
+        },
+        2,
+        &mut out,
+    );
 
     let mut found_output_sync = false;
     for i in 0..MAX_PORTS_CHECK {

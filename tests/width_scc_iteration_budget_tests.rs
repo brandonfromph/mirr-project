@@ -39,7 +39,7 @@ module ring {
     let res = run_pipeline(source);
     if let Ok(res) = res {
         // Assert width result contains something
-        assert!(res.width_result.is_some());
+        assert!(res.width_stats.is_some());
     }
 }
 

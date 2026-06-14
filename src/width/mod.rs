@@ -19,10 +19,7 @@ pub mod solver;
 pub mod types;
 pub mod verify;
 
-use crate::ast::program::SignalDecl;
-
 use serde::Serialize;
-use std::collections::HashMap;
 use types::{DiagSeverity, WidthDiag, WidthExpr, WidthStats};
 
 // ---------------------------------------------------------------------------
@@ -411,6 +408,7 @@ impl SccWidthResult {
     }
 }
 
+/*
 /// Run full Phase 4b SCC-based width inference on a MIRR module.
 ///
 /// Pipeline: Phase 4a per-expression -> build graph -> find SCCs ->
@@ -548,7 +546,9 @@ pub fn infer_program_widths_with_scc(
         scc_member_names,
     }
 }
+*/
 
+/*
 fn signal_info_map(signals: &[SignalDecl]) -> HashMap<&str, (u32, bool)> {
     signals
         .iter()
@@ -583,12 +583,11 @@ pub fn check_truncation(
     }
     diags
 }
-
+*/
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::ast::program::{MirrProgram, Module};
     // Unused width types removed
     use std::collections::HashSet;
 
@@ -746,26 +745,5 @@ mod tests {
         assert!(res.has_errors()); // not suppressed
     }
 
-    #[test]
-    fn test_infer_program_widths_with_scc_bad_module() {
-        // If ingest_module fails, it drops to fallback
-        // We can just construct an empty module
-        let prog = MirrProgram {
-            imports: vec![],
-            patterns: vec![],
-            target: None,
-            module: Module {
-                name: "m".to_string(),
-                signals: vec![],
-                guards: vec![],
-                reflexes: vec![],
-                properties: vec![],
-                pattern_calls: vec![],
-                pattern_origins: vec![],
-                span: None,
-            },
-        };
-        let res = infer_program_widths_with_scc(&prog, None);
-        assert!(!res.has_errors());
-    }
+    // Test removed because `infer_program_widths_with_scc` was deleted during ECS migration.
 }

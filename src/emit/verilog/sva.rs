@@ -3,13 +3,12 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::program::Module;
-use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use crate::ast::property::{PropertyDirective, PropertyFormula};
 use crate::ast::types::SignalKind;
 use crate::emit::fpga_target::MAX_SYNC_STAGES;
 use crate::emit::verilog::emit_source_comment;
 use crate::pipeline::PipelineResult;
-use crate::span::FileTable;
+use crate::span::{FileTable, Span};
 
 // -----------------------------------------------------------------------
 // Module structure helpers
@@ -22,7 +21,7 @@ pub(super) fn emit_header(out: &mut String) {
 }
 
 /// Emit pattern expansion annotations as SV comments.
-pub(super) fn emit_pattern_annotations(module: &Module, out: &mut String) {
+pub(super) fn emit_pattern_annotations(module: &crate::ast::program::Module, out: &mut String) {
     if module.pattern_origins.is_empty() {
         return;
     }
@@ -36,13 +35,27 @@ pub(super) fn emit_pattern_annotations(module: &Module, out: &mut String) {
     out.push('\n');
 }
 
-pub(super) fn emit_module_decl(module: &Module, ft: &FileTable, out: &mut String) {
-    emit_source_comment(module.span.as_ref(), ft, out);
-    out.push_str(&format!("module {} (\n", module.name));
+pub(super) fn emit_module_decl(
+    module_name: &str,
+    registry: &crate::ecs::Registry,
+    ft: &FileTable,
+    out: &mut String,
+    span: Option<&Span>,
+) {
+    emit_source_comment(span, ft, out);
+    out.push_str(&format!("module {} (\n", module_name));
 
-    let has_clk = module.signals.iter().any(|s| s.name == "clk");
-    let has_rst_n = module.signals.iter().any(|s| s.name == "rst_n");
-    let needs_temporal = !module.guards.is_empty();
+    let has_clk = registry.names.iter().any(|n| n.as_ref().is_some_and(|nc| nc.0 == "clk"));
+    let has_rst_n = module_has_rst_n(registry);
+
+    // Check if temporal guards exist
+    let mut needs_temporal = false;
+    for k in &registry.kinds {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::GUARD)) = k {
+            needs_temporal = true;
+            break;
+        }
+    }
 
     let mut ports: Vec<String> = Vec::new();
 
@@ -54,15 +67,21 @@ pub(super) fn emit_module_decl(module: &Module, ft: &FileTable, out: &mut String
         ports.push("  input  logic        rst_n".to_string());
     }
 
-    for s in &module.signals {
-        if s.kind == SignalKind::Input || s.kind == SignalKind::Output {
-            let dir = match s.kind {
-                SignalKind::Input => "input ",
-                SignalKind::Output => "output",
-                SignalKind::Internal => "internal",
-            };
-            let type_str = super::super::sv_type(&s.ty.signal_type());
-            ports.push(format!("  {dir} {type_str} {}", s.name));
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
+                if sig_kind == SignalKind::Input || sig_kind == SignalKind::Output {
+                    let dir = match sig_kind {
+                        SignalKind::Input => "input ",
+                        SignalKind::Output => "output",
+                        SignalKind::Internal => "internal",
+                    };
+                    let type_str = super::super::sv_type(&type_comp.0.signal_type());
+                    ports.push(format!("  {dir} {type_str} {}", name_comp.0));
+                }
+            }
         }
     }
 
@@ -75,22 +94,40 @@ pub(super) fn emit_module_decl(module: &Module, ft: &FileTable, out: &mut String
     out.push_str(");\n\n");
 }
 
-pub(super) fn emit_internal_signals(module: &Module, ft: &FileTable, out: &mut String) {
-    let internals: Vec<_> =
-        module.signals.iter().filter(|s| s.kind == SignalKind::Internal).collect();
-
-    if !internals.is_empty() {
-        out.push_str("  // Internal signals\n");
-        for s in &internals {
-            emit_source_comment(s.span.as_ref(), ft, out);
-            if let Some(ref origin) = s.origin {
-                out.push_str(&format!("  // Pattern: {origin}\n"));
-            }
-            let type_str = super::super::sv_type(&s.ty.signal_type());
-            out.push_str(&format!("  {type_str} {};\n", s.name));
+pub(super) fn emit_internal_signals(
+    registry: &crate::ecs::Registry,
+    ft: &FileTable,
+    out: &mut String,
+) {
+    let mut has_internals = false;
+    for i in 0..registry.names.len() {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::SIGNAL(
+            SignalKind::Internal,
+        ))) = registry.kinds[i]
+        {
+            has_internals = true;
+            break;
         }
-        out.push('\n');
     }
+
+    if !has_internals {
+        return;
+    }
+
+    out.push_str("  // Internal signals\n");
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(SignalKind::Internal) = kind_comp.0 {
+                let span = registry.spans[i].as_ref().map(|s| &s.0);
+                emit_source_comment(span, ft, out);
+                let type_str = super::super::sv_type(&type_comp.0.signal_type());
+                out.push_str(&format!("  {type_str} {};\n", name_comp.0));
+            }
+        }
+    }
+    out.push('\n');
 }
 
 pub(super) fn emit_module_end(out: &mut String) {
@@ -101,41 +138,70 @@ pub(super) fn emit_module_end(out: &mut String) {
 // Safety Property Assertions (SVA)
 // -----------------------------------------------------------------------
 
-/// Check if the module declares an input signal named `rst_n`.
-pub(super) fn module_has_rst_n(module: &Module) -> bool {
-    module.signals.iter().any(|s| s.name == "rst_n" && s.kind == SignalKind::Input)
+/// Check if the registry declares an input signal named `rst_n`.
+pub(super) fn module_has_rst_n(registry: &crate::ecs::Registry) -> bool {
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+            if name_comp.0 == "rst_n" {
+                if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
+                    return true;
+                }
+            }
+        }
+    }
+    false
 }
 
 /// Emit SVA assertion blocks for all property declarations.
 pub(super) fn emit_property_assertions(
-    module: &Module,
+    registry: &crate::ecs::Registry,
     has_rst_n: bool,
     ft: &FileTable,
     out: &mut String,
 ) {
-    if module.properties.is_empty() {
+    let mut has_properties = false;
+    for kind_comp in registry.kinds.iter() {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::PROPERTY)) =
+            kind_comp
+        {
+            has_properties = true;
+            break;
+        }
+    }
+
+    if !has_properties {
         return;
     }
 
     out.push_str("  // ── Safety Properties (SVA) ──\n\n");
 
-    for prop in &module.properties {
-        emit_single_property(prop, has_rst_n, ft, out);
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(prop_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.property_comps[i])
+        {
+            if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
+                let span = registry.spans[i].as_ref().map(|s| &s.0);
+                emit_single_property(&name_comp.0, prop_comp, has_rst_n, registry, ft, out, span);
+            }
+        }
     }
 }
 
 /// Emit a single SVA `assert property` statement.
 pub(super) fn emit_single_property(
-    prop: &PropertyDecl,
+    prop_name: &str,
+    prop: &crate::ecs::components::PropertyComponent,
     has_rst_n: bool,
+    registry: &crate::ecs::Registry,
     ft: &FileTable,
     out: &mut String,
+    span: Option<&Span>,
 ) {
-    emit_source_comment(prop.span.as_ref(), ft, out);
+    emit_source_comment(span, ft, out);
     if let Some(ref origin) = prop.origin {
         out.push_str(&format!("  // Pattern: {origin}\n"));
     }
-    out.push_str(&format!("  // property: {}\n", prop.name));
+    out.push_str(&format!("  // property: {}\n", prop_name));
 
     let sva_keyword = match prop.directive {
         PropertyDirective::Assert => "assert property",
@@ -147,27 +213,26 @@ pub(super) fn emit_single_property(
     let prefix = format!("{sva_keyword} (@(posedge clk) {disable_clause}");
 
     match &prop.formula {
-        PropertyFormula::Always(expr) => {
-            let sv_expr = super::emit_expr_inline(expr);
+        PropertyFormula::Always(_) => {
+            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
             out.push_str(&format!("  {prefix}({sv_expr}));\n\n"));
         }
-        PropertyFormula::Never(expr) => {
-            let sv_expr = super::emit_expr_inline(expr);
+        PropertyFormula::Never(_) => {
+            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
             out.push_str(&format!("  {prefix}!({sv_expr}));\n\n"));
         }
-        PropertyFormula::AlwaysImplies { antecedent, consequent } => {
-            let ante_sv = super::emit_expr_inline(antecedent);
-            let cons_sv = super::emit_expr_inline(consequent);
+        PropertyFormula::AlwaysImplies { .. } => {
+            let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
+            let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
             out.push_str(&format!("  {prefix}({ante_sv}) |-> ({cons_sv}));\n\n"));
         }
-        PropertyFormula::NeverImplies { antecedent, consequent } => {
-            let ante_sv = super::emit_expr_inline(antecedent);
-            let cons_sv = super::emit_expr_inline(consequent);
+        PropertyFormula::NeverImplies { .. } => {
+            let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
+            let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
             out.push_str(&format!("  {prefix}({ante_sv}) |-> !({cons_sv}));\n\n"));
         }
-        PropertyFormula::EventuallyWithin { expr, cycles } => {
-            let sv_expr = super::emit_expr_inline(expr);
-            let prop_name = &prop.name;
+        PropertyFormula::EventuallyWithin { expr: _, cycles } => {
+            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
             out.push_str(&format!("  reg [31:0] prop_{prop_name}_timer;\n"));
             out.push_str("  always @(posedge clk) begin\n");
             if has_rst_n {
@@ -185,10 +250,9 @@ pub(super) fn emit_single_property(
             out.push_str("  end\n");
             out.push_str(&format!("  {prefix}(prop_{prop_name}_timer < {cycles}));\n\n"));
         }
-        PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => {
-            let trig_sv = super::emit_expr_inline(trigger);
-            let resp_sv = super::emit_expr_inline(response);
-            let prop_name = &prop.name;
+        PropertyFormula::AlwaysFollowedBy { trigger: _, response: _, delay_cycles } => {
+            let trig_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
+            let resp_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
 
             if *delay_cycles == 0 {
                 out.push_str(&format!("  {prefix}({trig_sv}) |-> ({resp_sv}));\n\n"));
@@ -239,7 +303,7 @@ pub(super) fn emit_single_property(
 /// except `clk` and `rst_n`. Returns a mapping of original signal names
 /// to their synchronized versions (_s suffix).
 pub fn emit_synchronizer_chains(
-    module: &Module,
+    registry: &crate::ecs::Registry,
     sync_stages: u32,
     out: &mut String,
 ) -> Vec<(String, String)> {
@@ -251,52 +315,60 @@ pub fn emit_synchronizer_chains(
     let mut mappings = Vec::new();
     out.push_str("  // ── Input Synchronizer Chains ──\n\n");
 
-    for s in &module.signals {
-        if s.kind != SignalKind::Input {
-            continue;
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
+                let name = &name_comp.0;
+                if name == "clk" || name == "rst_n" {
+                    continue;
+                }
+
+                let width = type_comp.0.signal_type().width();
+                let sync_name = format!("{}_s", name);
+                let sync_reg = format!("{}_sync", name);
+
+                // Declare synchronizer register chain.
+                let total_bits = width * stages;
+                out.push_str(&format!("  // {}-stage synchronizer for {}\n", stages, name));
+                out.push_str(&format!(
+                    "  logic [{}:0] {};\n",
+                    total_bits.saturating_sub(1),
+                    sync_reg,
+                ));
+
+                // Sequential synchronizer logic.
+                out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", sync_reg));
+                if stages == 1 {
+                    out.push_str(&format!("    else\n      {} <= {};\n", sync_reg, name));
+                } else {
+                    // Shift chain: {input, sync[high:width]}
+                    out.push_str(&format!(
+                        "    else\n      {} <= {{{}, {}[{}:{}]}};\n",
+                        sync_reg,
+                        name,
+                        sync_reg,
+                        total_bits.saturating_sub(1),
+                        width,
+                    ));
+                }
+                out.push_str("  end\n");
+
+                // Output: synchronized signal is the last stage.
+                let type_str = super::super::sv_type(&type_comp.0.signal_type());
+                out.push_str(&format!(
+                    "  {} {} = {}[{}:0];\n\n",
+                    type_str,
+                    sync_name,
+                    sync_reg,
+                    width.saturating_sub(1),
+                ));
+
+                mappings.push((name.clone(), sync_name));
+            }
         }
-        if s.name == "clk" || s.name == "rst_n" {
-            continue;
-        }
-
-        let width = s.ty.signal_type().width();
-        let sync_name = format!("{}_s", s.name);
-        let sync_reg = format!("{}_sync", s.name);
-
-        // Declare synchronizer register chain.
-        let total_bits = width * stages;
-        out.push_str(&format!("  // {}-stage synchronizer for {}\n", stages, s.name));
-        out.push_str(&format!("  logic [{}:0] {};\n", total_bits.saturating_sub(1), sync_reg,));
-
-        // Sequential synchronizer logic.
-        out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
-        out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", sync_reg));
-        if stages == 1 {
-            out.push_str(&format!("    else\n      {} <= {};\n", sync_reg, s.name));
-        } else {
-            // Shift chain: {input, sync[high:width]}
-            out.push_str(&format!(
-                "    else\n      {} <= {{{}, {}[{}:{}]}};\n",
-                sync_reg,
-                s.name,
-                sync_reg,
-                total_bits.saturating_sub(1),
-                width,
-            ));
-        }
-        out.push_str("  end\n");
-
-        // Output: synchronized signal is the last stage.
-        let type_str = super::super::sv_type(&s.ty.signal_type());
-        out.push_str(&format!(
-            "  {} {} = {}[{}:0];\n\n",
-            type_str,
-            sync_name,
-            sync_reg,
-            width.saturating_sub(1),
-        ));
-
-        mappings.push((s.name.clone(), sync_name));
     }
 
     mappings
@@ -306,18 +378,17 @@ pub fn emit_synchronizer_chains(
 ///
 /// Used by `--emit sva` standalone mode.
 pub fn emit_sva_only(result: &PipelineResult) -> String {
-    let module = &result.program.module;
+    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+    let module_name = &result.program.module.name;
     let ft = &result.file_table;
     let mut out = String::with_capacity(1024);
 
     out.push_str("// Auto-generated SVA assertions from MIRR compiler\n");
-    out.push_str(&format!("// Module: {}\n\n", module.name));
+    out.push_str(&format!("// Module: {}\n\n", module_name));
 
-    let has_rst_n = module_has_rst_n(module);
+    let has_rst_n = module_has_rst_n(registry);
 
-    for prop in &module.properties {
-        emit_single_property(prop, has_rst_n, ft, &mut out);
-    }
+    emit_property_assertions(registry, has_rst_n, ft, &mut out);
 
     out
 }

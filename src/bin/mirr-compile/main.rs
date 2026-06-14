@@ -290,21 +290,10 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
 
     // Check for width errors — render through the diagnostic engine.
     if result.has_width_errors() {
-        if let Some(ref wr) = result.width_result {
-            let mut width_diags = Vec::new();
-            for (_, diags) in &wr.phase4a.assignment_results {
-                width_diags.extend(diags);
-            }
-            for (_, r) in &wr.phase4a.guard_results {
-                width_diags.extend(&r.diagnostics);
-            }
-            width_diags.extend(&wr.scc_diagnostics);
-            width_diags.extend(&wr.verification.diagnostics);
-            for wd in &width_diags {
-                let d = wd.to_diagnostic();
-                let rendered = mirrc::diagnostic::render_diagnostic(&d, &source, &root_file);
-                eprint!("{}", rendered);
-            }
+        for diag in &result.width_diagnostics {
+            let d = diag.to_diagnostic();
+            let rendered = mirrc::diagnostic::render_diagnostic(&d, &source, &root_file);
+            eprint!("{}", rendered);
         }
         eprintln!("Width errors detected — output may be incomplete.");
     }

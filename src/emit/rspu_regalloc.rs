@@ -77,11 +77,9 @@ pub fn allocate_registers(
     let mut internals = Vec::new();
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) = (
-            &registry.names[i],
-            &registry.kinds[i],
-            &registry.types[i],
-        ) {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
             if let EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
                 let name = &name_comp.0;
                 let size = match &type_comp.0.core {
@@ -101,29 +99,30 @@ pub fn allocate_registers(
     let mut cursor: u16 = input_base;
 
     // Helper closure to allocate a signal (either scalar or flattened array)
-    let mut allocate_signal = |cursor: &mut u16, name: String, size: u16| -> Result<(), MirrError> {
-        if *cursor as usize + size as usize > max_regs {
-            return Err(rspu_err(
-                "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
-            ));
-        }
-
-        if size == 1 {
-            let reg = *cursor as RegId;
-            map.insert(name.clone(), reg);
-            entries.push((name, reg));
-            *cursor += 1;
-        } else {
-            for i in 0..size {
-                let reg = *cursor as RegId;
-                let flat_name = format!("{}[{}]", name, i);
-                map.insert(flat_name.clone(), reg);
-                entries.push((flat_name, reg));
-                *cursor += 1;
+    let mut allocate_signal =
+        |cursor: &mut u16, name: String, size: u16| -> Result<(), MirrError> {
+            if *cursor as usize + size as usize > max_regs {
+                return Err(rspu_err(
+                    "R-SPU register allocation failed: too many signals (hardware limit exceeded).",
+                ));
             }
-        }
-        Ok(())
-    };
+
+            if size == 1 {
+                let reg = *cursor as RegId;
+                map.insert(name.clone(), reg);
+                entries.push((name, reg));
+                *cursor += 1;
+            } else {
+                for i in 0..size {
+                    let reg = *cursor as RegId;
+                    let flat_name = format!("{}[{}]", name, i);
+                    map.insert(flat_name.clone(), reg);
+                    entries.push((flat_name, reg));
+                    *cursor += 1;
+                }
+            }
+            Ok(())
+        };
 
     // 1. Allocate Inputs
     for (name, size) in inputs {

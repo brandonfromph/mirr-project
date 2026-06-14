@@ -67,14 +67,14 @@ proptest! {
         // 2. Run Modern ECS Simplifier
         let mut registry = Registry::new();
         let entity = registry.ingest_expr(&expr).expect("Ingestion should succeed for generated AST");
-        
+
         // The ECS system simplifies in-place within the Registry arrays
         let ecs_stats = mirrc::ecs::systems::simplifier_system(&mut registry);
-        
+
         let ecs_simplified = registry.reify_expr(entity).expect("Reification should succeed");
 
         // 3. Assert 100% Mathematical Parity
-        // We only compare rules_applied because the node counting mechanism differs 
+        // We only compare rules_applied because the node counting mechanism differs
         // between AST (pointer traversal) and ECS (array bounds).
         assert_eq!(
             ast_stats.rules_applied, ecs_stats.rules_applied,

@@ -13,7 +13,6 @@ mod temporal;
 
 pub use sva::{emit_sva_only, emit_synchronizer_chains};
 
-use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, UnaryOp};
 use crate::emit::fpga_target::FpgaTarget;
 use crate::pipeline::PipelineResult;
@@ -69,11 +68,12 @@ fn emit_sv_full(
     let dsp_attr = if dsp_threshold > 0 { target.map(|t| t.dsp_attribute()) } else { None };
 
     let ft = &result.file_table;
+    let registry = result.ecs_registry.as_ref().unwrap();
 
     sva::emit_header(&mut out);
     sva::emit_pattern_annotations(module, &mut out);
-    sva::emit_module_decl(module, ft, &mut out);
-    sva::emit_internal_signals(module, ft, &mut out);
+    sva::emit_module_decl(&module.name, registry, ft, &mut out, module.span.as_ref());
+    sva::emit_internal_signals(registry, ft, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
         if !netlist.signals.is_empty() {
@@ -126,8 +126,8 @@ fn emit_sv_full(
     }
 
     if !strip_sva {
-        let has_rst_n = sva::module_has_rst_n(module);
-        sva::emit_property_assertions(module, has_rst_n, ft, &mut out);
+        let has_rst_n = sva::module_has_rst_n(registry);
+        sva::emit_property_assertions(registry, has_rst_n, ft, &mut out);
     }
 
     sva::emit_module_end(&mut out);
@@ -148,9 +148,10 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
         return String::new();
     }
 
-    let mut out = String::with_capacity(2048);
-    let has_rst_n = sva::module_has_rst_n(module);
+    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+    let has_rst_n = sva::module_has_rst_n(registry);
 
+    let mut out = String::with_capacity(2048);
     out.push_str("// Auto-generated SVA bind file from MIRR compiler\n");
     out.push_str(&format!("// Bind target: {}\n", module.name));
     out.push_str("// Use with: read_verilog -sv <this_file> (formal verification only)\n\n");
@@ -184,8 +185,23 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
 
     // Emit all SVA properties.
     let ft = &result.file_table;
-    for prop in &module.properties {
-        sva::emit_single_property(prop, has_rst_n, ft, &mut out);
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(prop_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.property_comps[i])
+        {
+            if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
+                let span = registry.spans[i].as_ref().map(|s| &s.0);
+                sva::emit_single_property(
+                    &name_comp.0,
+                    prop_comp,
+                    has_rst_n,
+                    registry,
+                    ft,
+                    &mut out,
+                    span,
+                );
+            }
+        }
     }
 
     out.push_str("endmodule\n\n");
@@ -208,82 +224,288 @@ pub(crate) fn emit_source_comment(span: Option<&Span>, table: &FileTable, out: &
     }
 }
 
-/// Emit an Expr as an inline SystemVerilog expression.
+/// Emit an ExpressionComponent graph as an inline SystemVerilog expression.
 ///
 /// Bounded by 512 nodes.
-pub(super) fn emit_expr_inline(expr: &Expr) -> String {
-    let mut iterations = 0usize;
-    emit_expr_str(expr, &mut iterations)
+pub(super) fn emit_expr_inline(
+    expr_id: crate::ecs::EntityId,
+    registry: &crate::ecs::Registry,
+) -> String {
+    let mut result_stack: Vec<String> = Vec::with_capacity(32);
+    let mut work: Vec<ExprWork> = Vec::with_capacity(32);
+    work.push(ExprWork::Eval(expr_id));
+
+    let mut visited = 0usize;
+
+    while let Some(item) = work.pop() {
+        visited += 1;
+        if visited > MAX_EXPR_NODES {
+            return "/* truncated */".to_string();
+        }
+
+        match item {
+            ExprWork::Eval(id) => {
+                let idx = id.0 as usize;
+
+                if let Some(crate::ecs::components::LiteralComponent(lit)) = &registry.literals[idx]
+                {
+                    match lit {
+                        crate::ast::types::LiteralValue::Bool(true) => {
+                            result_stack.push("1'b1".to_string())
+                        }
+                        crate::ast::types::LiteralValue::Bool(false) => {
+                            result_stack.push("1'b0".to_string())
+                        }
+                        crate::ast::types::LiteralValue::Integer(n) => {
+                            result_stack.push(format!("{n}"))
+                        }
+                    }
+                } else if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
+                    registry.signal_refs[idx]
+                {
+                    let sig_name = registry.names[sig_ent.0 as usize]
+                        .as_ref()
+                        .map(|n| n.0.clone())
+                        .unwrap_or_default();
+                    result_stack.push(sig_name);
+                } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
+                    &registry.pending_signal_refs[idx]
+                {
+                    result_stack.push(name.clone());
+                } else if let Some(crate::ecs::components::PrevComponent { signal, delay }) =
+                    &registry.prev_ops[idx]
+                {
+                    let sig_name = if let Some(crate::ecs::components::SignalRefComponent(decl)) =
+                        registry.signal_refs[signal.0 as usize]
+                    {
+                        registry.names[decl.0 as usize]
+                            .as_ref()
+                            .map(|n| n.0.clone())
+                            .unwrap_or_default()
+                    } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
+                        &registry.pending_signal_refs[signal.0 as usize]
+                    {
+                        n.clone()
+                    } else {
+                        String::new()
+                    };
+                    result_stack.push(format!("{}_d{}", sig_name, delay));
+                } else if let Some(crate::ecs::components::BinaryComponent { op, left, right }) =
+                    &registry.binary_ops[idx]
+                {
+                    work.push(ExprWork::EmitBinary(*op));
+                    work.push(ExprWork::Eval(*right));
+                    work.push(ExprWork::Eval(*left));
+                } else if let Some(crate::ecs::components::UnaryComponent { op, operand }) =
+                    &registry.unary_ops[idx]
+                {
+                    work.push(ExprWork::EmitUnary(*op));
+                    work.push(ExprWork::Eval(*operand));
+                } else if let Some(crate::ecs::components::ArrayIndexComponent { array, index }) =
+                    &registry.array_indices[idx]
+                {
+                    work.push(ExprWork::EmitArrayIndex);
+                    work.push(ExprWork::Eval(*index));
+                    work.push(ExprWork::Eval(*array));
+                } else if let Some(crate::ecs::components::FieldAccessComponent { object, field }) =
+                    &registry.field_accesses[idx]
+                {
+                    work.push(ExprWork::EmitFieldAccess(field.clone()));
+                    work.push(ExprWork::Eval(*object));
+                } else if let Some(crate::ecs::components::ArrayLiteralComponent(elems)) =
+                    &registry.array_literals[idx]
+                {
+                    work.push(ExprWork::EmitArrayLiteral(elems.len()));
+                    for elem in elems.iter().rev() {
+                        work.push(ExprWork::Eval(*elem));
+                    }
+                } else if let Some(crate::ecs::components::StructLiteralComponent {
+                    name,
+                    fields,
+                }) = &registry.struct_literals[idx]
+                {
+                    work.push(ExprWork::EmitStructLiteral(
+                        name.clone(),
+                        fields.iter().map(|(f, _)| f.clone()).collect(),
+                    ));
+                    for (_, val) in fields.iter().rev() {
+                        work.push(ExprWork::Eval(*val));
+                    }
+                } else if let Some(crate::ecs::components::UnfoldIndexComponent(name)) =
+                    &registry.unfold_indices[idx]
+                {
+                    unreachable!("UnfoldIndex '{}' reached Verilog emitter", name);
+                } else if let Some(crate::ecs::components::MuxComponent {
+                    select,
+                    true_val,
+                    false_val,
+                }) = &registry.muxes[idx]
+                {
+                    work.push(ExprWork::EmitMux);
+                    work.push(ExprWork::Eval(*false_val));
+                    work.push(ExprWork::Eval(*true_val));
+                    work.push(ExprWork::Eval(*select));
+                } else {
+                    result_stack.push("/* unknown_expr */".to_string());
+                }
+            }
+            ExprWork::EmitUnary(op) => {
+                let inner = result_stack.pop().unwrap_or_default();
+                let res = match op {
+                    UnaryOp::Not => format!("(!{inner})"),
+                    UnaryOp::Negate => format!("(-{inner})"),
+                    UnaryOp::ReductionOr => format!("(|{inner})"),
+                };
+                result_stack.push(res);
+            }
+            ExprWork::EmitBinary(op) => {
+                let rhs = result_stack.pop().unwrap_or_default();
+                let lhs = result_stack.pop().unwrap_or_default();
+                let op_str = match op {
+                    BinaryOp::And => "&",
+                    BinaryOp::Or => "|",
+                    BinaryOp::BitwiseOr => "|",
+                    BinaryOp::BitwiseAnd => "&",
+                    BinaryOp::Xor => "^",
+                    BinaryOp::Lt => "<",
+                    BinaryOp::Le => "<=",
+                    BinaryOp::Gt => ">",
+                    BinaryOp::Ge => ">=",
+                    BinaryOp::Eq => "==",
+                    BinaryOp::Ne => "!=",
+                    BinaryOp::Add => "+",
+                    BinaryOp::Sub => "-",
+                    BinaryOp::Mul => "*",
+                    BinaryOp::Shl => "<<",
+                    BinaryOp::Shr => ">>",
+                };
+                result_stack.push(format!("({lhs} {op_str} {rhs})"));
+            }
+            ExprWork::EmitArrayIndex => {
+                let index = result_stack.pop().unwrap_or_default();
+                let array = result_stack.pop().unwrap_or_default();
+                result_stack.push(format!("{array}[{index}]"));
+            }
+            ExprWork::EmitFieldAccess(field) => {
+                let object = result_stack.pop().unwrap_or_default();
+                result_stack.push(format!("{object}.{field}"));
+            }
+            ExprWork::EmitArrayLiteral(count) => {
+                let mut parts = Vec::with_capacity(count);
+                for _ in 0..count {
+                    parts.push(result_stack.pop().unwrap_or_default());
+                }
+                result_stack.push(format!("'{{{}}}", parts.join(", ")));
+            }
+            ExprWork::EmitStructLiteral(name, fields) => {
+                let mut parts = Vec::with_capacity(fields.len());
+                for f in fields {
+                    let val = result_stack.pop().unwrap_or_default();
+                    parts.push(format!("{f}: {val}"));
+                }
+                result_stack.push(format!("{name}'{{{}}}", parts.join(", ")));
+            }
+            ExprWork::EmitMux => {
+                let false_val = result_stack.pop().unwrap_or_default();
+                let true_val = result_stack.pop().unwrap_or_default();
+                let cond = result_stack.pop().unwrap_or_default();
+                result_stack.push(format!("({cond} ? {true_val} : {false_val})"));
+            }
+        }
+    }
+
+    result_stack.pop().unwrap_or_default()
 }
 
-/// Bounded expression-to-string conversion.
-fn emit_expr_str(expr: &Expr, iterations: &mut usize) -> String {
+enum ExprWork {
+    Eval(crate::ecs::EntityId),
+    EmitUnary(UnaryOp),
+    EmitBinary(BinaryOp),
+    EmitArrayIndex,
+    EmitFieldAccess(String),
+    EmitArrayLiteral(usize),
+    EmitStructLiteral(String, Vec<String>),
+    EmitMux,
+}
+
+pub(super) fn emit_expr_ast_legacy(expr: &crate::ast::Expr) -> String {
+    let mut iterations = 0usize;
+    emit_expr_ast_str(expr, &mut iterations)
+}
+
+fn emit_expr_ast_str(expr: &crate::ast::Expr, iterations: &mut usize) -> String {
     *iterations += 1;
     if *iterations > MAX_EXPR_NODES {
         return "/* truncated */".to_string();
     }
     match expr {
-        Expr::Literal(crate::ast::types::LiteralValue::Bool(true)) => "1'b1".to_string(),
-        Expr::Literal(crate::ast::types::LiteralValue::Bool(false)) => "1'b0".to_string(),
-        Expr::Literal(crate::ast::types::LiteralValue::Integer(n)) => format!("{n}"),
-        Expr::Signal(name) => name.clone(),
-        Expr::Prev { signal, delay } => {
-            // Prev maps to a registered delayed version of the signal.
-            format!("{signal}_d{delay}")
+        crate::ast::Expr::Literal(crate::ast::types::LiteralValue::Bool(true)) => {
+            "1'b1".to_string()
         }
-        Expr::Unary { op, operand } => {
-            let inner = emit_expr_str(operand, iterations);
+        crate::ast::Expr::Literal(crate::ast::types::LiteralValue::Bool(false)) => {
+            "1'b0".to_string()
+        }
+        crate::ast::Expr::Literal(crate::ast::types::LiteralValue::Integer(n)) => format!("{n}"),
+        crate::ast::Expr::Signal(name) => name.clone(),
+        crate::ast::Expr::Prev { signal, delay } => format!("{signal}_d{delay}"),
+        crate::ast::Expr::Unary { op, operand } => {
+            let inner = emit_expr_ast_str(operand, iterations);
             match op {
-                UnaryOp::Not => format!("(!{inner})"),
-                UnaryOp::Negate => format!("(-{inner})"),
-                UnaryOp::ReductionOr => format!("(|{inner})"),
+                crate::ast::types::UnaryOp::Not => format!("(!{inner})"),
+                crate::ast::types::UnaryOp::Negate => format!("(-{inner})"),
+                crate::ast::types::UnaryOp::ReductionOr => format!("(|{inner})"),
             }
         }
-        Expr::Binary { op, left, right } => {
-            let l = emit_expr_str(left, iterations);
-            let r = emit_expr_str(right, iterations);
+        crate::ast::Expr::Binary { op, left, right } => {
+            let l = emit_expr_ast_str(left, iterations);
+            let r = emit_expr_ast_str(right, iterations);
             let op_str = match op {
-                BinaryOp::And => "&",
-                BinaryOp::Or => "|",
-                BinaryOp::BitwiseOr => "|",
-                BinaryOp::BitwiseAnd => "&",
-                BinaryOp::Xor => "^",
-                BinaryOp::Lt => "<",
-                BinaryOp::Le => "<=",
-                BinaryOp::Gt => ">",
-                BinaryOp::Ge => ">=",
-                BinaryOp::Eq => "==",
-                BinaryOp::Ne => "!=",
-                BinaryOp::Add => "+",
-                BinaryOp::Sub => "-",
-                BinaryOp::Mul => "*",
-                BinaryOp::Shl => "<<",
-                BinaryOp::Shr => ">>",
+                crate::ast::types::BinaryOp::And => "&",
+                crate::ast::types::BinaryOp::Or => "|",
+                crate::ast::types::BinaryOp::BitwiseOr => "|",
+                crate::ast::types::BinaryOp::BitwiseAnd => "&",
+                crate::ast::types::BinaryOp::Xor => "^",
+                crate::ast::types::BinaryOp::Lt => "<",
+                crate::ast::types::BinaryOp::Le => "<=",
+                crate::ast::types::BinaryOp::Gt => ">",
+                crate::ast::types::BinaryOp::Ge => ">=",
+                crate::ast::types::BinaryOp::Eq => "==",
+                crate::ast::types::BinaryOp::Ne => "!=",
+                crate::ast::types::BinaryOp::Add => "+",
+                crate::ast::types::BinaryOp::Sub => "-",
+                crate::ast::types::BinaryOp::Mul => "*",
+                crate::ast::types::BinaryOp::Shl => "<<",
+                crate::ast::types::BinaryOp::Shr => ">>",
             };
             format!("({l} {op_str} {r})")
         }
-        Expr::ArrayIndex { array, index } => {
-            let a = emit_expr_str(array, iterations);
-            let i = emit_expr_str(index, iterations);
+        crate::ast::Expr::ArrayIndex { array, index } => {
+            let a = emit_expr_ast_str(array, iterations);
+            let i = emit_expr_ast_str(index, iterations);
             format!("{a}[{i}]")
         }
-        Expr::FieldAccess { object, field } => {
-            let o = emit_expr_str(object, iterations);
+        crate::ast::Expr::FieldAccess { object, field } => {
+            let o = emit_expr_ast_str(object, iterations);
             format!("{o}.{field}")
         }
-        Expr::ArrayLiteral(elems) => {
-            let parts: Vec<String> =
-                elems.iter().take(MAX_EXPR_NODES).map(|e| emit_expr_str(e, iterations)).collect();
+        crate::ast::Expr::ArrayLiteral(elems) => {
+            let parts: Vec<String> = elems
+                .iter()
+                .take(MAX_EXPR_NODES)
+                .map(|e| emit_expr_ast_str(e, iterations))
+                .collect();
             format!("'{{{}}}", parts.join(", "))
         }
-        Expr::StructLiteral { name, fields } => {
+        crate::ast::Expr::StructLiteral { name, fields } => {
             let parts: Vec<String> = fields
                 .iter()
                 .take(MAX_EXPR_NODES)
-                .map(|(f, v)| format!("{}: {}", f, emit_expr_str(v, iterations)))
+                .map(|(f, v)| format!("{}: {}", f, emit_expr_ast_str(v, iterations)))
                 .collect();
             format!("{}'{{{}}}", name, parts.join(", "))
         }
-        Expr::UnfoldIndex(name) => unreachable!("UnfoldIndex '{}' reached Verilog emitter", name),
+        crate::ast::Expr::UnfoldIndex(name) => {
+            unreachable!("UnfoldIndex '{}' reached Verilog emitter", name)
+        }
     }
 }

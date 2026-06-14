@@ -9,7 +9,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use mirrc::emit::firrtl::emit_firrtl;
 use mirrc::emit::verilog::emit_sv;
-use mirrc::width::infer_program_widths_with_scc;
 use mirrc::{parse_mirr, run_pipeline, typecheck_module, PipelineConfig};
 use std::hint::black_box;
 

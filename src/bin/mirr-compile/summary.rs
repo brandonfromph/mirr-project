@@ -19,9 +19,9 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, show_stats
         );
     }
 
-    if let Some(wr) = &result.width_result {
-        let diag_count = wr.stats.diagnostics_count;
-        let scc_count = wr.stats.scc_count;
+    if let Some(wr) = &result.width_stats {
+        let diag_count = wr.diagnostics_count;
+        let scc_count = wr.scc_count;
         eprintln!("  Width: {diag_count} diagnostics, {scc_count} SCCs");
     }
 
@@ -52,14 +52,14 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, show_stats
     }
 
     if show_stats {
-        if let Some(wr) = &result.width_result {
+        if let Some(wr) = &result.width_stats {
             eprintln!(
                 "  [stats] nodes_analyzed={} rounds={} sccs={} expansive={} nonexpansive={}",
-                wr.stats.nodes_analyzed,
-                wr.stats.propagation_rounds,
-                wr.stats.scc_count,
-                wr.stats.expansive_count,
-                wr.stats.nonexpansive_count,
+                wr.nodes_analyzed,
+                wr.propagation_rounds,
+                wr.scc_count,
+                wr.expansive_count,
+                wr.nonexpansive_count,
             );
         }
     }

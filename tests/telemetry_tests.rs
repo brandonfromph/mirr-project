@@ -25,8 +25,7 @@ mod tests {
         let result = run_pipeline(source, &config).expect("Pipeline failed");
 
         // Phase 1: Verify solver round tracking via width_result
-        let solver_rounds =
-            result.width_result.as_ref().map(|w| w.stats.propagation_rounds).unwrap_or(0);
+        let solver_rounds = result.width_stats.as_ref().map(|w| w.propagation_rounds).unwrap_or(0);
         assert!(solver_rounds > 0, "Width solver rounds should be tracked");
         println!("[TELEMETRY] Solver Rounds: {}", solver_rounds);
     }

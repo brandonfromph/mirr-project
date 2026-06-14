@@ -10,7 +10,6 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::program::Module;
 use crate::ast::types::{SignalKind, SignalType};
 use crate::pipeline::PipelineResult;
 
@@ -22,14 +21,15 @@ const DEFAULT_SIM_CYCLES: u32 = 200;
 
 /// Emit a self-checking SystemVerilog testbench for the given module.
 pub fn emit_testbench(result: &PipelineResult) -> String {
-    let module = &result.program.module;
     let mut out = String::with_capacity(2048);
+    let registry = result.ecs_registry.as_ref().unwrap();
+    let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
-    emit_tb_header(module, &mut out);
-    emit_tb_signals(module, &mut out);
+    emit_tb_header(&module_name, &mut out);
+    emit_tb_signals(registry, &mut out);
     emit_tb_clock(&mut out);
-    emit_tb_dut_instance(module, &mut out);
-    emit_tb_stimulus(module, &mut out);
+    emit_tb_dut_instance(&module_name, registry, &mut out);
+    emit_tb_stimulus(&module_name, registry, &mut out);
     emit_tb_footer(&mut out);
 
     out
@@ -39,26 +39,32 @@ pub fn emit_testbench(result: &PipelineResult) -> String {
 // Internal helpers
 // -----------------------------------------------------------------------
 
-fn emit_tb_header(module: &Module, out: &mut String) {
+fn emit_tb_header(module_name: &str, out: &mut String) {
     out.push_str("// Auto-generated testbench by MIRR compiler (FPGA-001)\n");
     out.push_str("// Do not edit — regenerate from .mirr source.\n");
     out.push_str("`timescale 1ns / 1ps\n\n");
-    out.push_str(&format!("module {}_tb;\n\n", module.name));
+    out.push_str(&format!("module {}_tb;\n\n", module_name));
 }
 
-fn emit_tb_signals(module: &Module, out: &mut String) {
+fn emit_tb_signals(registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("  // Clock and reset\n");
     out.push_str("  logic clk;\n");
     out.push_str("  logic rst_n;\n\n");
 
     // Declare testbench signals for each port.
     out.push_str("  // DUT port signals\n");
-    for s in &module.signals {
-        if s.kind == SignalKind::Internal {
-            continue;
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
+                if sig_kind == SignalKind::Internal {
+                    continue;
+                }
+                let type_str = tb_type(&ty_comp.0.core);
+                out.push_str(&format!("  {} tb_{};\n", type_str, name_comp.0));
+            }
         }
-        let type_str = tb_type(&s.ty.signal_type());
-        out.push_str(&format!("  {} tb_{};\n", type_str, s.name));
     }
     out.push('\n');
 }
@@ -69,13 +75,28 @@ fn emit_tb_clock(out: &mut String) {
     out.push_str("  always #5 clk = ~clk;\n\n");
 }
 
-fn emit_tb_dut_instance(module: &Module, out: &mut String) {
+fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("  // DUT instantiation\n");
-    out.push_str(&format!("  {} dut (\n", module.name));
+    out.push_str(&format!("  {} dut (\n", module_name));
 
-    let has_clk = module.signals.iter().any(|s| s.name == "clk");
-    let has_rst_n = module.signals.iter().any(|s| s.name == "rst_n");
-    let has_guards = !module.guards.is_empty();
+    let mut has_clk = false;
+    let mut has_rst_n = false;
+    for name in registry.names.iter().flatten() {
+        if name.0 == "clk" {
+            has_clk = true;
+        }
+        if name.0 == "rst_n" {
+            has_rst_n = true;
+        }
+    }
+
+    let mut has_guards = false;
+    for k in &registry.kinds {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::GUARD)) = k {
+            has_guards = true;
+            break;
+        }
+    }
 
     let mut connections: Vec<String> = Vec::new();
 
@@ -87,14 +108,18 @@ fn emit_tb_dut_instance(module: &Module, out: &mut String) {
         connections.push("    .rst_n(rst_n)".to_string());
     }
 
-    for s in &module.signals {
-        if s.kind == SignalKind::Internal {
-            continue;
-        }
-        if s.name == "rst_n" {
-            connections.push(format!("    .{}(rst_n)", s.name));
-        } else {
-            connections.push(format!("    .{}(tb_{})", s.name, s.name));
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
+                if sig_kind == SignalKind::Internal {
+                    continue;
+                }
+                if name_comp.0 == "rst_n" {
+                    connections.push(format!("    .{}(rst_n)", name_comp.0));
+                } else {
+                    connections.push(format!("    .{}(tb_{})", name_comp.0, name_comp.0));
+                }
+            }
         }
     }
 
@@ -107,7 +132,7 @@ fn emit_tb_dut_instance(module: &Module, out: &mut String) {
     out.push_str("  );\n\n");
 }
 
-fn emit_tb_stimulus(module: &Module, out: &mut String) {
+fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mut String) {
     let sim_cycles = DEFAULT_SIM_CYCLES.min(MAX_SIM_CYCLES);
 
     out.push_str("  // Stimulus sequence\n");
@@ -116,9 +141,13 @@ fn emit_tb_stimulus(module: &Module, out: &mut String) {
     out.push_str("    rst_n = 1'b0;\n");
 
     // Drive all inputs to zero during reset.
-    for s in &module.signals {
-        if s.kind == SignalKind::Input && s.name != "rst_n" {
-            out.push_str(&format!("    tb_{} = '0;\n", s.name));
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
+                if name_comp.0 != "rst_n" {
+                    out.push_str(&format!("    tb_{} = '0;\n", name_comp.0));
+                }
+            }
         }
     }
 
@@ -126,33 +155,43 @@ fn emit_tb_stimulus(module: &Module, out: &mut String) {
     out.push_str("    rst_n = 1'b1;\n\n");
 
     out.push_str("    // Phase 2: Drive inputs to max range\n");
-    for s in &module.signals {
-        if s.kind == SignalKind::Input && s.name != "rst_n" {
-            let max_val = match &s.ty.signal_type() {
-                SignalType::Bool => "'1".to_string(),
-                SignalType::Unsigned(w) => format!("{}'hFFFF", w),
-                SignalType::Signed(w) => format!("{}'h7FFF", w),
-                SignalType::Array { .. }
-                | SignalType::Struct { .. }
-                | SignalType::FixedPoint { .. }
-                | SignalType::Bundle(_)
-                | SignalType::Fifo { .. } => "'0".to_string(),
-            };
-            out.push_str(&format!("    tb_{} = {};\n", s.name, max_val));
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
+                if name_comp.0 != "rst_n" {
+                    let max_val = match &ty_comp.0.core {
+                        SignalType::Bool => "'1".to_string(),
+                        SignalType::Unsigned(w) => format!("{}'hFFFF", w),
+                        SignalType::Signed(w) => format!("{}'h7FFF", w),
+                        SignalType::Array { .. }
+                        | SignalType::Struct { .. }
+                        | SignalType::FixedPoint { .. }
+                        | SignalType::Bundle(_)
+                        | SignalType::Fifo { .. } => "'0".to_string(),
+                    };
+                    out.push_str(&format!("    tb_{} = {};\n", name_comp.0, max_val));
+                }
+            }
         }
     }
 
     out.push_str(&format!("    repeat({}) @(posedge clk);\n\n", sim_cycles));
 
     out.push_str("    // Phase 3: Return to zero\n");
-    for s in &module.signals {
-        if s.kind == SignalKind::Input && s.name != "rst_n" {
-            out.push_str(&format!("    tb_{} = '0;\n", s.name));
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
+                if name_comp.0 != "rst_n" {
+                    out.push_str(&format!("    tb_{} = '0;\n", name_comp.0));
+                }
+            }
         }
     }
     out.push_str("    repeat(50) @(posedge clk);\n\n");
 
-    out.push_str(&format!("    $display(\"Testbench {} complete.\");\n", module.name));
+    out.push_str(&format!("    $display(\"Testbench {} complete.\");\n", module_name));
     out.push_str("    $finish;\n");
     out.push_str("  end\n\n");
 }

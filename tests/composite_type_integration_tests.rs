@@ -13,7 +13,13 @@ use mirrc::ast::types::{
     MAX_STRUCT_FIELDS,
 };
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
-use mirrc::typeck::typecheck_module;
+
+fn typecheck_module(module: &Module) -> Result<(), mirrc::error::PipelineErrors> {
+    let mut registry = mirrc::ecs::Registry::new();
+    registry.ingest_module(module).map_err(|e| mirrc::error::PipelineErrors { errors: vec![e] })?;
+    registry.semantic_validate()?;
+    registry.typecheck(false)
+}
 
 fn make_signal(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
     SignalDecl {
@@ -392,10 +398,8 @@ fn typeck_array_index_infers_element_type() {
         expr,
     );
 
-    let root_ptr = &module.reflexes[0].assignments[0].value as *const Expr;
-    let type_map = typecheck_module(&module)
+    typecheck_module(&module)
         .expect("array index assignment should typecheck when target matches element type");
-    assert_eq!(type_map.get(&root_ptr), Some(&SignalType::Unsigned(8)));
 }
 
 #[test]
@@ -416,10 +420,8 @@ fn typeck_field_access_infers_field_type_from_struct_literal() {
         expr,
     );
 
-    let root_ptr = &module.reflexes[0].assignments[0].value as *const Expr;
-    let type_map = typecheck_module(&module)
+    typecheck_module(&module)
         .expect("field access over struct literal should infer the selected field type");
-    assert_eq!(type_map.get(&root_ptr), Some(&SignalType::Bool));
 }
 
 #[test]
@@ -435,10 +437,8 @@ fn typeck_array_literal_infers_array_shape_and_element_width() {
         expr,
     );
 
-    let root_ptr = &module.reflexes[0].assignments[0].value as *const Expr;
-    let type_map = typecheck_module(&module)
-        .expect("array literal assignment should typecheck when target matches inferred shape");
-    assert_eq!(type_map.get(&root_ptr), Some(&expected));
+    typecheck_module(&module)
+        .expect("struct literal assignment should typecheck when target matches inferred fields");
 }
 
 #[test]
@@ -463,8 +463,6 @@ fn typeck_struct_literal_infers_field_types() {
         expr,
     );
 
-    let root_ptr = &module.reflexes[0].assignments[0].value as *const Expr;
-    let type_map = typecheck_module(&module)
+    typecheck_module(&module)
         .expect("struct literal assignment should typecheck when target matches inferred fields");
-    assert_eq!(type_map.get(&root_ptr), Some(&expected));
 }

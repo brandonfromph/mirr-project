@@ -442,7 +442,7 @@ fn sat_full_pipeline_with_width_and_temporal() {
     // SAT + width + temporal all enabled — full pipeline.
     let result = run_pipeline(AND_GUARD, &sat_config()).expect("full pipeline should succeed");
     assert!(result.sat_stats.is_some());
-    assert!(result.width_result.is_some());
+    assert!(result.width_stats.is_some());
     assert!(result.temporal_netlist.is_some());
     assert!(!result.has_width_errors());
 }

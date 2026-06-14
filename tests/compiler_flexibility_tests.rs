@@ -45,8 +45,8 @@ module FlexibilityTemporal {
     assert!(result.is_ok(), "Failed to run pipeline: {:?}", result.err());
 
     let res = result.unwrap();
-    assert!(res.type_map.is_some(), "Expected type checker map");
-    assert!(res.width_result.is_some(), "Expected width inference result");
+    assert!(res.ecs_registry.is_some(), "Expected type checker map");
+    assert!(res.width_stats.is_some(), "Expected width inference result");
     assert!(res.temporal_netlist.is_some(), "Expected temporal synthesis netlist");
 
     let netlist = res.temporal_netlist.unwrap();

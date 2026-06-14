@@ -102,14 +102,14 @@ pub fn build_netlist(result: &PipelineResult) -> JsonNetlist {
         nodes_after: s.nodes_after,
     });
 
-    let width_stats = result.width_result.as_ref().map(|w| WidthStatsJson {
-        nodes_analyzed: w.stats.nodes_analyzed,
-        propagation_rounds: w.stats.propagation_rounds,
-        diagnostics_count: w.stats.diagnostics_count,
-        scc_count: w.stats.scc_count,
-        expansive_count: w.stats.expansive_count,
-        nonexpansive_count: w.stats.nonexpansive_count,
-        has_errors: w.has_errors(),
+    let width_stats = result.width_stats.as_ref().map(|w| WidthStatsJson {
+        nodes_analyzed: w.nodes_analyzed,
+        propagation_rounds: w.propagation_rounds,
+        diagnostics_count: w.diagnostics_count,
+        scc_count: w.scc_count,
+        expansive_count: w.expansive_count,
+        nonexpansive_count: w.nonexpansive_count,
+        has_errors: w.diagnostics_count > 0,
     });
 
     let temporal = result

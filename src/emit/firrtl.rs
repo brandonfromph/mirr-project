@@ -16,7 +16,6 @@
 #![forbid(unsafe_code)]
 
 use crate::ast::expr::Expr;
-use crate::ast::program::Module;
 use crate::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
 use crate::ast::MAX_EXPR_NODES;
 use crate::pipeline::PipelineResult;
@@ -24,15 +23,16 @@ use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
 /// Emit FIRRTL from pipeline results.
 pub fn emit_firrtl(result: &PipelineResult) -> String {
-    let module = &result.program.module;
     let mut out = String::with_capacity(4096);
+    let registry = result.ecs_registry.as_ref().expect("ECS registry must be populated");
+    let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     emit_header(&mut out);
     out.push_str("circuit ");
-    out.push_str(&module.name);
+    out.push_str(&module_name);
     out.push_str(" :\n");
 
-    emit_module(module, result.temporal_netlist.as_ref(), &mut out);
+    emit_module(&module_name, registry, result.temporal_netlist.as_ref(), &mut out);
 
     out
 }
@@ -48,51 +48,65 @@ fn emit_header(out: &mut String) {
     out.push_str("FIRRTL version 1.1.0\n");
 }
 
-fn emit_module(module: &Module, temporal_netlist: Option<&TemporalNetlist>, out: &mut String) {
+fn emit_module(
+    module_name: &str,
+    registry: &crate::ecs::Registry,
+    temporal_netlist: Option<&TemporalNetlist>,
+    out: &mut String,
+) {
     out.push_str("  module ");
-    out.push_str(&module.name);
+    out.push_str(module_name);
     out.push_str(" :\n");
 
     // Clock and reset (implicit in MIRR, explicit in FIRRTL).
     out.push_str("    input clk : Clock\n");
     out.push_str("    input rst_n : UInt<1>\n");
 
-    emit_ports(module, out);
-    emit_internal_wires(module, out);
+    emit_ports(registry, out);
+    emit_internal_wires(registry, out);
     out.push('\n');
 
     if let Some(netlist) = temporal_netlist {
         emit_temporal_logic(netlist, out);
     }
 
-    emit_reflex_logic(module, out);
-    emit_property_comments(module, out);
+    emit_reflex_logic(registry, out);
+    emit_property_comments(registry, out);
 }
 
-fn emit_ports(module: &Module, out: &mut String) {
-    for s in &module.signals {
-        let dir = match s.kind {
-            SignalKind::Input => "input",
-            SignalKind::Output => "output",
-            SignalKind::Internal => continue, // handled as wires
-        };
-        let ty = firrtl_type(&s.ty.signal_type());
-        out.push_str(&format!("    {} {} : {}\n", dir, s.name, ty));
+fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
+                let dir = match sig_kind {
+                    SignalKind::Input => "input",
+                    SignalKind::Output => "output",
+                    SignalKind::Internal => continue, // handled as wires
+                };
+                let ty = firrtl_type(&ty_comp.0.core);
+                out.push_str(&format!("    {} {} : {}\n", dir, name_comp.0, ty));
+            }
+        }
     }
 }
 
-fn emit_internal_wires(module: &Module, out: &mut String) {
-    let internals: Vec<_> =
-        module.signals.iter().filter(|s| s.kind == SignalKind::Internal).collect();
-
-    if internals.is_empty() {
-        return;
-    }
-
-    out.push_str("\n    ; Internal signals\n");
-    for s in &internals {
-        let ty = firrtl_type(&s.ty.signal_type());
-        out.push_str(&format!("    wire {} : {}\n", s.name, ty));
+fn emit_internal_wires(registry: &crate::ecs::Registry, out: &mut String) {
+    let mut has_internals = false;
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
+            if let crate::ecs::EntityKind::SIGNAL(SignalKind::Internal) = kind_comp.0 {
+                if !has_internals {
+                    out.push_str("\n    ; Internal signals\n");
+                    has_internals = true;
+                }
+                let ty = firrtl_type(&ty_comp.0.core);
+                out.push_str(&format!("    wire {} : {}\n", name_comp.0, ty));
+            }
+        }
     }
 }
 
@@ -201,40 +215,77 @@ fn emit_counter_firrtl(cg: &crate::temporal::low_level_ir::CounterGuard, out: &m
     ));
 }
 
-fn emit_reflex_logic(module: &Module, out: &mut String) {
-    if module.reflexes.is_empty() {
+fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
+    let mut has_reflex = false;
+    for kind_comp in &registry.kinds {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::REFLEX)) =
+            kind_comp
+        {
+            has_reflex = true;
+            break;
+        }
+    }
+
+    if !has_reflex {
         return;
     }
 
     out.push_str("\n    ; ── Reflex Assignments ──\n");
 
-    for r in &module.reflexes {
-        out.push_str(&format!("\n    ; Reflex: {}\n", r.name));
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(r)) =
+            (&registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
+        {
+            if let crate::ecs::EntityKind::REFLEX = kind_comp.0 {
+                out.push_str(&format!("\n    ; Reflex: {}\n", name_comp.0));
 
-        let guard_cond = if r.guard_names.len() == 1 {
-            format!("{}_out", r.guard_names[0])
-        } else {
-            let mut expr = format!("{}_out", r.guard_names[0]);
-            let mut i = 1;
-            while i < r.guard_names.len() {
-                expr = format!("and({}, {}_out)", expr, r.guard_names[i]);
-                i += 1;
+                let guard_cond = if r.guards.len() == 1 {
+                    let g_name = &registry.names[r.guards[0].0 as usize].as_ref().unwrap().0;
+                    format!("{}_out", g_name)
+                } else if r.guards.is_empty() {
+                    "UInt<1>(1)".to_string()
+                } else {
+                    let mut expr = format!(
+                        "{}_out",
+                        registry.names[r.guards[0].0 as usize].as_ref().unwrap().0
+                    );
+                    let mut j = 1;
+                    while j < r.guards.len() {
+                        let g_name = &registry.names[r.guards[j].0 as usize].as_ref().unwrap().0;
+                        expr = format!("and({}, {}_out)", expr, g_name);
+                        j += 1;
+                    }
+                    expr
+                };
+
+                for a_id in &r.assignments {
+                    if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
+                        let target_name =
+                            &registry.names[assign.target.0 as usize].as_ref().unwrap().0;
+                        let val = emit_expr_inline_ecs(assign.value, registry);
+                        out.push_str(&format!(
+                            "    when {} :\n      connect {} , {}\n    else :\n      connect {} , UInt(0)\n",
+                            guard_cond, target_name, val, target_name,
+                        ));
+                    }
+                }
             }
-            expr
-        };
-
-        for a in &r.assignments {
-            let val = emit_expr_firrtl(&a.value);
-            out.push_str(&format!(
-                "    when {} :\n      connect {} , {}\n    else :\n      connect {} , UInt(0)\n",
-                guard_cond, a.target, val, a.target,
-            ));
         }
     }
 }
 
-fn emit_property_comments(module: &Module, out: &mut String) {
-    if module.properties.is_empty() {
+fn emit_property_comments(registry: &crate::ecs::Registry, out: &mut String) {
+    let mut has_properties = false;
+    for kind_comp in &registry.kinds {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::PROPERTY)) =
+            kind_comp
+        {
+            has_properties = true;
+            break;
+        }
+    }
+
+    if !has_properties {
         return;
     }
 
@@ -242,43 +293,67 @@ fn emit_property_comments(module: &Module, out: &mut String) {
         "\n    ; ── Safety Properties (verification only — no FIRRTL equivalent to SVA) ──\n",
     );
 
-    for prop in &module.properties {
-        let desc = match &prop.formula {
-            crate::ast::property::PropertyFormula::Always(expr) => {
-                format!("always ({})", expr_text(expr))
-            }
-            crate::ast::property::PropertyFormula::Never(expr) => {
-                format!("never ({})", expr_text(expr))
-            }
-            crate::ast::property::PropertyFormula::AlwaysImplies { antecedent, consequent } => {
-                format!("always ({} -> {})", expr_text(antecedent), expr_text(consequent),)
-            }
-            crate::ast::property::PropertyFormula::NeverImplies { antecedent, consequent } => {
-                format!("never ({} -> {})", expr_text(antecedent), expr_text(consequent),)
-            }
-            crate::ast::property::PropertyFormula::EventuallyWithin { expr, cycles } => {
-                format!("eventually within {} ({})", cycles, expr_text(expr))
-            }
-            crate::ast::property::PropertyFormula::AlwaysFollowedBy {
-                trigger,
-                response,
-                delay_cycles,
-            } => {
-                format!(
-                    "always ({} followed_by {} {})",
-                    expr_text(trigger),
-                    delay_cycles,
-                    expr_text(response),
-                )
-            }
-        };
+    for i in 0..registry.names.len() {
+        if let (Some(name_comp), Some(kind_comp), Some(prop)) =
+            (&registry.names[i], &registry.kinds[i], &registry.property_comps[i])
+        {
+            if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
+                let desc = match &prop.formula {
+                    crate::ast::property::PropertyFormula::Always(_) => {
+                        format!(
+                            "always ({})",
+                            emit_expr_inline_ecs(prop.formula_exprs[0], registry)
+                        )
+                    }
+                    crate::ast::property::PropertyFormula::Never(_) => {
+                        format!("never ({})", emit_expr_inline_ecs(prop.formula_exprs[0], registry))
+                    }
+                    crate::ast::property::PropertyFormula::AlwaysImplies { .. } => {
+                        format!(
+                            "always ({} -> {})",
+                            emit_expr_inline_ecs(prop.formula_exprs[0], registry),
+                            emit_expr_inline_ecs(prop.formula_exprs[1], registry)
+                        )
+                    }
+                    crate::ast::property::PropertyFormula::NeverImplies { .. } => {
+                        format!(
+                            "never ({} -> {})",
+                            emit_expr_inline_ecs(prop.formula_exprs[0], registry),
+                            emit_expr_inline_ecs(prop.formula_exprs[1], registry)
+                        )
+                    }
+                    crate::ast::property::PropertyFormula::EventuallyWithin { cycles, .. } => {
+                        format!(
+                            "eventually within {} ({})",
+                            cycles,
+                            emit_expr_inline_ecs(prop.formula_exprs[0], registry)
+                        )
+                    }
+                    crate::ast::property::PropertyFormula::AlwaysFollowedBy {
+                        delay_cycles,
+                        ..
+                    } => {
+                        format!(
+                            "always ({} followed_by {} {})",
+                            emit_expr_inline_ecs(prop.formula_exprs[0], registry),
+                            delay_cycles,
+                            emit_expr_inline_ecs(prop.formula_exprs[1], registry)
+                        )
+                    }
+                };
 
-        let directive_prefix = match prop.directive {
-            crate::ast::property::PropertyDirective::Assert => "",
-            crate::ast::property::PropertyDirective::Cover => "cover ",
-            crate::ast::property::PropertyDirective::Assume => "assume ",
-        };
-        out.push_str(&format!("    ; {}property {}: {}\n", directive_prefix, prop.name, desc,));
+                let directive_prefix = match prop.directive {
+                    crate::ast::property::PropertyDirective::Assert => "",
+                    crate::ast::property::PropertyDirective::Cover => "cover ",
+                    crate::ast::property::PropertyDirective::Assume => "assume ",
+                };
+
+                out.push_str(&format!(
+                    "    ; {directive_prefix}property {}: {desc}\n",
+                    name_comp.0
+                ));
+            }
+        }
     }
 }
 
@@ -479,4 +554,206 @@ fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
     }
 }
 
-use super::expr_text;
+enum ExprWork {
+    Eval(crate::ecs::EntityId),
+    EmitUnary(UnaryOp),
+    EmitBinary(BinaryOp),
+    EmitArrayIndex,
+    EmitFieldAccess(String),
+    EmitArrayLiteral(usize),
+    EmitStructLiteral(Vec<String>),
+    EmitMux,
+}
+
+fn emit_expr_inline_ecs(expr_id: crate::ecs::EntityId, registry: &crate::ecs::Registry) -> String {
+    let mut result_stack: Vec<String> = Vec::with_capacity(32);
+    let mut work: Vec<ExprWork> = Vec::with_capacity(32);
+    work.push(ExprWork::Eval(expr_id));
+
+    let mut visited = 0usize;
+
+    while let Some(item) = work.pop() {
+        visited += 1;
+        if visited > MAX_EXPR_NODES {
+            return "/* truncated */".to_string();
+        }
+
+        match item {
+            ExprWork::Eval(id) => {
+                let idx = id.0 as usize;
+
+                if let Some(crate::ecs::components::LiteralComponent(lit)) = &registry.literals[idx]
+                {
+                    match lit {
+                        crate::ast::types::LiteralValue::Bool(true) => {
+                            result_stack.push("UInt<1>(1)".to_string())
+                        }
+                        crate::ast::types::LiteralValue::Bool(false) => {
+                            result_stack.push("UInt<1>(0)".to_string())
+                        }
+                        crate::ast::types::LiteralValue::Integer(n) => {
+                            result_stack.push(format!("UInt({})", n))
+                        }
+                    }
+                } else if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
+                    registry.signal_refs[idx]
+                {
+                    let sig_name = registry.names[sig_ent.0 as usize]
+                        .as_ref()
+                        .map(|n| n.0.clone())
+                        .unwrap_or_default();
+                    result_stack.push(sig_name);
+                } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
+                    &registry.pending_signal_refs[idx]
+                {
+                    result_stack.push(name.clone());
+                } else if let Some(crate::ecs::components::PrevComponent { signal, delay }) =
+                    &registry.prev_ops[idx]
+                {
+                    let sig_name = if let Some(crate::ecs::components::SignalRefComponent(decl)) =
+                        registry.signal_refs[signal.0 as usize]
+                    {
+                        registry.names[decl.0 as usize]
+                            .as_ref()
+                            .map(|n| n.0.clone())
+                            .unwrap_or_default()
+                    } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
+                        &registry.pending_signal_refs[signal.0 as usize]
+                    {
+                        n.clone()
+                    } else {
+                        String::new()
+                    };
+                    result_stack.push(format!("{}_d{}", sig_name, delay));
+                } else if let Some(crate::ecs::components::BinaryComponent { op, left, right }) =
+                    &registry.binary_ops[idx]
+                {
+                    work.push(ExprWork::EmitBinary(*op));
+                    work.push(ExprWork::Eval(*right));
+                    work.push(ExprWork::Eval(*left));
+                } else if let Some(crate::ecs::components::UnaryComponent { op, operand }) =
+                    &registry.unary_ops[idx]
+                {
+                    work.push(ExprWork::EmitUnary(*op));
+                    work.push(ExprWork::Eval(*operand));
+                } else if let Some(crate::ecs::components::ArrayIndexComponent { array, index }) =
+                    &registry.array_indices[idx]
+                {
+                    work.push(ExprWork::EmitArrayIndex);
+                    work.push(ExprWork::Eval(*index));
+                    work.push(ExprWork::Eval(*array));
+                } else if let Some(crate::ecs::components::FieldAccessComponent { object, field }) =
+                    &registry.field_accesses[idx]
+                {
+                    work.push(ExprWork::EmitFieldAccess(field.clone()));
+                    work.push(ExprWork::Eval(*object));
+                } else if let Some(crate::ecs::components::ArrayLiteralComponent(elems)) =
+                    &registry.array_literals[idx]
+                {
+                    work.push(ExprWork::EmitArrayLiteral(elems.len()));
+                    for elem in elems.iter().rev() {
+                        work.push(ExprWork::Eval(*elem));
+                    }
+                } else if let Some(crate::ecs::components::StructLiteralComponent {
+                    name: _,
+                    fields,
+                }) = &registry.struct_literals[idx]
+                {
+                    work.push(ExprWork::EmitStructLiteral(
+                        fields.iter().map(|(f, _)| f.clone()).collect(),
+                    ));
+                    for (_, val) in fields.iter().rev() {
+                        work.push(ExprWork::Eval(*val));
+                    }
+                } else if let Some(crate::ecs::components::UnfoldIndexComponent(name)) =
+                    &registry.unfold_indices[idx]
+                {
+                    unreachable!("UnfoldIndex '{}' reached FIRRTL emitter", name);
+                } else if let Some(crate::ecs::components::MuxComponent {
+                    select,
+                    true_val,
+                    false_val,
+                }) = &registry.muxes[idx]
+                {
+                    work.push(ExprWork::EmitMux);
+                    work.push(ExprWork::Eval(*false_val));
+                    work.push(ExprWork::Eval(*true_val));
+                    work.push(ExprWork::Eval(*select));
+                } else {
+                    result_stack.push("/* unknown_expr */".to_string());
+                }
+            }
+            ExprWork::EmitUnary(op) => {
+                let inner = result_stack.pop().unwrap_or_default();
+                let res = match op {
+                    UnaryOp::Not => format!("not({})", inner),
+                    UnaryOp::Negate => format!("neg({})", inner),
+                    UnaryOp::ReductionOr => format!("orr({})", inner),
+                };
+                result_stack.push(res);
+            }
+            ExprWork::EmitBinary(op) => {
+                let r = result_stack.pop().unwrap_or_default();
+                let l = result_stack.pop().unwrap_or_default();
+                let op_fn = match op {
+                    BinaryOp::And => "and",
+                    BinaryOp::Or => "or",
+                    BinaryOp::BitwiseOr => "or",
+                    BinaryOp::BitwiseAnd => "and",
+                    BinaryOp::Xor => "xor",
+                    BinaryOp::Lt => "lt",
+                    BinaryOp::Le => "leq",
+                    BinaryOp::Gt => "gt",
+                    BinaryOp::Ge => "geq",
+                    BinaryOp::Eq => "eq",
+                    BinaryOp::Ne => "neq",
+                    BinaryOp::Add => "add",
+                    BinaryOp::Sub => "sub",
+                    BinaryOp::Mul => "mul",
+                    BinaryOp::Shl => "dshl",
+                    BinaryOp::Shr => "dshr",
+                };
+                result_stack.push(format!("{}({}, {})", op_fn, l, r));
+            }
+            ExprWork::EmitArrayIndex => {
+                let i = result_stack.pop().unwrap_or_default();
+                let a = result_stack.pop().unwrap_or_default();
+                result_stack.push(format!("{}[{}]", a, i));
+            }
+            ExprWork::EmitFieldAccess(field) => {
+                let o = result_stack.pop().unwrap_or_default();
+                result_stack.push(format!("{}.{}", o, field));
+            }
+            ExprWork::EmitArrayLiteral(len) => {
+                let mut parts = Vec::with_capacity(len);
+                for _ in 0..len {
+                    parts.push(result_stack.pop().unwrap_or_default());
+                }
+                if parts.is_empty() {
+                    result_stack.push("UInt(0)".to_string());
+                } else {
+                    result_stack.push(format!("cat({})", parts.join(", ")));
+                }
+            }
+            ExprWork::EmitStructLiteral(fields) => {
+                let mut parts = Vec::with_capacity(fields.len());
+                for _ in &fields {
+                    parts.push(result_stack.pop().unwrap_or_default());
+                }
+                if parts.is_empty() {
+                    result_stack.push("UInt(0)".to_string());
+                } else {
+                    result_stack.push(format!("cat({})", parts.join(", ")));
+                }
+            }
+            ExprWork::EmitMux => {
+                let cond = result_stack.pop().unwrap_or_default();
+                let t = result_stack.pop().unwrap_or_default();
+                let f = result_stack.pop().unwrap_or_default();
+                result_stack.push(format!("mux({}, {}, {})", cond, t, f));
+            }
+        }
+    }
+
+    result_stack.pop().unwrap_or_default()
+}

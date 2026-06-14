@@ -4,15 +4,15 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::property::PropertyFormula;
-use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
-use crate::ast::MAX_EXPR_NODES;
-use crate::error::MirrError;
-use crate::temporal::low_level_ir::ConditionKind;
 use super::rspu::rspu_err;
 use super::rspu_isa::*;
 use super::rspu_regalloc::RegAllocResult;
+use crate::ast::property::PropertyFormula;
+use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use crate::ast::MAX_EXPR_NODES;
 use crate::emit::rspu_tagged::tag_from_signal_type;
+use crate::error::MirrError;
+use crate::temporal::low_level_ir::ConditionKind;
 
 pub(crate) fn get_signal_tag_byte(name: &str, registry: &crate::ecs::Registry) -> u8 {
     if name == "true" {
@@ -28,14 +28,16 @@ pub(crate) fn get_signal_tag_byte(name: &str, registry: &crate::ecs::Registry) -
                         crate::emit::rspu_tagged::TypeTag::Uninitialized => return 0,
                         crate::emit::rspu_tagged::TypeTag::Bool => return 1,
                         crate::emit::rspu_tagged::TypeTag::Unsigned { width } => return width,
-                        crate::emit::rspu_tagged::TypeTag::Signed { width } => return width.saturating_add(128),
+                        crate::emit::rspu_tagged::TypeTag::Signed { width } => {
+                            return width.saturating_add(128)
+                        }
                         crate::emit::rspu_tagged::TypeTag::Interval { .. } => return 2,
                     }
                 }
             }
         }
     }
-    
+
     16 // Default to u16
 }
 
@@ -149,61 +151,109 @@ pub(crate) fn emit_expr(
             ExprWork::Eval(id) => {
                 let idx = id.0 as usize;
 
-                if let Some(crate::ecs::components::LiteralComponent(lit)) = &registry.literals[idx] {
+                if let Some(crate::ecs::components::LiteralComponent(lit)) = &registry.literals[idx]
+                {
                     let tmp = regs.alloc_temp().ok_or_else(|| {
-                        rspu_err(format!("{} R-SPU temporary registers exhausted.", crate::error_codes::ec(705)))
+                        rspu_err(format!(
+                            "{} R-SPU temporary registers exhausted.",
+                            crate::error_codes::ec(705)
+                        ))
                     })?;
                     match lit {
                         LiteralValue::Integer(n) => {
-                            instrs.push(RspuInstruction::LoadImm { dst: tmp, value: *n, width: 64 });
+                            instrs.push(RspuInstruction::LoadImm {
+                                dst: tmp,
+                                value: *n,
+                                width: 64,
+                            });
                         }
                         LiteralValue::Bool(b) => {
-                            instrs.push(RspuInstruction::LoadImm { dst: tmp, value: if *b { 1 } else { 0 }, width: 1 });
+                            instrs.push(RspuInstruction::LoadImm {
+                                dst: tmp,
+                                value: if *b { 1 } else { 0 },
+                                width: 1,
+                            });
                         }
                     }
                     result_stack.push(tmp);
-                } else if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) = registry.signal_refs[idx] {
-                    let sig_name = registry.names[sig_ent.0 as usize].as_ref().map(|n| n.0.clone()).unwrap_or_default();
+                } else if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
+                    registry.signal_refs[idx]
+                {
+                    let sig_name = registry.names[sig_ent.0 as usize]
+                        .as_ref()
+                        .map(|n| n.0.clone())
+                        .unwrap_or_default();
                     let r = regs.map.get(sig_name.as_str()).copied().unwrap_or(0);
                     result_stack.push(r);
-                } else if let Some(crate::ecs::components::PendingSignalRef(name)) = &registry.pending_signal_refs[idx] {
+                } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
+                    &registry.pending_signal_refs[idx]
+                {
                     let r = regs.map.get(name.as_str()).copied().unwrap_or(0);
                     result_stack.push(r);
-                } else if let Some(crate::ecs::components::BinaryComponent { op, left, right }) = &registry.binary_ops[idx] {
+                } else if let Some(crate::ecs::components::BinaryComponent { op, left, right }) =
+                    &registry.binary_ops[idx]
+                {
                     work.push(ExprWork::EmitBinary(*op));
                     work.push(ExprWork::Eval(*right));
                     work.push(ExprWork::Eval(*left));
-                } else if let Some(crate::ecs::components::UnaryComponent { op, operand }) = &registry.unary_ops[idx] {
+                } else if let Some(crate::ecs::components::UnaryComponent { op, operand }) =
+                    &registry.unary_ops[idx]
+                {
                     work.push(ExprWork::EmitUnary(*op));
                     work.push(ExprWork::Eval(*operand));
-                } else if let Some(crate::ecs::components::PrevComponent { signal, delay }) = &registry.prev_ops[idx] {
-                    let sig_name = if let Some(crate::ecs::components::SignalRefComponent(decl)) = registry.signal_refs[signal.0 as usize] {
-                        registry.names[decl.0 as usize].as_ref().map(|n| n.0.clone()).unwrap_or_default()
-                    } else if let Some(crate::ecs::components::PendingSignalRef(n)) = &registry.pending_signal_refs[signal.0 as usize] {
+                } else if let Some(crate::ecs::components::PrevComponent { signal, delay }) =
+                    &registry.prev_ops[idx]
+                {
+                    let sig_name = if let Some(crate::ecs::components::SignalRefComponent(decl)) =
+                        registry.signal_refs[signal.0 as usize]
+                    {
+                        registry.names[decl.0 as usize]
+                            .as_ref()
+                            .map(|n| n.0.clone())
+                            .unwrap_or_default()
+                    } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
+                        &registry.pending_signal_refs[signal.0 as usize]
+                    {
                         n.clone()
                     } else {
                         String::new()
                     };
                     let sig_reg = regs.map.get(sig_name.as_str()).copied().unwrap_or(0);
                     let tmp = regs.alloc_temp().ok_or_else(|| {
-                        rspu_err(format!("{} R-SPU temporary registers exhausted.", crate::error_codes::ec(705)))
+                        rspu_err(format!(
+                            "{} R-SPU temporary registers exhausted.",
+                            crate::error_codes::ec(705)
+                        ))
                     })?;
-                    instrs.push(RspuInstruction::Prev { dst: tmp, signal: sig_reg, delay: *delay as u32 });
+                    instrs.push(RspuInstruction::Prev {
+                        dst: tmp,
+                        signal: sig_reg,
+                        delay: *delay as u32,
+                    });
                     result_stack.push(tmp);
-                } else if let Some(crate::ecs::components::ArrayIndexComponent { array, index }) = &registry.array_indices[idx] {
+                } else if let Some(crate::ecs::components::ArrayIndexComponent { array, index }) =
+                    &registry.array_indices[idx]
+                {
                     // Quick check if the inner components are signal ref and literal
                     let arr_idx = array.0 as usize;
                     let ind_idx = index.0 as usize;
-                    
+
                     let mut arr_name = None;
-                    if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) = registry.signal_refs[arr_idx] {
+                    if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
+                        registry.signal_refs[arr_idx]
+                    {
                         arr_name = registry.names[sig_ent.0 as usize].as_ref().map(|n| n.0.clone());
-                    } else if let Some(crate::ecs::components::PendingSignalRef(n)) = &registry.pending_signal_refs[arr_idx] {
+                    } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
+                        &registry.pending_signal_refs[arr_idx]
+                    {
                         arr_name = Some(n.clone());
                     }
 
                     let mut lit_val = None;
-                    if let Some(crate::ecs::components::LiteralComponent(LiteralValue::Integer(v))) = &registry.literals[ind_idx] {
+                    if let Some(crate::ecs::components::LiteralComponent(LiteralValue::Integer(
+                        v,
+                    ))) = &registry.literals[ind_idx]
+                    {
                         lit_val = Some(*v);
                     }
 
@@ -212,16 +262,25 @@ pub(crate) fn emit_expr(
                         let r = regs.map.get(flat_name.as_str()).copied().unwrap_or(0);
                         result_stack.push(r);
                     } else {
-                        return Err(rspu_err(format!("{} R-SPU does not support dynamic array indexing.", crate::error_codes::ec(720))));
+                        return Err(rspu_err(format!(
+                            "{} R-SPU does not support dynamic array indexing.",
+                            crate::error_codes::ec(720)
+                        )));
                     }
                 } else {
-                    return Err(rspu_err(format!("{} R-SPU does not support composite or dynamic type expressions.", crate::error_codes::ec(720))));
+                    return Err(rspu_err(format!(
+                        "{} R-SPU does not support composite or dynamic type expressions.",
+                        crate::error_codes::ec(720)
+                    )));
                 }
             }
             ExprWork::EmitUnary(op) => {
                 let src = result_stack.pop().unwrap_or(0);
                 let tmp = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temporary registers exhausted.", crate::error_codes::ec(705)))
+                    rspu_err(format!(
+                        "{} R-SPU temporary registers exhausted.",
+                        crate::error_codes::ec(705)
+                    ))
                 })?;
                 let alu_op = match op {
                     UnaryOp::Not => AluUnaryOp::Not,
@@ -235,7 +294,10 @@ pub(crate) fn emit_expr(
                 let rhs = result_stack.pop().unwrap_or(0);
                 let lhs = result_stack.pop().unwrap_or(0);
                 let tmp = regs.alloc_temp().ok_or_else(|| {
-                    rspu_err(format!("{} R-SPU temporary registers exhausted.", crate::error_codes::ec(705)))
+                    rspu_err(format!(
+                        "{} R-SPU temporary registers exhausted.",
+                        crate::error_codes::ec(705)
+                    ))
                 })?;
                 let alu_op = binary_to_alu(op);
                 instrs.push(RspuInstruction::Alu { op: alu_op, dst: tmp, a: lhs, b: rhs });
@@ -283,8 +345,6 @@ pub(crate) fn emit_properties(
     registry: &crate::ecs::Registry,
 ) -> Result<(), MirrError> {
     let temp_start = regs.next_temp;
-
-    regs.next_temp = temp_start;
     let prop_id = property_id as PropertyId;
 
     match &prop.formula {

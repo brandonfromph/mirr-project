@@ -14,7 +14,6 @@ use crate::error::PipelineErrors;
 use crate::simplify::SimplifyStats;
 use crate::span::FileTable;
 use crate::temporal::low_level_ir::TemporalNetlist;
-use crate::width::{self, SccWidthResult};
 
 use serde::{Deserialize, Serialize};
 
@@ -108,14 +107,15 @@ pub struct PipelineResult {
     pub simplify_stats: Option<SimplifyStats>,
     /// SAT simplification stats (None if stage was skipped).
     pub sat_stats: Option<SatSimplifyPipelineStats>,
-    /// Width inference results (None if stage was skipped).
-    pub width_result: Option<SccWidthResult>,
+    /// Width inference statistics (None if stage was skipped).
+    pub width_stats: Option<crate::width::types::WidthStats>,
+    /// Diagnostics from width inference.
+    pub width_diagnostics: Vec<crate::width::types::WidthDiag>,
     /// Temporal netlist (None if stage was skipped).
     pub temporal_netlist: Option<TemporalNetlist>,
     /// R-SPU program (None if stage was skipped).
     pub rspu_program: Option<RspuProgram>,
-    /// Expression type map from the type checker (None if stage was skipped).
-    pub type_map: Option<crate::typeck::TypeMap>,
+
     /// Extended type map from MEGA-1 checker (None if stage was skipped).
     pub extended_type_map: Option<crate::typeck::extended::ExtendedTypeMap>,
     /// ISA simulation result (None if stage was skipped).
@@ -141,7 +141,7 @@ pub struct PipelineResult {
 impl PipelineResult {
     /// True if width inference produced any hard errors.
     pub fn has_width_errors(&self) -> bool {
-        self.width_result.as_ref().is_some_and(|r| r.has_errors())
+        self.width_stats.as_ref().is_some_and(|s| s.diagnostics_count > 0)
     }
 }
 
@@ -304,20 +304,6 @@ pub fn run_pipeline_on_program(
         registry.typecheck(config.bootstrap_mode)?;
     }
 
-    // [LEGACY AST TYPECHECKER]
-    // ECS-native typechecking complete. Maintaining AST-based type_map for
-    // downstream emitters until Phase 3 (R-SPU Emission).
-    let type_map = if config.typecheck {
-        let mode = if config.bootstrap_mode {
-            crate::typeck::TypecheckMode::Bootstrap
-        } else {
-            crate::typeck::TypecheckMode::Standard
-        };
-        Some(crate::typeck::typecheck_module_with_mode(&program.module, mode)?)
-    } else {
-        None
-    };
-
     // Stage 2.6: Extended type checking (opt-in MEGA-1).
     let extended_type_map = if config.extended_typecheck {
         let extended_decls: Vec<crate::typeck::extended::ExtendedSignalDecl> = program
@@ -362,12 +348,9 @@ pub fn run_pipeline_on_program(
     // We declare it here but populate it after building the final registry.
     let mut sat_stats = None;
 
-    // Stage 4: Width inference (optional). Always includes SCC.
-    let width_result = if config.width {
-        Some(width::infer_program_widths_with_scc(&program, type_map.as_ref()))
-    } else {
-        None
-    };
+    // Stage 4: Width inference (optional). Now entirely ECS-native.
+    // Executed in `run_compilation_pipeline` (Shadow Gate).
+    let mut width_stats = None;
 
     // Stage 5: ECS-Native Temporal Synthesis (Proposal 110 — Phase 3 ECS Transition).
     //
@@ -381,9 +364,13 @@ pub fn run_pipeline_on_program(
 
     // Phase 3 ECS Systems: Semantic Validation & Typechecking (Shadow Gate)
     // Runs alongside AST-based gates to ensure ECS parity during transition.
-    let (_, ecs_sat_stats) = crate::ecs::systems::run_compilation_pipeline(&mut final_registry);
+    let (ecs_width_stats, ecs_sat_stats) =
+        crate::ecs::systems::run_compilation_pipeline(&mut final_registry);
     if config.sat_simplify {
         sat_stats = Some(ecs_sat_stats);
+    }
+    if config.width {
+        width_stats = Some(ecs_width_stats);
     }
 
     let mut temporal_netlist = if config.temporal {
@@ -411,10 +398,11 @@ pub fn run_pipeline_on_program(
         program,
         simplify_stats,
         sat_stats,
-        width_result,
+        width_stats,
+        width_diagnostics: Vec::new(),
         temporal_netlist,
         rspu_program: None,
-        type_map,
+
         extended_type_map,
         sim_result: None,
         mape_k_result: None,

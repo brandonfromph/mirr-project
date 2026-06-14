@@ -77,30 +77,13 @@ pub fn typecheck_extended(
     }
 
     let mut errors = crate::error::PipelineErrors::new();
-    let mut ext_type_map: ExtendedTypeMap =
+    let ext_type_map: ExtendedTypeMap =
         std::collections::HashMap::with_capacity(module.signals.len() * 4);
 
     // --- Phase 1: Delegate base type checking ---
-    match crate::typeck::typecheck_module(module) {
-        Ok(base_map) => {
-            // Wrap each base type in ExtendedType
-            for (iter_count, (ptr, base_ty)) in base_map.iter().enumerate() {
-                if iter_count >= MAX_EXTENDED_TYPE_NODES {
-                    break;
-                }
-                let ext = match signal_types.values().find(|et| et.base == *base_ty) {
-                    Some(full) => (*full).clone(),
-                    None => ExtendedType::from_base(base_ty.clone()),
-                };
-                ext_type_map.insert(*ptr, ext);
-            }
-        }
-        Err(base_errors) => {
-            for e in &base_errors.errors {
-                errors.push(e.clone());
-            }
-        }
-    }
+    // [LEGACY] Base type checking via AST `typecheck_module` has been deleted.
+    // Base types are now checked by ECS. `ext_type_map` is left empty here,
+    // as it is unused by downstream ECS-based passes.
 
     // --- Phase 2: Refinement bound validation ---
     check_refinement_consistency(extended_signals, &mut errors);

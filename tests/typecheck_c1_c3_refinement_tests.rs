@@ -11,10 +11,14 @@ use mirrc::ast::expr::Expr;
 use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
-use mirrc::typeck::typecheck_module;
 use mirrc::validate_module;
 
-const MAX_ERR_SCAN: usize = 16;
+fn typecheck_module(module: &Module) -> Result<(), mirrc::error::PipelineErrors> {
+    let mut registry = mirrc::ecs::Registry::new();
+    registry.ingest_module(module).map_err(|e| mirrc::error::PipelineErrors { errors: vec![e] })?;
+    registry.semantic_validate()?;
+    registry.typecheck(false)
+}
 
 fn run_src(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::PipelineErrors> {
     run_pipeline(src, &PipelineConfig::default())

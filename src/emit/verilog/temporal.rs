@@ -78,7 +78,7 @@ pub(super) fn emit_temporal_logic(
                 out.push_str(&format!(
                     "  assign {} = {};\n\n",
                     cx.output_signal,
-                    super::emit_expr_inline(&cx.combination_logic),
+                    super::emit_expr_ast_legacy(&cx.combination_logic),
                 ));
             }
             CompiledGuard::DynamicCounter(dc) => {
@@ -198,7 +198,7 @@ fn emit_dynamic_counter_guard(
     out.push_str(&format!(
         "  assign {} = {};\n",
         target_signal,
-        super::emit_expr_inline(&dc.delay_expr),
+        super::emit_expr_ast_legacy(&dc.delay_expr),
     ));
 
     // Condition wire.
@@ -320,7 +320,7 @@ pub(super) fn emit_reflex_logic(
                                     "          if ({}) {} <= {};\n",
                                     guard_cond,
                                     sig,
-                                    super::emit_expr_inline(&a.value),
+                                    super::emit_expr_ast_legacy(&a.value),
                                 ));
                             }
                         }
@@ -396,7 +396,7 @@ pub(super) fn emit_reflex_logic(
                             "      if ({}) {} <= {};\n",
                             guard_cond,
                             sig,
-                            super::emit_expr_inline(&a.value),
+                            super::emit_expr_ast_legacy(&a.value),
                         ));
                     }
                 }

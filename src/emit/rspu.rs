@@ -22,14 +22,15 @@ use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
 use super::rspu_isa::*;
-use std::collections::{HashMap, HashSet};
 use super::rspu_regalloc::{allocate_registers, RegAllocResult};
 use crate::emit::rspu_helpers::{condition_to_reg, emit_expr, emit_properties};
 use crate::emit::rspu_opt::peephole_optimize;
+use std::collections::{HashMap, HashSet};
 
 /// Emit an R-SPU program from pipeline results.
 pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
-    let registry = result.ecs_registry.as_ref().expect("ECS registry required for Phase 6 emission");
+    let registry =
+        result.ecs_registry.as_ref().expect("ECS registry required for Phase 6 emission");
     let netlist = result.temporal_netlist.as_ref();
     let target_spec = TargetSpec::from_config(&result.program.target);
 
@@ -63,11 +64,9 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     // Step 3: Load inputs (tick preamble).
     let mut port_idx: PortId = 0;
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) = (
-            &registry.names[i],
-            &registry.kinds[i],
-            &registry.types[i],
-        ) {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
             if let EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
                 let name = &name_comp.0;
                 let size = match &type_comp.0.core {
@@ -91,11 +90,9 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
 
     // Step 3.5: Emit TAG_LOAD for each signal (type tag metadata).
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) = (
-            &registry.names[i],
-            &registry.kinds[i],
-            &registry.types[i],
-        ) {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
             if let EntityKind::SIGNAL(_) = kind_comp.0 {
                 let name = &name_comp.0;
                 let (size, element_ty) = match &type_comp.0.core {
@@ -158,29 +155,28 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     }
 
     // Step 5: Reflex emission (conditional assignments).
-    for reflex_comp_opt in &registry.reflex_comps {
-        if let Some(reflex_comp) = reflex_comp_opt {
-            emit_reflex(reflex_comp, &guard_map, &compiled_guard_map, &mut regs, &mut instrs, registry)?;
-        }
+    for reflex_comp in registry.reflex_comps.iter().flatten() {
+        emit_reflex(
+            reflex_comp,
+            &guard_map,
+            &compiled_guard_map,
+            &mut regs,
+            &mut instrs,
+            registry,
+        )?;
     }
 
     // Step 6: Property assertion emission.
-    let mut logical_prop_idx = 0;
-    for (_idx, prop_comp_opt) in registry.property_comps.iter().enumerate() {
-        if let Some(prop_comp) = prop_comp_opt {
-            emit_properties(logical_prop_idx, prop_comp, &mut regs, &mut instrs, registry)?;
-            logical_prop_idx += 1;
-        }
+    for (logical_prop_idx, prop_comp) in registry.property_comps.iter().flatten().enumerate() {
+        emit_properties(logical_prop_idx, prop_comp, &mut regs, &mut instrs, registry)?;
     }
 
     // Step 7: Store outputs (tick postamble).
     let mut out_port_idx: PortId = 0;
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) = (
-            &registry.names[i],
-            &registry.kinds[i],
-            &registry.types[i],
-        ) {
+        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
+            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        {
             if let EntityKind::SIGNAL(SignalKind::Output) = kind_comp.0 {
                 let name = &name_comp.0;
                 let size = match &type_comp.0.core {
@@ -276,24 +272,22 @@ fn allocate_guards(
     }
 
     // Allocate hardware guards for any direct signal-based guards in reflexes
-    for reflex_comp_opt in &registry.reflex_comps {
-        if let Some(reflex_comp) = reflex_comp_opt {
-            for &guard_id in &reflex_comp.guards {
-                if let Some(name_comp) = &registry.names[guard_id.0 as usize] {
-                    let gname = &name_comp.0;
-                    if gname != "always" && !map.contains_key(gname) {
-                        if next_id as usize >= max_guards {
-                            return Err(rspu_err(format!(
-                                "{} R-SPU guard resource exhausted: {} guards > {}.",
-                                crate::error_codes::ec(703),
-                                next_id as usize + 1,
-                                max_guards,
-                            )));
-                        }
-                        map.insert(gname.clone(), next_id);
-                        entries.push((gname.clone(), next_id));
-                        next_id = next_id.saturating_add(1);
+    for reflex_comp in registry.reflex_comps.iter().flatten() {
+        for &guard_id in &reflex_comp.guards {
+            if let Some(name_comp) = &registry.names[guard_id.0 as usize] {
+                let gname = &name_comp.0;
+                if gname != "always" && !map.contains_key(gname) {
+                    if next_id as usize >= max_guards {
+                        return Err(rspu_err(format!(
+                            "{} R-SPU guard resource exhausted: {} guards > {}.",
+                            crate::error_codes::ec(703),
+                            next_id as usize + 1,
+                            max_guards,
+                        )));
                     }
+                    map.insert(gname.clone(), next_id);
+                    entries.push((gname.clone(), next_id));
+                    next_id = next_id.saturating_add(1);
                 }
             }
         }
@@ -322,8 +316,8 @@ enum GuardWork<'a> {
     Combine { name: &'a str, sub_guards: &'a [CompiledGuard], is_or: bool },
 }
 
-fn emit_temporal_guards<'a>(
-    guards: &'a [CompiledGuard],
+fn emit_temporal_guards(
+    guards: &[CompiledGuard],
     regs: &mut RegAllocResult,
     guard_map: &HashMap<String, GuardId>,
     instrs: &mut Vec<RspuInstruction>,
@@ -360,7 +354,8 @@ fn emit_temporal_guards<'a>(
                 match guard {
                     CompiledGuard::ShiftRegister(sr) => {
                         let gid = guard_map[&sr.name];
-                        let cond_reg = condition_to_reg(&sr.condition_kind, regs, instrs, registry)?;
+                        let cond_reg =
+                            condition_to_reg(&sr.condition_kind, regs, instrs, registry)?;
                         instrs.push(RspuInstruction::SrInit {
                             guard: gid,
                             length: sr.delay_cycles as u32,
@@ -376,7 +371,8 @@ fn emit_temporal_guards<'a>(
                     }
                     CompiledGuard::Counter(cg) => {
                         let gid = guard_map[&cg.name];
-                        let cond_reg = condition_to_reg(&cg.condition_kind, regs, instrs, registry)?;
+                        let cond_reg =
+                            condition_to_reg(&cg.condition_kind, regs, instrs, registry)?;
                         instrs.push(RspuInstruction::CtrInit {
                             guard: gid,
                             target: cg.target_count,
@@ -409,7 +405,8 @@ fn emit_temporal_guards<'a>(
                     }
                     CompiledGuard::DynamicCounter(dc) => {
                         let gid = guard_map[&dc.name];
-                        let cond_reg = condition_to_reg(&dc.condition_kind, regs, instrs, registry)?;
+                        let cond_reg =
+                            condition_to_reg(&dc.condition_kind, regs, instrs, registry)?;
                         instrs.push(RspuInstruction::CtrInit {
                             guard: gid,
                             target: dc.max_delay,
@@ -456,7 +453,11 @@ fn emit_reflex(
     instrs: &mut Vec<RspuInstruction>,
     registry: &crate::ecs::Registry,
 ) -> Result<(), MirrError> {
-    let guard_names: Vec<String> = reflex.guards.iter().filter_map(|&g| registry.names[g.0 as usize].as_ref().map(|n| n.0.clone())).collect();
+    let guard_names: Vec<String> = reflex
+        .guards
+        .iter()
+        .filter_map(|&g| registry.names[g.0 as usize].as_ref().map(|n| n.0.clone()))
+        .collect();
 
     // 1. Resolve temporal_gid to the first guard (if any), otherwise always (0)
     let gid = if guard_names.is_empty() {
@@ -502,16 +503,20 @@ fn emit_reflex(
         if let Some(assignment) = &registry.assignment_comps[assignment_id.0 as usize] {
             regs.next_temp = assignment_temp_start;
 
-            let target_name = registry.names[assignment.target.0 as usize].as_ref().map(|n| n.0.clone()).unwrap_or_default();
+            let target_name = registry.names[assignment.target.0 as usize]
+                .as_ref()
+                .map(|n| n.0.clone())
+                .unwrap_or_default();
             let dst_reg = regs.map.get(&target_name).copied().unwrap_or(0);
 
             if let Some(acc) = acc_reg {
                 // Check if the assigned value is a literal boolean `true`
-                let is_bool_true = if let Some(lit) = &registry.literals[assignment.value.0 as usize] {
-                    matches!(lit.0, crate::ast::types::LiteralValue::Bool(true))
-                } else {
-                    false
-                };
+                let is_bool_true =
+                    if let Some(lit) = &registry.literals[assignment.value.0 as usize] {
+                        matches!(lit.0, crate::ast::types::LiteralValue::Bool(true))
+                    } else {
+                        false
+                    };
 
                 if is_bool_true {
                     // Highly optimized 1-instruction path: final = dst_reg | acc
@@ -536,7 +541,9 @@ fn emit_reflex(
 
                     // Cast acc to dst_reg's tag to satisfy strict ALU typing
                     let acc_cast = regs.alloc_temp().ok_or_else(|| {
-                        rspu_err("R-SPU temporary registers exhausted during reflex assignment cast.")
+                        rspu_err(
+                            "R-SPU temporary registers exhausted during reflex assignment cast.",
+                        )
                     })?;
                     let dst_tag =
                         crate::emit::rspu_helpers::get_signal_tag_byte(&target_name, registry);
@@ -608,4 +615,3 @@ fn emit_reflex(
 pub(crate) fn rspu_err(msg: impl Into<String>) -> MirrError {
     MirrError::RspuError { message: msg.into(), span: None }
 }
-
