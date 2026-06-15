@@ -25,14 +25,18 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         pattern_origins: Vec::new(),
         span: None,
     };
+    let program = MirrProgram {
+        target: None,
+        patterns: Vec::new(),
+        imports: Vec::new(),
+        module,
+    };
+    let mut reg = mirrc::ecs::Registry::new();
+    mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+
     PipelineResult {
         hls_result: None,
-        program: Some(MirrProgram {
-            target: None,
-            patterns: Vec::new(),
-            imports: Vec::new(),
-            module,
-        }),
+        program: Some(program),
         simplify_stats: None,
         sat_stats: None,
         width_stats: None,
@@ -46,7 +50,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         totality_result: None,
         symbolic_result: None,
         mape_k_rtl: None,
-        ecs_registry: Some(mirrc::ecs::Registry::new()),
+        ecs_registry: Some(reg),
         file_table: mirrc::span::FileTable::new(),
     }
 }

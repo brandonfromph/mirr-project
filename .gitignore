@@ -224,3 +224,5 @@ verify_synth.ys
 *.smt2
 *.smtc
 *.yw
+
+gha-creds-*.json

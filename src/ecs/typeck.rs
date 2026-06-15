@@ -484,6 +484,8 @@ impl Registry {
         match (target, expr) {
             (SignalType::Unsigned(tw), SignalType::Unsigned(ew)) => ew <= tw,
             (SignalType::Signed(tw), SignalType::Signed(ew)) => ew <= tw,
+            (SignalType::Unsigned(tw), SignalType::Signed(ew)) if tw == ew => true,
+            (SignalType::Signed(tw), SignalType::Unsigned(ew)) if tw == ew => true,
             (SignalType::Bool, SignalType::Unsigned(1))
             | (SignalType::Unsigned(1), SignalType::Bool) => true,
             _ => false,

@@ -239,6 +239,41 @@ pub fn drive_parsed_module_with_interpreter(
                         *v = Value::Bool(true);
                     }
                 }
+                "break" => {
+                    if let Some(v) = env.get_mut("input_ident_break") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "while" => {
+                    if let Some(v) = env.get_mut("input_ident_while") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "match" => {
+                    if let Some(v) = env.get_mut("input_ident_match") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "const" => {
+                    if let Some(v) = env.get_mut("input_ident_const") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "return" => {
+                    if let Some(v) = env.get_mut("input_ident_return") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "struct" => {
+                    if let Some(v) = env.get_mut("input_ident_struct") {
+                        *v = Value::Bool(true);
+                    }
+                }
+                "cycles" => {
+                    if let Some(v) = env.get_mut("input_ident_cycles") {
+                        *v = Value::Bool(true);
+                    }
+                }
                 "internal" => {
                     if let Some(v) = env.get_mut("input_ident_internal") {
                         *v = Value::Bool(true);
