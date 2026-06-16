@@ -28,7 +28,7 @@ fn test_ecs_span_linkage_integrity() {
     let next_id = reg.active_entities();
     let mut signal_count = 0;
     for i in 0..next_id {
-        let idx = i as usize;
+        let idx = i;
         if let Some(kind) = &reg.kinds[idx] {
             if let EntityKind::SIGNAL(_) = kind.0 {
                 signal_count += 1;
@@ -88,7 +88,7 @@ fn test_internal_wiring_consistency() {
     let next_id = reg.active_entities();
     let mut bin_op_found = false;
     for i in 0..next_id {
-        let idx = i as usize;
+        let idx = i;
         if let Some(bin) = &reg.binary_ops[idx] {
             bin_op_found = true;
             // Verify that 'left' and 'right' point to valid SignalRef entities

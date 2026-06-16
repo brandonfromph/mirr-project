@@ -4,7 +4,6 @@
 use mirrc::ast::expr::Expr;
 use mirrc::ast::program::{Assignment, Guard, Module, Reflex, SignalDecl};
 use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
-use mirrc::validate_module;
 
 fn typecheck_module(module: &Module) -> Result<(), mirrc::error::PipelineErrors> {
     let mut registry = mirrc::ecs::Registry::new();

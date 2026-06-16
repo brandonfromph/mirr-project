@@ -19,7 +19,6 @@
 use mirrc::ast::expr::Expr;
 use mirrc::ast::program::SignalDecl;
 use mirrc::ast::types::*;
-use mirrc::width;
 use mirrc::width::types::*;
 
 // ---------------------------------------------------------------------------
@@ -774,7 +773,7 @@ fn width_diagnostic_info_display_format() {
 fn program_width_inference_basic() {
     use mirrc::ast::program::*;
 
-    let program = mirrc::MirrProgram {
+    let _program = mirrc::MirrProgram {
         target: None,
         patterns: Vec::new(),
         imports: Vec::new(),

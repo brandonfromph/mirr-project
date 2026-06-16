@@ -14,7 +14,7 @@ fn verify_registry_integrity(registry: &Registry) {
         return;
     }
     for i in 0..next_id {
-        let idx = i as usize;
+        let idx = i;
 
         // Skip 'holes' in the registry if ingestion was sparse
         if registry.kinds[idx].is_none() {

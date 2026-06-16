@@ -32,10 +32,12 @@ fn test_ecs_simplify_parity() {
     }
     "#;
 
-    let mut config = PipelineConfig::default();
-    config.simplify = true;
-    config.temporal = false; // Disable downstream
-    config.width = false;
+    let config = PipelineConfig {
+        simplify: true,
+        temporal: false, // Disable downstream
+        width: false,
+        ..PipelineConfig::default()
+    };
 
     let result = run_pipeline(source, &config).expect("Pipeline should run");
 
