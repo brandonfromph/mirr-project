@@ -712,6 +712,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
                     crate::parser::module_parser::macro_parser::parse_module_macro_stmts(
                         &dummy_lines_refs,
                         &mut local_index,
+                        0,
                     )?;
                 unexpanded.statements.extend(parsed_stmts);
 
@@ -734,7 +735,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
     }
 
     let parsed_stmts =
-        crate::parser::module_parser::macro_parser::parse_module_macro_stmts(lines, index)?;
+        crate::parser::module_parser::macro_parser::parse_module_macro_stmts(lines, index, 0)?;
     unexpanded.statements.extend(parsed_stmts);
 
     while *index < lines.len() {

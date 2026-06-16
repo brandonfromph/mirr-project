@@ -50,6 +50,8 @@ pub enum Token {
     Ge,
     /// `==` — equality.
     EqEq,
+    /// `=` — assignment.
+    Eq,
     /// `!=` — inequality.
     BangEq,
     /// `(` — left parenthesis.
@@ -72,10 +74,22 @@ pub enum Token {
     Colon,
     /// `.` — field access separator.
     Dot,
+    /// `;` — statement terminator.
+    Semicolon,
 }
 
 /// Tokenize an expression string into a sequence of tokens.
 pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
+    tokenize_internal(input, false)
+}
+
+/// Tokenize source code for structural analysis (depth tracking).
+/// Handles comments and is immune to braces inside comments or templates.
+pub fn tokenize_structural(input: &str) -> Result<Vec<Token>, MirrError> {
+    tokenize_internal(input, true)
+}
+
+fn tokenize_internal(input: &str, handle_comments: bool) -> Result<Vec<Token>, MirrError> {
     let bytes = input.as_bytes();
     let len = bytes.len();
     let mut pos = 0usize;
@@ -89,6 +103,15 @@ pub fn tokenize_expr(input: &str) -> Result<Vec<Token>, MirrError> {
         // Skip whitespace.
         if is_whitespace_byte(b) {
             pos += 1;
+            continue;
+        }
+
+        // Handle // comments if requested.
+        if handle_comments && b == b'/' && pos + 1 < len && bytes[pos + 1] == b'/' {
+            pos += 2;
+            while pos < len && bytes[pos] != b'\n' {
+                pos += 1;
+            }
             continue;
         }
 
@@ -244,6 +267,7 @@ fn match_single_char_operator(b: u8) -> Option<Token> {
         b'*' => Some(Token::Star),
         b'<' => Some(Token::Lt),
         b'>' => Some(Token::Gt),
+        b'=' => Some(Token::Eq),
         b'(' => Some(Token::LParen),
         b')' => Some(Token::RParen),
         b'{' => Some(Token::LBrace),
@@ -253,6 +277,7 @@ fn match_single_char_operator(b: u8) -> Option<Token> {
         b',' => Some(Token::Comma),
         b':' => Some(Token::Colon),
         b'.' => Some(Token::Dot),
+        b';' => Some(Token::Semicolon),
         _ => None,
     }
 }
@@ -280,6 +305,16 @@ mod tests {
         match &tokens[0] {
             Token::Ident(s) => assert_eq!(s, "r_${s}"),
             _ => panic!("Expected identifier token"),
+        }
+    }
+
+    #[test]
+    fn test_tokenize_structural_comments() {
+        let input = "x = 1; // comment { } \n y = 2;";
+        let tokens = tokenize_structural(input).unwrap();
+        // Should not have LBrace or RBrace from the comment
+        for tok in &tokens {
+            assert!(!matches!(tok, Token::LBrace | Token::RBrace));
         }
     }
 }

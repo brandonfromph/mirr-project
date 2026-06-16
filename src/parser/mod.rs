@@ -12,6 +12,102 @@ pub use expr_parser::parse_expression;
 pub use module_parser::parse_mirr;
 pub use pattern_parser::{is_pattern_call_line, parse_pattern_call, parse_pattern_def};
 
+/// Granular reader for line-oriented source code that supports tracking column position.
+/// Allows multiple statements or structural elements to exist on the same line.
+#[allow(dead_code)]
+pub(crate) struct LineReader<'a> {
+    pub lines: &'a [&'a str],
+    pub index: usize,
+    pub col: usize,
+    current_tokens: Vec<crate::lexer::Token>,
+    token_idx: usize,
+}
+
+#[allow(dead_code)]
+impl<'a> LineReader<'a> {
+    pub fn new(lines: &'a [&'a str]) -> Self {
+        Self { lines, index: 0, col: 0, current_tokens: Vec::new(), token_idx: 0 }
+    }
+
+    pub fn is_eof(&self) -> bool {
+        self.index >= self.lines.len() && self.token_idx >= self.current_tokens.len()
+    }
+
+    fn ensure_tokens(&mut self) -> Result<(), MirrError> {
+        while self.token_idx >= self.current_tokens.len() {
+            if self.index >= self.lines.len() {
+                break;
+            }
+            let line = self.lines[self.index];
+            self.current_tokens = crate::lexer::tokenizer::tokenize_structural(line)?;
+            self.token_idx = 0;
+            self.index += 1;
+        }
+        Ok(())
+    }
+
+    pub fn peek(&mut self) -> Result<Option<&crate::lexer::Token>, MirrError> {
+        self.ensure_tokens()?;
+        Ok(self.current_tokens.get(self.token_idx))
+    }
+
+    pub fn next(&mut self) -> Result<Option<crate::lexer::Token>, MirrError> {
+        self.ensure_tokens()?;
+        if self.token_idx < self.current_tokens.len() {
+            let tok = self.current_tokens[self.token_idx].clone();
+            self.token_idx += 1;
+            Ok(Some(tok))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn skip_whitespace(&mut self) {
+        // LineReader is token-based, so whitespace is skipped during tokenization
+    }
+}
+
+/// Robustly collect all lines belonging to a block starting at `*index`.
+/// Correctly handles nested braces, comments, and `${...}` templates.
+/// Returns the lines as a Vec of strings and advances `*index` past the closing brace.
+pub(crate) fn collect_block_lines(
+    lines: &[&str],
+    index: &mut usize,
+) -> Result<Vec<String>, MirrError> {
+    let mut depth = 1;
+    let mut collected = Vec::new();
+    let start_idx = *index;
+
+    while *index < lines.len() {
+        let line = lines[*index];
+        let tokens = crate::lexer::tokenizer::tokenize_structural(line)?;
+
+        for tok in &tokens {
+            match tok {
+                crate::lexer::Token::LBrace => depth += 1,
+                crate::lexer::Token::RBrace => {
+                    depth -= 1;
+                    if depth == 0 {
+                        // Found the matching brace. Consume this line and return.
+                        *index += 1;
+                        return Ok(collected);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        collected.push(line.to_string());
+        *index += 1;
+    }
+
+    Err(MirrError::parse_error(format!(
+        "{} Unclosed block starting at line {}.",
+        crate::error_codes::ec(106),
+        start_idx + 1
+    )))
+}
+
 /// Skip empty lines and comment lines in a line array.
 /// Used by module_parser and pattern_parser.
 pub(crate) fn skip_empty_and_comments(lines: &[&str], index: &mut usize) {

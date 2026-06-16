@@ -388,7 +388,7 @@ fn expand_reflex_internal(
             ReflexMacroStmt::IfElse { condition, true_branch, false_branch } => {
                 let cond_expr = expand_expr(&condition, &cur_env, &cur_signal_env);
 
-                // True branch
+                // True branch: use or synthesize a guard for the condition
                 let true_guard_name = synthesize_guard(&cond_expr, ctx, global_guards)?;
                 let mut true_guards = active_guards.clone();
                 true_guards.push(true_guard_name);
@@ -401,13 +401,43 @@ fn expand_reflex_internal(
                     ));
                 }
 
-                // False branch (negated condition)
+                // False branch: optimize "else if" by combining conditions to avoid intermediate guards
                 if !false_branch.is_empty() {
-                    let false_expr = Expr::Unary {
+                    let false_cond = Expr::Unary {
                         op: crate::ast::types::UnaryOp::Not,
                         operand: Box::new(cond_expr),
                     };
-                    let false_guard_name = synthesize_guard(&false_expr, ctx, global_guards)?;
+
+                    if false_branch.len() == 1 {
+                        if let ReflexMacroStmt::IfElse {
+                            condition: ref next_cond,
+                            true_branch: ref next_true,
+                            false_branch: ref next_false,
+                        } = false_branch[0]
+                        {
+                            // Combine: !cond && next_cond
+                            let combined_cond = Expr::Binary {
+                                op: crate::ast::types::BinaryOp::And,
+                                left: Box::new(false_cond),
+                                right: Box::new(expand_expr(next_cond, &cur_env, &cur_signal_env)),
+                            };
+                            let combined_stmt = ReflexMacroStmt::IfElse {
+                                condition: combined_cond,
+                                true_branch: next_true.clone(),
+                                false_branch: next_false.clone(),
+                            };
+                            stmts_to_process.push((
+                                combined_stmt,
+                                active_guards.clone(),
+                                cur_env.clone(),
+                                cur_signal_env.clone(),
+                            ));
+                            continue;
+                        }
+                    }
+
+                    // Fallback: synthesize a guard for the negated condition
+                    let false_guard_name = synthesize_guard(&false_cond, ctx, global_guards)?;
                     let mut false_guards = active_guards.clone();
                     false_guards.push(false_guard_name);
                     for b in false_branch.into_iter().rev() {
@@ -474,6 +504,13 @@ fn synthesize_guard(
     ctx: &mut ExpansionCtx,
     global_guards: &mut Vec<Guard>,
 ) -> Result<String, MirrError> {
+    // Optimization: If the condition is JUST a reference to an existing guard, reuse it.
+    if let Expr::Signal(ref name) = cond {
+        if ctx.declared_guards.contains(name) {
+            return Ok(name.clone());
+        }
+    }
+
     // BUG-4: Deduplicate identical synthesized conditions to minimize token usage and RTL bloat.
     for g in global_guards.iter() {
         if g.name.starts_with("auto_g_") && &g.condition == cond && g.cycles == 1 {

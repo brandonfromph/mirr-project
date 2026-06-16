@@ -125,30 +125,35 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
         flag.set(true);
         p
     });
-    let statements =
-        crate::parser::module_parser::macro_parser::parse_module_macro_stmts(lines, index)
-            .map_err(|e| {
-                let span = e.span();
-                MirrError::PatternError {
-                    message: format!("In pattern '{name}' reflect body: {e}"),
-                    span,
-                }
-            })?;
+
+    let block_offset = *index;
+    let block_lines_owned =
+        crate::parser::collect_block_lines(lines, index).map_err(|e| MirrError::PatternError {
+            message: format!("In pattern '{name}' reflect body: {e}"),
+            span: None,
+        })?;
+    let block_lines: Vec<&str> = block_lines_owned.iter().map(|s| s.as_str()).collect();
+    let mut block_index = 0;
+
+    let statements = crate::parser::module_parser::macro_parser::parse_module_macro_stmts(
+        &block_lines,
+        &mut block_index,
+        block_offset,
+    )
+    .map_err(|e| {
+        let span = e.span();
+        MirrError::PatternError { message: format!("In pattern '{name}' reflect body: {e}"), span }
+    })?;
     crate::parser::module_parser::macro_parser::IN_PATTERN_REFLECT.with(|flag| {
         flag.set(prev);
     });
 
     if !is_flat_pattern {
-        // Skip past the closing brace of the reflect block.
-        if *index < lines.len() && lines[*index].trim().starts_with('}') {
+        // Now skip to the closing brace of the def/pattern block.
+        skip_empty_and_comments(lines, index);
+        if *index < lines.len() && lines[*index].trim() == "}" {
             *index += 1;
         }
-    }
-
-    // Now skip to the closing brace of the def/pattern block.
-    skip_empty_and_comments(lines, index);
-    if *index < lines.len() && lines[*index].trim() == "}" {
-        *index += 1;
     }
 
     let body = ReflectBlock { statements };
@@ -159,39 +164,32 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
 /// Collect the full `def` header, which may span multiple lines.
 ///
 /// Joins lines until we see `) {` or `){`. Returns the joined header string.
-/// Bounded: at most 64 lines for a header.
+/// Bounded: at most 1024 lines for a header.
 fn collect_def_header(lines: &[&str], index: &mut usize) -> Result<String, MirrError> {
     let mut header = String::new();
     let max_header_lines = 1024usize;
     let mut count = 0usize;
 
     while *index < lines.len() && count < max_header_lines {
-        let line = lines[*index].trim();
+        let line = lines[*index];
         *index += 1;
         count += 1;
-
-        if line.is_empty() || line.starts_with("//") {
-            continue;
-        }
 
         if !header.is_empty() {
             header.push('\n');
         }
         header.push_str(line);
 
-        // Check if we've seen closing parenthesis followed by opening brace
-        let clean_check = header.replace(|c: char| c.is_whitespace(), "");
-        if clean_check.contains("){") {
-            return Ok(header);
-        }
-    }
-
-    // If header ends with just `)` and next non-empty line is `{`, that's also valid.
-    if header.contains(')') {
-        skip_empty_and_comments(lines, index);
-        if *index < lines.len() && lines[*index].trim().starts_with('{') {
-            *index += 1;
-            return Ok(header);
+        // Use robust structural tokenization to check for header end: `) {`
+        if let Ok(tokens) = crate::lexer::tokenizer::tokenize_structural(&header) {
+            let mut seen_rparen = false;
+            for tok in &tokens {
+                match tok {
+                    crate::lexer::Token::RParen => seen_rparen = true,
+                    crate::lexer::Token::LBrace if seen_rparen => return Ok(header),
+                    _ => seen_rparen = false,
+                }
+            }
         }
     }
 
@@ -424,29 +422,32 @@ fn parse_pattern_call_str(full_call: &str) -> Result<PatternCall, MirrError> {
 /// Collect a pattern call header, which may span multiple lines.
 ///
 /// Joins lines until we see `);`. Returns the joined string.
-/// Bounded: at most 64 lines.
+/// Bounded: at most 1024 lines.
 fn collect_call_header(lines: &[&str], index: &mut usize) -> Result<String, MirrError> {
     let mut header = String::new();
     let max_header_lines = 1024usize;
     let mut count = 0usize;
 
     while *index < lines.len() && count < max_header_lines {
-        let line = lines[*index].trim();
+        let line = lines[*index];
         *index += 1;
         count += 1;
-
-        if line.is_empty() || line.starts_with("//") {
-            continue;
-        }
 
         if !header.is_empty() {
             header.push(' ');
         }
         header.push_str(line);
 
-        // Check if we've seen `);` marking end of call.
-        if header.ends_with(");") || header.contains(");") {
-            return Ok(header);
+        // Use robust structural tokenization to check for call end: `);`
+        if let Ok(tokens) = crate::lexer::tokenizer::tokenize_structural(&header) {
+            let mut seen_rparen = false;
+            for tok in &tokens {
+                match tok {
+                    crate::lexer::Token::RParen => seen_rparen = true,
+                    crate::lexer::Token::Semicolon if seen_rparen => return Ok(header),
+                    _ => seen_rparen = false,
+                }
+            }
         }
     }
 

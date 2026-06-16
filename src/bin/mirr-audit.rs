@@ -110,48 +110,18 @@ pub fn run(args: Args) -> anyhow::Result<()> {
     let root = std::env::current_dir()?;
 
     // D2: Attribute pattern scan
-    let re_deprecated = Regex::new(
-        &(String::from(r"#\[")
-            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100])?
-            + r"\]|#\[allow\("
-            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100])?
-            + r"\)\]"),
-    )?;
+    let re_deprecated = Regex::new(r"#\[deprecated\]|#\[allow\(deprecated\)\]")?;
     // D3: No unused blocks
-    let re_dead_code = Regex::new(
-        &(String::from(r"#\[allow\(")
-            + &String::from_utf8(vec![100, 101, 97, 100, 95, 99, 111, 100, 101])?
-            + r"\)\]|#\[cfg\(never\)\]"),
-    )?;
-    let str_1 = String::from_utf8(vec![111, 108, 100])?;
-    let str_2 = String::from_utf8(vec![108, 101, 103, 97, 99, 121])?;
-    let re_shim = Regex::new(
-        &(String::from(r"\b(_")
-            + &String::from_utf8(vec![117, 110, 117, 115, 101, 100])?
-            + r"|_"
-            + &str_1
-            + r"|_"
-            + &String::from_utf8(vec![99, 111, 109, 112, 97, 116])?
-            + r"|_"
-            + &str_2
-            + r")\b|//.*("
-            + &String::from_utf8(vec![114, 101, 109, 111, 118, 101, 100])?
-            + r"|"
-            + &String::from_utf8(vec![100, 101, 112, 114, 101, 99, 97, 116, 101, 100])?
-            + r"|TODO: remove)"),
-    )?;
+    let re_dead_code = Regex::new(r"#\[allow\(dead_code\)\]|#\[cfg\(never\)\]")?;
+
+    let re_shim =
+        Regex::new(r"\b(_unused|_old|_compat|_legacy)\b|//.*(removed|deprecated|TODO: remove)")?;
 
     // D7: No misleading comments (heuristic)
-    let str_3 = String::from_utf8(vec![115, 116, 97, 108, 101])?;
-    let re_stale = Regex::new(
-        &(String::from(r"//.*\b(")
-            + &str_3
-            + r"|"
-            + &str_2
-            + r"|"
-            + &str_1
-            + r"|previous version)\b"),
-    )?;
+    let re_stale = Regex::new(r"//.*\b(stale|legacy|old|previous version)\b")?;
+
+    // D1: No stubs/unimplemented logic
+    let re_stub = Regex::new(r"\bunimplemented!\(|\btodo!\(|\bpanic!\(")?;
 
     // Security: Red Lines
     let re_red_line = Regex::new(r"std::net|std::fs|std::process|Command::new|TcpStream")?;
@@ -303,6 +273,14 @@ pub fn run(args: Args) -> anyhow::Result<()> {
                             line: l_num,
                             rule: "D7".to_string(),
                             message: "Stale comment".to_string(),
+                        });
+                    }
+                    if re_stub.is_match(line) {
+                        findings.push(AuditFinding {
+                            file: rel_path.clone(),
+                            line: l_num,
+                            rule: "D1".to_string(),
+                            message: "Unimplemented stub or panic".to_string(),
                         });
                     }
                 }

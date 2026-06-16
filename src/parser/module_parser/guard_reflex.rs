@@ -65,11 +65,11 @@ pub(super) fn parse_guard(lines: &[&str], index: &mut usize) -> Result<Guard, Mi
         let trimmed = after_keyword.trim();
 
         // Handle 'name = when ...' or 'name when ...'
-        let (name, remaining) = if is_let && trimmed.contains('=') {
+        let (name, remaining) = if trimmed.contains('=') {
             let (n, r) = trimmed.split_once('=').ok_or_else(|| {
                 emit_at(
                     ErrorCode::GuardMalformed,
-                    "Expected '=' in let guard binding",
+                    "Expected '=' in guard binding",
                     Span::full_line(start_line as u32),
                 )
             })?;
