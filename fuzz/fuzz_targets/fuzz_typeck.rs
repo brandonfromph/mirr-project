@@ -1,11 +1,16 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use mirrc::{parse_mirr, typecheck_module};
+use mirrc::{parse_mirr, run_pipeline_on_program, PipelineConfig};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
         if let Ok(program) = parse_mirr(s) {
-            let _ = typecheck_module(&program.module);
+            let mut config = PipelineConfig::default();
+            config.temporal = false;
+            config.width = false;
+            config.simulate = false;
+            config.mape_k = false;
+            let _ = run_pipeline_on_program(program, &config);
         }
     }
 });

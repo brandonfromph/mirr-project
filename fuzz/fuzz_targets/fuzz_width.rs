@@ -1,12 +1,16 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use mirrc::parse_mirr;
-use mirrc::width;
+use mirrc::{parse_mirr, run_pipeline_on_program, PipelineConfig};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
         if let Ok(program) = parse_mirr(s) {
-            let _ = width::infer_program_widths_with_scc(&program, None);
+            let mut config = PipelineConfig::default();
+            config.temporal = false;
+            config.width = true;
+            config.simulate = false;
+            config.mape_k = false;
+            let _ = run_pipeline_on_program(program, &config);
         }
     }
 });
