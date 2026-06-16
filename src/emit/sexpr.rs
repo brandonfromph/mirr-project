@@ -8,12 +8,17 @@
 
 use crate::pipeline::PipelineResult;
 
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
+
 /// Emit the parsed MIRR program as an S-expression.
 ///
 /// Operates on the final typed AST (after expansion, type-checking,
 /// and width inference).
-pub fn emit_sexpr(result: &PipelineResult) -> String {
-    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+pub fn emit_sexpr(result: &PipelineResult) -> Result<String, MirrError> {
+    let registry = result.ecs_registry.as_ref().ok_or_else(|| {
+        mirrcode(ErrorCode::SExprFallback, "ECS registry required for S-expression emission")
+    })?;
     let name = registry.get_module_name().unwrap_or_else(|| "unknown".to_string());
 
     let mut signal_parts = Vec::new();
@@ -25,7 +30,7 @@ pub fn emit_sexpr(result: &PipelineResult) -> String {
         }
     }
 
-    format!("(ecs-program (module {} {}))", name, signal_parts.join(" "))
+    Ok(format!("(ecs-program (module {} {}))", name, signal_parts.join(" ")))
 }
 
 #[cfg(test)]
@@ -72,7 +77,7 @@ mod tests {
             ecs_registry: Some(reg),
             file_table: crate::span::FileTable::new(),
         };
-        let output = emit_sexpr(&result);
+        let output = emit_sexpr(&result).expect("Failed to emit sexpr");
         assert!(output.contains("module"));
         assert!(output.contains("empty"));
     }

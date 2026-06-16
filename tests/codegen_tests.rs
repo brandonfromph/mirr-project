@@ -20,7 +20,7 @@ fn compile_to_verilog(source: &str) -> String {
 fn compile_to_firrtl(source: &str) -> String {
     let config = PipelineConfig::default();
     let result = run_pipeline(source, &config).expect("pipeline failed");
-    emit_firrtl(&result)
+    emit_firrtl(&result).expect("Failed to emit FIRRTL")
 }
 
 // ---------------------------------------------------------------------------

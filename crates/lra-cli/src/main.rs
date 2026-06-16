@@ -291,7 +291,13 @@ fn compile_via_library(source: &str, target: &str, output: Option<&str>) -> i32 
 
     let compiled = match target {
         "verilog" | "sv" => emit::verilog::emit_sv(&result),
-        "firrtl" => emit::firrtl::emit_firrtl(&result),
+        "firrtl" => match emit::firrtl::emit_firrtl(&result) {
+            Ok(firrtl) => firrtl,
+            Err(e) => {
+                eprintln!("Error: FIRRTL emission failed: {e}");
+                return 1;
+            }
+        },
         "rspu" => match &result.rspu_program {
             Some(program) => program.emit_asm(),
             None => {
@@ -308,7 +314,13 @@ fn compile_via_library(source: &str, target: &str, output: Option<&str>) -> i32 
                 return 1;
             }
         },
-        "sexpr" | "s-expr" | "sexp" => emit::sexpr::emit_sexpr(&result),
+        "sexpr" | "s-expr" | "sexp" => match emit::sexpr::emit_sexpr(&result) {
+            Ok(sexpr) => sexpr,
+            Err(e) => {
+                eprintln!("Error: S-expression emission failed: {e}");
+                return 1;
+            }
+        },
         "dot" => emit::dot::emit_module_dot(&result),
         other => {
             eprintln!(

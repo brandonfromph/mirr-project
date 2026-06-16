@@ -21,10 +21,15 @@ use crate::ast::MAX_EXPR_NODES;
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
 
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
+
 /// Emit FIRRTL from pipeline results.
-pub fn emit_firrtl(result: &PipelineResult) -> String {
+pub fn emit_firrtl(result: &PipelineResult) -> Result<String, MirrError> {
     let mut out = String::with_capacity(4096);
-    let registry = result.ecs_registry.as_ref().expect("ECS registry must be populated");
+    let registry = result.ecs_registry.as_ref().ok_or_else(|| {
+        mirrcode(ErrorCode::RspuFallback, "ECS registry must be populated for FIRRTL emission")
+    })?;
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     emit_header(&mut out);
@@ -34,7 +39,7 @@ pub fn emit_firrtl(result: &PipelineResult) -> String {
 
     emit_module(&module_name, registry, result.temporal_netlist.as_ref(), &mut out);
 
-    out
+    Ok(out)
 }
 
 // -----------------------------------------------------------------------

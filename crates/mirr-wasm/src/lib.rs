@@ -192,10 +192,10 @@ pub fn compile_firrtl(source: &str) -> String {
     }
     let config = default_config();
     match run_pipeline(source, &config) {
-        Ok(result) => {
-            let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
-            wasm_ok(serde_json::Value::String(firrtl))
-        }
+        Ok(result) => match mirrc::emit::firrtl::emit_firrtl(&result) {
+            Ok(firrtl) => wasm_ok(serde_json::Value::String(firrtl)),
+            Err(e) => wasm_err(&e.into()),
+        },
         Err(errors) => wasm_err(&errors),
     }
 }
@@ -207,10 +207,10 @@ pub fn compile_sexpr(source: &str) -> String {
     }
     let config = default_config();
     match run_pipeline(source, &config) {
-        Ok(result) => {
-            let sexpr = mirrc::emit::sexpr::emit_sexpr(&result);
-            wasm_ok(serde_json::Value::String(sexpr))
-        }
+        Ok(result) => match mirrc::emit::sexpr::emit_sexpr(&result) {
+            Ok(sexpr) => wasm_ok(serde_json::Value::String(sexpr)),
+            Err(e) => wasm_err(&e.into()),
+        },
         Err(errors) => wasm_err(&errors),
     }
 }
@@ -443,7 +443,10 @@ pub fn compile_target(source: &str, target: &str) -> String {
         "firrtl" => {
             let config = default_config();
             match run_pipeline(source, &config) {
-                Ok(result) => mirrc::emit::firrtl::emit_firrtl(&result),
+                Ok(result) => match mirrc::emit::firrtl::emit_firrtl(&result) {
+                    Ok(out) => out,
+                    Err(e) => return wasm_err(&e.into()),
+                },
                 Err(errors) => return wasm_err(&errors),
             }
         }
@@ -482,7 +485,10 @@ pub fn compile_target(source: &str, target: &str) -> String {
         "sexpr" => {
             let config = default_config();
             match run_pipeline(source, &config) {
-                Ok(result) => mirrc::emit::sexpr::emit_sexpr(&result),
+                Ok(result) => match mirrc::emit::sexpr::emit_sexpr(&result) {
+                    Ok(out) => out,
+                    Err(e) => return wasm_err(&e.into()),
+                },
                 Err(errors) => return wasm_err(&errors),
             }
         }
@@ -598,7 +604,12 @@ pub fn simulate_waveform(source: &str, cycles: u32) -> String {
         Ok(result) => {
             use mirrc::temporal::low_level_ir::CompiledGuard;
 
-            let registry = result.ecs_registry.as_ref().unwrap();
+            let Some(registry) = result.ecs_registry.as_ref() else {
+                return serde_json::json!({
+                    "signals": []
+                })
+                .to_string();
+            };
             let mut signals = Vec::new();
 
             let mut si = 0;

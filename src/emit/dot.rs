@@ -19,7 +19,10 @@ const MAX_DOT_NODES: usize = 4096;
 /// Emit module-level DOT graph from pipeline results.
 pub fn emit_module_dot(result: &PipelineResult) -> String {
     let mut out = String::with_capacity(2048);
-    let registry = result.ecs_registry.as_ref().unwrap();
+    let registry = match &result.ecs_registry {
+        Some(r) => r,
+        None => return "// No ECS registry available for DOT emission\n".to_string(),
+    };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     out.push_str("digraph ");
@@ -48,7 +51,10 @@ pub fn emit_module_dot(result: &PipelineResult) -> String {
 /// Emit expr-level DOT graph (full AST tree per expression).
 pub fn emit_expr_dot(result: &PipelineResult) -> String {
     let mut out = String::with_capacity(4096);
-    let registry = result.ecs_registry.as_ref().unwrap();
+    let registry = match &result.ecs_registry {
+        Some(r) => r,
+        None => return "// No ECS registry available for DOT emission\n".to_string(),
+    };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     out.push_str("digraph ");
@@ -84,16 +90,21 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
             if let crate::ecs::EntityKind::REFLEX = kind_comp.0 {
                 for a_id in &r.assignments {
                     if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
-                        let target_name =
-                            &registry.names[assign.target.0 as usize].as_ref().unwrap().0;
-                        out.push_str(&format!(
-                            "  subgraph cluster_{}_{} {{\n",
-                            sanitize_id(&name_comp.0),
-                            sanitize_id(target_name)
-                        ));
-                        out.push_str(&format!("    label=\"{}.{}\";\n", name_comp.0, target_name));
-                        emit_expr_nodes_ecs(registry, assign.value, &mut node_id, &mut out);
-                        out.push_str("  }\n");
+                        let target_name_opt =
+                            registry.names[assign.target.0 as usize].as_ref().map(|n| &n.0);
+                        if let Some(target_name) = target_name_opt {
+                            out.push_str(&format!(
+                                "  subgraph cluster_{}_{} {{\n",
+                                sanitize_id(&name_comp.0),
+                                sanitize_id(target_name)
+                            ));
+                            out.push_str(&format!(
+                                "    label=\"{}.{}\";\n",
+                                name_comp.0, target_name
+                            ));
+                            emit_expr_nodes_ecs(registry, assign.value, &mut node_id, &mut out);
+                            out.push_str("  }\n");
+                        }
                     }
                 }
             }
@@ -352,17 +363,21 @@ fn emit_reflex_edges(registry: &crate::ecs::Registry, out: &mut String) {
         {
             if let crate::ecs::EntityKind::REFLEX = kind_comp.0 {
                 for gname in &r.guards {
-                    let g_name_str = &registry.names[gname.0 as usize].as_ref().unwrap().0;
-                    for a_id in &r.assignments {
-                        if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
-                            let target_name =
-                                &registry.names[assign.target.0 as usize].as_ref().unwrap().0;
-                            out.push_str(&format!(
-                                "  {} -> {} [label=\"{}\"];\n",
-                                guard_node_id(g_name_str),
-                                sanitize_id(target_name),
-                                name_comp.0,
-                            ));
+                    let g_name_str_opt = registry.names[gname.0 as usize].as_ref().map(|n| &n.0);
+                    if let Some(g_name_str) = g_name_str_opt {
+                        for a_id in &r.assignments {
+                            if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
+                                let target_name_opt =
+                                    registry.names[assign.target.0 as usize].as_ref().map(|n| &n.0);
+                                if let Some(target_name) = target_name_opt {
+                                    out.push_str(&format!(
+                                        "  {} -> {} [label=\"{}\"];\n",
+                                        guard_node_id(g_name_str),
+                                        sanitize_id(target_name),
+                                        name_comp.0,
+                                    ));
+                                }
+                            }
                         }
                     }
                 }
@@ -451,8 +466,12 @@ fn emit_expr_nodes_ecs(
         } else if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
             registry.signal_refs[idx]
         {
-            let name = registry.names[sig_ent.0 as usize].as_ref().unwrap().0.clone();
-            out.push_str(&format!("    n{my_id} [label=\"{name}\" shape=ellipse];\n"));
+            let name_opt = registry.names[sig_ent.0 as usize].as_ref().map(|n| &n.0);
+            if let Some(name) = name_opt {
+                out.push_str(&format!("    n{my_id} [label=\"{name}\" shape=ellipse];\n"));
+            } else {
+                out.push_str(&format!("    n{my_id} [label=\"unknown_sig\" shape=ellipse];\n"));
+            }
         } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
             &registry.pending_signal_refs[idx]
         {

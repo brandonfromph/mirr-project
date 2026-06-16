@@ -305,7 +305,16 @@ fn parse_assert_always_default() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Assert
     );
 }
@@ -315,7 +324,16 @@ fn parse_cover_always() {
     let src = mirr_with_property("cover always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Cover
     );
 }
@@ -325,7 +343,16 @@ fn parse_assume_always() {
     let src = mirr_with_property("assume always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Assume
     );
 }
@@ -335,11 +362,29 @@ fn parse_cover_never() {
     let src = mirr_with_property("cover never (x > 100);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Cover
     );
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::Never(_)
     ));
 }
@@ -349,11 +394,29 @@ fn parse_assume_implies() {
     let src = mirr_with_property("assume always (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Assume
     );
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::AlwaysImplies { .. }
     ));
 }
@@ -363,11 +426,29 @@ fn parse_cover_shorthand_parens() {
     let src = mirr_with_property("cover (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Cover
     );
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::Always(_)
     ));
 }
@@ -381,7 +462,16 @@ fn parse_never_implies() {
     let src = mirr_with_property("never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::NeverImplies { .. }
     ));
 }
@@ -391,11 +481,29 @@ fn parse_cover_never_implies() {
     let src = mirr_with_property("cover never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Cover
     );
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::NeverImplies { .. }
     ));
 }
@@ -420,7 +528,17 @@ fn never_implies_validation_passes() {
 fn parse_eventually_within() {
     let src = mirr_with_property("eventually within 10 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    match &result.program.as_ref().unwrap().module.properties[0].formula {
+    match &result
+        .ecs_registry
+        .as_ref()
+        .unwrap()
+        .property_comps
+        .iter()
+        .flatten()
+        .next()
+        .unwrap()
+        .formula
+    {
         PropertyFormula::EventuallyWithin { cycles, .. } => {
             assert_eq!(*cycles, 10);
         }
@@ -433,11 +551,29 @@ fn parse_cover_eventually_within() {
     let src = mirr_with_property("cover eventually within 5 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Cover
     );
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::EventuallyWithin { .. }
     ));
 }
@@ -478,7 +614,17 @@ fn eventually_within_validation_passes() {
 fn parse_always_followed_by() {
     let src = mirr_with_property("always (x > 100 followed_by 5 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    match &result.program.as_ref().unwrap().module.properties[0].formula {
+    match &result
+        .ecs_registry
+        .as_ref()
+        .unwrap()
+        .property_comps
+        .iter()
+        .flatten()
+        .next()
+        .unwrap()
+        .formula
+    {
         PropertyFormula::AlwaysFollowedBy { delay_cycles, .. } => {
             assert_eq!(*delay_cycles, 5);
         }
@@ -491,11 +637,29 @@ fn parse_assume_always_followed_by() {
     let src = mirr_with_property("assume always (x > 100 followed_by 3 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Assume
     );
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::AlwaysFollowedBy { .. }
     ));
 }
@@ -610,7 +774,7 @@ fn json_directive_field_present() {
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
     assert!(json.contains("\"directive\""), "Expected directive in JSON: {json}");
-    assert!(json.contains("\"cover\""), "Expected 'cover' directive: {json}");
+    assert!(json.contains("\"Cover\""), "Expected 'Cover' directive: {json}");
 }
 
 #[test]
@@ -618,7 +782,7 @@ fn json_never_implies_kind() {
     let src = mirr_with_property("never (x > 100 -> y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
-    assert!(json.contains("\"never_implies\""), "Expected 'never_implies' kind in JSON: {json}");
+    assert!(json.contains("\"NeverImplies\""), "Expected 'NeverImplies' kind in JSON: {json}");
 }
 
 #[test]
@@ -626,7 +790,7 @@ fn json_eventually_within_kind() {
     let src = mirr_with_property("eventually within 7 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
-    assert!(json.contains("\"eventually_within\""), "Expected 'eventually_within' kind: {json}");
+    assert!(json.contains("\"EventuallyWithin\""), "Expected 'EventuallyWithin' kind: {json}");
 }
 
 #[test]
@@ -634,7 +798,7 @@ fn json_always_followed_by_kind() {
     let src = mirr_with_property("always (x > 100 followed_by 3 y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     let json = mirrc::emit::json_netlist::emit_json(&result).unwrap();
-    assert!(json.contains("\"always_followed_by\""), "Expected 'always_followed_by' kind: {json}");
+    assert!(json.contains("\"AlwaysFollowedBy\""), "Expected 'AlwaysFollowedBy' kind: {json}");
 }
 
 // ===========================================================================
@@ -645,7 +809,7 @@ fn json_always_followed_by_kind() {
 fn firrtl_property_comment_assert() {
     let src = mirr_with_property("always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result).expect("Failed to emit FIRRTL");
     assert!(firrtl.contains("; property p:"), "Expected FIRRTL property comment: {firrtl}");
 }
 
@@ -653,7 +817,7 @@ fn firrtl_property_comment_assert() {
 fn firrtl_property_comment_cover_prefix() {
     let src = mirr_with_property("cover always (x > 0);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result).expect("Failed to emit FIRRTL");
     assert!(
         firrtl.contains("; cover property p:"),
         "Expected 'cover property' in FIRRTL comment: {firrtl}"
@@ -664,7 +828,7 @@ fn firrtl_property_comment_cover_prefix() {
 fn firrtl_eventually_within_comment() {
     let src = mirr_with_property("eventually within 5 (y);");
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
-    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result).expect("Failed to emit FIRRTL");
     assert!(
         firrtl.contains("eventually within 5"),
         "Expected 'eventually within 5' in FIRRTL: {firrtl}"
@@ -745,7 +909,16 @@ module m {
     assert_eq!(result.program.as_ref().unwrap().module.properties.len(), 6);
 
     assert!(matches!(
-        result.program.as_ref().unwrap().module.properties[0].formula,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .formula,
         PropertyFormula::Always(_)
     ));
     assert!(matches!(
@@ -780,7 +953,16 @@ fn full_pipeline_mixed_directives() {
     let result = run_pipeline(&src, &pipeline_config()).unwrap();
     assert_eq!(result.program.as_ref().unwrap().module.properties.len(), 3);
     assert_eq!(
-        result.program.as_ref().unwrap().module.properties[0].directive,
+        result
+            .ecs_registry
+            .as_ref()
+            .unwrap()
+            .property_comps
+            .iter()
+            .flatten()
+            .next()
+            .unwrap()
+            .directive,
         PropertyDirective::Assert
     );
     assert_eq!(

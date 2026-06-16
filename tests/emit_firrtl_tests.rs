@@ -14,7 +14,7 @@ use mirrc::pipeline::{run_pipeline, PipelineConfig};
 fn firrtl_from(src: &str) -> String {
     let config = PipelineConfig::default();
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
-    emit_firrtl(&result)
+    emit_firrtl(&result).expect("Failed to emit FIRRTL")
 }
 
 /// Helper: run pipeline with temporal disabled.
@@ -31,7 +31,7 @@ fn firrtl_no_temporal(src: &str) -> String {
         ..PipelineConfig::default()
     };
     let result = run_pipeline(src, &config).expect("pipeline should succeed");
-    emit_firrtl(&result)
+    emit_firrtl(&result).expect("Failed to emit FIRRTL")
 }
 
 // ---------------------------------------------------------------------------

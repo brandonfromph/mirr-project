@@ -188,97 +188,32 @@ pub fn drive_parsed_module_with_interpreter(
                 pos += 1;
             }
             let word_slice = &s[start..pos];
+            macro_rules! set_kw {
+                ($kw:expr) => {
+                    if let Some(v) = env.get_mut(concat!("input_ident_", $kw)) {
+                        *v = Value::Bool(true);
+                    }
+                };
+            }
             match word_slice {
-                "guard" => {
-                    if let Some(v) = env.get_mut("input_ident_guard") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "module" => {
-                    if let Some(v) = env.get_mut("input_ident_module") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "signal" => {
-                    if let Some(v) = env.get_mut("input_ident_signal") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "reflex" => {
-                    if let Some(v) = env.get_mut("input_ident_reflex") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "when" => {
-                    if let Some(v) = env.get_mut("input_ident_when") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "bool" => {
-                    if let Some(v) = env.get_mut("input_ident_bool") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "true" => {
-                    if let Some(v) = env.get_mut("input_ident_true") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "false" => {
-                    if let Some(v) = env.get_mut("input_ident_false") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "else" => {
-                    if let Some(v) = env.get_mut("input_ident_else") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "loop" => {
-                    if let Some(v) = env.get_mut("input_ident_loop") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "break" => {
-                    if let Some(v) = env.get_mut("input_ident_break") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "while" => {
-                    if let Some(v) = env.get_mut("input_ident_while") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "match" => {
-                    if let Some(v) = env.get_mut("input_ident_match") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "const" => {
-                    if let Some(v) = env.get_mut("input_ident_const") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "return" => {
-                    if let Some(v) = env.get_mut("input_ident_return") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "struct" => {
-                    if let Some(v) = env.get_mut("input_ident_struct") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "cycles" => {
-                    if let Some(v) = env.get_mut("input_ident_cycles") {
-                        *v = Value::Bool(true);
-                    }
-                }
-                "internal" => {
-                    if let Some(v) = env.get_mut("input_ident_internal") {
-                        *v = Value::Bool(true);
-                    }
-                }
+                "guard" => set_kw!("guard"),
+                "module" => set_kw!("module"),
+                "signal" => set_kw!("signal"),
+                "reflex" => set_kw!("reflex"),
+                "when" => set_kw!("when"),
+                "bool" => set_kw!("bool"),
+                "true" => set_kw!("true"),
+                "false" => set_kw!("false"),
+                "else" => set_kw!("else"),
+                "loop" => set_kw!("loop"),
+                "break" => set_kw!("break"),
+                "while" => set_kw!("while"),
+                "match" => set_kw!("match"),
+                "const" => set_kw!("const"),
+                "return" => set_kw!("return"),
+                "struct" => set_kw!("struct"),
+                "cycles" => set_kw!("cycles"),
+                "internal" => set_kw!("internal"),
                 _ => {}
             }
         } else {
@@ -299,50 +234,56 @@ pub fn drive_parsed_module_with_interpreter(
             if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::GUARD)) =
                 &registry.kinds[i]
             {
-                let name = registry.names[i].as_ref().map(|n| &n.0).unwrap();
-                let cond_ent = registry.conditions[i].as_ref().unwrap().0;
+                let name_opt = registry.names[i].as_ref().map(|n| &n.0);
+                let cond_ent_opt = registry.conditions[i].as_ref().map(|c| c.0);
 
-                let cond_true = eval_expr_ecs(cond_ent, registry, &|name: &str| {
-                    signal_env.get(name).cloned().unwrap_or(Value::Bool(false))
-                })
-                .as_bool();
+                if let (Some(name), Some(cond_ent)) = (name_opt, cond_ent_opt) {
+                    let cond_true = eval_expr_ecs(cond_ent, registry, &|name: &str| {
+                        signal_env.get(name).cloned().unwrap_or(Value::Bool(false))
+                    })
+                    .as_bool();
 
-                let sr_names = if guard_idx_counter < pools.sr_signal_names.len() {
-                    &pools.sr_signal_names[guard_idx_counter]
-                } else {
-                    &Vec::new()
-                };
+                    let sr_names = if guard_idx_counter < pools.sr_signal_names.len() {
+                        &pools.sr_signal_names[guard_idx_counter]
+                    } else {
+                        &Vec::new()
+                    };
 
-                if !sr_names.is_empty() {
-                    pools.next_vals.clear();
-                    for j in 0..sr_names.len() {
-                        if j == 0 {
-                            pools.next_vals.push(Value::Bool(cond_true));
-                        } else {
-                            let prev_name = &sr_names[j - 1];
-                            let pv =
-                                signal_env.get(prev_name).cloned().unwrap_or(Value::Bool(false));
-                            pools.next_vals.push(pv);
+                    if !sr_names.is_empty() {
+                        pools.next_vals.clear();
+                        for j in 0..sr_names.len() {
+                            if j == 0 {
+                                pools.next_vals.push(Value::Bool(cond_true));
+                            } else {
+                                let prev_name = &sr_names[j - 1];
+                                let pv = signal_env
+                                    .get(prev_name)
+                                    .cloned()
+                                    .unwrap_or(Value::Bool(false));
+                                pools.next_vals.push(pv);
+                            }
                         }
-                    }
-                    for (sr_name, val) in sr_names.iter().zip(pools.next_vals.iter()) {
-                        if let Some(se) = signal_env.get_mut(sr_name) {
-                            *se = val.clone();
+                        for (sr_name, val) in sr_names.iter().zip(pools.next_vals.iter()) {
+                            if let Some(se) = signal_env.get_mut(sr_name) {
+                                *se = val.clone();
+                            }
                         }
-                    }
-                    let active = pools.next_vals.iter().any(|v| v.as_bool());
-                    if let Some(ga) = guard_active.get_mut(name) {
-                        *ga = active;
-                    }
-                } else {
-                    if cond_true {
-                        if let Some(gc) = pools.guard_counters.get_mut(name) {
-                            *gc = registry.cycles[i].as_ref().unwrap().0;
+                        let active = pools.next_vals.iter().any(|v| v.as_bool());
+                        if let Some(ga) = guard_active.get_mut(name) {
+                            *ga = active;
                         }
-                    }
-                    let active = *pools.guard_counters.get(name).unwrap_or(&0) > 0;
-                    if let Some(ga) = guard_active.get_mut(name) {
-                        *ga = active;
+                    } else {
+                        if cond_true {
+                            if let Some(gc) = pools.guard_counters.get_mut(name) {
+                                if let Some(cyc) = &registry.cycles[i] {
+                                    *gc = cyc.0;
+                                }
+                            }
+                        }
+                        let active = *pools.guard_counters.get(name).unwrap_or(&0) > 0;
+                        if let Some(ga) = guard_active.get_mut(name) {
+                            *ga = active;
+                        }
                     }
                 }
                 guard_idx_counter += 1;
@@ -352,30 +293,34 @@ pub fn drive_parsed_module_with_interpreter(
         // Fire reflexes from ECS
         for i in 0..registry.reflex_comps.len() {
             if let Some(reflex) = &registry.reflex_comps[i] {
-                let r_name = registry.names[i].as_ref().map(|n| &n.0).unwrap();
-                if clear_reflex_names_snapshot.contains(r_name) {
-                    continue;
-                }
-                let mut any = false;
-                for g_ent in &reflex.guards {
-                    let g_name = registry.names[g_ent.0 as usize].as_ref().map(|n| &n.0).unwrap();
-                    if *guard_active.get(g_name).unwrap_or(&false) {
-                        any = true;
-                        break;
+                let r_name_opt = registry.names[i].as_ref().map(|n| &n.0);
+                if let Some(r_name) = r_name_opt {
+                    if clear_reflex_names_snapshot.contains(r_name) {
+                        continue;
                     }
-                }
-                if any {
-                    for asgn_ent in &reflex.assignments {
-                        if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
-                            let val = eval_expr_ecs(asgn.value, registry, &|name: &str| {
-                                signal_env.get(name).cloned().unwrap_or(Value::Bool(false))
-                            });
-                            let target_name = registry.names[asgn.target.0 as usize]
-                                .as_ref()
-                                .map(|n| &n.0)
-                                .unwrap();
-                            if let Some(sv) = signal_env.get_mut(target_name) {
-                                *sv = val;
+                    let mut any = false;
+                    for g_ent in &reflex.guards {
+                        let g_name_opt = registry.names[g_ent.0 as usize].as_ref().map(|n| &n.0);
+                        if let Some(g_name) = g_name_opt {
+                            if *guard_active.get(g_name).unwrap_or(&false) {
+                                any = true;
+                                break;
+                            }
+                        }
+                    }
+                    if any {
+                        for asgn_ent in &reflex.assignments {
+                            if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
+                                let val = eval_expr_ecs(asgn.value, registry, &|name: &str| {
+                                    signal_env.get(name).cloned().unwrap_or(Value::Bool(false))
+                                });
+                                if let Some(target_name) =
+                                    registry.names[asgn.target.0 as usize].as_ref().map(|n| &n.0)
+                                {
+                                    if let Some(sv) = signal_env.get_mut(target_name) {
+                                        *sv = val;
+                                    }
+                                }
                             }
                         }
                     }
@@ -429,10 +374,11 @@ pub fn drive_parsed_module_with_interpreter(
             if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::GUARD)) =
                 &registry.kinds[i]
             {
-                let name = registry.names[i].as_ref().map(|n| &n.0).unwrap();
-                if let Some(c) = pools.guard_counters.get_mut(name) {
-                    if *c > 0 {
-                        *c -= 1;
+                if let Some(name) = registry.names[i].as_ref().map(|n| &n.0) {
+                    if let Some(c) = pools.guard_counters.get_mut(name) {
+                        if *c > 0 {
+                            *c -= 1;
+                        }
                     }
                 }
             }
@@ -444,10 +390,11 @@ pub fn drive_parsed_module_with_interpreter(
                 SignalKind::Internal,
             ))) = &registry.kinds[i]
             {
-                let name = registry.names[i].as_ref().map(|n| &n.0).unwrap();
-                if let Some(v) = signal_env.get(name) {
-                    if let Some(pe) = pools.persistent_env.get_mut(name) {
-                        *pe = v.clone();
+                if let Some(name) = registry.names[i].as_ref().map(|n| &n.0) {
+                    if let Some(v) = signal_env.get(name) {
+                        if let Some(pe) = pools.persistent_env.get_mut(name) {
+                            *pe = v.clone();
+                        }
                     }
                 }
             }

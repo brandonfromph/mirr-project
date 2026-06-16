@@ -22,7 +22,15 @@ pub(super) fn extract_properties(
     result: &PipelineResult,
     errors: &mut Vec<MapeKError>,
 ) -> Vec<TemporalProperty> {
-    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+    let registry = match result.ecs_registry.as_ref() {
+        Some(r) => r,
+        None => {
+            errors.push(MapeKError::BridgeConfigError(
+                "ECS registry required for property extraction".to_string(),
+            ));
+            return Vec::new();
+        }
+    };
 
     let mut assert_count = 0;
     for prop_comp in registry.property_comps.iter().flatten() {

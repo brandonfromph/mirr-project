@@ -29,8 +29,12 @@ use std::collections::{HashMap, HashSet};
 
 /// Emit an R-SPU program from pipeline results.
 pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
-    let registry =
-        result.ecs_registry.as_ref().expect("ECS registry required for Phase 6 emission");
+    let registry = result.ecs_registry.as_ref().ok_or_else(|| {
+        crate::error_codes::mirrcode(
+            crate::error_codes::ErrorCode::RspuFallback,
+            "ECS registry missing during R-SPU emission",
+        )
+    })?;
     let netlist = result.temporal_netlist.as_ref();
     let target_spec = TargetSpec::from_config(&registry.target_config);
 

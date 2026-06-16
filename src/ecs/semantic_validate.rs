@@ -215,7 +215,7 @@ impl Registry {
     fn validate_expr_entity(&self, root_ent: EntityId, errors: &mut PipelineErrors) {
         let mut stack = vec![root_ent];
         let mut iterations = 0;
-        let max_iterations = 256; // Bound the expression depth for validation
+        let max_iterations = 8192; // Bound the expression depth for validation
 
         while let Some(ent) = stack.pop() {
             iterations += 1;

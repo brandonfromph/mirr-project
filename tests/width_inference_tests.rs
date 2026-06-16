@@ -164,6 +164,15 @@ fn check_assignment(
         registry.types[root_id.0 as usize].as_ref().map(|tc| tc.0.core.width()).unwrap_or(0);
 
     let target_info = signal_info.get(assignment.target.as_str()).copied();
+    if let Some((tw, ts)) = target_info {
+        let trunc_diags = mirrc::width::check_truncation(
+            &assignment.target,
+            tw,
+            mirrc::width::types::Width(expr_w),
+            ts,
+        );
+        diags.extend(trunc_diags);
+    }
 
     diags
 }

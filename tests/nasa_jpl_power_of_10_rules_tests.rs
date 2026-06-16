@@ -77,9 +77,9 @@ fn test_nasa_rule_3_registry_preallocated_bounds() {
 /// to prevent stack overflows and preserve high-assertion structural integrity.
 #[test]
 fn test_nasa_rule_5_assertion_density_and_depth_limits() {
-    // Generate an expression tree that exceeds the 512 node threshold
+    // Generate an expression tree that exceeds the 8192 node threshold
     let mut expr = Expr::Literal(LiteralValue::Integer(1));
-    for _ in 0..600 {
+    for _ in 0..8200 {
         expr = Expr::Binary {
             op: BinaryOp::Add,
             left: Box::new(Expr::Literal(LiteralValue::Integer(1))),
@@ -88,7 +88,12 @@ fn test_nasa_rule_5_assertion_density_and_depth_limits() {
     }
 
     let mut registry = Registry::new();
-    let res = registry.ingest_expr(&expr);
+    let res = std::thread::Builder::new()
+        .stack_size(16 * 1024 * 1024)
+        .spawn(move || registry.ingest_expr(&expr))
+        .unwrap()
+        .join()
+        .unwrap();
 
     // Should fail with a controlled error when attempting to ingest too many expression nodes
     assert!(res.is_err(), "Pathologically deep expression tree must be rejected under Rule 5");

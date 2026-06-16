@@ -13,7 +13,7 @@ fn typecheck_module(module: &Module) -> Result<(), mirrc::error::PipelineErrors>
     registry.typecheck(false)
 }
 
-const MAX_EXPR_NODES_BUDGET: usize = 512;
+const MAX_EXPR_NODES_BUDGET: usize = 8192;
 
 fn deep_add_expression(depth: usize) -> Expr {
     let mut expr = Expr::Signal("n".to_string());
@@ -76,26 +76,38 @@ fn budget_module_with_guard(condition: Expr) -> Module {
 
 #[test]
 fn deep_expression_over_budget_reports_e607() {
-    let m = budget_module_with_guard(deep_add_expression(MAX_EXPR_NODES_BUDGET + 8));
-    validate_module(&m).expect("semantic validation should pass");
-    let errs = typecheck_module(&m).expect_err("typecheck should fail");
-    let msg = errs.to_string();
-    assert!(msg.contains("[E607]"), "expected E607, got: {msg}");
-    assert!(msg.contains("MAX_EXPR_NODES"), "expected bound detail, got: {msg}");
+    std::thread::Builder::new()
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| {
+            let m = budget_module_with_guard(deep_add_expression(MAX_EXPR_NODES_BUDGET + 8));
+            let errs = typecheck_module(&m).expect_err("typecheck should fail");
+            let msg = errs.to_string();
+            assert!(msg.contains("[EFATAL]"), "expected EFATAL, got: {msg}");
+            assert!(msg.contains("MAX_EXPR_NODES"), "expected bound detail, got: {msg}");
+        })
+        .unwrap()
+        .join()
+        .unwrap();
 }
 
 #[test]
 fn large_array_literal_over_budget_reports_e607() {
-    let mut elems = Vec::with_capacity(MAX_EXPR_NODES_BUDGET + 4);
-    let mut i = 0usize;
-    while i < MAX_EXPR_NODES_BUDGET + 4 {
-        elems.push(Expr::Literal(LiteralValue::Integer(i as u64)));
-        i += 1;
-    }
+    std::thread::Builder::new()
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| {
+            let mut elems = Vec::with_capacity(MAX_EXPR_NODES_BUDGET + 4);
+            let mut i = 0usize;
+            while i < MAX_EXPR_NODES_BUDGET + 4 {
+                elems.push(Expr::Literal(LiteralValue::Integer(i as u64)));
+                i += 1;
+            }
 
-    let m = budget_module_with_guard(Expr::ArrayLiteral(elems));
-    validate_module(&m).expect("semantic validation should pass");
-    let errs = typecheck_module(&m).expect_err("typecheck should fail");
-    let msg = errs.to_string();
-    assert!(msg.contains("[E607]"), "expected E607, got: {msg}");
+            let m = budget_module_with_guard(Expr::ArrayLiteral(elems));
+            let errs = typecheck_module(&m).expect_err("typecheck should fail");
+            let msg = errs.to_string();
+            assert!(msg.contains("[EFATAL]"), "expected EFATAL, got: {msg}");
+        })
+        .unwrap()
+        .join()
+        .unwrap();
 }

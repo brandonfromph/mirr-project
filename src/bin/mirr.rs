@@ -110,31 +110,34 @@ fn main() -> anyhow::Result<()> {
             mirr_brain::run(args)?;
         }
         Commands::Kb { args } => {
-            let exe_dir = std::env::current_exe().unwrap();
-            let bin_dir = exe_dir.parent().unwrap();
+            let bin_dir = get_bin_dir()?;
             let mut cmd = std::process::Command::new(bin_dir.join("mirr-kb-native"));
             cmd.args(args);
-            let status = cmd.status().expect("Failed to execute mirr-kb-native");
+            let status = cmd
+                .status()
+                .map_err(|e| anyhow::anyhow!("Failed to execute mirr-kb-native: {}", e))?;
             if !status.success() {
                 std::process::exit(status.code().unwrap_or(1));
             }
         }
         Commands::KbIndex { args } => {
-            let exe_dir = std::env::current_exe().unwrap();
-            let bin_dir = exe_dir.parent().unwrap();
+            let bin_dir = get_bin_dir()?;
             let mut cmd = std::process::Command::new(bin_dir.join("mirr-kb-index"));
             cmd.args(args);
-            let status = cmd.status().expect("Failed to execute mirr-kb-index");
+            let status = cmd
+                .status()
+                .map_err(|e| anyhow::anyhow!("Failed to execute mirr-kb-index: {}", e))?;
             if !status.success() {
                 std::process::exit(status.code().unwrap_or(1));
             }
         }
         Commands::KbHydrate { args } => {
-            let exe_dir = std::env::current_exe().unwrap();
-            let bin_dir = exe_dir.parent().unwrap();
+            let bin_dir = get_bin_dir()?;
             let mut cmd = std::process::Command::new(bin_dir.join("mirr-kb-hydrate"));
             cmd.args(args);
-            let status = cmd.status().expect("Failed to execute mirr-kb-hydrate");
+            let status = cmd
+                .status()
+                .map_err(|e| anyhow::anyhow!("Failed to execute mirr-kb-hydrate: {}", e))?;
             if !status.success() {
                 std::process::exit(status.code().unwrap_or(1));
             }
@@ -142,4 +145,12 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn get_bin_dir() -> anyhow::Result<std::path::PathBuf> {
+    let exe_dir = std::env::current_exe()
+        .map_err(|e| anyhow::anyhow!("Failed to get current executable path: {}", e))?;
+    let bin_dir =
+        exe_dir.parent().ok_or_else(|| anyhow::anyhow!("Failed to get binary directory"))?;
+    Ok(bin_dir.to_path_buf())
 }

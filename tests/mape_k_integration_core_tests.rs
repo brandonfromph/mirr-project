@@ -48,12 +48,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
         pattern_origins: Vec::new(),
         span: None,
     };
-    let program = MirrProgram {
-        target: None,
-        patterns: Vec::new(),
-        imports: Vec::new(),
-        module,
-    };
+    let program = MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
     let mut reg = mirrc::ecs::Registry::new();
     mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
 

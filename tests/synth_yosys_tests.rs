@@ -57,7 +57,7 @@ fn synth_tmr_preserves_rtl() {
 fn synth_bind_file_has_bind_and_sva() {
     let source = include_str!("../examples/tmr_sensor_fusion.mirr");
     let result = compile(source);
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(!bind.is_empty(), "bind file should not be empty for TMR");
     assert!(bind.contains("bind tmr_sensor_fusion"), "missing bind statement");
@@ -69,7 +69,7 @@ fn synth_bind_file_has_bind_and_sva() {
 fn synth_bind_file_empty_for_no_properties() {
     let source = include_str!("../examples/shift_register_guard.mirr");
     let result = compile(source);
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(bind.is_empty(), "bind file should be empty when module has no properties");
 }

@@ -44,7 +44,9 @@ pub fn emit_certificate(result: &PipelineResult) -> Result<Vec<u8>, MirrError> {
         mirrcode(ErrorCode::ReceiptGenerationFailed, format!("R-SPU binary encoding failed: {}", e))
     })?;
 
-    let ecs = result.ecs_registry.as_ref().expect("ECS registry required");
+    let ecs = result.ecs_registry.as_ref().ok_or_else(|| {
+        mirrcode(ErrorCode::ReceiptGenerationFailed, "ECS registry required for certificate")
+    })?;
     let certificate = cert::build_certificate(totality, &binary, ecs);
 
     cert::serialize_certificate(&certificate)

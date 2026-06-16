@@ -27,7 +27,15 @@ pub(super) fn extract_sensors(
     result: &PipelineResult,
     errors: &mut Vec<MapeKError>,
 ) -> Vec<SensorConfig> {
-    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+    let registry = match result.ecs_registry.as_ref() {
+        Some(r) => r,
+        None => {
+            errors.push(MapeKError::BridgeConfigError(
+                "ECS registry required for sensor extraction".to_string(),
+            ));
+            return Vec::new();
+        }
+    };
 
     let mut signal_count = 0;
     for kind_comp in registry.kinds.iter().flatten() {

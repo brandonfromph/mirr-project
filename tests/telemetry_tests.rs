@@ -9,15 +9,12 @@ mod tests {
 
         let result = run_pipeline(source, &config).expect("Pipeline failed");
 
-        // Phase 1: Verify node density tracking via parsed program stats
+        // Phase 1: Verify node density tracking via ECS registry stats
         assert!(
-            !result.program.as_ref().unwrap().module.signals.is_empty(),
-            "Module should have at least one signal"
+            !result.ecs_registry.as_ref().unwrap().names.is_empty(),
+            "ECS Registry should have at least one entity"
         );
-        println!(
-            "[TELEMETRY] Node Density: {}",
-            result.program.as_ref().unwrap().module.signals.len()
-        );
+        println!("[TELEMETRY] Node Density: {}", result.ecs_registry.as_ref().unwrap().names.len());
     }
 
     #[test]

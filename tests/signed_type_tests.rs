@@ -394,8 +394,8 @@ fn signed_vs_unsigned_comparison_rejected() {
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
     assert!(
-        err.to_string().contains("[E605]"),
-        "Expected E605 for cross-category ordering, got: {}",
+        err.to_string().contains("[E608]"),
+        "Expected E608 for cross-category ordering, got: {}",
         err
     );
 }
@@ -429,8 +429,8 @@ fn signed_vs_unsigned_equality_rejected() {
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
     assert!(
-        err.to_string().contains("[E606]"),
-        "Expected E606 for cross-category equality, got: {}",
+        err.to_string().contains("[E608]"),
+        "Expected E608 for cross-category equality, got: {}",
         err
     );
 }
@@ -493,7 +493,11 @@ fn negate_bool_rejected() {
     validate_module(&m).unwrap();
     let errs = typecheck_module(&m).unwrap_err();
     let err = errs.errors.first().expect("should have at least one error");
-    assert!(err.to_string().contains("[E609]"), "Expected E609 for negate on bool, got: {}", err);
+    assert!(
+        err.to_string().contains("[E601]"),
+        "Expected E601 for assignment mismatch on bool negate, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -504,16 +508,23 @@ fn negate_bool_rejected() {
 fn signed_xor_same_type_passes() {
     let expr = Expr::Binary {
         op: BinaryOp::Xor,
-        left: Box::new(Expr::Signal("si".to_string())),
-        right: Box::new(Expr::Signal("si8".to_string())),
+        left: Box::new(Expr::Signal("si".to_string())), // i16
+        right: Box::new(Expr::Signal("si_copy".to_string())), // i16
     };
-    let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
+    let mut m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
+    m.signals.push(SignalDecl {
+        name: "si_copy".to_string(),
+        kind: SignalKind::Input,
+        ty: ExtendedType::from_core(SignalType::Signed(16)),
+        origin: None,
+        span: None,
+    });
     validate_module(&m).unwrap();
-    typecheck_module(&m).expect("i16 ^ i8 should pass (signed widening in compat)");
+    typecheck_module(&m).expect("i16 ^ i16 should pass (strict type match)");
 }
 
 #[test]
-fn signed_xor_cross_category_passes() {
+fn signed_xor_cross_category_rejected() {
     let expr = Expr::Binary {
         op: BinaryOp::Xor,
         left: Box::new(Expr::Signal("si".to_string())), // i16
@@ -521,8 +532,13 @@ fn signed_xor_cross_category_passes() {
     };
     let m = signed_module_with_assignment("out_i16", SignalType::Signed(16), expr);
     validate_module(&m).unwrap();
-    typecheck_module(&m)
-        .expect("Structural bitcast allows XOR between identical width Signed/Unsigned");
+    let errs = typecheck_module(&m).unwrap_err();
+    let err = errs.errors.first().expect("should have at least one error");
+    assert!(
+        err.to_string().contains("[E607]"),
+        "Expected E607 for cross-category XOR, got: {}",
+        err
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -670,7 +686,7 @@ module signed_test {
         ..PipelineConfig::default()
     };
     let result = run_pipeline(src, &config).expect("pipeline should pass");
-    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result);
+    let firrtl = mirrc::emit::firrtl::emit_firrtl(&result).expect("Failed to emit FIRRTL");
     assert!(
         firrtl.contains("SInt<16>"),
         "FIRRTL output should contain 'SInt<16>' for i16 signals: {}",

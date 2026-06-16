@@ -249,6 +249,7 @@ impl Registry {
         let idx = mod_id.0 as usize;
         self.names[idx] = Some(NameComponent(module.name.clone()));
         self.kinds[idx] = Some(KindComponent(EntityKind::MODULE));
+        self.spans[idx] = module.span.map(crate::ecs::components::SpanComponent);
 
         // BUG FIX: Register the module itself in the symbol table
         self.symbol_to_entity.insert(module.name.clone(), mod_id);
@@ -269,6 +270,18 @@ impl Registry {
             if let Some(KindComponent(EntityKind::MODULE)) = kind_comp {
                 if let Some(name_comp) = &self.names[i] {
                     return Some(name_comp.0.clone());
+                }
+            }
+        }
+        None
+    }
+
+    /// Retrieve the root module span from the registry.
+    pub fn get_module_span(&self) -> Option<crate::span::Span> {
+        for (i, kind_comp) in self.kinds.iter().enumerate() {
+            if let Some(KindComponent(EntityKind::MODULE)) = kind_comp {
+                if let Some(span_comp) = &self.spans[i] {
+                    return Some(span_comp.0);
                 }
             }
         }

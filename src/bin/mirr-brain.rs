@@ -151,7 +151,9 @@ pub fn run(args: Args) -> anyhow::Result<()> {
             })
         }
         let cmd = Args::command();
-        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
+        let manifest = serde_json::to_string_pretty(&get_cmd_manifest(&cmd))
+            .map_err(|e| anyhow::anyhow!("Failed to serialize command manifest: {}", e))?;
+        println!("{}", manifest);
         return Ok(());
     }
 

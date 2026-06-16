@@ -229,16 +229,18 @@ pub fn parallel_width_inference_system(
         })
         .collect();
 
+    let (width_diags, rounds) = expression_width_inference_system(registry);
+
     let stats = WidthStats {
         nodes_analyzed: registry.names.iter().filter(|n| n.is_some()).count(),
-        propagation_rounds: 0,
-        diagnostics_count: 0,
+        propagation_rounds: rounds,
+        diagnostics_count: width_diags.len(),
         scc_count: sccs.len(),
         expansive_count: 0,
         nonexpansive_count: 0,
     };
 
-    (sccs, scc_solves, VerifyResult { is_minimal: true, diagnostics: Vec::new() }, stats)
+    (sccs, scc_solves, VerifyResult { is_minimal: true, diagnostics: width_diags }, stats)
 }
 
 /// ECS System: SAT-based Simplification.

@@ -6,7 +6,7 @@ use super::*;
 #[test]
 fn bind_file_empty_without_properties() {
     let result = run_pipeline(MINIMAL_MODULE, &default_config()).unwrap();
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(bind.is_empty(), "bind file must be empty when module has no properties");
 }
@@ -14,7 +14,7 @@ fn bind_file_empty_without_properties() {
 #[test]
 fn bind_file_contains_sva_module_name() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(bind.contains("module prop_mod_sva"), "bind file must define _sva wrapper module");
 }
@@ -22,7 +22,7 @@ fn bind_file_contains_sva_module_name() {
 #[test]
 fn bind_file_contains_bind_statement() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(
         bind.contains("bind prop_mod prop_mod_sva u_sva (.*)"),
@@ -33,7 +33,7 @@ fn bind_file_contains_bind_statement() {
 #[test]
 fn bind_file_has_auto_generated_comment() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(
         bind.contains("Auto-generated SVA bind file"),
@@ -44,7 +44,7 @@ fn bind_file_has_auto_generated_comment() {
 #[test]
 fn bind_file_has_endmodule() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(bind.contains("endmodule"), "bind file must contain endmodule");
 }
@@ -52,7 +52,7 @@ fn bind_file_has_endmodule() {
 #[test]
 fn bind_file_ports_are_all_inputs() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     // In the bind SVA module, all ports should be inputs (observing the DUT)
     let mod_start = bind.find("module prop_mod_sva").expect("must find sva module");
@@ -68,7 +68,7 @@ fn bind_file_ports_are_all_inputs() {
 #[test]
 fn bind_file_contains_assert_property() {
     let result = run_pipeline(PROPERTY_ALL_VARIANTS, &default_config()).unwrap();
-    let bind = verilog::emit_sva_bind_file(&result);
+    let bind = verilog::emit_sva_bind_file(&result).expect("Failed to emit SVA bind");
 
     assert!(bind.contains("assert "), "bind file must contain SVA assertions");
 }

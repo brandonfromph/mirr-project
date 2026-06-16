@@ -324,7 +324,10 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
             process::exit(1);
         }),
         "sva" => emit::verilog::emit_sva_only(result),
-        "firrtl" => emit::firrtl::emit_firrtl(result),
+        "firrtl" => emit::firrtl::emit_firrtl(result).unwrap_or_else(|e| {
+            eprintln!("Error generating FIRRTL: {e}");
+            process::exit(1);
+        }),
         "rspu" => result.rspu_program.as_ref().map(|p| p.emit_asm()).unwrap_or_else(|| {
             eprintln!("Error: R-SPU program not generated.");
             process::exit(1);
@@ -346,7 +349,10 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
         "testbench" => emit::testbench::emit_testbench(result),
         "scaffold" => emit::fpga_scaffold::emit_constraints(result, &fpga_target),
         "build-script" => emit::fpga_scaffold::emit_build_script(result, &fpga_target),
-        "sexpr" => emit::sexpr::emit_sexpr(result),
+        "sexpr" => emit::sexpr::emit_sexpr(result).unwrap_or_else(|e| {
+            eprintln!("Error generating S-expression: {e}");
+            process::exit(1);
+        }),
         "mape-k-rtl" => result.mape_k_rtl.clone().expect("MAPE-K RTL skipped"),
         "cert" => {
             let cert_bytes = result
@@ -401,7 +407,10 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
     }
 
     if let Some(path) = &args.sva_file {
-        let sva_content = emit::verilog::emit_sva_bind_file(result);
+        let sva_content = emit::verilog::emit_sva_bind_file(result).unwrap_or_else(|e| {
+            eprintln!("Error generating SVA bind file: {e}");
+            process::exit(1);
+        });
         if !sva_content.is_empty() {
             std::fs::write(path, sva_content)?;
         }

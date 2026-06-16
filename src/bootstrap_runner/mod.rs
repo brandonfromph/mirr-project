@@ -216,10 +216,9 @@ impl BootstrapRunner {
                 let parser_src = std::fs::read_to_string(&parser_path).unwrap_or_default();
                 let parser_module = parse_mirr(&parser_src);
                 let ok = parser_module.is_ok();
-                let message = if ok {
-                    "MIRR parser module loaded".to_string()
-                } else {
-                    format!("MIRR parser module failed: {}", parser_module.err().unwrap())
+                let message = match parser_module {
+                    Ok(_) => "MIRR parser module loaded".to_string(),
+                    Err(e) => format!("MIRR parser module failed: {}", e),
                 };
                 stages.push(StageResult { name: "MirrParser".to_string(), ok, message });
             } else {
@@ -236,10 +235,9 @@ impl BootstrapRunner {
                 let semantic_src = std::fs::read_to_string(&semantic_path).unwrap_or_default();
                 let semantic_module = parse_mirr(&semantic_src);
                 let ok = semantic_module.is_ok();
-                let message = if ok {
-                    "MIRR semantic module loaded".to_string()
-                } else {
-                    format!("MIRR semantic module failed: {}", semantic_module.err().unwrap())
+                let message = match semantic_module {
+                    Ok(_) => "MIRR semantic module loaded".to_string(),
+                    Err(e) => format!("MIRR semantic module failed: {}", e),
                 };
                 stages.push(StageResult { name: "MirrSemantic".to_string(), ok, message });
             } else {
@@ -257,10 +255,9 @@ impl BootstrapRunner {
                 let temporal_src = std::fs::read_to_string(&temporal_path).unwrap_or_default();
                 let temporal_module = parse_mirr(&temporal_src);
                 let ok = temporal_module.is_ok();
-                let message = if ok {
-                    "MIRR temporal lowering module loaded".to_string()
-                } else {
-                    format!("MIRR temporal module failed: {}", temporal_module.err().unwrap())
+                let message = match temporal_module {
+                    Ok(_) => "MIRR temporal lowering module loaded".to_string(),
+                    Err(e) => format!("MIRR temporal module failed: {}", e),
                 };
                 stages.push(StageResult { name: "MirrTemporal".to_string(), ok, message });
             } else {
@@ -277,10 +274,9 @@ impl BootstrapRunner {
                 let emitter_src = std::fs::read_to_string(&emitter_path).unwrap_or_default();
                 let emitter_module = parse_mirr(&emitter_src);
                 let ok = emitter_module.is_ok();
-                let message = if ok {
-                    "MIRR emitter module loaded".to_string()
-                } else {
-                    format!("MIRR emitter module failed: {}", emitter_module.err().unwrap())
+                let message = match emitter_module {
+                    Ok(_) => "MIRR emitter module loaded".to_string(),
+                    Err(e) => format!("MIRR emitter module failed: {}", e),
                 };
                 stages.push(StageResult { name: "MirrEmitter".to_string(), ok, message });
             } else {

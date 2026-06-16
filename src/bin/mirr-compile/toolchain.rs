@@ -101,7 +101,10 @@ pub(super) fn run_toolchain_operations(
     }
 
     // Write SVA bind file for formal verification
-    let bind_content = emit::verilog::emit_sva_bind_file(result);
+    let bind_content = emit::verilog::emit_sva_bind_file(result).unwrap_or_else(|e| {
+        eprintln!("  [toolchain] WARNING: SVA bind generation failed: {e}");
+        String::new()
+    });
     let bind_path = if !bind_content.is_empty() {
         let p = super::derive_path(input_path, "_sva_bind.sv");
         if let Err(e) = std::fs::write(&p, &bind_content) {

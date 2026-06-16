@@ -40,7 +40,10 @@ fn get_ports(registry: &crate::ecs::Registry) -> Vec<Port> {
 
 /// Emit a constraint file for the given FPGA target.
 pub fn emit_constraints(result: &PipelineResult, target: &FpgaTarget) -> String {
-    let registry = result.ecs_registry.as_ref().unwrap();
+    let registry = match &result.ecs_registry {
+        Some(r) => r,
+        None => return "// No ECS registry available\n".to_string(),
+    };
     match target {
         FpgaTarget::Xilinx7 | FpgaTarget::XilinxUS => emit_xdc(registry, target),
         FpgaTarget::IntelCyclone => emit_sdc(registry, target),
@@ -53,7 +56,10 @@ pub fn emit_constraints(result: &PipelineResult, target: &FpgaTarget) -> String 
 
 /// Emit a build script for the given FPGA target.
 pub fn emit_build_script(result: &PipelineResult, target: &FpgaTarget) -> String {
-    let registry = result.ecs_registry.as_ref().unwrap();
+    let registry = match &result.ecs_registry {
+        Some(r) => r,
+        None => return "// No ECS registry available\n".to_string(),
+    };
     match target {
         FpgaTarget::Xilinx7 | FpgaTarget::XilinxUS => emit_vivado_tcl(registry, target),
         FpgaTarget::IntelCyclone => emit_quartus_tcl(registry, target),

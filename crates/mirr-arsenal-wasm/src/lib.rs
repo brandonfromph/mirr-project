@@ -47,7 +47,17 @@ impl ArsenalWasm {
             Ok(result) => {
                 let rendered = match target {
                     "verilog" | "sv" => emit::verilog::emit_sv(&result),
-                    "firrtl" => emit::firrtl::emit_firrtl(&result),
+                    "firrtl" => match emit::firrtl::emit_firrtl(&result) {
+                        Ok(firrtl) => firrtl,
+                        Err(e) => {
+                            return serde_json::json!({
+                                "ok": false,
+                                "target": target,
+                                "error": format!("FIRRTL emission failed: {}", e),
+                            })
+                            .to_string();
+                        }
+                    },
                     "json" => match emit::json_netlist::emit_json(&result) {
                         Ok(json) => json,
                         Err(e) => {
@@ -59,7 +69,17 @@ impl ArsenalWasm {
                             .to_string();
                         }
                     },
-                    "sexpr" | "s-expr" | "sexp" => emit::sexpr::emit_sexpr(&result),
+                    "sexpr" | "s-expr" | "sexp" => match emit::sexpr::emit_sexpr(&result) {
+                        Ok(sexpr) => sexpr,
+                        Err(e) => {
+                            return serde_json::json!({
+                                "ok": false,
+                                "target": target,
+                                "error": format!("S-expression emission failed: {}", e),
+                            })
+                            .to_string();
+                        }
+                    },
                     "dot" => emit::dot::emit_module_dot(&result),
                     "rspu" => match &result.rspu_program {
                         Some(program) => program.emit_asm(),

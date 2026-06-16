@@ -517,7 +517,7 @@ pub fn infer_program_widths_with_scc(
 
     let stats = WidthStats {
         nodes_analyzed: phase4a.stats.nodes_analyzed,
-        propagation_rounds: phase4a.stats.propagation_rounds,
+        propagation_rounds: ecs_rounds,
         diagnostics_count: phase4a.stats.diagnostics_count + scc_diags.len(),
         scc_count,
         expansive_count,
@@ -558,6 +558,7 @@ fn signal_info_map(signals: &[SignalDecl]) -> HashMap<&str, (u32, bool)> {
         })
         .collect()
 }
+*/
 
 pub fn check_truncation(
     target_name: &str,
@@ -583,7 +584,6 @@ pub fn check_truncation(
     }
     diags
 }
-*/
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -337,24 +337,38 @@ impl Registry {
                                 SignalType::Unsigned(w1.max(w2))
                             }
                         }
-                        BinaryOp::Eq | BinaryOp::Ne | BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
+                        BinaryOp::Eq | BinaryOp::Ne => {
+                            if matches!(left_ty, SignalType::Bool) || matches!(right_ty, SignalType::Bool) {
+                                if left_ty != right_ty {
+                                    return Err(MirrError::TypeError {
+                                        message: format!("{} Cross-category equality comparison.", crate::error_codes::ec(606)),
+                                        span: None,
+                                    });
+                                }
+                            } else {
+                                let (_, s1) = require_numeric(&left_ty, "==")?;
+                                let (_, s2) = require_numeric(&right_ty, "==")?;
+                                check_mixed_sign(s1, s2, "==")?;
+                            }
+                            SignalType::Bool
+                        }
+                        BinaryOp::Lt | BinaryOp::Le | BinaryOp::Gt | BinaryOp::Ge => {
                             let op_sym = match op {
-                                BinaryOp::Eq => "==",
-                                BinaryOp::Ne => "!=",
                                 BinaryOp::Lt => "<",
                                 BinaryOp::Le => "<=",
                                 BinaryOp::Gt => ">",
                                 _ => ">=",
                             };
-                            let (_w1, s1) = match left_ty {
-                                SignalType::Bool => (1, false),
-                                _ => require_numeric(&left_ty, op_sym)?,
-                            };
-                            let (_w2, s2) = match right_ty {
-                                SignalType::Bool => (1, false),
-                                _ => require_numeric(&right_ty, op_sym)?,
-                            };
-                            check_mixed_sign(s1, s2, op_sym)?;
+                            if matches!(left_ty, SignalType::Bool) || matches!(right_ty, SignalType::Bool) {
+                                return Err(MirrError::TypeError {
+                                    message: format!("{} Ordering comparison on bool.", crate::error_codes::ec(605)),
+                                    span: None,
+                                });
+                            } else {
+                                let (_, s1) = require_numeric(&left_ty, op_sym)?;
+                                let (_, s2) = require_numeric(&right_ty, op_sym)?;
+                                check_mixed_sign(s1, s2, op_sym)?;
+                            }
                             SignalType::Bool
                         }
                         BinaryOp::Shl | BinaryOp::Shr => {

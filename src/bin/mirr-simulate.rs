@@ -75,8 +75,16 @@ fn main() {
             })
         }
         let cmd = Cli::command();
-        println!("{}", serde_json::to_string_pretty(&get_cmd_manifest(&cmd)).unwrap());
-        process::exit(0);
+        match serde_json::to_string_pretty(&get_cmd_manifest(&cmd)) {
+            Ok(manifest) => {
+                println!("{}", manifest);
+                process::exit(0);
+            }
+            Err(e) => {
+                eprintln!("Error: Failed to serialize CLI manifest: {}", e);
+                process::exit(1);
+            }
+        }
     }
 
     let config = if args.neonatal {

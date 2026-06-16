@@ -11,6 +11,7 @@
 use crate::ast::MirrProgram;
 use crate::emit::rspu_isa::RspuProgram;
 use crate::error::PipelineErrors;
+use crate::error_codes::{mirrcode, ErrorCode};
 use crate::simplify::SimplifyStats;
 use crate::span::FileTable;
 use crate::temporal::low_level_ir::TemporalNetlist;
@@ -430,7 +431,12 @@ pub fn run_pipeline_on_program(
 
     // Stage 6.5: Totality check (optional, requires rspu program).
     if config.totality {
-        let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+        let registry = result.ecs_registry.as_ref().ok_or_else(|| {
+            PipelineErrors::from(mirrcode(
+                ErrorCode::ReceiptGenerationFailed,
+                "ECS registry required for totality check",
+            ))
+        })?;
         let target_spec = crate::emit::rspu_isa::TargetSpec::from_config(&registry.target_config);
         let totality = crate::totality::run_totality_check(registry, &target_spec);
         if let Some(ref mut prog) = result.rspu_program {

@@ -56,7 +56,7 @@ fn test_emit_expr_dot_all_examples() {
 fn test_emit_sexpr_all_examples() {
     for source in EXAMPLES {
         let result = compile(source);
-        let sexpr = emit_sexpr(&result);
+        let sexpr = emit_sexpr(&result).expect("Failed to emit sexpr");
 
         assert!(sexpr.contains("(module"));
         assert!(sexpr.contains("(signal"));

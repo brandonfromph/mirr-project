@@ -57,8 +57,12 @@ fn emit_sv_full(
     let mut out = String::with_capacity(4096);
 
     let ft = &result.file_table;
-    let registry = result.ecs_registry.as_ref().unwrap();
+    let registry = match &result.ecs_registry {
+        Some(r) => r,
+        None => return "// No ECS registry available\n".to_string(),
+    };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
+    let module_span = registry.get_module_span();
 
     // Determine which reflexes contain DSP-eligible multiplies.
     // threshold=0 means DSP inference is disabled.
@@ -72,7 +76,7 @@ fn emit_sv_full(
 
     sva::emit_header(&mut out);
     sva::emit_pattern_annotations_ecs(registry, &mut out);
-    sva::emit_module_decl(&module_name, registry, ft, &mut out, None);
+    sva::emit_module_decl(&module_name, registry, ft, &mut out, module_span.as_ref());
     sva::emit_internal_signals(registry, ft, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
@@ -115,7 +119,10 @@ fn emit_sv_full(
 pub fn emit_sv_standalone(result: &PipelineResult) -> String {
     let mut out = String::with_capacity(1024);
     let ft = &result.file_table;
-    let registry = result.ecs_registry.as_ref().unwrap();
+    let registry = match &result.ecs_registry {
+        Some(r) => r,
+        None => return "// No ECS registry available\n".to_string(),
+    };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
 
     sva::emit_header(&mut out);
@@ -140,19 +147,24 @@ pub fn emit_sv_standalone(result: &PipelineResult) -> String {
     out
 }
 
+use crate::error::MirrError;
+use crate::error_codes::{mirrcode, ErrorCode};
+
 /// Emit a SystemVerilog bind file containing only SVA properties.
 ///
 /// This produces a standalone module with the same port list as the
 /// original design, containing only SVA assertions. A `bind` statement
 /// connects it to the DUT for formal verification while keeping RTL
 /// synthesis-clean.
-pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
-    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> {
+    let registry = result.ecs_registry.as_ref().ok_or_else(|| {
+        mirrcode(ErrorCode::RspuFallback, "ECS registry required for SVA bind emission")
+    })?;
     let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
 
     let property_count = registry.property_comps.iter().flatten().count();
     if property_count == 0 {
-        return String::new();
+        return Ok(String::new());
     }
 
     let has_rst_n = sva::module_has_rst_n(registry);
@@ -234,7 +246,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> String {
     // Emit the bind statement.
     out.push_str(&format!("bind {} {sva_mod_name} u_sva (.*);\n", module_name));
 
-    out
+    Ok(out)
 }
 
 // -----------------------------------------------------------------------
