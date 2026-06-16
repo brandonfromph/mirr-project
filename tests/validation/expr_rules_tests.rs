@@ -74,7 +74,7 @@ macro_rules! test_e172 {
                     "module m {{ signal s1: out bool; reflex r1 {{ on always {{ s1 = {}; }} }} }}",
                     "(".repeat(200) + "true" + &")".repeat(200)
                 ),
-                "E171",
+                "E172",
             );
         }
     };

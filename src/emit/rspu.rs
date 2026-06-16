@@ -149,8 +149,11 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
         emit_temporal_guards(&net.guards, &mut regs, &guard_map, &mut instrs, registry)?;
     }
 
-    // Step 4.5: Initialize signal-based guards.
-    for (name, &gid) in &guard_map {
+    // Step 4.5: Initialize signal-based guards deterministically.
+    let mut sorted_guards: Vec<_> = guard_map.iter().collect();
+    sorted_guards.sort_by_key(|(name, _)| *name);
+
+    for (name, &gid) in sorted_guards {
         if name != "always" && regs.map.contains_key(name) {
             let cond_reg = regs.map[name];
             instrs.push(RspuInstruction::SrInit { guard: gid, length: 1, cond: cond_reg });

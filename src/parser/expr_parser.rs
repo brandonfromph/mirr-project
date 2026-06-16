@@ -91,14 +91,6 @@ impl ExprParser {
             )));
         }
 
-        // Early validation: check for balanced parentheses
-        if !self.has_balanced_parens() {
-            return Err(MirrError::parse_error(format!(
-                "{} Unbalanced parentheses in expression.",
-                crate::error_codes::ec(171)
-            )));
-        }
-
         let expr = self.parse_expr(0, 0)?;
         if !self.at_end() {
             return Err(MirrError::parse_error(format!(
@@ -108,29 +100,6 @@ impl ExprParser {
             )));
         }
         Ok(expr)
-    }
-
-    /// Check if parentheses are balanced in the token stream.
-    fn has_balanced_parens(&self) -> bool {
-        let mut depth = 0;
-        for token in &self.tokens {
-            match token {
-                Token::LParen => {
-                    depth += 1;
-                    if depth > MAX_EXPR_DEPTH {
-                        return false; // Prevent stack overflow
-                    }
-                }
-                Token::RParen => {
-                    if depth == 0 {
-                        return false; // Unmatched closing paren
-                    }
-                    depth -= 1;
-                }
-                _ => {}
-            }
-        }
-        depth == 0
     }
 
     /// Pratt parser: parse expression with given minimum binding power.
