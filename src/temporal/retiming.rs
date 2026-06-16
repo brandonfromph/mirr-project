@@ -105,15 +105,47 @@ impl RetimingGraph {
         if self.nodes.is_empty() {
             return 0;
         }
-        // Simple: sum all node delays as an upper bound.
-        // A proper implementation would use topological sort + longest
-        // path on the zero-weight subgraph.
-        let mut max_delay = 0u32;
-        for node in &self.nodes {
-            if node.delay > max_delay {
-                max_delay = node.delay;
+
+        let n = self.nodes.len();
+        let mut in_degree = vec![0; n];
+        let mut zero_edges = vec![Vec::new(); n];
+
+        for edge in &self.edges {
+            if edge.register_weight == 0 {
+                in_degree[edge.to] += 1;
+                zero_edges[edge.from].push(edge.to);
             }
         }
+
+        let mut queue = Vec::new();
+        let mut longest_path = vec![0u32; n];
+
+        for i in 0..n {
+            if in_degree[i] == 0 {
+                queue.push(i);
+                longest_path[i] = self.nodes[i].delay;
+            }
+        }
+
+        let mut max_delay = 0u32;
+
+        while let Some(u) = queue.pop() {
+            if longest_path[u] > max_delay {
+                max_delay = longest_path[u];
+            }
+
+            for &v in &zero_edges[u] {
+                let candidate_delay = longest_path[u] + self.nodes[v].delay;
+                if candidate_delay > longest_path[v] {
+                    longest_path[v] = candidate_delay;
+                }
+                in_degree[v] -= 1;
+                if in_degree[v] == 0 {
+                    queue.push(v);
+                }
+            }
+        }
+
         max_delay
     }
 }
@@ -247,5 +279,28 @@ mod tests {
             count += 1;
         }
         assert_eq!(graph.nodes.len(), MAX_RETIMING_NODES);
+    }
+
+    #[test]
+    fn test_critical_path_combinational() {
+        let mut graph = RetimingGraph::new();
+        let n0 = graph.add_node("n0".to_string(), 10).unwrap();
+        let n1 = graph.add_node("n1".to_string(), 20).unwrap();
+        let n2 = graph.add_node("n2".to_string(), 30).unwrap();
+        let n3 = graph.add_node("n3".to_string(), 40).unwrap();
+
+        // Path 1: n0 -> n1 -> n3 (Delay: 10 + 20 + 40 = 70)
+        graph.add_edge(n0, n1, 0);
+        graph.add_edge(n1, n3, 0);
+
+        // Path 2: n0 -> n2 -> n3 (Delay: 10 + 30 + 40 = 80)
+        graph.add_edge(n0, n2, 0);
+        graph.add_edge(n2, n3, 0);
+
+        // Edge with register (does not add to combinational path)
+        let n4 = graph.add_node("n4".to_string(), 50).unwrap();
+        graph.add_edge(n3, n4, 1);
+
+        assert_eq!(graph.critical_path(), 80);
     }
 }

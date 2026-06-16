@@ -26,6 +26,22 @@ use crate::temporal::low_level_ir::{
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use sha2::{Digest, Sha256};
+
+struct Sha256Hasher(Sha256);
+
+impl Hasher for Sha256Hasher {
+    fn write(&mut self, bytes: &[u8]) {
+        self.0.update(bytes);
+    }
+    fn finish(&self) -> u64 {
+        let mut hash_bytes = [0u8; 8];
+        let result = self.0.clone().finalize();
+        hash_bytes.copy_from_slice(&result[0..8]);
+        u64::from_le_bytes(hash_bytes)
+    }
+}
+
 
 /// Adaptive threshold for choosing between shift registers and counters.
 ///
@@ -93,10 +109,10 @@ impl TemporalCompiler {
     }
 
     /// Recursively hash an expression for stable deduplication without string allocations.
-    fn hash_expr_stable(
+    fn hash_expr_stable<H: std::hash::Hasher>(
         &self,
         expr: &Expr,
-        hasher: &mut std::collections::hash_map::DefaultHasher,
+        hasher: &mut H,
     ) {
         match expr {
             Expr::Literal(val) => {
@@ -198,7 +214,7 @@ impl TemporalCompiler {
 
     /// Generate a deterministic, valid identifier guard name based on the expression and cycles.
     fn get_deterministic_name(&self, expr: &Expr, cycles: u64) -> String {
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        let mut hasher = Sha256Hasher(Sha256::new());
         self.hash_expr_stable(expr, &mut hasher);
         cycles.hash(&mut hasher);
         let hash_val = hasher.finish();
