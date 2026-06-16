@@ -331,7 +331,7 @@ impl MacroExpander {
         // Return a splice list — the generated nodes wrapped in a list.
         // If there's exactly one item, return it directly.
         if generated.len() == 1 {
-            Ok(generated.into_iter().next().unwrap())
+            Ok(generated.into_iter().next().unwrap_or(SExpr::List(vec![])))
         } else {
             Ok(SExpr::List(generated))
         }

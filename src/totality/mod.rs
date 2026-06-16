@@ -80,7 +80,28 @@ pub fn run_totality_check_on_module(
     target: &crate::emit::rspu_isa::TargetSpec,
 ) -> TotalityResult {
     let mut reg = crate::ecs::Registry::new();
-    reg.ingest_module(module).unwrap();
+    if reg.ingest_module(module).is_err() {
+        return TotalityResult {
+            resource_bound: ResourceBound {
+                registers: 0,
+                instructions_estimate: 0,
+                guards: 0,
+                max_cycles: 0,
+                pass: false,
+            },
+            output_completeness: OutputCompletenessResult { pass: false, undriven_outputs: Vec::new() },
+            guard_coverage: GuardCoverageResult { pass: false, covered_outputs: 0, total_outputs: 0 },
+            temporal_bound: TemporalBoundResult {
+                pass: false,
+                worst_case_latency: u64::MAX,
+                max_guard_cycles: 0,
+                max_prev_delay: 0,
+            },
+            acyclicity: AcyclicityResult { pass: false, cycle_witness: None },
+            property_summary: Vec::new(),
+            is_total: false,
+        };
+    }
     run_totality_check(&reg, target)
 }
 

@@ -550,8 +550,8 @@ fn parse_target(lines: &[&str], index: &mut usize) -> Result<TargetConfig, MirrE
         ));
     }
 
-    let mut name = if line.starts_with("target ") {
-        line.strip_prefix("target ").unwrap().trim_end_matches('{').trim().to_string()
+    let mut name = if let Some(stripped) = line.strip_prefix("target ") {
+        stripped.trim_end_matches('{').trim().to_string()
     } else {
         "unnamed".to_string()
     };
