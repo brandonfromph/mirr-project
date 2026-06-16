@@ -24,9 +24,9 @@ use crate::temporal::low_level_ir::{
     CompiledGuard, ConditionKind, GeneratedSignal, GeneratedSignalKind, TemporalNetlist,
 };
 
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use sha2::{Digest, Sha256};
 
 struct Sha256Hasher(Sha256);
 
@@ -41,7 +41,6 @@ impl Hasher for Sha256Hasher {
         u64::from_le_bytes(hash_bytes)
     }
 }
-
 
 /// Adaptive threshold for choosing between shift registers and counters.
 ///
@@ -109,11 +108,7 @@ impl TemporalCompiler {
     }
 
     /// Recursively hash an expression for stable deduplication without string allocations.
-    fn hash_expr_stable<H: std::hash::Hasher>(
-        &self,
-        expr: &Expr,
-        hasher: &mut H,
-    ) {
+    fn hash_expr_stable<H: std::hash::Hasher>(&self, expr: &Expr, hasher: &mut H) {
         match expr {
             Expr::Literal(val) => {
                 0u8.hash(hasher);

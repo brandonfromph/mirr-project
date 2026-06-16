@@ -242,4 +242,3 @@ pub fn solve_scc(scc: &SccInfo, registry: &Registry) -> SccSolveResult {
         SccKind::Expansive => solve_expansive(scc, registry),
     }
 }
-

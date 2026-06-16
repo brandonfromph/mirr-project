@@ -234,7 +234,7 @@ fn parse_reflect_section(sexpr: &SExpr) -> Result<ReflectBlock, MirrError> {
                 statements.push(ModuleMacroStmt::PatternCall(parse_pattern_call(item)?));
             }
             Some("for-generate") | Some("if-generate") | Some("let-bind") => {
-                let form_name = inner.get(0).and_then(|x| x.as_symbol()).unwrap_or("unknown");
+                let form_name = inner.first().and_then(|x| x.as_symbol()).unwrap_or("unknown");
                 return Err(sexpr_err(format!(
                     "{} Unevaluated generative form '{}'",
                     crate::error_codes::ec(815),
@@ -311,7 +311,7 @@ fn parse_module_section(sexpr: &SExpr) -> Result<Module, MirrError> {
                 }
             }
             Some("for-generate") | Some("if-generate") | Some("let-bind") => {
-                let form_name = inner.get(0).and_then(|x| x.as_symbol()).unwrap_or("unknown");
+                let form_name = inner.first().and_then(|x| x.as_symbol()).unwrap_or("unknown");
                 return Err(sexpr_err(format!(
                     "{} Unevaluated generative form '{}'",
                     crate::error_codes::ec(815),

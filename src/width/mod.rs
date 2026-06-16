@@ -181,10 +181,6 @@ impl SccWidthResult {
     }
 }
 
-
-
-
-
 pub fn check_truncation(
     target_name: &str,
     target_width: u32,
@@ -215,10 +211,6 @@ mod tests {
 
     // Unused width types removed
     use std::collections::HashSet;
-
-    
-
-    
 
     #[test]
     fn test_width_result_has_errors() {

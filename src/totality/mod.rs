@@ -89,8 +89,15 @@ pub fn run_totality_check_on_module(
                 max_cycles: 0,
                 pass: false,
             },
-            output_completeness: OutputCompletenessResult { pass: false, undriven_outputs: Vec::new() },
-            guard_coverage: GuardCoverageResult { pass: false, covered_outputs: 0, total_outputs: 0 },
+            output_completeness: OutputCompletenessResult {
+                pass: false,
+                undriven_outputs: Vec::new(),
+            },
+            guard_coverage: GuardCoverageResult {
+                pass: false,
+                covered_outputs: 0,
+                total_outputs: 0,
+            },
             temporal_bound: TemporalBoundResult {
                 pass: false,
                 worst_case_latency: u64::MAX,
