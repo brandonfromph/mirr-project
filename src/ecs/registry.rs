@@ -76,6 +76,11 @@ pub struct Registry {
     // Phase 3: Temporal Synthesis Components (Proposal 110)
     pub temporal_nodes: Vec<Option<TemporalNodeComponent>>,
 
+    // Phase 5c: HLS Components (MEGA-12 Migration)
+    pub hls_dataflow: Vec<Option<HlsDataflowComponent>>,
+    pub hls_schedules: Vec<Option<HlsScheduleComponent>>,
+    pub hls_bindings: Vec<Option<HlsBindingComponent>>,
+
     pub(super) symbol_to_entity: HashMap<String, EntityId>,
 }
 
@@ -123,6 +128,9 @@ impl Registry {
             assignment_comps: vec![None; cap],
             property_comps: vec![None; cap],
             temporal_nodes: vec![None; cap],
+            hls_dataflow: vec![None; cap],
+            hls_schedules: vec![None; cap],
+            hls_bindings: vec![None; cap],
             array_indices: vec![None; cap],
             field_accesses: vec![None; cap],
             array_literals: vec![None; cap],
@@ -175,6 +183,9 @@ impl Registry {
             self.assignment_comps.resize(new_cap, None);
             self.property_comps.resize(new_cap, None);
             self.temporal_nodes.resize(new_cap, None);
+            self.hls_dataflow.resize(new_cap, None);
+            self.hls_schedules.resize(new_cap, None);
+            self.hls_bindings.resize(new_cap, None);
             self.array_indices.resize(new_cap, None);
             self.field_accesses.resize(new_cap, None);
             self.array_literals.resize(new_cap, None);

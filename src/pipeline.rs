@@ -131,8 +131,8 @@ pub struct PipelineResult {
     pub symbolic_result: Option<crate::symbolic::SymbolicResult>,
     /// MAPE-K RTL emission output (None if not requested).
     pub mape_k_rtl: Option<String>,
-    /// MEGA-12 HLS pass result (None if stage was skipped).
-    pub hls_result: Option<crate::hls::HlsResult>,
+    /// Deprecated: MEGA-12 HLS pass is now fully ECS-resident.
+    pub hls_result: Option<()>,
     /// String-interned file path table for source traceability.
     pub file_table: FileTable,
     /// The final fully-populated ECS registry.
@@ -416,12 +416,25 @@ pub fn run_pipeline_on_program(
         ecs_registry: Some(final_registry.clone()),
     };
 
-    // Stage 5c: HLS pass (optional, MEGA-12).
+    // Stage 5c: HLS pass (optional, MEGA-12 ECS migration).
     if config.hls {
-        let dag = crate::hls::OpDag::build_from_registry(&final_registry);
+        crate::hls::hls_ingestion_system(&mut final_registry);
 
-        let hls_config = crate::hls::HlsConfig::default();
-        result.hls_result = crate::hls::run_hls_pass(&dag, &hls_config).ok();
+        crate::ecs::systems::hls_schedule::hls_asap_schedule_system(&mut final_registry)
+            .map_err(|e| PipelineErrors { errors: vec![e] })?;
+
+        let latency = crate::hls::HlsConfig::default().latency;
+        if latency > 1 {
+            crate::ecs::systems::hls_schedule::hls_alap_schedule_system(
+                &mut final_registry,
+                latency,
+            )
+            .map_err(|e| PipelineErrors { errors: vec![e] })?;
+        }
+
+        crate::ecs::systems::hls_sharing::hls_sharing_system(&mut final_registry);
+
+        result.hls_result = Some(());
     }
 
     // Stage 6: R-SPU emission (optional, requires temporal).

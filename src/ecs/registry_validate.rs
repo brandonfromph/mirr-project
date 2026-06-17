@@ -25,6 +25,15 @@ impl super::Registry {
         if self.temporal_nodes.len() < max_id {
             return Err(anyhow::anyhow!("TemporalNodes table desync"));
         }
+        if self.hls_dataflow.len() < max_id {
+            return Err(anyhow::anyhow!("HlsDataflow table desync"));
+        }
+        if self.hls_schedules.len() < max_id {
+            return Err(anyhow::anyhow!("HlsSchedules table desync"));
+        }
+        if self.hls_bindings.len() < max_id {
+            return Err(anyhow::anyhow!("HlsBindings table desync"));
+        }
         if self.array_literals.len() < max_id {
             return Err(anyhow::anyhow!("ArrayLiterals table desync"));
         }

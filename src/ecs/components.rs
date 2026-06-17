@@ -263,3 +263,32 @@ pub struct TemporalNodeComponent {
     /// The cycle count this guard was compiled with.
     pub delay_cycles: u64,
 }
+
+// --- HLS (MEGA-12) Synthesis Components ---
+
+/// Component: Tracks data dependencies in the HLS dataflow graph.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HlsDataflowComponent {
+    /// Entities that produce data consumed by this entity.
+    pub predecessors: Vec<EntityId>,
+    /// Entities that consume data produced by this entity.
+    pub successors: Vec<EntityId>,
+}
+
+/// Component: Tracks operation scheduling in the HLS pipeline.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HlsScheduleComponent {
+    /// Earliest possible cycle (ASAP result).
+    pub earliest: u32,
+    /// Latest possible cycle (ALAP result).
+    pub latest: u32,
+    /// Hardware resource required.
+    pub resource: crate::hls::ResourceKind,
+}
+
+/// Component: Tracks physical resource binding for time-multiplexing.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HlsBindingComponent {
+    /// ID of the physical resource instance allocated to this entity.
+    pub physical_resource_id: u32,
+}

@@ -12,6 +12,9 @@ use crate::width::types::{SccInfo, SccKind, WidthDiag, WidthStats};
 use crate::width::verify::VerifyResult;
 use rayon::prelude::*;
 
+pub mod hls_schedule;
+pub mod hls_sharing;
+
 /// ECS System: Parallel Constant Folding.
 pub fn parallel_constant_folding_system(registry: &mut Registry) {
     let next_id = registry.next_id as usize;

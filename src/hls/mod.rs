@@ -9,10 +9,7 @@
 
 #![forbid(unsafe_code)]
 
-pub mod binding;
 pub mod fifo;
-pub mod schedule;
-pub mod sharing;
 
 /// Maximum operations in the HLS DAG (NASA P10 bound).
 pub const MAX_HLS_OPERATIONS: usize = 512;
@@ -36,8 +33,10 @@ impl Default for HlsConfig {
     }
 }
 
+use serde::{Deserialize, Serialize};
+
 /// Resource kinds in the HLS dataflow graph.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ResourceKind {
     /// Addition operation.
     Add,
@@ -96,419 +95,95 @@ impl core::fmt::Display for ResourceKind {
     }
 }
 
-/// Operand for an HLS operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum HlsOperand {
-    /// Result of another operation (op_id).
-    Op(u32),
-    /// A signal name.
-    Signal(String),
-    /// A literal value (formatted for Verilog).
-    Literal(String),
-}
-
-/// A single operation in the HLS dataflow graph.
-#[derive(Debug, Clone)]
-pub struct HlsOperation {
-    /// Unique operation ID.
-    pub op_id: u32,
-    /// Resource kind (what hardware this maps to).
-    pub kind: ResourceKind,
-    /// Bit width of the operation result.
-    pub width: u32,
-    /// Input operand widths.
-    pub operand_widths: Vec<u32>,
-    /// Detailed operands (Op, Signal, or Literal).
-    pub operands: Vec<HlsOperand>,
-    /// IDs of predecessor operations (data dependencies).
-    pub predecessors: Vec<u32>,
-    /// IDs of successor operations (data consumers).
-    pub successors: Vec<u32>,
-}
-
-/// HLS dataflow graph for scheduling and sharing.
-#[derive(Debug, Clone)]
-pub struct OpDag {
-    /// Operations in the graph.
-    pub ops: Vec<HlsOperation>,
-    /// Map from operation ID to target signal name (traceability).
-    pub target_signals: HashMap<u32, String>,
-}
-
+use crate::ecs::components::HlsDataflowComponent;
 use crate::ecs::{EntityId, Registry};
-use std::collections::HashMap;
 
-impl OpDag {
-    /// Create a new empty DAG.
-    pub fn new() -> Self {
-        Self { ops: Vec::new(), target_signals: HashMap::new() }
-    }
+/// ECS System: Ingest operations from the Registry to build the HLS dataflow graph.
+///
+/// This system populates `HlsDataflowComponent` on entities that represent
+/// operations to be scheduled and shared by the HLS engine.
+pub fn hls_ingestion_system(registry: &mut Registry) {
+    let max_id = registry.active_entities();
 
-    /// Build an HLS operation DAG from the ECS Registry.
-    ///
-    /// NASA Power-of-10: bounded by MAX_HLS_OPERATIONS.
-    pub fn build_from_registry(registry: &Registry) -> Self {
-        let mut dag = Self::new();
-        let mut entity_to_op = HashMap::new();
+    // First pass: identify all operations that are targets of assignments in reflexes
+    let mut op_entities = std::collections::HashSet::new();
 
-        // Find all reflexes and their assignments.
-        for reflex in registry.reflex_comps.iter().flatten() {
-            for &assign_id in &reflex.assignments {
+    for i in 0..max_id {
+        if let Some(reflex) = &registry.reflex_comps[i] {
+            for assign_id in &reflex.assignments {
                 if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
-                    if let Some(HlsOperand::Op(op_id)) =
-                        dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op)
-                    {
-                        if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
-                            dag.target_signals.insert(op_id, name_comp.0.clone());
-                        }
-                    }
+                    identify_operations(registry, assign.value, &mut op_entities);
                 }
             }
         }
-        dag
     }
 
-    /// Recursively (iteratively) ingest an expression entity into the DAG.
-    fn ingest_expr_entity(
-        &mut self,
-        registry: &Registry,
-        root_id: EntityId,
-        memo: &mut HashMap<EntityId, u32>,
-    ) -> Option<HlsOperand> {
-        if let Some(&op_id) = memo.get(&root_id) {
-            return Some(HlsOperand::Op(op_id));
-        }
+    // Second pass: for all identified operations, establish dataflow edges
+    for &id in &op_entities {
+        let idx = id.0 as usize;
 
-        let idx = root_id.0 as usize;
+        let mut predecessors = Vec::new();
 
         if let Some(binary) = &registry.binary_ops[idx] {
-            let left_operand = self.ingest_expr_entity(registry, binary.left, memo)?;
-            let right_operand = self.ingest_expr_entity(registry, binary.right, memo)?;
-
-            let kind = match binary.op {
-                crate::ast::types::BinaryOp::Add => ResourceKind::Add,
-                crate::ast::types::BinaryOp::Sub => ResourceKind::Sub,
-                crate::ast::types::BinaryOp::Mul => ResourceKind::Mul,
-                crate::ast::types::BinaryOp::And | crate::ast::types::BinaryOp::BitwiseAnd => {
-                    ResourceKind::And
-                }
-                crate::ast::types::BinaryOp::Or | crate::ast::types::BinaryOp::BitwiseOr => {
-                    ResourceKind::Or
-                }
-                crate::ast::types::BinaryOp::Xor => ResourceKind::Xor,
-                crate::ast::types::BinaryOp::Eq => ResourceKind::Eq,
-                crate::ast::types::BinaryOp::Ne => ResourceKind::Ne,
-                crate::ast::types::BinaryOp::Lt => ResourceKind::Lt,
-                crate::ast::types::BinaryOp::Le => ResourceKind::Le,
-                crate::ast::types::BinaryOp::Gt => ResourceKind::Gt,
-                crate::ast::types::BinaryOp::Ge => ResourceKind::Ge,
-                crate::ast::types::BinaryOp::Shl => ResourceKind::Shl,
-                crate::ast::types::BinaryOp::Shr => ResourceKind::Shr,
-            };
-
-            let width = registry.types[idx].as_ref().map(|t| t.0.core.width()).unwrap_or(8);
-            let operands = vec![left_operand.clone(), right_operand.clone()];
-            let op_id = self.add_op(kind, width, vec![width, width], operands)?;
-            memo.insert(root_id, op_id);
-
-            if let HlsOperand::Op(l) = left_operand {
-                self.add_edge(l, op_id);
+            if op_entities.contains(&binary.left) {
+                predecessors.push(binary.left);
             }
-            if let HlsOperand::Op(r) = right_operand {
-                self.add_edge(r, op_id);
+            if op_entities.contains(&binary.right) {
+                predecessors.push(binary.right);
             }
-            Some(HlsOperand::Op(op_id))
         } else if let Some(unary) = &registry.unary_ops[idx] {
-            let operand = self.ingest_expr_entity(registry, unary.operand, memo)?;
-
-            let kind = match unary.op {
-                crate::ast::types::UnaryOp::Not => ResourceKind::Not,
-                crate::ast::types::UnaryOp::Negate => ResourceKind::Negate,
-                crate::ast::types::UnaryOp::ReductionOr => ResourceKind::Negate, /* Approximate */
-            };
-
-            let width = registry.types[idx].as_ref().map(|t| t.0.core.width()).unwrap_or(8);
-            let operands = vec![operand.clone()];
-            let op_id = self.add_op(kind, width, vec![width], operands)?;
-            memo.insert(root_id, op_id);
-
-            if let HlsOperand::Op(o) = operand {
-                self.add_edge(o, op_id);
+            if op_entities.contains(&unary.operand) {
+                predecessors.push(unary.operand);
             }
-            Some(HlsOperand::Op(op_id))
-        } else if let Some(lit) = &registry.literals[idx] {
-            let val_str = match &lit.0 {
-                crate::ast::types::LiteralValue::Integer(n) => format!("{}", n),
-                crate::ast::types::LiteralValue::Bool(b) => {
-                    if *b {
-                        "1'b1".to_string()
-                    } else {
-                        "1'b0".to_string()
-                    }
+        }
+
+        // Initialize dataflow component if it doesn't exist
+        if registry.hls_dataflow[idx].is_none() {
+            registry.hls_dataflow[idx] =
+                Some(HlsDataflowComponent { predecessors: Vec::new(), successors: Vec::new() });
+        }
+
+        // Add predecessors and update their successors
+        for pred in predecessors {
+            // Add predecessor to current entity
+            if let Some(df) = &mut registry.hls_dataflow[idx] {
+                if !df.predecessors.contains(&pred) {
+                    df.predecessors.push(pred);
                 }
-            };
-            Some(HlsOperand::Literal(val_str))
-        } else if let Some(sig_ref) = &registry.signal_refs[idx] {
-            registry.names[sig_ref.0 .0 as usize]
-                .as_ref()
-                .map(|name| HlsOperand::Signal(name.0.clone()))
-        } else {
-            registry.names[idx].as_ref().map(|name| HlsOperand::Signal(name.0.clone()))
-        }
-    }
-
-    /// Add an operation to the DAG.
-    /// Returns the assigned op_id, or None if the graph is full.
-    pub fn add_op(
-        &mut self,
-        kind: ResourceKind,
-        width: u32,
-        operand_widths: Vec<u32>,
-        operands: Vec<HlsOperand>,
-    ) -> Option<u32> {
-        if self.ops.len() >= MAX_HLS_OPERATIONS {
-            return None;
-        }
-        let op_id = self.ops.len() as u32;
-        let op = HlsOperation {
-            op_id,
-            kind,
-            width,
-            operand_widths,
-            operands,
-            predecessors: Vec::new(),
-            successors: Vec::new(),
-        };
-        self.ops.push(op);
-        Some(op_id)
-    }
-
-    /// Add a data dependency edge from src to dst.
-    pub fn add_edge(&mut self, src: u32, dst: u32) {
-        if src < self.ops.len() as u32 && dst < self.ops.len() as u32 {
-            if !self.ops[dst as usize].predecessors.contains(&src) {
-                self.ops[dst as usize].predecessors.push(src);
             }
-            if !self.ops[src as usize].successors.contains(&dst) {
-                self.ops[src as usize].successors.push(dst);
+
+            // Add current entity as successor to predecessor
+            if registry.hls_dataflow[pred.0 as usize].is_none() {
+                registry.hls_dataflow[pred.0 as usize] =
+                    Some(HlsDataflowComponent { predecessors: Vec::new(), successors: Vec::new() });
             }
-        }
-    }
-}
 
-/// HLS pass result with scheduling, sharing, and binding information.
-#[derive(Debug, Clone)]
-pub struct HlsResult {
-    /// Original operations in the DAG.
-    pub ops: Vec<HlsOperation>,
-    /// Scheduling result (operation → cycle assignment).
-    pub schedule: Vec<schedule::ScheduleOp>,
-    /// Resource sharing groups (operations sharing a resource).
-    pub sharing_groups: Vec<Vec<usize>>,
-    /// Binding result (operation → physical resource assignment).
-    pub bindings: Vec<u32>,
-    /// Number of physical resources required.
-    pub resource_count: Vec<(ResourceKind, u32)>,
-    /// Synthesized FIFOs for streaming data across cycles.
-    pub fifos: Vec<fifo::FifoHardware>,
-    /// Map from operation ID to target signal name.
-    pub target_signals: HashMap<u32, String>,
-}
-
-use crate::error::MirrError;
-use crate::error_codes::{mirrcode, ErrorCode};
-
-/// Run the full HLS pass on an operation DAG.
-///
-/// Steps:
-/// 1. ASAP scheduling (earliest cycle for each operation)
-/// 2. ALAP scheduling (latest cycle for each operation)
-/// 3. Resource sharing (group compatible operations)
-/// 4. Operation binding (assign to physical resources)
-///
-/// Returns HlsResult with all optimization data.
-pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, MirrError> {
-    if dag.ops.is_empty() {
-        return Err(mirrcode(ErrorCode::HlsSchedulingFailed, "Empty operation DAG"));
-    }
-
-    // Step 1: ASAP scheduling.
-    let mut schedule_ops = schedule::asap_schedule(dag)?;
-
-    // Step 2: ALAP scheduling (if latency is meaningful).
-    if config.latency > 1 {
-        let alap = schedule::alap_schedule(dag, config.latency)?;
-        // Merge ALAP timing into schedule.
-        for (i, asap_op) in schedule_ops.iter_mut().enumerate() {
-            if i < alap.len() {
-                asap_op.latest = alap[i].latest;
-            }
-        }
-    } else {
-        // For single-cycle latency, ALAP = ASAP.
-        for op in &mut schedule_ops {
-            op.latest = op.earliest;
-        }
-    }
-
-    // Step 3: Resource sharing.
-    let sharing_groups =
-        if config.sharing { sharing::find_shareable_ops(&schedule_ops) } else { Vec::new() };
-
-    // Step 4: Operation binding.
-    let bindings = if config.binding {
-        binding::bind_operations(&schedule_ops)
-    } else {
-        // Trivial binding: each operation gets its own resource.
-        let mut trivial = Vec::with_capacity(schedule_ops.len());
-        for i in 0..schedule_ops.len() {
-            trivial.push(i as u32);
-        }
-        trivial
-    };
-
-    // Count physical resources.
-    let resource_count = count_resources(&bindings, &schedule_ops);
-
-    // Step 5: FIFO streaming synthesis.
-    let mut fifos = Vec::new();
-    if config.fifo {
-        // Iterate over DAG edges (successors)
-        for src_idx in 0..dag.ops.len() {
-            let src_op = &dag.ops[src_idx];
-            let src_sched = &schedule_ops[src_idx];
-
-            for &dst_id in &src_op.successors {
-                let dst_idx = dst_id as usize;
-                let dst_sched = &schedule_ops[dst_idx];
-
-                // If dst starts strictly after src finishes (in terms of ALAP/ASAP cycles), we need a FIFO.
-                // Assuming latency difference means cycles.
-                if dst_sched.earliest > src_sched.latest {
-                    let depth = dst_sched.earliest - src_sched.latest;
-                    if let Ok(mut fifo) = fifo::FifoHardware::new(depth, src_op.width) {
-                        fifo.name = format!("fifo_edge_{}_to_{}", src_op.op_id, dst_id);
-                        fifos.push(fifo);
-                    }
+            if let Some(df) = &mut registry.hls_dataflow[pred.0 as usize] {
+                if !df.successors.contains(&id) {
+                    df.successors.push(id);
                 }
             }
         }
     }
-
-    Ok(HlsResult {
-        ops: dag.ops.clone(),
-        schedule: schedule_ops,
-        sharing_groups,
-        bindings,
-        resource_count,
-        fifos,
-        target_signals: dag.target_signals.clone(),
-    })
 }
 
-/// Count physical resources used by the binding.
-fn count_resources(
-    bindings: &[u32],
-    schedule: &[schedule::ScheduleOp],
-) -> Vec<(ResourceKind, u32)> {
-    let mut counts: Vec<(ResourceKind, u32)> = Vec::new();
+fn identify_operations(
+    registry: &Registry,
+    root_id: EntityId,
+    op_entities: &mut std::collections::HashSet<EntityId>,
+) {
+    let idx = root_id.0 as usize;
 
-    let mut i = 0;
-    while i < schedule.len() {
-        let kind = schedule[i].resource;
-        let _binding = bindings[i];
-        // Count unique binding IDs for this resource kind.
-        // Note: binding is a physical resource ID, so we just count the max+1.
-        let mut found = false;
-        let mut j = 0;
-        while j < counts.len() {
-            if counts[j].0 == kind {
-                found = true;
-                break;
-            }
-            j += 1;
-        }
-        if !found {
-            // Count unique bindings for this kind.
-            let mut unique_bindings: Vec<u32> = Vec::new();
-            let mut k = 0;
-            while k < schedule.len() && k < bindings.len() {
-                if schedule[k].resource == kind {
-                    let b = bindings[k];
-                    if !unique_bindings.contains(&b) {
-                        unique_bindings.push(b);
-                    }
-                }
-                k += 1;
-            }
-            counts.push((kind, unique_bindings.len() as u32));
-        }
-        i += 1;
-    }
-
-    counts
-}
-
-impl Default for OpDag {
-    fn default() -> Self {
-        Self::new()
+    if registry.binary_ops[idx].is_some() {
+        op_entities.insert(root_id);
+        let left = registry.binary_ops[idx].as_ref().unwrap().left;
+        let right = registry.binary_ops[idx].as_ref().unwrap().right;
+        identify_operations(registry, left, op_entities);
+        identify_operations(registry, right, op_entities);
+    } else if registry.unary_ops[idx].is_some() {
+        op_entities.insert(root_id);
+        let operand = registry.unary_ops[idx].as_ref().unwrap().operand;
+        identify_operations(registry, operand, op_entities);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_op_dag_new() {
-        let dag = OpDag::new();
-        assert_eq!(dag.ops.len(), 0);
-    }
-
-    #[test]
-    fn test_op_dag_add_op() {
-        let mut dag = OpDag::new();
-        let id = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
-        assert_eq!(id, Some(0));
-        assert_eq!(dag.ops.len(), 1);
-        assert_eq!(dag.ops[0].kind, ResourceKind::Add);
-    }
-
-    #[test]
-    fn test_op_dag_add_edge() {
-        let mut dag = OpDag::new();
-        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
-        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
-        dag.add_edge(a, b);
-        assert!(dag.ops[b as usize].predecessors.contains(&a));
-        assert!(dag.ops[a as usize].successors.contains(&b));
-    }
-
-    #[test]
-    fn test_op_dag_max_operations() {
-        let mut dag = OpDag::new();
-        for _ in 0..MAX_HLS_OPERATIONS {
-            dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
-        }
-        let result = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn test_hls_pass_generates_fifo() {
-        let mut dag = OpDag::new();
-        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
-        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
-        dag.add_edge(a, b);
-
-        let config = HlsConfig { latency: 2, ..Default::default() };
-
-        let result = run_hls_pass(&dag, &config).expect("HLS pass failed");
-
-        // `a` is at cycle 0, `b` is at cycle 1.
-        // dst starts after src finishes, so a FIFO should be synthesized.
-        assert_eq!(result.fifos.len(), 1);
-        assert_eq!(result.fifos[0].depth, 1);
-        assert_eq!(result.fifos[0].elem_width, 8);
-    }
-}
+// End of src/hls/mod.rs

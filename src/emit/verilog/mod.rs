@@ -91,14 +91,7 @@ fn emit_sv_full(
         temporal::emit_temporal_logic_ecs(registry, netlist, ft, &mut out);
     }
 
-    temporal::emit_reflex_logic_ecs(
-        registry,
-        &dsp_reflexes,
-        dsp_attr,
-        result.hls_result.as_ref(),
-        ft,
-        &mut out,
-    );
+    temporal::emit_reflex_logic_ecs(registry, &dsp_reflexes, dsp_attr, ft, &mut out);
 
     let pattern_call_count = registry.pattern_defs.iter().flatten().count();
     if pattern_call_count > 0 {
@@ -138,7 +131,6 @@ pub fn emit_sv_standalone(result: &PipelineResult) -> String {
         registry,
         &std::collections::HashSet::new(),
         None,
-        result.hls_result.as_ref(),
         ft,
         &mut out,
     );
