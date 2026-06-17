@@ -8,7 +8,7 @@
 use mirrc::hls::binding::bind_operations;
 use mirrc::hls::schedule::{alap_schedule, asap_schedule, compute_mobility, ScheduleOp};
 use mirrc::hls::sharing::find_shareable_ops;
-use mirrc::hls::{run_hls_pass, HlsConfig, OpDag, ResourceKind};
+use mirrc::hls::{run_hls_pass, HlsConfig, OpDag, ResourceKind, HlsOperand};
 
 // =========================================================================
 // DAG construction tests
@@ -23,7 +23,7 @@ fn test_dag_build_empty() {
 #[test]
 fn test_dag_build_single_op() {
     let mut dag = OpDag::new();
-    let id = dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+    let id = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
     assert_eq!(id, Some(0));
     assert_eq!(dag.ops.len(), 1);
 }
@@ -31,9 +31,9 @@ fn test_dag_build_single_op() {
 #[test]
 fn test_dag_build_chain() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
-    let c = dag.add_op(ResourceKind::And, 8, vec![16, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
+    let c = dag.add_op(ResourceKind::And, 8, vec![16, 8], vec![]).unwrap();
     dag.add_edge(a, b);
     dag.add_edge(b, c);
 
@@ -49,7 +49,7 @@ fn test_dag_build_chain() {
 #[test]
 fn test_asap_single_op() {
     let mut dag = OpDag::new();
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
 
     let schedule = asap_schedule(&dag).unwrap();
     assert_eq!(schedule.len(), 1);
@@ -59,9 +59,9 @@ fn test_asap_single_op() {
 #[test]
 fn test_asap_chain() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
-    let c = dag.add_op(ResourceKind::And, 8, vec![16, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
+    let c = dag.add_op(ResourceKind::And, 8, vec![16, 8], vec![]).unwrap();
     dag.add_edge(a, b);
     dag.add_edge(b, c);
 
@@ -78,8 +78,8 @@ fn test_asap_chain() {
 #[test]
 fn test_alap_chain() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
     dag.add_edge(a, b);
 
     let schedule = alap_schedule(&dag, 2).unwrap();
@@ -160,7 +160,7 @@ fn test_binding_overlap() {
 #[test]
 fn test_hls_pass_single_op() {
     let mut dag = OpDag::new();
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
 
     let config = HlsConfig::default();
     let result = run_hls_pass(&dag, &config).unwrap();
@@ -170,8 +170,8 @@ fn test_hls_pass_single_op() {
 #[test]
 fn test_hls_pass_chain() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
     dag.add_edge(a, b);
 
     let config = HlsConfig::default();
@@ -192,8 +192,8 @@ fn test_hls_pass_empty_dag() {
 #[test]
 fn test_hls_pass_sharing_disabled() {
     let mut dag = OpDag::new();
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
 
     let config = HlsConfig { latency: 1, sharing: false, binding: true, fifo: true };
     let result = run_hls_pass(&dag, &config).unwrap();

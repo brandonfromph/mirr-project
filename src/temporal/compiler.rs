@@ -16,8 +16,9 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::types::BinaryOp;
-use crate::ast::{program::Guard, types::SignalType, Expr};
+use crate::ast::types::{BinaryOp, SignalType};
+use crate::ast::Expr;
+use crate::ecs::{EntityId, Registry};
 use crate::error::MirrError;
 use crate::error_codes::{mirrcode, ErrorCode};
 use crate::temporal::low_level_ir::{
@@ -54,13 +55,6 @@ const SHIFT_REGISTER_THRESHOLD: u64 = 16;
 /// in `compile_guard` is bounded to `MAX_COMPILE_GUARD_DEPTH * 4` iterations.
 const MAX_COMPILE_GUARD_DEPTH: usize = 64;
 
-/// Work items for the explicit compilation stack.
-/// Either compile a guard or combine two already-compiled sub-guards.
-enum WorkItem {
-    Compile(Guard),
-    Combine { name: String, op: BinaryOp },
-}
-
 /// Temporal Guard Compiler
 ///
 /// Responsible for lowering high-level temporal guards from the ECS Registry
@@ -90,13 +84,17 @@ impl TemporalCompiler {
         Self { signal_counter: 0, context: TemporalNetlist::new(), cache: HashMap::new() }
     }
 
-    /// Compile a module's temporal guards into a low-level netlist
-    pub fn compile_module(&mut self, guards: &[Guard]) -> Result<TemporalNetlist, MirrError> {
+    /// Compile a module's temporal guards from the ECS Registry into a low-level netlist
+    pub fn compile_module(
+        &mut self,
+        registry: &Registry,
+        guard_entities: &[EntityId],
+    ) -> Result<TemporalNetlist, MirrError> {
         self.cache.clear();
         let mut netlist = TemporalNetlist::new();
 
-        for guard in guards {
-            let compiled = self.compile_guard(guard)?;
+        for &gid in guard_entities {
+            let compiled = self.lower_guard_to_ecs(registry, gid)?;
             netlist.add_guard(compiled);
         }
 
@@ -252,258 +250,6 @@ impl TemporalCompiler {
     /// Uses an explicit work-stack instead of recursion to satisfy the
     /// NASA Power-of-10 "no recursion" rule. The loop is bounded to
     /// `MAX_COMPILE_GUARD_DEPTH * 4` iterations.
-    fn compile_guard(&mut self, guard: &Guard) -> Result<CompiledGuard, MirrError> {
-        let mut work_stack: Vec<WorkItem> = Vec::new();
-        let mut result_stack: Vec<CompiledGuard> = Vec::new();
-        work_stack.push(WorkItem::Compile(guard.clone()));
-
-        let max_iterations = MAX_COMPILE_GUARD_DEPTH * 4;
-        for _ in 0..max_iterations {
-            let item = match work_stack.pop() {
-                Some(item) => item,
-                None => break,
-            };
-            match item {
-                WorkItem::Compile(g) => {
-                    self.compile_leaf_or_decompound(g, &mut work_stack, &mut result_stack)?
-                }
-                WorkItem::Combine { name, op } => {
-                    self.combine_guard_results(name, op, &mut result_stack)?
-                }
-            }
-        }
-
-        if !work_stack.is_empty() {
-            return Err(MirrError::TemporalCompilationError {
-                message: format!(
-                    "{} guard '{}': compilation exceeded maximum iteration bound ({})",
-                    crate::error_codes::ec(304),
-                    guard.name,
-                    max_iterations
-                ),
-                span: guard.span,
-            });
-        }
-
-        result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
-            message: format!(
-                "{} guard '{}': internal error — no compilation result produced",
-                crate::error_codes::ec(305),
-                guard.name
-            ),
-            span: guard.span,
-        })
-    }
-
-    /// Handle a leaf guard (compile directly) or decompose a compound guard (push sub-guards).
-    fn compile_leaf_or_decompound(
-        &mut self,
-        g: Guard,
-        work_stack: &mut Vec<WorkItem>,
-        result_stack: &mut Vec<CompiledGuard>,
-    ) -> Result<(), MirrError> {
-        if let Some(cached) = self.cache.get(&g.name) {
-            result_stack.push(cached.clone());
-            return Ok(());
-        }
-
-        // Bounded search for existing identical guards (NASA P10: bounded search).
-        let mut matched = None;
-        if let Ok(cond_kind) = ConditionKind::try_from_expr(&g.condition) {
-            for existing in self.cache.values() {
-                match existing {
-                    CompiledGuard::ShiftRegister(sr) => {
-                        if sr.condition_kind == cond_kind && sr.delay_cycles == g.cycles {
-                            matched = Some(existing.clone());
-                            break;
-                        }
-                    }
-                    CompiledGuard::Counter(cg)
-                        if cg.condition_kind == cond_kind && cg.target_count == g.cycles =>
-                    {
-                        matched = Some(existing.clone());
-                        break;
-                    }
-                    _ => {}
-                }
-            }
-        }
-        if let Some(existing) = matched {
-            self.cache.insert(g.name.clone(), existing.clone());
-            result_stack.push(existing);
-            return Ok(());
-        }
-
-        // WorkItem enum is defined in compile_guard; use fully qualified match
-        match ConditionKind::try_from_expr(&g.condition) {
-            Ok(_) => {
-                let compiled = if g.cycles <= SHIFT_REGISTER_THRESHOLD {
-                    self.compile_shift_register_guard(&g)?
-                } else {
-                    self.compile_counter_guard(&g)?
-                };
-                self.cache.insert(g.name.clone(), compiled.clone());
-                result_stack.push(compiled);
-                Ok(())
-            }
-            Err(_) => {
-                if let Expr::Binary { op, left, right } = &g.condition {
-                    if *op == BinaryOp::And || *op == BinaryOp::Or {
-                        if work_stack.len() >= MAX_COMPILE_GUARD_DEPTH {
-                            return Err(MirrError::TemporalCompilationError {
-                                message: format!(
-                                    "{} guard '{}': exceeded maximum compile guard depth ({})",
-                                    crate::error_codes::ec(301),
-                                    g.name,
-                                    MAX_COMPILE_GUARD_DEPTH
-                                ),
-                                span: g.span,
-                            });
-                        }
-                        let left_name = self.get_deterministic_name(left, g.cycles);
-                        let right_name = self.get_deterministic_name(right, g.cycles);
-                        let left_guard = Guard {
-                            name: left_name,
-                            condition: (*left.clone()),
-                            cycles: g.cycles,
-                            template_cycles: None,
-                            origin: None,
-                            span: None,
-                        };
-                        let right_guard = Guard {
-                            name: right_name,
-                            condition: (*right.clone()),
-                            cycles: g.cycles,
-                            template_cycles: None,
-                            origin: None,
-                            span: None,
-                        };
-                        // Use the WorkItem enum from compile_guard scope
-                        work_stack.push(WorkItem::Combine { name: g.name.clone(), op: *op });
-                        work_stack.push(WorkItem::Compile(right_guard));
-                        work_stack.push(WorkItem::Compile(left_guard));
-                        Ok(())
-                    } else {
-                        Err(MirrError::TemporalCompilationError {
-                            message: format!("{} guard '{}': condition cannot be lowered to hardware — unsupported form", crate::error_codes::ec(302), g.name),
-                            span: g.span,
-                        })
-                    }
-                } else {
-                    Err(MirrError::TemporalCompilationError {
-                        message: format!("{} guard '{}': condition cannot be lowered to hardware — unsupported form", crate::error_codes::ec(302), g.name),
-                        span: g.span,
-                    })
-                }
-            }
-        }
-    }
-
-    /// Pop two compiled sub-guards, combine them into a ComplexGuard, push result.
-    fn combine_guard_results(
-        &mut self,
-        name: String,
-        op: BinaryOp,
-        result_stack: &mut Vec<CompiledGuard>,
-    ) -> Result<(), MirrError> {
-        let right_comp = result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
-            message: format!(
-                "{} guard '{}': internal error — missing right sub-guard result",
-                crate::error_codes::ec(303),
-                name
-            ),
-            span: None,
-        })?;
-        let left_comp = result_stack.pop().ok_or_else(|| MirrError::TemporalCompilationError {
-            message: format!(
-                "{} guard '{}': internal error — missing left sub-guard result",
-                crate::error_codes::ec(303),
-                name
-            ),
-            span: None,
-        })?;
-
-        let left_out = match &left_comp {
-            CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
-            CompiledGuard::Counter(c) => c.output_signal.clone(),
-            CompiledGuard::Complex(cx) => cx.output_signal.clone(),
-            CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
-        };
-        let right_out = match &right_comp {
-            CompiledGuard::ShiftRegister(sr) => sr.output_signal.clone(),
-            CompiledGuard::Counter(c) => c.output_signal.clone(),
-            CompiledGuard::Complex(cx) => cx.output_signal.clone(),
-            CompiledGuard::DynamicCounter(dc) => dc.output_signal.clone(),
-        };
-
-        let combo_expr = Expr::Binary {
-            left: Box::new(Expr::Signal(left_out)),
-            op: if op == BinaryOp::And { BinaryOp::And } else { BinaryOp::Or },
-            right: Box::new(Expr::Signal(right_out)),
-        };
-
-        let complex = crate::temporal::low_level_ir::ComplexGuard::new(
-            name.clone(),
-            vec![left_comp, right_comp],
-            combo_expr.clone(),
-        );
-
-        self.context.signals.push(GeneratedSignal {
-            name: complex.output_signal.clone(),
-            ty: SignalType::Bool,
-            kind: GeneratedSignalKind::LogicGate,
-            source: Some(combo_expr),
-        });
-
-        let compiled = CompiledGuard::Complex(complex);
-        self.cache.insert(name, compiled.clone());
-        result_stack.push(compiled);
-        Ok(())
-    }
-
-    fn compile_shift_register_guard(&mut self, guard: &Guard) -> Result<CompiledGuard, MirrError> {
-        let condition_kind = self.lower_condition(guard)?;
-        let input_signal = condition_kind.primary_signal().to_owned();
-        let total_delay = match &condition_kind {
-            ConditionKind::PrevSignal { delay, .. } => guard.cycles.saturating_add(*delay),
-            _ => guard.cycles,
-        };
-
-        self.synthesize_shift_register(&guard.name, &input_signal, total_delay, condition_kind)
-    }
-
-    fn compile_counter_guard(&mut self, guard: &Guard) -> Result<CompiledGuard, MirrError> {
-        let condition_kind = self.lower_condition(guard)?;
-        let input_signal = condition_kind.primary_signal().to_owned();
-        let total_delay = match &condition_kind {
-            ConditionKind::PrevSignal { delay, .. } => guard.cycles.saturating_add(*delay),
-            _ => guard.cycles,
-        };
-
-        self.synthesize_counter(&guard.name, &input_signal, total_delay, condition_kind)
-    }
-
-    /// Lower a guard condition to a [`ConditionKind`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`MirrError::TemporalCompilationError`] for any condition form
-    /// that is not in the supported set.  There is **no silent fallback** —
-    /// unsupported forms are compile errors. (P2-REQ-013)
-    fn lower_condition(&self, guard: &Guard) -> Result<ConditionKind, MirrError> {
-        ConditionKind::try_from_expr(&guard.condition).map_err(|reason| {
-            MirrError::TemporalCompilationError {
-                message: format!(
-                    "{} guard '{}': condition cannot be lowered to hardware — {}",
-                    crate::error_codes::ec(306),
-                    guard.name,
-                    reason
-                ),
-                span: guard.span,
-            }
-        })
-    }
-
     /// Synthesize a guard entity from the ECS Registry into Temporal IR.
     ///
     /// This method is the primary entry point for ECS-native temporal lowering.
@@ -736,23 +482,29 @@ impl TemporalCompiler {
                     let left_out = left_comp.output_signal().to_string();
                     let right_out = right_comp.output_signal().to_string();
 
-                    let combo_expr = Expr::Binary {
-                        left: Box::new(Expr::Signal(left_out)),
-                        op,
-                        right: Box::new(Expr::Signal(right_out)),
+                    let combo_logic = if op == BinaryOp::And {
+                        crate::temporal::low_level_ir::LogicExpr::And(
+                            Box::new(crate::temporal::low_level_ir::LogicExpr::Signal(left_out)),
+                            Box::new(crate::temporal::low_level_ir::LogicExpr::Signal(right_out)),
+                        )
+                    } else {
+                        crate::temporal::low_level_ir::LogicExpr::Or(
+                            Box::new(crate::temporal::low_level_ir::LogicExpr::Signal(left_out)),
+                            Box::new(crate::temporal::low_level_ir::LogicExpr::Signal(right_out)),
+                        )
                     };
 
                     let complex = crate::temporal::low_level_ir::ComplexGuard::new(
                         name.clone(),
                         vec![left_comp, right_comp],
-                        combo_expr.clone(),
+                        combo_logic,
                     );
 
-                    self.context.signals.push(GeneratedSignal {
+                    self.context.add_signal(GeneratedSignal {
                         name: complex.output_signal.clone(),
                         ty: SignalType::Bool,
                         kind: GeneratedSignalKind::LogicGate,
-                        source: Some(combo_expr),
+                        source: None,
                     });
 
                     let compiled = CompiledGuard::Complex(complex);
@@ -784,11 +536,10 @@ impl TemporalCompiler {
 
         for (i, stage_name) in sr_guard.stages.iter().enumerate() {
             self.context
-                .signals
-                .push(GeneratedSignal::shift_register_stage(stage_name.clone(), i as u32));
+                .add_signal(GeneratedSignal::shift_register_stage(stage_name.clone(), i as u32));
         }
 
-        self.context.signals.push(GeneratedSignal {
+        self.context.add_signal(GeneratedSignal {
             name: sr_guard.output_signal.clone(),
             ty: SignalType::Bool,
             kind: GeneratedSignalKind::LogicGate,
@@ -813,16 +564,15 @@ impl TemporalCompiler {
             kind,
         );
 
-        self.context.signals.push(GeneratedSignal::counter(
+        self.context.add_signal(GeneratedSignal::counter(
             counter_guard.counter_signal.clone(),
             counter_guard.counter_width(),
         ));
 
         self.context
-            .signals
-            .push(GeneratedSignal::comparator(counter_guard.comparator_signal.clone()));
+            .add_signal(GeneratedSignal::comparator(counter_guard.comparator_signal.clone()));
 
-        self.context.signals.push(GeneratedSignal {
+        self.context.add_signal(GeneratedSignal {
             name: counter_guard.output_signal.clone(),
             ty: SignalType::Bool,
             kind: GeneratedSignalKind::LogicGate,
@@ -904,12 +654,14 @@ pub enum ImplementationStrategy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::program::Guard;
+    use crate::ast::program::{Guard, Module};
+    use crate::ast::Expr;
+    use crate::ecs::Registry;
 
     fn signal_guard(name: &str, signal: &str, cycles: u64) -> Guard {
         Guard {
             name: name.to_string(),
-            condition: crate::ast::Expr::Signal(signal.to_string()),
+            condition: Expr::Signal(signal.to_string()),
             cycles,
             template_cycles: None,
             origin: None,
@@ -919,9 +671,29 @@ mod tests {
 
     #[test]
     fn test_shift_register_compilation() {
-        let mut compiler = TemporalCompiler::new();
+        let mut registry = Registry::new();
         let guard = signal_guard("short_delay", "input_signal", 4);
-        let compiled = compiler.compile_guard(&guard).expect("compile failed");
+        let module = Module {
+            name: "test".to_string(),
+            signals: vec![crate::ast::program::SignalDecl {
+                name: "input_signal".to_string(),
+                kind: crate::ast::types::SignalKind::Input,
+                ty: crate::ast::types::SignalType::Bool.into(),
+                span: None,
+                origin: None,
+            }],
+            guards: vec![guard],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+            pattern_origins: vec![],
+            span: None,
+        };
+        registry.ingest_module(&module).unwrap();
+
+        let mut compiler = TemporalCompiler::new();
+        let gid = EntityId(registry.next_id().0 - 1); // Last ingested entity
+        let compiled = compiler.lower_guard_to_ecs(&registry, gid).expect("compile failed");
 
         match compiled {
             CompiledGuard::ShiftRegister(sr) => {
@@ -936,9 +708,29 @@ mod tests {
 
     #[test]
     fn test_counter_compilation() {
-        let mut compiler = TemporalCompiler::new();
+        let mut registry = Registry::new();
         let guard = signal_guard("long_delay", "input_signal", 100);
-        let compiled = compiler.compile_guard(&guard).expect("compile failed");
+        let module = Module {
+            name: "test".to_string(),
+            signals: vec![crate::ast::program::SignalDecl {
+                name: "input_signal".to_string(),
+                kind: crate::ast::types::SignalKind::Input,
+                ty: crate::ast::types::SignalType::Bool.into(),
+                span: None,
+                origin: None,
+            }],
+            guards: vec![guard],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+            pattern_origins: vec![],
+            span: None,
+        };
+        registry.ingest_module(&module).unwrap();
+
+        let mut compiler = TemporalCompiler::new();
+        let gid = EntityId(registry.next_id().0 - 1);
+        let compiled = compiler.lower_guard_to_ecs(&registry, gid).expect("compile failed");
 
         match compiled {
             CompiledGuard::Counter(c) => {
@@ -953,10 +745,29 @@ mod tests {
 
     #[test]
     fn test_condition_kind_stored_in_compiled_ir() {
-        // P2-REQ-016 / P2-REQ-017: the IR must carry the full ConditionKind.
-        let mut compiler = TemporalCompiler::new();
+        let mut registry = Registry::new();
         let guard = signal_guard("my_guard", "clk_en", 4);
-        let compiled = compiler.compile_guard(&guard).expect("compile failed");
+        let module = Module {
+            name: "test".to_string(),
+            signals: vec![crate::ast::program::SignalDecl {
+                name: "clk_en".to_string(),
+                kind: crate::ast::types::SignalKind::Input,
+                ty: crate::ast::types::SignalType::Bool.into(),
+                span: None,
+                origin: None,
+            }],
+            guards: vec![guard],
+            reflexes: vec![],
+            properties: vec![],
+            pattern_calls: vec![],
+            pattern_origins: vec![],
+            span: None,
+        };
+        registry.ingest_module(&module).unwrap();
+
+        let mut compiler = TemporalCompiler::new();
+        let gid = EntityId(registry.next_id().0 - 1);
+        let compiled = compiler.lower_guard_to_ecs(&registry, gid).expect("compile failed");
 
         match compiled {
             CompiledGuard::ShiftRegister(sr) => {
@@ -990,54 +801,6 @@ mod tests {
         match ResourceEstimator::choose_optimal_strategy(100) {
             ImplementationStrategy::Counter(_) => {}
             _ => panic!("Expected Counter for N=100"),
-        }
-    }
-
-    #[test]
-    fn test_chaos_e303_missing_subguard() {
-        let mut compiler = TemporalCompiler::new();
-        let mut result_stack = Vec::new();
-        // Calling combine_guard_results with empty stack should trigger E303
-        let res =
-            compiler.combine_guard_results("chaos".to_string(), BinaryOp::And, &mut result_stack);
-        match res {
-            Err(MirrError::TemporalCompilationError { message, .. }) => {
-                assert!(message.contains("[E303]"), "Expected E303, got: {}", message);
-            }
-            _ => panic!("Expected E303 error, got {:?}", res),
-        }
-    }
-
-    #[test]
-    fn test_chaos_e304_iter_budget() {
-        let mut compiler = TemporalCompiler::new();
-        fn build_balanced_tree(n: usize, offset: usize) -> Expr {
-            if n == 1 {
-                Expr::Signal(format!("s{}", offset))
-            } else {
-                let half = n / 2;
-                Expr::Binary {
-                    left: Box::new(build_balanced_tree(half, offset)),
-                    op: BinaryOp::And,
-                    right: Box::new(build_balanced_tree(n - half, offset + half)),
-                }
-            }
-        }
-        let expr = build_balanced_tree(200, 0);
-        let guard = Guard {
-            name: "overloaded".to_string(),
-            condition: expr,
-            cycles: 1,
-            template_cycles: None,
-            origin: None,
-            span: None,
-        };
-        let res = compiler.compile_guard(&guard);
-        match res {
-            Err(MirrError::TemporalCompilationError { message, .. }) => {
-                assert!(message.contains("[E304]"), "Expected E304, got: {}", message);
-            }
-            _ => panic!("Expected E304 error, got {:?}", res),
         }
     }
 }

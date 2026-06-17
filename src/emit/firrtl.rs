@@ -15,7 +15,6 @@
 
 #![forbid(unsafe_code)]
 
-use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
 use crate::ast::MAX_EXPR_NODES;
 use crate::pipeline::PipelineResult;
@@ -133,7 +132,7 @@ fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
                 ));
                 let ty = "UInt<1>";
                 out.push_str(&format!("    wire {} : {}\n", cx.output_signal, ty));
-                let expr = emit_expr_firrtl(&cx.combination_logic);
+                let expr = emit_logic_expr_firrtl(&cx.combination_logic);
                 out.push_str(&format!("    connect {} , {}\n", cx.output_signal, expr));
             }
             CompiledGuard::DynamicCounter(dc) => {
@@ -467,95 +466,16 @@ fn emit_condition_firrtl(ck: &crate::temporal::low_level_ir::ConditionKind) -> S
     }
 }
 
-/// Emit an Expr as a FIRRTL expression string. Bounded by MAX_EXPR_NODES.
-fn emit_expr_firrtl(expr: &Expr) -> String {
-    let mut iterations = 0usize;
-    emit_expr_firrtl_bounded(expr, &mut iterations)
-}
-
-fn emit_expr_firrtl_bounded(expr: &Expr, iterations: &mut usize) -> String {
-    *iterations += 1;
-    if *iterations > MAX_EXPR_NODES {
-        return "; truncated".to_string();
-    }
-
-    match expr {
-        Expr::Literal(LiteralValue::Bool(true)) => "UInt<1>(1)".to_string(),
-        Expr::Literal(LiteralValue::Bool(false)) => "UInt<1>(0)".to_string(),
-        Expr::Literal(LiteralValue::Integer(n)) => format!("UInt({})", n),
-        Expr::Signal(name) => name.clone(),
-        Expr::Prev { signal, delay } => {
-            format!("{}_d{}", signal, delay)
+fn emit_logic_expr_firrtl(le: &crate::temporal::low_level_ir::LogicExpr) -> String {
+    use crate::temporal::low_level_ir::LogicExpr;
+    match le {
+        LogicExpr::Signal(s) => s.clone(),
+        LogicExpr::And(l, r) => {
+            format!("and({}, {})", emit_logic_expr_firrtl(l), emit_logic_expr_firrtl(r))
         }
-        Expr::Unary { op: UnaryOp::Not, operand } => {
-            let inner = emit_expr_firrtl_bounded(operand, iterations);
-            format!("not({})", inner)
+        LogicExpr::Or(l, r) => {
+            format!("or({}, {})", emit_logic_expr_firrtl(l), emit_logic_expr_firrtl(r))
         }
-        Expr::Unary { op: UnaryOp::ReductionOr, operand } => {
-            let inner = emit_expr_firrtl_bounded(operand, iterations);
-            format!("orr({})", inner)
-        }
-        Expr::Unary { op: UnaryOp::Negate, operand } => {
-            let inner = emit_expr_firrtl_bounded(operand, iterations);
-            format!("neg({})", inner)
-        }
-        Expr::Binary { op, left, right } => {
-            let l = emit_expr_firrtl_bounded(left, iterations);
-            let r = emit_expr_firrtl_bounded(right, iterations);
-            let op_fn = match op {
-                BinaryOp::And => "and",
-                BinaryOp::Or => "or",
-                BinaryOp::BitwiseOr => "or",
-                BinaryOp::BitwiseAnd => "and",
-                BinaryOp::Xor => "xor",
-                BinaryOp::Lt => "lt",
-                BinaryOp::Le => "leq",
-                BinaryOp::Gt => "gt",
-                BinaryOp::Ge => "geq",
-                BinaryOp::Eq => "eq",
-                BinaryOp::Ne => "neq",
-                BinaryOp::Add => "add",
-                BinaryOp::Sub => "sub",
-                BinaryOp::Mul => "mul",
-                BinaryOp::Shl => "dshl",
-                BinaryOp::Shr => "dshr",
-            };
-            format!("{}({}, {})", op_fn, l, r)
-        }
-        Expr::ArrayIndex { array, index } => {
-            let a = emit_expr_firrtl_bounded(array, iterations);
-            let i = emit_expr_firrtl_bounded(index, iterations);
-            format!("{}[{}]", a, i)
-        }
-        Expr::FieldAccess { object, field } => {
-            let o = emit_expr_firrtl_bounded(object, iterations);
-            format!("{}.{}", o, field)
-        }
-        Expr::ArrayLiteral(elems) => {
-            let parts: Vec<String> = elems
-                .iter()
-                .take(MAX_EXPR_NODES)
-                .map(|e| emit_expr_firrtl_bounded(e, iterations))
-                .collect();
-            if parts.is_empty() {
-                "UInt(0)".to_string()
-            } else {
-                format!("cat({})", parts.join(", "))
-            }
-        }
-        Expr::StructLiteral { fields, .. } => {
-            let parts: Vec<String> = fields
-                .iter()
-                .take(crate::ast::types::MAX_STRUCT_FIELDS)
-                .map(|(_, v)| emit_expr_firrtl_bounded(v, iterations))
-                .collect();
-            if parts.is_empty() {
-                "UInt(0)".to_string()
-            } else {
-                format!("cat({})", parts.join(", "))
-            }
-        }
-        Expr::UnfoldIndex(name) => unreachable!("UnfoldIndex '{}' reached FIRRTL emit", name),
     }
 }
 

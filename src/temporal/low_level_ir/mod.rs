@@ -8,7 +8,7 @@
 mod condition;
 pub use condition::ConditionKind;
 
-use crate::ast::{types::SignalType, Expr};
+use crate::ast::types::SignalType;
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
@@ -97,6 +97,17 @@ pub struct CounterGuard {
     pub condition_kind: ConditionKind,
 }
 
+/// Flat boolean logic expression for combining temporal guards.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LogicExpr {
+    /// Reference to a guard output signal
+    Signal(String),
+    /// Logical AND of two sub-expressions
+    And(Box<LogicExpr>, Box<LogicExpr>),
+    /// Logical OR of two sub-expressions
+    Or(Box<LogicExpr>, Box<LogicExpr>),
+}
+
 /// Complex guard with multiple temporal components
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ComplexGuard {
@@ -107,7 +118,7 @@ pub struct ComplexGuard {
     /// Final output signal
     pub output_signal: String,
     /// Final combination logic
-    pub combination_logic: Expr,
+    pub combination_logic: LogicExpr,
 }
 
 /// Maximum dynamic delay in cycles (2^20).
@@ -126,8 +137,8 @@ pub struct DynamicCounterGuard {
     pub output_signal: String,
     /// Lowered condition semantics
     pub condition_kind: ConditionKind,
-    /// The expression computing the delay cycle count at runtime.
-    pub delay_expr: Expr,
+    /// The expression computing the delay cycle count at runtime (SystemVerilog).
+    pub delay_expr: String,
     /// Static upper bound on the delay value (for counter width sizing).
     pub max_delay: u64,
     /// Name of the counter register signal.
@@ -143,8 +154,8 @@ pub struct GeneratedSignal {
     pub ty: SignalType,
     /// Signal kind
     pub kind: GeneratedSignalKind,
-    /// Source expression (if applicable)
-    pub source: Option<Expr>,
+    /// Source expression text (if applicable)
+    pub source: Option<String>,
 }
 
 /// Classification of generated signals
@@ -380,7 +391,7 @@ impl CounterGuard {
 
 impl ComplexGuard {
     /// Create a complex guard
-    pub fn new(name: String, sub_guards: Vec<CompiledGuard>, combination_logic: Expr) -> Self {
+    pub fn new(name: String, sub_guards: Vec<CompiledGuard>, combination_logic: LogicExpr) -> Self {
         Self { output_signal: format!("{name}_out"), name, sub_guards, combination_logic }
     }
 }
@@ -390,7 +401,7 @@ impl DynamicCounterGuard {
     pub fn new(
         name: String,
         condition_kind: ConditionKind,
-        delay_expr: Expr,
+        delay_expr: String,
         max_delay: u64,
     ) -> Self {
         Self {

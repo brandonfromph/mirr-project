@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn test_asap_single_op() {
         let mut dag = OpDag::new();
-        dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+        dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
 
         let schedule = asap_schedule(&dag).unwrap();
         assert_eq!(schedule.len(), 1);
@@ -331,9 +331,9 @@ mod tests {
     #[test]
     fn test_asap_chain() {
         let mut dag = OpDag::new();
-        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
-        let c = dag.add_op(ResourceKind::And, 8, vec![16, 8]).unwrap();
+        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
+        let c = dag.add_op(ResourceKind::And, 8, vec![16, 8], vec![]).unwrap();
         dag.add_edge(a, b);
         dag.add_edge(b, c);
 
@@ -347,10 +347,10 @@ mod tests {
     #[test]
     fn test_asap_diamond() {
         let mut dag = OpDag::new();
-        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-        let b = dag.add_op(ResourceKind::Mul, 8, vec![8, 8]).unwrap();
-        let c = dag.add_op(ResourceKind::Sub, 8, vec![8, 8]).unwrap();
-        let d = dag.add_op(ResourceKind::Or, 8, vec![8, 8]).unwrap();
+        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+        let b = dag.add_op(ResourceKind::Mul, 8, vec![8, 8], vec![]).unwrap();
+        let c = dag.add_op(ResourceKind::Sub, 8, vec![8, 8], vec![]).unwrap();
+        let d = dag.add_op(ResourceKind::Or, 8, vec![8, 8], vec![]).unwrap();
         dag.add_edge(a, c);
         dag.add_edge(b, c);
         dag.add_edge(c, d);
@@ -367,9 +367,9 @@ mod tests {
     #[test]
     fn test_alap_chain() {
         let mut dag = OpDag::new();
-        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
-        let c = dag.add_op(ResourceKind::And, 8, vec![16, 8]).unwrap();
+        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
+        let c = dag.add_op(ResourceKind::And, 8, vec![16, 8], vec![]).unwrap();
         dag.add_edge(a, b);
         dag.add_edge(b, c);
 

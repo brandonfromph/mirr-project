@@ -15,7 +15,6 @@ pub mod retiming;
 
 use crate::ast::program::Module;
 use crate::error::MirrError;
-use crate::simplify::simplify_expr;
 
 // Re-export the types callers need so they don't have to know sub-module paths.
 pub use compiler::{ImplementationStrategy, ResourceEstimate, ResourceEstimator, TemporalCompiler};
@@ -46,18 +45,9 @@ impl TemporalGuardCompiler {
         &mut self,
         module: &Module,
     ) -> Result<TemporalNetlist, MirrError> {
-        // Pre-simplify guard conditions (Phase 3 integration).
-        let simplified_guards: Vec<_> = module
-            .guards
-            .iter()
-            .map(|g| {
-                let mut g = g.clone();
-                g.condition = simplify_expr(g.condition);
-                g
-            })
-            .collect();
-        let mut inner = TemporalCompiler::new();
-        inner.compile_module(&simplified_guards)
+        let mut registry = crate::ecs::Registry::new();
+        registry.ingest_module(module)?;
+        crate::ecs::systems::temporal_synthesis_system(&mut registry)
     }
 
     /// Serialize a netlist to pretty-printed JSON.

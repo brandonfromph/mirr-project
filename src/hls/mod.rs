@@ -96,6 +96,17 @@ impl core::fmt::Display for ResourceKind {
     }
 }
 
+/// Operand for an HLS operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HlsOperand {
+    /// Result of another operation (op_id).
+    Op(u32),
+    /// A signal name.
+    Signal(String),
+    /// A literal value (formatted for Verilog).
+    Literal(String),
+}
+
 /// A single operation in the HLS dataflow graph.
 #[derive(Debug, Clone)]
 pub struct HlsOperation {
@@ -107,6 +118,8 @@ pub struct HlsOperation {
     pub width: u32,
     /// Input operand widths.
     pub operand_widths: Vec<u32>,
+    /// Detailed operands (Op, Signal, or Literal).
+    pub operands: Vec<HlsOperand>,
     /// IDs of predecessor operations (data dependencies).
     pub predecessors: Vec<u32>,
     /// IDs of successor operations (data consumers).
@@ -142,11 +155,13 @@ impl OpDag {
         for reflex in registry.reflex_comps.iter().flatten() {
             for &assign_id in &reflex.assignments {
                 if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
-                    if let Some(op_id) =
+                    if let Some(operand) =
                         dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op)
                     {
-                        if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
-                            dag.target_signals.insert(op_id, name_comp.0.clone());
+                        if let HlsOperand::Op(op_id) = operand {
+                            if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
+                                dag.target_signals.insert(op_id, name_comp.0.clone());
+                            }
                         }
                     }
                 }
@@ -161,16 +176,16 @@ impl OpDag {
         registry: &Registry,
         root_id: EntityId,
         memo: &mut HashMap<EntityId, u32>,
-    ) -> Option<u32> {
+    ) -> Option<HlsOperand> {
         if let Some(&op_id) = memo.get(&root_id) {
-            return Some(op_id);
+            return Some(HlsOperand::Op(op_id));
         }
 
         let idx = root_id.0 as usize;
 
         if let Some(binary) = &registry.binary_ops[idx] {
-            let left_op = self.ingest_expr_entity(registry, binary.left, memo);
-            let right_op = self.ingest_expr_entity(registry, binary.right, memo);
+            let left_operand = self.ingest_expr_entity(registry, binary.left, memo)?;
+            let right_operand = self.ingest_expr_entity(registry, binary.right, memo)?;
 
             let kind = match binary.op {
                 crate::ast::types::BinaryOp::Add => ResourceKind::Add,
@@ -194,18 +209,19 @@ impl OpDag {
             };
 
             let width = registry.types[idx].as_ref().map(|t| t.0.core.width()).unwrap_or(8);
-            let op_id = self.add_op(kind, width, vec![width, width])?;
+            let operands = vec![left_operand.clone(), right_operand.clone()];
+            let op_id = self.add_op(kind, width, vec![width, width], operands)?;
             memo.insert(root_id, op_id);
 
-            if let Some(l) = left_op {
+            if let HlsOperand::Op(l) = left_operand {
                 self.add_edge(l, op_id);
             }
-            if let Some(r) = right_op {
+            if let HlsOperand::Op(r) = right_operand {
                 self.add_edge(r, op_id);
             }
-            Some(op_id)
+            Some(HlsOperand::Op(op_id))
         } else if let Some(unary) = &registry.unary_ops[idx] {
-            let operand_op = self.ingest_expr_entity(registry, unary.operand, memo);
+            let operand = self.ingest_expr_entity(registry, unary.operand, memo)?;
 
             let kind = match unary.op {
                 crate::ast::types::UnaryOp::Not => ResourceKind::Not,
@@ -214,13 +230,34 @@ impl OpDag {
             };
 
             let width = registry.types[idx].as_ref().map(|t| t.0.core.width()).unwrap_or(8);
-            let op_id = self.add_op(kind, width, vec![width])?;
+            let operands = vec![operand.clone()];
+            let op_id = self.add_op(kind, width, vec![width], operands)?;
             memo.insert(root_id, op_id);
 
-            if let Some(o) = operand_op {
+            if let HlsOperand::Op(o) = operand {
                 self.add_edge(o, op_id);
             }
-            Some(op_id)
+            Some(HlsOperand::Op(op_id))
+        } else if let Some(lit) = &registry.literals[idx] {
+            let val_str = match &lit.0 {
+                crate::ast::types::LiteralValue::Integer(n) => format!("{}", n),
+                crate::ast::types::LiteralValue::Bool(b) => {
+                    if *b {
+                        "1'b1".to_string()
+                    } else {
+                        "1'b0".to_string()
+                    }
+                }
+            };
+            Some(HlsOperand::Literal(val_str))
+        } else if let Some(sig_ref) = &registry.signal_refs[idx] {
+            if let Some(name) = &registry.names[sig_ref.0 .0 as usize] {
+                Some(HlsOperand::Signal(name.0.clone()))
+            } else {
+                None
+            }
+        } else if let Some(name) = &registry.names[idx] {
+            Some(HlsOperand::Signal(name.0.clone()))
         } else {
             // Literals, signals, etc. — leaf nodes in the DAG.
             None
@@ -234,6 +271,7 @@ impl OpDag {
         kind: ResourceKind,
         width: u32,
         operand_widths: Vec<u32>,
+        operands: Vec<HlsOperand>,
     ) -> Option<u32> {
         if self.ops.len() >= MAX_HLS_OPERATIONS {
             return None;
@@ -244,6 +282,7 @@ impl OpDag {
             kind,
             width,
             operand_widths,
+            operands,
             predecessors: Vec::new(),
             successors: Vec::new(),
         };
@@ -267,6 +306,8 @@ impl OpDag {
 /// HLS pass result with scheduling, sharing, and binding information.
 #[derive(Debug, Clone)]
 pub struct HlsResult {
+    /// Original operations in the DAG.
+    pub ops: Vec<HlsOperation>,
     /// Scheduling result (operation → cycle assignment).
     pub schedule: Vec<schedule::ScheduleOp>,
     /// Resource sharing groups (operations sharing a resource).
@@ -362,6 +403,7 @@ pub fn run_hls_pass(dag: &OpDag, config: &HlsConfig) -> Result<HlsResult, MirrEr
     }
 
     Ok(HlsResult {
+        ops: dag.ops.clone(),
         schedule: schedule_ops,
         sharing_groups,
         bindings,
@@ -433,7 +475,7 @@ mod tests {
     #[test]
     fn test_op_dag_add_op() {
         let mut dag = OpDag::new();
-        let id = dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+        let id = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
         assert_eq!(id, Some(0));
         assert_eq!(dag.ops.len(), 1);
         assert_eq!(dag.ops[0].kind, ResourceKind::Add);
@@ -442,8 +484,8 @@ mod tests {
     #[test]
     fn test_op_dag_add_edge() {
         let mut dag = OpDag::new();
-        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
+        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
         dag.add_edge(a, b);
         assert!(dag.ops[b as usize].predecessors.contains(&a));
         assert!(dag.ops[a as usize].successors.contains(&b));
@@ -453,17 +495,17 @@ mod tests {
     fn test_op_dag_max_operations() {
         let mut dag = OpDag::new();
         for _ in 0..MAX_HLS_OPERATIONS {
-            dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+            dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
         }
-        let result = dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+        let result = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
         assert_eq!(result, None);
     }
 
     #[test]
     fn test_hls_pass_generates_fifo() {
         let mut dag = OpDag::new();
-        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
+        let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+        let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
         dag.add_edge(a, b);
 
         let config = HlsConfig { latency: 2, ..Default::default() };

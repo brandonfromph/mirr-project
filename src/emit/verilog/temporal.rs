@@ -31,7 +31,7 @@ pub(super) fn emit_temporal_logic_standalone(
                 out.push_str(&format!(
                     "  assign {} = {};\n\n",
                     cx.output_signal,
-                    super::emit_expr_ast_legacy(&cx.combination_logic),
+                    emit_logic_expr(&cx.combination_logic),
                 ));
             }
             CompiledGuard::DynamicCounter(dc) => {
@@ -103,7 +103,7 @@ pub(super) fn emit_temporal_logic_ecs(
                 out.push_str(&format!(
                     "  assign {} = {};\n\n",
                     cx.output_signal,
-                    super::emit_expr_ast_legacy(&cx.combination_logic),
+                    emit_logic_expr(&cx.combination_logic),
                 ));
             }
             CompiledGuard::DynamicCounter(dc) => {
@@ -196,9 +196,8 @@ pub(super) fn emit_reflex_logic_ecs(
 
     out.push_str("  // ── Reflex Signal Drivers ──\n\n");
 
-    if let Some(_hls) = hls {
-        // HLS logic remains unchanged for now, but we'd need an ECS-native way to handle it later.
-        out.push_str("  // HLS logic (AST-based, pending ECS migration)\n");
+    if let Some(hls_res) = hls {
+        emit_hls_logic_ecs(registry, hls_res, ft, out);
     } else {
         // Sort signals by name for deterministic emission.
         let mut signals: Vec<String> = signal_to_reflexes.keys().cloned().collect();
@@ -266,6 +265,126 @@ pub(super) fn emit_reflex_logic_ecs(
             out.push_str("  end\n\n");
         }
     }
+}
+
+fn emit_hls_logic_ecs(
+    _registry: &crate::ecs::Registry,
+    hls: &crate::hls::HlsResult,
+    _ft: &FileTable,
+    out: &mut String,
+) {
+    out.push_str("  // ── HLS Finite State Machine (MEGA-12) ──\n\n");
+
+    // 1. Declare hls_state register.
+    out.push_str("  logic [31:0] hls_state;\n\n");
+
+    // 2. Declare intermediate wires for every HLS operation.
+    let mut sorted_ops = hls.ops.clone();
+    sorted_ops.sort_by_key(|o| o.op_id);
+    for op in &sorted_ops {
+        out.push_str(&format!(
+            "  logic [{}:0] op_{}_res;\n",
+            op.width.saturating_sub(1),
+            op.op_id
+        ));
+    }
+    out.push('\n');
+
+    // 3. Group operations by cycle.
+    let mut cycle_to_ops: std::collections::HashMap<u32, Vec<usize>> =
+        std::collections::HashMap::new();
+    let mut max_cycle = 0;
+    for (i, op_sched) in hls.schedule.iter().enumerate() {
+        cycle_to_ops.entry(op_sched.earliest).or_default().push(i);
+        if op_sched.earliest > max_cycle {
+            max_cycle = op_sched.earliest;
+        }
+    }
+
+    // Sort cycles for deterministic emission.
+    let mut sorted_cycles: Vec<u32> = cycle_to_ops.keys().cloned().collect();
+    sorted_cycles.sort();
+
+    out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    out.push_str("    if (!rst_n) begin\n");
+    out.push_str("      hls_state <= 0;\n");
+    // Initialize target signals.
+    let mut sorted_targets: Vec<_> = hls.target_signals.values().collect();
+    sorted_targets.sort();
+    for target in sorted_targets {
+        out.push_str(&format!("      {} <= '0;\n", target));
+    }
+    out.push_str("    end else begin\n");
+    out.push_str("      case (hls_state)\n");
+
+    for cycle in sorted_cycles {
+        out.push_str(&format!("        {}: begin\n", cycle));
+        let op_indices = &cycle_to_ops[&cycle];
+        for &idx in op_indices {
+            let op_sched = &hls.schedule[idx];
+            let op = &hls.ops[op_sched.op_id as usize];
+
+            let op_str = match op.kind {
+                crate::hls::ResourceKind::Add => "+",
+                crate::hls::ResourceKind::Sub => "-",
+                crate::hls::ResourceKind::Mul => "*",
+                crate::hls::ResourceKind::And => "&",
+                crate::hls::ResourceKind::Or => "|",
+                crate::hls::ResourceKind::Xor => "^",
+                crate::hls::ResourceKind::Eq => "==",
+                crate::hls::ResourceKind::Ne => "!=",
+                crate::hls::ResourceKind::Lt => "<",
+                crate::hls::ResourceKind::Le => "<=",
+                crate::hls::ResourceKind::Gt => ">",
+                crate::hls::ResourceKind::Ge => ">=",
+                crate::hls::ResourceKind::Shl => "<<",
+                crate::hls::ResourceKind::Shr => ">>",
+                crate::hls::ResourceKind::Not => "!",
+                crate::hls::ResourceKind::Negate => "-",
+            };
+
+            let mut operands_str = Vec::new();
+            for operand in &op.operands {
+                match operand {
+                    crate::hls::HlsOperand::Op(id) => operands_str.push(format!("op_{}_res", id)),
+                    crate::hls::HlsOperand::Signal(s) => operands_str.push(s.clone()),
+                    crate::hls::HlsOperand::Literal(l) => operands_str.push(l.clone()),
+                }
+            }
+
+            if op.kind == crate::hls::ResourceKind::Not
+                || op.kind == crate::hls::ResourceKind::Negate
+            {
+                out.push_str(&format!(
+                    "          op_{}_res <= {}({});\n",
+                    op.op_id, op_str, operands_str[0]
+                ));
+            } else {
+                out.push_str(&format!(
+                    "          op_{}_res <= ({} {} {});\n",
+                    op.op_id, operands_str[0], op_str, operands_str[1]
+                ));
+            }
+
+            // If this operation is a final assignment to a target signal.
+            if let Some(target_name) = hls.target_signals.get(&op.op_id) {
+                out.push_str(&format!("          {} <= op_{}_res;\n", target_name, op.op_id));
+            }
+        }
+
+        // State transition.
+        if cycle < max_cycle {
+            out.push_str(&format!("          hls_state <= {};\n", cycle + 1));
+        } else {
+            out.push_str("          hls_state <= 0;\n");
+        }
+        out.push_str("        end\n");
+    }
+
+    out.push_str("        default: hls_state <= 0;\n");
+    out.push_str("      endcase\n");
+    out.push_str("    end\n");
+    out.push_str("  end\n\n");
 }
 
 fn emit_shift_register_guard(
@@ -377,7 +496,7 @@ fn emit_dynamic_counter_guard(
     out.push_str(&format!(
         "  assign {} = {};\n",
         target_signal,
-        super::emit_expr_ast_legacy(&dc.delay_expr),
+        dc.delay_expr,
     ));
 
     // Condition wire.
@@ -439,5 +558,15 @@ fn emit_condition_expr(ck: &crate::temporal::low_level_ir::ConditionKind) -> Str
             format!("({signal} {op_str} {val_str})")
         }
         ConditionKind::AlwaysTrue => "1'b1".to_string(),
+    }
+}
+
+/// Emit a LogicExpr as an inline SystemVerilog expression.
+fn emit_logic_expr(le: &crate::temporal::low_level_ir::LogicExpr) -> String {
+    use crate::temporal::low_level_ir::LogicExpr;
+    match le {
+        LogicExpr::Signal(s) => s.clone(),
+        LogicExpr::And(l, r) => format!("({} && {})", emit_logic_expr(l), emit_logic_expr(r)),
+        LogicExpr::Or(l, r) => format!("({} || {})", emit_logic_expr(l), emit_logic_expr(r)),
     }
 }
