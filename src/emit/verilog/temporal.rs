@@ -276,12 +276,31 @@ pub(super) fn emit_reflex_logic_ecs(
 }
 
 fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mut String) {
-    out.push_str("  // ── HLS Finite State Machine (MEGA-12) ──\n\n");
+    out.push_str("  // ── HLS Finite State Machine & Shared Resources (MEGA-12) ──\n\n");
 
     // 1. Declare hls_state register.
     out.push_str("  logic [31:0] hls_state;\n\n");
 
-    // 2. Declare intermediate wires for every HLS operation.
+    // 2. Group operations by cycle and collect bindings.
+    let mut cycle_to_ops: std::collections::HashMap<u32, Vec<usize>> =
+        std::collections::HashMap::new();
+    let mut bindings_map: std::collections::HashMap<u32, Vec<usize>> =
+        std::collections::HashMap::new();
+
+    let mut max_cycle = 0;
+    for i in 0..registry.active_entities() {
+        if let Some(sched) = &registry.hls_schedules[i] {
+            cycle_to_ops.entry(sched.earliest).or_default().push(i);
+            if sched.earliest > max_cycle {
+                max_cycle = sched.earliest;
+            }
+            if let Some(binding) = &registry.hls_bindings[i] {
+                bindings_map.entry(binding.physical_resource_id).or_default().push(i);
+            }
+        }
+    }
+
+    // 3. Declare intermediate wires for every HLS operation's result (registers).
     for i in 0..registry.active_entities() {
         if registry.hls_dataflow[i].is_some() {
             if let Some(tc) = &registry.types[i] {
@@ -292,31 +311,153 @@ fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mu
     }
     out.push('\n');
 
-    // 3. Group operations by cycle.
-    let mut cycle_to_ops: std::collections::HashMap<u32, Vec<usize>> =
-        std::collections::HashMap::new();
+    // 4. Emit Shared Functional Units and Input MUXes.
+    let mut sorted_binding_ids: Vec<u32> = bindings_map.keys().cloned().collect();
+    sorted_binding_ids.sort();
 
-    let mut max_cycle = 0;
-    for i in 0..registry.active_entities() {
-        if let Some(sched) = &registry.hls_schedules[i] {
-            cycle_to_ops.entry(sched.earliest).or_default().push(i);
-            if sched.earliest > max_cycle {
-                max_cycle = sched.earliest;
+    for &binding_id in &sorted_binding_ids {
+        let ops = &bindings_map[&binding_id];
+        if ops.is_empty() {
+            continue;
+        }
+
+        let first_op_idx = ops[0];
+        let sched = registry.hls_schedules[first_op_idx].as_ref().unwrap();
+        let kind = sched.resource;
+
+        // Find max width among all operations sharing this resource
+        let mut max_width = 1;
+        for &idx in ops {
+            if let Some(tc) = &registry.types[idx] {
+                max_width = max_width.max(tc.0.core.width());
             }
         }
+
+        out.push_str(&format!("  // Shared Resource: {:?} (ID: {})\n", kind, binding_id));
+        out.push_str(&format!(
+            "  logic [{}:0] shared_{}_{}_in_A;\n",
+            max_width.saturating_sub(1),
+            kind,
+            binding_id
+        ));
+        if !matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
+            out.push_str(&format!(
+                "  logic [{}:0] shared_{}_{}_in_B;\n",
+                max_width.saturating_sub(1),
+                kind,
+                binding_id
+            ));
+        }
+        out.push_str(&format!(
+            "  logic [{}:0] shared_{}_{}_out;\n",
+            max_width.saturating_sub(1),
+            kind,
+            binding_id
+        ));
+
+        // Emit the actual hardware block
+        let op_str = match kind {
+            crate::hls::ResourceKind::Add => "+",
+            crate::hls::ResourceKind::Sub => "-",
+            crate::hls::ResourceKind::Mul => "*",
+            crate::hls::ResourceKind::And => "&",
+            crate::hls::ResourceKind::Or => "|",
+            crate::hls::ResourceKind::Xor => "^",
+            crate::hls::ResourceKind::Eq => "==",
+            crate::hls::ResourceKind::Ne => "!=",
+            crate::hls::ResourceKind::Lt => "<",
+            crate::hls::ResourceKind::Le => "<=",
+            crate::hls::ResourceKind::Gt => ">",
+            crate::hls::ResourceKind::Ge => ">=",
+            crate::hls::ResourceKind::Shl => "<<",
+            crate::hls::ResourceKind::Shr => ">>",
+            crate::hls::ResourceKind::Not => "!",
+            crate::hls::ResourceKind::Negate => "-",
+        };
+
+        if matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
+            out.push_str(&format!(
+                "  assign shared_{}_{}_out = {}(shared_{}_{}_in_A);\n",
+                kind, binding_id, op_str, kind, binding_id
+            ));
+        } else {
+            out.push_str(&format!(
+                "  assign shared_{}_{}_out = shared_{}_{}_in_A {} shared_{}_{}_in_B;\n",
+                kind, binding_id, kind, binding_id, op_str, kind, binding_id
+            ));
+        }
+
+        // Emit MUXes
+        out.push_str("  always_comb begin\n");
+        out.push_str("    case (hls_state)\n");
+
+        for &idx in ops {
+            let cycle = registry.hls_schedules[idx].as_ref().unwrap().earliest;
+            out.push_str(&format!("      {}: begin\n", cycle));
+
+            let get_operand_str = |op_entity_id: u32| -> String {
+                let op_idx = op_entity_id as usize;
+                if registry.hls_schedules[op_idx].is_some() {
+                    format!("op_{}_res", op_entity_id)
+                } else if let Some(lit) = &registry.literals[op_idx] {
+                    match &lit.0 {
+                        crate::ast::types::LiteralValue::Integer(n) => format!("{}", n),
+                        crate::ast::types::LiteralValue::Bool(b) => {
+                            if *b {
+                                "1'b1".to_string()
+                            } else {
+                                "1'b0".to_string()
+                            }
+                        }
+                    }
+                } else if let Some(name_comp) = &registry.names[op_idx] {
+                    name_comp.0.clone()
+                } else {
+                    format!("op_{}_res", op_entity_id) // Fallback
+                }
+            };
+
+            if let Some(binary) = &registry.binary_ops[idx] {
+                out.push_str(&format!(
+                    "        shared_{}_{}_in_A = {};\n",
+                    kind,
+                    binding_id,
+                    get_operand_str(binary.left.0)
+                ));
+                out.push_str(&format!(
+                    "        shared_{}_{}_in_B = {};\n",
+                    kind,
+                    binding_id,
+                    get_operand_str(binary.right.0)
+                ));
+            } else if let Some(unary) = &registry.unary_ops[idx] {
+                out.push_str(&format!(
+                    "        shared_{}_{}_in_A = {};\n",
+                    kind,
+                    binding_id,
+                    get_operand_str(unary.operand.0)
+                ));
+            }
+            out.push_str("      end\n");
+        }
+        out.push_str("      default: begin\n");
+        out.push_str(&format!("        shared_{}_{}_in_A = '0;\n", kind, binding_id));
+        if !matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
+            out.push_str(&format!("        shared_{}_{}_in_B = '0;\n", kind, binding_id));
+        }
+        out.push_str("      end\n");
+        out.push_str("    endcase\n");
+        out.push_str("  end\n\n");
     }
-    // 4. Emit the FSM block.
-    // Sort cycles for deterministic emission.
+
+    // 5. Emit the FSM block.
     let mut sorted_cycles: Vec<u32> = cycle_to_ops.keys().cloned().collect();
     sorted_cycles.sort();
 
     out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
     out.push_str("    if (!rst_n) begin\n");
     out.push_str("      hls_state <= 0;\n");
-    // Initialize target signals.
-    // In a full implementation, we'd track target signals differently in ECS,
-    // perhaps by checking if the entity is the `value` of an `AssignmentComponent`.
-    // For now, we omit initialization here or handle it elsewhere if needed.
+    // Target signal initialization omitted for migration parity.
     out.push_str("    end else begin\n");
     out.push_str("      case (hls_state)\n");
 
@@ -324,51 +465,16 @@ fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mu
         out.push_str(&format!("        {}: begin\n", cycle));
         let op_indices = &cycle_to_ops[&cycle];
         for &idx in op_indices {
-            let op_id = idx;
-            let kind = registry.hls_schedules[idx].as_ref().unwrap().resource;
-
-            let op_str = match kind {
-                crate::hls::ResourceKind::Add => "+",
-                crate::hls::ResourceKind::Sub => "-",
-                crate::hls::ResourceKind::Mul => "*",
-                crate::hls::ResourceKind::And => "&",
-                crate::hls::ResourceKind::Or => "|",
-                crate::hls::ResourceKind::Xor => "^",
-                crate::hls::ResourceKind::Eq => "==",
-                crate::hls::ResourceKind::Ne => "!=",
-                crate::hls::ResourceKind::Lt => "<",
-                crate::hls::ResourceKind::Le => "<=",
-                crate::hls::ResourceKind::Gt => ">",
-                crate::hls::ResourceKind::Ge => ">=",
-                crate::hls::ResourceKind::Shl => "<<",
-                crate::hls::ResourceKind::Shr => ">>",
-                crate::hls::ResourceKind::Not => "!",
-                crate::hls::ResourceKind::Negate => "-",
-            };
-
-            let mut operands_str = Vec::new();
-            if let Some(binary) = &registry.binary_ops[idx] {
-                // Formatting operand is simplified for this migration
-                operands_str.push(format!("op_{}_res", binary.left.0));
-                operands_str.push(format!("op_{}_res", binary.right.0));
-            } else if let Some(unary) = &registry.unary_ops[idx] {
-                operands_str.push(format!("op_{}_res", unary.operand.0));
-            }
-
-            if kind == crate::hls::ResourceKind::Not || kind == crate::hls::ResourceKind::Negate {
-                if !operands_str.is_empty() {
-                    out.push_str(&format!(
-                        "          op_{}_res <= {}({});\n",
-                        op_id, op_str, operands_str[0]
-                    ));
-                }
+            // Check if this operation has a binding
+            if let Some(binding) = &registry.hls_bindings[idx] {
+                let kind = registry.hls_schedules[idx].as_ref().unwrap().resource;
+                out.push_str(&format!(
+                    "          op_{}_res <= shared_{}_{}_out;\n",
+                    idx, kind, binding.physical_resource_id
+                ));
             } else {
-                if operands_str.len() >= 2 {
-                    out.push_str(&format!(
-                        "          op_{}_res <= ({} {} {});\n",
-                        op_id, operands_str[0], op_str, operands_str[1]
-                    ));
-                }
+                // Fallback for unbound operations (shouldn't happen with full binding pass)
+                out.push_str(&format!("          // Error: Operation {} unbound\n", idx));
             }
 
             // Assign target signal if this entity is assigned to one
@@ -378,7 +484,7 @@ fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mu
                         if let Some(name_comp) = &registry.names[asgn.target.0 as usize] {
                             out.push_str(&format!(
                                 "          {} <= op_{}_res;\n",
-                                name_comp.0, op_id
+                                name_comp.0, idx
                             ));
                         }
                     }
