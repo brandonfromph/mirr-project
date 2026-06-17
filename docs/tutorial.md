@@ -579,9 +579,7 @@ def tmr_voter(
         reflex vote_${s} {
             on always {
                 // Majority voting logic
-                ${alarm} = (${s}_1 && ${s}_2) || 
-                           (${s}_1 && ${s}_3) || 
-                           (${s}_2 && ${s}_3);
+                ${alarm} = (${s}_1 && ${s}_2) || (${s}_1 && ${s}_3) || (${s}_2 && ${s}_3);
             }
         }
     }
@@ -613,7 +611,7 @@ The compiler expands this into three internal signals and one voting reflex auto
 
 ### Generative Hardware (Lisp-like Power)
 
-Because the `reflect` block is parsed as a Lisp-style S-expression under the hood, you can use compile-time loops and math to generate arrays of hardware. For example, a `for` loop allows you to unroll hardware logic at compile-time:
+Because the `reflect` block is parsed into a structural AST under the hood, you can use compile-time loops and math to generate arrays of hardware. For example, a `for` loop allows you to unroll hardware logic at compile-time:
 
 ```mirr
 def multi_monitor() {
@@ -621,9 +619,7 @@ def multi_monitor() {
         for i in 0..3 {
             signal alarm_${i}: internal bool;
             reflex r_${i} {
-                on always {
-                    alarm_${i} = true;
-                }
+                alarm_${i} = true;
             }
         }
     }
@@ -985,5 +981,8 @@ any bounded-time, event-driven hardware safety rule. By restricting the language
 - [Error Codes](error_codes) — Full list of compiler diagnostics
 - [Type System](type-system) — Signed/unsigned types and inference rules
 - [R-SPU ISA Spec](rspu_isa_spec) — Instruction set architecture
+- [Migration Guide](migration-guide) — Upgrading from an earlier version
+- [Roadmap](roadmap) — Project phases and what comes next
+](rspu_isa_spec) — Instruction set architecture
 - [Migration Guide](migration-guide) — Upgrading from an earlier version
 - [Roadmap](roadmap) — Project phases and what comes next
