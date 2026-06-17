@@ -22,6 +22,8 @@ required. You just need to be able to read code.
 8. [Reading compiler output](#lesson-8-reading-compiler-output)
 9. [Common errors](#lesson-9-common-errors)
 10. [What MIRR does NOT do](#lesson-10-what-mirr-does-not-do)
+11. [Advanced Types (Structs & Bundles)](#lesson-11-advanced-types)
+12. [Let Bindings (State vs. Constants)](#lesson-12-let-bindings)
 
 ---
 
@@ -296,8 +298,7 @@ MIRR has a small, fixed set of types:
 | `i32` | Signed integer -2147483648 to 2147483647 | 32 bits |
 | `i64` | Signed integer | 64 bits |
 
-There are no floating point numbers, no strings, no
-arrays, no structs. Hardware operates on bits and fixed-width numbers.
+There are no floating point numbers or strings. However, MIRR supports fixed-width **Arrays**, **Structs**, and **Bundles** (Interfaces). Hardware operates on bits and fixed-width numbers.
 
 **Signed vs. unsigned:** Use unsigned types (`u8`–`u64`) for sensor readings,
 counters, and addresses. Use signed types (`i8`–`i64`) for values that can be
@@ -486,6 +487,58 @@ property low_triggers_clamp {
 `always (P -> Q)` means: "whenever P is true, Q must also be true (in
 the same cycle)." The `->` is called **implication**. It says "P implies
 Q."
+
+### The three property formulas (advanced)
+
+```mirr
+property never_drop_implies_alarm {
+    never (airway_pressure < 30 -> !clamp_valve);
+}
+```
+
+`never (P -> Q)` means: "it must never be the case that P implies Q."
+
+```mirr
+property clamp_reachable {
+    cover eventually within 100 (clamp_valve);
+}
+```
+
+`eventually within N (P)` means: "P must become true at least once within
+N clock cycles from reset." This is used to prove that something CAN
+happen — that a state is reachable.
+
+```mirr
+property clamp_follows_drop {
+    always (airway_pressure < 50 followed_by 5 clamp_valve);
+}
+```
+
+`always (P followed_by N Q)` means: "whenever P is true, Q must be true
+exactly N cycles later."
+
+### Directives: assert, cover, assume
+
+Each property has a **directive** that tells the formal verifier what to
+do with it:
+
+| Directive | Meaning | When to use |
+|-----------|---------|-------------|
+| (none / default) | `assert` — prove this holds | Normal safety assertions |
+| `cover` | Prove this is reachable | Check that a state can be reached |
+| `assume` | Assume this is true (constrain inputs) | Restrict the verifier's input space |
+
+Example with explicit directive:
+
+```mirr
+property clamp_reachable {
+    cover eventually within 100 (clamp_valve);
+}
+```
+
+The `cover` directive tells the verifier: "I am not asking you to prove
+this always holds. I am asking you to prove that there exists at least one
+scenario where `clamp_valve` becomes true within 100 cycles."
 
 ### The three property formulas (advanced)
 
@@ -975,6 +1028,59 @@ The core constructs (signal, guard, reflex) are sufficient to express
 any bounded-time, event-driven hardware safety rule. By restricting the language to these, MIRR guarantees **Zero-Jitter** execution, while the macro system allows you to build complex DSLs on top of this safe foundation without compromising the generated hardware.
 
 ---
+
+
+## Lesson 11: Advanced Types
+
+MIRR is more than just raw bits. You can organize your signals into complex structures.
+
+### Structs
+
+Structs let you group related signals into a single named record. You must declare the struct at the top level (outside the module).
+
+```mirr
+struct Point {
+    x: u16;
+    y: u16;
+}
+
+module graphics {
+    signal p: in struct Point;
+    signal out_x: out u16;
+
+    reflex r {
+        out_x = p.x;
+    }
+}
+```
+
+### Fixed-Point Math
+
+For DSP applications, MIRR supports fixed-point types.
+
+```mirr
+signal velocity: internal fixed<16, 8>; // 16 bits total, 8 fractional bits
+```
+
+---
+
+## Lesson 12: Let Bindings
+
+Sometimes you want to give a name to a value that is used in multiple places. MIRR uses `let` for this.
+
+```mirr
+module binding_test {
+    let CONSTANT_LIMIT: u16 = 42;
+    signal y: out u16;
+    
+    reflex r {
+        y = CONSTANT_LIMIT;
+    }
+}
+```
+
+> [!NOTE]
+> `let` bindings in modules generate an internal signal driven by a constant. They are different from macro `let` bindings which are purely compile-time.
 
 ## What to read next
 
