@@ -71,27 +71,31 @@ fn test_temporal_compiler_module_and_expressions() {
     for guard in guards {
         let name = guard.name.clone();
         let mut registry = Registry::new();
-        let mut module = Module {
+        let module = Module {
             name: "test".to_string(),
-            signals: vec![mirrc::ast::program::SignalDecl {
-                name: "sig".to_string(),
-                kind: mirrc::ast::types::SignalKind::Input,
-                ty: mirrc::ast::types::SignalType::Bool.into(),
-                span: None,
-                origin: None,
-            }, mirrc::ast::program::SignalDecl {
-                name: "a".to_string(),
-                kind: mirrc::ast::types::SignalKind::Input,
-                ty: mirrc::ast::types::SignalType::Bool.into(),
-                span: None,
-                origin: None,
-            }, mirrc::ast::program::SignalDecl {
-                name: "b".to_string(),
-                kind: mirrc::ast::types::SignalKind::Input,
-                ty: mirrc::ast::types::SignalType::Bool.into(),
-                span: None,
-                origin: None,
-            }],
+            signals: vec![
+                mirrc::ast::program::SignalDecl {
+                    name: "sig".to_string(),
+                    kind: mirrc::ast::types::SignalKind::Input,
+                    ty: mirrc::ast::types::SignalType::Bool.into(),
+                    span: None,
+                    origin: None,
+                },
+                mirrc::ast::program::SignalDecl {
+                    name: "a".to_string(),
+                    kind: mirrc::ast::types::SignalKind::Input,
+                    ty: mirrc::ast::types::SignalType::Bool.into(),
+                    span: None,
+                    origin: None,
+                },
+                mirrc::ast::program::SignalDecl {
+                    name: "b".to_string(),
+                    kind: mirrc::ast::types::SignalKind::Input,
+                    ty: mirrc::ast::types::SignalType::Bool.into(),
+                    span: None,
+                    origin: None,
+                },
+            ],
             guards: vec![guard],
             reflexes: vec![],
             properties: vec![],

@@ -282,11 +282,7 @@ fn emit_hls_logic_ecs(
     let mut sorted_ops = hls.ops.clone();
     sorted_ops.sort_by_key(|o| o.op_id);
     for op in &sorted_ops {
-        out.push_str(&format!(
-            "  logic [{}:0] op_{}_res;\n",
-            op.width.saturating_sub(1),
-            op.op_id
-        ));
+        out.push_str(&format!("  logic [{}:0] op_{}_res;\n", op.width.saturating_sub(1), op.op_id));
     }
     out.push('\n');
 
@@ -493,11 +489,7 @@ fn emit_dynamic_counter_guard(
     // Dynamic target wire.
     let target_signal = format!("{}_target", dc.name);
     out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), target_signal));
-    out.push_str(&format!(
-        "  assign {} = {};\n",
-        target_signal,
-        dc.delay_expr,
-    ));
+    out.push_str(&format!("  assign {} = {};\n", target_signal, dc.delay_expr,));
 
     // Condition wire.
     out.push_str(&format!("  logic {}_cond;\n", dc.name));

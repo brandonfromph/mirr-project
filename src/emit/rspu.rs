@@ -394,10 +394,10 @@ fn emit_temporal_guards(
                         instrs.push(RspuInstruction::CtrQuery { dst: dst_reg, guard: gid });
                     }
                     CompiledGuard::Complex(cx) => {
-                        let is_or = match &cx.combination_logic {
-                            crate::temporal::low_level_ir::LogicExpr::Or(_, _) => true,
-                            _ => false,
-                        };
+                        let is_or = matches!(
+                            &cx.combination_logic,
+                            crate::temporal::low_level_ir::LogicExpr::Or(_, _)
+                        );
                         work.push(GuardWork::Combine {
                             name: &cx.name,
                             sub_guards: &cx.sub_guards,

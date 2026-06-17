@@ -8,7 +8,7 @@ use mirrc::hls::{HlsConfig, OpDag, ResourceKind, MAX_HLS_OPERATIONS};
 #[test]
 fn hls_single_operation_schedule() {
     let mut dag = OpDag::new();
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
 
     let config = HlsConfig { latency: 1, ..Default::default() };
     let result = mirrc::hls::run_hls_pass(&dag, &config);
@@ -22,9 +22,9 @@ fn hls_single_operation_schedule() {
 #[test]
 fn hls_chain_schedule() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let c = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let c = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
     dag.add_edge(a, b);
     dag.add_edge(b, c);
 
@@ -42,9 +42,9 @@ fn hls_chain_schedule() {
 #[test]
 fn hls_parallel_schedule() {
     let mut dag = OpDag::new();
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
-    dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
+    dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
 
     let config = HlsConfig { latency: 1, ..Default::default() };
     let result = mirrc::hls::run_hls_pass(&dag, &config);
@@ -60,9 +60,9 @@ fn hls_parallel_schedule() {
 fn hls_max_operations_reject() {
     let mut dag = OpDag::new();
     for _ in 0..MAX_HLS_OPERATIONS {
-        dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+        dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
     }
-    let result = dag.add_op(ResourceKind::Add, 8, vec![8, 8]);
+    let result = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]);
     assert_eq!(result, None, "DAG should reject operations beyond MAX_HLS_OPERATIONS");
 }
 
@@ -77,9 +77,9 @@ fn hls_empty_dag_rejected() {
 #[test]
 fn hls_full_pipeline() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
-    let c = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
+    let c = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
     dag.add_edge(a, b);
     dag.add_edge(a, c);
 
@@ -96,8 +96,8 @@ fn hls_full_pipeline() {
 #[test]
 fn hls_dag_add_edge() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
     dag.add_edge(a, b);
 
     assert!(dag.ops[b as usize].predecessors.contains(&a));
@@ -107,8 +107,8 @@ fn hls_dag_add_edge() {
 #[test]
 fn hls_dag_duplicate_edge() {
     let mut dag = OpDag::new();
-    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8]).unwrap();
-    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8]).unwrap();
+    let a = dag.add_op(ResourceKind::Add, 8, vec![8, 8], vec![]).unwrap();
+    let b = dag.add_op(ResourceKind::Mul, 16, vec![8, 8], vec![]).unwrap();
     dag.add_edge(a, b);
     dag.add_edge(a, b); // duplicate
 

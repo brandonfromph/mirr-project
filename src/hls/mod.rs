@@ -155,13 +155,11 @@ impl OpDag {
         for reflex in registry.reflex_comps.iter().flatten() {
             for &assign_id in &reflex.assignments {
                 if let Some(assign) = &registry.assignment_comps[assign_id.0 as usize] {
-                    if let Some(operand) =
+                    if let Some(HlsOperand::Op(op_id)) =
                         dag.ingest_expr_entity(registry, assign.value, &mut entity_to_op)
                     {
-                        if let HlsOperand::Op(op_id) = operand {
-                            if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
-                                dag.target_signals.insert(op_id, name_comp.0.clone());
-                            }
+                        if let Some(name_comp) = &registry.names[assign.target.0 as usize] {
+                            dag.target_signals.insert(op_id, name_comp.0.clone());
                         }
                     }
                 }
@@ -251,16 +249,11 @@ impl OpDag {
             };
             Some(HlsOperand::Literal(val_str))
         } else if let Some(sig_ref) = &registry.signal_refs[idx] {
-            if let Some(name) = &registry.names[sig_ref.0 .0 as usize] {
-                Some(HlsOperand::Signal(name.0.clone()))
-            } else {
-                None
-            }
-        } else if let Some(name) = &registry.names[idx] {
-            Some(HlsOperand::Signal(name.0.clone()))
+            registry.names[sig_ref.0 .0 as usize]
+                .as_ref()
+                .map(|name| HlsOperand::Signal(name.0.clone()))
         } else {
-            // Literals, signals, etc. — leaf nodes in the DAG.
-            None
+            registry.names[idx].as_ref().map(|name| HlsOperand::Signal(name.0.clone()))
         }
     }
 

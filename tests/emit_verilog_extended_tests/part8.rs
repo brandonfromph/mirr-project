@@ -20,7 +20,11 @@ fn complex_guard_assign_block() {
     };
 
     let mut netlist = TemporalNetlist::new();
-    let complex = ComplexGuard::new("combo".to_string(), vec![], Expr::Signal("a".to_string()));
+    let complex = ComplexGuard::new(
+        "combo".to_string(),
+        vec![],
+        mirrc::temporal::low_level_ir::LogicExpr::Signal("a".to_string()),
+    );
     netlist.add_guard(CompiledGuard::Complex(complex));
 
     let result = result_with_netlist(module, netlist);

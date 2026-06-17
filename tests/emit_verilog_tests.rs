@@ -280,7 +280,7 @@ fn temporal_emit_verilog_complex_guard() {
     let complex = ComplexGuard::new(
         "combo".to_string(),
         vec![],
-        mirrc::ast::Expr::Signal("dummy".to_string()),
+        mirrc::temporal::low_level_ir::LogicExpr::Signal("dummy".to_string()),
     );
     netlist.add_guard(CompiledGuard::Complex(complex));
 

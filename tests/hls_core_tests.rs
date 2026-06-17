@@ -8,7 +8,7 @@
 use mirrc::hls::binding::bind_operations;
 use mirrc::hls::schedule::{alap_schedule, asap_schedule, compute_mobility, ScheduleOp};
 use mirrc::hls::sharing::find_shareable_ops;
-use mirrc::hls::{run_hls_pass, HlsConfig, OpDag, ResourceKind, HlsOperand};
+use mirrc::hls::{run_hls_pass, HlsConfig, OpDag, ResourceKind};
 
 // =========================================================================
 // DAG construction tests
