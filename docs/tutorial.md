@@ -18,7 +18,7 @@ required. You just need to be able to read code.
 4. [Types and expressions](#lesson-4-types-and-expressions)
 5. [Temporal guards](#lesson-5-temporal-guards)
 6. [Properties](#lesson-6-properties)
-7. [Patterns](#lesson-7-patterns)
+7. [Metaprogramming (Macros)](#lesson-7-metaprogramming-macros)
 8. [Reading compiler output](#lesson-8-reading-compiler-output)
 9. [Common errors](#lesson-9-common-errors)
 10. [What MIRR does NOT do](#lesson-10-what-mirr-does-not-do)
@@ -72,7 +72,7 @@ chip.
 
 MIRR is not a general-purpose programming language. It has no loops, no
 functions, no if-else, no heap. It does exactly one thing: it lets you
-write safety rules that become physical circuits.
+write safety rules that become physical circuits with **Zero-Jitter** guarantees.
 
 ### Key terms
 
@@ -296,8 +296,7 @@ MIRR has a small, fixed set of types:
 | `i32` | Signed integer -2147483648 to 2147483647 | 32 bits |
 | `i64` | Signed integer | 64 bits |
 
-There are no floating point numbers, no strings, no
-arrays, no structs. Hardware operates on bits and fixed-width numbers.
+There are no floating point numbers (`f32`/`f64`), no strings, no arrays, no structs. Hardware operates on bits and fixed-width numbers.
 
 **Signed vs. unsigned:** Use unsigned types (`u8`–`u64`) for sensor readings,
 counters, and addresses. Use signed types (`i8`–`i64`) for values that can be
@@ -353,19 +352,6 @@ signal was N cycles ago and lets you compare it to the current value.
 
 The delay must be at least 1. `prev(signal, 0)` is an error — that is
 just the current value, and the compiler will reject it.
-
-### Truth table: AND, OR, NOT
-
-For reference, here is how the logical operators work on boolean values:
-
-```
-AND (&&):           OR (||):            NOT (!):
-  A     B   Result    A     B   Result    A   Result
-  false false false    false false false    false true
-  false true  false    false true  true     true  false
-  true  false false    true  false true
-  true  true  true     true  true  true
-```
 
 ---
 
@@ -487,58 +473,6 @@ property low_triggers_clamp {
 the same cycle)." The `->` is called **implication**. It says "P implies
 Q."
 
-### The three property formulas (advanced)
-
-```mirr
-property never_drop_implies_alarm {
-    never (airway_pressure < 30 -> !clamp_valve);
-}
-```
-
-`never (P -> Q)` means: "it must never be the case that P implies Q."
-
-```mirr
-property clamp_reachable {
-    cover eventually within 100 (clamp_valve);
-}
-```
-
-`eventually within N (P)` means: "P must become true at least once within
-N clock cycles from reset." This is used to prove that something CAN
-happen — that a state is reachable.
-
-```mirr
-property clamp_follows_drop {
-    always (airway_pressure < 50 followed_by 5 clamp_valve);
-}
-```
-
-`always (P followed_by N Q)` means: "whenever P is true, Q must be true
-exactly N cycles later."
-
-### Directives: assert, cover, assume
-
-Each property has a **directive** that tells the formal verifier what to
-do with it:
-
-| Directive | Meaning | When to use |
-|-----------|---------|-------------|
-| (none / default) | `assert` — prove this holds | Normal safety assertions |
-| `cover` | Prove this is reachable | Check that a state can be reached |
-| `assume` | Assume this is true (constrain inputs) | Restrict the verifier's input space |
-
-Example with explicit directive:
-
-```mirr
-property clamp_reachable {
-    cover eventually within 100 (clamp_valve);
-}
-```
-
-The `cover` directive tells the verifier: "I am not asking you to prove
-this always holds. I am asking you to prove that there exists at least one
-scenario where `clamp_valve` becomes true within 100 cycles."
-
 ### Properties do NOT generate hardware
 
 > [!WARNING]
@@ -546,100 +480,87 @@ scenario where `clamp_valve` becomes true within 100 cycles."
 > `always (pressure > 10)` does not create a circuit that enforces the
 > condition. Only reflexes drive hardware outputs.
 
-This is important. A property like `always (pressure > 10)` does NOT
-create a circuit that enforces `pressure > 10`. It creates a check that
-a formal verification tool can analyze. The hardware behavior is defined
-entirely by signals, guards, and reflexes.
-
 ---
 
-## Lesson 7: Patterns
+## Lesson 7: Metaprogramming (Macros)
 
-### The problem patterns solve
+### The Power of `def` and `reflect`
 
-Imagine you have 10 sensors that all need the same guard-and-reflex
-structure: "if sensor exceeds a limit for N cycles, set an alarm." Writing
-the same code 10 times is tedious and error-prone.
+MIRR is designed to be minimal to ensure absolute safety. But writing hundreds of signals and guards manually is tedious. To solve this, MIRR has a **homoiconic macro system** built right into the language.
 
-Patterns let you define a reusable template once and use it many times
-with different parameters.
+You can use the `def` and `reflect` keywords to create your own **Domain-Specific Languages (DSLs)** that generate hardware at compile-time.
 
-### Defining a pattern with `def` and `reflect`
+### Creating a Template
+
+Let's say you frequently need a "Triple-Modular Redundancy" (TMR) voting system for high-reliability sensors. Instead of writing it manually every time, you define a macro:
 
 ```mirr
-def threshold_guard(
-    sensor: signal in u16,
-    limit:  u16,
-    delay:  u32,
-    alarm:  signal out bool
+def tmr_voter(
+    name:  string,
+    alarm: signal out bool
 ) {
     reflect {
-        guard ${sensor}_over {
-            when ${sensor} > ${limit}
-            for  ${delay} cycles;
-        }
-
-        reflex ${sensor}_trigger {
-            on ${sensor}_over {
-                ${alarm} = true;
+        // Generate three redundant input signals
+        signal ${name}_1: in bool;
+        signal ${name}_2: in bool;
+        signal ${name}_3: in bool;
+        
+        reflex vote_${name} {
+            on always {
+                // Majority voting logic
+                ${alarm} = (${name}_1 && ${name}_2) || 
+                           (${name}_1 && ${name}_3) || 
+                           (${name}_2 && ${name}_3);
             }
-        }
-
-        property ${sensor}_safety {
-            always (${sensor} > ${limit} -> ${alarm});
         }
     }
 }
 ```
 
 Breaking it down:
+- `def` declares a named macro pattern.
+- `reflect { ... }` is the "Code as Data" block. It tells the compiler to treat everything inside as a template.
+- `${name}` is a **hygienic substitution**. The compiler will replace it with whatever string argument you provide.
 
-- `def` declares a named pattern.
-- Parameters are listed in parentheses. Each one has a name and a type.
-  - `signal in u16` means "a signal that carries a 16-bit input"
-  - `u16` means "a plain 16-bit value" (not a signal, just a number)
-  - `signal out bool` means "a signal that carries a boolean output"
-- `reflect { ... }` contains the template body.
-- `${param}` substitutes the parameter's value into names and expressions.
+### Using your Custom DSL
 
-### Using a pattern
-
-Inside a module, call the pattern like a function:
+Inside your module, you just call the macro like a function:
 
 ```mirr
-module dual_sensor {
-    signals {
-        temperature:    in  u16
-        pressure:       in  u16
-        temp_alarm:     out bool
-        pressure_alarm: out bool
-    }
+module flight_computer {
+    signal pitch_voted: out bool;
+    signal yaw_voted:   out bool;
 
     calls {
-        threshold_guard(temperature, 100, 5, temp_alarm)
-        threshold_guard(pressure, 300, 3, pressure_alarm)
+        tmr_voter("pitch", pitch_voted);
+        tmr_voter("yaw",   yaw_voted);
     }
 }
 ```
 
-The compiler expands each call into the full guard/reflex/property code,
-with unique names so nothing collides:
+The compiler expands this into six input signals and two voting reflexes automatically. Your hardware remains deterministic, but your source code becomes incredibly expressive.
 
-- First call produces: `threshold_guard_0_temperature_over`,
-  `threshold_guard_0_temperature_trigger`, etc.
-- Second call produces: `threshold_guard_1_pressure_over`,
-  `threshold_guard_1_pressure_trigger`, etc.
+### Generative Hardware (Lisp-like Power)
 
-### When to use patterns
+Because the `reflect` block is parsed as a Lisp-style S-expression under the hood, you can use compile-time loops to generate arrays of hardware:
 
-Use patterns when you have the same signal/guard/reflex structure repeated
-for different signals or thresholds. Do not use patterns for one-off logic.
+```mirr
+def generate_bus(base_name, width) {
+    reflect {
+        (for-generate "i" 0 width (
+            (signal (concat-sym base_name "_" i) out bool)
+        ))
+    }
+}
+```
+
+This allows you to write powerful, reusable hardware generators without violating the strict "Zero-Jitter" rules of the physical chip. 
 
 ---
 
 ## Lesson 8: Reading compiler output
 
-The MIRR compiler can emit ten output formats. Each serves a different
+The MIRR compiler can emit several output formats. Each serves a different
 purpose.
 
 ````carousel
@@ -649,21 +570,14 @@ Verilog is the standard hardware description language used by chip
 manufacturers. This is the primary output — it is what gets turned into
 a real chip.
 
-**Who reads it:** Hardware engineers, synthesis tools (Xilinx Vivado,
-Intel Quartus, Synopsys Design Compiler).
-
 ```bash
 cargo run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### FIRRTL (`--emit firrtl`)
 
-FIRRTL (Flexible Intermediate Representation for Register-Transfer Level)
-is an intermediate format used by the FIRRTL compiler framework
+FIRRTL is an intermediate format used by the FIRRTL compiler framework
 (originally from UC Berkeley's Chisel project).
-
-**Who reads it:** FIRRTL-based toolchains for further hardware
-transformations.
 
 ```bash
 cargo run --bin mirr-compile -- --emit firrtl examples/neonatal_respirator.mirr
@@ -675,108 +589,10 @@ R-SPU (Reflex Signal Processing Unit) is MIRR's instruction-level backend.
 It compiles your module into a bounded instruction sequence for a
 safety-critical processor architecture.
 
-**Who uses it:** Embedded safety systems, custom silicon targets, MAPE-K
-runtime monitors.
-
 ```bash
 cargo run --bin mirr-compile -- --emit rspu examples/neonatal_respirator.mirr
 ```
-<!-- slide -->
-### DOT (`--emit dot`)
-
-DOT is a graph description language used by Graphviz. The output is a
-visual diagram showing how signals, guards, and reflexes connect.
-
-**Who reads it:** You, for debugging and understanding your design.
-
-```bash
-cargo run --bin mirr-compile -- --emit dot examples/neonatal_respirator.mirr
-# Then open the .dot file with Graphviz or an online viewer
-```
-<!-- slide -->
-### JSON (`--emit json`)
-
-A machine-readable representation of the compiled program. Useful for
-building tools on top of the MIRR compiler.
-
-**Who reads it:** Scripts, dashboards, other programs that need to
-analyze the compiled output.
-
-The JSON output includes:
-- `schema_version` — version of the JSON schema (currently `"0.2.0"`)
-- `ir_version` — version of the IR contract (currently `"1.0"`)
-- `program` — the full ECS entity graph of your module
-- `simplify_stats` — how many logic simplifications were applied
-- `width_stats` — bit-width inference results
-- `temporal` — the lowered temporal guard netlist
-- `properties` — your property declarations
-
-```bash
-cargo run --bin mirr-compile -- --emit json examples/neonatal_respirator.mirr
-```
-<!-- slide -->
-### Testbench (`--emit testbench`)
-
-Generates a SystemVerilog testbench that instantiates the compiled module
-and drives stimulus for basic smoke-testing.
-
-**Who reads it:** Hardware engineers running simulation in Vivado, Quartus,
-or open-source simulators like Verilator.
-
-```bash
-cargo run --bin mirr-compile -- --emit testbench examples/neonatal_respirator.mirr
-```
-<!-- slide -->
-### S-expression IR (`--emit sexpr`)
-
-Emits the compiled design as an S-expression intermediate representation.
-Useful for tool interop, custom analysis passes, and round-trip testing.
-
-**Who reads it:** Toolchain developers, custom analysis scripts, the
-MIRR S-expression evaluator.
-
-```bash
-cargo run --bin mirr-compile -- --emit sexpr examples/neonatal_respirator.mirr
-```
-<!-- slide -->
-### FPGA Scaffold (`--emit fpga_scaffold`)
-
-Generates a complete FPGA project scaffold including pin constraints,
-clock configuration, and top-level wrappers for supported FPGA targets.
-
-**Who reads it:** FPGA engineers targeting Xilinx, Lattice, or Intel
-development boards.
-
-```bash
-cargo run --bin mirr-compile -- --emit fpga_scaffold examples/neonatal_respirator.mirr
-```
-<!-- slide -->
-### Build Script (`--emit build_script`)
-
-Generates a Makefile or build script that invokes the appropriate
-synthesis toolchain for the selected target.
-
-**Who reads it:** CI pipelines, build systems, hardware engineers
-automating synthesis flows.
-
-```bash
-cargo run --bin mirr-compile -- --emit build_script examples/neonatal_respirator.mirr
-```
-<!-- slide -->
-### DSP (`--emit dsp`)
-
-Emits a DSP (Digital Signal Processing) block description for modules
-that use arithmetic-heavy signal chains, targeting dedicated DSP slices
-on FPGAs.
-
-**Who reads it:** DSP engineers, FPGA synthesis tools that map to
-hardware multiplier/accumulator blocks.
-
-```bash
-cargo run --bin mirr-compile -- --emit dsp examples/neonatal_respirator.mirr
-```
 ````
-
 
 ---
 
@@ -790,71 +606,12 @@ the problem belongs to.
 
 | Code | Category | What went wrong |
 |------|----------|-----------------|
-| `[E1xx]` | Parse error | The compiler could not understand the syntax of your code (E101–E166, E170–E181) |
-| `[E2xx]` | Semantic error | The syntax is valid but the meaning is wrong (E201–E216) |
-| `[E300]` | Temporal error | Something went wrong during temporal guard compilation |
-| `[E4xx]` | Pattern error | Something went wrong during pattern expansion (E400–E425) |
-| `[E5xx]` | Width error | Bit-width inference found an inconsistency (E500–E511) |
-| `[E6xx]` | Type error | Type checker found a type mismatch (E601–E609) |
-| `[E7xx]` | R-SPU error | R-SPU instruction emission failed (E701–E715) |
-| `[E8xx]` | S-expression error | S-expression IR processing failed (E800–E815) |
+| `[E1xx]` | Parse error | The compiler could not understand the syntax of your code |
+| `[E2xx]` | Semantic error | The syntax is valid but the meaning is wrong |
+| `[E5xx]` | Width error | Bit-width inference found an inconsistency |
+| `[E8xx]` | S-expression error | A compile-time macro expansion failed |
 
-### [E1xx] Parse errors
-
-**Unbalanced parentheses:**
-
-```diff
-- guard g {
--     when (pressure < 50
--     for 1 cycles;
-- }
-+ guard g {
-+     when (pressure < 50)
-+     for 1 cycles;
-+ }
-```
-
-```
-[E100] Parse error: [E171] Unbalanced parentheses in expression.
-```
-
-**Fix:** Add the missing closing parenthesis: `when (pressure < 50)`.
-
-**Too many tokens:**
-
-```diff
-- signals {
--     x: in out bool
-- }
-+ signals {
-+     x: in bool
-+ }
-```
-
-```
-[E100] Parse error: [E114] Too many tokens in signal declaration.
-```
-
-**Fix:** A signal is either `in` or `out`, not both.
-
-### [E2xx] Semantic errors
-
-**Duplicate names:**
-
-```diff
-  signals {
--     x: in bool
--     x: out bool   // x declared twice
-+     x_in: in bool
-+     x_out: out bool
-  }
-```
-
-```
-Semantic error: [E201] Duplicate signal name: 'x'. First defined at line 2.
-```
-
-**Fix:** Give each signal a unique name.
+### Common Fixes
 
 **Undeclared signal reference:**
 
@@ -873,115 +630,26 @@ Semantic error: [E204] Guard 'g' references undeclared signal 'ghost'. Did you m
 **Fix:** Declare `ghost` as a signal, or correct the spelling. The compiler
 suggests the closest match when a similar name exists.
 
-**Invalid `prev()` delay:**
-
-```mirr
-property p {
-    always (prev(sensor, 0) > 50);   // delay 0 is invalid
-}
-```
-
-```
-Semantic error: [E209] 'p' contains prev('sensor') with delay 0; delay must be >= 1.
-```
-
-**Fix:** Use `prev(sensor, 1)` or higher.
-
-### [E300] Temporal errors
-
-These occur during the temporal lowering stage (when the compiler converts
-guards into counter circuits). They are rare in normal usage.
-
-### [E4xx] Pattern errors
-
-**Undefined pattern:**
-
-```mirr
-module m {
-    signals {
-        x: in u16
-    }
-
-    undefined_pattern(x)    // no such pattern exists
-}
-```
-
-```
-[E400] Pattern error: Undefined pattern 'undefined_pattern'.
-```
-
-**Fix:** Define the pattern with `def` before calling it, or fix the name.
-
 ---
 
 ## Lesson 10: What MIRR does NOT do
 
-MIRR is deliberately minimal. Understanding what it cannot do is as
-important as understanding what it can do.
+MIRR is deliberately minimal to guarantee **Zero Jitter**.
 
-### No loops
-
-> [!WARNING]
-> There is no `for`, `while`, or `loop`. Hardware does not "loop" — it
-> exists physically and operates every cycle. If you need something to
-> happen N times, you use a guard with `for N cycles`.
-
-### No functions
-
-> [!WARNING]
-> There are no callable functions. Patterns (`def`/`reflect`) look like
-> functions but they are compile-time templates — they are expanded before
-> anything runs. There is no call stack.
-
-### No conditionals
-
-> [!NOTE]
-> There is no `if`/`else`. Guards and reflexes are the MIRR equivalent of
-> conditional behavior: "if this condition persists, then take this action."
-
-### No variables
-
-> [!IMPORTANT]
-> There are no mutable variables. Signals carry values, but you cannot
-> declare a local variable and change it over time. The only "state" in the
-> hardware is in the guard counters and the `prev()` memory.
-
-### No heap, no allocation
-
-> [!CAUTION]
-> There is no `malloc`, `new`, or dynamic allocation. Hardware is fixed at
-> manufacturing time. You cannot create or destroy circuits at runtime.
-
-### No recursion
-
-> [!CAUTION]
-> The compiler forbids recursion in all forms. This is a NASA/JPL Power-of-10
-> safety rule: every algorithm must have a bounded execution time. Recursion
-> makes execution time unpredictable.
+### No runtime loops
+There is no `for`, `while`, or `loop` that runs on the hardware. If you need something to happen N times, you use a guard with `for N cycles`.
 
 ### No floating point
+All types are integers (signed or unsigned) or booleans. Floating-point math is non-deterministic and forbidden by NASA P10 rules.
 
-> [!IMPORTANT]
-> All types are integers (signed or unsigned) or booleans. Floating point arithmetic
-> requires specialized hardware units and is outside MIRR's scope.
+### No heap allocation
+There is no `malloc` or `new`. Hardware is fixed at manufacturing time. You cannot create or destroy circuits at runtime.
 
 ### Why so minimal?
 
-> [!NOTE]
-> MIRR follows NASA/JPL Power-of-10 coding rules: no recursion, bounded
-> loops, bounded memory. Every language construct maps to hardware with
-> predictable timing and resource usage.
-
-MIRR targets safety-critical systems — medical devices, flight
-controllers, industrial safety monitors. In these systems, simplicity is
-a feature. Every construct in the language maps directly to hardware with
-predictable timing and resource usage. There are no hidden costs, no
-abstractions to leak, no runtime surprises.
-
-The three constructs (signal, guard, reflex) are sufficient to express
-any bounded-time, event-driven hardware safety rule. Adding more would
-increase complexity without increasing the set of hardware behaviors you
-can describe.
+MIRR follows NASA/JPL Power-of-10 coding rules: no recursion, bounded
+loops, bounded memory. Every language construct maps to hardware with
+predictable timing and resource usage. Safe power is better than raw, unstable power.
 
 ---
 
@@ -990,5 +658,3 @@ can describe.
 - [Error Codes](error_codes) — Full list of compiler diagnostics
 - [Type System](type-system) — Signed/unsigned types and inference rules
 - [R-SPU ISA Spec](rspu_isa_spec) — Instruction set architecture
-- [Migration Guide](migration-guide) — Upgrading from an earlier version
-- [Roadmap](roadmap) — Project phases and what comes next
