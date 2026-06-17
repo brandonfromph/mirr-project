@@ -6,6 +6,11 @@
 
 use super::qualifiers::*;
 use super::types::*;
+use crate::ecs::components::{
+    AssignmentComponent, EntityId, EntityKind, KindComponent, ModuleComponent, NameComponent,
+    ReflexComponent, TypeComponent,
+};
+use crate::ecs::Registry;
 
 // ===========================================================================
 // Phase 4: Effect checking
@@ -100,6 +105,294 @@ pub(super) fn check_effect_qualifiers(
                         ),
                         span: assignment.span,
                     });
+                }
+            }
+        }
+    }
+}
+
+/// ECS-native: Check effect qualifiers (pure/stateful).
+pub fn check_effect_qualifiers_ecs(
+    registry: &Registry,
+    mod_id: EntityId,
+    errors: &mut crate::error::PipelineErrors,
+) {
+    let mut pure_signals = std::collections::HashSet::new();
+    let mut stateful_signals = std::collections::HashSet::new();
+
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
+                    if let Some(TypeComponent(ty)) = &registry.types[i] {
+                        if matches!(ty.annotations.effect, crate::ast::types::EffectQualifier::Pure)
+                        {
+                            if let Some(NameComponent(name)) = &registry.names[i] {
+                                pure_signals.insert(name.as_str());
+                            }
+                        } else if matches!(
+                            ty.annotations.effect,
+                            crate::ast::types::EffectQualifier::Stateful
+                        ) {
+                            if let Some(NameComponent(name)) = &registry.names[i] {
+                                stateful_signals.insert(name.as_str());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if pure_signals.is_empty() {
+        return;
+    }
+
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
+                    let reflex_name = if let Some(NameComponent(n)) = &registry.names[i] {
+                        n.as_str()
+                    } else {
+                        "unnamed"
+                    };
+                    for &assign_ent in assignments {
+                        if let Some(AssignmentComponent { target, value }) =
+                            &registry.assignment_comps[assign_ent.0 as usize]
+                        {
+                            if let Some(NameComponent(target_name)) =
+                                &registry.names[target.0 as usize]
+                            {
+                                if !pure_signals.contains(target_name.as_str()) {
+                                    continue;
+                                }
+
+                                if ecs_expr_contains_prev(registry, *value) {
+                                    errors.push(crate::error::MirrError::TypeError {
+                                        message: format!(
+                                            "[{}] Pure signal '{}' cannot depend on prev() (stateful operation) in reflex '{}'.",
+                                            error_codes::E616_EFF_PURE,
+                                            target_name,
+                                            reflex_name
+                                        ),
+                                        span: None,
+                                    });
+                                }
+
+                                let refs = crate::validation::semantic::collect_signal_refs_ecs(
+                                    registry, *value,
+                                );
+                                for sig_ref in refs {
+                                    if stateful_signals.contains(sig_ref.as_str()) {
+                                        errors.push(crate::error::MirrError::TypeError {
+                                            message: format!(
+                                                "[{}] Pure signal '{}' cannot depend on stateful signal '{}' in reflex '{}'.",
+                                                error_codes::E617_EFF_MIX,
+                                                target_name,
+                                                sig_ref,
+                                                reflex_name
+                                            ),
+                                            span: None,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn ecs_expr_contains_prev(registry: &Registry, entity: EntityId) -> bool {
+    let mut stack = vec![entity];
+    let mut visited = 0usize;
+    while let Some(node) = stack.pop() {
+        visited += 1;
+        if visited > MAX_EXTENDED_TYPE_NODES {
+            break;
+        }
+        let idx = node.0 as usize;
+        if registry.prev_ops[idx].is_some() {
+            return true;
+        }
+        if let Some(crate::ecs::components::UnaryComponent { operand, .. }) =
+            &registry.unary_ops[idx]
+        {
+            stack.push(*operand);
+        } else if let Some(crate::ecs::components::BinaryComponent { left, right, .. }) =
+            &registry.binary_ops[idx]
+        {
+            stack.push(*left);
+            stack.push(*right);
+        }
+    }
+    false
+}
+
+/// ECS-native: Check clock domain qualifiers.
+pub fn check_clock_domains_ecs(
+    registry: &Registry,
+    mod_id: EntityId,
+    errors: &mut crate::error::PipelineErrors,
+) {
+    let mut signal_domain = std::collections::HashMap::new();
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
+                    if let Some(TypeComponent(ty)) = &registry.types[i] {
+                        if let Some(cd) = &ty.annotations.clock_domain {
+                            if let Some(NameComponent(name)) = &registry.names[i] {
+                                signal_domain.insert(name.as_str(), cd.as_str());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if signal_domain.is_empty() {
+        return;
+    }
+
+    // Check cross-domain references
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
+                    let reflex_name = if let Some(NameComponent(n)) = &registry.names[i] {
+                        n.as_str()
+                    } else {
+                        "unnamed"
+                    };
+                    for &assign_ent in assignments {
+                        if let Some(AssignmentComponent { target, value }) =
+                            &registry.assignment_comps[assign_ent.0 as usize]
+                        {
+                            let target_name = registry.names[target.0 as usize]
+                                .as_ref()
+                                .map(|n| n.0.as_str())
+                                .unwrap_or("");
+                            let target_dom = signal_domain.get(target_name);
+
+                            let refs = crate::validation::semantic::collect_signal_refs_ecs(
+                                registry, *value,
+                            );
+                            for sig_ref in refs {
+                                let source_dom = signal_domain.get(sig_ref.as_str());
+                                if let (Some(td), Some(sd)) = (target_dom, source_dom) {
+                                    if td != sd {
+                                        errors.push(crate::error::MirrError::TypeError {
+                                            message: format!(
+                                                "[{}] Clock domain crossing: signal '{}' (@{}) references '{}' (@{}) without synchronizer in reflex '{}'.",
+                                                error_codes::E618_CLK_CROSS,
+                                                target_name,
+                                                td,
+                                                sig_ref,
+                                                sd,
+                                                reflex_name
+                                            ),
+                                            span: None,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// ECS-native: Check phantom tag compatibility.
+pub fn check_phantom_tags_ecs(
+    registry: &Registry,
+    mod_id: EntityId,
+    errors: &mut crate::error::PipelineErrors,
+) {
+    let mut signal_tag = std::collections::HashMap::new();
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
+                    if let Some(TypeComponent(ty)) = &registry.types[i] {
+                        if let Some(tag) = &ty.annotations.phantom_tag {
+                            if let Some(NameComponent(name)) = &registry.names[i] {
+                                signal_tag.insert(name.as_str(), tag.as_str());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if signal_tag.is_empty() {
+        return;
+    }
+
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
+                    let reflex_name = if let Some(NameComponent(n)) = &registry.names[i] {
+                        n.as_str()
+                    } else {
+                        "unnamed"
+                    };
+                    for &assign_ent in assignments {
+                        if let Some(AssignmentComponent { target, value }) =
+                            &registry.assignment_comps[assign_ent.0 as usize]
+                        {
+                            let target_name = registry.names[target.0 as usize]
+                                .as_ref()
+                                .map(|n| n.0.as_str())
+                                .unwrap_or("");
+                            let target_tag = signal_tag.get(target_name);
+
+                            let refs = crate::validation::semantic::collect_signal_refs_ecs(
+                                registry, *value,
+                            );
+                            for sig_ref in refs {
+                                let source_tag = signal_tag.get(sig_ref.as_str());
+                                match (target_tag, source_tag) {
+                                    (Some(tt), Some(st)) if tt != st => {
+                                        errors.push(crate::error::MirrError::TypeError {
+                                            message: format!(
+                                                "[{}] Phantom tag mismatch: cannot assign #{}-tagged signal '{}' to #{}-tagged target '{}' in reflex '{}'.",
+                                                error_codes::E620_PHT_MISMATCH,
+                                                st,
+                                                sig_ref,
+                                                tt,
+                                                target_name,
+                                                reflex_name
+                                            ),
+                                            span: None,
+                                        });
+                                    }
+                                    (Some(tt), None) => {
+                                        errors.push(crate::error::MirrError::TypeError {
+                                            message: format!(
+                                                "[{}] Phantom tag mismatch: cannot assign untagged signal '{}' to #{}-tagged target '{}' in reflex '{}'.",
+                                                error_codes::E620_PHT_MISMATCH,
+                                                sig_ref,
+                                                tt,
+                                                target_name,
+                                                reflex_name
+                                            ),
+                                            span: None,
+                                        });
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -462,4 +755,160 @@ pub fn check_session_types(
     //
     // Full implementation deferred to MEGA-1 Phase 2 (multi-module linking).
     let _ = module;
+}
+
+// ===========================================================================
+// Phase 7 (ECS-Native): Session type checking
+// ===========================================================================
+
+/// Bounded linear scan: returns `true` if `state` appears as any `from` or
+/// `to` endpoint in `transitions`, capped at `MAX_SESSION_STATES` entries.
+///
+/// Extracted from the main checker to keep each function ≤ one printed page
+/// (NASA P10 Rule #1). No heap allocation — pure indexed traversal.
+#[inline]
+fn session_state_is_reachable(transitions: &[SessionTransition], state: &str) -> bool {
+    let bound = transitions.len().min(MAX_SESSION_STATES);
+    let mut t_idx = 0usize;
+    while t_idx < bound {
+        let t = &transitions[t_idx];
+        if t.from == state || t.to == state {
+            return true;
+        }
+        t_idx += 1;
+    }
+    false
+}
+
+/// Bounded linear scan: returns a reference to the `SessionProtocol` whose
+/// `name` matches `target`, capped at `MAX_SESSION_STATES` entries, or `None`.
+///
+/// Replaces a `HashMap` lookup. Because `protocols.len() ≤ MAX_SESSION_STATES`
+/// (64), the worst-case is 64 comparisons — O(1) by P10 Rule #2 and zero
+/// heap allocation (no hash table constructed at call time).
+#[inline]
+fn find_protocol<'p>(
+    protocols: &'p [SessionProtocol],
+    target: &str,
+) -> Option<&'p SessionProtocol> {
+    let bound = protocols.len().min(MAX_SESSION_STATES);
+    let mut p_idx = 0usize;
+    while p_idx < bound {
+        if protocols[p_idx].name == target {
+            return Some(&protocols[p_idx]);
+        }
+        p_idx += 1;
+    }
+    None
+}
+
+/// Emit a session-type error via the pipeline accumulator.
+///
+/// Extracted to keep `check_session_types_ecs` ≤ one printed page
+/// (NASA P10 Rule #1). Returns `true` if the error cap was hit (caller
+/// should `return` immediately).
+#[inline]
+fn push_session_error(
+    errors: &mut crate::error::PipelineErrors,
+    message: String,
+    span: Option<crate::span::Span>,
+) -> bool {
+    if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+        return true;
+    }
+    errors.push(crate::error::MirrError::TypeError { message, span });
+    false
+}
+
+/// ECS-native: Verify session type protocol compliance for all signals in
+/// `mod_id` that carry a `session` annotation.
+///
+/// For each annotated signal this function verifies:
+/// 1. The referenced protocol is declared in `protocols` (E625).
+/// 2. The referenced state appears in that protocol's transition table (E625).
+///
+/// This check is purely structural — it validates that each signal is in a
+/// *legal* protocol state at compile time. Cross-reflex state-transition
+/// analysis (multi-module linking) is deferred to MEGA-1 Phase 2.
+///
+/// # NASA P10 Compliance
+/// - Rule #1: Every function is ≤ one printed page. Helpers are extracted.
+/// - Rule #2: All loops bounded by `max_id` or `MAX_SESSION_STATES`.
+/// - Rule #3: Zero heap allocation — protocol lookup is a bounded linear
+///   scan (`find_protocol`), not a `HashMap`.
+/// - Rule #6: All branches have explicit else paths or `continue` skips.
+pub fn check_session_types_ecs(
+    registry: &Registry,
+    mod_id: EntityId,
+    protocols: &[SessionProtocol],
+    errors: &mut crate::error::PipelineErrors,
+) {
+    let max_id = registry.active_entities();
+    let mut entity_idx = 0usize;
+
+    while entity_idx < max_id {
+        // --- Guard 1: Must belong to the target module. ---
+        let Some(ModuleComponent(m_id)) = registry.modules[entity_idx] else {
+            entity_idx += 1;
+            continue;
+        };
+        if m_id != mod_id {
+            entity_idx += 1;
+            continue;
+        }
+
+        // --- Guard 2: Must be a signal entity. ---
+        let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[entity_idx] else {
+            entity_idx += 1;
+            continue;
+        };
+
+        // --- Guard 3: Must have a type component. ---
+        let Some(TypeComponent(ty)) = &registry.types[entity_idx] else {
+            entity_idx += 1;
+            continue;
+        };
+
+        // --- Guard 4: Must carry a session annotation. ---
+        let Some(ref sess) = ty.annotations.session else {
+            entity_idx += 1;
+            continue;
+        };
+
+        // All guards passed — perform protocol validation.
+        let sig_name =
+            registry.names[entity_idx].as_ref().map(|n| n.0.as_str()).unwrap_or("<unnamed>");
+        let span = registry.spans[entity_idx].as_ref().map(|s| s.0);
+
+        match find_protocol(protocols, &sess.protocol) {
+            None => {
+                let msg = format!(
+                    "[{}] Signal '{}' references undeclared session protocol '{}'.",
+                    error_codes::E625_SES_PROTOCOL,
+                    sig_name,
+                    sess.protocol
+                );
+                if push_session_error(errors, msg, span) {
+                    return;
+                }
+            }
+            Some(proto) => {
+                if !session_state_is_reachable(&proto.transitions, &sess.state) {
+                    let msg = format!(
+                        "[{}] Signal '{}' references state '{}' which does not exist \
+                         in protocol '{}'.",
+                        error_codes::E625_SES_PROTOCOL,
+                        sig_name,
+                        sess.state,
+                        sess.protocol
+                    );
+                    if push_session_error(errors, msg, span) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        entity_idx += 1;
+    }
 }

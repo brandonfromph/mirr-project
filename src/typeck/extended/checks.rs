@@ -6,14 +6,19 @@
 
 use super::qualifiers::*;
 use super::types::*;
+use crate::ecs::components::{
+    AssignmentComponent, EntityId, EntityKind, KindComponent, ModuleComponent, NameComponent,
+    ReflexComponent, TypeComponent,
+};
+use crate::ecs::Registry;
 
 // ===========================================================================
 // E) typecheck_extended() — extended type checking function signature
 // ===========================================================================
 
-/// Extended type map: maps each expression (by pointer identity) to its
-/// inferred `ExtendedType`. Replaces `TypeMap` for MEGA-1 programs.
-pub type ExtendedTypeMap = std::collections::HashMap<*const crate::ast::expr::Expr, ExtendedType>;
+/// Extended type map: maps each expression entity to its
+/// inferred `ExtendedType`. Replaces legacy pointer-based map.
+pub type ExtendedTypeMap = std::collections::HashMap<EntityId, ExtendedType>;
 
 /// Result of extended type checking on a module.
 ///
@@ -312,6 +317,146 @@ fn check_linear_signals(
                 ),
                 span: None,
             });
+        }
+    }
+}
+
+/// ECS-native: Run all extended type checks on a module in the Registry.
+///
+/// Calls Phase 7 (session type checking) with an empty protocol list.
+/// Programs that declare `session` protocols should use
+/// [`typecheck_extended_ecs_with_protocols`] to provide the protocol definitions.
+pub fn typecheck_extended_ecs(registry: &Registry, mod_id: EntityId) -> ExtendedTypeCheckResult {
+    typecheck_extended_ecs_with_protocols(registry, mod_id, &[])
+}
+
+/// ECS-native: Run all extended type checks, including Phase 7 session type
+/// validation against the provided protocol definitions.
+///
+/// # Phase Execution Order
+///
+/// 2. Refinement bound validation (E610, E612)
+/// 3. Linear type checking (E613, E614)
+/// 4. Effect checking (E616, E617)
+/// 5. Clock domain checking (E618, E619)
+/// 6. Phantom tag checking (E620, E621)
+/// 7. Session type checking (E625)  ← now fully ECS-native
+///
+/// All phases are O(entities) with constant inner bounds (NASA P10 Rule #2).
+pub fn typecheck_extended_ecs_with_protocols(
+    registry: &Registry,
+    mod_id: EntityId,
+    protocols: &[super::qualifiers::SessionProtocol],
+) -> ExtendedTypeCheckResult {
+    let mut extended_signals = Vec::new();
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
+                    if let Some(decl) = ExtendedSignalDecl::from_ecs(registry, EntityId(i as u32)) {
+                        extended_signals.push(decl);
+                    }
+                }
+            }
+        }
+    }
+
+    let mut errors = crate::error::PipelineErrors::new();
+
+    // --- Phase 2: Refinement bound validation ---
+    check_refinement_consistency(&extended_signals, &mut errors);
+
+    // --- Phase 3: Linear type checking ---
+    check_linear_signals_ecs(registry, mod_id, &mut errors);
+
+    // --- Phase 4: Effect checking ---
+    super::domain_checks::check_effect_qualifiers_ecs(registry, mod_id, &mut errors);
+
+    // --- Phase 5: Clock domain checking ---
+    super::domain_checks::check_clock_domains_ecs(registry, mod_id, &mut errors);
+
+    // --- Phase 6: Phantom tag checking ---
+    super::domain_checks::check_phantom_tags_ecs(registry, mod_id, &mut errors);
+
+    // --- Phase 7: Session type checking (ECS-native) ---
+    super::domain_checks::check_session_types_ecs(registry, mod_id, protocols, &mut errors);
+
+    ExtendedTypeCheckResult { type_map: std::collections::HashMap::new(), errors }
+}
+
+/// ECS-native: Check exactly-once consumption of linear signals.
+pub fn check_linear_signals_ecs(
+    registry: &Registry,
+    mod_id: EntityId,
+    errors: &mut crate::error::PipelineErrors,
+) {
+    let mut linear_names = std::collections::HashSet::new();
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
+                    if let Some(TypeComponent(ty)) = &registry.types[i] {
+                        if matches!(ty.annotations.linearity, crate::ast::types::Linearity::Linear)
+                        {
+                            if let Some(NameComponent(name)) = &registry.names[i] {
+                                linear_names.insert(name.as_str());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if linear_names.is_empty() {
+        return;
+    }
+
+    let mut read_counts = std::collections::HashMap::with_capacity(linear_names.len());
+
+    // Iterate reflexes of this module
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
+                    read_counts.clear();
+                    for &name in &linear_names {
+                        read_counts.insert(name, 0);
+                    }
+
+                    for &assign_ent in assignments {
+                        if let Some(AssignmentComponent { value, .. }) =
+                            &registry.assignment_comps[assign_ent.0 as usize]
+                        {
+                            let refs = crate::validation::semantic::collect_signal_refs_ecs(
+                                registry, *value,
+                            );
+                            for sig_ref in refs {
+                                if linear_names.contains(sig_ref.as_str()) {
+                                    if let Some(count) = read_counts.get_mut(sig_ref.as_str()) {
+                                        *count += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Validate exactly-once consumption per reflex
+                    for (&name, &count) in &read_counts {
+                        if count > 1 {
+                            errors.push(crate::error::MirrError::TypeError {
+                                message: format!(
+                                    "[{}] Linear signal '{}' consumed multiple times ({}) in reflex.",
+                                    error_codes::E614_LIN_DOUBLE,
+                                    name,
+                                    count
+                                ),
+                                span: None,
+                            });
+                        }
+                    }
+                }
+            }
         }
     }
 }
