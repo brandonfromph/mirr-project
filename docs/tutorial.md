@@ -246,7 +246,7 @@ Let us read it line by line:
 ### Step 2: Compile it
 
 ```bash
-cargo run --bin mirr-compile -- --emit verilog my_respirator.mirr
+cargo run --bin mirr -- compile --emit verilog my_respirator.mirr
 ```
 
 This tells the MIRR compiler to:
@@ -264,16 +264,16 @@ real chip.
 
 ```bash
 # SystemVerilog Assertions — formal verification checks
-cargo run --bin mirr-compile -- --emit sva my_respirator.mirr
+cargo run --bin mirr -- compile --emit sva my_respirator.mirr
 
 # JSON — machine-readable output for tools
-cargo run --bin mirr-compile -- --emit json my_respirator.mirr
+cargo run --bin mirr -- compile --emit json my_respirator.mirr
 
 # DOT — graph visualization (open with Graphviz)
-cargo run --bin mirr-compile -- --emit dot my_respirator.mirr
+cargo run --bin mirr -- compile --emit dot my_respirator.mirr
 
 # FIRRTL — intermediate representation for the FIRRTL ecosystem
-cargo run --bin mirr-compile -- --emit firrtl my_respirator.mirr
+cargo run --bin mirr -- compile --emit firrtl my_respirator.mirr
 ```
 
 ---
@@ -553,87 +553,84 @@ entirely by signals, guards, and reflexes.
 
 ---
 
-## Lesson 7: Patterns
+## Lesson 7: Metaprogramming (Macros)
 
-### The problem patterns solve
+### The Power of `def` and `reflect`
 
-Imagine you have 10 sensors that all need the same guard-and-reflex
-structure: "if sensor exceeds a limit for N cycles, set an alarm." Writing
-the same code 10 times is tedious and error-prone.
+MIRR is designed to be minimal to ensure absolute safety. But writing hundreds of signals and guards manually is tedious. To solve this, MIRR has a **homoiconic macro system** built right into the language.
 
-Patterns let you define a reusable template once and use it many times
-with different parameters.
+You can use the `def` and `reflect` keywords to create your own **Domain-Specific Languages (DSLs)** that generate hardware at compile-time.
 
-### Defining a pattern with `def` and `reflect`
+### Creating a Template
+
+Let's say you frequently need a "Triple-Modular Redundancy" (TMR) voting system for high-reliability sensors. Instead of writing it manually every time, you define a macro:
 
 ```mirr
-def threshold_guard(
-    sensor: signal in u16,
-    limit:  u16,
-    delay:  u32,
-    alarm:  signal out bool
+def tmr_voter(
+    s: signal in bool,
+    alarm: signal out bool
 ) {
     reflect {
-        guard ${sensor}_over {
-            when ${sensor} > ${limit}
-            for  ${delay} cycles;
-        }
-
-        reflex ${sensor}_trigger {
-            on ${sensor}_over {
-                ${alarm} = true;
+        // Generate three redundant internal signals
+        signal ${s}_1: internal bool;
+        signal ${s}_2: internal bool;
+        signal ${s}_3: internal bool;
+        
+        reflex vote_${s} {
+            on always {
+                // Majority voting logic
+                ${alarm} = (${s}_1 && ${s}_2) || 
+                           (${s}_1 && ${s}_3) || 
+                           (${s}_2 && ${s}_3);
             }
-        }
-
-        property ${sensor}_safety {
-            always (${sensor} > ${limit} -> ${alarm});
         }
     }
 }
 ```
 
 Breaking it down:
+- `def` declares a named macro pattern.
+- `reflect { ... }` is the "Code as Data" block. It tells the compiler to treat everything inside as a template.
+- `${s}` is a **hygienic substitution**. The compiler will replace it with the actual signal name you provide.
+- Internal signals (like `${s}_1`) can be declared inside `reflect`, while inputs and outputs must be passed as parameters.
 
-- `def` declares a named pattern.
-- Parameters are listed in parentheses. Each one has a name and a type.
-  - `signal in u16` means "a signal that carries a 16-bit input"
-  - `u16` means "a plain 16-bit value" (not a signal, just a number)
-  - `signal out bool` means "a signal that carries a boolean output"
-- `reflect { ... }` contains the template body.
-- `${param}` substitutes the parameter's value into names and expressions.
+### Using your Custom DSL
 
-### Using a pattern
-
-Inside a module, call the pattern like a function:
+Inside your module, you just call the macro like a function:
 
 ```mirr
-module dual_sensor {
-    signals {
-        temperature:    in  u16
-        pressure:       in  u16
-        temp_alarm:     out bool
-        pressure_alarm: out bool
-    }
+module flight_computer {
+    signal pitch: in bool;
+    signal pitch_voted: out bool;
 
     calls {
-        threshold_guard(temperature, 100, 5, temp_alarm)
-        threshold_guard(pressure, 300, 3, pressure_alarm)
+        tmr_voter(pitch, pitch_voted);
     }
 }
 ```
 
-The compiler expands each call into the full guard/reflex/property code,
-with unique names so nothing collides:
+The compiler expands this into three internal signals and one voting reflex automatically. Your hardware remains deterministic, but your source code becomes incredibly expressive.
 
-- First call produces: `threshold_guard_0_temperature_over`,
-  `threshold_guard_0_temperature_trigger`, etc.
-- Second call produces: `threshold_guard_1_pressure_over`,
-  `threshold_guard_1_pressure_trigger`, etc.
+### Generative Hardware (Lisp-like Power)
 
-### When to use patterns
+Because the `reflect` block is parsed as a Lisp-style S-expression under the hood, you can use compile-time loops and math to generate arrays of hardware. For example, a `for` loop allows you to unroll hardware logic at compile-time:
 
-Use patterns when you have the same signal/guard/reflex structure repeated
-for different signals or thresholds. Do not use patterns for one-off logic.
+```mirr
+def multi_monitor() {
+    reflect {
+        for i in 0..3 {
+            signal alarm_${i}: internal bool;
+            reflex r_${i} {
+                on always {
+                    alarm_${i} = true;
+                }
+            }
+        }
+    }
+}
+```
+
+This allows you to write powerful, reusable hardware generators without violating the strict "Zero-Jitter" rules of the physical chip. 
 
 ---
 
@@ -653,7 +650,7 @@ a real chip.
 Intel Quartus, Synopsys Design Compiler).
 
 ```bash
-cargo run --bin mirr-compile -- --emit verilog examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit verilog examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### FIRRTL (`--emit firrtl`)
@@ -666,7 +663,7 @@ is an intermediate format used by the FIRRTL compiler framework
 transformations.
 
 ```bash
-cargo run --bin mirr-compile -- --emit firrtl examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit firrtl examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### R-SPU Assembly (`--emit rspu`)
@@ -679,7 +676,7 @@ safety-critical processor architecture.
 runtime monitors.
 
 ```bash
-cargo run --bin mirr-compile -- --emit rspu examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit rspu examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### DOT (`--emit dot`)
@@ -690,7 +687,7 @@ visual diagram showing how signals, guards, and reflexes connect.
 **Who reads it:** You, for debugging and understanding your design.
 
 ```bash
-cargo run --bin mirr-compile -- --emit dot examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit dot examples/neonatal_respirator.mirr
 # Then open the .dot file with Graphviz or an online viewer
 ```
 <!-- slide -->
@@ -712,7 +709,7 @@ The JSON output includes:
 - `properties` — your property declarations
 
 ```bash
-cargo run --bin mirr-compile -- --emit json examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit json examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### Testbench (`--emit testbench`)
@@ -724,7 +721,7 @@ and drives stimulus for basic smoke-testing.
 or open-source simulators like Verilator.
 
 ```bash
-cargo run --bin mirr-compile -- --emit testbench examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit testbench examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### S-expression IR (`--emit sexpr`)
@@ -736,7 +733,7 @@ Useful for tool interop, custom analysis passes, and round-trip testing.
 MIRR S-expression evaluator.
 
 ```bash
-cargo run --bin mirr-compile -- --emit sexpr examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit sexpr examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### FPGA Scaffold (`--emit fpga_scaffold`)
@@ -748,7 +745,7 @@ clock configuration, and top-level wrappers for supported FPGA targets.
 development boards.
 
 ```bash
-cargo run --bin mirr-compile -- --emit fpga_scaffold examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit fpga_scaffold examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### Build Script (`--emit build_script`)
@@ -760,7 +757,7 @@ synthesis toolchain for the selected target.
 automating synthesis flows.
 
 ```bash
-cargo run --bin mirr-compile -- --emit build_script examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit build_script examples/neonatal_respirator.mirr
 ```
 <!-- slide -->
 ### DSP (`--emit dsp`)
@@ -773,7 +770,7 @@ on FPGAs.
 hardware multiplier/accumulator blocks.
 
 ```bash
-cargo run --bin mirr-compile -- --emit dsp examples/neonatal_respirator.mirr
+cargo run --bin mirr -- compile --emit dsp examples/neonatal_respirator.mirr
 ```
 ````
 
