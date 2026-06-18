@@ -29,6 +29,13 @@ pub const MAX_PHANTOM_TAGS: usize = 32;
 /// Maximum number of session type states in a single protocol.
 pub const MAX_SESSION_STATES: usize = 64;
 
+/// Maximum number of linear-qualified signals in a single module.
+///
+/// Bounds the fixed-size stack arrays used by `check_linear_signals_ecs`.
+/// A module with more than 128 linear signals is architecturally unusual
+/// and warrants decomposition into sub-modules.
+pub const MAX_LINEAR_SIGNALS: usize = 128;
+
 /// Maximum number of dependent type parameters on a single type.
 pub const MAX_DEPENDENT_PARAMS: usize = 8;
 
