@@ -297,7 +297,7 @@ pub fn run_pipeline_on_program(
 
     // 4. Hydrate the full, expanded module into the Registry for Stage 5 synthesis.
     // This happens AFTER AST validation so we know the AST is semantically sound.
-    registry.ingest_module(&program.module)?;
+    let mod_id = registry.ingest_module(&program.module)?;
     registry.semantic_validate()?;
 
     // Phase 3 ECS Systems: Semantic Validation & Typechecking (Shadow Gate)
@@ -307,19 +307,7 @@ pub fn run_pipeline_on_program(
 
     // Stage 2.6: Extended type checking (opt-in MEGA-1).
     let extended_type_map = if config.extended_typecheck {
-        let extended_decls: Vec<crate::typeck::extended::ExtendedSignalDecl> = program
-            .module
-            .signals
-            .iter()
-            .map(crate::typeck::extended::ExtendedSignalDecl::from_ast)
-            .collect();
-        let ext_result = crate::typeck::extended::typecheck_extended(
-            &program.module,
-            &extended_decls,
-            &[],
-            &[],
-            &[],
-        );
+        let ext_result = crate::typeck::extended::typecheck_extended_ecs(&registry, mod_id);
         if !ext_result.errors.is_empty() {
             return Err(ext_result.errors);
         }
@@ -329,8 +317,11 @@ pub fn run_pipeline_on_program(
     };
 
     // Stage 2.7: Symbolic analysis (optional, MEGA-5).
-    let symbolic_result =
-        if config.symbolic { crate::symbolic::analyze_module(&program.module).ok() } else { None };
+    let symbolic_result = if config.symbolic {
+        crate::symbolic::analyze_module_ecs(&registry, mod_id).ok()
+    } else {
+        None
+    };
 
     // Stage 3: Simplify (optional).
     // ECS-native simplification (Phase 3 ECS Transition).
@@ -413,7 +404,7 @@ pub fn run_pipeline_on_program(
         mape_k_rtl: None,
         hls_result: None,
         file_table: FileTable::new(),
-        ecs_registry: Some(final_registry.clone()),
+        ecs_registry: None,
     };
 
     // Stage 5c: HLS pass (optional, MEGA-12 ECS migration).
@@ -436,6 +427,8 @@ pub fn run_pipeline_on_program(
 
         result.hls_result = Some(());
     }
+    
+    result.ecs_registry = Some(final_registry.clone());
 
     // Stage 6: R-SPU emission (optional, requires temporal).
     if config.rspu {

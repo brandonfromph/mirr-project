@@ -399,7 +399,54 @@ pub fn check_phantom_tags_ecs(
 ) {
     let max_id = registry.active_entities();
 
-    // Iterate reflexes of this module
+    // Fetch declared phantom tags from the module entity
+    // TODO(MEGA-1): Implement PhantomTagsComponent when AST supports phantom tags.
+    let declared_tag_names: std::collections::HashSet<&str> = std::collections::HashSet::new();
+
+    // E621: Pass 1: Verify all signals refer to a declared phantom tag
+    let mut entity_idx = 0usize;
+    while entity_idx < max_id {
+        let Some(ModuleComponent(m_id)) = registry.modules[entity_idx] else {
+            entity_idx += 1;
+            continue;
+        };
+        if m_id != mod_id {
+            entity_idx += 1;
+            continue;
+        }
+
+        let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[entity_idx] else {
+            entity_idx += 1;
+            continue;
+        };
+
+        if let Some(TypeComponent(ty)) = &registry.types[entity_idx] {
+            if let Some(pt) = &ty.annotations.phantom_tag {
+                if !declared_tag_names.contains(pt.as_str()) {
+                    let sig_name = registry.names[entity_idx]
+                        .map(|n| registry.resolve_name(n.0))
+                        .unwrap_or("unnamed");
+
+                    if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                        return;
+                    }
+                    errors.push(crate::error::MirrError::TypeError {
+                        message: format!(
+                            "[{}] Signal '{}' references undeclared phantom tag '#{}'. \
+                             Declare it in the module's tag list.",
+                            error_codes::E621_PHT_UNDEF,
+                            sig_name,
+                            pt.as_str()
+                        ),
+                        span: registry.spans[entity_idx].map(|s| s.0),
+                    });
+                }
+            }
+        }
+        entity_idx += 1;
+    }
+
+    // E620: Pass 2: Check tag compatibility on assignments
     let mut reflex_idx = 0usize;
     while reflex_idx < max_id {
         let Some(ModuleComponent(m_id)) = registry.modules[reflex_idx] else {
