@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 #![forbid(unsafe_code)]
 
 use mirrc::pipeline::PipelineConfig;

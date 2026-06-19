@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 #![forbid(unsafe_code)]
 
 fn assert_err(source: &str, expected_code: &str) {

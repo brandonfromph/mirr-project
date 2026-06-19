@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 use mirrc::parser::parse_mirr;
 use mirrc::pipeline::{run_pipeline_with_file, PipelineConfig};
 

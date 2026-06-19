@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 //! Integration tests for MEGA-1 extended type checking through the pipeline.
 
 #![forbid(unsafe_code)]

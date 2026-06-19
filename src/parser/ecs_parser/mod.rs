@@ -610,13 +610,85 @@ fn parse_property_ecs(
         crate::ast::property::PropertyDirective::Assert
     };
 
-    let true_ent = registry.next_id();
-    registry
-        .set_literal(true_ent, crate::ecs::components::LiteralComponent(LiteralValue::Bool(true)));
-    let formula_exprs = vec![true_ent];
-    let formula = crate::ast::property::PropertyFormula::Always(crate::ast::expr::Expr::Literal(
-        LiteralValue::Bool(true),
-    ));
+    let formula_str =
+        after_keyword.split_once(':').unwrap_or(("", after_keyword)).1.trim().trim_end_matches(';');
+    let mut clean_formula_str = formula_str;
+    if clean_formula_str.starts_with("assert ") {
+        clean_formula_str = clean_formula_str.strip_prefix("assert ").unwrap().trim();
+    } else if clean_formula_str.starts_with("cover ") {
+        clean_formula_str = clean_formula_str.strip_prefix("cover ").unwrap().trim();
+    } else if clean_formula_str.starts_with("assume ") {
+        clean_formula_str = clean_formula_str.strip_prefix("assume ").unwrap().trim();
+    }
+
+    let fake_expr = crate::ast::expr::Expr::Literal(crate::ast::types::LiteralValue::Bool(true));
+    let (formula, formula_exprs) = if let Some(body) =
+        clean_formula_str.strip_prefix("always implies ")
+    {
+        // syntax: always implies a b or always implies (a) (b) or always a implies b (wait no, `always a implies b` doesn't start with `always implies `!)
+        // Let's support both
+        let (left, right) =
+            body.split_once(" implies ").or_else(|| body.split_once(',')).unwrap_or((body, body));
+        let left_ent = parse_expression_ecs(registry, left.trim())?;
+        let right_ent = parse_expression_ecs(registry, right.trim())?;
+        let f = crate::ast::property::PropertyFormula::AlwaysImplies {
+            antecedent: fake_expr.clone(),
+            consequent: fake_expr.clone(),
+        };
+        (f, vec![left_ent, right_ent])
+    } else if let Some(body) = clean_formula_str.strip_prefix("never implies ") {
+        let (left, right) =
+            body.split_once(" implies ").or_else(|| body.split_once(',')).unwrap_or((body, body));
+        let left_ent = parse_expression_ecs(registry, left.trim())?;
+        let right_ent = parse_expression_ecs(registry, right.trim())?;
+        let f = crate::ast::property::PropertyFormula::NeverImplies {
+            antecedent: fake_expr.clone(),
+            consequent: fake_expr.clone(),
+        };
+        (f, vec![left_ent, right_ent])
+    } else if let Some(body) = clean_formula_str.strip_prefix("eventually within ") {
+        let (cycles_str, expr_str) = body.split_once(' ').unwrap_or(("0", body));
+        let expr_str = expr_str.trim().strip_prefix("cycles ").unwrap_or(expr_str.trim());
+        let cycles = cycles_str.parse::<u32>().unwrap_or(0);
+        let ent = parse_expression_ecs(registry, expr_str.trim())?;
+        let f = crate::ast::property::PropertyFormula::EventuallyWithin {
+            cycles,
+            expr: fake_expr.clone(),
+        };
+        (f, vec![ent])
+    } else if let Some(body) = clean_formula_str.strip_prefix("never ") {
+        if let Some((left, right)) = body.split_once(" implies ") {
+            let left_ent = parse_expression_ecs(registry, left.trim())?;
+            let right_ent = parse_expression_ecs(registry, right.trim())?;
+            let f = crate::ast::property::PropertyFormula::NeverImplies {
+                antecedent: fake_expr.clone(),
+                consequent: fake_expr.clone(),
+            };
+            (f, vec![left_ent, right_ent])
+        } else {
+            let ent = parse_expression_ecs(registry, body.trim())?;
+            let f = crate::ast::property::PropertyFormula::Never(fake_expr.clone());
+            (f, vec![ent])
+        }
+    } else if let Some(body) = clean_formula_str.strip_prefix("always ") {
+        if let Some((left, right)) = body.split_once(" implies ") {
+            let left_ent = parse_expression_ecs(registry, left.trim())?;
+            let right_ent = parse_expression_ecs(registry, right.trim())?;
+            let f = crate::ast::property::PropertyFormula::AlwaysImplies {
+                antecedent: fake_expr.clone(),
+                consequent: fake_expr.clone(),
+            };
+            (f, vec![left_ent, right_ent])
+        } else {
+            let ent = parse_expression_ecs(registry, body.trim())?;
+            let f = crate::ast::property::PropertyFormula::Always(fake_expr.clone());
+            (f, vec![ent])
+        }
+    } else {
+        let ent = parse_expression_ecs(registry, clean_formula_str.trim())?;
+        let f = crate::ast::property::PropertyFormula::Always(fake_expr.clone());
+        (f, vec![ent])
+    };
 
     *index += 1;
     while *index < lines.len() {

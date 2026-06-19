@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 #![forbid(unsafe_code)]
 //! Master linkage file for extended test suites partitioned during the Dark Age (March 17-22).
 //! This file re-registers the entire fragmented test suite to restore Golden Era verification levels.

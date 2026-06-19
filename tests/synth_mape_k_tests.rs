@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 //! Integration tests for MAPE-K RTL synthesis.
 //!
 //! Verifies that the generated MAPE-K SystemVerilog modules

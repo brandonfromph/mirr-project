@@ -27,7 +27,7 @@ pub mod reader;
 pub mod types;
 
 // Re-exports for convenience.
-pub use convert::{ast_to_sexpr, sexpr_to_ast};
+pub use convert::{registry_to_sexpr, sexpr_to_registry};
 pub use eval::{eval, EvalState};
 pub use macro_expand::MacroExpander;
 pub use parser::parse_sexpr;

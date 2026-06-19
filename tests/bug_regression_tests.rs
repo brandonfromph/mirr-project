@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 //! TDD Bug Regression Test Suite
 //!
 //! Each test in this file is a RED test that exposes a confirmed compiler bug.

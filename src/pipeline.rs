@@ -82,7 +82,7 @@ impl Default for PipelineConfig {
             rspu: false,
             extended_typecheck: false,
             simulate: false,
-            mape_k: false,
+            mape_k: true,
             mape_k_partition: None,
             mape_k_ticks: None,
             retiming: false,
@@ -93,7 +93,7 @@ impl Default for PipelineConfig {
             logic_optimize: false,
             base_dir: None,
             source_file: None,
-            macro_expand: false,
+            macro_expand: true,
             dump_macro_ast: false,
         }
     }

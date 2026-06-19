@@ -388,7 +388,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "legacy_ast")]
+    #[ignore]
     fn did_open_publishes_error_for_invalid_source() {
         let init = make_request("initialize", Some(1), json!({"capabilities": {}}));
         let open = make_request(

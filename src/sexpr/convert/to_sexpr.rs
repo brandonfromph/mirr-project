@@ -374,10 +374,7 @@ fn convert_signal_type(ty: SignalType) -> SExpr {
         SignalType::Struct { name, fields } => {
             let mut items = vec![SExpr::sym("struct"), SExpr::str_val(&name)];
             for (fname, ftype) in fields {
-                items.push(SExpr::list(vec![
-                    SExpr::str_val(&fname),
-                    convert_signal_type(ftype),
-                ]));
+                items.push(SExpr::list(vec![SExpr::str_val(&fname), convert_signal_type(ftype)]));
             }
             SExpr::list(items)
         }

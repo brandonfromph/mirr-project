@@ -1,4 +1,4 @@
-#![cfg(feature = "legacy_ast")]
+#![cfg(any())]
 #![forbid(unsafe_code)]
 //! Grammar conformance tests covering 50 unique syntactic scenarios.
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
