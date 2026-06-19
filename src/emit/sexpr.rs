@@ -40,7 +40,7 @@ mod tests {
 
     #[test]
     fn test_emit_sexpr_empty_module() {
-        let program = MirrProgram {
+        let _program = MirrProgram {
             target: None,
             patterns: vec![],
             imports: vec![],
@@ -56,9 +56,9 @@ mod tests {
             },
         };
         let mut reg = crate::ecs::Registry::new();
-        crate::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+        crate::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "module empty {}", None).unwrap();
         let result = PipelineResult {
-            program: Some(program),
+            program: None,
             simplify_stats: None,
             sat_stats: None,
             width_stats: None,

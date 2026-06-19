@@ -8,7 +8,7 @@ use mirrc::ecs::Registry;
 use mirrc::sexpr::convert::registry_to_sexpr;
 use mirrc::sexpr::print_sexpr;
 
-const MAX_SCAN: usize = 128;
+
 
 fn get_sexpr(src: &str) -> mirrc::sexpr::types::SExpr {
     let mut registry = Registry::new();

@@ -34,7 +34,7 @@ module test {
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
     let mut registry = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, source, None)
         .expect("ingestion should succeed");
     expand_patterns(&mut program, &registry).expect("expansion should succeed");
     assert!(!program.module.guards.is_empty(), "should have expanded guard");
@@ -71,7 +71,7 @@ module test {
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
     let mut registry = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, source, None)
         .expect("ingestion should succeed");
     expand_patterns(&mut program, &registry).expect("expansion should succeed");
     assert!(program.module.guards.len() >= 2, "should have at least 2 expanded guards");
@@ -105,7 +105,7 @@ module test {
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
     let mut registry = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, source, None)
         .expect("ingestion should succeed");
     expand_patterns(&mut program, &registry).expect("expansion should succeed");
     // Internal signals should be renamed to avoid conflicts
@@ -134,7 +134,7 @@ module test {
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
     let mut registry = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, source, None)
         .expect("ingestion should succeed");
     let result = expand_patterns(&mut program, &registry);
     assert!(result.is_err(), "arity mismatch should be detected");
@@ -167,7 +167,7 @@ module test {
     let mut program = parse_mirr(source).expect("parse should succeed");
     validate_pattern_defs(&program.patterns).expect("validation should succeed");
     let mut registry = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut registry, program.clone(), None)
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, source, None)
         .expect("ingestion should succeed");
     expand_patterns(&mut program, &registry).expect("expansion should succeed");
     assert!(!program.module.guards.is_empty());

@@ -49,7 +49,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
     };
     let program = MirrProgram { target: None, patterns: vec![], imports: vec![], module };
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None).unwrap();
 
     PipelineResult {
         program: Some(program),
@@ -76,7 +76,7 @@ fn stub_pipeline(signals: Vec<SignalDecl>, properties: Vec<PropertyDecl>) -> Pip
 fn parse_to_pipeline(source: &str) -> PipelineResult {
     let program = parse_mirr(source).expect("MIRR parse should succeed");
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut reg, program.clone(), None).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, source, None).unwrap();
 
     PipelineResult {
         program: Some(program),

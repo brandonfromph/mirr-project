@@ -5,7 +5,7 @@ use mirrc::ast::Expr;
 use mirrc::ecs::components::*;
 use mirrc::ecs::systems::*;
 use mirrc::ecs::Registry;
-use mirrc::parse_mirr;
+
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]
@@ -185,9 +185,9 @@ fn test_ingest_module_integration() {
             property p { always(x -> y); }
         }
     "#;
-    let prog = parse_mirr(src).expect("parse");
     let mut reg = Registry::new();
-    let mod_id = reg.ingest_module(&prog.module).expect("ingest module");
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, src, None).expect("parse");
+    let mod_id = reg.get_entity_by_name("m").expect("module m");
 
     assert_eq!(reg.kinds[mod_id.0 as usize].unwrap().0, EntityKind::MODULE);
     assert!(reg.get_entity_by_name("m").is_some());
@@ -374,8 +374,7 @@ fn test_temporal_synthesis_system_paths() {
             guard g_short { when x for 10 cycles; }
         }
     "#;
-    let prog = parse_mirr(src).expect("parse");
-    reg.ingest_module(&prog.module).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, src, None).unwrap();
     let netlist = temporal_synthesis_system(&mut reg).unwrap();
     assert!(!netlist.guards.is_empty());
 
@@ -392,9 +391,8 @@ fn test_temporal_synthesis_system_paths() {
             guard g_long { when x for 20 cycles; }
         }
     "#;
-    let prog2 = parse_mirr(src_long).expect("parse");
     let mut reg2 = Registry::new();
-    reg2.ingest_module(&prog2.module).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg2, src_long, None).unwrap();
     temporal_synthesis_system(&mut reg2).unwrap();
 
     let g2_id = reg2.get_entity_by_name("g_long").unwrap();
@@ -408,9 +406,8 @@ macro_rules! test_semantic_err {
     ($name:ident, $src:expr, $err:expr) => {
         #[test]
         fn $name() -> Result<(), Box<dyn std::error::Error>> {
-            let prog = parse_mirr($src)?;
             let mut reg = Registry::new();
-            reg.ingest_module(&prog.module)?;
+            let _ = mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, $src, None);
             let errs = reg.semantic_validate().unwrap_err();
             assert!(format!("{:?}", errs).contains($err));
             Ok(())

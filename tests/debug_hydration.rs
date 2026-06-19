@@ -1,4 +1,4 @@
-use mirrc::parser::parse_mirr;
+
 use mirrc::pipeline::{run_pipeline_with_file, PipelineConfig};
 
 fn run_test(source: &str) -> Result<(), String> {

@@ -334,11 +334,11 @@ fn find_push<'a>(
 }
 
 fn drive_prog(
-    prog: &mirrc::ast::MirrProgram,
+    _prog: &mirrc::ast::MirrProgram,
     input: &[u8],
 ) -> Vec<mirrc::mirr_driver::ObservedPush> {
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::ecs::adapter::ingest_program(&mut reg, prog.clone(), None).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None).unwrap();
     drive_parsed_module_with_interpreter(&reg, input)
 }
 

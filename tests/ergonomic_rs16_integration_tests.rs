@@ -2,7 +2,7 @@
 //! This test enforces that signals defined in ergonomic 'signals { ... }' blocks
 //! are correctly ingested into the ECS Registry as first-class entities.
 
-use mirrc::ecs::{adapter::ingest_program, components::*, Registry};
+use mirrc::ecs::{components::*, Registry};
 use mirrc::parser::parse_mirr;
 
 #[test]
@@ -19,7 +19,7 @@ module test_mod {
 
     // 3. Ingest into ECS Registry
     let mut registry = Registry::new();
-    ingest_program(&mut registry, program, None).expect("ECS ingestion failed");
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, input, None).expect("ECS ingestion failed");
 
     // 4. Verify entity exists (use public method get_entity_by_name)
     let lidar_entity =

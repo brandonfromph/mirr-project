@@ -1,3 +1,4 @@
+/*
 use crate::ast::program::MirrProgram;
 use crate::ecs::components::*;
 use crate::ecs::Registry;
@@ -94,3 +95,4 @@ pub fn register_signal_to_ecs(
     registry.set_parent(entity, module_entity);
     entity
 }
+*/
