@@ -109,53 +109,117 @@ pattern noc_l1_router_2(
     signal sd_17: internal u64;
 
     reflex r_dl { on always { sv_0 = downlink_valid; sd_0 = downlink_data; } }
-    guard n0(!tx_valid_0) for 1 cycles;
-    guard y0(tx_valid_0) for 1 cycles;
+    guard n0 {
+        when (!tx_valid_0) for 1 cycles;
+    }
+    guard y0 {
+        when (tx_valid_0) for 1 cycles;
+    }
     reflex r0 { on y0 { sv_1 = true; sd_1 = tx_data_0; } on n0 { sv_1 = sv_0; sd_1 = sd_0; } }
-    guard n1(!tx_valid_1) for 1 cycles;
-    guard y1(tx_valid_1) for 1 cycles;
+    guard n1 {
+        when (!tx_valid_1) for 1 cycles;
+    }
+    guard y1 {
+        when (tx_valid_1) for 1 cycles;
+    }
     reflex r1 { on y1 { sv_2 = true; sd_2 = tx_data_1; } on n1 { sv_2 = sv_1; sd_2 = sd_1; } }
-    guard n2(!tx_valid_2) for 1 cycles;
-    guard y2(tx_valid_2) for 1 cycles;
+    guard n2 {
+        when (!tx_valid_2) for 1 cycles;
+    }
+    guard y2 {
+        when (tx_valid_2) for 1 cycles;
+    }
     reflex r2 { on y2 { sv_3 = true; sd_3 = tx_data_2; } on n2 { sv_3 = sv_2; sd_3 = sd_2; } }
-    guard n3(!tx_valid_3) for 1 cycles;
-    guard y3(tx_valid_3) for 1 cycles;
+    guard n3 {
+        when (!tx_valid_3) for 1 cycles;
+    }
+    guard y3 {
+        when (tx_valid_3) for 1 cycles;
+    }
     reflex r3 { on y3 { sv_4 = true; sd_4 = tx_data_3; } on n3 { sv_4 = sv_3; sd_4 = sd_3; } }
-    guard n4(!tx_valid_4) for 1 cycles;
-    guard y4(tx_valid_4) for 1 cycles;
+    guard n4 {
+        when (!tx_valid_4) for 1 cycles;
+    }
+    guard y4 {
+        when (tx_valid_4) for 1 cycles;
+    }
     reflex r4 { on y4 { sv_5 = true; sd_5 = tx_data_4; } on n4 { sv_5 = sv_4; sd_5 = sd_4; } }
-    guard n5(!tx_valid_5) for 1 cycles;
-    guard y5(tx_valid_5) for 1 cycles;
+    guard n5 {
+        when (!tx_valid_5) for 1 cycles;
+    }
+    guard y5 {
+        when (tx_valid_5) for 1 cycles;
+    }
     reflex r5 { on y5 { sv_6 = true; sd_6 = tx_data_5; } on n5 { sv_6 = sv_5; sd_6 = sd_5; } }
-    guard n6(!tx_valid_6) for 1 cycles;
-    guard y6(tx_valid_6) for 1 cycles;
+    guard n6 {
+        when (!tx_valid_6) for 1 cycles;
+    }
+    guard y6 {
+        when (tx_valid_6) for 1 cycles;
+    }
     reflex r6 { on y6 { sv_7 = true; sd_7 = tx_data_6; } on n6 { sv_7 = sv_6; sd_7 = sd_6; } }
-    guard n7(!tx_valid_7) for 1 cycles;
-    guard y7(tx_valid_7) for 1 cycles;
+    guard n7 {
+        when (!tx_valid_7) for 1 cycles;
+    }
+    guard y7 {
+        when (tx_valid_7) for 1 cycles;
+    }
     reflex r7 { on y7 { sv_8 = true; sd_8 = tx_data_7; } on n7 { sv_8 = sv_7; sd_8 = sd_7; } }
-    guard n8(!tx_valid_8) for 1 cycles;
-    guard y8(tx_valid_8) for 1 cycles;
+    guard n8 {
+        when (!tx_valid_8) for 1 cycles;
+    }
+    guard y8 {
+        when (tx_valid_8) for 1 cycles;
+    }
     reflex r8 { on y8 { sv_9 = true; sd_9 = tx_data_8; } on n8 { sv_9 = sv_8; sd_9 = sd_8; } }
-    guard n9(!tx_valid_9) for 1 cycles;
-    guard y9(tx_valid_9) for 1 cycles;
+    guard n9 {
+        when (!tx_valid_9) for 1 cycles;
+    }
+    guard y9 {
+        when (tx_valid_9) for 1 cycles;
+    }
     reflex r9 { on y9 { sv_10 = true; sd_10 = tx_data_9; } on n9 { sv_10 = sv_9; sd_10 = sd_9; } }
-    guard n10(!tx_valid_10) for 1 cycles;
-    guard y10(tx_valid_10) for 1 cycles;
+    guard n10 {
+        when (!tx_valid_10) for 1 cycles;
+    }
+    guard y10 {
+        when (tx_valid_10) for 1 cycles;
+    }
     reflex r10 { on y10 { sv_11 = true; sd_11 = tx_data_10; } on n10 { sv_11 = sv_10; sd_11 = sd_10; } }
-    guard n11(!tx_valid_11) for 1 cycles;
-    guard y11(tx_valid_11) for 1 cycles;
+    guard n11 {
+        when (!tx_valid_11) for 1 cycles;
+    }
+    guard y11 {
+        when (tx_valid_11) for 1 cycles;
+    }
     reflex r11 { on y11 { sv_12 = true; sd_12 = tx_data_11; } on n11 { sv_12 = sv_11; sd_12 = sd_11; } }
-    guard n12(!tx_valid_12) for 1 cycles;
-    guard y12(tx_valid_12) for 1 cycles;
+    guard n12 {
+        when (!tx_valid_12) for 1 cycles;
+    }
+    guard y12 {
+        when (tx_valid_12) for 1 cycles;
+    }
     reflex r12 { on y12 { sv_13 = true; sd_13 = tx_data_12; } on n12 { sv_13 = sv_12; sd_13 = sd_12; } }
-    guard n13(!tx_valid_13) for 1 cycles;
-    guard y13(tx_valid_13) for 1 cycles;
+    guard n13 {
+        when (!tx_valid_13) for 1 cycles;
+    }
+    guard y13 {
+        when (tx_valid_13) for 1 cycles;
+    }
     reflex r13 { on y13 { sv_14 = true; sd_14 = tx_data_13; } on n13 { sv_14 = sv_13; sd_14 = sd_13; } }
-    guard n14(!tx_valid_14) for 1 cycles;
-    guard y14(tx_valid_14) for 1 cycles;
+    guard n14 {
+        when (!tx_valid_14) for 1 cycles;
+    }
+    guard y14 {
+        when (tx_valid_14) for 1 cycles;
+    }
     reflex r14 { on y14 { sv_15 = true; sd_15 = tx_data_14; } on n14 { sv_15 = sv_14; sd_15 = sd_14; } }
-    guard n15(!tx_valid_15) for 1 cycles;
-    guard y15(tx_valid_15) for 1 cycles;
+    guard n15 {
+        when (!tx_valid_15) for 1 cycles;
+    }
+    guard y15 {
+        when (tx_valid_15) for 1 cycles;
+    }
     reflex r15 { on y15 { sv_16 = true; sd_16 = tx_data_15; } on n15 { sv_16 = sv_15; sd_16 = sd_15; } }
 
     signal dest_id: internal u64;
@@ -209,40 +273,74 @@ pattern noc_l1_router_2(
             rx_data_15 = 0;
         }
     }
-    guard p0(dest_id == 32) for 1 cycles;
+    guard p0 {
+        when (dest_id == 32) for 1 cycles;
+    }
     reflex out0 { on p0 { rx_valid_0 = sv_16; rx_data_0 = payload; } }
-    guard p1(dest_id == 33) for 1 cycles;
+    guard p1 {
+        when (dest_id == 33) for 1 cycles;
+    }
     reflex out1 { on p1 { rx_valid_1 = sv_16; rx_data_1 = payload; } }
-    guard p2(dest_id == 34) for 1 cycles;
+    guard p2 {
+        when (dest_id == 34) for 1 cycles;
+    }
     reflex out2 { on p2 { rx_valid_2 = sv_16; rx_data_2 = payload; } }
-    guard p3(dest_id == 35) for 1 cycles;
+    guard p3 {
+        when (dest_id == 35) for 1 cycles;
+    }
     reflex out3 { on p3 { rx_valid_3 = sv_16; rx_data_3 = payload; } }
-    guard p4(dest_id == 36) for 1 cycles;
+    guard p4 {
+        when (dest_id == 36) for 1 cycles;
+    }
     reflex out4 { on p4 { rx_valid_4 = sv_16; rx_data_4 = payload; } }
-    guard p5(dest_id == 37) for 1 cycles;
+    guard p5 {
+        when (dest_id == 37) for 1 cycles;
+    }
     reflex out5 { on p5 { rx_valid_5 = sv_16; rx_data_5 = payload; } }
-    guard p6(dest_id == 38) for 1 cycles;
+    guard p6 {
+        when (dest_id == 38) for 1 cycles;
+    }
     reflex out6 { on p6 { rx_valid_6 = sv_16; rx_data_6 = payload; } }
-    guard p7(dest_id == 39) for 1 cycles;
+    guard p7 {
+        when (dest_id == 39) for 1 cycles;
+    }
     reflex out7 { on p7 { rx_valid_7 = sv_16; rx_data_7 = payload; } }
-    guard p8(dest_id == 40) for 1 cycles;
+    guard p8 {
+        when (dest_id == 40) for 1 cycles;
+    }
     reflex out8 { on p8 { rx_valid_8 = sv_16; rx_data_8 = payload; } }
-    guard p9(dest_id == 41) for 1 cycles;
+    guard p9 {
+        when (dest_id == 41) for 1 cycles;
+    }
     reflex out9 { on p9 { rx_valid_9 = sv_16; rx_data_9 = payload; } }
-    guard p10(dest_id == 42) for 1 cycles;
+    guard p10 {
+        when (dest_id == 42) for 1 cycles;
+    }
     reflex out10 { on p10 { rx_valid_10 = sv_16; rx_data_10 = payload; } }
-    guard p11(dest_id == 43) for 1 cycles;
+    guard p11 {
+        when (dest_id == 43) for 1 cycles;
+    }
     reflex out11 { on p11 { rx_valid_11 = sv_16; rx_data_11 = payload; } }
-    guard p12(dest_id == 44) for 1 cycles;
+    guard p12 {
+        when (dest_id == 44) for 1 cycles;
+    }
     reflex out12 { on p12 { rx_valid_12 = sv_16; rx_data_12 = payload; } }
-    guard p13(dest_id == 45) for 1 cycles;
+    guard p13 {
+        when (dest_id == 45) for 1 cycles;
+    }
     reflex out13 { on p13 { rx_valid_13 = sv_16; rx_data_13 = payload; } }
-    guard p14(dest_id == 46) for 1 cycles;
+    guard p14 {
+        when (dest_id == 46) for 1 cycles;
+    }
     reflex out14 { on p14 { rx_valid_14 = sv_16; rx_data_14 = payload; } }
-    guard p15(dest_id == 47) for 1 cycles;
+    guard p15 {
+        when (dest_id == 47) for 1 cycles;
+    }
     reflex out15 { on p15 { rx_valid_15 = sv_16; rx_data_15 = payload; } }
 
-    guard ext(!is_local) for 1 cycles;
+    guard ext {
+        when (!is_local) for 1 cycles;
+    }
     reflex out_ext { on ext { uplink_valid = sv_16; uplink_data = sd_16; } }
 }
 

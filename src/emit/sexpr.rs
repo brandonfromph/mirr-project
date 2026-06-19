@@ -56,7 +56,8 @@ mod tests {
             },
         };
         let mut reg = crate::ecs::Registry::new();
-        crate::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "module empty {}", None).unwrap();
+        crate::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "module empty {}", None)
+            .unwrap();
         let result = PipelineResult {
             program: None,
             simplify_stats: None,

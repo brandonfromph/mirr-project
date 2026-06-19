@@ -19,7 +19,8 @@ module test_mod {
 
     // 3. Ingest into ECS Registry
     let mut registry = Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, input, None).expect("ECS ingestion failed");
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, input, None)
+        .expect("ECS ingestion failed");
 
     // 4. Verify entity exists (use public method get_entity_by_name)
     let lidar_entity =

@@ -138,7 +138,8 @@ fn make_property(
 fn result_from_module(module: Module) -> PipelineResult {
     let program = MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None)
+        .unwrap();
 
     PipelineResult {
         hls_result: None,
@@ -165,7 +166,8 @@ fn result_from_module(module: Module) -> PipelineResult {
 fn result_with_netlist(module: Module, netlist: TemporalNetlist) -> PipelineResult {
     let program = MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None)
+        .unwrap();
 
     PipelineResult {
         hls_result: None,

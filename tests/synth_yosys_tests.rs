@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![cfg(any())]
 //! Integration tests for synthesis-clean SystemVerilog emission.
 //!

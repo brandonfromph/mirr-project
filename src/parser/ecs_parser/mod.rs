@@ -91,26 +91,35 @@ fn parse_mirr_ecs_internal(
             let (path_str, alias) = parse_import_line(line, index)?;
             if let Some(dir) = base_dir {
                 let import_path = dir.join(&path_str);
-                if let Ok(canonical) = import_path.canonicalize() {
-                    if !loaded_files.contains(&canonical) {
-                        loaded_files.insert(canonical.clone());
-                        if let Ok(imported_source) = std::fs::read_to_string(&import_path) {
-                            parse_mirr_ecs_internal(
-                                registry,
-                                &imported_source,
-                                import_path.parent(),
-                                loaded_files,
-                                if alias.is_empty() { None } else { Some(&alias) },
-                            )?;
-                        }
-                    }
+                let canonical = import_path.canonicalize().map_err(|e| {
+                    MirrError::parse_error(format!("Import not found: {:?} - {}", import_path, e))
+                })?;
+                if !loaded_files.contains(&canonical) {
+                    loaded_files.insert(canonical.clone());
+                    let imported_source = std::fs::read_to_string(&canonical).map_err(|e| {
+                        MirrError::parse_error(format!(
+                            "Cannot read import {:?} - {}",
+                            canonical, e
+                        ))
+                    })?;
+                    parse_mirr_ecs_internal(
+                        registry,
+                        &imported_source,
+                        canonical.parent(),
+                        loaded_files,
+                        if alias.is_empty() { None } else { Some(&alias) },
+                    )?;
                 }
             }
             index += 1;
             continue;
         }
 
-        if line.starts_with("def ") || line.starts_with("pattern ") {
+        if line.starts_with("def ")
+            || line.starts_with("pattern ")
+            || line.starts_with("extern module ")
+            || line.starts_with("extern def ")
+        {
             let pat = crate::parser::pattern_parser::parse_pattern_def(&lines, &mut index)?;
             let entity = registry.create_entity(&pat.name, KindComponent::PATTERN);
             registry.set_type(entity, TypeComponent::pattern(pat.clone()));
@@ -263,6 +272,18 @@ fn parse_top_level_struct_ecs(
     Ok((name, fields))
 }
 
+fn unroll_text_substitution(line: &str, var: &str, idx: i32) -> String {
+    let mut s = line.to_string();
+    s = s.replace(&format!("[{}]", var), &format!("_{}", idx));
+    s = s.replace(&format!("${{{}}}", var), &format!("{}", idx));
+    s = s.replace(&format!("_{}_", var), &format!("_{}_", idx));
+    s = s.replace(&format!("_{} ", var), &format!("_{} ", idx));
+    s = s.replace(&format!("_{},", var), &format!("_{},", idx));
+    s = s.replace(&format!("_{};", var), &format!("_{};", idx));
+    s = s.replace(&format!("_{})", var), &format!("_{})", idx));
+    s
+}
+
 fn parse_module_ecs(
     registry: &mut Registry,
     lines: &[&str],
@@ -288,6 +309,19 @@ fn parse_module_ecs(
     let mod_name = name.to_string();
     *index += 1;
 
+    parse_module_ecs_stmts(registry, module_entity, &mod_name, lines, index, struct_defs)?;
+
+    Ok(module_entity)
+}
+
+fn parse_module_ecs_stmts(
+    registry: &mut Registry,
+    module_entity: EntityId,
+    mod_name: &str,
+    lines: &[&str],
+    index: &mut usize,
+    struct_defs: &HashMap<String, Vec<(String, SignalType)>>,
+) -> Result<(), MirrError> {
     while *index < lines.len() {
         skip_empty_and_comments(lines, index);
         if *index >= lines.len() {
@@ -296,7 +330,51 @@ fn parse_module_ecs(
         let line = lines[*index].trim();
         if line == "}" {
             *index += 1;
-            return Ok(module_entity);
+            break;
+        }
+
+        if line.starts_with("for ") {
+            let after_for = line.strip_prefix("for ").unwrap();
+            let (var, rest) = after_for
+                .split_once(" in ")
+                .ok_or_else(|| MirrError::parse_error("Missing 'in' in for loop"))?;
+            let var = var.trim();
+            let range_part = rest
+                .split_once('{')
+                .ok_or_else(|| MirrError::parse_error("Missing '{' in for loop"))?
+                .0
+                .trim();
+            let (start_str, end_str) = range_part
+                .split_once("..")
+                .ok_or_else(|| MirrError::parse_error("Missing '..' in for loop"))?;
+            let start: i32 = start_str
+                .trim()
+                .parse()
+                .map_err(|_| MirrError::parse_error("Invalid loop start"))?;
+            let end: i32 =
+                end_str.trim().parse().map_err(|_| MirrError::parse_error("Invalid loop end"))?;
+
+            *index += 1;
+            let block_lines = crate::parser::collect_block_lines(lines, index)?;
+
+            for i in start..end {
+                let mut substituted_lines = Vec::new();
+                for bline in &block_lines {
+                    substituted_lines.push(unroll_text_substitution(bline, var, i));
+                }
+                let substituted_strs: Vec<&str> =
+                    substituted_lines.iter().map(|s| s.as_str()).collect();
+                let mut sub_index = 0;
+                parse_module_ecs_stmts(
+                    registry,
+                    module_entity,
+                    mod_name,
+                    &substituted_strs,
+                    &mut sub_index,
+                    struct_defs,
+                )?;
+            }
+            continue;
         }
 
         if line.starts_with("signal ")
@@ -304,7 +382,7 @@ fn parse_module_ecs(
             || line.starts_with("out ")
             || line.starts_with("internal ")
         {
-            parse_signal_ecs(registry, module_entity, &mod_name, line, *index, struct_defs)?;
+            parse_signal_ecs(registry, module_entity, mod_name, line, *index, struct_defs)?;
             *index += 1;
             continue;
         }
@@ -321,31 +399,39 @@ fn parse_module_ecs(
                     *index += 1;
                     break;
                 }
-                parse_signal_ecs(registry, module_entity, &mod_name, inner_line, *index, struct_defs)?;
+                parse_signal_ecs(
+                    registry,
+                    module_entity,
+                    mod_name,
+                    inner_line,
+                    *index,
+                    struct_defs,
+                )?;
                 *index += 1;
             }
             continue;
         }
 
         if line.starts_with("guard ") {
-            parse_guard_ecs(registry, module_entity, &mod_name, lines, index)?;
+            parse_guard_ecs(registry, module_entity, mod_name, lines, index)?;
             continue;
         }
 
         if line.starts_with("reflex ") {
-            parse_reflex_ecs(registry, module_entity, &mod_name, lines, index)?;
+            parse_reflex_ecs(registry, module_entity, mod_name, lines, index)?;
             continue;
         }
 
         if line.starts_with("property ") || line.starts_with("assert ") {
-            parse_property_ecs(registry, module_entity, &mod_name, lines, index)?;
+            parse_property_ecs(registry, module_entity, mod_name, lines, index)?;
             continue;
         }
 
         if crate::parser::pattern_parser::is_pattern_call_start(line) {
             let pat_call = crate::parser::pattern_parser::parse_pattern_call(lines, index)?;
+            let call_id = registry.next_id();
             let entity = registry.create_entity(
-                &format!("{}_call", pat_call.pattern_name),
+                &format!("{}_call_{}", pat_call.pattern_name, call_id.0),
                 KindComponent::PATTERN_CALL,
             );
             registry.set_module(entity, crate::ecs::components::ModuleComponent(module_entity));
@@ -355,8 +441,7 @@ fn parse_module_ecs(
 
         *index += 1;
     }
-
-    Ok(module_entity)
+    Ok(())
 }
 
 fn parse_signal_ecs(
@@ -515,7 +600,7 @@ fn parse_reflex_ecs(
     let mut assignment_ents = Vec::new();
 
     while *index < lines.len() {
-        skip_empty_and_comments(lines, index);
+        crate::parser::skip_empty_and_comments(lines, index);
         if *index >= lines.len() {
             break;
         }
@@ -546,39 +631,12 @@ fn parse_reflex_ecs(
 
             if !rest.contains('{') {
                 *index += 1;
-                skip_empty_and_comments(lines, index);
+                crate::parser::skip_empty_and_comments(lines, index);
             }
             *index += 1;
 
-            while *index < lines.len() {
-                skip_empty_and_comments(lines, index);
-                let inner_line = lines[*index].trim();
-                if inner_line == "}" {
-                    break;
-                }
-                if let Some((target_name, expr_str)) = inner_line.split_once('=') {
-                    let target_name = target_name.trim();
-                    let expr_str = expr_str.trim_end_matches(';').trim();
-                    let target_ent = registry.get_entity_by_name(target_name).ok_or_else(|| {
-                        MirrError::parse_error(format!(
-                            "Assignment target signal '{}' not found.",
-                            target_name
-                        ))
-                    })?;
-                    let rvalue_ent = parse_expression_ecs(registry, expr_str)?;
-                    let assign_id = registry.next_id();
-                    let interned_name =
-                        registry.interner.intern(&format!("_assign_{}", assign_id.0));
-                    registry.set_name(assign_id, NameComponent(interned_name));
-                    registry.set_kind(assign_id, KindComponent(EntityKind::ASSIGNMENT));
-                    registry.set_assignment(
-                        assign_id,
-                        AssignmentComponent { target: target_ent, value: rvalue_ent },
-                    );
-                    assignment_ents.push(assign_id);
-                }
-                *index += 1;
-            }
+            parse_on_block_stmts(registry, &mut assignment_ents, lines, index)?;
+            continue;
         }
         *index += 1;
     }
@@ -592,6 +650,88 @@ fn parse_reflex_ecs(
     registry.set_parent(reflex_id, module_entity);
 
     Ok(reflex_id)
+}
+
+fn parse_on_block_stmts(
+    registry: &mut Registry,
+    assignment_ents: &mut Vec<EntityId>,
+    lines: &[&str],
+    index: &mut usize,
+) -> Result<(), MirrError> {
+    while *index < lines.len() {
+        crate::parser::skip_empty_and_comments(lines, index);
+        if *index >= lines.len() {
+            break;
+        }
+        let inner_line = lines[*index].trim();
+        if inner_line == "}" {
+            *index += 1;
+            return Ok(());
+        }
+
+        if inner_line.starts_with("for ") {
+            let after_for = inner_line.strip_prefix("for ").unwrap();
+            let (var, rest) = after_for
+                .split_once(" in ")
+                .ok_or_else(|| MirrError::parse_error("Missing 'in' in for loop"))?;
+            let var = var.trim();
+            let range_part = rest
+                .split_once('{')
+                .ok_or_else(|| MirrError::parse_error("Missing '{' in for loop"))?
+                .0
+                .trim();
+            let (start_str, end_str) = range_part
+                .split_once("..")
+                .ok_or_else(|| MirrError::parse_error("Missing '..' in for loop"))?;
+            let start: i32 = start_str
+                .trim()
+                .parse()
+                .map_err(|_| MirrError::parse_error("Invalid loop start"))?;
+            let end: i32 =
+                end_str.trim().parse().map_err(|_| MirrError::parse_error("Invalid loop end"))?;
+
+            *index += 1;
+            let block_lines = crate::parser::collect_block_lines(lines, index)?;
+
+            for i in start..end {
+                let mut substituted_lines = Vec::new();
+                for bline in &block_lines {
+                    substituted_lines.push(unroll_text_substitution(bline, var, i));
+                }
+                let substituted_strs: Vec<&str> =
+                    substituted_lines.iter().map(|s| s.as_str()).collect();
+                let mut sub_index = 0;
+                parse_on_block_stmts(registry, assignment_ents, &substituted_strs, &mut sub_index)?;
+            }
+            continue;
+        }
+
+        if let Some((target_name, expr_str)) = inner_line.split_once('=') {
+            let target_name = target_name.trim();
+            let expr_str = expr_str.trim().trim_end_matches(';');
+            let target_ent = if let Some(ent) = registry.get_entity_by_name(target_name) {
+                ent
+            } else {
+                return Err(MirrError::parse_error(format!(
+                    "Target signal '{}' not found for assignment.",
+                    target_name
+                )));
+            };
+
+            let rvalue_ent = parse_expression_ecs(registry, expr_str)?;
+            let assign_id = registry.create_entity("assign", KindComponent(EntityKind::ASSIGNMENT));
+            let interned_name = registry.interner.intern(&format!("_assign_{}", assign_id.0));
+            registry.set_name(assign_id, NameComponent(interned_name));
+            registry.set_kind(assign_id, KindComponent(EntityKind::ASSIGNMENT));
+            registry.set_assignment(
+                assign_id,
+                AssignmentComponent { target: target_ent, value: rvalue_ent },
+            );
+            assignment_ents.push(assign_id);
+        }
+        *index += 1;
+    }
+    Ok(())
 }
 
 fn parse_property_ecs(
@@ -625,9 +765,34 @@ fn parse_property_ecs(
         crate::ast::property::PropertyDirective::Assert
     };
 
-    let formula_str =
-        after_keyword.split_once(':').unwrap_or(("", after_keyword)).1.trim().trim_end_matches(';');
-    let mut clean_formula_str = formula_str;
+    let mut formula_str = String::new();
+    if header.ends_with('{') {
+        *index += 1;
+        while *index < lines.len() {
+            crate::parser::skip_empty_and_comments(lines, index);
+            if *index >= lines.len() {
+                break;
+            }
+            let inner_line = lines[*index].trim();
+            if inner_line == "}" {
+                *index += 1;
+                break;
+            }
+            formula_str = inner_line.trim_end_matches(';').to_string();
+            *index += 1;
+        }
+    } else {
+        formula_str = after_keyword
+            .split_once(':')
+            .unwrap_or(("", after_keyword))
+            .1
+            .trim()
+            .trim_end_matches(';')
+            .to_string();
+        *index += 1;
+    }
+
+    let mut clean_formula_str = formula_str.as_str();
     if clean_formula_str.starts_with("assert ") {
         clean_formula_str = clean_formula_str.strip_prefix("assert ").unwrap().trim();
     } else if clean_formula_str.starts_with("cover ") {
@@ -686,7 +851,11 @@ fn parse_property_ecs(
             (f, vec![ent])
         }
     } else if let Some(raw_body) = clean_formula_str.strip_prefix("always ") {
-        let body = raw_body.trim().strip_prefix('(').and_then(|b| b.strip_suffix(')')).unwrap_or(raw_body.trim());
+        let body = raw_body
+            .trim()
+            .strip_prefix('(')
+            .and_then(|b| b.strip_suffix(')'))
+            .unwrap_or(raw_body.trim());
         if let Some((left, right)) = body.split_once(" followed_by ") {
             let (cycles_str, right_expr) = right.split_once(' ').unwrap_or(("0", right));
             let cycles = cycles_str.parse::<u32>().unwrap_or(0);

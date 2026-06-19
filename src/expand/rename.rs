@@ -9,9 +9,7 @@ use crate::ast::macro_nodes::{ModuleMacroStmt, ReflexMacroStmt};
 use crate::ast::property::PropertyFormula;
 use crate::ast::MAX_EXPR_NODES;
 
-pub(super) fn collect_fragment_names(
-    fragment: &crate::ast::pattern::ReflectBlock,
-) -> HashSet<String> {
+pub fn collect_fragment_names(fragment: &crate::ast::pattern::ReflectBlock) -> HashSet<String> {
     let mut names = HashSet::with_capacity(32);
     for stmt in &fragment.statements {
         collect_stmt_names(stmt, &mut names);
@@ -110,7 +108,7 @@ fn rename_target(target: &mut String, rename: &HashMap<String, String>) {
 /// Also renames references: guard conditions (signal refs), reflex guard_names,
 /// reflex assignment targets (only if they reference internal signals from
 /// this fragment), and property formula signal refs.
-pub(super) fn apply_name_prefixing(
+pub fn apply_name_prefixing(
     fragment: &mut crate::ast::pattern::ReflectBlock,
     prefix: &str,
     original_names: &HashSet<String>,
@@ -331,7 +329,7 @@ pub(super) fn rename_property_signals(
 }
 
 /// Set origin tags on all nodes in the fragment.
-pub(super) fn set_origin_tags(fragment: &mut crate::ast::pattern::ReflectBlock, origin: &str) {
+pub fn set_origin_tags(fragment: &mut crate::ast::pattern::ReflectBlock, origin: &str) {
     for stmt in &mut fragment.statements {
         set_stmt_origin(stmt, origin);
     }

@@ -106,7 +106,7 @@ fn test_combinatorial_mux_matrix() {
     for entries in [2, 4, 8, 16] {
         let mut signals = String::new();
         let mut logic = String::new();
-        
+
         for i in 0..entries {
             signals.push_str(&format!("        in_{}: in u8;\n", i));
             logic.push_str(&format!(

@@ -29,8 +29,16 @@ fn test_allocator_maps_signals_to_unique_registers() {
         span: None,
     };
 
-    let ent1 = registry.create_signal(sig1.name.clone(), KindComponent(EntityKind::SIGNAL(sig1.kind)), TypeComponent(sig1.ty.clone()));
-    let ent2 = registry.create_signal(sig2.name.clone(), KindComponent(EntityKind::SIGNAL(sig2.kind)), TypeComponent(sig2.ty.clone()));
+    let ent1 = registry.create_signal(
+        sig1.name.clone(),
+        KindComponent(EntityKind::SIGNAL(sig1.kind)),
+        TypeComponent(sig1.ty.clone()),
+    );
+    let ent2 = registry.create_signal(
+        sig2.name.clone(),
+        KindComponent(EntityKind::SIGNAL(sig2.kind)),
+        TypeComponent(sig2.ty.clone()),
+    );
 
     // Perform Allocation
     let mut allocator = RspuAllocator::new();
@@ -56,7 +64,11 @@ fn test_allocator_enforces_register_limit() {
             origin: None,
             span: None,
         };
-        let ent = registry.create_signal(sig.name.clone(), KindComponent(EntityKind::SIGNAL(sig.kind)), TypeComponent(sig.ty.clone()));
+        let ent = registry.create_signal(
+            sig.name.clone(),
+            KindComponent(EntityKind::SIGNAL(sig.kind)),
+            TypeComponent(sig.ty.clone()),
+        );
         allocator.allocate(&registry, ent).expect("Allocation failed");
     }
 
@@ -68,7 +80,11 @@ fn test_allocator_enforces_register_limit() {
         origin: None,
         span: None,
     };
-    let ent = registry.create_signal(sig.name.clone(), KindComponent(EntityKind::SIGNAL(sig.kind)), TypeComponent(sig.ty.clone()));
+    let ent = registry.create_signal(
+        sig.name.clone(),
+        KindComponent(EntityKind::SIGNAL(sig.kind)),
+        TypeComponent(sig.ty.clone()),
+    );
 
     assert!(
         allocator.allocate(&registry, ent).is_err(),

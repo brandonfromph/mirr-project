@@ -50,7 +50,8 @@ fn roundtrip_module_signals_and_guards() {
 
     // 2. Ingest S-Expr to Registry B
     let mut reg_b = Registry::new();
-    let mod_b = sexpr_to_registry(&mut reg_b, &sexpr_a).expect("Failed to parse S-Expr into Registry");
+    let mod_b =
+        sexpr_to_registry(&mut reg_b, &sexpr_a).expect("Failed to parse S-Expr into Registry");
 
     // 3. Dump Registry B to S-Expr
     let sexpr_b = registry_to_sexpr(&reg_b, mod_b);

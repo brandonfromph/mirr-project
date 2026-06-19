@@ -93,10 +93,55 @@ fn emit_sv_full(
 
     temporal::emit_reflex_logic_ecs(registry, &dsp_reflexes, dsp_attr, ft, &mut out);
 
-    let pattern_call_count = registry.pattern_defs.iter().flatten().count();
-    if pattern_call_count > 0 {
+
+    if !registry.extern_instantiations.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
-        out.push_str("  // (Pattern calls are expanded into reflexes/guards in ECS)\n\n");
+        for call_id in &registry.extern_instantiations {
+            if let Some(call_comp) = &registry.pattern_calls[call_id.0 as usize] {
+                let call = &call_comp.0;
+                let pattern_name = &call.pattern_name;
+
+                let mut param_names = Vec::new();
+                if let Some(def_id) = registry.get_entity_by_name(pattern_name) {
+                    if let Some(def_comp) = &registry.pattern_defs[def_id.0 as usize] {
+                        param_names = def_comp.0.params.iter().map(|p| p.name.clone()).collect();
+                    }
+                }
+
+                let instance_name =
+                    format!("{}_inst_{}", pattern_name.replace("::", "_"), call_id.0);
+
+                let module_name = if let Some(idx) = pattern_name.rfind("::") {
+                    &pattern_name[idx + 2..]
+                } else {
+                    pattern_name
+                };
+
+                out.push_str(&format!("  {} {} (\n", module_name, instance_name));
+
+                for (i, arg) in call.arguments.iter().enumerate() {
+                    let port_name =
+                        if i < param_names.len() { &param_names[i] } else { "UNKNOWN_PORT" };
+
+                    let arg_str = match arg {
+                        crate::ast::pattern::PatternArg::SignalRef(s) => s.clone(),
+                        crate::ast::pattern::PatternArg::ConstInt(v) => format!("{}", v),
+                        crate::ast::pattern::PatternArg::ConstBool(b) => {
+                            if *b {
+                                "1'b1".to_string()
+                            } else {
+                                "1'b0".to_string()
+                            }
+                        }
+                        crate::ast::pattern::PatternArg::PatternRef(s) => s.clone(),
+                    };
+
+                    let comma = if i == call.arguments.len() - 1 { "" } else { "," };
+                    out.push_str(&format!("    .{}({}){}\n", port_name, arg_str, comma));
+                }
+                out.push_str("  );\n\n");
+            }
+        }
     }
 
     if !strip_sva {

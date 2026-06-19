@@ -6,7 +6,7 @@
 //!
 //! Implementation: regfile.sv (BRAM inferred)
 
-def regfile(
+extern module regfile(
     clk: signal in bool,
     rs1: signal in u10,
     rs2: signal in u10,
@@ -15,11 +15,4 @@ def regfile(
     din: signal in u64,
     dout1: signal out u64,
     dout2: signal out u64
-) {
-    reflect {
-        // Dummy signal to satisfy compiler (logic moved to regfile.sv)
-        signal _interface_active: internal bool;
-    }
-}
-
-module regfile {}
+) {}

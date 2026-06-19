@@ -64,6 +64,8 @@ pub struct PatternDef {
     pub params: Vec<PatternParam>,
     /// Template body (reflect block with interpolation markers).
     pub body: ReflectBlock,
+    /// Whether this is an external module (emitted as a structural instantiation).
+    pub is_extern: bool,
     /// Source span for LSP diagnostics (`None` when unavailable).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub span: Option<Span>,

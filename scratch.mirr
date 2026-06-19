@@ -1,0 +1,39 @@
+module types {}
+def regfile(
+    clk: signal in bool,
+    rs1: signal in u10,
+    rs2: signal in u10,
+    rd:  signal in u10,
+    we:  signal in bool,
+    din: signal in u64,
+    dout1: signal out u64,
+    dout2: signal out u64
+) {
+    reflect {
+        signal mem: internal u64[1024];
+
+        reflex write_port {
+            // Need temporal trigger? Wait, I didn't see 'on clk' support. Let's try 'on always' for now to see if it parses.
+            on always {
+                dout1 = mem[rs1];
+                dout2 = mem[rs2];
+                if (we) {
+                    mem[rd] = din;
+                }
+            }
+        }
+    }
+}
+
+module top {
+    signal clk: in bool;
+    signal rs1: in u10;
+    signal rs2: in u10;
+    signal rd: in u10;
+    signal we: in bool;
+    signal din: in u64;
+    signal dout1: out u64;
+    signal dout2: out u64;
+
+    regfile(clk, rs1, rs2, rd, we, din, dout1, dout2);
+}

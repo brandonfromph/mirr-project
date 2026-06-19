@@ -22,7 +22,11 @@ fn test_synthesis_pipeline() {
         origin: None,
         span: None,
     };
-    let _sig_ent = registry.create_signal(sig.name.clone(), KindComponent(EntityKind::SIGNAL(sig.kind)), TypeComponent(sig.ty.clone()));
+    let _sig_ent = registry.create_signal(
+        sig.name.clone(),
+        KindComponent(EntityKind::SIGNAL(sig.kind)),
+        TypeComponent(sig.ty.clone()),
+    );
 
     // 2. Register Guard Entity with expression hydration
     let cond_expr_id = registry

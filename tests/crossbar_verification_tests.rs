@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![cfg(any())]
 use mirrc::pipeline::PipelineConfig;
 use mirrc::Workspace;

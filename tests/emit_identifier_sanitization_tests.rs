@@ -8,11 +8,21 @@ use mirrc::pipeline::PipelineResult;
 
 fn result_with_module_name(module_name: &str) -> PipelineResult {
     let mut reg = mirrc::ecs::Registry::new();
-    
-    let m_id = reg.create_entity(module_name, mirrc::ecs::components::KindComponent(mirrc::ecs::EntityKind::MODULE));
 
-    let s_id = reg.create_entity("sig-name.with spaces", mirrc::ecs::components::KindComponent(mirrc::ecs::EntityKind::SIGNAL(mirrc::ast::types::SignalKind::Internal)));
-    reg.types[s_id.0 as usize] = Some(mirrc::ecs::components::TypeComponent(mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Unsigned(8))));
+    let m_id = reg.create_entity(
+        module_name,
+        mirrc::ecs::components::KindComponent(mirrc::ecs::EntityKind::MODULE),
+    );
+
+    let s_id = reg.create_entity(
+        "sig-name.with spaces",
+        mirrc::ecs::components::KindComponent(mirrc::ecs::EntityKind::SIGNAL(
+            mirrc::ast::types::SignalKind::Internal,
+        )),
+    );
+    reg.types[s_id.0 as usize] = Some(mirrc::ecs::components::TypeComponent(
+        mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Unsigned(8)),
+    ));
 
     PipelineResult {
         hls_result: None,

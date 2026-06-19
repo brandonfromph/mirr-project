@@ -108,6 +108,9 @@ pub struct Registry {
     // Target Hardware Configuration
     pub target_config: Option<crate::ast::program::TargetConfig>,
 
+    // External structural module instantiations
+    pub extern_instantiations: Vec<EntityId>,
+
     // Knowledge Base Component Tables (Phase 2)
     pub vectors: Vec<Option<VectorComponent>>,
     pub chunk_texts: Vec<Option<ChunkTextComponent>>,
@@ -194,6 +197,7 @@ impl Registry {
             width_constraints: vec![None; cap],
             pattern_origins: Vec::new(),
             target_config: None,
+            extern_instantiations: Vec::new(),
             symbol_to_entity: HashMap::with_capacity(cap),
         }
     }

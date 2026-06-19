@@ -211,32 +211,36 @@ pub(super) fn emit_single_property(
     out.push_str(&format!("  // property: {}\n", prop_name));
 
     let sva_keyword = match prop.directive {
-        PropertyDirective::Assert => "assert property",
-        PropertyDirective::Cover => "cover property",
-        PropertyDirective::Assume => "assume property",
+        PropertyDirective::Assert => "assert",
+        PropertyDirective::Cover => "cover",
+        PropertyDirective::Assume => "assume",
     };
 
-    let disable_clause = if has_rst_n { "disable iff (!rst_n) " } else { "" };
-    let prefix = format!("{sva_keyword} (@(posedge clk) {disable_clause}");
+    let prefix = if has_rst_n {
+        format!("  always @(posedge clk) begin\n    if (rst_n) begin\n      {sva_keyword}(")
+    } else {
+        format!("  always @(posedge clk) begin\n    {sva_keyword}(")
+    };
+    let suffix = if has_rst_n { ");\n    end\n  end\n\n" } else { ");\n  end\n\n" };
 
     match &prop.formula {
         PropertyFormula::Always(_) => {
             let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
-            out.push_str(&format!("  {prefix}({sv_expr}));\n\n"));
+            out.push_str(&format!("{prefix}{sv_expr}{suffix}"));
         }
         PropertyFormula::Never(_) => {
             let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
-            out.push_str(&format!("  {prefix}!({sv_expr}));\n\n"));
+            out.push_str(&format!("{prefix}!({sv_expr}){suffix}"));
         }
         PropertyFormula::AlwaysImplies { .. } => {
             let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
             let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
-            out.push_str(&format!("  {prefix}({ante_sv}) |-> ({cons_sv}));\n\n"));
+            out.push_str(&format!("{prefix}(!({ante_sv})) || ({cons_sv}){suffix}"));
         }
         PropertyFormula::NeverImplies { .. } => {
             let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
             let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
-            out.push_str(&format!("  {prefix}({ante_sv}) |-> !({cons_sv}));\n\n"));
+            out.push_str(&format!("{prefix}(!({ante_sv})) || (!({cons_sv})){suffix}"));
         }
         PropertyFormula::EventuallyWithin { expr: _, cycles } => {
             let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
@@ -255,14 +259,14 @@ pub(super) fn emit_single_property(
                 ));
             }
             out.push_str("  end\n");
-            out.push_str(&format!("  {prefix}(prop_{prop_name}_timer < {cycles}));\n\n"));
+            out.push_str(&format!("{prefix}prop_{prop_name}_timer < {cycles}{suffix}"));
         }
         PropertyFormula::AlwaysFollowedBy { trigger: _, response: _, delay_cycles } => {
             let trig_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
             let resp_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
 
             if *delay_cycles == 0 {
-                out.push_str(&format!("  {prefix}({trig_sv}) |-> ({resp_sv}));\n\n"));
+                out.push_str(&format!("{prefix}(!({trig_sv})) || ({resp_sv}){suffix}"));
             } else if *delay_cycles == 1 {
                 out.push_str(&format!("  reg prop_{prop_name}_trig_d1;\n"));
                 out.push_str("  always @(posedge clk) begin\n");
@@ -274,7 +278,7 @@ pub(super) fn emit_single_property(
                 }
                 out.push_str("  end\n");
                 out.push_str(&format!(
-                    "  {prefix}(prop_{prop_name}_trig_d1) |-> ({resp_sv}));\n\n"
+                    "{prefix}(!(prop_{prop_name}_trig_d1)) || ({resp_sv}){suffix}"
                 ));
             } else {
                 let msb = delay_cycles - 1;
@@ -295,7 +299,7 @@ pub(super) fn emit_single_property(
                 }
                 out.push_str("  end\n");
                 out.push_str(&format!(
-                    "  {prefix}(prop_{prop_name}_trig_shift[{msb}]) |-> ({resp_sv}));\n\n"
+                    "{prefix}(!(prop_{prop_name}_trig_shift[{msb}])) || ({resp_sv}){suffix}"
                 ));
             }
         }

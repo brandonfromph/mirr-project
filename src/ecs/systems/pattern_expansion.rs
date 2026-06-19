@@ -80,7 +80,7 @@ fn expr_to_string(expr: &crate::ast::expr::Expr) -> String {
             };
             format!("({} {} {})", expr_to_string(left), op_str, expr_to_string(right))
         }
-        Expr::Prev { signal, delay } => format!("{}[-{}]", signal, delay),
+        Expr::Prev { signal, delay } => format!("prev({}, {})", signal, delay),
         Expr::ArrayIndex { array, index } => {
             format!("{}[{}]", expr_to_string(array), expr_to_string(index))
         }
@@ -177,8 +177,11 @@ fn inject_module(
 
     // Inject pattern calls
     for call in &module.pattern_calls {
-        let entity = registry
-            .create_entity(&format!("{}_call", call.pattern_name), KindComponent::PATTERN_CALL);
+        let call_id = registry.next_id();
+        let entity = registry.create_entity(
+            &format!("{}_call_{}", call.pattern_name, call_id.0),
+            KindComponent::PATTERN_CALL,
+        );
         registry.set_module(entity, crate::ecs::components::ModuleComponent(parent_module));
         registry.set_pattern_call(entity, PatternCallComponent(call.clone()));
     }
@@ -213,27 +216,41 @@ pub fn expand_patterns(registry: &mut Registry) -> Result<(), MirrError> {
             registry.modules[call_entity.0 as usize].map(|m| m.0).unwrap_or(EntityId(0));
 
         // Locate PatternDef
-        let mut def_entity = None;
-        for i in 0..registry.next_id {
-            if registry.kinds[i as usize] == Some(KindComponent::PATTERN) {
-                if let Some(def_comp) = &registry.pattern_defs[i as usize] {
-                    if def_comp.0.name == call_comp.0.pattern_name {
-                        def_entity = Some(def_comp.clone());
-                        break;
-                    }
+        // Locate PatternDef
+        let def_comp = match registry.get_entity_by_name(&call_comp.0.pattern_name) {
+            Some(id) => {
+                println!("DEBUG: Found pattern entity {} for '{}'", id.0, call_comp.0.pattern_name);
+                if let Some(comp) = &registry.pattern_defs[id.0 as usize] {
+                    comp.clone()
+                } else {
+                    return Err(MirrError::SemanticError {
+                        message: format!("Entity '{}' is not a pattern", call_comp.0.pattern_name),
+                        span: call_comp.0.span,
+                    });
                 }
             }
-        }
-
-        let def_comp = match def_entity {
-            Some(d) => d,
             None => {
+                println!(
+                    "DEBUG: Failed to find pattern '{}'. Available symbols in registry:",
+                    call_comp.0.pattern_name
+                );
+                for (sym, ent) in registry.get_symbol_table() {
+                    if sym.contains("noc_l1") {
+                        println!("DEBUG:   sym: '{}' -> ent: {}", sym, ent.0);
+                    }
+                }
                 return Err(MirrError::SemanticError {
                     message: format!("Pattern '{}' not found", call_comp.0.pattern_name),
                     span: call_comp.0.span,
                 });
             }
         };
+
+        if def_comp.0.is_extern {
+            registry.extern_instantiations.push(call_entity);
+            // DO NOT unset pattern call, so it remains for Verilog emission
+            continue;
+        }
 
         // Create environment mapping
         let signal_env = build_signal_env(&def_comp.0, &call_comp.0)?;
@@ -250,12 +267,23 @@ pub fn expand_patterns(registry: &mut Registry) -> Result<(), MirrError> {
             span: None,
         };
 
+        let prefix = format!("{}_call_{}", def_comp.0.name.replace("::", "_"), call_entity.0);
+        let mut param_names = std::collections::HashSet::new();
+        for p in &def_comp.0.params {
+            param_names.insert(p.name.clone());
+        }
+
+        let mut fragment = def_comp.0.body.clone();
+        let names = crate::expand::rename::collect_fragment_names(&fragment);
+        crate::expand::rename::apply_name_prefixing(&mut fragment, &prefix, &names, &param_names);
+        crate::expand::rename::set_origin_tags(&mut fragment, &prefix);
+
         crate::expand::ast_expand::expand_statements_inplace(
             &mut temp_module,
-            def_comp.0.body.statements.clone(),
+            fragment.statements,
             HashMap::new(),
             signal_env,
-            Some(def_comp.0.name.clone()),
+            Some(prefix),
         )?;
 
         // Inject expanded primitives into Registry
@@ -266,7 +294,9 @@ pub fn expand_patterns(registry: &mut Registry) -> Result<(), MirrError> {
 
         // Add any newly spawned pattern calls to the queue
         for new_call_id in registry.entities_with_components(COMP_PATTERN_CALL) {
-            if !work_queue.contains(&new_call_id) {
+            if !work_queue.contains(&new_call_id)
+                && !registry.extern_instantiations.contains(&new_call_id)
+            {
                 work_queue.push(new_call_id);
             }
         }

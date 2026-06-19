@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 use crate::ast::expr::Expr;
-use crate::ast::types::{
-    BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType,
-};
+use crate::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use crate::ecs::components::{
     ConditionComponent, CyclesComponent, KindComponent, ReflexComponent, TypeComponent,
 };
@@ -88,16 +86,16 @@ fn parse_signals(
         _ => return Err(sexpr_err("Expected signals list".to_string())),
     };
     expect_head(items, "signals")?;
-    
+
     for sig_expr in &items[1..] {
         let sig_list = match sig_expr {
             SExpr::List(list) => list,
             _ => continue,
         };
         expect_head(sig_list, "signal")?;
-        
+
         let name = sig_list[1].as_str_val().unwrap_or("").to_string();
-        
+
         let kind_str = sig_list[2].as_symbol().unwrap_or("internal");
         let kind = match kind_str {
             "input" => SignalKind::Input,
@@ -105,9 +103,9 @@ fn parse_signals(
             "internal" => SignalKind::Internal,
             _ => SignalKind::Internal,
         };
-        
+
         let ty_core = parse_signal_type(&sig_list[3])?;
-        
+
         let sig_id = registry.create_signal(
             name,
             KindComponent(crate::ecs::components::EntityKind::SIGNAL(kind)),
@@ -115,7 +113,7 @@ fn parse_signals(
         );
         registry.set_parent(sig_id, module_id);
     }
-    
+
     Ok(())
 }
 
@@ -156,33 +154,33 @@ fn parse_guards(
         _ => return Err(sexpr_err("Expected guards list".to_string())),
     };
     expect_head(items, "guards")?;
-    
+
     for g_expr in &items[1..] {
         let g_list = match g_expr {
             SExpr::List(list) => list,
             _ => continue,
         };
         expect_head(g_list, "guard")?;
-        
+
         let name = g_list[1].as_str_val().unwrap_or("").to_string();
         let cond_expr = parse_expr(&g_list[2])?;
         let cycles = g_list.get(3).and_then(|e| e.as_integer()).unwrap_or(1);
-        
+
         let guard_id = registry.create_entity(&name, KindComponent::GUARD);
         let cond_id = registry.ingest_expr(&cond_expr)?;
-        
+
         if registry.conditions.len() <= guard_id.0 as usize {
             registry.conditions.resize(guard_id.0 as usize + 1, None);
         }
         registry.conditions[guard_id.0 as usize] = Some(ConditionComponent(cond_id));
-        
+
         if registry.cycles.len() <= guard_id.0 as usize {
             registry.cycles.resize(guard_id.0 as usize + 1, None);
         }
         registry.cycles[guard_id.0 as usize] = Some(CyclesComponent(cycles));
         registry.set_parent(guard_id, module_id);
     }
-    
+
     Ok(())
 }
 
@@ -196,23 +194,23 @@ fn parse_reflexes(
         _ => return Err(sexpr_err("Expected reflexes list".to_string())),
     };
     expect_head(items, "reflexes")?;
-    
+
     for r_expr in &items[1..] {
         let r_list = match r_expr {
             SExpr::List(list) => list,
             _ => continue,
         };
         expect_head(r_list, "reflex")?;
-        
+
         let name = r_list[1].as_str_val().unwrap_or("").to_string();
         let reflex_id = registry.create_entity(&name, KindComponent::REFLEX);
-        
+
         let on_list = match &r_list[2] {
             SExpr::List(l) => l,
             _ => return Err(sexpr_err("Expected on list".to_string())),
         };
         expect_head(on_list, "on")?;
-        
+
         let mut guard_ids = Vec::new();
         for g_expr in &on_list[1..] {
             let g_name = g_expr.as_str_val().unwrap_or("").to_string();
@@ -220,7 +218,7 @@ fn parse_reflexes(
                 guard_ids.push(id);
             }
         }
-        
+
         let mut assignment_ids = Vec::new();
         for a_expr in &r_list[3..] {
             let a_list = match a_expr {
@@ -229,35 +227,34 @@ fn parse_reflexes(
             };
             expect_head(a_list, "assign")?;
             let target_name = a_list[1].as_str_val().unwrap_or("").to_string();
-            let target_id = registry.get_entity_by_name(&target_name).unwrap_or(crate::ecs::EntityId(0));
-            
+            let target_id =
+                registry.get_entity_by_name(&target_name).unwrap_or(crate::ecs::EntityId(0));
+
             let val_expr = parse_expr(&a_list[2])?;
             let val_id = registry.ingest_expr(&val_expr)?;
-            
+
             let assign_id = registry.create_entity("assign", KindComponent::ASSIGNMENT);
-            
+
             if registry.assignment_comps.len() <= assign_id.0 as usize {
                 registry.assignment_comps.resize(assign_id.0 as usize + 1, None);
             }
-            registry.assignment_comps[assign_id.0 as usize] = Some(crate::ecs::components::AssignmentComponent {
-                target: target_id,
-                value: val_id,
-            });
+            registry.assignment_comps[assign_id.0 as usize] =
+                Some(crate::ecs::components::AssignmentComponent {
+                    target: target_id,
+                    value: val_id,
+                });
             registry.set_parent(assign_id, reflex_id);
             assignment_ids.push(assign_id);
         }
-        
+
         if registry.reflex_comps.len() <= reflex_id.0 as usize {
             registry.reflex_comps.resize(reflex_id.0 as usize + 1, None);
         }
-        registry.reflex_comps[reflex_id.0 as usize] = Some(ReflexComponent {
-            guards: guard_ids,
-            assignments: assignment_ids,
-            origin: None,
-        });
+        registry.reflex_comps[reflex_id.0 as usize] =
+            Some(ReflexComponent { guards: guard_ids, assignments: assignment_ids, origin: None });
         registry.set_parent(reflex_id, module_id);
     }
-    
+
     Ok(())
 }
 

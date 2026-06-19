@@ -62,7 +62,16 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
 
     // Extract name and param string from header.
     let is_flat_pattern = header.starts_with("pattern ");
-    let keyword_len = if is_flat_pattern { "pattern ".len() } else { "def ".len() };
+    let is_extern = header.starts_with("extern module ") || header.starts_with("extern def ");
+    let keyword_len = if is_flat_pattern {
+        "pattern ".len()
+    } else if header.starts_with("extern module ") {
+        "extern module ".len()
+    } else if header.starts_with("extern def ") {
+        "extern def ".len()
+    } else {
+        "def ".len()
+    };
     let after_def = header.get(keyword_len..).ok_or_else(|| {
         pattern_err(format!("{} Malformed pattern definition.", crate::error_codes::ec(402)))
     })?;
@@ -89,6 +98,24 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
 
     // Now we should be inside the body.
     skip_empty_and_comments(lines, index);
+
+    if is_extern {
+        skip_empty_and_comments(lines, index);
+        if *index < lines.len() && lines[*index].trim() == "{" {
+            *index += 1;
+            skip_empty_and_comments(lines, index);
+            if *index < lines.len() && lines[*index].trim() == "}" {
+                *index += 1;
+            }
+        }
+        return Ok(PatternDef {
+            name: name.to_string(),
+            params,
+            body: ReflectBlock { statements: vec![] },
+            is_extern: true,
+            span: None,
+        });
+    }
 
     if !is_flat_pattern {
         if *index >= lines.len() {
@@ -158,7 +185,7 @@ pub fn parse_pattern_def(lines: &[&str], index: &mut usize) -> Result<PatternDef
 
     let body = ReflectBlock { statements };
 
-    Ok(PatternDef { name: name.to_string(), params, body, span: None })
+    Ok(PatternDef { name: name.to_string(), params, body, is_extern: false, span: None })
 }
 
 /// Collect the full `def` header, which may span multiple lines.

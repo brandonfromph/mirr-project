@@ -208,7 +208,14 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
         process::exit(1);
     });
 
-    let mut config = PipelineConfig { bootstrap_mode: true, ..Default::default() };
+    let root_path = Path::new(&root_file);
+    let workspace_root = root_path.parent().unwrap_or_else(|| Path::new("."));
+
+    let mut config = PipelineConfig {
+        bootstrap_mode: true,
+        base_dir: Some(workspace_root.to_path_buf()),
+        ..Default::default()
+    };
     if args.emit.as_deref() == Some("rspu")
         || args.emit.as_deref() == Some("cert")
         || args.emit.as_deref() == Some("riscv")

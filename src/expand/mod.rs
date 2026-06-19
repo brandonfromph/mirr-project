@@ -8,7 +8,7 @@
 
 pub mod ast_expand;
 mod cycles;
-mod rename;
+pub mod rename;
 mod scoping;
 mod substitution;
 

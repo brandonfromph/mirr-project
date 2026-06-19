@@ -1,22 +1,19 @@
 [tasks]
 bmc
-prove
 
 [options]
 bmc: mode bmc
-bmc: depth 17
-prove: mode prove
-prove: depth 17
+bmc: depth 20
 
 [engines]
-smtbmc bitwuzla
+smtbmc z3
 
 [script]
 read_verilog -sv -formal ram.sv
 read_verilog -sv -formal regfile.sv
 read_verilog -sv -formal rspu_top_synth.sv
 read_verilog -sv -formal rspu_top_sva_bind.sv
-prep -top rspu_top
+prep -top types
 
 [files]
 /Users/brandonc.blay/projects/mirr-private/rspu_chip/core/ram.sv

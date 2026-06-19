@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![cfg(any())]
 #![forbid(unsafe_code)]
 //! Tests for the property system hardening campaign:

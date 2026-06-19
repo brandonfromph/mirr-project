@@ -203,7 +203,6 @@ fn test_ingest_module_integration() {
     let r_id = reg.get_entity_by_name("r").unwrap();
     let r_comp = reg.reflex_comps[r_id.0 as usize].as_ref().unwrap();
     assert_eq!(r_comp.guards[0], g_id);
-
 }
 
 #[test]

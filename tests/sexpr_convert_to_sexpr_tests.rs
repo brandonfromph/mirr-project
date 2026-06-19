@@ -8,8 +8,6 @@ use mirrc::ecs::Registry;
 use mirrc::sexpr::convert::registry_to_sexpr;
 use mirrc::sexpr::print_sexpr;
 
-
-
 fn get_sexpr(src: &str) -> mirrc::sexpr::types::SExpr {
     let mut registry = Registry::new();
     let _ = mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, src, None)
