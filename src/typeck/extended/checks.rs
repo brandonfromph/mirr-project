@@ -349,11 +349,13 @@ pub fn typecheck_extended_ecs_with_protocols(
     protocols: &[super::qualifiers::SessionProtocol],
 ) -> ExtendedTypeCheckResult {
     let mut extended_signals = Vec::new();
-    for (i, mod_comp) in registry.modules.iter().enumerate() {
-        if let Some(ModuleComponent(m_id)) = mod_comp {
+    let target_mask = crate::ecs::registry::COMP_MODULE | crate::ecs::registry::COMP_KIND;
+    for entity in registry.entities_with_components(target_mask) {
+        let i = entity.0 as usize;
+        if let Some(ModuleComponent(m_id)) = &registry.modules[i] {
             if *m_id == mod_id {
                 if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
-                    if let Some(decl) = ExtendedSignalDecl::from_ecs(registry, EntityId(i as u32)) {
+                    if let Some(decl) = super::qualifiers::ExtendedSignalDecl::from_ecs(registry, EntityId(i as u32)) {
                         extended_signals.push(decl);
                     }
                 }
@@ -429,7 +431,7 @@ fn collect_linear_ids<'r>(
             entity_idx += 1;
             continue;
         };
-        out[fill] = Some((EntityId(entity_idx as u32), name.as_str()));
+        out[fill] = Some((EntityId(entity_idx as u32), registry.resolve_name(*name)));
         fill += 1;
         entity_idx += 1;
     }

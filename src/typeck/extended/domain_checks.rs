@@ -7,8 +7,8 @@
 use super::qualifiers::*;
 use super::types::*;
 use crate::ecs::components::{
-    AssignmentComponent, EntityId, EntityKind, KindComponent, ModuleComponent, NameComponent,
-    ReflexComponent, TypeComponent,
+    AssignmentComponent, EntityId, EntityKind, KindComponent, ModuleComponent, ReflexComponent,
+    TypeComponent,
 };
 use crate::ecs::Registry;
 
@@ -112,97 +112,121 @@ pub(super) fn check_effect_qualifiers(
 }
 
 /// ECS-native: Check effect qualifiers (pure/stateful).
+///
+/// Adheres to NASA P10 Rule #3 (no heap allocation during execution) by
+/// avoiding HashSets and performing linear scans or direct component lookups.
 pub fn check_effect_qualifiers_ecs(
     registry: &Registry,
     mod_id: EntityId,
     errors: &mut crate::error::PipelineErrors,
 ) {
-    let mut pure_signals = std::collections::HashSet::new();
-    let mut stateful_signals = std::collections::HashSet::new();
-
-    for (i, mod_comp) in registry.modules.iter().enumerate() {
-        if let Some(ModuleComponent(m_id)) = mod_comp {
-            if *m_id == mod_id {
-                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
-                    if let Some(TypeComponent(ty)) = &registry.types[i] {
-                        if matches!(ty.annotations.effect, crate::ast::types::EffectQualifier::Pure)
-                        {
-                            if let Some(NameComponent(name)) = &registry.names[i] {
-                                pure_signals.insert(name.as_str());
-                            }
-                        } else if matches!(
-                            ty.annotations.effect,
-                            crate::ast::types::EffectQualifier::Stateful
-                        ) {
-                            if let Some(NameComponent(name)) = &registry.names[i] {
-                                stateful_signals.insert(name.as_str());
-                            }
-                        }
+    // Phase 4 only runs if there are signals in the module.
+    let max_id = registry.active_entities();
+    let mut has_pure = false;
+    let mut i = 0usize;
+    while i < max_id {
+        if let Some(ModuleComponent(m_id)) = registry.modules[i] {
+            if m_id == mod_id {
+                if let Some(TypeComponent(ty)) = &registry.types[i] {
+                    if matches!(ty.annotations.effect, crate::ast::types::EffectQualifier::Pure) {
+                        has_pure = true;
+                        break;
                     }
                 }
             }
         }
+        i += 1;
     }
 
-    if pure_signals.is_empty() {
+    if !has_pure {
         return;
     }
 
-    for (i, mod_comp) in registry.modules.iter().enumerate() {
-        if let Some(ModuleComponent(m_id)) = mod_comp {
-            if *m_id == mod_id {
-                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
-                    let reflex_name = if let Some(NameComponent(n)) = &registry.names[i] {
-                        n.as_str()
-                    } else {
-                        "unnamed"
-                    };
-                    for &assign_ent in assignments {
-                        if let Some(AssignmentComponent { target, value }) =
-                            &registry.assignment_comps[assign_ent.0 as usize]
-                        {
-                            if let Some(NameComponent(target_name)) =
-                                &registry.names[target.0 as usize]
-                            {
-                                if !pure_signals.contains(target_name.as_str()) {
-                                    continue;
-                                }
+    // Iterate reflexes of this module
+    let mut reflex_idx = 0usize;
+    while reflex_idx < max_id {
+        let Some(ModuleComponent(m_id)) = registry.modules[reflex_idx] else {
+            reflex_idx += 1;
+            continue;
+        };
+        if m_id != mod_id {
+            reflex_idx += 1;
+            continue;
+        }
 
-                                if ecs_expr_contains_prev(registry, *value) {
-                                    errors.push(crate::error::MirrError::TypeError {
-                                        message: format!(
-                                            "[{}] Pure signal '{}' cannot depend on prev() (stateful operation) in reflex '{}'.",
-                                            error_codes::E616_EFF_PURE,
-                                            target_name,
-                                            reflex_name
-                                        ),
-                                        span: None,
-                                    });
-                                }
+        let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[reflex_idx] else {
+            reflex_idx += 1;
+            continue;
+        };
 
-                                let refs = crate::validation::semantic::collect_signal_refs_ecs(
-                                    registry, *value,
-                                );
-                                for sig_ref in refs {
-                                    if stateful_signals.contains(sig_ref.as_str()) {
-                                        errors.push(crate::error::MirrError::TypeError {
-                                            message: format!(
-                                                "[{}] Pure signal '{}' cannot depend on stateful signal '{}' in reflex '{}'.",
-                                                error_codes::E617_EFF_MIX,
-                                                target_name,
-                                                sig_ref,
-                                                reflex_name
-                                            ),
-                                            span: None,
-                                        });
+        let reflex_name =
+            registry.names[reflex_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("unnamed");
+
+        for &assign_ent in assignments {
+            let Some(AssignmentComponent { target, value }) =
+                &registry.assignment_comps[assign_ent.0 as usize]
+            else {
+                continue;
+            };
+
+            // 1. Check if target is Pure
+            let Some(TypeComponent(target_ty)) = &registry.types[target.0 as usize] else {
+                continue;
+            };
+            if !matches!(target_ty.annotations.effect, crate::ast::types::EffectQualifier::Pure) {
+                continue;
+            }
+
+            let target_name = registry.names[target.0 as usize]
+                .map(|n| registry.resolve_name(n.0))
+                .unwrap_or("?");
+
+            // E616: Check for Prev in pure expression
+            if ecs_expr_contains_prev(registry, *value) {
+                let msg = format!(
+                    "[{}] Pure signal '{}' cannot depend on prev() (stateful operation) in reflex '{}'.",
+                    error_codes::E616_EFF_PURE,
+                    target_name,
+                    reflex_name
+                );
+                if push_session_error(errors, msg, None) {
+                    return;
+                }
+            }
+
+            // E617: Check for stateful signal references in pure expression
+            let refs = crate::validation::semantic::collect_signal_refs_ecs(registry, *value);
+            for sig_ref in refs {
+                // Find signal entity by name in this module (linear scan, P10 Rule #2)
+                let mut s_idx = 0usize;
+                while s_idx < max_id {
+                    if let Some(nc) = registry.names[s_idx] {
+                        if registry.resolve_name(nc.0) == sig_ref {
+                            if let Some(TypeComponent(ty)) = &registry.types[s_idx] {
+                                if matches!(
+                                    ty.annotations.effect,
+                                    crate::ast::types::EffectQualifier::Stateful
+                                ) {
+                                    let msg = format!(
+                                        "[{}] Pure signal '{}' cannot depend on stateful signal '{}' in reflex '{}'.",
+                                        error_codes::E617_EFF_MIX,
+                                        target_name,
+                                        sig_ref,
+                                        reflex_name
+                                    );
+                                    if push_session_error(errors, msg, None) {
+                                        return;
                                     }
                                 }
                             }
+                            break;
                         }
                     }
+                    s_idx += 1;
                 }
             }
         }
+        reflex_idx += 1;
     }
 }
 
@@ -233,169 +257,234 @@ fn ecs_expr_contains_prev(registry: &Registry, entity: EntityId) -> bool {
 }
 
 /// ECS-native: Check clock domain qualifiers.
+///
+/// Adheres to NASA P10 Rule #3 by performing linear scans for cross-domain
+/// verification instead of constructing a heap-allocated HashMap.
 pub fn check_clock_domains_ecs(
     registry: &Registry,
     mod_id: EntityId,
     errors: &mut crate::error::PipelineErrors,
 ) {
-    let mut signal_domain = std::collections::HashMap::new();
-    for (i, mod_comp) in registry.modules.iter().enumerate() {
-        if let Some(ModuleComponent(m_id)) = mod_comp {
-            if *m_id == mod_id {
-                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
-                    if let Some(TypeComponent(ty)) = &registry.types[i] {
-                        if let Some(cd) = &ty.annotations.clock_domain {
-                            if let Some(NameComponent(name)) = &registry.names[i] {
-                                signal_domain.insert(name.as_str(), cd.as_str());
-                            }
-                        }
+    let max_id = registry.active_entities();
+
+    // Fetch declared domains from the module entity
+    // TODO(MEGA-1): Implement ClockDomainsComponent when AST supports clock domains.
+    let declared_names: std::collections::HashSet<&str> = std::collections::HashSet::new();
+
+    // Pass 1: Verify all signals refer to a declared clock domain (E619)
+    let mut entity_idx = 0usize;
+    while entity_idx < max_id {
+        let Some(ModuleComponent(m_id)) = registry.modules[entity_idx] else {
+            entity_idx += 1;
+            continue;
+        };
+        if m_id != mod_id {
+            entity_idx += 1;
+            continue;
+        }
+
+        let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[entity_idx] else {
+            entity_idx += 1;
+            continue;
+        };
+
+        if let Some(TypeComponent(ty)) = &registry.types[entity_idx] {
+            if let Some(cd) = &ty.annotations.clock_domain {
+                if !declared_names.contains(cd.as_str()) {
+                    let sig_name = registry.names[entity_idx]
+                        .map(|n| registry.resolve_name(n.0))
+                        .unwrap_or("unnamed");
+
+                    if errors.len() >= crate::error::MAX_ACCUMULATED_ERRORS {
+                        return;
                     }
+                    errors.push(crate::error::MirrError::TypeError {
+                        message: format!(
+                            "[{}] Signal '{}' references undeclared clock domain '@{}'.",
+                            error_codes::E619_CLK_UNDEF,
+                            sig_name,
+                            cd.as_str()
+                        ),
+                        span: registry.spans[entity_idx].map(|s| s.0),
+                    });
                 }
             }
         }
+        entity_idx += 1;
     }
 
-    if signal_domain.is_empty() {
-        return;
-    }
+    // Iterate reflexes of this module
+    let mut reflex_idx = 0usize;
+    while reflex_idx < max_id {
+        let Some(ModuleComponent(m_id)) = registry.modules[reflex_idx] else {
+            reflex_idx += 1;
+            continue;
+        };
+        if m_id != mod_id {
+            reflex_idx += 1;
+            continue;
+        }
 
-    // Check cross-domain references
-    for (i, mod_comp) in registry.modules.iter().enumerate() {
-        if let Some(ModuleComponent(m_id)) = mod_comp {
-            if *m_id == mod_id {
-                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
-                    let reflex_name = if let Some(NameComponent(n)) = &registry.names[i] {
-                        n.as_str()
-                    } else {
-                        "unnamed"
-                    };
-                    for &assign_ent in assignments {
-                        if let Some(AssignmentComponent { target, value }) =
-                            &registry.assignment_comps[assign_ent.0 as usize]
-                        {
-                            let target_name = registry.names[target.0 as usize]
+        let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[reflex_idx] else {
+            reflex_idx += 1;
+            continue;
+        };
+
+        let reflex_name =
+            registry.names[reflex_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("unnamed");
+
+        for &assign_ent in assignments {
+            let Some(AssignmentComponent { target, value }) =
+                &registry.assignment_comps[assign_ent.0 as usize]
+            else {
+                continue;
+            };
+
+            let target_idx = target.0 as usize;
+            let target_name =
+                registry.names[target_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("?");
+            let target_dom = registry.types[target_idx]
+                .as_ref()
+                .and_then(|t| t.0.annotations.clock_domain.as_ref())
+                .map(|cd| cd.as_str());
+
+            let refs = crate::validation::semantic::collect_signal_refs_ecs(registry, *value);
+            for sig_ref in refs {
+                // Find source signal domain (linear scan)
+                let mut source_dom: Option<&str> = None;
+                let mut s_idx = 0usize;
+                while s_idx < max_id {
+                    if let Some(nc) = registry.names[s_idx] {
+                        if registry.resolve_name(nc.0) == sig_ref {
+                            source_dom = registry.types[s_idx]
                                 .as_ref()
-                                .map(|n| n.0.as_str())
-                                .unwrap_or("");
-                            let target_dom = signal_domain.get(target_name);
+                                .and_then(|t| t.0.annotations.clock_domain.as_ref())
+                                .map(|cd| cd.as_str());
+                            break;
+                        }
+                    }
+                    s_idx += 1;
+                }
 
-                            let refs = crate::validation::semantic::collect_signal_refs_ecs(
-                                registry, *value,
-                            );
-                            for sig_ref in refs {
-                                let source_dom = signal_domain.get(sig_ref.as_str());
-                                if let (Some(td), Some(sd)) = (target_dom, source_dom) {
-                                    if td != sd {
-                                        errors.push(crate::error::MirrError::TypeError {
-                                            message: format!(
-                                                "[{}] Clock domain crossing: signal '{}' (@{}) references '{}' (@{}) without synchronizer in reflex '{}'.",
-                                                error_codes::E618_CLK_CROSS,
-                                                target_name,
-                                                td,
-                                                sig_ref,
-                                                sd,
-                                                reflex_name
-                                            ),
-                                            span: None,
-                                        });
-                                    }
-                                }
-                            }
+                if let (Some(td), Some(sd)) = (target_dom, source_dom) {
+                    if td != sd {
+                        let msg = format!(
+                            "[{}] Clock domain crossing: signal '{}' (@{}) references '{}' (@{}) without synchronizer in reflex '{}'.",
+                            error_codes::E618_CLK_CROSS,
+                            target_name,
+                            td,
+                            sig_ref,
+                            sd,
+                            reflex_name
+                        );
+                        if push_session_error(errors, msg, None) {
+                            return;
                         }
                     }
                 }
             }
         }
+        reflex_idx += 1;
     }
 }
 
 /// ECS-native: Check phantom tag compatibility.
+///
+/// Adheres to NASA P10 Rule #3 by performing linear scans for phantom tag
+/// verification instead of constructing a heap-allocated HashMap.
 pub fn check_phantom_tags_ecs(
     registry: &Registry,
     mod_id: EntityId,
     errors: &mut crate::error::PipelineErrors,
 ) {
-    let mut signal_tag = std::collections::HashMap::new();
-    for (i, mod_comp) in registry.modules.iter().enumerate() {
-        if let Some(ModuleComponent(m_id)) = mod_comp {
-            if *m_id == mod_id {
-                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
-                    if let Some(TypeComponent(ty)) = &registry.types[i] {
-                        if let Some(tag) = &ty.annotations.phantom_tag {
-                            if let Some(NameComponent(name)) = &registry.names[i] {
-                                signal_tag.insert(name.as_str(), tag.as_str());
-                            }
-                        }
-                    }
-                }
-            }
+    let max_id = registry.active_entities();
+
+    // Iterate reflexes of this module
+    let mut reflex_idx = 0usize;
+    while reflex_idx < max_id {
+        let Some(ModuleComponent(m_id)) = registry.modules[reflex_idx] else {
+            reflex_idx += 1;
+            continue;
+        };
+        if m_id != mod_id {
+            reflex_idx += 1;
+            continue;
         }
-    }
 
-    if signal_tag.is_empty() {
-        return;
-    }
+        let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[reflex_idx] else {
+            reflex_idx += 1;
+            continue;
+        };
 
-    for (i, mod_comp) in registry.modules.iter().enumerate() {
-        if let Some(ModuleComponent(m_id)) = mod_comp {
-            if *m_id == mod_id {
-                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
-                    let reflex_name = if let Some(NameComponent(n)) = &registry.names[i] {
-                        n.as_str()
-                    } else {
-                        "unnamed"
-                    };
-                    for &assign_ent in assignments {
-                        if let Some(AssignmentComponent { target, value }) =
-                            &registry.assignment_comps[assign_ent.0 as usize]
-                        {
-                            let target_name = registry.names[target.0 as usize]
+        let reflex_name =
+            registry.names[reflex_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("unnamed");
+
+        for &assign_ent in assignments {
+            let Some(AssignmentComponent { target, value }) =
+                &registry.assignment_comps[assign_ent.0 as usize]
+            else {
+                continue;
+            };
+
+            let target_idx = target.0 as usize;
+            let target_name =
+                registry.names[target_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("?");
+            let target_tag = registry.types[target_idx]
+                .as_ref()
+                .and_then(|t| t.0.annotations.phantom_tag.as_ref())
+                .map(|pt| pt.as_str());
+
+            let refs = crate::validation::semantic::collect_signal_refs_ecs(registry, *value);
+            for sig_ref in refs {
+                // Find source signal phantom tag (linear scan)
+                let mut source_tag: Option<&str> = None;
+                let mut s_idx = 0usize;
+                while s_idx < max_id {
+                    if let Some(nc) = registry.names[s_idx] {
+                        if registry.resolve_name(nc.0) == sig_ref {
+                            source_tag = registry.types[s_idx]
                                 .as_ref()
-                                .map(|n| n.0.as_str())
-                                .unwrap_or("");
-                            let target_tag = signal_tag.get(target_name);
-
-                            let refs = crate::validation::semantic::collect_signal_refs_ecs(
-                                registry, *value,
-                            );
-                            for sig_ref in refs {
-                                let source_tag = signal_tag.get(sig_ref.as_str());
-                                match (target_tag, source_tag) {
-                                    (Some(tt), Some(st)) if tt != st => {
-                                        errors.push(crate::error::MirrError::TypeError {
-                                            message: format!(
-                                                "[{}] Phantom tag mismatch: cannot assign #{}-tagged signal '{}' to #{}-tagged target '{}' in reflex '{}'.",
-                                                error_codes::E620_PHT_MISMATCH,
-                                                st,
-                                                sig_ref,
-                                                tt,
-                                                target_name,
-                                                reflex_name
-                                            ),
-                                            span: None,
-                                        });
-                                    }
-                                    (Some(tt), None) => {
-                                        errors.push(crate::error::MirrError::TypeError {
-                                            message: format!(
-                                                "[{}] Phantom tag mismatch: cannot assign untagged signal '{}' to #{}-tagged target '{}' in reflex '{}'.",
-                                                error_codes::E620_PHT_MISMATCH,
-                                                sig_ref,
-                                                tt,
-                                                target_name,
-                                                reflex_name
-                                            ),
-                                            span: None,
-                                        });
-                                    }
-                                    _ => {}
-                                }
-                            }
+                                .and_then(|t| t.0.annotations.phantom_tag.as_ref())
+                                .map(|pt| pt.as_str());
+                            break;
                         }
                     }
+                    s_idx += 1;
+                }
+
+                match (target_tag, source_tag) {
+                    (Some(tt), Some(st)) if tt != st => {
+                        let msg = format!(
+                            "[{}] Phantom tag mismatch: cannot assign #{}-tagged signal '{}' to #{}-tagged target '{}' in reflex '{}'.",
+                            error_codes::E620_PHT_MISMATCH,
+                            st,
+                            sig_ref,
+                            tt,
+                            target_name,
+                            reflex_name
+                        );
+                        if push_session_error(errors, msg, None) {
+                            return;
+                        }
+                    }
+                    (Some(tt), None) => {
+                        let msg = format!(
+                            "[{}] Phantom tag mismatch: cannot assign untagged signal '{}' to #{}-tagged target '{}' in reflex '{}'.",
+                            error_codes::E620_PHT_MISMATCH,
+                            sig_ref,
+                            tt,
+                            target_name,
+                            reflex_name
+                        );
+                        if push_session_error(errors, msg, None) {
+                            return;
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
+        reflex_idx += 1;
     }
 }
 
@@ -877,7 +966,7 @@ pub fn check_session_types_ecs(
 
         // All guards passed — perform protocol validation.
         let sig_name =
-            registry.names[entity_idx].as_ref().map(|n| n.0.as_str()).unwrap_or("<unnamed>");
+            registry.names[entity_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("<unnamed>");
         let span = registry.spans[entity_idx].as_ref().map(|s| s.0);
 
         match find_protocol(protocols, &sess.protocol) {

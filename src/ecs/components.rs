@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 use crate::ast::types::{BinaryOp, ExtendedType, LiteralValue, UnaryOp};
+use crate::ecs::intern::InternId;
 use serde::{Deserialize, Serialize};
 
 /// The Entity ID: The fundamental atom of the ECS compiler.
@@ -8,9 +9,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct EntityId(pub u32);
 
-/// Component: Signal Name
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NameComponent(pub String);
+/// Component: Signal Name (interned).
+///
+/// Holds an [`InternId`] into the owning Registry's [`StringInterner`].
+/// Name comparisons are `u32 == u32` — no heap allocation at compare time.
+/// Resolve the string with `registry.interner.resolve(name_component.0)`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NameComponent(pub InternId);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EntityKind {
@@ -66,7 +71,7 @@ impl TypeComponent {
 }
 
 /// Component: Parent Module ID
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ModuleComponent(pub EntityId);
 
 /// Component: Namespace Scope from imports (e.g. `isa` from `import "isa_map.mirr" as isa`)
@@ -78,41 +83,41 @@ pub struct ModuleScopeComponent(pub String);
 pub struct PatternDefComponent(pub crate::ast::pattern::PatternDef);
 
 /// Component: Temporal Cycle Count (for Guards)
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CyclesComponent(pub u64);
 
 /// Component: Reference to a Guard condition expression
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ConditionComponent(pub EntityId);
 
 // --- Expression Components (Flat Representation) ---
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LiteralComponent(pub LiteralValue);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UnaryComponent {
     pub op: UnaryOp,
     pub operand: EntityId,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BinaryComponent {
     pub op: BinaryOp,
     pub left: EntityId,
     pub right: EntityId,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+/// Component: Reference to a Signal's previous value
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PrevComponent {
     pub signal: EntityId,
     pub delay: u64,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SignalRefComponent(pub EntityId);
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PendingSignalRef(pub String);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -156,14 +161,14 @@ pub struct SpanComponent(pub crate::span::Span);
 pub struct VectorComponent(pub Vec<f32>);
 
 /// Component: Reflex (Logic that reacts to guards)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ReflexComponent {
     pub guards: Vec<EntityId>,
     pub assignments: Vec<EntityId>,
 }
 
-/// Component: Assignment within a reflex
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+/// Component: Assignment (Target signal = Expression)
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AssignmentComponent {
     pub target: EntityId,
     pub value: EntityId,

@@ -3,6 +3,7 @@
 use crate::ast::program::{Guard, Module};
 use crate::ast::{BinaryOp, Expr, UnaryOp};
 use crate::ecs::components::*;
+use crate::ecs::intern::{InternId, StringInterner};
 use crate::error::MirrError;
 use std::collections::HashMap;
 
@@ -19,13 +20,58 @@ pub const MAX_ENTITIES: usize = 1_000_000;
 
 use serde::{Deserialize, Serialize};
 
+// --- Bitmask Constants ---
+// --- Bitmask Constants ---
+pub const COMP_NAME: u64 = 1 << 0;
+pub const COMP_KIND: u64 = 1 << 1;
+pub const COMP_TYPE: u64 = 1 << 2;
+pub const COMP_SPAN: u64 = 1 << 3;
+pub const COMP_MODULE: u64 = 1 << 4;
+pub const COMP_PATTERN_DEF: u64 = 1 << 5;
+pub const COMP_CYCLES: u64 = 1 << 6;
+pub const COMP_CONDITION: u64 = 1 << 7;
+pub const COMP_LITERAL: u64 = 1 << 8;
+pub const COMP_UNARY_OP: u64 = 1 << 9;
+pub const COMP_BINARY_OP: u64 = 1 << 10;
+pub const COMP_PREV_OP: u64 = 1 << 11;
+pub const COMP_SIGNAL_REF: u64 = 1 << 12;
+pub const COMP_PENDING_SIGNAL_REF: u64 = 1 << 13;
+pub const COMP_ARRAY_INDEX: u64 = 1 << 14;
+pub const COMP_FIELD_ACCESS: u64 = 1 << 15;
+pub const COMP_ARRAY_LITERAL: u64 = 1 << 16;
+pub const COMP_STRUCT_LITERAL: u64 = 1 << 17;
+pub const COMP_UNFOLD_INDEX: u64 = 1 << 18;
+pub const COMP_MUX: u64 = 1 << 19;
+pub const COMP_WIDTH_CONSTRAINT: u64 = 1 << 20;
+pub const COMP_VECTOR: u64 = 1 << 21;
+pub const COMP_CHUNK_TEXT: u64 = 1 << 22;
+pub const COMP_SOURCE_PATH: u64 = 1 << 23;
+pub const COMP_LINE_RANGE: u64 = 1 << 24;
+pub const COMP_OPCODE: u64 = 1 << 25;
+pub const COMP_INSTRUCTION_TABLE: u64 = 1 << 26;
+pub const COMP_REFLEX: u64 = 1 << 27;
+pub const COMP_ASSIGNMENT: u64 = 1 << 28;
+pub const COMP_PROPERTY: u64 = 1 << 29;
+pub const COMP_TEMPORAL_NODE: u64 = 1 << 30;
+pub const COMP_HLS_DATAFLOW: u64 = 1 << 31;
+pub const COMP_HLS_SCHEDULE: u64 = 1 << 32;
+pub const COMP_HLS_BINDING: u64 = 1 << 33;
+
 /// The Registry: The Data-Oriented "World" of the MIRR Compiler.
 /// Refactored to Vec-based storage for O(1) access and cache locality.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Registry {
     pub(super) next_id: u32,
 
+    /// String interner — maps names to compact [`InternId`] handles.
+    ///
+    /// All `NameComponent` values are `InternId`s into this table.
+    /// Resolve with `self.interner.resolve(id)`.
+    /// Bounded: max [`crate::ecs::intern::MAX_INTERN_ENTRIES`] unique strings.
+    pub interner: StringInterner,
+
     // --- Component Arrays (Dense SoA) ---
+    pub component_masks: Vec<u64>,
     pub names: Vec<Option<NameComponent>>,
     pub kinds: Vec<Option<KindComponent>>,
     pub types: Vec<Option<TypeComponent>>,
@@ -102,8 +148,10 @@ impl Registry {
         let cap = MAX_ENTITIES / 10; // Start with 100k capacity
         Registry {
             next_id: 0,
+            interner: StringInterner::new(),
 
             // --- Component Arrays (Dense SoA) ---
+            component_masks: vec![0; cap],
             names: vec![None; cap],
             kinds: vec![None; cap],
             types: vec![None; cap],
@@ -158,6 +206,7 @@ impl Registry {
         let idx = id.0 as usize;
         if idx >= self.names.len() {
             let new_cap = (idx + 1024).min(MAX_ENTITIES);
+            self.component_masks.resize(new_cap, 0);
             self.names.resize(new_cap, None);
             self.kinds.resize(new_cap, None);
             self.types.resize(new_cap, None);
@@ -202,6 +251,256 @@ impl Registry {
         self.next_id as usize
     }
 
+    /// Returns an iterator over all EntityIds that possess ALL components specified in the mask.
+    pub fn entities_with_components(&self, mask: u64) -> impl Iterator<Item = EntityId> + '_ {
+        self.component_masks
+            .iter()
+            .enumerate()
+            .take(self.active_entities())
+            .filter_map(move |(i, &entity_mask)| {
+                if entity_mask & mask == mask {
+                    Some(EntityId(i as u32))
+                } else {
+                    None
+                }
+            })
+    }
+
+// --- Component Setters ---
+#[inline]
+    pub fn set_name(&mut self, entity: EntityId, comp: NameComponent) {
+        let idx = entity.0 as usize;
+        self.names[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_NAME;
+    }
+    #[inline]
+    pub fn unset_name(&mut self, entity: EntityId) {
+        let idx = entity.0 as usize;
+        self.names[idx] = None;
+        self.component_masks[idx] &= !COMP_NAME;
+    }
+
+    #[inline]
+    pub fn set_kind(&mut self, entity: EntityId, comp: KindComponent) {
+        let idx = entity.0 as usize;
+        self.kinds[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_KIND;
+    }
+    #[inline]
+    pub fn set_type(&mut self, entity: EntityId, comp: TypeComponent) {
+        let idx = entity.0 as usize;
+        self.types[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_TYPE;
+    }
+    #[inline]
+    pub fn set_span(&mut self, entity: EntityId, comp: SpanComponent) {
+        let idx = entity.0 as usize;
+        self.spans[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_SPAN;
+    }
+    #[inline]
+    pub fn set_module(&mut self, entity: EntityId, comp: ModuleComponent) {
+        let idx = entity.0 as usize;
+        self.modules[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_MODULE;
+    }
+    #[inline]
+    pub fn set_pattern_def(&mut self, entity: EntityId, comp: PatternDefComponent) {
+        let idx = entity.0 as usize;
+        self.pattern_defs[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_PATTERN_DEF;
+    }
+    #[inline]
+    pub fn set_cycle(&mut self, entity: EntityId, comp: CyclesComponent) {
+        let idx = entity.0 as usize;
+        self.cycles[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_CYCLES;
+    }
+    #[inline]
+    pub fn set_condition(&mut self, entity: EntityId, comp: ConditionComponent) {
+        let idx = entity.0 as usize;
+        self.conditions[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_CONDITION;
+    }
+    #[inline]
+    pub fn set_literal(&mut self, entity: EntityId, comp: LiteralComponent) {
+        let idx = entity.0 as usize;
+        self.literals[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_LITERAL;
+    }
+    #[inline]
+    pub fn set_unary_op(&mut self, entity: EntityId, comp: UnaryComponent) {
+        let idx = entity.0 as usize;
+        self.unary_ops[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_UNARY_OP;
+    }
+    #[inline]
+    pub fn unset_unary_op(&mut self, entity: EntityId) {
+        let idx = entity.0 as usize;
+        self.unary_ops[idx] = None;
+        self.component_masks[idx] &= !COMP_UNARY_OP;
+    }
+
+    #[inline]
+    pub fn set_binary_op(&mut self, entity: EntityId, comp: BinaryComponent) {
+        let idx = entity.0 as usize;
+        self.binary_ops[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_BINARY_OP;
+    }
+    #[inline]
+    pub fn unset_binary_op(&mut self, entity: EntityId) {
+        let idx = entity.0 as usize;
+        self.binary_ops[idx] = None;
+        self.component_masks[idx] &= !COMP_BINARY_OP;
+    }
+
+    #[inline]
+    pub fn set_prev_op(&mut self, entity: EntityId, comp: PrevComponent) {
+        let idx = entity.0 as usize;
+        self.prev_ops[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_PREV_OP;
+    }
+    #[inline]
+    pub fn set_signal_ref(&mut self, entity: EntityId, comp: SignalRefComponent) {
+        let idx = entity.0 as usize;
+        self.signal_refs[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_SIGNAL_REF;
+    }
+    #[inline]
+    pub fn set_pending_signal_ref(&mut self, entity: EntityId, comp: PendingSignalRef) {
+        let idx = entity.0 as usize;
+        self.pending_signal_refs[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_PENDING_SIGNAL_REF;
+    }
+    #[inline]
+    pub fn set_array_index(&mut self, entity: EntityId, comp: ArrayIndexComponent) {
+        let idx = entity.0 as usize;
+        self.array_indices[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_ARRAY_INDEX;
+    }
+    #[inline]
+    pub fn set_field_access(&mut self, entity: EntityId, comp: FieldAccessComponent) {
+        let idx = entity.0 as usize;
+        self.field_accesses[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_FIELD_ACCESS;
+    }
+    #[inline]
+    pub fn set_array_literal(&mut self, entity: EntityId, comp: ArrayLiteralComponent) {
+        let idx = entity.0 as usize;
+        self.array_literals[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_ARRAY_LITERAL;
+    }
+    #[inline]
+    pub fn set_struct_literal(&mut self, entity: EntityId, comp: StructLiteralComponent) {
+        let idx = entity.0 as usize;
+        self.struct_literals[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_STRUCT_LITERAL;
+    }
+    #[inline]
+    pub fn set_unfold_index(&mut self, entity: EntityId, comp: UnfoldIndexComponent) {
+        let idx = entity.0 as usize;
+        self.unfold_indices[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_UNFOLD_INDEX;
+    }
+    #[inline]
+    pub fn set_mux(&mut self, entity: EntityId, comp: MuxComponent) {
+        let idx = entity.0 as usize;
+        self.muxes[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_MUX;
+    }
+    #[inline]
+    pub fn unset_mux(&mut self, entity: EntityId) {
+        let idx = entity.0 as usize;
+        self.muxes[idx] = None;
+        self.component_masks[idx] &= !COMP_MUX;
+    }
+
+    #[inline]
+    pub fn set_width_constraint(&mut self, entity: EntityId, comp: WidthConstraintComponent) {
+        let idx = entity.0 as usize;
+        self.width_constraints[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_WIDTH_CONSTRAINT;
+    }
+    #[inline]
+    pub fn set_vector(&mut self, entity: EntityId, comp: VectorComponent) {
+        let idx = entity.0 as usize;
+        self.vectors[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_VECTOR;
+    }
+    #[inline]
+    pub fn set_chunk_text(&mut self, entity: EntityId, comp: ChunkTextComponent) {
+        let idx = entity.0 as usize;
+        self.chunk_texts[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_CHUNK_TEXT;
+    }
+    #[inline]
+    pub fn set_source_path(&mut self, entity: EntityId, comp: SourcePathComponent) {
+        let idx = entity.0 as usize;
+        self.source_paths[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_SOURCE_PATH;
+    }
+    #[inline]
+    pub fn set_line_range(&mut self, entity: EntityId, comp: LineRangeComponent) {
+        let idx = entity.0 as usize;
+        self.line_ranges[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_LINE_RANGE;
+    }
+    #[inline]
+    pub fn set_opcode(&mut self, entity: EntityId, comp: OpcodeComponent) {
+        let idx = entity.0 as usize;
+        self.opcodes[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_OPCODE;
+    }
+    #[inline]
+    pub fn set_instruction_table(&mut self, entity: EntityId, comp: InstructionTableComponent) {
+        let idx = entity.0 as usize;
+        self.instruction_tables[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_INSTRUCTION_TABLE;
+    }
+    #[inline]
+    pub fn set_reflex(&mut self, entity: EntityId, comp: ReflexComponent) {
+        let idx = entity.0 as usize;
+        self.reflex_comps[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_REFLEX;
+    }
+    #[inline]
+    pub fn set_assignment(&mut self, entity: EntityId, comp: AssignmentComponent) {
+        let idx = entity.0 as usize;
+        self.assignment_comps[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_ASSIGNMENT;
+    }
+    #[inline]
+    pub fn set_property(&mut self, entity: EntityId, comp: PropertyComponent) {
+        let idx = entity.0 as usize;
+        self.property_comps[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_PROPERTY;
+    }
+    #[inline]
+    pub fn set_temporal_node(&mut self, entity: EntityId, comp: TemporalNodeComponent) {
+        let idx = entity.0 as usize;
+        self.temporal_nodes[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_TEMPORAL_NODE;
+    }
+    #[inline]
+    pub fn set_hls_dataflow(&mut self, entity: EntityId, comp: HlsDataflowComponent) {
+        let idx = entity.0 as usize;
+        self.hls_dataflow[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_HLS_DATAFLOW;
+    }
+    #[inline]
+    pub fn set_hls_schedule(&mut self, entity: EntityId, comp: HlsScheduleComponent) {
+        let idx = entity.0 as usize;
+        self.hls_schedules[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_HLS_SCHEDULE;
+    }
+    #[inline]
+    pub fn set_hls_binding(&mut self, entity: EntityId, comp: HlsBindingComponent) {
+        let idx = entity.0 as usize;
+        self.hls_bindings[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_HLS_BINDING;
+    }
+
+
     /// Create a new Knowledge Base Chunk Entity
     pub fn create_kb_chunk(
         &mut self,
@@ -215,7 +514,7 @@ impl Registry {
         let idx = id.0 as usize;
 
         self.symbol_to_entity.insert(id_str.clone(), id);
-        self.names[idx] = Some(NameComponent(id_str));
+        self.names[idx] = Some(NameComponent(self.interner.intern(&id_str)));
         self.chunk_texts[idx] = Some(ChunkTextComponent(text));
         self.source_paths[idx] = Some(SourcePathComponent(source));
         self.line_ranges[idx] = Some(LineRangeComponent(range));
@@ -227,24 +526,51 @@ impl Registry {
         id
     }
 
-    /// Safely create a new entity.
     pub fn create_entity(&mut self, name: &str, kind: KindComponent) -> EntityId {
         let id = self.next_id();
-        let idx = id.0 as usize;
-        self.names[idx] = Some(NameComponent(name.to_string()));
-        self.kinds[idx] = Some(kind);
+        let name_id = self.interner.intern(name);
+        self.set_name(id, NameComponent(name_id));
+        self.set_kind(id, kind);
         self.symbol_to_entity.insert(name.to_string(), id);
         id
     }
 
-    /// Safely set type for an entity.
-    pub fn set_type(&mut self, entity: EntityId, ty: TypeComponent) {
-        self.types[entity.0 as usize] = Some(ty);
+    /// Safely set type for an entity (Delegated to ECS bitmask setter).
+    pub fn set_legacy_type(&mut self, entity: EntityId, ty: TypeComponent) {
+        self.set_type(entity, ty);
     }
 
     /// Safely set parent for an entity.
     pub fn set_parent(&mut self, entity: EntityId, parent: EntityId) {
-        self.modules[entity.0 as usize] = Some(ModuleComponent(parent));
+        self.set_module(entity, ModuleComponent(parent));
+    }
+
+    /// Resolve a [`NameComponent`]'s interned id to a `&str`.
+    ///
+    /// This is the canonical read API for entity names. O(1).
+    /// Returns `"<invalid>"` for sentinel ids (P10 Rule #5 — no panics).
+    ///
+    /// # Example
+    /// ```ignore
+    /// if let Some(nc) = registry.names[idx] {
+    ///     let name = registry.resolve_name(nc.0);
+    /// }
+    /// ```
+    #[inline]
+    pub fn resolve_name(&self, id: InternId) -> &str {
+        self.interner.resolve(id)
+    }
+
+    /// Convenience: get the name string for an `EntityId`, or `"<unnamed>"`.
+    ///
+    /// Used by emitters and diagnostics that need the name of an arbitrary entity.
+    #[inline]
+    pub fn get_entity_name(&self, entity: EntityId) -> &str {
+        let idx = entity.0 as usize;
+        match self.names.get(idx).and_then(|n| n.as_ref()) {
+            Some(nc) => self.interner.resolve(nc.0),
+            None => "<unnamed>",
+        }
     }
 
     pub fn ingest_program(
@@ -258,7 +584,7 @@ impl Registry {
     pub fn ingest_module(&mut self, module: &Module) -> Result<EntityId, MirrError> {
         let mod_id = self.next_id();
         let idx = mod_id.0 as usize;
-        self.names[idx] = Some(NameComponent(module.name.clone()));
+        self.names[idx] = Some(NameComponent(self.interner.intern(&module.name)));
         self.kinds[idx] = Some(KindComponent(EntityKind::MODULE));
         self.spans[idx] = module.span.map(crate::ecs::components::SpanComponent);
 
@@ -279,8 +605,8 @@ impl Registry {
     pub fn get_module_name(&self) -> Option<String> {
         for (i, kind_comp) in self.kinds.iter().enumerate() {
             if let Some(KindComponent(EntityKind::MODULE)) = kind_comp {
-                if let Some(name_comp) = &self.names[i] {
-                    return Some(name_comp.0.clone());
+                if let Some(name_comp) = self.names[i] {
+                    return Some(self.interner.resolve(name_comp.0).to_string());
                 }
             }
         }
@@ -337,7 +663,7 @@ impl Registry {
             self.symbol_to_entity.insert(guard.name.clone(), guard_id);
             self.symbol_to_entity.insert(format!("{}::{}", mod_name, guard.name), guard_id);
 
-            self.names[g_idx] = Some(NameComponent(guard.name.clone()));
+            self.names[g_idx] = Some(NameComponent(self.interner.intern(&guard.name)));
             self.kinds[g_idx] = Some(KindComponent(EntityKind::GUARD));
             self.conditions[g_idx] = Some(ConditionComponent(cond_entity));
             self.cycles[g_idx] = Some(CyclesComponent(guard.cycles));
@@ -401,7 +727,8 @@ impl Registry {
 
                 let assign_ent = self.next_id();
                 let assign_idx = assign_ent.0 as usize;
-                self.names[assign_idx] = Some(NameComponent(format!("_assign_{}", assign_ent.0)));
+                let assign_name = format!("_assign_{}", assign_ent.0);
+                self.names[assign_idx] = Some(NameComponent(self.interner.intern(&assign_name)));
                 self.kinds[assign_idx] = Some(KindComponent(EntityKind::ASSIGNMENT));
                 self.assignment_comps[assign_idx] =
                     Some(AssignmentComponent { target: target_ent, value: val_ent });
@@ -418,7 +745,7 @@ impl Registry {
             self.symbol_to_entity.insert(reflex.name.clone(), reflex_ent);
             self.symbol_to_entity.insert(format!("{}::{}", _mod_name, reflex.name), reflex_ent);
 
-            self.names[r_idx] = Some(NameComponent(reflex.name.clone()));
+            self.names[r_idx] = Some(NameComponent(self.interner.intern(&reflex.name)));
             self.kinds[r_idx] = Some(KindComponent(EntityKind::REFLEX));
             self.reflex_comps[r_idx] =
                 Some(ReflexComponent { guards: guard_entities, assignments: assignment_entities });
@@ -449,7 +776,7 @@ impl Registry {
             self.symbol_to_entity.insert(prop.name.clone(), prop_ent);
             self.symbol_to_entity.insert(format!("{}::{}", mod_name, prop.name), prop_ent);
 
-            self.names[p_idx] = Some(NameComponent(prop.name.clone()));
+            self.names[p_idx] = Some(NameComponent(self.interner.intern(&prop.name)));
             self.kinds[p_idx] = Some(KindComponent(EntityKind::PROPERTY));
             self.property_comps[p_idx] = Some(PropertyComponent {
                 directive: prop.directive,
@@ -708,9 +1035,11 @@ impl Registry {
                         memo.insert(id, res.clone());
                         results.push(res);
                     } else if let Some(SignalRefComponent(sig_ent)) = self.signal_refs[idx] {
-                        let sig_name = self.names[sig_ent.0 as usize]
-                            .as_ref()
-                            .map(|n| n.0.clone())
+                        let sig_name = self
+                            .names
+                            .get(sig_ent.0 as usize)
+                            .and_then(|n| *n)
+                            .map(|nc| self.resolve_name(nc.0).to_string())
                             .ok_or_else(|| {
                                 MirrError::InternalError(
                                     "Signal reference to unnamed entity".to_string(),
@@ -735,7 +1064,10 @@ impl Registry {
                         let sig_name = if let Some(SignalRefComponent(decl)) =
                             self.signal_refs[signal.0 as usize]
                         {
-                            self.names[decl.0 as usize].as_ref().map(|n| n.0.clone())
+                            self.names
+                                .get(decl.0 as usize)
+                                .and_then(|n| *n)
+                                .map(|nc| self.resolve_name(nc.0).to_string())
                         } else if let Some(PendingSignalRef(n)) =
                             &self.pending_signal_refs[signal.0 as usize]
                         {
@@ -862,7 +1194,7 @@ impl Registry {
         let id = self.next_id();
         let idx = id.0 as usize;
         self.symbol_to_entity.insert(name.clone(), id);
-        self.names[idx] = Some(NameComponent(name));
+        self.names[idx] = Some(NameComponent(self.interner.intern(&name)));
         self.kinds[idx] = Some(kind);
         self.types[idx] = Some(ty);
         id
@@ -878,6 +1210,10 @@ impl Registry {
     /// Primarily used by tests and pattern expansion.
     pub fn register_symbol(&mut self, symbol: &str, entity: EntityId) {
         self.symbol_to_entity.insert(symbol.to_string(), entity);
+    }
+
+    pub fn get_symbol_table(&self) -> &HashMap<String, EntityId> {
+        &self.symbol_to_entity
     }
 
     #[cfg(not(target_arch = "wasm32"))]
