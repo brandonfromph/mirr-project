@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! Expression and pattern-call parsing from S-expressions.
 
 #![forbid(unsafe_code)]

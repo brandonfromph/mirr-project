@@ -1,124 +1,58 @@
 //! ARCHITECTURAL SUB-ENGINE: S-EXPRESSION TRANSPILER
 //!
-//! Converts the MIRR AST into a homoiconic S-expression representation.
-//! This engine serves as the primary bridge for formal verification,
-//! enabling MIRR programs to be consumed by external automated theorem
-//! provers (like Z3 or Rocq) for proving safety invariants.
-//!
-//! NASA Power-of-10: conversion depth bounded by MAX_CONVERT_DEPTH.
+//! Converts the MIRR ECS Registry into a homoiconic S-expression representation.
+//! This engine serves as the primary bridge for formal verification.
 
 #![forbid(unsafe_code)]
 
-use crate::ast::expr::Expr;
-use crate::ast::macro_nodes::{ModuleMacroStmt, ReflexMacroStmt};
-use crate::ast::pattern::{
-    PatternArg, PatternCall, PatternDef, PatternOrigin, PatternParam, PatternParamKind,
-};
-use crate::ast::program::{Guard, MirrProgram, Module, Reflex, SignalDecl};
-use crate::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
+use crate::ast::pattern::{PatternArg, PatternDef, PatternParam, PatternParamKind};
+use crate::ast::property::{PropertyDirective, PropertyFormula};
 use crate::ast::types::{
     BinaryOp, EffectQualifier, Linearity, LiteralValue, Refinement, SignalKind, SignalType,
     TypeAnnotations, UnaryOp,
 };
+use crate::ecs::components::EntityKind;
+use crate::ecs::{EntityId, Registry};
 use crate::sexpr::types::SExpr;
 
-use super::MAX_CONVERT_DEPTH;
-
-pub fn ast_to_sexpr(program: &MirrProgram) -> SExpr {
+pub fn registry_to_sexpr(registry: &Registry, module_entity: EntityId) -> SExpr {
     SExpr::list(vec![
         SExpr::sym("program"),
-        convert_patterns(&program.patterns),
-        convert_module(&program.module),
+        convert_patterns(registry, module_entity),
+        convert_module(registry, module_entity),
     ])
 }
 
-fn convert_patterns(patterns: &[PatternDef]) -> SExpr {
+fn convert_patterns(registry: &Registry, _module_entity: EntityId) -> SExpr {
     let mut items = vec![SExpr::sym("patterns")];
-    for p in patterns {
-        items.push(convert_pattern_def(p));
+    for (idx, kind_opt) in registry.kinds.iter().enumerate() {
+        if let Some(kind) = kind_opt {
+            if std::mem::discriminant(&kind.0) == std::mem::discriminant(&EntityKind::PATTERN) {
+                if let Some(def_comp) = registry.pattern_defs[idx].as_ref() {
+                    items.push(convert_pattern_def(&def_comp.0));
+                }
+            }
+        }
     }
     SExpr::list(items)
 }
 
 fn convert_pattern_def(p: &PatternDef) -> SExpr {
     let mut items = vec![SExpr::sym("pattern-def"), SExpr::str_val(&p.name)];
-    // Params
     let mut param_items = vec![SExpr::sym("params")];
     for param in &p.params {
         param_items.push(convert_pattern_param(param));
     }
     items.push(SExpr::list(param_items));
 
-    // Reflect body
-    let mut signals = Vec::new();
-    let mut guards = Vec::new();
-    let mut reflexes = Vec::new();
-    let mut properties = Vec::new();
-    let mut pattern_calls = Vec::new();
-
-    for stmt in &p.body.statements {
-        match stmt {
-            ModuleMacroStmt::Signal(s) => signals.push(s.clone()),
-            ModuleMacroStmt::Guard(g) => guards.push(g.clone()),
-            ModuleMacroStmt::Reflex(r) => {
-                // Convert UnexpandedReflex to Reflex (flat-ish for legacy S-Expr)
-                reflexes.push(Reflex {
-                    name: r.name.clone(),
-                    guard_names: r.guard_names.clone(),
-                    assignments: r
-                        .statements
-                        .iter()
-                        .filter_map(|s| match s {
-                            ReflexMacroStmt::Assignment(a) => Some(a.clone()),
-                            _ => None,
-                        })
-                        .collect(),
-                    origin: None,
-                    span: r.span,
-                });
-            }
-            ModuleMacroStmt::Property(p) => properties.push(p.clone()),
-            ModuleMacroStmt::PatternCall(c) => pattern_calls.push(c.clone()),
-            _ => {}
-        }
-    }
-
-    let mut reflect_items = vec![SExpr::sym("reflect")];
-    reflect_items.push(convert_signals(&signals));
-    reflect_items.push(convert_guards(&guards));
-    reflect_items.push(convert_reflexes(&reflexes));
-    reflect_items.push(convert_properties(&properties));
-    reflect_items.push(convert_pattern_calls(&pattern_calls));
-
-    // Emit generative nodes inside the reflect block so they can be expanded
-    for stmt in &p.body.statements {
-        match stmt {
-            ModuleMacroStmt::ForLoop { var, start, end, body } => {
-                let body_items: Vec<SExpr> = body.iter().map(convert_module_macro_stmt).collect();
-                let for_gen = SExpr::list(vec![
-                    SExpr::sym("for-generate"),
-                    SExpr::str_val(var),
-                    SExpr::int(*start as u64),
-                    SExpr::int(*end as u64),
-                    SExpr::list(body_items),
-                ]);
-                reflect_items.push(for_gen);
-            }
-            ModuleMacroStmt::LetBinding { name, ty, value } => {
-                let let_node = SExpr::list(vec![
-                    SExpr::sym("let-bind"),
-                    SExpr::str_val(name),
-                    SExpr::str_val(ty),
-                    convert_expr(value),
-                ]);
-                reflect_items.push(let_node);
-            }
-            _ => {}
-        }
-    }
-
-    items.push(SExpr::list(reflect_items));
-
+    items.push(SExpr::list(vec![
+        SExpr::sym("reflect"),
+        SExpr::list(vec![SExpr::sym("signals")]),
+        SExpr::list(vec![SExpr::sym("guards")]),
+        SExpr::list(vec![SExpr::sym("reflexes")]),
+        SExpr::list(vec![SExpr::sym("properties")]),
+        SExpr::list(vec![SExpr::sym("pattern-calls")]),
+    ]));
     SExpr::list(items)
 }
 
@@ -147,34 +81,276 @@ fn convert_pattern_param(param: &PatternParam) -> SExpr {
     SExpr::list(items)
 }
 
-fn convert_module(module: &Module) -> SExpr {
+fn convert_module(registry: &Registry, module_entity: EntityId) -> SExpr {
+    let name = registry.get_entity_name(module_entity).to_string();
+
     SExpr::list(vec![
         SExpr::sym("module"),
-        SExpr::str_val(&module.name),
-        convert_signals(&module.signals),
-        convert_guards(&module.guards),
-        convert_reflexes(&module.reflexes),
-        convert_properties(&module.properties),
-        convert_pattern_calls(&module.pattern_calls),
-        convert_pattern_origins(&module.pattern_origins),
+        SExpr::str_val(&name),
+        convert_signals(registry, module_entity),
+        convert_guards(registry, module_entity),
+        convert_reflexes(registry, module_entity),
+        convert_properties(registry, module_entity),
+        convert_pattern_calls(registry, module_entity),
+        convert_pattern_origins(registry, module_entity),
     ])
 }
 
-fn convert_signals(signals: &[SignalDecl]) -> SExpr {
-    let mut items = vec![SExpr::sym("signals")];
-    for s in signals {
-        let mut sig = vec![
-            SExpr::sym("signal"),
-            SExpr::str_val(&s.name),
-            convert_signal_kind(s.kind),
-            convert_signal_type(s.ty.core.clone()),
-        ];
-        if !s.ty.annotations.is_default() {
-            sig.push(convert_annotations(&s.ty.annotations));
+fn get_children_discriminant(
+    registry: &Registry,
+    parent: EntityId,
+    kind_disc: std::mem::Discriminant<EntityKind>,
+) -> Vec<EntityId> {
+    let mut children = Vec::new();
+    for i in 0..registry.active_entities() {
+        if let (Some(m), Some(k)) = (registry.modules[i].as_ref(), registry.kinds[i].as_ref()) {
+            if m.0 == parent && std::mem::discriminant(&k.0) == kind_disc {
+                children.push(EntityId(i as u32));
+            }
         }
-        items.push(SExpr::list(sig));
+    }
+    children
+}
+
+fn convert_signals(registry: &Registry, module_entity: EntityId) -> SExpr {
+    let mut items = vec![SExpr::sym("signals")];
+    for s in get_children_discriminant(
+        registry,
+        module_entity,
+        std::mem::discriminant(&EntityKind::SIGNAL(SignalKind::Input)),
+    ) {
+        let name = registry.get_entity_name(s).to_string();
+        if let (Some(ty_comp), Some(kind_comp)) =
+            (registry.types[s.0 as usize].as_ref(), registry.kinds[s.0 as usize].as_ref())
+        {
+            if let EntityKind::SIGNAL(sig_kind) = &kind_comp.0 {
+                let kind_sexpr = match sig_kind {
+                    SignalKind::Input => SExpr::sym("input"),
+                    SignalKind::Output => SExpr::sym("output"),
+                    SignalKind::Internal => SExpr::sym("internal"),
+                };
+                let mut sig = vec![
+                    SExpr::sym("signal"),
+                    SExpr::str_val(&name),
+                    kind_sexpr,
+                    convert_signal_type(ty_comp.0.core.clone()),
+                ];
+                if !ty_comp.0.annotations.is_default() {
+                    sig.push(convert_annotations(&ty_comp.0.annotations));
+                }
+                items.push(SExpr::list(sig));
+            }
+        }
     }
     SExpr::list(items)
+}
+
+fn convert_guards(registry: &Registry, module_entity: EntityId) -> SExpr {
+    let mut items = vec![SExpr::sym("guards")];
+    for g in get_children_discriminant(
+        registry,
+        module_entity,
+        std::mem::discriminant(&EntityKind::GUARD),
+    ) {
+        let name = registry.get_entity_name(g).to_string();
+        if let Some(cond) = registry.conditions[g.0 as usize].as_ref() {
+            let mut g_list = vec![
+                SExpr::sym("guard"),
+                SExpr::str_val(&name),
+                convert_expr_ecs(registry, cond.0),
+            ];
+            let cycles = registry.cycles[g.0 as usize].as_ref().map(|c| c.0).unwrap_or(1);
+            g_list.push(SExpr::int(cycles));
+            items.push(SExpr::list(g_list));
+        }
+    }
+    SExpr::list(items)
+}
+
+fn convert_reflexes(registry: &Registry, module_entity: EntityId) -> SExpr {
+    let mut items = vec![SExpr::sym("reflexes")];
+    for r in get_children_discriminant(
+        registry,
+        module_entity,
+        std::mem::discriminant(&EntityKind::REFLEX),
+    ) {
+        let name = registry.get_entity_name(r).to_string();
+        if let Some(reflex) = registry.reflex_comps[r.0 as usize].as_ref() {
+            let mut reflex_items = vec![SExpr::sym("reflex"), SExpr::str_val(&name)];
+            let mut on_items = vec![SExpr::sym("on")];
+            for g in &reflex.guards {
+                let g_name = registry.get_entity_name(*g).to_string();
+                on_items.push(SExpr::str_val(&g_name));
+            }
+            reflex_items.push(SExpr::list(on_items));
+
+            for a in &reflex.assignments {
+                if let Some(assign) = registry.assignment_comps[a.0 as usize].as_ref() {
+                    let target_name = registry.get_entity_name(assign.target).to_string();
+                    reflex_items.push(SExpr::list(vec![
+                        SExpr::sym("assign"),
+                        SExpr::str_val(&target_name),
+                        convert_expr_ecs(registry, assign.value),
+                    ]));
+                }
+            }
+            items.push(SExpr::list(reflex_items));
+        }
+    }
+    SExpr::list(items)
+}
+
+fn convert_properties(registry: &Registry, module_entity: EntityId) -> SExpr {
+    let mut items = vec![SExpr::sym("properties")];
+    for p in get_children_discriminant(
+        registry,
+        module_entity,
+        std::mem::discriminant(&EntityKind::PROPERTY),
+    ) {
+        let name = registry.get_entity_name(p).to_string();
+        if let Some(prop) = registry.property_comps[p.0 as usize].as_ref() {
+            items.push(SExpr::list(vec![
+                SExpr::sym("property"),
+                SExpr::str_val(&name),
+                convert_directive(prop.directive),
+                convert_formula_ecs(registry, prop),
+            ]));
+        }
+    }
+    SExpr::list(items)
+}
+
+fn convert_pattern_calls(registry: &Registry, module_entity: EntityId) -> SExpr {
+    let mut items = vec![SExpr::sym("pattern-calls")];
+    for c in get_children_discriminant(
+        registry,
+        module_entity,
+        std::mem::discriminant(&EntityKind::PATTERN_CALL),
+    ) {
+        if let Some(call) = registry.pattern_calls[c.0 as usize].as_ref() {
+            let mut call_items =
+                vec![SExpr::sym("pattern-call"), SExpr::str_val(&call.0.pattern_name)];
+            for arg in &call.0.arguments {
+                call_items.push(convert_pattern_arg(arg));
+            }
+            items.push(SExpr::list(call_items));
+        }
+    }
+    SExpr::list(items)
+}
+
+fn convert_pattern_origins(_registry: &Registry, _module_entity: EntityId) -> SExpr {
+    SExpr::list(vec![SExpr::sym("pattern-origins")])
+}
+
+fn convert_directive(d: PropertyDirective) -> SExpr {
+    match d {
+        PropertyDirective::Assert => SExpr::sym("assert"),
+        PropertyDirective::Cover => SExpr::sym("cover"),
+        PropertyDirective::Assume => SExpr::sym("assume"),
+    }
+}
+
+fn convert_formula_ecs(
+    registry: &Registry,
+    prop: &crate::ecs::components::PropertyComponent,
+) -> SExpr {
+    match &prop.formula {
+        PropertyFormula::Always(_) => SExpr::list(vec![
+            SExpr::sym("always"),
+            convert_expr_ecs(registry, prop.formula_exprs[0]),
+        ]),
+        PropertyFormula::Never(_) => SExpr::list(vec![
+            SExpr::sym("never"),
+            convert_expr_ecs(registry, prop.formula_exprs[0]),
+        ]),
+        PropertyFormula::AlwaysImplies { .. } => SExpr::list(vec![
+            SExpr::sym("always-implies"),
+            convert_expr_ecs(registry, prop.formula_exprs[0]),
+            convert_expr_ecs(registry, prop.formula_exprs[1]),
+        ]),
+        PropertyFormula::NeverImplies { .. } => SExpr::list(vec![
+            SExpr::sym("never-implies"),
+            convert_expr_ecs(registry, prop.formula_exprs[0]),
+            convert_expr_ecs(registry, prop.formula_exprs[1]),
+        ]),
+        PropertyFormula::EventuallyWithin { cycles, .. } => SExpr::list(vec![
+            SExpr::sym("eventually-within"),
+            convert_expr_ecs(registry, prop.formula_exprs[0]),
+            SExpr::int(*cycles as u64),
+        ]),
+        PropertyFormula::AlwaysFollowedBy { delay_cycles, .. } => SExpr::list(vec![
+            SExpr::sym("always-followed-by"),
+            convert_expr_ecs(registry, prop.formula_exprs[0]),
+            convert_expr_ecs(registry, prop.formula_exprs[1]),
+            SExpr::int(*delay_cycles as u64),
+        ]),
+    }
+}
+
+fn convert_expr_ecs(registry: &Registry, expr_entity: EntityId) -> SExpr {
+    if let Some(lit) = registry.literals.get(expr_entity.0 as usize).and_then(|c| c.as_ref()) {
+        match lit.0 {
+            LiteralValue::Bool(b) => SExpr::Bool(b),
+            LiteralValue::Integer(n) => SExpr::Integer(n),
+        }
+    } else if let Some(sig_ref) =
+        registry.signal_refs.get(expr_entity.0 as usize).and_then(|c| c.as_ref())
+    {
+        let name = registry.get_entity_name(sig_ref.0).to_string();
+        SExpr::list(vec![SExpr::sym("signal"), SExpr::str_val(&name)])
+    } else if let Some(bin) =
+        registry.binary_ops.get(expr_entity.0 as usize).and_then(|c| c.as_ref())
+    {
+        let op_sym = binop_to_symbol(bin.op);
+        SExpr::list(vec![
+            SExpr::sym(op_sym),
+            convert_expr_ecs(registry, bin.left),
+            convert_expr_ecs(registry, bin.right),
+        ])
+    } else if let Some(un) = registry.unary_ops.get(expr_entity.0 as usize).and_then(|c| c.as_ref())
+    {
+        let op_sym = match un.op {
+            UnaryOp::Not => "not",
+            UnaryOp::Negate => "negate",
+            UnaryOp::ReductionOr => "reduce_or",
+        };
+        SExpr::list(vec![SExpr::sym(op_sym), convert_expr_ecs(registry, un.operand)])
+    } else if let Some(prev) =
+        registry.prev_ops.get(expr_entity.0 as usize).and_then(|c| c.as_ref())
+    {
+        let name = registry.get_entity_name(prev.signal).to_string();
+        SExpr::list(vec![SExpr::sym("prev"), SExpr::str_val(&name), SExpr::int(prev.delay)])
+    } else {
+        // Assume direct signal reference
+        let name = registry.get_entity_name(expr_entity).to_string();
+        if name != "<unnamed>" && !name.is_empty() {
+            SExpr::list(vec![SExpr::sym("signal"), SExpr::str_val(&name)])
+        } else {
+            SExpr::Bool(false)
+        }
+    }
+}
+
+fn binop_to_symbol(op: BinaryOp) -> &'static str {
+    match op {
+        BinaryOp::And => "and",
+        BinaryOp::Or => "or",
+        BinaryOp::BitwiseOr => "bitor",
+        BinaryOp::BitwiseAnd => "bitand",
+        BinaryOp::Xor => "xor",
+        BinaryOp::Lt => "<",
+        BinaryOp::Le => "<=",
+        BinaryOp::Gt => ">",
+        BinaryOp::Ge => ">=",
+        BinaryOp::Eq => "==",
+        BinaryOp::Ne => "!=",
+        BinaryOp::Add => "+",
+        BinaryOp::Sub => "-",
+        BinaryOp::Mul => "*",
+        BinaryOp::Shl => "<<",
+        BinaryOp::Shr => ">>",
+    }
 }
 
 fn convert_signal_kind(kind: SignalKind) -> SExpr {
@@ -197,14 +373,11 @@ fn convert_signal_type(ty: SignalType) -> SExpr {
         ]),
         SignalType::Struct { name, fields } => {
             let mut items = vec![SExpr::sym("struct"), SExpr::str_val(&name)];
-            let mut i = 0;
-            while i < fields.len() && i < crate::ast::types::MAX_STRUCT_FIELDS {
-                let (ref fname, ref ftype) = fields[i];
+            for (fname, ftype) in fields {
                 items.push(SExpr::list(vec![
-                    SExpr::str_val(fname),
-                    convert_signal_type(ftype.clone()),
+                    SExpr::str_val(&fname),
+                    convert_signal_type(ftype),
                 ]));
-                i += 1;
             }
             SExpr::list(items)
         }
@@ -261,273 +434,6 @@ fn convert_annotations(ann: &TypeAnnotations) -> SExpr {
     SExpr::list(items)
 }
 
-fn convert_guards(guards: &[Guard]) -> SExpr {
-    let mut items = vec![SExpr::sym("guards")];
-    for g in guards {
-        let mut g_list =
-            vec![SExpr::sym("guard"), SExpr::str_val(&g.name), convert_expr(&g.condition)];
-        if let Some(ref tc) = g.template_cycles {
-            g_list.push(SExpr::str_val(tc));
-        } else {
-            g_list.push(SExpr::int(g.cycles));
-        }
-        items.push(SExpr::list(g_list));
-    }
-    SExpr::list(items)
-}
-
-fn convert_reflexes(reflexes: &[Reflex]) -> SExpr {
-    let mut items = vec![SExpr::sym("reflexes")];
-    for r in reflexes {
-        let mut reflex_items = vec![SExpr::sym("reflex"), SExpr::str_val(&r.name)];
-        let mut on_items = vec![SExpr::sym("on")];
-        for gn in &r.guard_names {
-            on_items.push(SExpr::str_val(gn));
-        }
-        reflex_items.push(SExpr::list(on_items));
-        for a in &r.assignments {
-            reflex_items.push(SExpr::list(vec![
-                SExpr::sym("assign"),
-                SExpr::str_val(&a.target),
-                convert_expr(&a.value),
-            ]));
-        }
-        items.push(SExpr::list(reflex_items));
-    }
-    SExpr::list(items)
-}
-
-fn convert_properties(props: &[PropertyDecl]) -> SExpr {
-    let mut items = vec![SExpr::sym("properties")];
-    for p in props {
-        items.push(SExpr::list(vec![
-            SExpr::sym("property"),
-            SExpr::str_val(&p.name),
-            convert_directive(p.directive),
-            convert_formula(&p.formula),
-        ]));
-    }
-    SExpr::list(items)
-}
-
-fn convert_directive(d: PropertyDirective) -> SExpr {
-    match d {
-        PropertyDirective::Assert => SExpr::sym("assert"),
-        PropertyDirective::Cover => SExpr::sym("cover"),
-        PropertyDirective::Assume => SExpr::sym("assume"),
-    }
-}
-
-fn convert_formula(f: &PropertyFormula) -> SExpr {
-    match f {
-        PropertyFormula::Always(e) => SExpr::list(vec![SExpr::sym("always"), convert_expr(e)]),
-        PropertyFormula::Never(e) => SExpr::list(vec![SExpr::sym("never"), convert_expr(e)]),
-        PropertyFormula::AlwaysImplies { antecedent, consequent } => SExpr::list(vec![
-            SExpr::sym("always-implies"),
-            convert_expr(antecedent),
-            convert_expr(consequent),
-        ]),
-        PropertyFormula::NeverImplies { antecedent, consequent } => SExpr::list(vec![
-            SExpr::sym("never-implies"),
-            convert_expr(antecedent),
-            convert_expr(consequent),
-        ]),
-        PropertyFormula::EventuallyWithin { expr, cycles } => SExpr::list(vec![
-            SExpr::sym("eventually-within"),
-            convert_expr(expr),
-            SExpr::int(*cycles as u64),
-        ]),
-        PropertyFormula::AlwaysFollowedBy { trigger, response, delay_cycles } => SExpr::list(vec![
-            SExpr::sym("always-followed-by"),
-            convert_expr(trigger),
-            convert_expr(response),
-            SExpr::int(*delay_cycles as u64),
-        ]),
-    }
-}
-
-/// Work item for iterative `convert_expr` (replaces recursion).
-enum ConvertWork<'a> {
-    /// Process an expression node.
-    Process(&'a Expr),
-    /// Compose a unary S-expression from one result.
-    BuildUnary(&'static str),
-    /// Compose a binary S-expression from two results.
-    BuildBinary(&'static str),
-    /// Compose `(field-access <obj> <field>)` — one result + stored field name.
-    BuildFieldAccess(&'a str),
-    /// Compose `(array-literal <e0> <e1> ...)` from `count` results.
-    BuildArrayLiteral(usize),
-    /// Compose `(struct-literal <name> (<f0> <v0>) ...)` from `count` results + stored metadata.
-    BuildStructLiteral { name: &'a str, field_names: &'a [(String, Expr)], count: usize },
-}
-
-fn convert_expr(expr: &Expr) -> SExpr {
-    const MAX_ITER: usize = MAX_CONVERT_DEPTH * 4;
-    let mut work_stack: Vec<ConvertWork<'_>> = Vec::with_capacity(MAX_CONVERT_DEPTH);
-    let mut result_stack: Vec<SExpr> = Vec::with_capacity(MAX_CONVERT_DEPTH);
-    work_stack.push(ConvertWork::Process(expr));
-
-    let mut iterations: usize = 0;
-    while let Some(work) = work_stack.pop() {
-        iterations += 1;
-        if iterations > MAX_ITER {
-            break;
-        }
-        match work {
-            ConvertWork::Process(e) => match e {
-                Expr::Literal(LiteralValue::Bool(b)) => result_stack.push(SExpr::Bool(*b)),
-                Expr::Literal(LiteralValue::Integer(n)) => result_stack.push(SExpr::Integer(*n)),
-                Expr::Signal(name) => {
-                    result_stack
-                        .push(SExpr::list(vec![SExpr::sym("signal"), SExpr::str_val(name)]));
-                }
-                Expr::Prev { signal, delay } => {
-                    result_stack.push(SExpr::list(vec![
-                        SExpr::sym("prev"),
-                        SExpr::str_val(signal),
-                        SExpr::int(*delay),
-                    ]));
-                }
-                Expr::Unary { op, operand } => {
-                    let op_sym = match op {
-                        UnaryOp::Not => "not",
-                        UnaryOp::Negate => "negate",
-                        UnaryOp::ReductionOr => "reduce_or",
-                    };
-                    work_stack.push(ConvertWork::BuildUnary(op_sym));
-                    work_stack.push(ConvertWork::Process(operand));
-                }
-                Expr::Binary { op, left, right } => {
-                    let op_sym = binop_to_symbol(*op);
-                    work_stack.push(ConvertWork::BuildBinary(op_sym));
-                    work_stack.push(ConvertWork::Process(right));
-                    work_stack.push(ConvertWork::Process(left));
-                }
-                Expr::ArrayIndex { array, index } => {
-                    work_stack.push(ConvertWork::BuildBinary("aref"));
-                    work_stack.push(ConvertWork::Process(index));
-                    work_stack.push(ConvertWork::Process(array));
-                }
-                Expr::FieldAccess { object, field } => {
-                    work_stack.push(ConvertWork::BuildFieldAccess(field));
-                    work_stack.push(ConvertWork::Process(object));
-                }
-                Expr::ArrayLiteral(elems) => {
-                    let count = elems.len().min(MAX_CONVERT_DEPTH);
-                    work_stack.push(ConvertWork::BuildArrayLiteral(count));
-                    // Push in reverse so they are processed left-to-right.
-                    let mut i = count;
-                    while i > 0 {
-                        i -= 1;
-                        work_stack.push(ConvertWork::Process(&elems[i]));
-                    }
-                }
-                Expr::StructLiteral { name, fields } => {
-                    let count = fields.len().min(MAX_CONVERT_DEPTH);
-                    work_stack.push(ConvertWork::BuildStructLiteral {
-                        name,
-                        field_names: fields,
-                        count,
-                    });
-                    let mut i = count;
-                    while i > 0 {
-                        i -= 1;
-                        work_stack.push(ConvertWork::Process(&fields[i].1));
-                    }
-                }
-                Expr::UnfoldIndex(name) => {
-                    result_stack
-                        .push(SExpr::list(vec![SExpr::sym("unfold-index"), SExpr::str_val(name)]));
-                }
-            },
-            ConvertWork::BuildUnary(op_sym) => {
-                let operand = result_stack.pop().unwrap_or(SExpr::Bool(false));
-                result_stack.push(SExpr::list(vec![SExpr::sym(op_sym), operand]));
-            }
-            ConvertWork::BuildBinary(op_sym) => {
-                let right = result_stack.pop().unwrap_or(SExpr::Bool(false));
-                let left = result_stack.pop().unwrap_or(SExpr::Bool(false));
-                result_stack.push(SExpr::list(vec![SExpr::sym(op_sym), left, right]));
-            }
-            ConvertWork::BuildFieldAccess(field) => {
-                let obj = result_stack.pop().unwrap_or(SExpr::Bool(false));
-                result_stack.push(SExpr::list(vec![
-                    SExpr::sym("field-access"),
-                    obj,
-                    SExpr::str_val(field),
-                ]));
-            }
-            ConvertWork::BuildArrayLiteral(count) => {
-                let mut items = vec![SExpr::sym("array-literal")];
-                let mut i = 0;
-                while i < count {
-                    items.push(result_stack.pop().unwrap_or(SExpr::Bool(false)));
-                    i += 1;
-                }
-                // Results were popped in reverse order; reverse back.
-                items[1..].reverse();
-                result_stack.push(SExpr::list(items));
-            }
-            ConvertWork::BuildStructLiteral { name, field_names, count } => {
-                let mut items = vec![SExpr::sym("struct-literal"), SExpr::str_val(name)];
-                // Collect results (popped in reverse).
-                let mut vals = Vec::with_capacity(count);
-                let mut i = 0;
-                while i < count {
-                    vals.push(result_stack.pop().unwrap_or(SExpr::Bool(false)));
-                    i += 1;
-                }
-                vals.reverse();
-                let mut j = 0;
-                while j < count && j < field_names.len() {
-                    items.push(SExpr::list(vec![
-                        SExpr::str_val(&field_names[j].0),
-                        vals[j].clone(),
-                    ]));
-                    j += 1;
-                }
-                result_stack.push(SExpr::list(items));
-            }
-        }
-    }
-
-    result_stack.pop().unwrap_or(SExpr::Bool(false))
-}
-
-fn binop_to_symbol(op: BinaryOp) -> &'static str {
-    match op {
-        BinaryOp::And => "and",
-        BinaryOp::Or => "or",
-        BinaryOp::BitwiseOr => "bitor",
-        BinaryOp::BitwiseAnd => "bitand",
-        BinaryOp::Xor => "xor",
-        BinaryOp::Lt => "<",
-        BinaryOp::Le => "<=",
-        BinaryOp::Gt => ">",
-        BinaryOp::Ge => ">=",
-        BinaryOp::Eq => "==",
-        BinaryOp::Ne => "!=",
-        BinaryOp::Add => "+",
-        BinaryOp::Sub => "-",
-        BinaryOp::Mul => "*",
-        BinaryOp::Shl => "<<",
-        BinaryOp::Shr => ">>",
-    }
-}
-
-fn convert_pattern_calls(calls: &[PatternCall]) -> SExpr {
-    let mut items = vec![SExpr::sym("pattern-calls")];
-    for c in calls {
-        let mut call_items = vec![SExpr::sym("pattern-call"), SExpr::str_val(&c.pattern_name)];
-        for arg in &c.arguments {
-            call_items.push(convert_pattern_arg(arg));
-        }
-        items.push(SExpr::list(call_items));
-    }
-    SExpr::list(items)
-}
-
 fn convert_pattern_arg(arg: &PatternArg) -> SExpr {
     match arg {
         PatternArg::SignalRef(name) => {
@@ -539,150 +445,6 @@ fn convert_pattern_arg(arg: &PatternArg) -> SExpr {
         }
         PatternArg::PatternRef(name) => {
             SExpr::list(vec![SExpr::sym("pattern-ref"), SExpr::str_val(name)])
-        }
-    }
-}
-
-fn convert_pattern_origins(origins: &[PatternOrigin]) -> SExpr {
-    let mut items = vec![SExpr::sym("pattern-origins")];
-    for o in origins {
-        items.push(SExpr::list(vec![
-            SExpr::sym("pattern-origin"),
-            SExpr::str_val(&o.pattern_name),
-            SExpr::str_val(&o.call_args_summary),
-        ]));
-    }
-    SExpr::list(items)
-}
-
-/// Convert a `ModuleMacroStmt` into its S-expression form for generative bodies.
-fn convert_module_macro_stmt(stmt: &ModuleMacroStmt) -> SExpr {
-    match stmt {
-        ModuleMacroStmt::Signal(s) => {
-            let mut sig = vec![
-                SExpr::sym("signal"),
-                SExpr::str_val(&s.name),
-                convert_signal_kind(s.kind),
-                convert_signal_type(s.ty.core.clone()),
-            ];
-            if !s.ty.annotations.is_default() {
-                sig.push(convert_annotations(&s.ty.annotations));
-            }
-            SExpr::list(sig)
-        }
-        ModuleMacroStmt::Guard(g) => {
-            let mut g_list =
-                vec![SExpr::sym("guard"), SExpr::str_val(&g.name), convert_expr(&g.condition)];
-            if let Some(ref tc) = g.template_cycles {
-                g_list.push(SExpr::str_val(tc));
-            } else {
-                g_list.push(SExpr::int(g.cycles));
-            }
-            SExpr::list(g_list)
-        }
-        ModuleMacroStmt::Reflex(r) => {
-            let mut reflex_items = vec![SExpr::sym("reflex"), SExpr::str_val(&r.name)];
-            let mut on_items = vec![SExpr::sym("on")];
-            for gn in &r.guard_names {
-                on_items.push(SExpr::str_val(gn));
-            }
-            reflex_items.push(SExpr::list(on_items));
-            for s in &r.statements {
-                reflex_items.push(convert_reflex_macro_stmt(s));
-            }
-            SExpr::list(reflex_items)
-        }
-        ModuleMacroStmt::Property(p) => SExpr::list(vec![
-            SExpr::sym("property"),
-            SExpr::str_val(&p.name),
-            convert_directive(p.directive),
-            convert_formula(&p.formula),
-        ]),
-        ModuleMacroStmt::PatternCall(c) => {
-            let mut call_items = vec![SExpr::sym("pattern-call"), SExpr::str_val(&c.pattern_name)];
-            for arg in &c.arguments {
-                call_items.push(convert_pattern_arg(arg));
-            }
-            SExpr::list(call_items)
-        }
-        ModuleMacroStmt::ForLoop { var, start, end, body } => {
-            let body_items: Vec<SExpr> = body.iter().map(convert_module_macro_stmt).collect();
-            SExpr::list(vec![
-                SExpr::sym("for-generate"),
-                SExpr::str_val(var),
-                SExpr::int(*start as u64),
-                SExpr::int(*end as u64),
-                SExpr::list(body_items),
-            ])
-        }
-        ModuleMacroStmt::LetBinding { name, ty, value } => SExpr::list(vec![
-            SExpr::sym("let-bind"),
-            SExpr::str_val(name),
-            SExpr::str_val(ty),
-            convert_expr(value),
-        ]),
-    }
-}
-
-/// Convert a `ReflexMacroStmt` into its S-expression form for generative bodies.
-fn convert_reflex_macro_stmt(stmt: &ReflexMacroStmt) -> SExpr {
-    match stmt {
-        ReflexMacroStmt::Assignment(a) => SExpr::list(vec![
-            SExpr::sym("assign"),
-            SExpr::str_val(&a.target),
-            convert_expr(&a.value),
-        ]),
-        ReflexMacroStmt::LetBinding { name, ty, value, .. } => SExpr::list(vec![
-            SExpr::sym("let-bind"),
-            SExpr::str_val(name),
-            SExpr::str_val(ty),
-            convert_expr(value),
-        ]),
-        ReflexMacroStmt::OnBlock { guard_names, body } => {
-            let mut items = vec![SExpr::sym("on-block")];
-            let mut guard_list = vec![SExpr::sym("guards")];
-            for gn in guard_names {
-                guard_list.push(SExpr::str_val(gn));
-            }
-            items.push(SExpr::list(guard_list));
-            for s in body {
-                items.push(convert_reflex_macro_stmt(s));
-            }
-            SExpr::list(items)
-        }
-        ReflexMacroStmt::ForLoop { var, start, end, body } => {
-            let body_items: Vec<SExpr> = body.iter().map(convert_reflex_macro_stmt).collect();
-            SExpr::list(vec![
-                SExpr::sym("for-generate"),
-                SExpr::str_val(var),
-                SExpr::int(*start as u64),
-                SExpr::int(*end as u64),
-                SExpr::list(body_items),
-            ])
-        }
-        ReflexMacroStmt::IfElse { condition, true_branch, false_branch } => {
-            let then_items: Vec<SExpr> =
-                true_branch.iter().map(convert_reflex_macro_stmt).collect();
-            let else_items: Vec<SExpr> =
-                false_branch.iter().map(convert_reflex_macro_stmt).collect();
-            SExpr::list(vec![
-                SExpr::sym("if-generate"),
-                convert_expr(condition),
-                SExpr::list(then_items),
-                SExpr::list(else_items),
-            ])
-        }
-        ReflexMacroStmt::Match { expr, arms } => {
-            // Convert match to chained if-generate forms
-            let mut result_items = vec![SExpr::sym("match-generate")];
-            result_items.push(convert_expr(expr));
-            for arm in arms {
-                let body_items: Vec<SExpr> =
-                    arm.body.iter().map(convert_reflex_macro_stmt).collect();
-                result_items
-                    .push(SExpr::list(vec![SExpr::str_val(&arm.pattern), SExpr::list(body_items)]));
-            }
-            SExpr::list(result_items)
         }
     }
 }
