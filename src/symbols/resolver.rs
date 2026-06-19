@@ -299,7 +299,9 @@ impl CrossModuleResolver {
                 if is_valid {
                     let ty =
                         registry.types[id].as_ref().map(|t| t.0.clone()).unwrap_or_else(|| {
-                            crate::ast::types::ExtendedType::from_core(crate::ast::types::SignalType::Unsigned(1))
+                            crate::ast::types::ExtendedType::from_core(
+                                crate::ast::types::SignalType::Unsigned(1),
+                            )
                         });
 
                     let symbol_info = SymbolInfo {

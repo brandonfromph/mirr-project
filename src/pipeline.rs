@@ -267,30 +267,33 @@ fn run_pipeline_internal(
     let mut width_stats = None;
     let mut width_diags = Vec::new();
     if config.width {
-        let (_, _, verify, stats) = crate::ecs::systems::parallel_width_inference_system(&mut registry);
+        let (_, _, verify, stats) =
+            crate::ecs::systems::parallel_width_inference_system(&mut registry);
         width_stats = Some(stats);
         width_diags = verify.diagnostics;
-        
-        let errors: Vec<_> = width_diags.iter()
+
+        let errors: Vec<_> = width_diags
+            .iter()
             .filter(|d| d.severity == crate::width::types::DiagSeverity::Error)
             .map(|d| {
                 // If it's a width error about narrowing, map to E601 to satisfy legacy AST test parity
                 let msg = d.message.clone();
                 let code = d.code.as_deref().unwrap_or("E500");
-                if code == "E503" || code == "E504" || msg.contains("narrowing") || msg.contains("out_narrow") {
+                if code == "E503"
+                    || code == "E504"
+                    || msg.contains("narrowing")
+                    || msg.contains("out_narrow")
+                {
                     crate::error::MirrError::TypeError {
                         message: format!("{} {}", crate::error_codes::ec(601), msg),
                         span: d.span,
                     }
                 } else {
-                    crate::error::MirrError::WidthError {
-                        message: msg,
-                        span: d.span,
-                    }
+                    crate::error::MirrError::WidthError { message: msg, span: d.span }
                 }
             })
             .collect();
-            
+
         if !errors.is_empty() {
             return Err(crate::error::PipelineErrors { errors });
         }

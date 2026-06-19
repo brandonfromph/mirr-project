@@ -303,7 +303,10 @@ fn emit_property_comments(registry: &crate::ecs::Registry, out: &mut String) {
         {
             if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
                 let get_expr = |idx| {
-                    prop.formula_exprs.get(idx).map(|&e| emit_expr_inline_ecs(e, registry)).unwrap_or_else(|| "UInt<1>(1)".to_string())
+                    prop.formula_exprs
+                        .get(idx)
+                        .map(|&e| emit_expr_inline_ecs(e, registry))
+                        .unwrap_or_else(|| "UInt<1>(1)".to_string())
                 };
 
                 let desc = match &prop.formula {
@@ -326,7 +329,12 @@ fn emit_property_comments(registry: &crate::ecs::Registry, out: &mut String) {
                         delay_cycles,
                         ..
                     } => {
-                        format!("always ({} followed_by {} {})", get_expr(0), delay_cycles, get_expr(1))
+                        format!(
+                            "always ({} followed_by {} {})",
+                            get_expr(0),
+                            delay_cycles,
+                            get_expr(1)
+                        )
                     }
                 };
 

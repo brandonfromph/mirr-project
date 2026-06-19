@@ -101,7 +101,7 @@ fn test_workspace_caching_and_invalidation() {
 //     let tmp = TempDir::new().unwrap();
 //     let sub = tmp.path().join("sub.mirr");
 //     let root = tmp.path().join("main.mirr");
-// 
+//
 //     fs::write(
 //         &sub,
 //         "
@@ -114,12 +114,12 @@ fn test_workspace_caching_and_invalidation() {
 //     ",
 //     )
 //     .unwrap();
-// 
+//
 //     fs::write(
 //         &root,
 //         "
 //         import \"sub.mirr\" as sub_lib;
-//         
+//
 //         def local_pat() {
 //             reflect {
 //                 property p { always(true); }
@@ -129,13 +129,13 @@ fn test_workspace_caching_and_invalidation() {
 //     ",
 //     )
 //     .unwrap();
-// 
+//
 //     let mut workspace = Workspace::new(tmp.path());
 //     let snapshot = workspace.compile_snapshot(&root, &basic_config()).unwrap();
-// 
+//
 //     // let prog = &snapshot.pipeline.program.as_ref().unwrap();
 //     // assert_eq!(prog.patterns.len(), 2);
-// 
+//
 //     // let names: Vec<_> = prog.patterns.iter().map(|p| p.name.as_str()).collect();
 //     // assert!(names.contains(&"local_pat"));
 //     // assert!(names.contains(&"sub_lib::helper"));

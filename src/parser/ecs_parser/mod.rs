@@ -448,7 +448,9 @@ fn parse_guard_ecs(
                 let cycles_str = &expr_str[idx + 5..].trim();
                 let parts: Vec<&str> = cycles_str.split_whitespace().collect();
                 if parts.len() >= 2 && parts[1].starts_with("cycles") {
-                    cycles = parts[0].parse().map_err(|_| MirrError::parse_error("Invalid cycle count."))?;
+                    cycles = parts[0]
+                        .parse()
+                        .map_err(|_| MirrError::parse_error("Invalid cycle count."))?;
                 }
                 expr_str = expr_str[..idx].trim();
             }
@@ -609,7 +611,8 @@ fn parse_property_ecs(
     };
 
     let true_ent = registry.next_id();
-    registry.set_literal(true_ent, crate::ecs::components::LiteralComponent(LiteralValue::Bool(true)));
+    registry
+        .set_literal(true_ent, crate::ecs::components::LiteralComponent(LiteralValue::Bool(true)));
     let formula_exprs = vec![true_ent];
     let formula = crate::ast::property::PropertyFormula::Always(crate::ast::expr::Expr::Literal(
         LiteralValue::Bool(true),
