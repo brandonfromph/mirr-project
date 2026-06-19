@@ -39,7 +39,7 @@ mod ecs_linear_typeck_tests {
     ) -> EntityId {
         let id = reg.next_id();
         let idx = id.0 as usize;
-        reg.names[idx] = Some(NameComponent(name.to_string()));
+        reg.names[idx] = Some(NameComponent(reg.interner.intern(name)));
         reg.kinds[idx] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
         reg.types[idx] = Some(TypeComponent(ExtendedType::new(SignalType::Bool, annotations)));
         reg.modules[idx] = Some(ModuleComponent(mod_id));
@@ -73,10 +73,10 @@ mod ecs_linear_typeck_tests {
     ) -> EntityId {
         let id = reg.next_id();
         let idx = id.0 as usize;
-        reg.names[idx] = Some(NameComponent(name.to_string()));
+        reg.names[idx] = Some(NameComponent(reg.interner.intern(name)));
         reg.kinds[idx] = Some(KindComponent(EntityKind::REFLEX));
         reg.modules[idx] = Some(ModuleComponent(mod_id));
-        reg.reflex_comps[idx] = Some(ReflexComponent { guards: vec![], assignments });
+        reg.reflex_comps[idx] = Some(ReflexComponent { guards: vec![], assignments, origin: None });
         id
     }
 

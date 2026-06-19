@@ -4,6 +4,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod ecs_parser;
 pub mod expr_parser;
 pub mod module_parser;
 pub mod pattern_parser;

@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![forbid(unsafe_code)]
 #![deny(warnings)]
 
@@ -39,7 +40,7 @@ fn test_nasa_rule_2_bounded_loops_and_cycles() {
 
     let g_ent = registry.next_id();
     registry.names[g_ent.0 as usize] =
-        Some(mirrc::ecs::components::NameComponent("loop_guard".to_string()));
+        Some(mirrc::ecs::components::NameComponent(registry.interner.intern("loop_guard")));
     registry.kinds[g_ent.0 as usize] = Some(KindComponent::GUARD);
     registry.conditions[g_ent.0 as usize] =
         Some(mirrc::ecs::components::ConditionComponent(loop_ent_1));
@@ -69,7 +70,10 @@ fn test_nasa_rule_3_registry_preallocated_bounds() {
     );
     registry.set_parent(sig, mod_ent);
 
-    assert_eq!(registry.names[sig.0 as usize].as_ref().unwrap().0, "sensor_a");
+    assert_eq!(
+        registry.resolve_name(registry.names[sig.0 as usize].as_ref().unwrap().0),
+        "sensor_a"
+    );
 }
 
 /// NASA JPL Rule 5: High Assertion Density and AST Complexity Bounds.

@@ -16,7 +16,10 @@ fn test_ecs_registry_signal_creation() {
     let entity = registry.create_signal(sig_name.clone(), kind, ty);
 
     // Assert: Everything is in the right table (SoA)
-    assert_eq!(registry.names[entity.0 as usize].as_ref().unwrap().0, "sys_clk");
+    assert_eq!(
+        registry.resolve_name(registry.names[entity.0 as usize].as_ref().unwrap().0),
+        "sys_clk"
+    );
     assert_eq!(registry.get_entity_by_name("sys_clk"), Some(entity));
 
     println!("ECS Entity {} created for signal {}", entity.0, sig_name);
@@ -54,7 +57,10 @@ fn test_ecs_full_module_ingestion() {
     let mod_id = registry.ingest_module(&prog.module).expect("failed to ingest");
 
     // Verify Module entity
-    assert_eq!(registry.names[mod_id.0 as usize].as_ref().unwrap().0, "majority_gate");
+    assert_eq!(
+        registry.resolve_name(registry.names[mod_id.0 as usize].as_ref().unwrap().0),
+        "majority_gate"
+    );
 
     // Verify Signal entities (majority_gate has 3 in, 1 out)
     assert!(registry.get_entity_by_name("input_a").is_some());
@@ -187,11 +193,14 @@ fn test_ecs_parallel_vector_search() {
 
     assert_eq!(hits.len(), 1);
     let top_entity = hits[0].0;
-    assert_eq!(registry.names[top_entity.0 as usize].as_ref().unwrap().0, "chunk_2");
+    assert_eq!(
+        registry.resolve_name(registry.names[top_entity.0 as usize].as_ref().unwrap().0),
+        "chunk_2"
+    );
 
     println!(
         "Parallel Vector Search found top match: {}",
-        registry.names[top_entity.0 as usize].as_ref().unwrap().0
+        registry.resolve_name(registry.names[top_entity.0 as usize].as_ref().unwrap().0)
     );
 }
 

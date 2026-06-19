@@ -56,7 +56,7 @@ pub fn verify_least_solution(
 
             let sig_name = registry.names[sig_id.0 as usize]
                 .as_ref()
-                .map(|n| n.0.as_str())
+                .map(|nc| registry.resolve_name(nc.0))
                 .unwrap_or("unknown");
 
             let (declared, sig_signed) = registry.types[sig_id.0 as usize]

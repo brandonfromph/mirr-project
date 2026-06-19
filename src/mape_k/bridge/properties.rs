@@ -117,8 +117,8 @@ fn lower_ecs_expr_to_predicate(
     }
 
     if let Some(components::SignalRefComponent(sig_ent)) = &registry.signal_refs[i] {
-        if let Some(name) = &registry.names[sig_ent.0 as usize] {
-            return Ok(SignalPredicate::IsTrue(name.0.clone()));
+        if let Some(nc) = &registry.names[sig_ent.0 as usize] {
+            return Ok(SignalPredicate::IsTrue(registry.resolve_name(nc.0).to_string()));
         }
     }
 
@@ -163,7 +163,9 @@ fn lower_binary_predicate_ecs(
     let sig_name = if let Some(components::SignalRefComponent(sig_ent)) =
         &registry.signal_refs[left_idx]
     {
-        registry.names[sig_ent.0 as usize].as_ref().map(|n| n.0.clone())
+        registry.names[sig_ent.0 as usize]
+            .as_ref()
+            .map(|nc| registry.resolve_name(nc.0).to_string())
     } else if let Some(components::PendingSignalRef(name)) = &registry.pending_signal_refs[left_idx]
     {
         Some(name.clone())
@@ -219,8 +221,8 @@ pub(super) fn extract_signal_name_ecs(
         }
 
         if let Some(components::SignalRefComponent(sig_ent)) = &registry.signal_refs[i] {
-            if let Some(name) = &registry.names[sig_ent.0 as usize] {
-                return Ok(name.0.clone());
+            if let Some(nc) = &registry.names[sig_ent.0 as usize] {
+                return Ok(registry.resolve_name(nc.0).to_string());
             }
         }
         if let Some(components::PendingSignalRef(name)) = &registry.pending_signal_refs[i] {

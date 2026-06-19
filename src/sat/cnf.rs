@@ -527,18 +527,21 @@ pub fn equivalence_check_ecs_cnf(
     registry: &mut Registry,
 ) -> Option<CnfFormula> {
     let xor_id = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-    registry.binary_ops[xor_id.0 as usize] = Some(crate::ecs::components::BinaryComponent {
-        op: BinaryOp::Xor,
-        left: original,
-        right: simplified,
-    });
+    registry.set_binary_op(
+        xor_id,
+        crate::ecs::components::BinaryComponent {
+            op: BinaryOp::Xor,
+            left: original,
+            right: simplified,
+        },
+    );
 
     let mut formula = entity_to_cnf(xor_id, registry)?;
     formula.add_clause(vec![Literal::pos(formula.root_var)]);
 
     // Clean up temporary XOR node
-    registry.names[xor_id.0 as usize] = None;
-    registry.binary_ops[xor_id.0 as usize] = None;
+    registry.unset_name(xor_id);
+    registry.unset_binary_op(xor_id);
 
     Some(formula)
 }
@@ -590,11 +593,14 @@ mod tests {
         let sig_b = registry.create_entity("b", crate::ecs::components::KindComponent::SIGNAL);
 
         let and_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.binary_ops[and_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
-            op: BinaryOp::And,
-            left: sig_a,
-            right: sig_b,
-        });
+        registry.set_binary_op(
+            and_node,
+            crate::ecs::components::BinaryComponent {
+                op: BinaryOp::And,
+                left: sig_a,
+                right: sig_b,
+            },
+        );
 
         let cnf = entity_to_cnf(and_node, &registry).unwrap();
         assert_eq!(cnf.num_vars, 3);

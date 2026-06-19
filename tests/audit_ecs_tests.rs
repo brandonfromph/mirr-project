@@ -194,8 +194,9 @@ fn test_10_typeck_mock_parallel_width_inference_bypass() {
 
     for i in 0..5 {
         let id = registry.next_id();
-        registry.names[id.0 as usize] =
-            Some(mirrc::ecs::components::NameComponent(format!("sig{}", i)));
+        registry.names[id.0 as usize] = Some(mirrc::ecs::components::NameComponent(
+            registry.interner.intern(&format!("sig{}", i)),
+        ));
     }
 
     let (sccs, solves, verify, stats) = parallel_width_inference_system(&mut registry);

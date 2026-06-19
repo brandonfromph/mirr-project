@@ -17,6 +17,7 @@
 //! Error codes: E901-E910.
 
 #![forbid(unsafe_code)]
+#![allow(unused_imports)]
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -325,6 +326,8 @@ impl SymbolTable {
         })
     }
 
+    #[deprecated(note = "Phase 6: Legacy AST path for tests only")]
+    #[allow(deprecated)]
     /// Build a symbol table from a parsed module and its imports.
     ///
     /// This is the main entry point for constructing symbol tables from
@@ -356,6 +359,8 @@ impl SymbolTable {
         Ok(table)
     }
 
+    #[deprecated(note = "Phase 6: Legacy AST path for tests only")]
+    #[allow(deprecated)]
     /// Recursively build symbol table from a module and its imports.
     ///
     /// Note: `imports` comes from `MirrProgram.imports`, not from `Module`.

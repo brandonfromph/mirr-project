@@ -208,7 +208,7 @@ test_hyd! {
         let ent = r.get_entity_by_name("M::r").expect("Missing M::r");
         let rc = r.reflex_comps[ent.0 as usize].as_ref().unwrap();
         assert_eq!(rc.guards.len(), 1);
-        assert_eq!(r.names[rc.guards[0].0 as usize].as_ref().unwrap().0, "always");
+        assert_eq!(r.resolve_name(r.names[rc.guards[0].0 as usize].as_ref().unwrap().0), "always");
     };
 
     hyd_reflex_multi_guards,

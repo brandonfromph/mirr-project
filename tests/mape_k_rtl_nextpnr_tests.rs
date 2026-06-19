@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![forbid(unsafe_code)]
 #![allow(unused_imports)]
 

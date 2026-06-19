@@ -33,8 +33,9 @@ fn test_noc_router_priority_scheduling() {
                 let idx = (k as *const _ as usize - reg.kinds.as_ptr() as usize)
                     / std::mem::size_of::<Option<mirrc::ecs::components::KindComponent>>();
                 if let Some(name) = &reg.names[idx] {
-                    return name.0.starts_with("port_tx_valid_")
-                        || name.0.starts_with("port_tx_valid[");
+                    let n_str = reg.resolve_name(name.0);
+                    return n_str.starts_with("port_tx_valid_")
+                        || n_str.starts_with("port_tx_valid[");
                 }
             }
             false

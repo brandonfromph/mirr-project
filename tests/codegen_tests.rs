@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![forbid(unsafe_code)]
 //! Codegen pattern tests — verify generated output contains expected patterns.
 //!

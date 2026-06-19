@@ -77,16 +77,16 @@ pub fn allocate_registers(
     let mut internals = Vec::new();
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(type_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
-                let name = &name_comp.0;
+                let name = registry.resolve_name(nc.0);
                 let size = match &type_comp.0.core {
                     crate::ast::types::SignalType::Array { length, .. } => *length as u16,
                     _ => 1,
                 };
-                let sig_tuple = (name.clone(), size);
+                let sig_tuple = (name.to_string(), size);
                 match sig_kind {
                     SignalKind::Input => inputs.push(sig_tuple),
                     SignalKind::Output => outputs.push(sig_tuple),

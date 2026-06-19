@@ -165,6 +165,8 @@ impl CrossModuleResolver {
         Self { symbol_table, import_context, qualified_cache: HashMap::new() }
     }
 
+    #[deprecated(note = "Phase 6: Legacy AST path for tests only")]
+    #[allow(deprecated)]
     /// Build a cross-module resolver from a main program and its imports.
     ///
     /// This is the primary factory method for creating resolvers. It processes
@@ -257,6 +259,67 @@ impl CrossModuleResolver {
         }
 
         Ok(module_symbols)
+    }
+
+    /// Build a cross-module resolver natively from the ECS Registry (Phase 6 Strangler Fig).
+    /// NASA Power of 10: O(N) iteration over contiguous ECS arrays without recursive AST traversal.
+    pub fn from_ecs_registry(
+        registry: &crate::ecs::Registry,
+        main_path: PathBuf,
+    ) -> Result<Self, MirrError> {
+        let mut symbol_table = SymbolTable::new();
+        let mut module_symbols = ModuleSymbols::new("main".to_string(), main_path.clone());
+
+        let max_entities = registry.names.len();
+        let mut iterations = 0;
+
+        for id in 0..max_entities {
+            iterations += 1;
+            if iterations > crate::symbols::table::MAX_SYMBOLS_PER_MODULE * 10 {
+                // Hard loop bound (NASA Rule 2)
+                break;
+            }
+
+            if let Some(name_comp) = registry.names[id].as_ref() {
+                let mut is_valid = false;
+                let mut symbol_kind = crate::ast::types::SignalKind::Internal;
+                if let Some(crate::ecs::components::KindComponent(kind)) = registry.kinds[id] {
+                    match kind {
+                        crate::ecs::components::EntityKind::SIGNAL(sk) => {
+                            is_valid = true;
+                            symbol_kind = sk;
+                        }
+                        crate::ecs::components::EntityKind::PATTERN => {
+                            is_valid = true;
+                        }
+                        _ => {}
+                    }
+                }
+
+                if is_valid {
+                    let ty =
+                        registry.types[id].as_ref().map(|t| t.0.clone()).unwrap_or_else(|| {
+                            crate::ast::types::ExtendedType::from_core(crate::ast::types::SignalType::Unsigned(1))
+                        });
+
+                    let symbol_info = SymbolInfo {
+                        name: registry.interner.resolve(name_comp.0).to_string(),
+                        kind: symbol_kind,
+                        ty,
+                        span: registry.spans[id].as_ref().map(|s| s.0),
+                        module_path: main_path.clone(),
+                    };
+
+                    // Ignore errors if we exceed max symbols, just drop the rest
+                    let _ = module_symbols.add_symbol(symbol_info);
+                }
+            }
+        }
+
+        symbol_table.add_module(module_symbols)?;
+        symbol_table.set_current_module(main_path);
+
+        Ok(Self::new(symbol_table, ImportContext::new()))
     }
 
     /// Set the current module for resolution context.
@@ -649,6 +712,8 @@ pub struct ResolverStats {
     pub cached_qualified_symbols: usize,
 }
 
+#[deprecated(note = "Phase 6: Legacy AST path for tests only")]
+#[allow(deprecated)]
 /// Convenience function to create a resolver from a MIRR program.
 ///
 /// This is a high-level convenience function that handles the complete
@@ -667,6 +732,7 @@ pub fn create_resolver_for_program(
 
 #[cfg(test)]
 mod tests {
+    #![allow(deprecated)]
     use super::*;
     use crate::ast::program::{ImportDecl, SignalDecl};
     use crate::ast::types::{SignalKind, SignalType};

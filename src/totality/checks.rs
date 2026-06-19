@@ -90,7 +90,7 @@ pub fn check_output_completeness(registry: &crate::ecs::Registry) -> OutputCompl
                 }
 
                 if !driven {
-                    undriven.push(name.0.clone());
+                    undriven.push(registry.resolve_name(name.0).to_string());
                 }
             }
         }

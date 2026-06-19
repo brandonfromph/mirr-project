@@ -1,7 +1,7 @@
 //! Graphviz DOT emitter for MIRR IR.
 //!
 //! Produces a `digraph` showing signals as nodes, guards as diamond nodes,
-//! reflex assignments as edges, and `Prev` back-edges as dashed red edges.
+//! `always_comb` blocks for reflex assignments.
 //!
 //! Two detail levels:
 //! - Module-level (default): one node per signal, one node per guard.
@@ -67,15 +67,13 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
 
     // Guard condition trees.
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(cond_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.conditions[i])
+        if let (Some(nc), Some(kind_comp), Some(cond_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.conditions[i])
         {
             if let crate::ecs::EntityKind::GUARD = kind_comp.0 {
-                out.push_str(&format!(
-                    "  subgraph cluster_guard_{} {{\n",
-                    sanitize_id(&name_comp.0)
-                ));
-                out.push_str(&format!("    label=\"guard: {}\";\n", name_comp.0));
+                let name = registry.resolve_name(nc.0);
+                out.push_str(&format!("  subgraph cluster_guard_{} {{\n", sanitize_id(name)));
+                out.push_str(&format!("    label=\"guard: {}\";\n", name));
                 emit_expr_nodes_ecs(registry, cond_comp.0, &mut node_id, &mut out);
                 out.push_str("  }\n");
             }
@@ -84,23 +82,24 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
 
     // Reflex assignment RHS trees.
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(r)) =
-            (&registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
+        if let (Some(nc), Some(kind_comp), Some(r)) =
+            (registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
         {
             if let crate::ecs::EntityKind::REFLEX = kind_comp.0 {
+                let reflex_name = registry.resolve_name(nc.0);
                 for a_id in &r.assignments {
                     if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
-                        let target_name_opt =
-                            registry.names[assign.target.0 as usize].as_ref().map(|n| &n.0);
+                        let target_name_opt = registry.names[assign.target.0 as usize]
+                            .map(|n| registry.resolve_name(n.0));
                         if let Some(target_name) = target_name_opt {
                             out.push_str(&format!(
                                 "  subgraph cluster_{}_{} {{\n",
-                                sanitize_id(&name_comp.0),
+                                sanitize_id(reflex_name),
                                 sanitize_id(target_name)
                             ));
                             out.push_str(&format!(
                                 "    label=\"{}.{}\";\n",
-                                name_comp.0, target_name
+                                reflex_name, target_name
                             ));
                             emit_expr_nodes_ecs(registry, assign.value, &mut node_id, &mut out);
                             out.push_str("  }\n");
@@ -134,8 +133,8 @@ fn emit_pattern_origin_comments(registry: &crate::ecs::Registry, out: &mut Strin
 
     out.push_str("  // ── Pattern Definitions ──\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(_)) = (&registry.names[i], &registry.pattern_defs[i]) {
-            out.push_str(&format!("  // Pattern: {}\n", name_comp.0));
+        if let (Some(nc), Some(_)) = (registry.names[i], &registry.pattern_defs[i]) {
+            out.push_str(&format!("  // Pattern: {}\n", registry.resolve_name(nc.0)));
         }
     }
     out.push('\n');
@@ -144,10 +143,11 @@ fn emit_pattern_origin_comments(registry: &crate::ecs::Registry, out: &mut Strin
 fn emit_signal_nodes(registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("  // Signals\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
+                let name = registry.resolve_name(nc.0);
                 let shape = match sig_kind {
                     SignalKind::Input => "invhouse",
                     SignalKind::Output => "house",
@@ -161,8 +161,8 @@ fn emit_signal_nodes(registry: &crate::ecs::Registry, out: &mut String) {
                 };
                 out.push_str(&format!(
                     "  {} [label=\"{}: {}\" shape={shape}];\n",
-                    sanitize_id(&name_comp.0),
-                    name_comp.0,
+                    sanitize_id(name),
+                    name,
                     width_label,
                 ));
             }
@@ -174,14 +174,15 @@ fn emit_signal_nodes(registry: &crate::ecs::Registry, out: &mut String) {
 fn emit_guard_nodes(registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("  // Guards\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(cycles_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.cycles[i])
+        if let (Some(nc), Some(kind_comp), Some(cycles_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.cycles[i])
         {
             if let crate::ecs::EntityKind::GUARD = kind_comp.0 {
+                let name = registry.resolve_name(nc.0);
                 out.push_str(&format!(
                     "  {} [label=\"{} ({}c)\" shape=diamond style=filled fillcolor=lightyellow];\n",
-                    guard_node_id(&name_comp.0),
-                    name_comp.0,
+                    guard_node_id(name),
+                    name,
                     cycles_comp.0,
                 ));
             }
@@ -206,8 +207,8 @@ fn collect_signal_refs_ecs(
 
         if let Some(crate::ecs::components::SignalRefComponent(sig_id)) = registry.signal_refs[idx]
         {
-            if let Some(n) = &registry.names[sig_id.0 as usize] {
-                refs.push(n.0.clone());
+            if let Some(nc) = registry.names[sig_id.0 as usize] {
+                refs.push(registry.resolve_name(nc.0).to_string());
             }
         } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
             &registry.pending_signal_refs[idx]
@@ -274,8 +275,8 @@ fn collect_prev_refs_ecs(
             if let Some(crate::ecs::components::SignalRefComponent(sig_id)) =
                 registry.signal_refs[signal.0 as usize]
             {
-                if let Some(n) = &registry.names[sig_id.0 as usize] {
-                    refs.push((n.0.clone(), *delay));
+                if let Some(nc) = registry.names[sig_id.0 as usize] {
+                    refs.push((registry.resolve_name(nc.0).to_string(), *delay));
                 }
             } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
                 &registry.pending_signal_refs[signal.0 as usize]
@@ -327,16 +328,17 @@ fn collect_prev_refs_ecs(
 fn emit_guard_edges(registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("  // Guard inputs\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(cond_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.conditions[i])
+        if let (Some(nc), Some(kind_comp), Some(cond_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.conditions[i])
         {
             if let crate::ecs::EntityKind::GUARD = kind_comp.0 {
+                let guard_name = registry.resolve_name(nc.0);
                 let refs = collect_signal_refs_ecs(registry, cond_comp.0);
                 for sig in &refs {
                     out.push_str(&format!(
                         "  {} -> {};\n",
                         sanitize_id(sig),
-                        guard_node_id(&name_comp.0)
+                        guard_node_id(guard_name)
                     ));
                 }
                 // Prev back-edges rendered as dashed red.
@@ -345,7 +347,7 @@ fn emit_guard_edges(registry: &crate::ecs::Registry, out: &mut String) {
                     out.push_str(&format!(
                         "  {} -> {} [style=dashed color=red label=\"prev\"];\n",
                         sanitize_id(sig),
-                        guard_node_id(&name_comp.0),
+                        guard_node_id(guard_name),
                     ));
                 }
             }
@@ -358,23 +360,25 @@ fn emit_guard_edges(registry: &crate::ecs::Registry, out: &mut String) {
 fn emit_reflex_edges(registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("  // Reflex assignments\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(r)) =
-            (&registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
+        if let (Some(nc), Some(kind_comp), Some(r)) =
+            (registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
         {
             if let crate::ecs::EntityKind::REFLEX = kind_comp.0 {
+                let reflex_name = registry.resolve_name(nc.0);
                 for gname in &r.guards {
-                    let g_name_str_opt = registry.names[gname.0 as usize].as_ref().map(|n| &n.0);
-                    if let Some(g_name_str) = g_name_str_opt {
+                    let g_name_opt =
+                        registry.names[gname.0 as usize].map(|n| registry.resolve_name(n.0));
+                    if let Some(g_name) = g_name_opt {
                         for a_id in &r.assignments {
                             if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
-                                let target_name_opt =
-                                    registry.names[assign.target.0 as usize].as_ref().map(|n| &n.0);
+                                let target_name_opt = registry.names[assign.target.0 as usize]
+                                    .map(|n| registry.resolve_name(n.0));
                                 if let Some(target_name) = target_name_opt {
                                     out.push_str(&format!(
                                         "  {} -> {} [label=\"{}\"];\n",
-                                        guard_node_id(g_name_str),
+                                        guard_node_id(g_name),
                                         sanitize_id(target_name),
-                                        name_comp.0,
+                                        reflex_name,
                                     ));
                                 }
                             }
@@ -466,12 +470,10 @@ fn emit_expr_nodes_ecs(
         } else if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
             registry.signal_refs[idx]
         {
-            let name_opt = registry.names[sig_ent.0 as usize].as_ref().map(|n| &n.0);
-            if let Some(name) = name_opt {
-                out.push_str(&format!("    n{my_id} [label=\"{name}\" shape=ellipse];\n"));
-            } else {
-                out.push_str(&format!("    n{my_id} [label=\"unknown_sig\" shape=ellipse];\n"));
-            }
+            let name = registry.names[sig_ent.0 as usize]
+                .map(|n| registry.resolve_name(n.0))
+                .unwrap_or("unknown_sig");
+            out.push_str(&format!("    n{my_id} [label=\"{name}\" shape=ellipse];\n"));
         } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
             &registry.pending_signal_refs[idx]
         {
@@ -482,7 +484,9 @@ fn emit_expr_nodes_ecs(
             let name = if let Some(crate::ecs::components::SignalRefComponent(decl)) =
                 registry.signal_refs[signal.0 as usize]
             {
-                registry.names[decl.0 as usize].as_ref().map(|n| n.0.clone()).unwrap_or_default()
+                registry.names[decl.0 as usize]
+                    .map(|n| registry.resolve_name(n.0).to_string())
+                    .unwrap_or_default()
             } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
                 &registry.pending_signal_refs[signal.0 as usize]
             {
@@ -636,11 +640,12 @@ fn emit_property_nodes(registry: &crate::ecs::Registry, out: &mut String) {
 
     out.push_str("  // ── Safety Properties ──\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(prop)) =
-            (&registry.names[i], &registry.kinds[i], &registry.property_comps[i])
+        if let (Some(nc), Some(kind_comp), Some(prop)) =
+            (registry.names[i], &registry.kinds[i], &registry.property_comps[i])
         {
             if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
-                let prop_id = format!("prop_{}", sanitize_id(&name_comp.0));
+                let name = registry.resolve_name(nc.0);
+                let prop_id = format!("prop_{}", sanitize_id(name));
                 let fillcolor = match prop.directive {
                     crate::ast::property::PropertyDirective::Assert => "lightblue",
                     crate::ast::property::PropertyDirective::Cover => "lightyellow",
@@ -648,7 +653,7 @@ fn emit_property_nodes(registry: &crate::ecs::Registry, out: &mut String) {
                 };
                 out.push_str(&format!(
                     "  {prop_id} [shape=note style=filled fillcolor={fillcolor} label=\"{}\"];\n",
-                    name_comp.0,
+                    name,
                 ));
 
                 for expr_id in &prop.formula_exprs {

@@ -1,5 +1,5 @@
 use mirrc::parse_mirr;
-use mirrc::pipeline::{run_pipeline_on_program, PipelineConfig};
+use mirrc::pipeline::{run_pipeline_with_file, PipelineConfig};
 
 #[test]
 fn test_bool_u1_compatibility() {
@@ -15,9 +15,8 @@ fn test_bool_u1_compatibility() {
         }
     }
     ";
-    let program = parse_mirr(source).unwrap();
     let config = PipelineConfig::default();
-    let result = run_pipeline_on_program(program, &config);
+    let result = run_pipeline_with_file(source, "test.mirr", &config);
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -34,9 +33,8 @@ fn test_width_mismatch_error() {
         }
     }
     ";
-    let program = parse_mirr(source).unwrap();
     let config = PipelineConfig::default();
-    let result = run_pipeline_on_program(program, &config);
+    let result = run_pipeline_with_file(source, "test.mirr", &config);
     assert!(result.is_err());
     let errs = result.expect_err("Expected errors for width mismatch");
     println!("Actual errors: {:?}", errs);
@@ -57,9 +55,8 @@ fn test_bitwise_mixed_types() {
         }
     }
     ";
-    let program = parse_mirr(source).unwrap();
     let config = PipelineConfig::default();
-    let result = run_pipeline_on_program(program, &config);
+    let result = run_pipeline_with_file(source, "test.mirr", &config);
     assert!(
         result.is_err(),
         "Expected type error under standard MIRR for mixed-type logical operands"
@@ -85,9 +82,8 @@ fn test_index_unsigned() {
         }
     }
     ";
-    let program = parse_mirr(source).unwrap();
     let config = PipelineConfig::default();
-    let result = run_pipeline_on_program(program, &config);
+    let result = run_pipeline_with_file(source, "test.mirr", &config);
     if result.is_ok() {
         println!("Indexing unsigned is supported!");
     } else {
@@ -108,9 +104,8 @@ fn test_index_bool_array() {
         }
     }
     ";
-    let program = parse_mirr(source).unwrap();
     let config = PipelineConfig::default();
-    let result = run_pipeline_on_program(program, &config);
+    let result = run_pipeline_with_file(source, "test.mirr", &config);
     if result.is_ok() {
         println!("Indexing bool array is supported!");
     } else {

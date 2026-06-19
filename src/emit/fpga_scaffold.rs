@@ -31,7 +31,11 @@ fn get_ports(registry: &crate::ecs::Registry) -> Vec<Port> {
             use crate::ecs::components::EntityKind;
             if let EntityKind::SIGNAL(skind) = kind.0 {
                 let width = ty.0.core.width();
-                ports.push(Port { name: name.0.clone(), kind: skind, width });
+                ports.push(Port {
+                    name: registry.resolve_name(name.0).to_string(),
+                    kind: skind,
+                    width,
+                });
             }
         }
     }

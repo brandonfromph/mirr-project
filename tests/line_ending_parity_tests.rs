@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![forbid(unsafe_code)]
 //! Line-ending parity tests (LF vs CRLF).
 

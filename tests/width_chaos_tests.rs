@@ -11,7 +11,7 @@ fn get_registry_and_scc(
     let mut sig_id = None;
     for (id, name) in registry.names.iter().enumerate() {
         if let Some(n) = name {
-            if n.0 == signal_name {
+            if registry.resolve_name(n.0) == signal_name {
                 sig_id = Some(mirrc::ecs::components::EntityId(id as u32));
                 break;
             }

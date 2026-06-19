@@ -13,9 +13,13 @@ use std::collections::{HashMap, HashSet};
 use crate::ast::expr::Expr;
 use crate::ast::pattern::PatternDef;
 use crate::ast::program::Module;
-
 use crate::ast::types::SignalKind;
 use crate::ast::MAX_EXPR_NODES;
+use crate::ecs::components::{
+    AssignmentComponent, BinaryComponent, EntityId, EntityKind, KindComponent, LiteralComponent,
+    ModuleComponent, PrevComponent, ReflexComponent, SignalRefComponent, UnaryComponent,
+};
+use crate::ecs::Registry;
 use crate::error::MirrError;
 use crate::error::PipelineErrors;
 use crate::parser::pattern_parser::{MAX_PARAMS, MAX_REFLECT_LINES};
@@ -690,6 +694,163 @@ pub fn collect_signal_refs(expr: &Expr) -> Vec<String> {
     }
 
     refs
+}
+
+/// ECS-native: Collect all signal references in an expression entity.
+pub fn collect_signal_refs_ecs(registry: &Registry, entity: EntityId) -> Vec<String> {
+    let mut iterations = 0usize;
+    let mut refs = Vec::with_capacity(16);
+    let mut stack: Vec<EntityId> = Vec::with_capacity(32);
+    stack.push(entity);
+
+    while let Some(node) = stack.pop() {
+        iterations += 1;
+        if iterations > MAX_EXPR_NODES {
+            break;
+        }
+
+        let idx = node.0 as usize;
+        if let Some(SignalRefComponent(sig_ent)) = &registry.signal_refs[idx] {
+            if let Some(nc) = registry.names[sig_ent.0 as usize] {
+                let name = registry.resolve_name(nc.0);
+                let clean_name = if let Some(pos) = name.find('[') { &name[..pos] } else { name };
+                refs.push(clean_name.to_string());
+            }
+        } else if let Some(PrevComponent { signal, .. }) = &registry.prev_ops[idx] {
+            stack.push(*signal);
+        } else if let Some(UnaryComponent { operand, .. }) = &registry.unary_ops[idx] {
+            stack.push(*operand);
+        } else if let Some(BinaryComponent { left, right, .. }) = &registry.binary_ops[idx] {
+            stack.push(*left);
+            stack.push(*right);
+        } else if let Some(LiteralComponent(_)) = &registry.literals[idx] {
+            // No signal refs in literals
+        }
+        // TODO: ArrayIndex, FieldAccess, etc. when they are fully ECS-ified
+    }
+
+    refs
+}
+
+/// ECS-native: Validate a module in the Registry for semantic correctness.
+pub fn validate_module_ecs(registry: &Registry, mod_id: EntityId) -> Result<(), PipelineErrors> {
+    let mut errors = PipelineErrors::new();
+    let mut reported_undeclared: HashSet<String> = HashSet::with_capacity(16);
+
+    // Collect names of entities belonging to this module using Bitmask Filter.
+    let mut module_entities = Vec::new();
+    for entity in registry.entities_with_components(crate::ecs::registry::COMP_MODULE) {
+        if let Some(ModuleComponent(m_id)) = &registry.modules[entity.0 as usize] {
+            if *m_id == mod_id {
+                module_entities.push(entity);
+            }
+        }
+    }
+
+    // Check for duplicate names (Signals, Guards, Reflexes, Properties).
+    let mut seen_names: HashMap<&str, (Option<Span>, &str)> =
+        HashMap::with_capacity(module_entities.len());
+
+    for &ent in &module_entities {
+        let idx = ent.0 as usize;
+        if let (Some(nc), Some(KindComponent(kind))) = (registry.names[idx], &registry.kinds[idx]) {
+            let name = registry.resolve_name(nc.0);
+            let kind_str = match kind {
+                EntityKind::SIGNAL(_) => "signal",
+                EntityKind::GUARD => "guard",
+                EntityKind::REFLEX => "reflex",
+                EntityKind::PROPERTY => "property",
+                _ => continue,
+            };
+
+            if let Some((first_span, first_kind)) = seen_names.get(name) {
+                let code = if kind_str == *first_kind {
+                    match kind {
+                        EntityKind::SIGNAL(_) => crate::error_codes::ec(201),
+                        EntityKind::GUARD => crate::error_codes::ec(213),
+                        EntityKind::REFLEX => crate::error_codes::ec(212),
+                        EntityKind::PROPERTY => crate::error_codes::ec(214),
+                        _ => crate::error_codes::ec(201),
+                    }
+                } else {
+                    crate::error_codes::ec(201)
+                };
+
+                let mut msg = if kind_str == *first_kind {
+                    format!("{} Duplicate {} name: '{}'.", code, kind_str, name)
+                } else {
+                    format!(
+                        "{} Name collision: '{}' is defined as both a {} and a {}.",
+                        code, name, kind_str, first_kind
+                    )
+                };
+
+                if let Some(fs) = first_span {
+                    msg.push_str(&format!(" First defined at line {}.", fs.start_line + 1));
+                }
+                errors.push(MirrError::SemanticError {
+                    message: msg,
+                    span: registry.spans[idx].as_ref().map(|s| s.0),
+                });
+            } else {
+                seen_names.insert(name, (registry.spans[idx].as_ref().map(|s| s.0), kind_str));
+            }
+        }
+    }
+
+    // Check for undeclared signal references in expressions.
+    for &ent in &module_entities {
+        let idx = ent.0 as usize;
+        // Collect all expression nodes reachable from this entity.
+        let expr_roots = match &registry.kinds[idx] {
+            Some(KindComponent(EntityKind::GUARD)) => {
+                registry.conditions[idx].as_ref().map(|c| vec![c.0]).unwrap_or_default()
+            }
+            Some(KindComponent(EntityKind::REFLEX)) => {
+                let mut roots = Vec::new();
+                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[idx] {
+                    for &a_id in assignments {
+                        if let Some(AssignmentComponent { value, .. }) =
+                            &registry.assignment_comps[a_id.0 as usize]
+                        {
+                            roots.push(*value);
+                        }
+                    }
+                }
+                roots
+            }
+            Some(KindComponent(EntityKind::PROPERTY)) => registry.property_comps[idx]
+                .as_ref()
+                .map(|p| p.formula_exprs.clone())
+                .unwrap_or_default(),
+            _ => vec![],
+        };
+
+        for root in expr_roots {
+            let refs = collect_signal_refs_ecs(registry, root);
+            for sig_name in refs {
+                if !seen_names.contains_key(sig_name.as_str())
+                    && !reported_undeclared.contains(&sig_name)
+                {
+                    errors.push(MirrError::SemanticError {
+                        message: format!(
+                            "{} Undeclared signal '{}' referenced in expression.",
+                            crate::error_codes::ec(202),
+                            sig_name
+                        ),
+                        span: registry.spans[idx].as_ref().map(|s| s.0),
+                    });
+                    reported_undeclared.insert(sig_name);
+                }
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
 }
 
 /// Validate property declarations: no duplicate names, all signal refs declared.

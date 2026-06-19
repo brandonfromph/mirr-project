@@ -25,6 +25,12 @@ pub mod statistics;
 
 use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};
+use crate::ecs::components::{
+    AssignmentComponent, BinaryComponent, EntityId, EntityKind, KindComponent, LiteralComponent,
+    ModuleComponent, PrevComponent, ReflexComponent, SignalRefComponent, TypeComponent,
+    UnaryComponent,
+};
+use crate::ecs::Registry;
 use crate::error::MirrError;
 
 // ── NASA Power-of-10 bounds ────────────────────────────────────────────────
@@ -271,6 +277,73 @@ pub fn sym_eval_expr(expr: &Expr, state: &SymState) -> SymValue {
     values.pop().unwrap_or(SymValue::Top)
 }
 
+/// ECS-native: Symbolically evaluate an entity in the Registry.
+pub fn sym_eval_ecs(registry: &Registry, entity: EntityId, state: &SymState) -> SymValue {
+    enum Work {
+        Eval(EntityId),
+        ApplyUnary(UnaryOp),
+        ApplyBinary(BinaryOp),
+    }
+
+    let mut work: Vec<Work> = Vec::with_capacity(MAX_SYM_DEPTH);
+    let mut values: Vec<SymValue> = Vec::with_capacity(MAX_SYM_DEPTH);
+
+    work.push(Work::Eval(entity));
+
+    let max_iters = MAX_SYM_DEPTH * 3;
+    let mut iter_count: usize = 0;
+
+    while let Some(item) = work.pop() {
+        iter_count += 1;
+        if iter_count > max_iters {
+            return SymValue::Top;
+        }
+
+        match item {
+            Work::Eval(id) => {
+                let idx = id.0 as usize;
+                if let Some(LiteralComponent(lit)) = &registry.literals[idx] {
+                    let v = match lit {
+                        LiteralValue::Bool(b) => SymValue::Concrete(u64::from(*b)),
+                        LiteralValue::Integer(n) => SymValue::Concrete(*n),
+                    };
+                    values.push(v);
+                } else if let Some(SignalRefComponent(sig_ent)) = &registry.signal_refs[idx] {
+                    if let Some(nc) = &registry.names[sig_ent.0 as usize] {
+                        let name = registry.resolve_name(nc.0);
+                        values.push(state.lookup(name));
+                    } else {
+                        values.push(SymValue::Top);
+                    }
+                } else if let Some(PrevComponent { .. }) = &registry.prev_ops[idx] {
+                    values.push(SymValue::Top);
+                } else if let Some(UnaryComponent { op, operand }) = &registry.unary_ops[idx] {
+                    work.push(Work::ApplyUnary(*op));
+                    work.push(Work::Eval(*operand));
+                } else if let Some(BinaryComponent { op, left, right }) = &registry.binary_ops[idx]
+                {
+                    work.push(Work::ApplyBinary(*op));
+                    work.push(Work::Eval(*right));
+                    work.push(Work::Eval(*left));
+                } else {
+                    values.push(SymValue::Top);
+                }
+            }
+            Work::ApplyUnary(op) => {
+                let val = values.pop().unwrap_or(SymValue::Top);
+                values.push(sym_eval_unary(op, val));
+            }
+            Work::ApplyBinary(op) => {
+                let rhs = values.pop().unwrap_or(SymValue::Top);
+                let lhs = values.pop().unwrap_or(SymValue::Top);
+                values.push(sym_eval_binary(op, lhs, rhs));
+            }
+        }
+    }
+
+    values.pop().unwrap_or(SymValue::Top)
+}
+
 // ── Binary abstract transfer function ──────────────────────────────────────
 
 /// Evaluate a binary operation on two abstract values.
@@ -462,6 +535,116 @@ pub fn analyze_module(module: &crate::ast::program::Module) -> Result<SymbolicRe
                             sig_width
                         ),
                     });
+                }
+            }
+        }
+    }
+
+    Ok(SymbolicResult { intervals, violations, iterations: 1, converged: true })
+}
+
+/// ECS-native: Symbolically analyze an entire module in the Registry.
+pub fn analyze_module_ecs(
+    registry: &Registry,
+    mod_id: EntityId,
+) -> Result<SymbolicResult, MirrError> {
+    // Collect all signals belonging to this module.
+    let mut module_signals = Vec::new();
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
+                    module_signals.push(EntityId(i as u32));
+                }
+            }
+        }
+    }
+
+    if module_signals.len() > MAX_SYM_SIGNALS {
+        return Err(MirrError::SymbolicError {
+            message: format!(
+                "{} Symbolic analysis: {} signals exceed maximum ({})",
+                crate::error_codes::ec(1003),
+                module_signals.len(),
+                MAX_SYM_SIGNALS
+            ),
+            span: None,
+        });
+    }
+
+    // Build initial state: every signal starts as Unknown { width }.
+    let mut state = SymState::new();
+    for sig_ent in &module_signals {
+        let idx = sig_ent.0 as usize;
+        let name = if let Some(nc) = &registry.names[idx] {
+            registry.resolve_name(nc.0).to_string()
+        } else {
+            String::new()
+        };
+        let width =
+            if let Some(TypeComponent(ty)) = &registry.types[idx] { ty.core.width() } else { 64 };
+        state.signals.push((name, SymValue::Unknown { width }));
+    }
+
+    // Evaluate every reflex assignment symbolically.
+    let mut intervals: Vec<(String, SymValue)> = Vec::new();
+    let mut violations: Vec<SymbolicViolation> = Vec::new();
+
+    // Find reflexes belonging to this module.
+    for (i, mod_comp) in registry.modules.iter().enumerate() {
+        if let Some(ModuleComponent(m_id)) = mod_comp {
+            if *m_id == mod_id {
+                if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
+                    for &assign_ent in assignments {
+                        if let Some(AssignmentComponent { target, value }) =
+                            &registry.assignment_comps[assign_ent.0 as usize]
+                        {
+                            let val = sym_eval_ecs(registry, *value, &state);
+                            let target_name = if let Some(nc) = &registry.names[target.0 as usize] {
+                                registry.resolve_name(nc.0).to_string()
+                            } else {
+                                String::new()
+                            };
+                            intervals.push((target_name.clone(), val));
+
+                            // Check width bounds.
+                            let sig_width = if let Some(TypeComponent(ty)) =
+                                &registry.types[target.0 as usize]
+                            {
+                                ty.core.width()
+                            } else {
+                                0
+                            };
+
+                            if sig_width > 0 {
+                                let max_val = if sig_width >= 64 {
+                                    u64::MAX
+                                } else {
+                                    (1u64 << sig_width) - 1
+                                };
+
+                                let definitely_exceeds = match val {
+                                    SymValue::Concrete(v) => v > max_val,
+                                    SymValue::Interval { hi, .. } => hi > max_val,
+                                    SymValue::Unknown { .. } | SymValue::Top => false,
+                                };
+
+                                if definitely_exceeds {
+                                    violations.push(SymbolicViolation {
+                                        signal: target_name.clone(),
+                                        expected: SymValue::Interval { lo: 0, hi: max_val },
+                                        actual: val,
+                                        message: format!(
+                                            "{} Signal '{}' may exceed {}-bit width bounds",
+                                            crate::error_codes::ec(1001),
+                                            target_name,
+                                            sig_width
+                                        ),
+                                    });
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

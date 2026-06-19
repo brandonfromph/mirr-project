@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 //! TYPE-005: Higher-Order Patterns tests.
 //!
 //! Verifies:

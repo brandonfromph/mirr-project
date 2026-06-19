@@ -56,6 +56,8 @@ pub const COMP_TEMPORAL_NODE: u64 = 1 << 30;
 pub const COMP_HLS_DATAFLOW: u64 = 1 << 31;
 pub const COMP_HLS_SCHEDULE: u64 = 1 << 32;
 pub const COMP_HLS_BINDING: u64 = 1 << 33;
+pub const COMP_PATTERN_CALL: u64 = 1 << 34;
+pub const COMP_PATTERN_INSTANCE: u64 = 1 << 35;
 
 /// The Registry: The Data-Oriented "World" of the MIRR Compiler.
 /// Refactored to Vec-based storage for O(1) access and cache locality.
@@ -78,6 +80,8 @@ pub struct Registry {
     pub spans: Vec<Option<SpanComponent>>,
     pub modules: Vec<Option<ModuleComponent>>,
     pub pattern_defs: Vec<Option<PatternDefComponent>>,
+    pub pattern_calls: Vec<Option<PatternCallComponent>>,
+    pub pattern_instances: Vec<Option<PatternInstanceComponent>>,
     pub cycles: Vec<Option<CyclesComponent>>,
     pub conditions: Vec<Option<ConditionComponent>>,
 
@@ -158,6 +162,8 @@ impl Registry {
             spans: vec![None; cap],
             modules: vec![None; cap],
             pattern_defs: vec![None; cap],
+            pattern_calls: vec![None; cap],
+            pattern_instances: vec![None; cap],
             cycles: vec![None; cap],
             conditions: vec![None; cap],
             literals: vec![None; cap],
@@ -204,14 +210,16 @@ impl Registry {
         self.next_id += 1;
 
         let idx = id.0 as usize;
-        if idx >= self.names.len() {
+        if idx >= self.component_masks.len() {
             let new_cap = (idx + 1024).min(MAX_ENTITIES);
             self.component_masks.resize(new_cap, 0);
             self.names.resize(new_cap, None);
             self.kinds.resize(new_cap, None);
-            self.types.resize(new_cap, None);
+            self.spans.resize(new_cap, None);
             self.modules.resize(new_cap, None);
             self.pattern_defs.resize(new_cap, None);
+            self.pattern_calls.resize(new_cap, None);
+            self.pattern_instances.resize(new_cap, None);
             self.cycles.resize(new_cap, None);
             self.conditions.resize(new_cap, None);
             self.literals.resize(new_cap, None);
@@ -253,21 +261,19 @@ impl Registry {
 
     /// Returns an iterator over all EntityIds that possess ALL components specified in the mask.
     pub fn entities_with_components(&self, mask: u64) -> impl Iterator<Item = EntityId> + '_ {
-        self.component_masks
-            .iter()
-            .enumerate()
-            .take(self.active_entities())
-            .filter_map(move |(i, &entity_mask)| {
+        self.component_masks.iter().enumerate().take(self.active_entities()).filter_map(
+            move |(i, &entity_mask)| {
                 if entity_mask & mask == mask {
                     Some(EntityId(i as u32))
                 } else {
                     None
                 }
-            })
+            },
+        )
     }
 
-// --- Component Setters ---
-#[inline]
+    // --- Component Setters ---
+    #[inline]
     pub fn set_name(&mut self, entity: EntityId, comp: NameComponent) {
         let idx = entity.0 as usize;
         self.names[idx] = Some(comp);
@@ -309,6 +315,30 @@ impl Registry {
         let idx = entity.0 as usize;
         self.pattern_defs[idx] = Some(comp);
         self.component_masks[idx] |= COMP_PATTERN_DEF;
+    }
+    #[inline]
+    pub fn set_pattern_call(&mut self, entity: EntityId, comp: PatternCallComponent) {
+        let idx = entity.0 as usize;
+        self.pattern_calls[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_PATTERN_CALL;
+    }
+    #[inline]
+    pub fn unset_pattern_call(&mut self, entity: EntityId) {
+        let idx = entity.0 as usize;
+        self.pattern_calls[idx] = None;
+        self.component_masks[idx] &= !COMP_PATTERN_CALL;
+    }
+    #[inline]
+    pub fn set_pattern_instance(&mut self, entity: EntityId, comp: PatternInstanceComponent) {
+        let idx = entity.0 as usize;
+        self.pattern_instances[idx] = Some(comp);
+        self.component_masks[idx] |= COMP_PATTERN_INSTANCE;
+    }
+    #[inline]
+    pub fn unset_pattern_instance(&mut self, entity: EntityId) {
+        let idx = entity.0 as usize;
+        self.pattern_instances[idx] = None;
+        self.component_masks[idx] &= !COMP_PATTERN_INSTANCE;
     }
     #[inline]
     pub fn set_cycle(&mut self, entity: EntityId, comp: CyclesComponent) {
@@ -499,7 +529,6 @@ impl Registry {
         self.hls_bindings[idx] = Some(comp);
         self.component_masks[idx] |= COMP_HLS_BINDING;
     }
-
 
     /// Create a new Knowledge Base Chunk Entity
     pub fn create_kb_chunk(
@@ -707,7 +736,7 @@ impl Registry {
                     return Err(MirrError::SemanticError {
                         message: format!(
                             "{} Undeclared guard '{}' referenced in reflex.",
-                            crate::error_codes::ec(204),
+                            crate::error_codes::ec(205),
                             gname
                         ),
                         span: reflex.span,
@@ -719,10 +748,11 @@ impl Registry {
             for assign in &reflex.assignments {
                 let val_ent = self.ingest_expr(&assign.value)?;
                 let target_ent = self.get_entity_by_name(&assign.target).unwrap_or_else(|| {
-                    self.create_entity(
-                        &assign.target,
-                        KindComponent(EntityKind::SIGNAL(crate::ast::types::SignalKind::Internal)),
-                    )
+                    let id = self.next_id();
+                    let name_id = self.interner.intern(&assign.target);
+                    self.set_name(id, NameComponent(name_id));
+                    self.symbol_to_entity.insert(assign.target.clone(), id);
+                    id
                 });
 
                 let assign_ent = self.next_id();
@@ -747,8 +777,11 @@ impl Registry {
 
             self.names[r_idx] = Some(NameComponent(self.interner.intern(&reflex.name)));
             self.kinds[r_idx] = Some(KindComponent(EntityKind::REFLEX));
-            self.reflex_comps[r_idx] =
-                Some(ReflexComponent { guards: guard_entities, assignments: assignment_entities });
+            self.reflex_comps[r_idx] = Some(ReflexComponent {
+                guards: guard_entities,
+                assignments: assignment_entities,
+                origin: reflex.origin.clone(),
+            });
             if let Some(span) = reflex.span {
                 self.spans[r_idx] = Some(SpanComponent(span));
             }

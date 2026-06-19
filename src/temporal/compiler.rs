@@ -281,14 +281,13 @@ impl TemporalCompiler {
 
         let name = registry.names[idx]
             .as_ref()
+            .map(|nc| registry.resolve_name(nc.0).to_string())
             .ok_or_else(|| {
-                mirrcode(
-                    ErrorCode::TemporalCondLowerFailed,
-                    format!("Guard entity {} missing NameComponent", guard_entity.0),
-                )
-            })?
-            .0
-            .clone();
+            mirrcode(
+                ErrorCode::TemporalCondLowerFailed,
+                format!("Guard entity {} missing NameComponent", guard_entity.0),
+            )
+        })?;
 
         let cycles = registry.cycles[idx]
             .ok_or_else(|| {

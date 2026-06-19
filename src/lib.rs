@@ -84,7 +84,7 @@ pub use error::PipelineErrors;
 pub use error_codes::{mirrcode, ErrorCode};
 pub use mape_k::{MapeKResult, MapeKSimulator, SimConfig};
 pub use parser::parse_mirr;
-pub use pipeline::{run_pipeline, run_pipeline_on_program, PipelineConfig, PipelineResult};
+pub use pipeline::{run_pipeline, run_pipeline_with_file, PipelineConfig, PipelineResult};
 pub use simplify::SimplifyStats;
 pub use temporal::{
     low_level_ir::TemporalNetlist, low_level_ir::TemporalNetlistJson, TemporalGuardCompiler,

@@ -14,6 +14,7 @@ use rayon::prelude::*;
 
 pub mod hls_schedule;
 pub mod hls_sharing;
+pub mod pattern_expansion;
 
 /// ECS System: Parallel Constant Folding.
 pub fn parallel_constant_folding_system(registry: &mut Registry) {
@@ -31,8 +32,8 @@ pub fn parallel_constant_folding_system(registry: &mut Registry) {
 
     for (id, value) in reductions {
         let idx = id.0 as usize;
-        registry.binary_ops[idx] = None;
-        registry.literals[idx] = Some(LiteralComponent(value));
+        registry.unset_binary_op(EntityId(idx as u32));
+        registry.set_literal(EntityId(idx as u32), LiteralComponent(value));
     }
 }
 
@@ -271,6 +272,7 @@ pub fn sat_simplification_system(
     stats
 }
 
+/* --- STRANGLER PATTERN: ORCHESTRATOR ARCHIVED ---
 /// ECS System: Pipeline Orchestrator.
 pub fn run_compilation_pipeline(
     registry: &mut Registry,
@@ -280,6 +282,7 @@ pub fn run_compilation_pipeline(
     let (_, _, _, stats) = parallel_width_inference_system(registry);
     (stats, sat_stats)
 }
+*/
 
 /// ECS System: Temporal Synthesis (Proposal 110 — Phase 3 ECS Transition).
 ///
@@ -323,7 +326,9 @@ pub fn temporal_synthesis_system(registry: &mut Registry) -> Result<TemporalNetl
         let idx = gid.0 as usize;
         if let Some(name_comp) = &registry.names[idx] {
             // Find this guard in the netlist.
-            if let Some(compiled) = netlist.guards.iter().find(|g| g.name() == name_comp.0) {
+            if let Some(compiled) =
+                netlist.guards.iter().find(|g| g.name() == registry.resolve_name(name_comp.0))
+            {
                 let node = match compiled {
                     CompiledGuard::ShiftRegister(sr) => TemporalNodeComponent {
                         strategy: TemporalStrategy::ShiftRegister,
@@ -356,7 +361,7 @@ pub fn temporal_synthesis_system(registry: &mut Registry) -> Result<TemporalNetl
                         delay_cycles: dc.max_delay,
                     },
                 };
-                registry.temporal_nodes[idx] = Some(node);
+                registry.set_temporal_node(EntityId(idx as u32), node);
             }
         }
     }
@@ -472,11 +477,20 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                 // Rule: !true => false, !false => true
                 if unary.op == UnaryOp::Not {
                     let operand_idx = unary.operand.0 as usize;
-                    if let Some(LiteralComponent(LiteralValue::Bool(b))) =
+                    let operand_bool = if let Some(LiteralComponent(LiteralValue::Bool(b))) =
                         &registry.literals[operand_idx]
                     {
-                        registry.unary_ops[idx] = None;
-                        registry.literals[idx] = Some(LiteralComponent(LiteralValue::Bool(!*b)));
+                        Some(*b)
+                    } else {
+                        None
+                    };
+
+                    if let Some(b) = operand_bool {
+                        registry.unset_unary_op(EntityId(idx as u32));
+                        registry.set_literal(
+                            EntityId(idx as u32),
+                            LiteralComponent(LiteralValue::Bool(!b)),
+                        );
                         rules_fired += 1;
                         continue;
                     }
@@ -497,8 +511,8 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                 // Constant folding
                 if let (Some(l_lit), Some(r_lit)) = (&left_lit, &right_lit) {
                     if let Some(val) = fold_binary(binary.op, l_lit, r_lit) {
-                        registry.binary_ops[idx] = None;
-                        registry.literals[idx] = Some(LiteralComponent(val));
+                        registry.unset_binary_op(EntityId(idx as u32));
+                        registry.set_literal(EntityId(idx as u32), LiteralComponent(val));
                         rules_fired += 1;
                         continue;
                     }
@@ -515,15 +529,19 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Bool(false)) = right_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Bool(false)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Bool(false)),
+                            );
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Bool(false)) = left_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Bool(false)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Bool(false)),
+                            );
                             rules_fired += 1;
                             continue;
                         } else if eq {
@@ -531,9 +549,11 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                             rules_fired += 1;
                             continue;
                         } else if is_left_not_right || is_right_not_left {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Bool(false)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Bool(false)),
+                            );
                             rules_fired += 1;
                             continue;
                         }
@@ -548,15 +568,19 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Bool(true)) = right_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Bool(true)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Bool(true)),
+                            );
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Bool(true)) = left_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Bool(true)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Bool(true)),
+                            );
                             rules_fired += 1;
                             continue;
                         } else if eq {
@@ -564,9 +588,11 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                             rules_fired += 1;
                             continue;
                         } else if is_left_not_right || is_right_not_left {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Bool(true)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Bool(true)),
+                            );
                             rules_fired += 1;
                             continue;
                         }
@@ -581,25 +607,33 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Bool(true)) = right_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.unary_ops[idx] = Some(UnaryComponent {
-                                op: UnaryOp::Not,
-                                operand: EntityId(left_idx as u32),
-                            });
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_unary_op(
+                                EntityId(idx as u32),
+                                UnaryComponent {
+                                    op: UnaryOp::Not,
+                                    operand: EntityId(left_idx as u32),
+                                },
+                            );
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Bool(true)) = left_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.unary_ops[idx] = Some(UnaryComponent {
-                                op: UnaryOp::Not,
-                                operand: EntityId(right_idx as u32),
-                            });
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_unary_op(
+                                EntityId(idx as u32),
+                                UnaryComponent {
+                                    op: UnaryOp::Not,
+                                    operand: EntityId(right_idx as u32),
+                                },
+                            );
                             rules_fired += 1;
                             continue;
                         } else if eq {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Bool(false)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Bool(false)),
+                            );
                             rules_fired += 1;
                             continue;
                         }
@@ -632,15 +666,19 @@ pub fn simplifier_system(registry: &mut Registry) -> crate::simplify::SimplifySt
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Integer(0)) = right_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Integer(0)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Integer(0)),
+                            );
                             rules_fired += 1;
                             continue;
                         } else if let Some(LiteralValue::Integer(0)) = left_lit {
-                            registry.binary_ops[idx] = None;
-                            registry.literals[idx] =
-                                Some(LiteralComponent(LiteralValue::Integer(0)));
+                            registry.unset_binary_op(EntityId(idx as u32));
+                            registry.set_literal(
+                                EntityId(idx as u32),
+                                LiteralComponent(LiteralValue::Integer(0)),
+                            );
                             rules_fired += 1;
                             continue;
                         }

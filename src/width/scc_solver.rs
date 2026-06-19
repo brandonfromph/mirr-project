@@ -81,7 +81,7 @@ pub fn solve_nonexpansive(scc: &SccInfo, registry: &Registry) -> SccSolveResult 
                 .signals
                 .get(i)
                 .and_then(|&id| registry.names[id.0 as usize].as_ref())
-                .map(|s| s.0.as_str())
+                .map(|nc| registry.resolve_name(nc.0))
                 .unwrap_or("unknown");
             diagnostics.push(
                 WidthDiag::error(format!(
@@ -123,8 +123,10 @@ pub fn solve_expansive(scc: &SccInfo, registry: &Registry) -> SccSolveResult {
             continue;
         }
 
-        let sig_name =
-            registry.names[sig_id.0 as usize].as_ref().map(|n| n.0.as_str()).unwrap_or("unknown");
+        let sig_name = registry.names[sig_id.0 as usize]
+            .as_ref()
+            .map(|nc| registry.resolve_name(nc.0))
+            .unwrap_or("unknown");
 
         // Strategy 2: Infer from guard bounds.
         let inferred = infer_bound_from_guards(sig_id, registry);

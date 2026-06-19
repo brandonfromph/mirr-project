@@ -97,10 +97,10 @@ pub struct Module {
     #[serde(default)]
     pub properties: Vec<PropertyDecl>,
     /// Pattern instantiation calls (erased after expansion).
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pattern_calls: Vec<PatternCall>,
     /// Provenance tags from pattern expansion (DO-178C traceability).
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pattern_origins: Vec<PatternOrigin>,
     /// Source span for LSP diagnostics (`None` when unavailable).
     #[serde(default, skip_serializing_if = "Option::is_none")]

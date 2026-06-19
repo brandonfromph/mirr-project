@@ -45,7 +45,10 @@ pub(super) fn emit_module_decl(
     emit_source_comment(span, ft, out);
     out.push_str(&format!("module {} (\n", module_name));
 
-    let has_clk = registry.names.iter().any(|n| n.as_ref().is_some_and(|nc| nc.0 == "clk"));
+    let has_clk = registry
+        .names
+        .iter()
+        .any(|n| n.as_ref().is_some_and(|nc| registry.resolve_name(nc.0) == "clk"));
     let has_rst_n = module_has_rst_n(registry);
 
     // Check if temporal guards exist
@@ -68,10 +71,11 @@ pub(super) fn emit_module_decl(
     }
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(type_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
+                let name = registry.resolve_name(nc.0);
                 if sig_kind == SignalKind::Input || sig_kind == SignalKind::Output {
                     let dir = match sig_kind {
                         SignalKind::Input => "input ",
@@ -79,7 +83,7 @@ pub(super) fn emit_module_decl(
                         SignalKind::Internal => "internal",
                     };
                     let type_str = super::super::sv_type(&type_comp.0.signal_type());
-                    ports.push(format!("  {dir} {type_str} {}", name_comp.0));
+                    ports.push(format!("  {dir} {type_str} {}", name));
                 }
             }
         }
@@ -116,14 +120,15 @@ pub(super) fn emit_internal_signals(
 
     out.push_str("  // Internal signals\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(type_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Internal) = kind_comp.0 {
+                let name = registry.resolve_name(nc.0);
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
                 emit_source_comment(span, ft, out);
                 let type_str = super::super::sv_type(&type_comp.0.signal_type());
-                out.push_str(&format!("  {type_str} {};\n", name_comp.0));
+                out.push_str(&format!("  {type_str} {};\n", name));
             }
         }
     }
@@ -142,7 +147,8 @@ pub(super) fn emit_module_end(out: &mut String) {
 pub(super) fn module_has_rst_n(registry: &crate::ecs::Registry) -> bool {
     for i in 0..registry.names.len() {
         if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
-            if name_comp.0 == "rst_n" {
+            let sname = registry.resolve_name(name_comp.0);
+            if sname == "rst_n" {
                 if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
                     return true;
                 }
@@ -176,12 +182,13 @@ pub(super) fn emit_property_assertions(
     out.push_str("  // ── Safety Properties (SVA) ──\n\n");
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(prop_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.property_comps[i])
+        if let (Some(nc), Some(kind_comp), Some(prop_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.property_comps[i])
         {
             if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
+                let name = registry.resolve_name(nc.0);
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
-                emit_single_property(&name_comp.0, prop_comp, has_rst_n, registry, ft, out, span);
+                emit_single_property(name, prop_comp, has_rst_n, registry, ft, out, span);
             }
         }
     }
@@ -316,11 +323,11 @@ pub fn emit_synchronizer_chains(
     out.push_str("  // ── Input Synchronizer Chains ──\n\n");
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(type_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
-                let name = &name_comp.0;
+                let name = registry.resolve_name(nc.0);
                 if name == "clk" || name == "rst_n" {
                     continue;
                 }
@@ -366,7 +373,7 @@ pub fn emit_synchronizer_chains(
                     width.saturating_sub(1),
                 ));
 
-                mappings.push((name.clone(), sync_name));
+                mappings.push((name.to_string(), sync_name));
             }
         }
     }

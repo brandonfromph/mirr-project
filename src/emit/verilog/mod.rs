@@ -183,15 +183,16 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
             (&registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(_) = kind.0 {
-                if name.0 == "clk" {
+                let sname = registry.resolve_name(name.0);
+                if sname == "clk" {
                     has_clk = true;
                 }
-                if name.0 == "rst_n" {
+                if sname == "rst_n" {
                     has_rst = true;
                 }
                 let dir = "input ";
                 let type_str = super::sv_type(&ty.0.signal_type());
-                ports.push(format!("  {dir} {type_str} {}", name.0));
+                ports.push(format!("  {dir} {type_str} {}", sname));
             }
         }
     }
@@ -219,15 +220,10 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
             (&registry.names[i], &registry.kinds[i], &registry.property_comps[i])
         {
             if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
+                let prop_name = registry.resolve_name(name_comp.0);
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
                 sva::emit_single_property(
-                    &name_comp.0,
-                    prop_comp,
-                    has_rst_n,
-                    registry,
-                    ft,
-                    &mut out,
-                    span,
+                    prop_name, prop_comp, has_rst_n, registry, ft, &mut out, span,
                 );
             }
         }
@@ -293,8 +289,7 @@ pub(super) fn emit_expr_inline(
                     registry.signal_refs[idx]
                 {
                     let sig_name = registry.names[sig_ent.0 as usize]
-                        .as_ref()
-                        .map(|n| n.0.clone())
+                        .map(|n| registry.resolve_name(n.0).to_string())
                         .unwrap_or_default();
                     result_stack.push(sig_name);
                 } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
@@ -308,8 +303,7 @@ pub(super) fn emit_expr_inline(
                         registry.signal_refs[signal.0 as usize]
                     {
                         registry.names[decl.0 as usize]
-                            .as_ref()
-                            .map(|n| n.0.clone())
+                            .map(|n| registry.resolve_name(n.0).to_string())
                             .unwrap_or_default()
                     } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
                         &registry.pending_signal_refs[signal.0 as usize]

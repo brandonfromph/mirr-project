@@ -26,8 +26,9 @@ impl Registry {
                                     Default::default(),
                                 )));
                             if ty != SignalType::Bool {
-                                let name =
-                                    self.names[i].as_ref().map(|n| n.0.clone()).unwrap_or_default();
+                                let name = self.names[i]
+                                    .map(|nc| self.resolve_name(nc.0).to_string())
+                                    .unwrap_or_default();
                                 errors.push(MirrError::TypeError {
                                     message: format!(
                                         "{} Guard '{}' condition must be bool, got {}.",
@@ -63,8 +64,7 @@ impl Registry {
                             )));
                         if !self.types_compatible(&target_ty, &expr_ty) {
                             let target_name = self.names[target.0 as usize]
-                                .as_ref()
-                                .map(|n| n.0.clone())
+                                .map(|nc| self.resolve_name(nc.0).to_string())
                                 .unwrap_or_default();
                             errors.push(MirrError::TypeError {
                                 message: format!("{} Assignment to '{}' ({}): expression type {} is not compatible.", crate::error_codes::ec(601),

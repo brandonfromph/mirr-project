@@ -68,11 +68,11 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     // Step 3: Load inputs (tick preamble).
     let mut port_idx: PortId = 0;
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(type_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
-                let name = &name_comp.0;
+                let name = registry.resolve_name(nc.0);
                 let size = match &type_comp.0.core {
                     crate::ast::types::SignalType::Array { length, .. } => *length as usize,
                     _ => 1,
@@ -94,11 +94,11 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
 
     // Step 3.5: Emit TAG_LOAD for each signal (type tag metadata).
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(type_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let EntityKind::SIGNAL(_) = kind_comp.0 {
-                let name = &name_comp.0;
+                let name = registry.resolve_name(nc.0);
                 let (size, element_ty) = match &type_comp.0.core {
                     crate::ast::types::SignalType::Array { length, element } => {
                         (*length as usize, &**element)
@@ -181,11 +181,11 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     // Step 7: Store outputs (tick postamble).
     let mut out_port_idx: PortId = 0;
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(type_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(type_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let EntityKind::SIGNAL(SignalKind::Output) = kind_comp.0 {
-                let name = &name_comp.0;
+                let name = registry.resolve_name(nc.0);
                 let size = match &type_comp.0.core {
                     crate::ast::types::SignalType::Array { length, .. } => *length as usize,
                     _ => 1,
@@ -281,8 +281,8 @@ fn allocate_guards(
     // Allocate hardware guards for any direct signal-based guards in reflexes
     for reflex_comp in registry.reflex_comps.iter().flatten() {
         for &guard_id in &reflex_comp.guards {
-            if let Some(name_comp) = &registry.names[guard_id.0 as usize] {
-                let gname = &name_comp.0;
+            if let Some(nc) = &registry.names[guard_id.0 as usize] {
+                let gname = registry.resolve_name(nc.0);
                 if gname != "always" && !map.contains_key(gname) {
                     if next_id as usize >= max_guards {
                         return Err(rspu_err(format!(
@@ -292,8 +292,8 @@ fn allocate_guards(
                             max_guards,
                         )));
                     }
-                    map.insert(gname.clone(), next_id);
-                    entries.push((gname.clone(), next_id));
+                    map.insert(gname.to_string(), next_id);
+                    entries.push((gname.to_string(), next_id));
                     next_id = next_id.saturating_add(1);
                 }
             }
@@ -460,7 +460,9 @@ fn emit_reflex(
     let guard_names: Vec<String> = reflex
         .guards
         .iter()
-        .filter_map(|&g| registry.names[g.0 as usize].as_ref().map(|n| n.0.clone()))
+        .filter_map(|&g| {
+            registry.names[g.0 as usize].map(|nc| registry.resolve_name(nc.0).to_string())
+        })
         .collect();
 
     // 1. Resolve temporal_gid to the first guard (if any), otherwise always (0)
@@ -508,8 +510,7 @@ fn emit_reflex(
             regs.next_temp = assignment_temp_start;
 
             let target_name = registry.names[assignment.target.0 as usize]
-                .as_ref()
-                .map(|n| n.0.clone())
+                .map(|nc| registry.resolve_name(nc.0).to_string())
                 .unwrap_or_default();
             let dst_reg = regs.map.get(&target_name).copied().unwrap_or(0);
 

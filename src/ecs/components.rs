@@ -18,6 +18,7 @@ pub struct EntityId(pub u32);
 pub struct NameComponent(pub InternId);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
 pub enum EntityKind {
     SIGNAL(crate::ast::types::SignalKind),
     GUARD,
@@ -26,6 +27,7 @@ pub enum EntityKind {
     MODULE,
     PATTERN,
     ASSIGNMENT,
+    PATTERN_CALL,
 }
 
 impl EntityKind {
@@ -38,6 +40,7 @@ impl EntityKind {
             EntityKind::MODULE => "module",
             EntityKind::PATTERN => "pattern",
             EntityKind::ASSIGNMENT => "assignment",
+            EntityKind::PATTERN_CALL => "pattern_call",
         }
     }
 }
@@ -55,6 +58,7 @@ impl KindComponent {
     pub const REFLEX: Self = KindComponent(EntityKind::REFLEX);
     pub const ASSIGNMENT: Self = KindComponent(EntityKind::ASSIGNMENT);
     pub const PROPERTY: Self = KindComponent(EntityKind::PROPERTY);
+    pub const PATTERN_CALL: Self = KindComponent(EntityKind::PATTERN_CALL);
 }
 
 /// Component: Type (Width, Refinement, etc.)
@@ -81,6 +85,17 @@ pub struct ModuleScopeComponent(pub String);
 /// Component: Pattern Definition for pattern expansion
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PatternDefComponent(pub crate::ast::pattern::PatternDef);
+
+/// Component: Pattern Call (Instantiation arguments)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PatternCallComponent(pub crate::ast::pattern::PatternCall);
+
+/// Component: Origin tracking for pattern instantiation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PatternInstanceComponent {
+    pub pattern_name: String,
+    pub caller: EntityId,
+}
 
 /// Component: Temporal Cycle Count (for Guards)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -165,6 +180,7 @@ pub struct VectorComponent(pub Vec<f32>);
 pub struct ReflexComponent {
     pub guards: Vec<EntityId>,
     pub assignments: Vec<EntityId>,
+    pub origin: Option<String>,
 }
 
 /// Component: Assignment (Target signal = Expression)

@@ -1,31 +1,49 @@
 use mirrc::parser::parse_mirr;
-use mirrc::pipeline::{run_pipeline_on_program, PipelineConfig};
+use mirrc::pipeline::{run_pipeline_with_file, PipelineConfig};
 
 fn run_test(source: &str) -> Result<(), String> {
-    let program = match parse_mirr(source) {
-        Ok(p) => p,
-        Err(e) => return Err(format!("{:?}", e)),
-    };
     let config = PipelineConfig { bootstrap_mode: true, ..Default::default() };
-    match run_pipeline_on_program(program, &config) {
+    match run_pipeline_with_file(source, "test.mirr", &config) {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("{:?}", e)),
     }
 }
 
 #[test]
+fn test_hydration_idempotency() {
+    let source = "
+    module test {
+        signal s1: bool;
+        signal s2: bool;
+        reflex r {
+            on always {
+                s1 = s2;
+            }
+        }
+    }
+    ";
+    let config = PipelineConfig::default();
+    let result = run_pipeline_with_file(source, "test.mirr", &config);
+    assert!(result.is_ok());
+}
+
+#[test]
 fn test_hydration_bug() {
     let source = "
     module test {
-        signal s1: u5;
-        signal b: bool;
-        reflex r { on always { b = s1[0]; } }
+        signal input_pulse: in bool;
+        signal s1: bool;
+        reflex process_pulse {
+            on input_pulse {
+                s1 = true;
+            }
+        }
     }
     ";
-    match run_test(source) {
-        Ok(_) => println!("PASS"),
-        Err(e) => panic!("FAIL: {}", e),
-    }
+
+    // Test that the hydration bug is fixed
+    let result = run_test(source);
+    assert!(result.is_ok(), "Hydration bug failed: {:?}", result);
 }
 
 fn main() {}

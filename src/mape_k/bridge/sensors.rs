@@ -63,7 +63,7 @@ pub(super) fn extract_sensors(
                 let (base_value, noise_amplitude) = heuristic_sensor_defaults(&ty.0.core);
 
                 sensors.push(SensorConfig {
-                    name: name.0.clone(),
+                    name: registry.resolve_name(name.0).to_string(),
                     base_value,
                     noise_amplitude,
                     fault_at_tick: None,

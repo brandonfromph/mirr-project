@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 use mirrc::pipeline::PipelineConfig;
 use mirrc::Workspace;
 use std::path::PathBuf;

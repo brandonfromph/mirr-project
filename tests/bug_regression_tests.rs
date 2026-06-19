@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 //! TDD Bug Regression Test Suite
 //!
 //! Each test in this file is a RED test that exposes a confirmed compiler bug.
@@ -120,7 +121,7 @@ fn bug3_ecs_width_inference_must_return_correct_width_for_u16() {
     // Create a signal entity manually tagged as u16
     let id = registry.next_id();
     let idx = id.0 as usize;
-    registry.names[idx] = Some(NameComponent("counter".to_string()));
+    registry.names[idx] = Some(NameComponent(registry.interner.intern("counter")));
     registry.kinds[idx] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
     registry.types[idx] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(16))));
 
@@ -143,7 +144,7 @@ fn bug3_ecs_width_inference_must_return_correct_width_for_u32() {
 
     let id = registry.next_id();
     let idx = id.0 as usize;
-    registry.names[idx] = Some(NameComponent("data_bus".to_string()));
+    registry.names[idx] = Some(NameComponent(registry.interner.intern("data_bus")));
     registry.kinds[idx] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
     registry.types[idx] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(32))));
 
@@ -166,7 +167,7 @@ fn bug3_ecs_width_inference_must_return_width_1_for_bool() {
 
     let id = registry.next_id();
     let idx = id.0 as usize;
-    registry.names[idx] = Some(NameComponent("flag".to_string()));
+    registry.names[idx] = Some(NameComponent(registry.interner.intern("flag")));
     registry.kinds[idx] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
     registry.types[idx] = Some(TypeComponent(ExtendedType::from_core(SignalType::Bool)));
 

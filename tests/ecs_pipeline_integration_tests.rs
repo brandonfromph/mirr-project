@@ -7,7 +7,8 @@ use mirrc::ast::types::{BinaryOp, LiteralValue};
 use mirrc::ecs::components::*;
 use mirrc::ecs::registry::Registry;
 use mirrc::ecs::systems::{
-    parallel_constant_folding_system, parallel_width_inference_system, run_compilation_pipeline,
+    parallel_constant_folding_system, parallel_width_inference_system, sat_simplification_system,
+    simplifier_system,
 };
 
 // Parameterized integration test macro
@@ -425,7 +426,9 @@ macro_rules! test_pipeline_orchestration_case {
                 );
             }
 
-            let (width_stats, _sat_stats) = run_compilation_pipeline(&mut registry);
+            let _ = simplifier_system(&mut registry);
+            let _sat_stats = sat_simplification_system(&mut registry);
+            let (_, _, _, width_stats) = parallel_width_inference_system(&mut registry);
             assert_eq!(width_stats.nodes_analyzed, $sig_count);
             // Verify that constant folding worked (the binary_ops should be None now)
             assert_eq!(registry.binary_ops.iter().filter(|b| b.is_some()).count(), 0);

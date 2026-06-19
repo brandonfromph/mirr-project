@@ -25,7 +25,7 @@ pub fn emit_sexpr(result: &PipelineResult) -> Result<String, MirrError> {
     for i in 0..registry.kinds.len() {
         if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(_) = kind_comp.0 {
-                signal_parts.push(format!("(signal {})", name_comp.0));
+                signal_parts.push(format!("(signal {})", registry.resolve_name(name_comp.0)));
             }
         }
     }

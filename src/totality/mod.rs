@@ -131,7 +131,7 @@ pub fn check_dependency_acyclicity(registry: &crate::ecs::Registry) -> Acyclicit
     for i in 0..registry.names.len() {
         if let (Some(name), Some(kind)) = (&registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::components::EntityKind::SIGNAL(_) = kind.0 {
-                names.push(&name.0);
+                names.push(registry.resolve_name(name.0));
                 ni += 1;
                 if ni >= MAX_SIGNALS {
                     break;
@@ -160,14 +160,16 @@ pub fn check_dependency_acyclicity(registry: &crate::ecs::Registry) -> Acyclicit
                 }
                 if let Some(assign) = &registry.assignment_comps[asgn_ent.0 as usize] {
                     if let Some(t_name_comp) = &registry.names[assign.target.0 as usize] {
-                        let target_idx = find_signal_index(&names, &t_name_comp.0);
+                        let target_idx =
+                            find_signal_index(&names, registry.resolve_name(t_name_comp.0));
                         if let Some(ti) = target_idx {
                             let mut deps = collect_signal_deps_ecs(assign.value, registry);
 
                             // MEGA-10: Guard dependencies.
                             for guard_ent in &reflex.guards {
                                 if let Some(g_name_comp) = &registry.names[guard_ent.0 as usize] {
-                                    if g_name_comp.0 == "always" || g_name_comp.0 == "never" {
+                                    let g_name = registry.resolve_name(g_name_comp.0);
+                                    if g_name == "always" || g_name == "never" {
                                         continue;
                                     }
                                     if let Some(cond_comp) =
@@ -268,7 +270,10 @@ fn build_property_summary(registry: &crate::ecs::Registry) -> Vec<PropertySummar
                     "always_followed_by"
                 }
             };
-            summaries.push(PropertySummary { name: name_comp.0.clone(), kind: kind.to_string() });
+            summaries.push(PropertySummary {
+                name: registry.resolve_name(name_comp.0).to_string(),
+                kind: kind.to_string(),
+            });
             pi += 1;
             if pi >= MAX_SIGNALS {
                 break;
@@ -313,7 +318,7 @@ fn collect_signal_deps_ecs(
         // Signal reference
         if let Some(components::SignalRefComponent(sig_ent)) = &registry.signal_refs[i] {
             if let Some(name) = &registry.names[sig_ent.0 as usize] {
-                deps.push(name.0.clone());
+                deps.push(registry.resolve_name(name.0).to_string());
             }
             continue;
         }

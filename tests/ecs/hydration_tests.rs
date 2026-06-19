@@ -86,7 +86,7 @@ fn test_hydration_7() {
         span: None,
     };
     let id = reg.ingest_module(&module).unwrap();
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "M1");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "M1");
 }
 #[test]
 fn test_hydration_8() {

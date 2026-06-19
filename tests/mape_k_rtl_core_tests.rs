@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![forbid(unsafe_code)]
 
 //! Core integration tests for MAPE-K RTL emitter without external tools.

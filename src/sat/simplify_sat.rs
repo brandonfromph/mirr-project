@@ -129,9 +129,9 @@ pub fn simplify_entity_with_sat(entity: EntityId, registry: &mut Registry) -> Sa
         checks_performed += 1;
         cnf_f.add_clause(vec![cnf::Literal::pos(cnf_f.root_var)]);
         if solver::solve(&cnf_f) == SatResult::Unsatisfiable {
-            registry.binary_ops[entity.0 as usize] = None;
-            registry.unary_ops[entity.0 as usize] = None;
-            registry.muxes[entity.0 as usize] = None;
+            registry.unset_binary_op(entity);
+            registry.unset_unary_op(entity);
+            registry.unset_mux(entity);
             registry.literals[entity.0 as usize] =
                 Some(crate::ecs::components::LiteralComponent(LiteralValue::Bool(false)));
             return SatSimplifyResult {
@@ -156,9 +156,9 @@ pub fn simplify_entity_with_sat(entity: EntityId, registry: &mut Registry) -> Sa
         checks_performed += 1;
         cnf_t.add_clause(vec![cnf::Literal::neg(cnf_t.root_var)]);
         if solver::solve(&cnf_t) == SatResult::Unsatisfiable {
-            registry.binary_ops[entity.0 as usize] = None;
-            registry.unary_ops[entity.0 as usize] = None;
-            registry.muxes[entity.0 as usize] = None;
+            registry.unset_binary_op(entity);
+            registry.unset_unary_op(entity);
+            registry.unset_mux(entity);
             registry.literals[entity.0 as usize] =
                 Some(crate::ecs::components::LiteralComponent(LiteralValue::Bool(true)));
             return SatSimplifyResult {
@@ -186,7 +186,7 @@ pub fn simplify_entity_with_sat(entity: EntityId, registry: &mut Registry) -> Sa
             equiv_cnf.add_clause(vec![cnf::Literal::pos(equiv_cnf.root_var)]);
             if solver::solve(&equiv_cnf) == SatResult::Unsatisfiable {
                 // They are always EQUAL, meaning the false_val branch is dead logic.
-                registry.muxes[entity.0 as usize] = None;
+                registry.unset_mux(entity);
                 // Replace entity with true_val signal reference
                 registry.signal_refs[entity.0 as usize] =
                     Some(crate::ecs::components::SignalRefComponent(mux.true_val));
@@ -204,7 +204,7 @@ pub fn simplify_entity_with_sat(entity: EntityId, registry: &mut Registry) -> Sa
             checks_performed += 1;
             equiv_cnf.add_clause(vec![cnf::Literal::pos(equiv_cnf.root_var)]);
             if solver::solve(&equiv_cnf) == SatResult::Unsatisfiable {
-                registry.muxes[entity.0 as usize] = None;
+                registry.unset_mux(entity);
                 registry.signal_refs[entity.0 as usize] =
                     Some(crate::ecs::components::SignalRefComponent(mux.false_val));
                 return SatSimplifyResult {
@@ -314,15 +314,16 @@ mod tests {
         let sig = registry.create_entity("a", crate::ecs::components::KindComponent::SIGNAL);
 
         let not1 = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.unary_ops[not1.0 as usize] =
-            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig });
+        registry.set_unary_op(
+            not1,
+            crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig },
+        );
 
         let or_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.binary_ops[or_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
-            op: BinaryOp::Or,
-            left: sig,
-            right: not1,
-        });
+        registry.set_binary_op(
+            or_node,
+            crate::ecs::components::BinaryComponent { op: BinaryOp::Or, left: sig, right: not1 },
+        );
 
         let result = simplify_entity_with_sat(or_node, &mut registry);
         assert!(result.reduced);
@@ -339,15 +340,16 @@ mod tests {
         let sig = registry.create_entity("a", crate::ecs::components::KindComponent::SIGNAL);
 
         let not1 = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.unary_ops[not1.0 as usize] =
-            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig });
+        registry.set_unary_op(
+            not1,
+            crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig },
+        );
 
         let and_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.binary_ops[and_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
-            op: BinaryOp::And,
-            left: sig,
-            right: not1,
-        });
+        registry.set_binary_op(
+            and_node,
+            crate::ecs::components::BinaryComponent { op: BinaryOp::And, left: sig, right: not1 },
+        );
 
         let result = simplify_entity_with_sat(and_node, &mut registry);
         assert!(result.reduced);
@@ -364,15 +366,20 @@ mod tests {
         let sig_b = registry.create_entity("b", crate::ecs::components::KindComponent::SIGNAL);
 
         let not_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.unary_ops[not_node.0 as usize] =
-            Some(crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig_b });
+        registry.set_unary_op(
+            not_node,
+            crate::ecs::components::UnaryComponent { op: UnaryOp::Not, operand: sig_b },
+        );
 
         let and_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.binary_ops[and_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
-            op: BinaryOp::And,
-            left: sig_a,
-            right: not_node,
-        });
+        registry.set_binary_op(
+            and_node,
+            crate::ecs::components::BinaryComponent {
+                op: BinaryOp::And,
+                left: sig_a,
+                right: not_node,
+            },
+        );
 
         assert!(is_boolean_entity(and_node, &registry));
     }
@@ -384,11 +391,14 @@ mod tests {
         let sig_b = registry.create_entity("b", crate::ecs::components::KindComponent::SIGNAL);
 
         let add_node = registry.create_entity("", crate::ecs::components::KindComponent::SIGNAL);
-        registry.binary_ops[add_node.0 as usize] = Some(crate::ecs::components::BinaryComponent {
-            op: BinaryOp::Add,
-            left: sig_a,
-            right: sig_b,
-        });
+        registry.set_binary_op(
+            add_node,
+            crate::ecs::components::BinaryComponent {
+                op: BinaryOp::Add,
+                left: sig_a,
+                right: sig_b,
+            },
+        );
 
         assert!(!is_boolean_entity(add_node, &registry));
     }

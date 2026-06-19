@@ -204,18 +204,21 @@ impl ConditionKind {
         // Helper to extract a signal name (either simple or array index)
         let get_signal_name = |ent_idx: usize| -> Result<String, MirrError> {
             if let Some(sig_ref) = &registry.signal_refs[ent_idx] {
-                registry.names[sig_ref.0 .0 as usize].as_ref().map(|n| n.0.clone()).ok_or_else(
-                    || {
+                registry.names[sig_ref.0 .0 as usize]
+                    .as_ref()
+                    .map(|nc| registry.resolve_name(nc.0).to_string())
+                    .ok_or_else(|| {
                         mirrcode(
                             ErrorCode::TemporalCondLowerFailed,
                             "Signal reference to unnamed entity",
                         )
-                    },
-                )
+                    })
             } else if let Some(arr_idx) = &registry.array_indices[ent_idx] {
                 let arr_ent = arr_idx.array.0 as usize;
                 let arr_name = if let Some(sig_ref) = &registry.signal_refs[arr_ent] {
-                    registry.names[sig_ref.0 .0 as usize].as_ref().map(|n| n.0.clone())
+                    registry.names[sig_ref.0 .0 as usize]
+                        .as_ref()
+                        .map(|nc| registry.resolve_name(nc.0).to_string())
                 } else {
                     None
                 };

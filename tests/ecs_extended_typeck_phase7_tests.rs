@@ -61,7 +61,7 @@ mod phase7_session_ecs_tests {
         let annotations = make_session_annotations(protocol, state);
         let ext_ty = ExtendedType::new(SignalType::Bool, annotations);
 
-        reg.names[sig_idx] = Some(NameComponent("req".to_string()));
+        reg.names[sig_idx] = Some(NameComponent(reg.interner.intern("req")));
         reg.kinds[sig_idx] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
         reg.types[sig_idx] = Some(TypeComponent(ext_ty));
         reg.modules[sig_idx] = Some(ModuleComponent(mod_id));
@@ -139,7 +139,7 @@ mod phase7_session_ecs_tests {
         // Signal with NO session annotation
         let sig_id = reg.next_id();
         let sig_idx = sig_id.0 as usize;
-        reg.names[sig_idx] = Some(NameComponent("clk".to_string()));
+        reg.names[sig_idx] = Some(NameComponent(reg.interner.intern("clk")));
         reg.kinds[sig_idx] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
         reg.types[sig_idx] =
             Some(TypeComponent(ExtendedType::new(SignalType::Bool, Default::default())));
@@ -165,7 +165,7 @@ mod phase7_session_ecs_tests {
         // Valid signal
         let s1 = reg.next_id();
         let idx1 = s1.0 as usize;
-        reg.names[idx1] = Some(NameComponent("req".to_string()));
+        reg.names[idx1] = Some(NameComponent(reg.interner.intern("req")));
         reg.kinds[idx1] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
         reg.types[idx1] = Some(TypeComponent(ExtendedType::new(
             SignalType::Bool,
@@ -176,7 +176,7 @@ mod phase7_session_ecs_tests {
         // Invalid signal (bad state)
         let s2 = reg.next_id();
         let idx2 = s2.0 as usize;
-        reg.names[idx2] = Some(NameComponent("ack".to_string()));
+        reg.names[idx2] = Some(NameComponent(reg.interner.intern("ack")));
         reg.kinds[idx2] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
         reg.types[idx2] = Some(TypeComponent(ExtendedType::new(
             SignalType::Bool,
@@ -210,7 +210,7 @@ mod phase7_session_ecs_tests {
         // Signal in modB with an invalid protocol — should NOT be flagged when checking mod_a
         let s = reg.next_id();
         let idx = s.0 as usize;
-        reg.names[idx] = Some(NameComponent("out".to_string()));
+        reg.names[idx] = Some(NameComponent(reg.interner.intern("out")));
         reg.kinds[idx] = Some(KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
         reg.types[idx] = Some(TypeComponent(ExtendedType::new(
             SignalType::Bool,

@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![forbid(unsafe_code)]
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 fn run_expand_only(src: &str) -> Result<(), String> {

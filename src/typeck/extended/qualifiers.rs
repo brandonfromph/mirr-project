@@ -434,10 +434,41 @@ impl ExtendedSignalDecl {
     /// Elevate a parsed `SignalDecl` to an `ExtendedSignalDecl`.
     /// Propagates MEGA-1 annotations from the AST-level `ExtendedType`.
     pub fn from_ast(decl: &crate::ast::program::SignalDecl) -> Self {
+        Self::from_ext_type(decl.name.clone(), decl.kind, &decl.ty, decl.origin.clone(), decl.span)
+    }
+
+    /// ECS-native: Create an `ExtendedSignalDecl` from a Registry entity.
+    pub fn from_ecs(
+        registry: &crate::ecs::Registry,
+        entity: crate::ecs::components::EntityId,
+    ) -> Option<Self> {
+        let idx = entity.0 as usize;
+        let name_id = registry.names.get(idx)?.and_then(|nc| Some(nc.0))?;
+        let name = registry.resolve_name(name_id).to_string();
+        let kind = match registry.kinds.get(idx)? {
+            Some(crate::ecs::components::KindComponent(
+                crate::ecs::components::EntityKind::SIGNAL(k),
+            )) => *k,
+            _ => return None,
+        };
+        let ext_ty = &registry.types.get(idx)?.as_ref()?.0;
+        let span = registry.spans.get(idx)?.as_ref().map(|s| s.0);
+
+        Some(Self::from_ext_type(name, kind, ext_ty, None, span))
+    }
+
+    /// Internal helper to map AST-level `ExtendedType` to checker-level `ExtendedSignalDecl`.
+    fn from_ext_type(
+        name: String,
+        kind: crate::ast::types::SignalKind,
+        ext_ty: &crate::ast::types::ExtendedType,
+        origin: Option<String>,
+        span: Option<Span>,
+    ) -> Self {
         use crate::ast::types::{EffectQualifier, Linearity, Refinement};
 
-        let base = decl.ty.signal_type();
-        let annotations = &decl.ty.annotations;
+        let base = ext_ty.core.clone();
+        let annotations = &ext_ty.annotations;
 
         // Map annotations to checker-level qualifiers.
         let mut qualifiers: Vec<TypeQualifier> = Vec::new();
@@ -457,17 +488,12 @@ impl ExtendedSignalDecl {
                 Refinement::Range { lo, hi } => {
                     refinements.push(RefinementPredicate {
                         bound: RefinementBound::ValueInRange { lo: *lo, hi: *hi },
-                        span: decl.span,
+                        span,
                     });
                 }
-                Refinement::Predicate(s) => {
-                    // Store as a >= 0 bound; future campaigns will parse the
-                    // predicate string into richer bounds.
-                    refinements.push(RefinementPredicate {
-                        bound: RefinementBound::ValueGe(0),
-                        span: decl.span,
-                    });
-                    let _ = s;
+                Refinement::Predicate(_) => {
+                    refinements
+                        .push(RefinementPredicate { bound: RefinementBound::ValueGe(0), span });
                 }
             }
         }
@@ -490,16 +516,9 @@ impl ExtendedSignalDecl {
             type_nat: None,
             dependent_params: Vec::new(),
             session: None,
-            span: decl.span,
+            span,
         };
 
-        Self {
-            name: decl.name.clone(),
-            kind: decl.kind,
-            ty: base,
-            extended_ty,
-            origin: decl.origin.clone(),
-            span: decl.span,
-        }
+        Self { name, kind, ty: base, extended_ty, origin, span }
     }
 }

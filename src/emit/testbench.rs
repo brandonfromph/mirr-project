@@ -54,15 +54,15 @@ fn emit_tb_signals(registry: &crate::ecs::Registry, out: &mut String) {
     // Declare testbench signals for each port.
     out.push_str("  // DUT port signals\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
                 if sig_kind == SignalKind::Internal {
                     continue;
                 }
                 let type_str = tb_type(&ty_comp.0.core);
-                out.push_str(&format!("  {} tb_{};\n", type_str, name_comp.0));
+                out.push_str(&format!("  {} tb_{};\n", type_str, registry.resolve_name(nc.0)));
             }
         }
     }
@@ -81,11 +81,12 @@ fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, out:
 
     let mut has_clk = false;
     let mut has_rst_n = false;
-    for name in registry.names.iter().flatten() {
-        if name.0 == "clk" {
+    for nc in registry.names.iter().flatten() {
+        let name = registry.resolve_name(nc.0);
+        if name == "clk" {
             has_clk = true;
         }
-        if name.0 == "rst_n" {
+        if name == "rst_n" {
             has_rst_n = true;
         }
     }
@@ -109,15 +110,16 @@ fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, out:
     }
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+        if let (Some(nc), Some(kind_comp)) = (registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
                 if sig_kind == SignalKind::Internal {
                     continue;
                 }
-                if name_comp.0 == "rst_n" {
-                    connections.push(format!("    .{}(rst_n)", name_comp.0));
+                let name = registry.resolve_name(nc.0);
+                if name == "rst_n" {
+                    connections.push(format!("    .{}(rst_n)", name));
                 } else {
-                    connections.push(format!("    .{}(tb_{})", name_comp.0, name_comp.0));
+                    connections.push(format!("    .{}(tb_{})", name, name));
                 }
             }
         }
@@ -142,10 +144,11 @@ fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mu
 
     // Drive all inputs to zero during reset.
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+        if let (Some(nc), Some(kind_comp)) = (registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
-                if name_comp.0 != "rst_n" {
-                    out.push_str(&format!("    tb_{} = '0;\n", name_comp.0));
+                let name = registry.resolve_name(nc.0);
+                if name != "rst_n" {
+                    out.push_str(&format!("    tb_{} = '0;\n", name));
                 }
             }
         }
@@ -156,11 +159,12 @@ fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mu
 
     out.push_str("    // Phase 2: Drive inputs to max range\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
-                if name_comp.0 != "rst_n" {
+                let name = registry.resolve_name(nc.0);
+                if name != "rst_n" {
                     let max_val = match &ty_comp.0.core {
                         SignalType::Bool => "'1".to_string(),
                         SignalType::Unsigned(w) => format!("{}'hFFFF", w),
@@ -171,7 +175,7 @@ fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mu
                         | SignalType::Bundle(_)
                         | SignalType::Fifo { .. } => "'0".to_string(),
                     };
-                    out.push_str(&format!("    tb_{} = {};\n", name_comp.0, max_val));
+                    out.push_str(&format!("    tb_{} = {};\n", name, max_val));
                 }
             }
         }
@@ -181,10 +185,11 @@ fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mu
 
     out.push_str("    // Phase 3: Return to zero\n");
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+        if let (Some(nc), Some(kind_comp)) = (registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
-                if name_comp.0 != "rst_n" {
-                    out.push_str(&format!("    tb_{} = '0;\n", name_comp.0));
+                let name = registry.resolve_name(nc.0);
+                if name != "rst_n" {
+                    out.push_str(&format!("    tb_{} = '0;\n", name));
                 }
             }
         }

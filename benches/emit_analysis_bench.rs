@@ -9,10 +9,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use mirrc::emit::firrtl::emit_firrtl;
 use mirrc::emit::verilog::emit_sv;
-use mirrc::{parse_mirr, run_pipeline, run_pipeline_on_program, PipelineConfig};
+use mirrc::{parse_mirr, run_pipeline, run_pipeline_with_file, PipelineConfig};
 use std::hint::black_box;
 
-fn typecheck_ecs(prog: &mirrc::MirrProgram) {
+fn typecheck_ecs(source: &str) {
     let config = PipelineConfig {
         temporal: false,
         width: false,
@@ -20,10 +20,10 @@ fn typecheck_ecs(prog: &mirrc::MirrProgram) {
         mape_k: false,
         ..PipelineConfig::default()
     };
-    let _ = run_pipeline_on_program(prog.clone(), &config);
+    let _ = run_pipeline_with_file(source, "dummy.mirr", &config);
 }
 
-fn width_infer_ecs(prog: &mirrc::MirrProgram) {
+fn width_infer_ecs(source: &str) {
     let config = PipelineConfig {
         temporal: false,
         width: true,
@@ -31,7 +31,7 @@ fn width_infer_ecs(prog: &mirrc::MirrProgram) {
         mape_k: false,
         ..PipelineConfig::default()
     };
-    let _ = run_pipeline_on_program(prog.clone(), &config);
+    let _ = run_pipeline_with_file(source, "dummy.mirr", &config);
 }
 
 // ---------------------------------------------------------------------------
@@ -69,22 +69,16 @@ fn bench_emit_firrtl(c: &mut Criterion) {
 }
 
 fn bench_typecheck(c: &mut Criterion) {
-    let prog_fc = parse_mirr(SRC_FC).unwrap();
-    let prog_tmr = parse_mirr(SRC_TMR).unwrap();
-
     let mut group = c.benchmark_group("typecheck");
-    group.bench_function("flight_controller", |b| b.iter(|| typecheck_ecs(black_box(&prog_fc))));
-    group.bench_function("tmr", |b| b.iter(|| typecheck_ecs(black_box(&prog_tmr))));
+    group.bench_function("flight_controller", |b| b.iter(|| typecheck_ecs(black_box(SRC_FC))));
+    group.bench_function("tmr", |b| b.iter(|| typecheck_ecs(black_box(SRC_TMR))));
     group.finish();
 }
 
 fn bench_width_infer(c: &mut Criterion) {
-    let prog_fc = parse_mirr(SRC_FC).unwrap();
-    let prog_tmr = parse_mirr(SRC_TMR).unwrap();
-
     let mut group = c.benchmark_group("width_infer");
-    group.bench_function("flight_controller", |b| b.iter(|| width_infer_ecs(black_box(&prog_fc))));
-    group.bench_function("tmr", |b| b.iter(|| width_infer_ecs(black_box(&prog_tmr))));
+    group.bench_function("flight_controller", |b| b.iter(|| width_infer_ecs(black_box(SRC_FC))));
+    group.bench_function("tmr", |b| b.iter(|| width_infer_ecs(black_box(SRC_TMR))));
     group.finish();
 }
 

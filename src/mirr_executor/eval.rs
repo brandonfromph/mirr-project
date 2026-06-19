@@ -50,8 +50,8 @@ pub(super) fn eval_expr_ecs(
 
     // Signal references
     if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) = &registry.signal_refs[idx] {
-        if let Some(name) = &registry.names[sig_ent.0 as usize] {
-            return env_get(&name.0);
+        if let Some(nc) = &registry.names[sig_ent.0 as usize] {
+            return env_get(registry.resolve_name(nc.0));
         }
     }
 
@@ -66,10 +66,10 @@ pub(super) fn eval_expr_ecs(
         if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
             &registry.signal_refs[p.signal.0 as usize]
         {
-            if let Some(name) = &registry.names[sig_ent.0 as usize] {
+            if let Some(nc) = &registry.names[sig_ent.0 as usize] {
                 // In this executor, prev(x, d) is just env_get(x).
                 // Proper delay is handled by the shift-register state machine in drive_*.
-                return env_get(&name.0);
+                return env_get(registry.resolve_name(nc.0));
             }
         }
     }
@@ -241,19 +241,20 @@ pub(super) fn init_pools_for_registry(
     p.program_fingerprint = fingerprint;
 
     for i in 0..registry.names.len() {
-        if let (Some(name), Some(kind)) = (&registry.names[i], &registry.kinds[i]) {
+        if let (Some(nc), Some(kind)) = (registry.names[i], &registry.kinds[i]) {
+            let name = registry.resolve_name(nc.0);
             match kind.0 {
                 crate::ecs::EntityKind::REFLEX => {
-                    if name.0.contains("clear") || name.0.contains("tick") {
-                        p.clear_reflex_names.push(name.0.clone());
+                    if name.contains("clear") || name.contains("tick") {
+                        p.clear_reflex_names.push(name.to_string());
                     }
                 }
                 crate::ecs::EntityKind::SIGNAL(crate::ast::types::SignalKind::Input) => {
-                    p.env.insert(name.0.clone(), Value::Bool(false));
+                    p.env.insert(name.to_string(), Value::Bool(false));
                 }
                 crate::ecs::EntityKind::GUARD => {
-                    p.guard_counters.insert(name.0.clone(), 0);
-                    p.guard_active.insert(name.0.clone(), false);
+                    p.guard_counters.insert(name.to_string(), 0);
+                    p.guard_active.insert(name.to_string(), false);
                 }
                 _ => {}
             }
@@ -263,20 +264,21 @@ pub(super) fn init_pools_for_registry(
 
     p.persistent_env.clear();
     for i in 0..registry.names.len() {
-        if let (Some(name), Some(kind), Some(ty)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind), Some(ty)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(_) = kind.0 {
+                let name = registry.resolve_name(nc.0);
                 match ty.0.signal_type() {
                     crate::ast::types::SignalType::Bool => {
-                        p.persistent_env.insert(name.0.clone(), Value::Bool(false));
+                        p.persistent_env.insert(name.to_string(), Value::Bool(false));
                     }
                     crate::ast::types::SignalType::Unsigned(_)
                     | crate::ast::types::SignalType::Signed(_) => {
-                        p.persistent_env.insert(name.0.clone(), Value::Integer(0));
+                        p.persistent_env.insert(name.to_string(), Value::Integer(0));
                     }
                     _ => {
-                        p.persistent_env.insert(name.0.clone(), Value::Integer(0));
+                        p.persistent_env.insert(name.to_string(), Value::Integer(0));
                     }
                 }
             }
@@ -286,24 +288,26 @@ pub(super) fn init_pools_for_registry(
 
     p.output_signal_names.clear();
     for i in 0..registry.names.len() {
-        if let (Some(name), Some(kind)) = (&registry.names[i], &registry.kinds[i]) {
+        if let (Some(nc), Some(kind)) = (registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(crate::ast::types::SignalKind::Output) = kind.0 {
-                p.output_signal_names.push(name.0.clone());
+                p.output_signal_names.push(registry.resolve_name(nc.0).to_string());
             }
         }
     }
 
     p.sr_signal_names.clear();
     for i in 0..registry.names.len() {
-        if let (Some(name), Some(kind)) = (&registry.names[i], &registry.kinds[i]) {
+        if let (Some(nc), Some(kind)) = (registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::GUARD = kind.0 {
-                let prefix = format!("{}_sr_", name.0);
+                let name = registry.resolve_name(nc.0);
+                let prefix = format!("{}_sr_", name);
                 let mut sr_names: Vec<(usize, String)> = Vec::new();
                 for j in 0..registry.names.len() {
-                    if let Some(nc) = &registry.names[j] {
-                        if nc.0.starts_with(&prefix) {
-                            if let Ok(idx) = nc.0[prefix.len()..].parse::<usize>() {
-                                sr_names.push((idx, nc.0.clone()));
+                    if let Some(target_nc) = &registry.names[j] {
+                        let target_name = registry.resolve_name(target_nc.0);
+                        if target_name.starts_with(&prefix) {
+                            if let Ok(idx) = target_name[prefix.len()..].parse::<usize>() {
+                                sr_names.push((idx, target_name.to_string()));
                             }
                         }
                     }

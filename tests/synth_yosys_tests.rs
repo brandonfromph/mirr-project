@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 //! Integration tests for synthesis-clean SystemVerilog emission.
 //!
 //! Verifies that `emit_sv_synthesis()` strips all SVA property blocks

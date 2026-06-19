@@ -355,7 +355,10 @@ pub fn typecheck_extended_ecs_with_protocols(
         if let Some(ModuleComponent(m_id)) = &registry.modules[i] {
             if *m_id == mod_id {
                 if let Some(KindComponent(EntityKind::SIGNAL(_))) = &registry.kinds[i] {
-                    if let Some(decl) = super::qualifiers::ExtendedSignalDecl::from_ecs(registry, EntityId(i as u32)) {
+                    if let Some(decl) = super::qualifiers::ExtendedSignalDecl::from_ecs(
+                        registry,
+                        EntityId(i as u32),
+                    ) {
                         extended_signals.push(decl);
                     }
                 }

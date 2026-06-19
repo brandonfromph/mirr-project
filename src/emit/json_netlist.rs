@@ -18,6 +18,7 @@ pub struct JsonNetlist {
     /// IR version for contract tracking.
     pub ir_version: String,
     /// The ECS Registry containing all IR.
+    #[serde(skip)]
     pub ecs_registry: crate::ecs::Registry,
     /// Simplification statistics (null if skipped).
     pub simplify_stats: Option<SimplifyStatsJson>,

@@ -136,7 +136,7 @@ pub fn build_certificate(
                 };
                 let (width, is_signed) = ty.0.core.width_and_signed();
                 type_witnesses.push(TypeWitness {
-                    name: name.0.clone(),
+                    name: registry.resolve_name(name.0).to_string(),
                     kind: kind_val,
                     width,
                     signed: if is_signed { 1 } else { 0 },

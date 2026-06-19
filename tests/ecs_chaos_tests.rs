@@ -7,11 +7,11 @@ use mirrc::ecs::registry::Registry;
 fn test_chaos_missing_kind_no_panic() {
     let mut registry = Registry::new();
     let ent1 = registry.next_id();
-    registry.names[ent1.0 as usize] = Some(NameComponent("duplicate".to_string()));
+    registry.names[ent1.0 as usize] = Some(NameComponent(registry.interner.intern("duplicate")));
     registry.kinds[ent1.0 as usize] = Some(KindComponent(EntityKind::GUARD));
 
     let ent2 = registry.next_id();
-    registry.names[ent2.0 as usize] = Some(NameComponent("duplicate".to_string()));
+    registry.names[ent2.0 as usize] = Some(NameComponent(registry.interner.intern("duplicate")));
     // CRITICAL: Missing KindComponent on ent2!
 
     // This should no longer panic, but return Err with a descriptive message.

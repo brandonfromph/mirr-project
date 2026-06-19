@@ -86,7 +86,7 @@ pub fn drive_parsed_module_with_interpreter(
         .enumerate()
         .find_map(|(i, k)| {
             if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
-                registry.names[i].as_ref().map(|n| n.0.len())
+                registry.names[i].map(|nc| registry.resolve_name(nc.0).len())
             } else {
                 None
             }
@@ -234,7 +234,7 @@ pub fn drive_parsed_module_with_interpreter(
             if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::GUARD)) =
                 &registry.kinds[i]
             {
-                let name_opt = registry.names[i].as_ref().map(|n| &n.0);
+                let name_opt = registry.names[i].map(|nc| registry.resolve_name(nc.0));
                 let cond_ent_opt = registry.conditions[i].as_ref().map(|c| c.0);
 
                 if let (Some(name), Some(cond_ent)) = (name_opt, cond_ent_opt) {
@@ -293,14 +293,15 @@ pub fn drive_parsed_module_with_interpreter(
         // Fire reflexes from ECS
         for i in 0..registry.reflex_comps.len() {
             if let Some(reflex) = &registry.reflex_comps[i] {
-                let r_name_opt = registry.names[i].as_ref().map(|n| &n.0);
+                let r_name_opt = registry.names[i].map(|nc| registry.resolve_name(nc.0));
                 if let Some(r_name) = r_name_opt {
-                    if clear_reflex_names_snapshot.contains(r_name) {
+                    if clear_reflex_names_snapshot.iter().any(|n| n == r_name) {
                         continue;
                     }
                     let mut any = false;
                     for g_ent in &reflex.guards {
-                        let g_name_opt = registry.names[g_ent.0 as usize].as_ref().map(|n| &n.0);
+                        let g_name_opt =
+                            registry.names[g_ent.0 as usize].map(|nc| registry.resolve_name(nc.0));
                         if let Some(g_name) = g_name_opt {
                             if *guard_active.get(g_name).unwrap_or(&false) {
                                 any = true;
@@ -314,8 +315,8 @@ pub fn drive_parsed_module_with_interpreter(
                                 let val = eval_expr_ecs(asgn.value, registry, &|name: &str| {
                                     signal_env.get(name).cloned().unwrap_or(Value::Bool(false))
                                 });
-                                if let Some(target_name) =
-                                    registry.names[asgn.target.0 as usize].as_ref().map(|n| &n.0)
+                                if let Some(target_name) = registry.names[asgn.target.0 as usize]
+                                    .map(|nc| registry.resolve_name(nc.0))
                                 {
                                     if let Some(sv) = signal_env.get_mut(target_name) {
                                         *sv = val;
@@ -374,7 +375,7 @@ pub fn drive_parsed_module_with_interpreter(
             if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::GUARD)) =
                 &registry.kinds[i]
             {
-                if let Some(name) = registry.names[i].as_ref().map(|n| &n.0) {
+                if let Some(name) = registry.names[i].map(|nc| registry.resolve_name(nc.0)) {
                     if let Some(c) = pools.guard_counters.get_mut(name) {
                         if *c > 0 {
                             *c -= 1;
@@ -390,7 +391,7 @@ pub fn drive_parsed_module_with_interpreter(
                 SignalKind::Internal,
             ))) = &registry.kinds[i]
             {
-                if let Some(name) = registry.names[i].as_ref().map(|n| &n.0) {
+                if let Some(name) = registry.names[i].map(|nc| registry.resolve_name(nc.0)) {
                     if let Some(v) = signal_env.get(name) {
                         if let Some(pe) = pools.persistent_env.get_mut(name) {
                             *pe = v.clone();

@@ -72,7 +72,7 @@ fn infer(expr: &Expr, signals: &[SignalDecl]) -> (u32, Vec<WidthDiag>) {
     let mut to_update = Vec::new();
     for (i, name_opt) in registry.names.iter().enumerate() {
         if let Some(name) = name_opt {
-            if let Some(&(w, is_signed)) = signal_info.get(name.0.as_str()) {
+            if let Some(&(w, is_signed)) = signal_info.get(registry.resolve_name(name.0)) {
                 to_update.push((i, w, is_signed));
             }
         }
@@ -139,7 +139,7 @@ fn check_assignment(
     let mut to_update = Vec::new();
     for (i, name_opt) in registry.names.iter().enumerate() {
         if let Some(name) = name_opt {
-            if let Some(&(w, is_signed)) = signal_info.get(name.0.as_str()) {
+            if let Some(&(w, is_signed)) = signal_info.get(registry.resolve_name(name.0)) {
                 to_update.push((i, w, is_signed));
             }
         }

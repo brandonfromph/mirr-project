@@ -65,9 +65,9 @@ pub(super) fn emit_temporal_logic_ecs(
     sorted_prevs.sort();
 
     for (sig_ent, delay) in sorted_prevs {
-        if let Some(name_comp) = &registry.names[sig_ent.0 as usize] {
+        if let Some(nc) = &registry.names[sig_ent.0 as usize] {
             if let Some(type_comp) = &registry.types[sig_ent.0 as usize] {
-                let sig_name = &name_comp.0;
+                let sig_name = registry.resolve_name(nc.0);
                 let type_str = crate::emit::sv_type(&type_comp.0.signal_type());
                 out.push_str(&format!("  {} {}_d{};\n", type_str, sig_name, delay));
             }
@@ -79,8 +79,10 @@ pub(super) fn emit_temporal_logic_ecs(
         // Find the guard entity to get its span
         let mut span = None;
         for i in 0..registry.names.len() {
-            if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
-                if name_comp.0 == guard.name() && kind_comp.0 == crate::ecs::EntityKind::GUARD {
+            if let (Some(nc), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+                if registry.resolve_name(nc.0) == guard.name()
+                    && kind_comp.0 == crate::ecs::EntityKind::GUARD
+                {
                     span = registry.spans[i].as_ref().map(|s| &s.0);
                     break;
                 }
@@ -161,16 +163,18 @@ pub(super) fn emit_reflex_logic_ecs(
     for i in 0..registry.reflex_comps.len() {
         if let Some(reflex) = &registry.reflex_comps[i] {
             for g_ent in &reflex.guards {
-                if let Some(name_comp) = &registry.names[g_ent.0 as usize] {
-                    if name_comp.0 != "always" {
-                        guard_names_used.insert(name_comp.0.clone());
+                if let Some(nc) = &registry.names[g_ent.0 as usize] {
+                    let gname = registry.resolve_name(nc.0);
+                    if gname != "always" {
+                        guard_names_used.insert(gname.to_string());
                     }
                 }
             }
             for asgn_ent in &reflex.assignments {
                 if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
-                    if let Some(target_name) = &registry.names[asgn.target.0 as usize] {
-                        signal_to_reflexes.entry(target_name.0.clone()).or_default().push(i);
+                    if let Some(target_nc) = &registry.names[asgn.target.0 as usize] {
+                        let target_name = registry.resolve_name(target_nc.0);
+                        signal_to_reflexes.entry(target_name.to_string()).or_default().push(i);
                     }
                 }
             }
@@ -218,8 +222,8 @@ pub(super) fn emit_reflex_logic_ecs(
             if let Some(attr) = dsp_attr {
                 let mut has_dsp = false;
                 for &ri in reflex_indices {
-                    if let Some(name_comp) = &registry.names[ri] {
-                        if dsp_reflexes.contains(&name_comp.0) {
+                    if let Some(nc) = &registry.names[ri] {
+                        if dsp_reflexes.contains(registry.resolve_name(nc.0)) {
                             has_dsp = true;
                             break;
                         }
@@ -241,8 +245,8 @@ pub(super) fn emit_reflex_logic_ecs(
                 if let Some(reflex) = &registry.reflex_comps[ri] {
                     let mut guard_parts = Vec::new();
                     for g_ent in &reflex.guards {
-                        if let Some(g_name) = &registry.names[g_ent.0 as usize] {
-                            guard_parts.push(format!("{}_out", g_name.0));
+                        if let Some(nc) = &registry.names[g_ent.0 as usize] {
+                            guard_parts.push(format!("{}_out", registry.resolve_name(nc.0)));
                         }
                     }
                     let guard_cond = if guard_parts.is_empty() {
@@ -253,8 +257,9 @@ pub(super) fn emit_reflex_logic_ecs(
 
                     for asgn_ent in &reflex.assignments {
                         if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
-                            if let Some(target_name) = &registry.names[asgn.target.0 as usize] {
-                                if target_name.0 == sig_name {
+                            if let Some(target_nc) = &registry.names[asgn.target.0 as usize] {
+                                let target_name = registry.resolve_name(target_nc.0);
+                                if target_name == sig_name {
                                     let span = registry.spans[ri].as_ref().map(|s| &s.0);
                                     emit_source_comment(span, ft, out);
                                     out.push_str(&format!(
@@ -410,8 +415,8 @@ fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mu
                             }
                         }
                     }
-                } else if let Some(name_comp) = &registry.names[op_idx] {
-                    name_comp.0.clone()
+                } else if let Some(nc) = &registry.names[op_idx] {
+                    registry.resolve_name(nc.0).to_string()
                 } else {
                     format!("op_{}_res", op_entity_id) // Fallback
                 }
@@ -481,10 +486,11 @@ fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mu
             for asgn_idx in 0..registry.active_entities() {
                 if let Some(asgn) = &registry.assignment_comps[asgn_idx] {
                     if asgn.value.0 == idx as u32 {
-                        if let Some(name_comp) = &registry.names[asgn.target.0 as usize] {
+                        if let Some(nc) = &registry.names[asgn.target.0 as usize] {
                             out.push_str(&format!(
                                 "          {} <= op_{}_res;\n",
-                                name_comp.0, idx
+                                registry.resolve_name(nc.0),
+                                idx
                             ));
                         }
                     }

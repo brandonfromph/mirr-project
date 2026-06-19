@@ -16,7 +16,7 @@ fn test_registry_construction_and_basic_entity_ops() {
     assert_eq!(reg.next_id().0, 2);
 
     let ent = reg.create_entity("my_sig", KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
-    assert_eq!(reg.names[ent.0 as usize].as_ref().unwrap().0, "my_sig");
+    assert_eq!(reg.resolve_name(reg.names[ent.0 as usize].as_ref().unwrap().0), "my_sig");
     assert!(matches!(reg.kinds[ent.0 as usize].unwrap().0, EntityKind::SIGNAL(_)));
     assert_eq!(reg.get_entity_by_name("my_sig"), Some(ent));
 
@@ -193,7 +193,7 @@ fn test_ingest_module_integration() {
     assert!(reg.get_entity_by_name("m").is_some());
 
     let sig_x = reg.get_entity_by_name("x").unwrap();
-    assert_eq!(reg.names[sig_x.0 as usize].as_ref().unwrap().0, "x");
+    assert_eq!(reg.resolve_name(reg.names[sig_x.0 as usize].as_ref().unwrap().0), "x");
     assert!(reg.get_entity_by_name("m::x").is_some());
 
     let g_id = reg.get_entity_by_name("g").unwrap();
@@ -288,66 +288,66 @@ fn test_semantic_validate_adversarial_paths() {
     let mut reg = Registry::new();
 
     let mod_id = reg.next_id();
-    reg.names[mod_id.0 as usize] = Some(NameComponent("mymod".into()));
+    reg.names[mod_id.0 as usize] = Some(NameComponent(reg.interner.intern("mymod")));
     reg.kinds[mod_id.0 as usize] = Some(KindComponent::MODULE);
 
     // Duplicate signals
     let s1 = reg.next_id();
-    reg.names[s1.0 as usize] = Some(NameComponent("sig".into()));
+    reg.names[s1.0 as usize] = Some(NameComponent(reg.interner.intern("sig")));
     reg.kinds[s1.0 as usize] = Some(KindComponent::SIGNAL);
     reg.modules[s1.0 as usize] = Some(ModuleComponent(mod_id));
 
     let s2 = reg.next_id();
-    reg.names[s2.0 as usize] = Some(NameComponent("sig".into()));
+    reg.names[s2.0 as usize] = Some(NameComponent(reg.interner.intern("sig")));
     reg.kinds[s2.0 as usize] = Some(KindComponent::SIGNAL);
     reg.modules[s2.0 as usize] = Some(ModuleComponent(mod_id));
 
     // Duplicate guards
     let g1 = reg.next_id();
-    reg.names[g1.0 as usize] = Some(NameComponent("g".into()));
+    reg.names[g1.0 as usize] = Some(NameComponent(reg.interner.intern("g")));
     reg.kinds[g1.0 as usize] = Some(KindComponent::GUARD);
     reg.modules[g1.0 as usize] = Some(ModuleComponent(mod_id));
 
     let g2 = reg.next_id();
-    reg.names[g2.0 as usize] = Some(NameComponent("g".into()));
+    reg.names[g2.0 as usize] = Some(NameComponent(reg.interner.intern("g")));
     reg.kinds[g2.0 as usize] = Some(KindComponent::GUARD);
     reg.modules[g2.0 as usize] = Some(ModuleComponent(mod_id));
 
     // Duplicate reflexes
     let r1 = reg.next_id();
-    reg.names[r1.0 as usize] = Some(NameComponent("r".into()));
+    reg.names[r1.0 as usize] = Some(NameComponent(reg.interner.intern("r")));
     reg.kinds[r1.0 as usize] = Some(KindComponent::REFLEX);
     reg.modules[r1.0 as usize] = Some(ModuleComponent(mod_id));
 
     let r2 = reg.next_id();
-    reg.names[r2.0 as usize] = Some(NameComponent("r".into()));
+    reg.names[r2.0 as usize] = Some(NameComponent(reg.interner.intern("r")));
     reg.kinds[r2.0 as usize] = Some(KindComponent::REFLEX);
     reg.modules[r2.0 as usize] = Some(ModuleComponent(mod_id));
 
     // Guard missing condition and cycles
     let g_bad = reg.next_id();
-    reg.names[g_bad.0 as usize] = Some(NameComponent("g_bad".into()));
+    reg.names[g_bad.0 as usize] = Some(NameComponent(reg.interner.intern("g_bad")));
     reg.kinds[g_bad.0 as usize] = Some(KindComponent::GUARD);
     reg.modules[g_bad.0 as usize] = Some(ModuleComponent(mod_id));
 
     // Non-guard has condition
     let s_bad = reg.next_id();
-    reg.names[s_bad.0 as usize] = Some(NameComponent("s_bad".into()));
+    reg.names[s_bad.0 as usize] = Some(NameComponent(reg.interner.intern("s_bad")));
     reg.kinds[s_bad.0 as usize] = Some(KindComponent::SIGNAL);
     reg.modules[s_bad.0 as usize] = Some(ModuleComponent(mod_id));
     reg.conditions[s_bad.0 as usize] = Some(ConditionComponent(EntityId(0)));
 
     // Reflex invalid guard ref
     let ref_bad = reg.next_id();
-    reg.names[ref_bad.0 as usize] = Some(NameComponent("ref_bad".into()));
+    reg.names[ref_bad.0 as usize] = Some(NameComponent(reg.interner.intern("ref_bad")));
     reg.kinds[ref_bad.0 as usize] = Some(KindComponent::REFLEX);
     reg.modules[ref_bad.0 as usize] = Some(ModuleComponent(mod_id));
     reg.reflex_comps[ref_bad.0 as usize] =
-        Some(ReflexComponent { guards: vec![EntityId(9999)], assignments: vec![] }); // Past max_id
+        Some(ReflexComponent { guards: vec![EntityId(9999)], assignments: vec![], origin: None }); // Past max_id
 
     // Broken leaf expr
     let l_bad = reg.next_id();
-    reg.names[l_bad.0 as usize] = Some(NameComponent("expr_bad".into()));
+    reg.names[l_bad.0 as usize] = Some(NameComponent(reg.interner.intern("expr_bad")));
     reg.kinds[l_bad.0 as usize] = Some(KindComponent(EntityKind::ASSIGNMENT));
 
     let errors = reg.semantic_validate().unwrap_err();

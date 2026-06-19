@@ -62,7 +62,7 @@ fn test_stdlib_majority() {
     for i in 0..reg.names.len() {
         if let (Some(name), Some(kind)) = (&reg.names[i], &reg.kinds[i]) {
             if let mirrc::ecs::EntityKind::PROPERTY = kind.0 {
-                if name.0 == "majority_correct" {
+                if reg.resolve_name(name.0) == "majority_correct" {
                     found = true;
                     break;
                 }
@@ -82,7 +82,7 @@ fn test_stdlib_priority_enc() {
     for i in 0..reg.names.len() {
         if let (Some(name), Some(kind)) = (&reg.names[i], &reg.kinds[i]) {
             if let mirrc::ecs::EntityKind::PROPERTY = kind.0 {
-                if name.0 == "pending_iff_irq" {
+                if reg.resolve_name(name.0) == "pending_iff_irq" {
                     found = true;
                     break;
                 }

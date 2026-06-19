@@ -37,7 +37,7 @@ fn test_diagnostic_e302_unsupported_condition() {
     let mut registry = Registry::new();
     let ent = registry.next_id();
     // Create an entity that exists but has no supported components (e.g. just a name)
-    registry.names[ent.0 as usize] = Some(NameComponent("unsupported".to_string()));
+    registry.names[ent.0 as usize] = Some(NameComponent(registry.interner.intern("unsupported")));
 
     let g = registry.create_entity("fail_g", KindComponent::GUARD);
     registry.cycles[g.0 as usize] = Some(CyclesComponent(10));

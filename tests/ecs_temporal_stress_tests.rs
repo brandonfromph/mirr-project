@@ -20,7 +20,8 @@ fn test_stress_nesting_depth_limit() {
         let parent = registry.next_id();
         registry.binary_ops[parent.0 as usize] =
             Some(BinaryComponent { op: BinaryOp::And, left: expr_a, right: current_expr });
-        registry.names[parent.0 as usize] = Some(NameComponent(format!("nest_{}", i)));
+        registry.names[parent.0 as usize] =
+            Some(NameComponent(registry.interner.intern(&format!("nest_{}", i))));
         current_expr = parent;
     }
 
@@ -76,7 +77,7 @@ fn test_stress_adaptive_strategy_selection() {
 fn test_stress_registry_robustness_missing_components() {
     let mut registry = Registry::new();
     let ent = registry.next_id();
-    registry.names[ent.0 as usize] = Some(NameComponent("broken".to_string()));
+    registry.names[ent.0 as usize] = Some(NameComponent(registry.interner.intern("broken")));
     // Missing Cycles and Condition
 
     let mut compiler = TemporalCompiler::new();

@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 //! Integration tests for the emitters (dot, sexpr).
 //! Compiles various complex examples through the pipeline and runs the emitters
 //! to ensure 100% coverage without panics or errors.

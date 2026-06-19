@@ -80,8 +80,8 @@ fn emit_module(
 
 fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
                 let dir = match sig_kind {
@@ -90,7 +90,7 @@ fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
                     SignalKind::Internal => continue, // handled as wires
                 };
                 let ty = firrtl_type(&ty_comp.0.core);
-                out.push_str(&format!("    {} {} : {}\n", dir, name_comp.0, ty));
+                out.push_str(&format!("    {} {} : {}\n", dir, registry.resolve_name(nc.0), ty));
             }
         }
     }
@@ -99,8 +99,8 @@ fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
 fn emit_internal_wires(registry: &crate::ecs::Registry, out: &mut String) {
     let mut has_internals = false;
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(ty_comp)) =
-            (&registry.names[i], &registry.kinds[i], &registry.types[i])
+        if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
+            (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Internal) = kind_comp.0 {
                 if !has_internals {
@@ -108,7 +108,7 @@ fn emit_internal_wires(registry: &crate::ecs::Registry, out: &mut String) {
                     has_internals = true;
                 }
                 let ty = firrtl_type(&ty_comp.0.core);
-                out.push_str(&format!("    wire {} : {}\n", name_comp.0, ty));
+                out.push_str(&format!("    wire {} : {}\n", registry.resolve_name(nc.0), ty));
             }
         }
     }
@@ -237,26 +237,26 @@ fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("\n    ; ── Reflex Assignments ──\n");
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(r)) =
-            (&registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
+        if let (Some(nc), Some(kind_comp), Some(r)) =
+            (registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
         {
             if let crate::ecs::EntityKind::REFLEX = kind_comp.0 {
-                out.push_str(&format!("\n    ; Reflex: {}\n", name_comp.0));
+                out.push_str(&format!("\n    ; Reflex: {}\n", registry.resolve_name(nc.0)));
 
                 let guard_cond = if r.guards.len() == 1 {
-                    let g_name = &registry.names[r.guards[0].0 as usize].as_ref().unwrap().0;
-                    format!("{}_out", g_name)
+                    let g_nc = registry.names[r.guards[0].0 as usize].unwrap();
+                    format!("{}_out", registry.resolve_name(g_nc.0))
                 } else if r.guards.is_empty() {
                     "UInt<1>(1)".to_string()
                 } else {
                     let mut expr = format!(
                         "{}_out",
-                        registry.names[r.guards[0].0 as usize].as_ref().unwrap().0
+                        registry.resolve_name(registry.names[r.guards[0].0 as usize].unwrap().0)
                     );
                     let mut j = 1;
                     while j < r.guards.len() {
-                        let g_name = &registry.names[r.guards[j].0 as usize].as_ref().unwrap().0;
-                        expr = format!("and({}, {}_out)", expr, g_name);
+                        let g_nc = registry.names[r.guards[j].0 as usize].unwrap();
+                        expr = format!("and({}, {}_out)", expr, registry.resolve_name(g_nc.0));
                         j += 1;
                     }
                     expr
@@ -264,8 +264,8 @@ fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
 
                 for a_id in &r.assignments {
                     if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
-                        let target_name =
-                            &registry.names[assign.target.0 as usize].as_ref().unwrap().0;
+                        let target_nc = registry.names[assign.target.0 as usize].unwrap();
+                        let target_name = registry.resolve_name(target_nc.0);
                         let val = emit_expr_inline_ecs(assign.value, registry);
                         out.push_str(&format!(
                             "    when {} :\n      connect {} , {}\n    else :\n      connect {} , UInt(0)\n",
@@ -298,51 +298,35 @@ fn emit_property_comments(registry: &crate::ecs::Registry, out: &mut String) {
     );
 
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(kind_comp), Some(prop)) =
-            (&registry.names[i], &registry.kinds[i], &registry.property_comps[i])
+        if let (Some(nc), Some(kind_comp), Some(prop)) =
+            (registry.names[i], &registry.kinds[i], &registry.property_comps[i])
         {
             if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
+                let get_expr = |idx| {
+                    prop.formula_exprs.get(idx).map(|&e| emit_expr_inline_ecs(e, registry)).unwrap_or_else(|| "UInt<1>(1)".to_string())
+                };
+
                 let desc = match &prop.formula {
                     crate::ast::property::PropertyFormula::Always(_) => {
-                        format!(
-                            "always ({})",
-                            emit_expr_inline_ecs(prop.formula_exprs[0], registry)
-                        )
+                        format!("always ({})", get_expr(0))
                     }
                     crate::ast::property::PropertyFormula::Never(_) => {
-                        format!("never ({})", emit_expr_inline_ecs(prop.formula_exprs[0], registry))
+                        format!("never ({})", get_expr(0))
                     }
                     crate::ast::property::PropertyFormula::AlwaysImplies { .. } => {
-                        format!(
-                            "always ({} -> {})",
-                            emit_expr_inline_ecs(prop.formula_exprs[0], registry),
-                            emit_expr_inline_ecs(prop.formula_exprs[1], registry)
-                        )
+                        format!("always ({} -> {})", get_expr(0), get_expr(1))
                     }
                     crate::ast::property::PropertyFormula::NeverImplies { .. } => {
-                        format!(
-                            "never ({} -> {})",
-                            emit_expr_inline_ecs(prop.formula_exprs[0], registry),
-                            emit_expr_inline_ecs(prop.formula_exprs[1], registry)
-                        )
+                        format!("never ({} -> {})", get_expr(0), get_expr(1))
                     }
                     crate::ast::property::PropertyFormula::EventuallyWithin { cycles, .. } => {
-                        format!(
-                            "eventually within {} ({})",
-                            cycles,
-                            emit_expr_inline_ecs(prop.formula_exprs[0], registry)
-                        )
+                        format!("eventually within {} ({})", cycles, get_expr(0))
                     }
                     crate::ast::property::PropertyFormula::AlwaysFollowedBy {
                         delay_cycles,
                         ..
                     } => {
-                        format!(
-                            "always ({} followed_by {} {})",
-                            emit_expr_inline_ecs(prop.formula_exprs[0], registry),
-                            delay_cycles,
-                            emit_expr_inline_ecs(prop.formula_exprs[1], registry)
-                        )
+                        format!("always ({} followed_by {} {})", get_expr(0), delay_cycles, get_expr(1))
                     }
                 };
 
@@ -354,7 +338,7 @@ fn emit_property_comments(registry: &crate::ecs::Registry, out: &mut String) {
 
                 out.push_str(&format!(
                     "    ; {directive_prefix}property {}: {desc}\n",
-                    name_comp.0
+                    registry.resolve_name(nc.0)
                 ));
             }
         }
@@ -524,8 +508,7 @@ fn emit_expr_inline_ecs(expr_id: crate::ecs::EntityId, registry: &crate::ecs::Re
                     registry.signal_refs[idx]
                 {
                     let sig_name = registry.names[sig_ent.0 as usize]
-                        .as_ref()
-                        .map(|n| n.0.clone())
+                        .map(|nc| registry.resolve_name(nc.0).to_string())
                         .unwrap_or_default();
                     result_stack.push(sig_name);
                 } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
@@ -539,8 +522,7 @@ fn emit_expr_inline_ecs(expr_id: crate::ecs::EntityId, registry: &crate::ecs::Re
                         registry.signal_refs[signal.0 as usize]
                     {
                         registry.names[decl.0 as usize]
-                            .as_ref()
-                            .map(|n| n.0.clone())
+                            .map(|nc| registry.resolve_name(nc.0).to_string())
                             .unwrap_or_default()
                     } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
                         &registry.pending_signal_refs[signal.0 as usize]

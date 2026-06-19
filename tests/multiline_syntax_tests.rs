@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 #[test]

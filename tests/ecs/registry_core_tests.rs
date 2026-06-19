@@ -34,7 +34,7 @@ fn test_registry_core_2() {
 fn test_registry_core_3() {
     let mut reg = Registry::new();
     let id = reg.create_entity("test_entity", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "test_entity");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "test_entity");
 }
 #[test]
 fn test_registry_core_4() {
@@ -96,95 +96,95 @@ fn test_registry_core_10() {
         KindComponent(EntityKind::SIGNAL(SignalKind::Internal)),
         TypeComponent(ExtendedType::new(SignalType::Bool, Default::default())),
     );
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "sig1");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "sig1");
 }
 #[test]
 fn test_registry_core_11() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_10", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_10");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_10");
 }
 #[test]
 fn test_registry_core_12() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_11", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_11");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_11");
 }
 #[test]
 fn test_registry_core_13() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_12", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_12");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_12");
 }
 #[test]
 fn test_registry_core_14() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_13", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_13");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_13");
 }
 #[test]
 fn test_registry_core_15() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_14", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_14");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_14");
 }
 #[test]
 fn test_registry_core_16() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_15", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_15");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_15");
 }
 #[test]
 fn test_registry_core_17() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_16", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_16");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_16");
 }
 #[test]
 fn test_registry_core_18() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_17", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_17");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_17");
 }
 #[test]
 fn test_registry_core_19() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_18", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_18");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_18");
 }
 #[test]
 fn test_registry_core_20() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_19", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_19");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_19");
 }
 #[test]
 fn test_registry_core_21() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_20", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_20");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_20");
 }
 #[test]
 fn test_registry_core_22() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_21", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_21");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_21");
 }
 #[test]
 fn test_registry_core_23() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_22", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_22");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_22");
 }
 #[test]
 fn test_registry_core_24() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_23", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_23");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_23");
 }
 #[test]
 fn test_registry_core_25() {
     let mut reg = Registry::new();
     let id = reg.create_entity("dummy_24", KindComponent::SIGNAL);
-    assert_eq!(reg.names[id.0 as usize].as_ref().unwrap().0, "dummy_24");
+    assert_eq!(reg.resolve_name(reg.names[id.0 as usize].as_ref().unwrap().0), "dummy_24");
 }

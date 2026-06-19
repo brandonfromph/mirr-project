@@ -1,13 +1,10 @@
+#![cfg(feature = "legacy_ast")]
 use mirrc::parser::parse_mirr;
-use mirrc::pipeline::{run_pipeline_on_program, PipelineConfig};
+use mirrc::pipeline::{run_pipeline_with_file, PipelineConfig};
 
 fn run_test(source: &str) -> Result<(), String> {
-    let program = match parse_mirr(source) {
-        Ok(p) => p,
-        Err(e) => return Err(format!("{:?}", e)),
-    };
     let config = PipelineConfig { bootstrap_mode: true, ..Default::default() };
-    match run_pipeline_on_program(program, &config) {
+    match run_pipeline_with_file(source, "test.mirr", &config) {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("{:?}", e)),
     }

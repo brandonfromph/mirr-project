@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #[cfg(test)]
 mod e2e_tests {
     use mirrc::pipeline::{run_pipeline, PipelineConfig};

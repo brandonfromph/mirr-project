@@ -20,8 +20,8 @@ pub(crate) fn get_signal_tag_byte(name: &str, registry: &crate::ecs::Registry) -
     }
 
     for i in 0..registry.names.len() {
-        if let Some(n) = &registry.names[i] {
-            if n.0 == name {
+        if let Some(nc) = &registry.names[i] {
+            if registry.resolve_name(nc.0) == name {
                 if let Some(type_comp) = &registry.types[i] {
                     let tag = tag_from_signal_type(&type_comp.0.core);
                     match tag {
@@ -180,8 +180,7 @@ pub(crate) fn emit_expr(
                     registry.signal_refs[idx]
                 {
                     let sig_name = registry.names[sig_ent.0 as usize]
-                        .as_ref()
-                        .map(|n| n.0.clone())
+                        .map(|nc| registry.resolve_name(nc.0).to_string())
                         .unwrap_or_default();
                     let r = regs.map.get(sig_name.as_str()).copied().unwrap_or(0);
                     result_stack.push(r);
@@ -208,8 +207,7 @@ pub(crate) fn emit_expr(
                         registry.signal_refs[signal.0 as usize]
                     {
                         registry.names[decl.0 as usize]
-                            .as_ref()
-                            .map(|n| n.0.clone())
+                            .map(|nc| registry.resolve_name(nc.0).to_string())
                             .unwrap_or_default()
                     } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
                         &registry.pending_signal_refs[signal.0 as usize]
@@ -242,7 +240,8 @@ pub(crate) fn emit_expr(
                     if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
                         registry.signal_refs[arr_idx]
                     {
-                        arr_name = registry.names[sig_ent.0 as usize].as_ref().map(|n| n.0.clone());
+                        arr_name = registry.names[sig_ent.0 as usize]
+                            .map(|nc| registry.resolve_name(nc.0).to_string());
                     } else if let Some(crate::ecs::components::PendingSignalRef(n)) =
                         &registry.pending_signal_refs[arr_idx]
                     {

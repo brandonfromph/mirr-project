@@ -144,7 +144,7 @@ pub fn find_sccs(graph: &WidthDepGraph, registry: &crate::ecs::registry::Registr
             let names: Vec<&str> = members
                 .iter()
                 .take(5)
-                .filter_map(|&i| registry.names[i].as_ref().map(|s| s.0.as_str()))
+                .filter_map(|&i| registry.names[i].as_ref().map(|nc| registry.resolve_name(nc.0)))
                 .collect();
             diagnostics.push(
                 WidthDiag::error(format!(

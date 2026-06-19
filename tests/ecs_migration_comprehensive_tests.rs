@@ -19,7 +19,7 @@ mod tests {
         let mod_ent = reg.create_entity("top", KindComponent::MODULE);
         let ent = register_signal_to_ecs(&mut reg, mod_ent, sig);
 
-        assert_eq!(reg.names[ent.0 as usize].as_ref().unwrap().0, "test_sig");
+        assert_eq!(reg.resolve_name(reg.names[ent.0 as usize].as_ref().unwrap().0), "test_sig");
         assert_eq!(
             reg.kinds[ent.0 as usize].as_ref().unwrap().0,
             EntityKind::SIGNAL(SignalKind::Input)
@@ -67,7 +67,7 @@ mod tests {
         let cond = Expr::Signal("missing".to_string());
         let cond_ent = reg.ingest_expr(&cond).expect("Ingestion failed");
         let g_ent = reg.next_id();
-        reg.names[g_ent.0 as usize] = Some(NameComponent("g1".to_string()));
+        reg.names[g_ent.0 as usize] = Some(NameComponent(reg.interner.intern("g1")));
         reg.kinds[g_ent.0 as usize] = Some(KindComponent::GUARD);
         reg.conditions[g_ent.0 as usize] = Some(ConditionComponent(cond_ent));
 
@@ -82,7 +82,7 @@ mod tests {
         let prev = Expr::Prev { signal: "s1".to_string(), delay: 0 };
         let prev_ent = reg.ingest_expr(&prev).expect("Ingestion failed");
         let g_ent = reg.next_id();
-        reg.names[g_ent.0 as usize] = Some(NameComponent("g1".to_string()));
+        reg.names[g_ent.0 as usize] = Some(NameComponent(reg.interner.intern("g1")));
         reg.kinds[g_ent.0 as usize] = Some(KindComponent::GUARD);
         reg.conditions[g_ent.0 as usize] = Some(ConditionComponent(prev_ent));
 
@@ -118,7 +118,7 @@ mod tests {
         let cond = Expr::Signal("s1".to_string());
         let cond_ent = reg.ingest_expr(&cond).expect("Ingestion failed");
         let g_ent = reg.next_id();
-        reg.names[g_ent.0 as usize] = Some(NameComponent("g1".to_string()));
+        reg.names[g_ent.0 as usize] = Some(NameComponent(reg.interner.intern("g1")));
         reg.kinds[g_ent.0 as usize] = Some(KindComponent::GUARD);
         reg.conditions[g_ent.0 as usize] = Some(ConditionComponent(cond_ent));
 
@@ -212,14 +212,14 @@ mod tests {
             Some(AssignmentComponent { target: sig, value: reg.next_id() });
         let r1 = reg.next_id();
         reg.reflex_comps[r1.0 as usize] =
-            Some(ReflexComponent { guards: vec![g1], assignments: vec![a1] });
+            Some(ReflexComponent { guards: vec![g1], assignments: vec![a1], origin: None });
 
         let a2 = reg.next_id();
         reg.assignment_comps[a2.0 as usize] =
             Some(AssignmentComponent { target: sig, value: reg.next_id() });
         let r2 = reg.next_id();
         reg.reflex_comps[r2.0 as usize] =
-            Some(ReflexComponent { guards: vec![g1], assignments: vec![a2] });
+            Some(ReflexComponent { guards: vec![g1], assignments: vec![a2], origin: None });
 
         // Ownership validation (not yet fully implemented in my semantic_validate but planned)
         // assert!(reg.semantic_validate().is_err());

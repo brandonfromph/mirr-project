@@ -51,12 +51,10 @@ pub fn analyze_dsp_ecs(registry: &crate::ecs::Registry, threshold: u32) -> DspAn
                 if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
                     if has_multiply_ecs(asgn.value, registry) {
                         let reflex_name = registry.names[i]
-                            .as_ref()
-                            .map(|n| n.0.clone())
+                            .map(|nc| registry.resolve_name(nc.0).to_string())
                             .unwrap_or_else(|| "unnamed_reflex".to_string());
                         let target_name = registry.names[asgn.target.0 as usize]
-                            .as_ref()
-                            .map(|n| n.0.clone())
+                            .map(|nc| registry.resolve_name(nc.0).to_string())
                             .unwrap_or_else(|| "unnamed_target".to_string());
                         candidates.push(DspCandidate { reflex_name, target_signal: target_name });
                         break;

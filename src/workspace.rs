@@ -7,10 +7,8 @@ use std::rc::Rc;
 
 use sha2::{Digest, Sha256};
 
-use crate::ast::MirrProgram;
 use crate::error::{MirrError, PipelineErrors};
-use crate::parser::parse_mirr;
-use crate::pipeline::{run_pipeline_on_program, PipelineConfig, PipelineResult};
+use crate::pipeline::{PipelineConfig, PipelineResult};
 
 /// Workspace manages multi-file MIRR projects, import resolution, and caching.
 #[derive(Debug, Clone)]
@@ -54,7 +52,11 @@ impl WorkspaceConfig {
 
 /// Internal state during import resolution.
 struct LoadState {
+    /* --- STRANGLER FIG: Legacy AST approach commented out ---
     files: HashMap<PathBuf, MirrProgram>,
+    */
+    // ECS Native approach:
+    files: HashSet<PathBuf>,
     graph: WorkspaceDependencyGraph,
 }
 
@@ -184,10 +186,10 @@ impl Workspace {
         let root_source = self.load_source(&root_path)?;
         let root_source_hash = hash_text(&root_source);
 
-        // 1. Recursive Resolution and Parsing
+        // 1. Iterative Resolution for Dependency Tracking (ECS Native, NASA Power of 10)
         let mut load_state =
-            LoadState { files: HashMap::new(), graph: WorkspaceDependencyGraph::new() };
-        self.resolve_imports_recursive(&root_path, &root_source, &mut load_state)?;
+            LoadState { files: HashSet::new(), graph: WorkspaceDependencyGraph::new() };
+        self.resolve_imports_ecs_native(&root_path, &root_source, &mut load_state)?;
 
         // 2. Compute Workspace Hash (for caching)
         let workspace_hash =
@@ -198,61 +200,22 @@ impl Workspace {
             }
         }
 
-        // 3. Linking (Program Merging)
-        let mut merged_program = parse_mirr(&root_source)
-            .map_err(|error| WorkspaceError::Parse { path: root_path.clone(), error })?;
-
-        // Merge patterns from all imported files
-        // (This turns Workspace into a real Linker!)
-        for (path, program) in &load_state.files {
-            if path == &root_path {
-                continue;
-            }
-
-            // Find the alias used to import this file
-            let mut alias = None;
-            for (parent, deps) in &load_state.graph.dependencies {
-                if deps.contains(path) {
-                    // Look up alias in the parent's parse result
-                    if let Some(prog) = load_state.files.get(parent) {
-                        if let Some(imp) = prog.imports.iter().find(|imp| {
-                            if let Some(parent_dir) = parent.parent() {
-                                let resolved = parent_dir.join(&imp.path);
-                                if let Ok(canonical) = fs::canonicalize(&resolved) {
-                                    return &canonical == path;
-                                }
-                            }
-                            false
-                        }) {
-                            alias = Some(imp.alias.clone());
-                        }
-                    }
-                }
-            }
-
-            let prefix = alias.map(|a| format!("{}::", a)).unwrap_or_default();
-            for pat in &program.patterns {
-                let mut aliased_pat = pat.clone();
-                aliased_pat.name = format!("{}{}", prefix, pat.name);
-                merged_program.patterns.push(aliased_pat);
-            }
-        }
-        println!("=== REGISTERED PATTERNS ===");
-        for pat in &merged_program.patterns {
-            println!("  Pattern: {}", pat.name);
-        }
-        println!("===========================");
-
-        // 4. Pipeline Execution
+        // 3. Pipeline Execution (Phase 4: Direct to ECS!)
+        // In Phase 4, the ECS Parser handles imports natively by reading them from disk.
         let pipeline = Rc::new(
-            run_pipeline_on_program(merged_program, config).map_err(WorkspaceError::Pipeline)?,
+            crate::pipeline::run_pipeline_with_file(
+                &root_source,
+                root_path.to_str().unwrap_or(""),
+                config,
+            )
+            .map_err(WorkspaceError::Pipeline)?,
         );
 
-        let mut imported_paths: Vec<PathBuf> = load_state.files.keys().cloned().collect();
+        let mut imported_paths: Vec<PathBuf> = load_state.files.into_iter().collect();
         imported_paths.sort();
 
         let artifact_summary = WorkspaceArtifactSummary {
-            loaded_files: load_state.files.len(),
+            loaded_files: imported_paths.len(),
             loaded_files_paths: imported_paths,
             dependency_nodes: load_state.graph.all_files().len(),
             source_hash: root_source_hash.clone(),
@@ -270,6 +233,56 @@ impl Workspace {
         Ok(snapshot)
     }
 
+    /// ECS-Native, NASA Power of 10 compliant iterative dependency resolution.
+    fn resolve_imports_ecs_native(
+        &mut self,
+        root_path: &Path,
+        root_source: &str,
+        state: &mut LoadState,
+    ) -> Result<(), WorkspaceError> {
+        let mut work_queue: Vec<(PathBuf, String)> = Vec::with_capacity(128);
+        work_queue.push((canonical_or_self(root_path), root_source.to_string()));
+
+        let mut iterations = 0;
+        let max_iterations = 1024; // Rule 2: Hard bounded iterations
+
+        while let Some((current_path, source)) = work_queue.pop() {
+            iterations += 1;
+            if iterations > max_iterations {
+                return Err(WorkspaceError::Import {
+                    path: current_path,
+                    message: "Exceeded maximum dependency resolution limit (NASA Power of 10 rule)"
+                        .to_string(),
+                });
+            }
+
+            if state.files.contains(&current_path) {
+                continue;
+            }
+            state.files.insert(current_path.clone());
+
+            // Lightweight scan for imports, bypassing full AST
+            for line in source.lines() {
+                let line = line.trim();
+                if line.starts_with("import ") {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 2 {
+                        let path_str = parts[1].trim_matches('"').trim_matches(';');
+                        let dep_path = self.resolve_import_path(&current_path, path_str)?;
+                        state.graph.add_dependency(current_path.clone(), dep_path.clone());
+
+                        if !state.files.contains(&dep_path) {
+                            let dep_source = self.load_source(&dep_path)?;
+                            work_queue.push((dep_path, dep_source));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /* --- STRANGLER FIG: Legacy Recursive Resolution Commented Out ---
     /// Recursively load and parse all dependencies.
     fn resolve_imports_recursive(
         &mut self,
@@ -297,6 +310,7 @@ impl Workspace {
 
         Ok(())
     }
+    */
 
     pub fn load_source(&mut self, path: &Path) -> Result<String, WorkspaceError> {
         let path = canonical_or_self(path);
@@ -361,7 +375,7 @@ impl Workspace {
         let mut hasher = Sha256::new();
         hasher.update(root_source_hash.as_bytes());
 
-        let mut sorted_files: Vec<_> = state.files.keys().collect();
+        let mut sorted_files: Vec<_> = state.files.iter().collect();
         sorted_files.sort();
 
         for file in sorted_files {

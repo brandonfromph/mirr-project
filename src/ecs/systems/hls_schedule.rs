@@ -21,11 +21,14 @@ pub fn hls_asap_schedule_system(registry: &mut Registry) -> Result<(), MirrError
                 let kind = determine_resource_kind(registry, EntityId(i as u32))
                     .unwrap_or(crate::hls::ResourceKind::Add);
 
-                registry.hls_schedules[i] = Some(HlsScheduleComponent {
-                    earliest: 0,
-                    latest: 0, // Will be set by ALAP
-                    resource: kind,
-                });
+                registry.set_hls_schedule(
+                    EntityId(i as u32),
+                    HlsScheduleComponent {
+                        earliest: 0,
+                        latest: 0, // Will be set by ALAP
+                        resource: kind,
+                    },
+                );
             } else {
                 if let Some(sched) = &mut registry.hls_schedules[i] {
                     sched.earliest = 0;

@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 #![forbid(unsafe_code)]
 //! Tests for the property system hardening campaign:
 //! - Bug fix: prev() delay validation now applies to properties

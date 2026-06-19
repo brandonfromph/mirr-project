@@ -13,7 +13,7 @@ pub fn ingest_program(
     for pat in program.patterns {
         let entity = registry.create_entity(&pat.name, KindComponent::PATTERN);
         registry.set_type(entity, TypeComponent::pattern(pat.clone()));
-        registry.pattern_defs[entity.0 as usize] = Some(PatternDefComponent(pat));
+        registry.set_pattern_def(entity, PatternDefComponent(pat));
     }
 
     // 1.5. Ingest imports
@@ -62,7 +62,7 @@ fn ingest_import_recursive(
     for pat in imported_prog.patterns {
         let entity = registry.create_entity(&pat.name, KindComponent::PATTERN);
         registry.set_type(entity, TypeComponent::pattern(pat.clone()));
-        registry.pattern_defs[entity.0 as usize] = Some(PatternDefComponent(pat.clone()));
+        registry.set_pattern_def(entity, PatternDefComponent(pat.clone()));
 
         // Register the qualified name (Alias::Name) in the symbol table
         let qualified_name = format!("{}::{}", import.alias, pat.name);
@@ -89,7 +89,7 @@ pub fn register_signal_to_ecs(
     let entity = registry.create_entity(&sig.name, KindComponent(EntityKind::SIGNAL(sig.kind)));
     registry.set_type(entity, TypeComponent::signal(sig.ty));
     if let Some(span) = sig.span {
-        registry.spans[entity.0 as usize] = Some(SpanComponent(span));
+        registry.set_span(entity, SpanComponent(span));
     }
     registry.set_parent(entity, module_entity);
     entity

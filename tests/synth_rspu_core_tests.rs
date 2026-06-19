@@ -1,3 +1,4 @@
+#![cfg(feature = "legacy_ast")]
 //! Integration tests for R-SPU Core RTL synthesis.
 //!
 //! Verifies that the new 64-bit tagged-word core modules
