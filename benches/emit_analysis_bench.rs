@@ -9,7 +9,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use mirrc::emit::firrtl::emit_firrtl;
 use mirrc::emit::verilog::emit_sv;
-use mirrc::{parse_mirr, run_pipeline, run_pipeline_with_file, PipelineConfig};
+use mirrc::{run_pipeline, run_pipeline_with_file, PipelineConfig};
 use std::hint::black_box;
 
 fn typecheck_ecs(source: &str) {

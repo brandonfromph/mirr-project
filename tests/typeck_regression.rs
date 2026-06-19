@@ -125,8 +125,7 @@ fn test_bit_assignment() {
         }
     }
     ";
-    let program_result = parse_mirr(source);
-    let program = program_result.unwrap();
-    let target = &program.module.reflexes[0].assignments[0].target;
-    println!("Assignment target: '{}'", target);
+    let program_result = run_pipeline_with_file(source, "test.mirr", &PipelineConfig::default());
+    assert!(program_result.is_ok());
+    println!("Bit assignment parses successfully");
 }

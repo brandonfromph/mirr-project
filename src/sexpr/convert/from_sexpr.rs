@@ -166,7 +166,7 @@ fn parse_guards(
         
         let name = g_list[1].as_str_val().unwrap_or("").to_string();
         let cond_expr = parse_expr(&g_list[2])?;
-        let cycles = g_list.get(3).and_then(|e| e.as_integer()).unwrap_or(1) as u64;
+        let cycles = g_list.get(3).and_then(|e| e.as_integer()).unwrap_or(1);
         
         let guard_id = registry.create_entity(&name, KindComponent::GUARD);
         let cond_id = registry.ingest_expr(&cond_expr)?;
@@ -264,7 +264,7 @@ fn parse_reflexes(
 fn parse_expr(expr: &SExpr) -> Result<Expr, MirrError> {
     match expr {
         SExpr::Bool(b) => Ok(Expr::Literal(LiteralValue::Bool(*b))),
-        SExpr::Integer(i) => Ok(Expr::Literal(LiteralValue::Integer(*i as u64))),
+        SExpr::Integer(i) => Ok(Expr::Literal(LiteralValue::Integer(*i))),
         SExpr::List(list) => {
             if list.is_empty() {
                 return Err(sexpr_err("Empty expr list".to_string()));

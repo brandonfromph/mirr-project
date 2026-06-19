@@ -41,7 +41,5 @@ module tmr_voter {
         }
     }
 
-    property no_spurious_output {
-        always ((input_a == input_b || input_a == input_c || input_b == input_c) -> (output == input_a || output == input_b || output == input_c));
-    }
+    property no_spurious_output: always (input_a == input_b || input_a == input_c || input_b == input_c) implies (output == input_a || output == input_b || output == input_c);
 }

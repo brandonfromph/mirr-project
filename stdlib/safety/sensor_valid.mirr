@@ -33,7 +33,5 @@ module sensor_validator {
         }
     }
 
-    property no_invalid_output {
-        always (temp_fault -> (raw_temp < 200 || raw_temp > 420));
-    }
+    property no_invalid_output: always temp_fault implies (raw_temp < 200 || raw_temp > 420);
 }

@@ -29,7 +29,5 @@ module crc8_checksum {
         }
     }
 
-    property crc_valid_when_ready {
-        always (crc_ready -> (crc_out != 0 || data_valid));
-    }
+    property crc_valid_when_ready: always crc_ready implies (crc_out != 0 || data_valid);
 }

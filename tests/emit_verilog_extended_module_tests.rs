@@ -133,9 +133,7 @@ fn property_assert_produces_sva() {
     let sv = run_src(
         r#"module prop_sv {
     signal x: in bool;
-    property p {
-        always (x);
-    }
+    property p: always x;
 }"#,
     );
     // SVA assert / property keyword should appear

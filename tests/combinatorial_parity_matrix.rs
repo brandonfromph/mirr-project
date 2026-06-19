@@ -106,16 +106,20 @@ fn test_combinatorial_mux_matrix() {
     for entries in [2, 4, 8, 16] {
         let mut signals = String::new();
         let mut logic = String::new();
-
+        
         for i in 0..entries {
             signals.push_str(&format!("        in_{}: in u8;\n", i));
+            logic.push_str(&format!(
+                "
+                guard g_{i} {{ when sel == {i} for 1 cycles; }}
+                reflex r_{i} {{ on g_{i} {{ out = in_{i}; }} }}"
+            ));
         }
-
-        logic.push_str("            match sel {\n");
-        for i in 0..entries {
-            logic.push_str(&format!("                {} => out = in_{};\n", i, i));
-        }
-        logic.push_str("                _ => out = 0;\n            }\n");
+        logic.push_str(&format!(
+            "
+                guard g_def {{ when sel >= {entries} for 1 cycles; }}
+                reflex r_def {{ on g_def {{ out = 0; }} }}"
+        ));
 
         let source = format!(
             r#"
@@ -123,16 +127,9 @@ fn test_combinatorial_mux_matrix() {
                 signals {{
                     sel: in u4;
                     out: out u8;
-                    default: internal bool;
 {signals}
                 }}
-                
-                guard g {{ when true for 1 cycles; }}
-                reflex r_split_ {{
-                    on g {{
 {logic}
-                    }}
-                }}
             }}
         "#,
             entries = entries,

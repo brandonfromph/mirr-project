@@ -309,6 +309,24 @@ fn parse_module_ecs(
             continue;
         }
 
+        if line.starts_with("signals {") || line == "signals {" {
+            *index += 1;
+            while *index < lines.len() {
+                skip_empty_and_comments(lines, index);
+                if *index >= lines.len() {
+                    break;
+                }
+                let inner_line = lines[*index].trim();
+                if inner_line == "}" {
+                    *index += 1;
+                    break;
+                }
+                parse_signal_ecs(registry, module_entity, &mod_name, inner_line, *index, struct_defs)?;
+                *index += 1;
+            }
+            continue;
+        }
+
         if line.starts_with("guard ") {
             parse_guard_ecs(registry, module_entity, &mod_name, lines, index)?;
             continue;
@@ -354,10 +372,7 @@ fn parse_signal_ecs(
 
     let after_keyword =
         if let Some(stripped) = trimmed.strip_prefix("signal ") { stripped } else { trimmed };
-    let without_semicolon = after_keyword
-        .trim()
-        .strip_suffix(';')
-        .ok_or_else(|| MirrError::parse_error("Signal declaration must end with ';'."))?;
+    let without_semicolon = after_keyword.trim().trim_end_matches(';');
 
     let (name_part, rest) = without_semicolon
         .split_once(':')
@@ -670,8 +685,20 @@ fn parse_property_ecs(
             let f = crate::ast::property::PropertyFormula::Never(fake_expr.clone());
             (f, vec![ent])
         }
-    } else if let Some(body) = clean_formula_str.strip_prefix("always ") {
-        if let Some((left, right)) = body.split_once(" implies ") {
+    } else if let Some(raw_body) = clean_formula_str.strip_prefix("always ") {
+        let body = raw_body.trim().strip_prefix('(').and_then(|b| b.strip_suffix(')')).unwrap_or(raw_body.trim());
+        if let Some((left, right)) = body.split_once(" followed_by ") {
+            let (cycles_str, right_expr) = right.split_once(' ').unwrap_or(("0", right));
+            let cycles = cycles_str.parse::<u32>().unwrap_or(0);
+            let left_ent = parse_expression_ecs(registry, left.trim())?;
+            let right_ent = parse_expression_ecs(registry, right_expr.trim())?;
+            let f = crate::ast::property::PropertyFormula::AlwaysFollowedBy {
+                trigger: fake_expr.clone(),
+                response: fake_expr.clone(),
+                delay_cycles: cycles,
+            };
+            (f, vec![left_ent, right_ent])
+        } else if let Some((left, right)) = body.split_once(" implies ") {
             let left_ent = parse_expression_ecs(registry, left.trim())?;
             let right_ent = parse_expression_ecs(registry, right.trim())?;
             let f = crate::ast::property::PropertyFormula::AlwaysImplies {

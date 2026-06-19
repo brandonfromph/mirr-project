@@ -49,11 +49,7 @@ module flight_controller {
         }
     }
 
-    property speed_bounded {
-        always (airspeed < 400);
-    }
+    property speed_bounded: always airspeed < 400;
 
-    property low_alt_warns {
-        always (altitude < 500 -> terrain_warn);
-    }
+    property low_alt_warns: always altitude < 500 implies terrain_warn;
 }

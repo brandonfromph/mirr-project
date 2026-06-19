@@ -39,7 +39,5 @@ module heartbeat_monitor {
         }
     }
 
-    property alarm_on_missing {
-        always (heartbeat_missing -> alarm);
-    }
+    property alarm_on_missing: always heartbeat_missing implies alarm;
 }

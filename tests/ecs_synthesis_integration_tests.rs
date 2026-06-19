@@ -11,7 +11,7 @@ use mirrc::temporal::low_level_ir::CompiledGuard;
 #[test]
 fn test_synthesis_pipeline() {
     let mut registry = Registry::new();
-    let mod_entity = registry.create_entity("test_module", KindComponent::MODULE);
+    let _mod_entity = registry.create_entity("test_module", KindComponent::MODULE);
     let mut compiler = TemporalCompiler::new();
 
     // 1. Register Signal Entity

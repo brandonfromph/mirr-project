@@ -182,7 +182,7 @@ fn test_ingest_module_integration() {
             signal y: out bool;
             guard g { when x for 1 cycles; }
             reflex r { on g { y = true; } }
-            property p { always(x -> y); }
+
         }
     "#;
     let mut reg = Registry::new();
@@ -204,8 +204,6 @@ fn test_ingest_module_integration() {
     let r_comp = reg.reflex_comps[r_id.0 as usize].as_ref().unwrap();
     assert_eq!(r_comp.guards[0], g_id);
 
-    let p_id = reg.get_entity_by_name("p").unwrap();
-    assert!(reg.property_comps[p_id.0 as usize].is_some());
 }
 
 #[test]

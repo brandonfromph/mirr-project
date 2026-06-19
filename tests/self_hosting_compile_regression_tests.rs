@@ -1,13 +1,23 @@
 #![forbid(unsafe_code)]
 
-use mirrc::parser::parse_mirr;
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
+
+fn parse_mirr_ecs(src: &str) -> Result<(), mirrc::error::PipelineErrors> {
+    let mut config = PipelineConfig::default();
+    config.typecheck = false;
+    config.simplify = false;
+    config.width = false;
+    config.temporal = false;
+    config.mape_k = false;
+    run_pipeline(src, &config).map(|_| ())
+}
+
 use std::fs;
 
 #[test]
 fn test_compiler_mirr_emitter() {
     let src = fs::read_to_string("compiler_mirr/emitter.mirr").unwrap();
-    assert!(parse_mirr(&src).is_ok());
+    assert!(parse_mirr_ecs(&src).is_ok());
     // Fails in temporal compilation due to unsupported form
     assert!(run_pipeline(&src, &PipelineConfig::default()).is_err());
 }
@@ -22,7 +32,7 @@ fn test_compiler_mirr_lexer() {
 #[test]
 fn test_compiler_mirr_main() {
     let src = fs::read_to_string("compiler_mirr/main.mirr").unwrap();
-    let res = parse_mirr(&src);
+    let res = parse_mirr_ecs(&src);
     if let Err(e) = &res {
         println!("Parse error main: {:?}", e);
     }
@@ -40,7 +50,7 @@ fn test_compiler_mirr_parser() {
 #[test]
 fn test_compiler_mirr_semantic() {
     let src = fs::read_to_string("compiler_mirr/semantic.mirr").unwrap();
-    assert!(parse_mirr(&src).is_ok());
+    assert!(parse_mirr_ecs(&src).is_ok());
     // Fails in temporal compilation due to unsupported form
     assert!(run_pipeline(&src, &PipelineConfig::default()).is_err());
 }
@@ -48,7 +58,7 @@ fn test_compiler_mirr_semantic() {
 #[test]
 fn test_compiler_mirr_temporal_lowering() {
     let src = fs::read_to_string("compiler_mirr/temporal_lowering.mirr").unwrap();
-    assert!(parse_mirr(&src).is_ok());
+    assert!(parse_mirr_ecs(&src).is_ok());
     // Fails in type checking due to type mismatch
     assert!(run_pipeline(&src, &PipelineConfig::default()).is_err());
 }
@@ -56,7 +66,7 @@ fn test_compiler_mirr_temporal_lowering() {
 #[test]
 fn test_compiler_mirr_test_main() {
     let src = fs::read_to_string("compiler_mirr/test_main.mirr").unwrap();
-    let res = parse_mirr(&src);
+    let res = parse_mirr_ecs(&src);
     // Fails due to unsupported `fn`
     assert!(res.is_ok() || res.is_err());
 }

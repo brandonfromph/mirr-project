@@ -31,7 +31,5 @@ module priority_encoder {
         }
     }
 
-    property pending_iff_irq {
-        always (irq_pending == (irq_0 || irq_1 || irq_2 || irq_3));
-    }
+    property pending_iff_irq: always (irq_pending == (irq_0 || irq_1 || irq_2 || irq_3));
 }

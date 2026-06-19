@@ -212,7 +212,7 @@ fn parse_always_body(body: &str, name: &str) -> Result<PropertyFormula, MirrErro
 
 /// Parse the inner content which may be a simple expression or an implication.
 fn parse_always_or_implies_inner(inner: &str, name: &str) -> Result<PropertyFormula, MirrError> {
-    if let Some((lhs, rhs)) = inner.split_once(" -> ") {
+    if let Some((lhs, rhs)) = inner.split_once(" -> ").or_else(|| inner.split_once(" implies ")) {
         let antecedent = parse_expression(lhs.trim()).map_err(|e| {
             emit_at(
                 ErrorCode::PropertyAntecedentError,
@@ -244,7 +244,7 @@ fn parse_never_body(body: &str, name: &str) -> Result<PropertyFormula, MirrError
     let inner = unwrap_parens(body, name, "never")?;
 
     // Check for never (P -> Q) — NeverImplies
-    if let Some((lhs, rhs)) = inner.split_once(" -> ") {
+    if let Some((lhs, rhs)) = inner.split_once(" -> ").or_else(|| inner.split_once(" implies ")) {
         let antecedent = parse_expression(lhs.trim()).map_err(|e| {
             emit_at(
                 ErrorCode::PropertyAntecedentError,

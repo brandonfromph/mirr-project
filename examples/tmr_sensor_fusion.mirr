@@ -297,43 +297,29 @@ module tmr_sensor_fusion {
 
     // P1: Voted output always equals sensor A when A is healthy.
     //     (Primary voter integrity.)
-    property vote_integrity {
-        always (voted_value == sensor_a || voted_value == sensor_b || voted_value == sensor_c);
-    }
+    property vote_integrity: always (voted_value == sensor_a || voted_value == sensor_b || voted_value == sensor_c);
 
     // P2: No shutdown without a detected fault.
     //     (Prevents nuisance trips — critical for human-rated systems.)
-    property no_spurious_shutdown {
-        always (safety_shutdown -> fault_detected);
-    }
+    property no_spurious_shutdown: always safety_shutdown implies fault_detected;
 
     // P3: Never have all three sensors failed simultaneously.
     //     (If all three fail, the system is in an unrecoverable state.)
-    property not_triple_failure {
-        never (sensor_a_failed && sensor_b_failed && sensor_c_failed);
-    }
+    property not_triple_failure: never (sensor_a_failed && sensor_b_failed && sensor_c_failed);
 
     // P4: Faults must be detected within 16 cycles.
     //     (Bounded fault latency — required for DO-254 / IEC 61508.)
-    property fault_latency_bound {
-        eventually within 16 (fault_detected);
-    }
+    property fault_latency_bound: eventually within 16 (fault_detected);
 
     // P5: After a fault, shutdown must follow within 32 cycles.
     //     (Shutdown response time guarantee.)
-    property shutdown_follows_fault {
-        always (fault_detected followed_by 32 safety_shutdown);
-    }
+    property shutdown_follows_fault: always (fault_detected followed_by 32 safety_shutdown);
 
     // P6: Assume at least one sensor is healthy (environment constraint).
     //     (Don't explore all-dead corner — constrain formal verification.)
-    property healthy_env {
-        assume always (sensor_a_ok || sensor_b_ok || sensor_c_ok);
-    }
+    property healthy_env: assume always (sensor_a_ok || sensor_b_ok || sensor_c_ok);
 
     // P7: Prove the pressure alarm is reachable (not dead code).
     //     (Reachability cover point for formal verification.)
-    property pressure_alarm_reachable {
-        cover eventually within 100 (pressure_alarm);
-    }
+    property pressure_alarm_reachable: cover eventually within 100 (pressure_alarm);
 }

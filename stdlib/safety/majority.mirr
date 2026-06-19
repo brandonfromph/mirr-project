@@ -40,7 +40,5 @@ module majority_gate {
         }
     }
 
-    property majority_correct {
-        always ((input_a && input_b) || (input_a && input_c) || (input_b && input_c) -> majority_out);
-    }
+    property majority_correct: always (input_a && input_b) || (input_a && input_c) || (input_b && input_c) implies majority_out;
 }

@@ -10,7 +10,7 @@ use mirrc::temporal::allocator::RspuAllocator;
 #[test]
 fn test_allocator_maps_signals_to_unique_registers() {
     let mut registry = Registry::new();
-    let mod_entity = registry.create_entity("test_module", KindComponent::MODULE);
+    let _mod_entity = registry.create_entity("test_module", KindComponent::MODULE);
 
     // Register two signals
 
@@ -44,7 +44,7 @@ fn test_allocator_maps_signals_to_unique_registers() {
 #[test]
 fn test_allocator_enforces_register_limit() {
     let mut registry = Registry::new();
-    let mod_entity = registry.create_entity("test_module", KindComponent::MODULE);
+    let _mod_entity = registry.create_entity("test_module", KindComponent::MODULE);
 
     let mut allocator = RspuAllocator::new();
     // Fill 256 registers

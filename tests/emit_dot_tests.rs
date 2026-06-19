@@ -5,9 +5,6 @@
 //! empty module through emit_expr_dot, multi-assignment reflex subgraphs,
 //! and internal signal shape.
 
-use mirrc::ast::expr::Expr;
-use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use mirrc::ast::types::{BinaryOp, ExtendedType, LiteralValue, SignalKind, SignalType};
 use mirrc::emit;
 use mirrc::pipeline::{run_pipeline, PipelineConfig, PipelineResult};
 
@@ -62,63 +59,22 @@ module empty {
 }
 "#;
 
-/// Build a PipelineResult with a Prev node in a guard condition.
-/// The parser doesn't support prev() syntax, so we build the AST directly.
-fn prev_guard_result() -> PipelineResult {
-    let module = Module {
-        name: "prev_guard".to_string(),
-        signals: vec![
-            SignalDecl {
-                name: "x".to_string(),
-                kind: SignalKind::Input,
-                ty: ExtendedType::from_core(SignalType::Unsigned(8)),
-                origin: None,
-                span: None,
-            },
-            SignalDecl {
-                name: "y".to_string(),
-                kind: SignalKind::Output,
-                ty: ExtendedType::from_core(SignalType::Bool),
-                origin: None,
-                span: None,
-            },
-        ],
-        guards: vec![Guard {
-            name: "g".to_string(),
-            condition: Expr::Binary {
-                op: BinaryOp::Gt,
-                left: Box::new(Expr::Prev { signal: "x".to_string(), delay: 3 }),
-                right: Box::new(Expr::Literal(LiteralValue::Integer(10))),
-            },
-            cycles: 5,
-            template_cycles: None,
-            origin: None,
-            span: None,
-        }],
-        reflexes: vec![Reflex {
-            name: "r".to_string(),
-            guard_names: vec!["g".to_string()],
-            assignments: vec![Assignment {
-                target: "y".to_string(),
-                value: Expr::Literal(LiteralValue::Bool(true)),
-                span: None,
-            }],
-            origin: None,
-            span: None,
-        }],
-        properties: Vec::new(),
-        pattern_calls: Vec::new(),
-        pattern_origins: Vec::new(),
-        span: None,
-    };
+const PREV_MIRR_SRC: &str = r#"
+module prev_guard {
+    signal x: in u8;
+    signal y: out bool;
+    guard g { when x > prev(x, 3) for 5 cycles; }
+    reflex r { on g { y = true; } }
+}
+"#;
 
-    let program = MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
+fn prev_guard_result() -> PipelineResult {
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None).unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, PREV_MIRR_SRC, None).unwrap();
 
     PipelineResult {
         hls_result: None,
-        program: Some(program),
+        program: None,
         simplify_stats: None,
         width_stats: None,
         width_diagnostics: Vec::new(),

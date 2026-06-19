@@ -604,6 +604,7 @@ fn expand_expr(
         // ONLY insert into rename map if NOT a reserved literal
         if !matches!(k.as_str(), "true" | "false") {
             rename_map.insert(k.clone(), v.clone());
+            rename_map.insert(format!("${{{}}}", k), v.clone());
         }
     }
     crate::expand::rename::rename_expr_signals(&mut new_expr, &rename_map);

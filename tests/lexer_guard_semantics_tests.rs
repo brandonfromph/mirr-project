@@ -11,7 +11,7 @@ fn test_guard_counter_lifetime() {
     // - a guard `digit_guard` triggered by `input_byte_is_digit` for 3 cycles
     // - a reflex that sets `emit_push_integer = true` while the guard is active
     // - a clear/tick reflex that resets `emit_push_integer = false`
-    let prog = MirrProgram {
+    let _prog = MirrProgram {
         target: None,
         patterns: Vec::new(),
         imports: Vec::new(),

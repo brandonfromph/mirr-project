@@ -15,7 +15,7 @@ module test_mod {
 }"#;
 
     // 2. Parse into AST
-    let program = parse_mirr(input).expect("Parser should accept expanded signals");
+    let _program = parse_mirr(input).expect("Parser should accept expanded signals");
 
     // 3. Ingest into ECS Registry
     let mut registry = Registry::new();

@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![allow(deprecated)]
 
 use std::path::PathBuf;
 

@@ -7,30 +7,16 @@ use mirrc::emit;
 use mirrc::pipeline::PipelineResult;
 
 fn result_with_module_name(module_name: &str) -> PipelineResult {
-    let module = Module {
-        name: module_name.to_string(),
-        signals: vec![SignalDecl {
-            name: "sig-name.with spaces".to_string(),
-            kind: SignalKind::Internal,
-            ty: ExtendedType::from_core(SignalType::Unsigned(8)),
-            origin: None,
-            span: None,
-        }],
-        guards: Vec::new(),
-        reflexes: Vec::new(),
-        properties: Vec::new(),
-        pattern_calls: Vec::new(),
-        pattern_origins: Vec::new(),
-        span: None,
-    };
-
-    let program = MirrProgram { target: None, patterns: Vec::new(), imports: Vec::new(), module };
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None).unwrap();
+    
+    let m_id = reg.create_entity(module_name, mirrc::ecs::components::KindComponent(mirrc::ecs::EntityKind::MODULE));
+
+    let s_id = reg.create_entity("sig-name.with spaces", mirrc::ecs::components::KindComponent(mirrc::ecs::EntityKind::SIGNAL(mirrc::ast::types::SignalKind::Internal)));
+    reg.types[s_id.0 as usize] = Some(mirrc::ecs::components::TypeComponent(mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Unsigned(8))));
 
     PipelineResult {
         hls_result: None,
-        program: Some(program),
+        program: None,
         simplify_stats: None,
         sat_stats: None,
         width_stats: None,

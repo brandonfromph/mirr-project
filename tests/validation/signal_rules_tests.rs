@@ -1,18 +1,28 @@
 #![forbid(unsafe_code)]
-use mirrc::parse_mirr;
-use mirrc::validate_module;
+use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 fn check_ok(src: &str) {
-    let p = parse_mirr(src).expect("Parse failed");
-    validate_module(&p.module).expect("Validation failed");
+    let full_src = format!("target profile {{ name: \"t\"; word_size: 64; }} {}", src);
+    let mut config = PipelineConfig::default();
+    config.simplify = false;
+    config.width = false;
+    config.temporal = false;
+    if let Err(e) = run_pipeline(&full_src, &config) {
+        panic!("Validation failed: {:?}", e);
+    }
 }
 
 fn check_err(src: &str, msg: &str) {
-    let p = parse_mirr(src).expect("Parse failed, expected semantic error");
-    match validate_module(&p.module) {
+    let full_src = format!("target profile {{ name: \"t\"; word_size: 64; }} {}", src);
+    let mut config = PipelineConfig::default();
+    config.simplify = false;
+    config.width = false;
+    config.temporal = false;
+    match run_pipeline(&full_src, &config) {
         Ok(_) => panic!("Expected error '{}', but got Ok", msg),
         Err(e) => {
-            assert!(e.to_string().contains(msg), "Expected '{}', got '{}'", msg, e)
+            let err_str = format!("{:?}", e);
+            assert!(err_str.contains(msg), "Expected '{}', got '{}'", msg, err_str);
         }
     }
 }

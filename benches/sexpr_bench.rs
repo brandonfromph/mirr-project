@@ -7,7 +7,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use mirrc::parse_mirr;
-use mirrc::sexpr::{ast_to_sexpr, eval, parse_sexpr, print_sexpr, sexpr_to_ast, EvalState};
+use mirrc::sexpr::{eval, parse_sexpr, print_sexpr, registry_to_sexpr, sexpr_to_registry, EvalState};
 use std::hint::black_box;
 
 // ---------------------------------------------------------------------------
@@ -111,18 +111,34 @@ fn bench_sexpr_print(c: &mut Criterion) {
     group.finish();
 }
 
+use mirrc::ecs::Registry;
+use mirrc::parser::ecs_parser::parse_mirr_ecs;
+
 fn bench_sexpr_convert(c: &mut Criterion) {
-    let small_prog = parse_mirr(&small_mirr()).expect("parse small mirr");
-    let medium_prog = parse_mirr(&medium_mirr()).expect("parse medium mirr");
-    let small_sx = ast_to_sexpr(&small_prog);
-    let medium_sx = ast_to_sexpr(&medium_prog);
+    let mut small_reg = Registry::new();
+    parse_mirr_ecs(&mut small_reg, &small_mirr()).expect("parse small mirr");
+    let small_mod = small_reg.get_entity_by_name("bench_small").unwrap();
+    
+    let mut medium_reg = Registry::new();
+    parse_mirr_ecs(&mut medium_reg, &medium_mirr()).expect("parse medium mirr");
+    let medium_mod = medium_reg.get_entity_by_name("bench_medium").unwrap();
+    
+    let small_sx = registry_to_sexpr(&small_reg, small_mod);
+    let medium_sx = registry_to_sexpr(&medium_reg, medium_mod);
+    
     let mut group = c.benchmark_group("sexpr_convert");
-    group.bench_function("ast_to_sexpr_small", |b| b.iter(|| ast_to_sexpr(black_box(&small_prog))));
-    group.bench_function("ast_to_sexpr_medium", |b| {
-        b.iter(|| ast_to_sexpr(black_box(&medium_prog)))
+    group.bench_function("registry_to_sexpr_small", |b| b.iter(|| registry_to_sexpr(black_box(&small_reg), small_mod)));
+    group.bench_function("registry_to_sexpr_medium", |b| {
+        b.iter(|| registry_to_sexpr(black_box(&medium_reg), medium_mod))
     });
-    group.bench_function("sexpr_to_ast_small", |b| b.iter(|| sexpr_to_ast(black_box(&small_sx))));
-    group.bench_function("sexpr_to_ast_medium", |b| b.iter(|| sexpr_to_ast(black_box(&medium_sx))));
+    group.bench_function("sexpr_to_registry_small", |b| b.iter(|| {
+        let mut reg = Registry::new();
+        sexpr_to_registry(&mut reg, black_box(&small_sx)).unwrap()
+    }));
+    group.bench_function("sexpr_to_registry_medium", |b| b.iter(|| {
+        let mut reg = Registry::new();
+        sexpr_to_registry(&mut reg, black_box(&medium_sx)).unwrap()
+    }));
     group.finish();
 }
 

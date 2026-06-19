@@ -24,9 +24,7 @@ module tb_target {
         }
     }
 
-    property bounded {
-        always (sensor < 65535);
-    }
+    property bounded: always (sensor < 65535);
 }
 "#;
 

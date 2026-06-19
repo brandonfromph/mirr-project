@@ -34,7 +34,5 @@ module watchdog_timer {
         }
     }
 
-    property reset_before_65 {
-        always (!heartbeat for 64 cycles -> system_reset);
-    }
+    property reset_before_65: always !heartbeat for 64 cycles implies system_reset;
 }
