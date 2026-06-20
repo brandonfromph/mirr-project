@@ -13,9 +13,6 @@
 //! 7. Emergency-stop action table generation (priority 255, OnViolation)
 //! 8. Cover and Assume properties are filtered out
 
-use mirrc::ast::program::SignalDecl;
-use mirrc::ast::property::{PropertyDecl, PropertyDirective, PropertyFormula};
-use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 
 use mirrc::mape_k::bridge::{bridge_from_pipeline, MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS};
 use mirrc::mape_k::error::MapeKError;

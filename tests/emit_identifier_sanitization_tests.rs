@@ -1,15 +1,13 @@
 #![forbid(unsafe_code)]
 //! DOT identifier sanitization tests.
 
-use mirrc::ast::program::{MirrProgram, Module, SignalDecl};
-use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 use mirrc::emit;
 use mirrc::pipeline::PipelineResult;
 
 fn result_with_module_name(module_name: &str) -> PipelineResult {
     let mut reg = mirrc::ecs::Registry::new();
 
-    let m_id = reg.create_entity(
+    let _m_id = reg.create_entity(
         module_name,
         mirrc::ecs::components::KindComponent(mirrc::ecs::EntityKind::MODULE),
     );

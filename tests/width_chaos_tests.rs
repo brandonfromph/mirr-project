@@ -4,7 +4,7 @@ fn get_registry_and_scc(
     source: &str,
     signal_name: &str,
 ) -> (mirrc::ecs::Registry, mirrc::width::types::SccInfo) {
-    let program = mirrc::parser::parse_mirr(source).unwrap();
+    let _program = mirrc::parser::parse_mirr(source).unwrap();
     let mut registry = mirrc::ecs::Registry::new();
     mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, source, None).unwrap();
 

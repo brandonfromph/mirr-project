@@ -751,7 +751,7 @@ module no_guard_mod {
     signal b: out bool;
 }
 "#;
-    let prog = parse_ok(src);
+    let _prog = parse_ok(src);
     let pushes = drive_prog_from_src(src, b"hello 123");
 
     assert!(

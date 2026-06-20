@@ -1,4 +1,3 @@
-use mirrc::parse_mirr;
 use mirrc::pipeline::{run_pipeline_with_file, PipelineConfig};
 
 #[test]

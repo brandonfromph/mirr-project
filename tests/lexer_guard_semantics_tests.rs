@@ -1,8 +1,4 @@
 #![forbid(unsafe_code)]
-use mirrc::ast::expr::Expr;
-use mirrc::ast::program::{Assignment, Guard, MirrProgram, Module, Reflex, SignalDecl};
-use mirrc::ast::types::LiteralValue;
-use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 use mirrc::mirr_executor::drive_parsed_module_with_interpreter;
 
 #[test]
