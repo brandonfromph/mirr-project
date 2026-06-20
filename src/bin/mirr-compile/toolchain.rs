@@ -84,6 +84,7 @@ pub(super) fn run_toolchain_operations(
                 std::path::Path::new(&sv_path),
                 &module_name,
                 std::path::Path::new("."),
+                link,
             ) {
                 Ok(res) => {
                     if res.success {
@@ -168,6 +169,7 @@ pub(super) fn run_toolchain_operations(
                 std::path::Path::new(&sv_path),
                 std::path::Path::new("."),
                 &registry,
+                link,
             ) {
                 Ok(res) => {
                     if res.passed {
@@ -195,6 +197,7 @@ pub(super) fn run_toolchain_operations(
                 &module_name,
                 std::path::Path::new("."),
                 &registry,
+                link,
             ) {
                 Ok(res) => {
                     if res.passed {

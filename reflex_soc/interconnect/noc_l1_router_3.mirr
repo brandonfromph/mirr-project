@@ -108,6 +108,40 @@ pattern noc_l1_router_3(
     signal sv_17: internal bool;
     signal sd_17: internal u64;
 
+    // --- MAPE-K Monitor State ---
+    signal heartbeat_0: internal u32;
+    signal core_dead_0: internal bool;
+    signal heartbeat_1: internal u32;
+    signal core_dead_1: internal bool;
+    signal heartbeat_2: internal u32;
+    signal core_dead_2: internal bool;
+    signal heartbeat_3: internal u32;
+    signal core_dead_3: internal bool;
+    signal heartbeat_4: internal u32;
+    signal core_dead_4: internal bool;
+    signal heartbeat_5: internal u32;
+    signal core_dead_5: internal bool;
+    signal heartbeat_6: internal u32;
+    signal core_dead_6: internal bool;
+    signal heartbeat_7: internal u32;
+    signal core_dead_7: internal bool;
+    signal heartbeat_8: internal u32;
+    signal core_dead_8: internal bool;
+    signal heartbeat_9: internal u32;
+    signal core_dead_9: internal bool;
+    signal heartbeat_10: internal u32;
+    signal core_dead_10: internal bool;
+    signal heartbeat_11: internal u32;
+    signal core_dead_11: internal bool;
+    signal heartbeat_12: internal u32;
+    signal core_dead_12: internal bool;
+    signal heartbeat_13: internal u32;
+    signal core_dead_13: internal bool;
+    signal heartbeat_14: internal u32;
+    signal core_dead_14: internal bool;
+    signal heartbeat_15: internal u32;
+    signal core_dead_15: internal bool;
+
     reflex r_dl { on always { sv_0 = downlink_valid; sd_0 = downlink_data; } }
     guard n0 {
         when (!tx_valid_0) for 1 cycles;
@@ -115,112 +149,128 @@ pattern noc_l1_router_3(
     guard y0 {
         when (tx_valid_0) for 1 cycles;
     }
-    reflex r0 { on y0 { sv_1 = true; sd_1 = tx_data_0; } on n0 { sv_1 = sv_0; sd_1 = sd_0; } }
+    reflex r0 { on y0 { sv_1 = true; sd_1 = tx_data_0; heartbeat_0 = 0; } on n0 { sv_1 = sv_0; sd_1 = sd_0; heartbeat_0 = heartbeat_0 + 1; } }
+    reflex analyze_0 { on always { core_dead_0 = heartbeat_0 > 1024; } }
     guard n1 {
         when (!tx_valid_1) for 1 cycles;
     }
     guard y1 {
         when (tx_valid_1) for 1 cycles;
     }
-    reflex r1 { on y1 { sv_2 = true; sd_2 = tx_data_1; } on n1 { sv_2 = sv_1; sd_2 = sd_1; } }
+    reflex r1 { on y1 { sv_2 = true; sd_2 = tx_data_1; heartbeat_1 = 0; } on n1 { sv_2 = sv_1; sd_2 = sd_1; heartbeat_1 = heartbeat_1 + 1; } }
+    reflex analyze_1 { on always { core_dead_1 = heartbeat_1 > 1024; } }
     guard n2 {
         when (!tx_valid_2) for 1 cycles;
     }
     guard y2 {
         when (tx_valid_2) for 1 cycles;
     }
-    reflex r2 { on y2 { sv_3 = true; sd_3 = tx_data_2; } on n2 { sv_3 = sv_2; sd_3 = sd_2; } }
+    reflex r2 { on y2 { sv_3 = true; sd_3 = tx_data_2; heartbeat_2 = 0; } on n2 { sv_3 = sv_2; sd_3 = sd_2; heartbeat_2 = heartbeat_2 + 1; } }
+    reflex analyze_2 { on always { core_dead_2 = heartbeat_2 > 1024; } }
     guard n3 {
         when (!tx_valid_3) for 1 cycles;
     }
     guard y3 {
         when (tx_valid_3) for 1 cycles;
     }
-    reflex r3 { on y3 { sv_4 = true; sd_4 = tx_data_3; } on n3 { sv_4 = sv_3; sd_4 = sd_3; } }
+    reflex r3 { on y3 { sv_4 = true; sd_4 = tx_data_3; heartbeat_3 = 0; } on n3 { sv_4 = sv_3; sd_4 = sd_3; heartbeat_3 = heartbeat_3 + 1; } }
+    reflex analyze_3 { on always { core_dead_3 = heartbeat_3 > 1024; } }
     guard n4 {
         when (!tx_valid_4) for 1 cycles;
     }
     guard y4 {
         when (tx_valid_4) for 1 cycles;
     }
-    reflex r4 { on y4 { sv_5 = true; sd_5 = tx_data_4; } on n4 { sv_5 = sv_4; sd_5 = sd_4; } }
+    reflex r4 { on y4 { sv_5 = true; sd_5 = tx_data_4; heartbeat_4 = 0; } on n4 { sv_5 = sv_4; sd_5 = sd_4; heartbeat_4 = heartbeat_4 + 1; } }
+    reflex analyze_4 { on always { core_dead_4 = heartbeat_4 > 1024; } }
     guard n5 {
         when (!tx_valid_5) for 1 cycles;
     }
     guard y5 {
         when (tx_valid_5) for 1 cycles;
     }
-    reflex r5 { on y5 { sv_6 = true; sd_6 = tx_data_5; } on n5 { sv_6 = sv_5; sd_6 = sd_5; } }
+    reflex r5 { on y5 { sv_6 = true; sd_6 = tx_data_5; heartbeat_5 = 0; } on n5 { sv_6 = sv_5; sd_6 = sd_5; heartbeat_5 = heartbeat_5 + 1; } }
+    reflex analyze_5 { on always { core_dead_5 = heartbeat_5 > 1024; } }
     guard n6 {
         when (!tx_valid_6) for 1 cycles;
     }
     guard y6 {
         when (tx_valid_6) for 1 cycles;
     }
-    reflex r6 { on y6 { sv_7 = true; sd_7 = tx_data_6; } on n6 { sv_7 = sv_6; sd_7 = sd_6; } }
+    reflex r6 { on y6 { sv_7 = true; sd_7 = tx_data_6; heartbeat_6 = 0; } on n6 { sv_7 = sv_6; sd_7 = sd_6; heartbeat_6 = heartbeat_6 + 1; } }
+    reflex analyze_6 { on always { core_dead_6 = heartbeat_6 > 1024; } }
     guard n7 {
         when (!tx_valid_7) for 1 cycles;
     }
     guard y7 {
         when (tx_valid_7) for 1 cycles;
     }
-    reflex r7 { on y7 { sv_8 = true; sd_8 = tx_data_7; } on n7 { sv_8 = sv_7; sd_8 = sd_7; } }
+    reflex r7 { on y7 { sv_8 = true; sd_8 = tx_data_7; heartbeat_7 = 0; } on n7 { sv_8 = sv_7; sd_8 = sd_7; heartbeat_7 = heartbeat_7 + 1; } }
+    reflex analyze_7 { on always { core_dead_7 = heartbeat_7 > 1024; } }
     guard n8 {
         when (!tx_valid_8) for 1 cycles;
     }
     guard y8 {
         when (tx_valid_8) for 1 cycles;
     }
-    reflex r8 { on y8 { sv_9 = true; sd_9 = tx_data_8; } on n8 { sv_9 = sv_8; sd_9 = sd_8; } }
+    reflex r8 { on y8 { sv_9 = true; sd_9 = tx_data_8; heartbeat_8 = 0; } on n8 { sv_9 = sv_8; sd_9 = sd_8; heartbeat_8 = heartbeat_8 + 1; } }
+    reflex analyze_8 { on always { core_dead_8 = heartbeat_8 > 1024; } }
     guard n9 {
         when (!tx_valid_9) for 1 cycles;
     }
     guard y9 {
         when (tx_valid_9) for 1 cycles;
     }
-    reflex r9 { on y9 { sv_10 = true; sd_10 = tx_data_9; } on n9 { sv_10 = sv_9; sd_10 = sd_9; } }
+    reflex r9 { on y9 { sv_10 = true; sd_10 = tx_data_9; heartbeat_9 = 0; } on n9 { sv_10 = sv_9; sd_10 = sd_9; heartbeat_9 = heartbeat_9 + 1; } }
+    reflex analyze_9 { on always { core_dead_9 = heartbeat_9 > 1024; } }
     guard n10 {
         when (!tx_valid_10) for 1 cycles;
     }
     guard y10 {
         when (tx_valid_10) for 1 cycles;
     }
-    reflex r10 { on y10 { sv_11 = true; sd_11 = tx_data_10; } on n10 { sv_11 = sv_10; sd_11 = sd_10; } }
+    reflex r10 { on y10 { sv_11 = true; sd_11 = tx_data_10; heartbeat_10 = 0; } on n10 { sv_11 = sv_10; sd_11 = sd_10; heartbeat_10 = heartbeat_10 + 1; } }
+    reflex analyze_10 { on always { core_dead_10 = heartbeat_10 > 1024; } }
     guard n11 {
         when (!tx_valid_11) for 1 cycles;
     }
     guard y11 {
         when (tx_valid_11) for 1 cycles;
     }
-    reflex r11 { on y11 { sv_12 = true; sd_12 = tx_data_11; } on n11 { sv_12 = sv_11; sd_12 = sd_11; } }
+    reflex r11 { on y11 { sv_12 = true; sd_12 = tx_data_11; heartbeat_11 = 0; } on n11 { sv_12 = sv_11; sd_12 = sd_11; heartbeat_11 = heartbeat_11 + 1; } }
+    reflex analyze_11 { on always { core_dead_11 = heartbeat_11 > 1024; } }
     guard n12 {
         when (!tx_valid_12) for 1 cycles;
     }
     guard y12 {
         when (tx_valid_12) for 1 cycles;
     }
-    reflex r12 { on y12 { sv_13 = true; sd_13 = tx_data_12; } on n12 { sv_13 = sv_12; sd_13 = sd_12; } }
+    reflex r12 { on y12 { sv_13 = true; sd_13 = tx_data_12; heartbeat_12 = 0; } on n12 { sv_13 = sv_12; sd_13 = sd_12; heartbeat_12 = heartbeat_12 + 1; } }
+    reflex analyze_12 { on always { core_dead_12 = heartbeat_12 > 1024; } }
     guard n13 {
         when (!tx_valid_13) for 1 cycles;
     }
     guard y13 {
         when (tx_valid_13) for 1 cycles;
     }
-    reflex r13 { on y13 { sv_14 = true; sd_14 = tx_data_13; } on n13 { sv_14 = sv_13; sd_14 = sd_13; } }
+    reflex r13 { on y13 { sv_14 = true; sd_14 = tx_data_13; heartbeat_13 = 0; } on n13 { sv_14 = sv_13; sd_14 = sd_13; heartbeat_13 = heartbeat_13 + 1; } }
+    reflex analyze_13 { on always { core_dead_13 = heartbeat_13 > 1024; } }
     guard n14 {
         when (!tx_valid_14) for 1 cycles;
     }
     guard y14 {
         when (tx_valid_14) for 1 cycles;
     }
-    reflex r14 { on y14 { sv_15 = true; sd_15 = tx_data_14; } on n14 { sv_15 = sv_14; sd_15 = sd_14; } }
+    reflex r14 { on y14 { sv_15 = true; sd_15 = tx_data_14; heartbeat_14 = 0; } on n14 { sv_15 = sv_14; sd_15 = sd_14; heartbeat_14 = heartbeat_14 + 1; } }
+    reflex analyze_14 { on always { core_dead_14 = heartbeat_14 > 1024; } }
     guard n15 {
         when (!tx_valid_15) for 1 cycles;
     }
     guard y15 {
         when (tx_valid_15) for 1 cycles;
     }
-    reflex r15 { on y15 { sv_16 = true; sd_16 = tx_data_15; } on n15 { sv_16 = sv_15; sd_16 = sd_15; } }
+    reflex r15 { on y15 { sv_16 = true; sd_16 = tx_data_15; heartbeat_15 = 0; } on n15 { sv_16 = sv_15; sd_16 = sd_15; heartbeat_15 = heartbeat_15 + 1; } }
+    reflex analyze_15 { on always { core_dead_15 = heartbeat_15 > 1024; } }
 
     signal dest_id: internal u64;
     signal payload: internal u64;
@@ -273,75 +323,158 @@ pattern noc_l1_router_3(
             rx_data_15 = 0;
         }
     }
-    guard p0 {
-        when (dest_id == 48) for 1 cycles;
+    guard p0_alive {
+        when ((dest_id == 48) && !core_dead_0) for 1 cycles;
     }
-    reflex out0 { on p0 { rx_valid_0 = sv_16; rx_data_0 = payload; } }
-    guard p1 {
-        when (dest_id == 49) for 1 cycles;
+    guard p0_dead {
+        when ((dest_id == 48) && core_dead_0) for 1 cycles;
     }
-    reflex out1 { on p1 { rx_valid_1 = sv_16; rx_data_1 = payload; } }
-    guard p2 {
-        when (dest_id == 50) for 1 cycles;
+    reflex out0_alive { on p0_alive { rx_valid_0 = sv_16; rx_data_0 = payload; } }
+    guard p1_alive {
+        when ((dest_id == 49) && !core_dead_1) for 1 cycles;
     }
-    reflex out2 { on p2 { rx_valid_2 = sv_16; rx_data_2 = payload; } }
-    guard p3 {
-        when (dest_id == 51) for 1 cycles;
+    guard p1_dead {
+        when ((dest_id == 49) && core_dead_1) for 1 cycles;
     }
-    reflex out3 { on p3 { rx_valid_3 = sv_16; rx_data_3 = payload; } }
-    guard p4 {
-        when (dest_id == 52) for 1 cycles;
+    reflex out1_alive { on p1_alive { rx_valid_1 = sv_16; rx_data_1 = payload; } }
+    guard p2_alive {
+        when ((dest_id == 50) && !core_dead_2) for 1 cycles;
     }
-    reflex out4 { on p4 { rx_valid_4 = sv_16; rx_data_4 = payload; } }
-    guard p5 {
-        when (dest_id == 53) for 1 cycles;
+    guard p2_dead {
+        when ((dest_id == 50) && core_dead_2) for 1 cycles;
     }
-    reflex out5 { on p5 { rx_valid_5 = sv_16; rx_data_5 = payload; } }
-    guard p6 {
-        when (dest_id == 54) for 1 cycles;
+    reflex out2_alive { on p2_alive { rx_valid_2 = sv_16; rx_data_2 = payload; } }
+    guard p3_alive {
+        when ((dest_id == 51) && !core_dead_3) for 1 cycles;
     }
-    reflex out6 { on p6 { rx_valid_6 = sv_16; rx_data_6 = payload; } }
-    guard p7 {
-        when (dest_id == 55) for 1 cycles;
+    guard p3_dead {
+        when ((dest_id == 51) && core_dead_3) for 1 cycles;
     }
-    reflex out7 { on p7 { rx_valid_7 = sv_16; rx_data_7 = payload; } }
-    guard p8 {
-        when (dest_id == 56) for 1 cycles;
+    reflex out3_alive { on p3_alive { rx_valid_3 = sv_16; rx_data_3 = payload; } }
+    guard p4_alive {
+        when ((dest_id == 52) && !core_dead_4) for 1 cycles;
     }
-    reflex out8 { on p8 { rx_valid_8 = sv_16; rx_data_8 = payload; } }
-    guard p9 {
-        when (dest_id == 57) for 1 cycles;
+    guard p4_dead {
+        when ((dest_id == 52) && core_dead_4) for 1 cycles;
     }
-    reflex out9 { on p9 { rx_valid_9 = sv_16; rx_data_9 = payload; } }
-    guard p10 {
-        when (dest_id == 58) for 1 cycles;
+    reflex out4_alive { on p4_alive { rx_valid_4 = sv_16; rx_data_4 = payload; } }
+    guard p5_alive {
+        when ((dest_id == 53) && !core_dead_5) for 1 cycles;
     }
-    reflex out10 { on p10 { rx_valid_10 = sv_16; rx_data_10 = payload; } }
-    guard p11 {
-        when (dest_id == 59) for 1 cycles;
+    guard p5_dead {
+        when ((dest_id == 53) && core_dead_5) for 1 cycles;
     }
-    reflex out11 { on p11 { rx_valid_11 = sv_16; rx_data_11 = payload; } }
-    guard p12 {
-        when (dest_id == 60) for 1 cycles;
+    reflex out5_alive { on p5_alive { rx_valid_5 = sv_16; rx_data_5 = payload; } }
+    guard p6_alive {
+        when ((dest_id == 54) && !core_dead_6) for 1 cycles;
     }
-    reflex out12 { on p12 { rx_valid_12 = sv_16; rx_data_12 = payload; } }
-    guard p13 {
-        when (dest_id == 61) for 1 cycles;
+    guard p6_dead {
+        when ((dest_id == 54) && core_dead_6) for 1 cycles;
     }
-    reflex out13 { on p13 { rx_valid_13 = sv_16; rx_data_13 = payload; } }
-    guard p14 {
-        when (dest_id == 62) for 1 cycles;
+    reflex out6_alive { on p6_alive { rx_valid_6 = sv_16; rx_data_6 = payload; } }
+    guard p7_alive {
+        when ((dest_id == 55) && !core_dead_7) for 1 cycles;
     }
-    reflex out14 { on p14 { rx_valid_14 = sv_16; rx_data_14 = payload; } }
-    guard p15 {
-        when (dest_id == 63) for 1 cycles;
+    guard p7_dead {
+        when ((dest_id == 55) && core_dead_7) for 1 cycles;
     }
-    reflex out15 { on p15 { rx_valid_15 = sv_16; rx_data_15 = payload; } }
+    reflex out7_alive { on p7_alive { rx_valid_7 = sv_16; rx_data_7 = payload; } }
+    guard p8_alive {
+        when ((dest_id == 56) && !core_dead_8) for 1 cycles;
+    }
+    guard p8_dead {
+        when ((dest_id == 56) && core_dead_8) for 1 cycles;
+    }
+    reflex out8_alive { on p8_alive { rx_valid_8 = sv_16; rx_data_8 = payload; } }
+    guard p9_alive {
+        when ((dest_id == 57) && !core_dead_9) for 1 cycles;
+    }
+    guard p9_dead {
+        when ((dest_id == 57) && core_dead_9) for 1 cycles;
+    }
+    reflex out9_alive { on p9_alive { rx_valid_9 = sv_16; rx_data_9 = payload; } }
+    guard p10_alive {
+        when ((dest_id == 58) && !core_dead_10) for 1 cycles;
+    }
+    guard p10_dead {
+        when ((dest_id == 58) && core_dead_10) for 1 cycles;
+    }
+    reflex out10_alive { on p10_alive { rx_valid_10 = sv_16; rx_data_10 = payload; } }
+    guard p11_alive {
+        when ((dest_id == 59) && !core_dead_11) for 1 cycles;
+    }
+    guard p11_dead {
+        when ((dest_id == 59) && core_dead_11) for 1 cycles;
+    }
+    reflex out11_alive { on p11_alive { rx_valid_11 = sv_16; rx_data_11 = payload; } }
+    guard p12_alive {
+        when ((dest_id == 60) && !core_dead_12) for 1 cycles;
+    }
+    guard p12_dead {
+        when ((dest_id == 60) && core_dead_12) for 1 cycles;
+    }
+    reflex out12_alive { on p12_alive { rx_valid_12 = sv_16; rx_data_12 = payload; } }
+    guard p13_alive {
+        when ((dest_id == 61) && !core_dead_13) for 1 cycles;
+    }
+    guard p13_dead {
+        when ((dest_id == 61) && core_dead_13) for 1 cycles;
+    }
+    reflex out13_alive { on p13_alive { rx_valid_13 = sv_16; rx_data_13 = payload; } }
+    guard p14_alive {
+        when ((dest_id == 62) && !core_dead_14) for 1 cycles;
+    }
+    guard p14_dead {
+        when ((dest_id == 62) && core_dead_14) for 1 cycles;
+    }
+    reflex out14_alive { on p14_alive { rx_valid_14 = sv_16; rx_data_14 = payload; } }
+    guard p15_alive {
+        when ((dest_id == 63) && !core_dead_15) for 1 cycles;
+    }
+    guard p15_dead {
+        when ((dest_id == 63) && core_dead_15) for 1 cycles;
+    }
+    reflex out15_alive { on p15_alive { rx_valid_15 = sv_16; rx_data_15 = payload; } }
 
     guard ext {
         when (!is_local) for 1 cycles;
     }
-    reflex out_ext { on ext { uplink_valid = sv_16; uplink_data = sd_16; } }
+    
+    // Bounce packets for dead local cores back to L2
+    signal bounce_valid: internal bool;
+    signal bounce_data: internal u64;
+
+    // Check if any local core is dead and is the destination
+    signal should_bounce: internal bool;
+    reflex eval_bounce_cond {
+        on always {
+            should_bounce = false;
+            should_bounce = should_bounce || (dest_id == 48 && core_dead_0);
+            should_bounce = should_bounce || (dest_id == 49 && core_dead_1);
+            should_bounce = should_bounce || (dest_id == 50 && core_dead_2);
+            should_bounce = should_bounce || (dest_id == 51 && core_dead_3);
+            should_bounce = should_bounce || (dest_id == 52 && core_dead_4);
+            should_bounce = should_bounce || (dest_id == 53 && core_dead_5);
+            should_bounce = should_bounce || (dest_id == 54 && core_dead_6);
+            should_bounce = should_bounce || (dest_id == 55 && core_dead_7);
+            should_bounce = should_bounce || (dest_id == 56 && core_dead_8);
+            should_bounce = should_bounce || (dest_id == 57 && core_dead_9);
+            should_bounce = should_bounce || (dest_id == 58 && core_dead_10);
+            should_bounce = should_bounce || (dest_id == 59 && core_dead_11);
+            should_bounce = should_bounce || (dest_id == 60 && core_dead_12);
+            should_bounce = should_bounce || (dest_id == 61 && core_dead_13);
+            should_bounce = should_bounce || (dest_id == 62 && core_dead_14);
+            should_bounce = should_bounce || (dest_id == 63 && core_dead_15);
+        }
+    }
+
+    guard bounce_y { when (should_bounce) for 1 cycles; }
+    guard bounce_n { when (!should_bounce) for 1 cycles; }
+
+    reflex do_bounce_y { on bounce_y { bounce_valid = sv_16; bounce_data = sd_16 | 9223372036854775808; } }
+    reflex do_bounce_n { on bounce_n { bounce_valid = false; bounce_data = 0; } }
+
+    reflex out_ext { on ext { uplink_valid = sv_16 || bounce_valid; uplink_data = sd_16 | bounce_data; } }
 }
 
 module noc_l1_router_3 {}

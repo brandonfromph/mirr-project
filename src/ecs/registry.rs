@@ -636,7 +636,7 @@ impl Registry {
 
     /// Retrieve the root module name from the registry.
     pub fn get_module_name(&self) -> Option<String> {
-        for (i, kind_comp) in self.kinds.iter().enumerate() {
+        for (i, kind_comp) in self.kinds.iter().enumerate().rev() {
             if let Some(KindComponent(EntityKind::MODULE)) = kind_comp {
                 if let Some(name_comp) = self.names[i] {
                     return Some(self.interner.resolve(name_comp.0).to_string());

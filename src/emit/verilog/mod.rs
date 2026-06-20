@@ -95,7 +95,25 @@ fn emit_sv_full(
 
     if !registry.extern_instantiations.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
+        let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+            if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+                Some(crate::ecs::EntityId(i as u32))
+            } else {
+                None
+            }
+        });
+
         for call_id in &registry.extern_instantiations {
+            if let Some(top_id) = top_module_id {
+                if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[call_id.0 as usize] {
+                    if *parent_id != top_id {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+            }
+
             if let Some(call_comp) = &registry.pattern_calls[call_id.0 as usize] {
                 let call = &call_comp.0;
                 let pattern_name = &call.pattern_name;
@@ -218,11 +236,29 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
         registry.kinds.iter().flatten().any(|k| k.0 == crate::ecs::EntityKind::GUARD)
             || property_count > 0;
 
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
+    let mut declared_ports: Vec<String> = Vec::new();
     let mut has_clk = false;
     let mut has_rst = false;
-    let mut ports: Vec<String> = Vec::new();
 
     for i in 0..registry.names.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let (Some(name), Some(kind), Some(ty)) =
             (&registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -236,22 +272,22 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
                 }
                 let dir = "input ";
                 let type_str = super::sv_type(&ty.0.signal_type());
-                ports.push(format!("  {dir} {type_str} {}", sname));
+                declared_ports.push(format!("  {dir} {type_str} {}", sname));
             }
         }
     }
 
-    let mut final_ports = Vec::new();
+    let mut ports: Vec<String> = Vec::new();
     if needs_temporal && !has_clk {
-        final_ports.push("  input  logic        clk".to_string());
+        ports.push("  input  logic        clk".to_string());
     }
     if needs_temporal && !has_rst {
-        final_ports.push("  input  logic        rst_n".to_string());
+        ports.push("  input  logic        rst_n".to_string());
     }
-    final_ports.extend(ports);
+    ports.extend(declared_ports);
 
-    let port_count = final_ports.len();
-    for (i, port) in final_ports.iter().enumerate() {
+    let port_count = ports.len();
+    for (i, port) in ports.iter().enumerate() {
         let comma = if i + 1 < port_count { "," } else { "" };
         out.push_str(&format!("{port}{comma}\n"));
     }

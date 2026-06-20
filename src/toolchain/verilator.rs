@@ -50,10 +50,14 @@ pub fn run_lint(
     sv_path: &Path,
     working_dir: &Path,
     registry: &ToolRegistry,
+    link: &[String],
 ) -> Result<VerilatorResult, ToolchainError> {
     let sv_normalized = normalize_path_for_mingw(sv_path);
 
-    let args: Vec<&str> = vec!["--lint-only", "-Wall", "--sv", &sv_normalized];
+    let mut args: Vec<&str> = vec!["--lint-only", "-Wall", "--sv", &sv_normalized];
+    for l in link {
+        args.push(l);
+    }
 
     let output = invoke_tool(registry, Tool::Verilator, &args, working_dir)?;
 
@@ -89,11 +93,15 @@ pub fn run_simulation(
     module_name: &str,
     working_dir: &Path,
     registry: &ToolRegistry,
+    link: &[String],
 ) -> Result<SimulationResult, ToolchainError> {
     let sv_normalized = normalize_path_for_mingw(sv_path);
 
     // Step 1: Compile to C++ and build
-    let args: Vec<&str> = vec!["--sv", "--cc", "--exe", "--build", &sv_normalized];
+    let mut args: Vec<&str> = vec!["--sv", "--cc", "--exe", "--build", &sv_normalized];
+    for l in link {
+        args.push(l);
+    }
 
     let output = invoke_tool(registry, Tool::Verilator, &args, working_dir)?;
 

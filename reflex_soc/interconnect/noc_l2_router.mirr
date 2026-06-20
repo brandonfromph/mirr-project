@@ -33,34 +33,214 @@ pattern noc_l2_router(
     signal sd_5: internal u64;
 
     reflex r_base { on always { sv_0 = false; sd_0 = 0; } }
+    // Adaptive Buffer for L1 Group 0
+    signal buf_valid_0: internal bool;
+    signal buf_data_0: internal u64;
+    signal is_bounce_0: internal bool;
+    signal act_valid_0: internal bool;
+    signal act_data_0: internal u64;
+    reflex parse_bounce_0 {
+        on always {
+            is_bounce_0 = uplink_valid_0 && ((uplink_data_0 >> 63) == 1);
+        }
+    }
+
+    guard g_bounce_0 { when (is_bounce_0) for 1 cycles; }
+    guard g_norm_0 { when (!is_bounce_0 && uplink_valid_0) for 1 cycles; }
+    guard g_retry_0 { when (!uplink_valid_0 && buf_valid_0) for 1 cycles; }
+    guard g_idle_0 { when (!uplink_valid_0 && !buf_valid_0) for 1 cycles; }
+
+    reflex r_b_0 {
+        on g_bounce_0 {
+            buf_valid_0 = true;
+            buf_data_0 = uplink_data_0 & 9223372036854775807;
+            act_valid_0 = false;
+            act_data_0 = 0;
+        }
+    }
+    reflex r_n_0 {
+        on g_norm_0 {
+            act_valid_0 = true;
+            act_data_0 = uplink_data_0;
+        }
+    }
+    reflex r_r_0 {
+        on g_retry_0 {
+            act_valid_0 = true;
+            act_data_0 = buf_data_0;
+            buf_valid_0 = false;
+        }
+    }
+    reflex r_i_0 {
+        on g_idle_0 {
+            act_valid_0 = false;
+            act_data_0 = 0;
+        }
+    }
+
     guard n0 {
-        when (!uplink_valid_0) for 1 cycles;
+        when (!act_valid_0) for 1 cycles;
     }
     guard y0 {
-        when (uplink_valid_0) for 1 cycles;
+        when (act_valid_0) for 1 cycles;
     }
-    reflex r0 { on y0 { sv_1 = true; sd_1 = uplink_data_0; } on n0 { sv_1 = sv_0; sd_1 = sd_0; } }
+    reflex r0 { on y0 { sv_1 = true; sd_1 = act_data_0; } on n0 { sv_1 = sv_0; sd_1 = sd_0; } }
+    // Adaptive Buffer for L1 Group 1
+    signal buf_valid_1: internal bool;
+    signal buf_data_1: internal u64;
+    signal is_bounce_1: internal bool;
+    signal act_valid_1: internal bool;
+    signal act_data_1: internal u64;
+    reflex parse_bounce_1 {
+        on always {
+            is_bounce_1 = uplink_valid_1 && ((uplink_data_1 >> 63) == 1);
+        }
+    }
+
+    guard g_bounce_1 { when (is_bounce_1) for 1 cycles; }
+    guard g_norm_1 { when (!is_bounce_1 && uplink_valid_1) for 1 cycles; }
+    guard g_retry_1 { when (!uplink_valid_1 && buf_valid_1) for 1 cycles; }
+    guard g_idle_1 { when (!uplink_valid_1 && !buf_valid_1) for 1 cycles; }
+
+    reflex r_b_1 {
+        on g_bounce_1 {
+            buf_valid_1 = true;
+            buf_data_1 = uplink_data_1 & 9223372036854775807;
+            act_valid_1 = false;
+            act_data_1 = 0;
+        }
+    }
+    reflex r_n_1 {
+        on g_norm_1 {
+            act_valid_1 = true;
+            act_data_1 = uplink_data_1;
+        }
+    }
+    reflex r_r_1 {
+        on g_retry_1 {
+            act_valid_1 = true;
+            act_data_1 = buf_data_1;
+            buf_valid_1 = false;
+        }
+    }
+    reflex r_i_1 {
+        on g_idle_1 {
+            act_valid_1 = false;
+            act_data_1 = 0;
+        }
+    }
+
     guard n1 {
-        when (!uplink_valid_1) for 1 cycles;
+        when (!act_valid_1) for 1 cycles;
     }
     guard y1 {
-        when (uplink_valid_1) for 1 cycles;
+        when (act_valid_1) for 1 cycles;
     }
-    reflex r1 { on y1 { sv_2 = true; sd_2 = uplink_data_1; } on n1 { sv_2 = sv_1; sd_2 = sd_1; } }
+    reflex r1 { on y1 { sv_2 = true; sd_2 = act_data_1; } on n1 { sv_2 = sv_1; sd_2 = sd_1; } }
+    // Adaptive Buffer for L1 Group 2
+    signal buf_valid_2: internal bool;
+    signal buf_data_2: internal u64;
+    signal is_bounce_2: internal bool;
+    signal act_valid_2: internal bool;
+    signal act_data_2: internal u64;
+    reflex parse_bounce_2 {
+        on always {
+            is_bounce_2 = uplink_valid_2 && ((uplink_data_2 >> 63) == 1);
+        }
+    }
+
+    guard g_bounce_2 { when (is_bounce_2) for 1 cycles; }
+    guard g_norm_2 { when (!is_bounce_2 && uplink_valid_2) for 1 cycles; }
+    guard g_retry_2 { when (!uplink_valid_2 && buf_valid_2) for 1 cycles; }
+    guard g_idle_2 { when (!uplink_valid_2 && !buf_valid_2) for 1 cycles; }
+
+    reflex r_b_2 {
+        on g_bounce_2 {
+            buf_valid_2 = true;
+            buf_data_2 = uplink_data_2 & 9223372036854775807;
+            act_valid_2 = false;
+            act_data_2 = 0;
+        }
+    }
+    reflex r_n_2 {
+        on g_norm_2 {
+            act_valid_2 = true;
+            act_data_2 = uplink_data_2;
+        }
+    }
+    reflex r_r_2 {
+        on g_retry_2 {
+            act_valid_2 = true;
+            act_data_2 = buf_data_2;
+            buf_valid_2 = false;
+        }
+    }
+    reflex r_i_2 {
+        on g_idle_2 {
+            act_valid_2 = false;
+            act_data_2 = 0;
+        }
+    }
+
     guard n2 {
-        when (!uplink_valid_2) for 1 cycles;
+        when (!act_valid_2) for 1 cycles;
     }
     guard y2 {
-        when (uplink_valid_2) for 1 cycles;
+        when (act_valid_2) for 1 cycles;
     }
-    reflex r2 { on y2 { sv_3 = true; sd_3 = uplink_data_2; } on n2 { sv_3 = sv_2; sd_3 = sd_2; } }
+    reflex r2 { on y2 { sv_3 = true; sd_3 = act_data_2; } on n2 { sv_3 = sv_2; sd_3 = sd_2; } }
+    // Adaptive Buffer for L1 Group 3
+    signal buf_valid_3: internal bool;
+    signal buf_data_3: internal u64;
+    signal is_bounce_3: internal bool;
+    signal act_valid_3: internal bool;
+    signal act_data_3: internal u64;
+    reflex parse_bounce_3 {
+        on always {
+            is_bounce_3 = uplink_valid_3 && ((uplink_data_3 >> 63) == 1);
+        }
+    }
+
+    guard g_bounce_3 { when (is_bounce_3) for 1 cycles; }
+    guard g_norm_3 { when (!is_bounce_3 && uplink_valid_3) for 1 cycles; }
+    guard g_retry_3 { when (!uplink_valid_3 && buf_valid_3) for 1 cycles; }
+    guard g_idle_3 { when (!uplink_valid_3 && !buf_valid_3) for 1 cycles; }
+
+    reflex r_b_3 {
+        on g_bounce_3 {
+            buf_valid_3 = true;
+            buf_data_3 = uplink_data_3 & 9223372036854775807;
+            act_valid_3 = false;
+            act_data_3 = 0;
+        }
+    }
+    reflex r_n_3 {
+        on g_norm_3 {
+            act_valid_3 = true;
+            act_data_3 = uplink_data_3;
+        }
+    }
+    reflex r_r_3 {
+        on g_retry_3 {
+            act_valid_3 = true;
+            act_data_3 = buf_data_3;
+            buf_valid_3 = false;
+        }
+    }
+    reflex r_i_3 {
+        on g_idle_3 {
+            act_valid_3 = false;
+            act_data_3 = 0;
+        }
+    }
+
     guard n3 {
-        when (!uplink_valid_3) for 1 cycles;
+        when (!act_valid_3) for 1 cycles;
     }
     guard y3 {
-        when (uplink_valid_3) for 1 cycles;
+        when (act_valid_3) for 1 cycles;
     }
-    reflex r3 { on y3 { sv_4 = true; sd_4 = uplink_data_3; } on n3 { sv_4 = sv_3; sd_4 = sd_3; } }
+    reflex r3 { on y3 { sv_4 = true; sd_4 = act_data_3; } on n3 { sv_4 = sv_3; sd_4 = sd_3; } }
 
     signal dest_id: internal u64;
     signal payload: internal u64;

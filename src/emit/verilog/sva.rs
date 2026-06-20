@@ -45,12 +45,6 @@ pub(super) fn emit_module_decl(
     emit_source_comment(span, ft, out);
     out.push_str(&format!("module {} (\n", module_name));
 
-    let has_clk = registry
-        .names
-        .iter()
-        .any(|n| n.as_ref().is_some_and(|nc| registry.resolve_name(nc.0) == "clk"));
-    let has_rst_n = module_has_rst_n(registry);
-
     // Check if temporal guards exist
     let mut needs_temporal = false;
     for k in &registry.kinds {
@@ -60,34 +54,58 @@ pub(super) fn emit_module_decl(
         }
     }
 
-    let mut ports: Vec<String> = Vec::new();
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
 
-    // Auto-inject clk and rst_n when temporal guards exist.
-    if needs_temporal && !has_clk {
-        ports.push("  input  logic        clk".to_string());
-    }
-    if needs_temporal && !has_rst_n {
-        ports.push("  input  logic        rst_n".to_string());
-    }
+    let mut declared_ports: Vec<String> = Vec::new();
+    let mut has_clk = false;
+    let mut has_rst_n = false;
 
     for i in 0..registry.names.len() {
+        // Only include signals belonging to the top-level module
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue; // No parent module means it's not a signal of the top module
+            }
+        }
+
         if let (Some(nc), Some(kind_comp), Some(type_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
                 if sig_kind == SignalKind::Input || sig_kind == SignalKind::Output {
+                    if name == "clk" { has_clk = true; }
+                    if name == "rst_n" { has_rst_n = true; }
                     let dir = match sig_kind {
                         SignalKind::Input => "input ",
                         SignalKind::Output => "output",
                         SignalKind::Internal => "internal",
                     };
                     let type_str = super::super::sv_type(&type_comp.0.signal_type());
-                    ports.push(format!("  {dir} {type_str} {}", name));
+                    declared_ports.push(format!("  {dir} {type_str} {}", name));
                 }
             }
         }
     }
+
+    let mut ports: Vec<String> = Vec::new();
+    if needs_temporal && !has_clk {
+        ports.push("  input  logic        clk".to_string());
+    }
+    if needs_temporal && !has_rst_n {
+        ports.push("  input  logic        rst_n".to_string());
+    }
+    ports.extend(declared_ports);
 
     let port_count = ports.len();
     for (i, port) in ports.iter().enumerate() {
@@ -103,8 +121,26 @@ pub(super) fn emit_internal_signals(
     ft: &FileTable,
     out: &mut String,
 ) {
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     let mut has_internals = false;
     for i in 0..registry.names.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::SIGNAL(
             SignalKind::Internal,
         ))) = registry.kinds[i]
@@ -120,6 +156,16 @@ pub(super) fn emit_internal_signals(
 
     out.push_str("  // Internal signals\n");
     for i in 0..registry.names.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let (Some(nc), Some(kind_comp), Some(type_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -145,7 +191,25 @@ pub(super) fn emit_module_end(out: &mut String) {
 
 /// Check if the registry declares an input signal named `rst_n`.
 pub(super) fn module_has_rst_n(registry: &crate::ecs::Registry) -> bool {
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     for i in 0..registry.names.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let (Some(name_comp), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
             let sname = registry.resolve_name(name_comp.0);
             if sname == "rst_n" {
@@ -165,10 +229,28 @@ pub(super) fn emit_property_assertions(
     ft: &FileTable,
     out: &mut String,
 ) {
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     let mut has_properties = false;
-    for kind_comp in registry.kinds.iter() {
+    for i in 0..registry.names.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::PROPERTY)) =
-            kind_comp
+            registry.kinds[i]
         {
             has_properties = true;
             break;
@@ -182,6 +264,16 @@ pub(super) fn emit_property_assertions(
     out.push_str("  // ── Safety Properties (SVA) ──\n\n");
 
     for i in 0..registry.names.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let (Some(nc), Some(kind_comp), Some(prop_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.property_comps[i])
         {

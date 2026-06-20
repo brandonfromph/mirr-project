@@ -41,6 +41,7 @@ pub fn run_logic_optimization(
     sv_path: &Path,
     module_name: &str,
     working_dir: &Path,
+    link: &[String],
 ) -> Result<OptimizeResult, ToolchainError> {
     if !registry.is_available(Tool::Yosys) {
         return Err(ToolchainError::ToolNotFound { tool: "yosys".to_string() });
@@ -65,6 +66,9 @@ pub fn run_logic_optimization(
 
     // Generate Yosys script
     let mut script = String::with_capacity(512);
+    for l in link {
+        script.push_str(&format!("read_verilog -sv {}\n", l));
+    }
     script.push_str(&format!("read_verilog -sv {}\n", sv_path_str));
     script.push_str(&format!("hierarchy -top {}\n", module_name));
     script.push_str("proc; opt; memory; opt; fsm; opt;\n");

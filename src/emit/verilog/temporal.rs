@@ -27,7 +27,6 @@ pub(super) fn emit_temporal_logic_standalone(
             }
             CompiledGuard::Complex(cx) => {
                 out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
-                out.push_str(&format!("  logic {};\n", cx.output_signal));
                 out.push_str(&format!(
                     "  assign {} = {};\n\n",
                     cx.output_signal,
@@ -49,9 +48,27 @@ pub(super) fn emit_temporal_logic_ecs(
 ) {
     out.push_str("  // ── Temporal Guards ──\n\n");
 
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     // Declare registers for ALL prev() back-references found in the module
     let mut seen_prevs = std::collections::HashSet::new();
     for i in 0..registry.reflex_comps.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let Some(reflex) = &registry.reflex_comps[i] {
             for asgn_ent in &reflex.assignments {
                 if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
@@ -78,14 +95,24 @@ pub(super) fn emit_temporal_logic_ecs(
     for guard in &netlist.guards {
         // Find the guard entity to get its span
         let mut span = None;
+        let mut guard_module_id = None;
         for i in 0..registry.names.len() {
             if let (Some(nc), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
                 if registry.resolve_name(nc.0) == guard.name()
                     && kind_comp.0 == crate::ecs::EntityKind::GUARD
                 {
                     span = registry.spans[i].as_ref().map(|s| &s.0);
+                    if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                        guard_module_id = Some(*parent_id);
+                    }
                     break;
                 }
+            }
+        }
+
+        if let (Some(top_id), Some(g_mod_id)) = (top_module_id, guard_module_id) {
+            if g_mod_id != top_id {
+                continue;
             }
         }
 
@@ -101,7 +128,6 @@ pub(super) fn emit_temporal_logic_ecs(
             CompiledGuard::Complex(cx) => {
                 emit_source_comment(span, ft, out);
                 out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
-                out.push_str(&format!("  logic {};\n", cx.output_signal));
                 out.push_str(&format!(
                     "  assign {} = {};\n\n",
                     cx.output_signal,
@@ -131,7 +157,11 @@ fn collect_prevs_ecs(
         }
         let idx = id.0 as usize;
         if let Some(p) = &registry.prev_ops[idx] {
-            seen.insert((p.signal, p.delay));
+            let mut target_sig = p.signal;
+            if let Some(sig_ref) = &registry.signal_refs[p.signal.0 as usize] {
+                target_sig = sig_ref.0;
+            }
+            seen.insert((target_sig, p.delay));
             stack.push(p.signal);
         } else if let Some(b) = &registry.binary_ops[idx] {
             stack.push(b.left);
@@ -153,6 +183,14 @@ pub(super) fn emit_reflex_logic_ecs(
     ft: &FileTable,
     out: &mut String,
 ) {
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     // Group assignments by target signal
     let mut signal_to_reflexes: std::collections::HashMap<String, Vec<usize>> =
         std::collections::HashMap::new();
@@ -161,6 +199,16 @@ pub(super) fn emit_reflex_logic_ecs(
     let mut guard_names_used: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for i in 0..registry.reflex_comps.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
         if let Some(reflex) = &registry.reflex_comps[i] {
             for g_ent in &reflex.guards {
                 if let Some(nc) = &registry.names[g_ent.0 as usize] {
@@ -187,15 +235,7 @@ pub(super) fn emit_reflex_logic_ecs(
 
     out.push_str("  // ── Reflex Assignments ──\n\n");
 
-    // Declare wires for guard outputs used in reflexes
-    let mut sorted_guards: Vec<_> = guard_names_used.into_iter().collect();
-    sorted_guards.sort();
-    for gname in sorted_guards {
-        out.push_str(&format!("  logic {}_out;\n", gname));
-    }
-    if !signal_to_reflexes.is_empty() {
-        out.push('\n');
-    }
+
 
     out.push_str("  // ── Reflex Signal Drivers ──\n\n");
 
