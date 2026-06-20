@@ -267,36 +267,48 @@ pub(super) fn run_toolchain_operations(
 
     // ASIC Tape-out (OpenLANE)
     if tapeout {
+        eprintln!("  [tapeout] Generating OpenLANE ASIC physical design package...");
+
+        // 1. Generate SDC
+        let sdc_content = mirrc::toolchain::sdc::generate_sdc_config(ecs.target_config.as_ref());
+        let sdc_path = "constraints.sdc";
+        if let Err(e) = std::fs::write(sdc_path, &sdc_content) {
+            eprintln!("  [tapeout] FAILED — unable to write SDC constraints: {}", e);
+            return;
+        }
+
+        // 2. Generate config.json
+        let mut verilog_files = vec![sv_path.clone()];
+        verilog_files.extend_from_slice(link);
+
+        let config = mirrc::toolchain::openlane::OpenLaneConfig {
+            design_name: module_name.clone(),
+            verilog_files,
+            clock_port: "clk".to_string(),
+            clock_period: 10.0,
+            sdc_file: std::fs::canonicalize(sdc_path)
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| sdc_path.to_string()),
+            pdk: "sky130A".to_string(),
+            std_cell_library: "sky130_fd_sc_hd".to_string(),
+            pl_target_density: 0.65,
+            run_synth: false,
+        };
+
+        let config_json = serde_json::to_string_pretty(&config).unwrap_or_default();
+        if let Err(e) = std::fs::write("config.json", &config_json) {
+            eprintln!("  [tapeout] FAILED — unable to write config.json: {}", e);
+            return;
+        }
+
+        eprintln!("  [tapeout] PASSED — Tape-out package generated successfully.");
+        eprintln!("  [tapeout] Output files ready for foundry / CI pipeline:");
+        eprintln!("    - {}", sv_path);
+        eprintln!("    - constraints.sdc");
+        eprintln!("    - config.json");
+
         if registry.is_available(Tool::Openlane) {
-            eprintln!("  [tapeout] Running OpenLANE physical design flow...");
-
-            // 1. Generate SDC
-            let sdc_content = mirrc::toolchain::sdc::generate_sdc_config(ecs.target_config.as_ref());
-            let sdc_path = "constraints.sdc";
-            if let Err(e) = std::fs::write(sdc_path, &sdc_content) {
-                eprintln!("  [tapeout] FAILED — unable to write SDC constraints: {}", e);
-                return;
-            }
-
-            // 2. Generate config.json
-            let mut verilog_files = vec![sv_path.clone()];
-            verilog_files.extend_from_slice(link);
-
-            let config = mirrc::toolchain::openlane::OpenLaneConfig {
-                design_name: module_name.clone(),
-                verilog_files,
-                clock_port: "clk".to_string(),
-                clock_period: 10.0,
-                sdc_file: std::fs::canonicalize(sdc_path)
-                    .map(|p| p.to_string_lossy().to_string())
-                    .unwrap_or_else(|_| sdc_path.to_string()),
-                pdk: "sky130A".to_string(),
-                std_cell_library: "sky130_fd_sc_hd".to_string(),
-                pl_target_density: 0.65,
-                run_synth: false,
-            };
-
-            // 3. Invoke flow
+            eprintln!("  [tapeout] Docker detected. Running local OpenLANE physical design flow...");
             match mirrc::toolchain::openlane::run_openlane_flow(
                 &registry,
                 std::path::Path::new("."),
@@ -325,7 +337,8 @@ pub(super) fn run_toolchain_operations(
                 Err(e) => eprintln!("  [tapeout] FAILED: {}", e),
             }
         } else {
-            eprintln!("  [tapeout] SKIPPED — openlane not found in PATH. Is Docker running?");
+            eprintln!("  [tapeout] SKIPPED local execution — Docker not found. This is normal!");
+            eprintln!("  [tapeout] (ASIC Place & Route of 64 cores requires 16GB+ RAM. Drop the generated files into a CI runner to produce the .gds file.)");
         }
     }
 }

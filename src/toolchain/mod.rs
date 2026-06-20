@@ -85,6 +85,7 @@ impl Tool {
         match self {
             Self::Verilator => "--version",
             Self::IcarusVerilog => "--version",
+            Self::Openlane => "info",
             _ => "--version",
         }
     }
