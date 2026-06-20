@@ -8,14 +8,14 @@ use std::path::Path;
 #[test]
 fn test_lint_tool_not_found() {
     let reg = ToolRegistry::new(); // Empty registry
-    let result = run_lint(Path::new("dummy.sv"), Path::new("."), &reg);
+    let result = run_lint(Path::new("dummy.sv"), Path::new("."), &reg, &[]);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_simulation_tool_not_found() {
     let reg = ToolRegistry::new();
-    let result = run_simulation(Path::new("dummy.sv"), "test", Path::new("."), &reg);
+    let result = run_simulation(Path::new("dummy.sv"), "test", Path::new("."), &reg, &[]);
     assert!(result.is_err());
 }
 
@@ -67,7 +67,7 @@ fn test_verilator_mocked_execution() {
 
     // 1. Test run_lint
     let lint_result =
-        run_lint(&sv_path, &tmp_dir, &reg).expect("Lint should succeed invoking mock");
+        run_lint(&sv_path, &tmp_dir, &reg, &[]).expect("Lint should succeed invoking mock");
     assert_eq!(lint_result.warning_count, 2);
     assert_eq!(lint_result.error_count, 1);
     assert!(lint_result.passed); // passed relies on exit code 0, which our mock provides
@@ -83,7 +83,7 @@ fn test_verilator_mocked_execution() {
     let model_bin = obj_dir.join(model_bin_name);
     std::fs::copy(&mock_bin, &model_bin).unwrap();
 
-    let sim_result = run_simulation(&sv_path, "dummy_mod", &tmp_dir, &reg)
+    let sim_result = run_simulation(&sv_path, "dummy_mod", &tmp_dir, &reg, &[])
         .expect("Simulation should succeed invoking mock");
 
     assert!(sim_result.passed);
@@ -102,7 +102,7 @@ fn test_simulation_compilation_failure() {
         ToolInfo { path: "cargo".to_string(), version: "mock".to_string(), available: true },
     );
 
-    let result = run_simulation(Path::new("dummy.sv"), "test", Path::new("."), &reg);
+    let result = run_simulation(Path::new("dummy.sv"), "test", Path::new("."), &reg, &[]);
     assert!(result.is_err());
 
     match result.unwrap_err() {

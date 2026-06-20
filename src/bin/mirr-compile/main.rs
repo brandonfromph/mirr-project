@@ -141,6 +141,10 @@ pub struct Cli {
     #[arg(short = 'O', long, help_heading = "Synthesis Options")]
     pub optimize: bool,
 
+    /// Run OpenLANE ASIC physical design flow
+    #[arg(long, help_heading = "Toolchain Execution")]
+    pub tapeout: bool,
+
     /// Override oss-cad-suite root directory
     #[arg(long, help_heading = "Toolchain Execution")]
     pub toolchain_path: Option<String>,
@@ -434,6 +438,7 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
         || args.timing
         || args.eqy
         || args.optimize
+        || args.tapeout
     {
         let mut all_links = args.link.clone();
         let root_path_canon = std::fs::canonicalize(std::path::Path::new(&root_file))
@@ -472,6 +477,7 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
             args.timing,
             args.eqy,
             args.optimize,
+            args.tapeout,
             args.toolchain_path.as_deref(),
             &all_links,
         );

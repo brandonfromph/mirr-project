@@ -26,6 +26,7 @@ pub(super) fn run_toolchain_operations(
     timing: bool,
     eqy_check: bool,
     optimize: bool,
+    tapeout: bool,
     _toolchain_path: Option<&str>,
     link: &[String],
 ) {
@@ -51,6 +52,9 @@ pub(super) fn run_toolchain_operations(
     }
     if eqy_check {
         registry.probe(Tool::Eqy);
+    }
+    if tapeout {
+        registry.probe(Tool::Openlane);
     }
     if pnr {
         if let Some(bin) = fpga_target.nextpnr_binary() {
@@ -258,6 +262,70 @@ pub(super) fn run_toolchain_operations(
             );
         } else {
             eprintln!("  [eqy] SKIPPED — eqy not found in PATH");
+        }
+    }
+
+    // ASIC Tape-out (OpenLANE)
+    if tapeout {
+        if registry.is_available(Tool::Openlane) {
+            eprintln!("  [tapeout] Running OpenLANE physical design flow...");
+
+            // 1. Generate SDC
+            let sdc_content = mirrc::toolchain::sdc::generate_sdc_config(ecs.target_config.as_ref());
+            let sdc_path = "constraints.sdc";
+            if let Err(e) = std::fs::write(sdc_path, &sdc_content) {
+                eprintln!("  [tapeout] FAILED — unable to write SDC constraints: {}", e);
+                return;
+            }
+
+            // 2. Generate config.json
+            let mut verilog_files = vec![sv_path.clone()];
+            verilog_files.extend_from_slice(link);
+
+            let config = mirrc::toolchain::openlane::OpenLaneConfig {
+                design_name: module_name.clone(),
+                verilog_files,
+                clock_port: "clk".to_string(),
+                clock_period: 10.0,
+                sdc_file: std::fs::canonicalize(sdc_path)
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| sdc_path.to_string()),
+                pdk: "sky130A".to_string(),
+                std_cell_library: "sky130_fd_sc_hd".to_string(),
+                pl_target_density: 0.65,
+                run_synth: false,
+            };
+
+            // 3. Invoke flow
+            match mirrc::toolchain::openlane::run_openlane_flow(
+                &registry,
+                std::path::Path::new("."),
+                &config,
+            ) {
+                Ok(res) => {
+                    if res.success {
+                        eprintln!("  [tapeout] PASSED — OpenLANE flow complete.");
+                        if let Some(gds) = res.gds_path {
+                            eprintln!("  [tapeout] GDSII Layout: {}", gds);
+                        }
+                        if res.setup_slack_ns < 0.0 {
+                            eprintln!(
+                                "  [tapeout] WARNING — Static Timing Analysis failed. WNS: {}ns.",
+                                res.setup_slack_ns
+                            );
+                        }
+                    } else if res.routing_violations > 0 {
+                        eprintln!(
+                            "  [tapeout] FAILED — Placement density too high (Current: 0.65). Try lowering --pl-target-density."
+                        );
+                    } else {
+                        eprintln!("  [tapeout] FAILED — OpenLANE error:\n{}", res.stderr);
+                    }
+                }
+                Err(e) => eprintln!("  [tapeout] FAILED: {}", e),
+            }
+        } else {
+            eprintln!("  [tapeout] SKIPPED — openlane not found in PATH. Is Docker running?");
         }
     }
 }

@@ -8,7 +8,7 @@ use std::path::Path;
 #[test]
 fn test_optimize_tool_not_found() {
     let reg = ToolRegistry::new(); // Empty registry
-    let result = run_logic_optimization(&reg, Path::new("dummy.sv"), "top", Path::new("."));
+    let result = run_logic_optimization(&reg, Path::new("dummy.sv"), "top", Path::new("."), &[]);
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -35,7 +35,7 @@ fn test_optimize_tool_invocation_success_or_fail() {
     // (though optimize.rs only creates the script and invokes the tool).
     std::fs::write(&sv_path, "module test_module; endmodule").unwrap();
 
-    let result = run_logic_optimization(&reg, &sv_path, "test_module", &tmp_dir);
+    let result = run_logic_optimization(&reg, &sv_path, "test_module", &tmp_dir, &[]);
 
     assert!(result.is_ok(), "Expected Ok since the tool was invoked");
     let opt_result = result.unwrap();
