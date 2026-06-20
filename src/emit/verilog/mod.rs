@@ -79,6 +79,12 @@ fn emit_sv_full(
     sva::emit_module_decl(&module_name, registry, ft, &mut out, module_span.as_ref());
     sva::emit_internal_signals(registry, ft, &mut out);
 
+    let sync_mappings = sva::emit_synchronizer_chains(registry, 2, &mut out);
+    let mut sync_map = std::collections::HashMap::new();
+    for (orig, sync) in sync_mappings {
+        sync_map.insert(orig, sync);
+    }
+
     if let Some(netlist) = &result.temporal_netlist {
         if !netlist.signals.is_empty() {
             out.push_str("  // Temporal signals\n");
@@ -88,10 +94,10 @@ fn emit_sv_full(
             }
             out.push('\n');
         }
-        temporal::emit_temporal_logic_ecs(registry, netlist, ft, &mut out);
+        temporal::emit_temporal_logic_ecs(registry, netlist, &sync_map, ft, &mut out);
     }
 
-    temporal::emit_reflex_logic_ecs(registry, &dsp_reflexes, dsp_attr, ft, &mut out);
+    temporal::emit_reflex_logic_ecs(registry, &dsp_reflexes, dsp_attr, &sync_map, ft, &mut out);
 
     if !registry.extern_instantiations.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
@@ -163,7 +169,7 @@ fn emit_sv_full(
 
     if !strip_sva {
         let has_rst_n = sva::module_has_rst_n(registry);
-        sva::emit_property_assertions(registry, has_rst_n, ft, &mut out);
+        sva::emit_property_assertions(registry, has_rst_n, &sync_map, ft, &mut out);
     }
 
     sva::emit_module_end(&mut out);
@@ -185,14 +191,17 @@ pub fn emit_sv_standalone(result: &PipelineResult) -> String {
     sva::emit_module_decl(&module_name, registry, ft, &mut out, None);
     sva::emit_internal_signals(registry, ft, &mut out);
 
+    let empty_map = std::collections::HashMap::new();
+
     if let Some(netlist) = &result.temporal_netlist {
-        temporal::emit_temporal_logic_standalone(netlist, ft, &mut out);
+        temporal::emit_temporal_logic_standalone(registry, netlist, ft, &mut out);
     }
 
     temporal::emit_reflex_logic_ecs(
         registry,
         &std::collections::HashSet::new(),
         None,
+        &empty_map,
         ft,
         &mut out,
     );
@@ -308,8 +317,9 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
                     }
                 }
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
+                let empty_map = std::collections::HashMap::new();
                 sva::emit_single_property(
-                    prop_name, prop_comp, clock_domain, has_rst_n, registry, ft, &mut out, span,
+                    prop_name, prop_comp, clock_domain, has_rst_n, registry, &empty_map, ft, &mut out, span,
                 );
             }
         }
@@ -341,6 +351,7 @@ pub(crate) fn emit_source_comment(span: Option<&Span>, table: &FileTable, out: &
 pub(super) fn emit_expr_inline(
     expr_id: crate::ecs::EntityId,
     registry: &crate::ecs::Registry,
+    sync_map: &std::collections::HashMap<String, String>,
 ) -> String {
     let mut result_stack: Vec<String> = Vec::with_capacity(32);
     let mut work: Vec<ExprWork> = Vec::with_capacity(32);
@@ -377,7 +388,8 @@ pub(super) fn emit_expr_inline(
                     let sig_name = registry.names[sig_ent.0 as usize]
                         .map(|n| registry.resolve_name(n.0).to_string())
                         .unwrap_or_default();
-                    result_stack.push(sig_name);
+                    let final_name = sync_map.get(&sig_name).unwrap_or(&sig_name).clone();
+                    result_stack.push(final_name);
                 } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
                     &registry.pending_signal_refs[idx]
                 {

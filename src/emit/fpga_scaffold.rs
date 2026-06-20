@@ -42,6 +42,15 @@ fn get_ports(registry: &crate::ecs::Registry) -> Vec<Port> {
     ports
 }
 
+fn get_main_clock(registry: &crate::ecs::Registry) -> String {
+    for ty in registry.types.iter().flatten() {
+        if let Some(cd) = &ty.0.annotations.clock_domain {
+            return cd.clone();
+        }
+    }
+    "clk".to_string()
+}
+
 /// Emit a constraint file for the given FPGA target.
 pub fn emit_constraints(result: &PipelineResult, target: &FpgaTarget) -> String {
     let registry = match &result.ecs_registry {
@@ -89,8 +98,8 @@ fn emit_xdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     ));
     out.push_str("## Fill in PACKAGE_PIN values for your board.\n\n");
 
-    // Clock constraint.
-    out.push_str("create_clock -period 10.000 -name clk [get_ports clk]\n");
+    let main_clock = get_main_clock(registry);
+    out.push_str(&format!("create_clock -period 10.000 -name {0} [get_ports {0}]\n", main_clock));
     lines += 1;
 
     // Port constraints.
@@ -139,7 +148,8 @@ fn emit_sdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     ));
     out.push_str("## Fill in pin assignments for your board.\n\n");
 
-    out.push_str("create_clock -period 10.000 -name clk [get_ports clk]\n");
+    let main_clock = get_main_clock(registry);
+    out.push_str(&format!("create_clock -period 10.000 -name {0} [get_ports {0}]\n", main_clock));
     out.push_str("derive_pll_clocks\n");
     out.push_str("derive_clock_uncertainty\n\n");
 
@@ -153,7 +163,7 @@ fn emit_sdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
             SignalKind::Output => "set_output_delay",
             SignalKind::Internal => continue,
         };
-        out.push_str(&format!("{} -clock clk 2.000 [get_ports {}]\n", constraint, s.name));
+        out.push_str(&format!("{} -clock {} 2.000 [get_ports {}]\n", constraint, main_clock, s.name));
     }
 
     out
@@ -335,7 +345,8 @@ fn emit_lpf(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     ));
     out.push_str("# Fill in LOC values for your board.\n\n");
 
-    out.push_str("FREQUENCY NET \"clk\" 100.000000 MHz;\n\n");
+    let main_clock = get_main_clock(registry);
+    out.push_str(&format!("FREQUENCY NET \"{}\" 100.000000 MHz;\n\n", main_clock));
 
     for s in &get_ports(registry) {
         if s.kind == SignalKind::Internal {
@@ -374,7 +385,8 @@ fn emit_pdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     ));
     out.push_str("# Fill in pin assignments for your board.\n\n");
 
-    out.push_str("create_clock -name {clk} -period 10.000 [get_ports clk]\n\n");
+    let main_clock = get_main_clock(registry);
+    out.push_str(&format!("create_clock -name {{{0}}} -period 10.000 [get_ports {0}]\n\n", main_clock));
 
     for s in &get_ports(registry) {
         if s.kind == SignalKind::Internal {

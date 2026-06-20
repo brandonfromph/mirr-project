@@ -62,16 +62,29 @@ fn emit_module(
     out.push_str(module_name);
     out.push_str(" :\n");
 
-    // Clock and reset (implicit in MIRR, explicit in FIRRTL).
-    out.push_str("    input clk : Clock\n");
-    out.push_str("    input rst_n : UInt<1>\n");
+    let mut has_clk = false;
+    let mut has_rst_n = false;
+    for i in 0..registry.names.len() {
+        if let (Some(nc), Some(kc)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::components::EntityKind::SIGNAL(crate::ast::types::SignalKind::Input) = kc.0 {
+                let name = registry.resolve_name(nc.0);
+                if name == "clk" { has_clk = true; }
+                if name == "rst_n" { has_rst_n = true; }
+            }
+        }
+    }
+
+    if temporal_netlist.is_some() {
+        if !has_clk { out.push_str("    input clk : Clock\n"); }
+        if !has_rst_n { out.push_str("    input rst_n : UInt<1>\n"); }
+    }
 
     emit_ports(registry, out);
     emit_internal_wires(registry, out);
     out.push('\n');
 
     if let Some(netlist) = temporal_netlist {
-        emit_temporal_logic(netlist, out);
+        emit_temporal_logic(registry, netlist, out);
     }
 
     emit_reflex_logic(registry, out);
@@ -89,8 +102,25 @@ fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
                     SignalKind::Output => "output",
                     SignalKind::Internal => continue, // handled as wires
                 };
-                let ty = firrtl_type(&ty_comp.0.core);
-                out.push_str(&format!("    {} {} : {}\n", dir, registry.resolve_name(nc.0), ty));
+                let name = registry.resolve_name(nc.0);
+                
+                // If it's an explicit clock domain port, emit as Clock instead of UInt<1>
+                let mut is_clock = false;
+                if name == "clk" {
+                    is_clock = true;
+                } else {
+                    for j in 0..registry.types.len() {
+                        if let Some(t) = &registry.types[j] {
+                            if t.0.annotations.clock_domain.as_deref() == Some(name) {
+                                is_clock = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                let ty = if is_clock { "Clock".to_string() } else { firrtl_type(&ty_comp.0.core) };
+                out.push_str(&format!("    {} {} : {}\n", dir, name, ty));
             }
         }
     }
@@ -114,16 +144,32 @@ fn emit_internal_wires(registry: &crate::ecs::Registry, out: &mut String) {
     }
 }
 
-fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
+fn emit_temporal_logic(registry: &crate::ecs::Registry, netlist: &TemporalNetlist, out: &mut String) {
     out.push_str("\n    ; ── Temporal Guards ──\n");
 
     for guard in &netlist.guards {
+        let output_signal = match guard {
+            CompiledGuard::ShiftRegister(sr) => &sr.output_signal,
+            CompiledGuard::Counter(cg) => &cg.output_signal,
+            CompiledGuard::Complex(cx) => &cx.output_signal,
+            CompiledGuard::DynamicCounter(dc) => &dc.output_signal,
+        };
+
+        let mut clock_domain = "clk";
+        if let Some(id) = registry.get_entity_by_name(output_signal) {
+            if let Some(tc) = &registry.types[id.0 as usize] {
+                if let Some(cd) = tc.0.annotations.clock_domain.as_deref() {
+                    clock_domain = cd;
+                }
+            }
+        }
+
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
-                emit_shift_register_firrtl(sr, out);
+                emit_shift_register_firrtl(sr, clock_domain, out);
             }
             CompiledGuard::Counter(cg) => {
-                emit_counter_firrtl(cg, out);
+                emit_counter_firrtl(cg, clock_domain, out);
             }
             CompiledGuard::Complex(cx) => {
                 out.push_str(&format!(
@@ -141,7 +187,7 @@ fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
                     dc.name, dc.max_delay
                 ));
                 let width = dc.counter_width();
-                out.push_str(&format!("    reg {} : UInt<{}>, clock\n", dc.counter_signal, width));
+                out.push_str(&format!("    reg {} : UInt<{}>, {}\n", dc.counter_signal, width, clock_domain));
                 out.push_str(&format!("    wire {} : UInt<1>\n", dc.output_signal));
             }
         }
@@ -150,6 +196,7 @@ fn emit_temporal_logic(netlist: &TemporalNetlist, out: &mut String) {
 
 fn emit_shift_register_firrtl(
     sr: &crate::temporal::low_level_ir::ShiftRegisterGuard,
+    clock_domain: &str,
     out: &mut String,
 ) {
     let stage_count = sr.delay_cycles.min(super::verilog::MAX_SR_STAGES_INLINE);
@@ -164,8 +211,8 @@ fn emit_shift_register_firrtl(
 
     // Shift register as a vector of 1-bit registers.
     out.push_str(&format!(
-        "    reg {}_sr : UInt<{}> , clk with : (reset => (not(rst_n), UInt(0)))\n",
-        sr.name, stage_count,
+        "    reg {}_sr : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))\n",
+        sr.name, stage_count, clock_domain,
     ));
 
     // Condition wire.
@@ -180,7 +227,7 @@ fn emit_shift_register_firrtl(
     out.push_str(&format!("    connect {} , andr({}_sr)\n", sr.output_signal, sr.name,));
 }
 
-fn emit_counter_firrtl(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mut String) {
+fn emit_counter_firrtl(cg: &crate::temporal::low_level_ir::CounterGuard, clock_domain: &str, out: &mut String) {
     let width = cg.counter_width();
     let cond = emit_condition_firrtl(&cg.condition_kind);
 
@@ -193,8 +240,8 @@ fn emit_counter_firrtl(cg: &crate::temporal::low_level_ir::CounterGuard, out: &m
 
     // Counter register.
     out.push_str(&format!(
-        "    reg {} : UInt<{}> , clk with : (reset => (not(rst_n), UInt(0)))\n",
-        cg.counter_signal, width,
+        "    reg {} : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))\n",
+        cg.counter_signal, width, clock_domain,
     ));
 
     // Condition wire.

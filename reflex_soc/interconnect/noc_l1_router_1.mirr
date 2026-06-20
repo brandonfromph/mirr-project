@@ -440,41 +440,7 @@ pattern noc_l1_router_1(
         when (!is_local) for 1 cycles;
     }
     
-    // Bounce packets for dead local cores back to L2
-    signal bounce_valid: internal bool;
-    signal bounce_data: internal u64;
-
-    // Check if any local core is dead and is the destination
-    signal should_bounce: internal bool;
-    reflex eval_bounce_cond {
-        on always {
-            should_bounce = false;
-            should_bounce = should_bounce || (dest_id == 16 && core_dead_0);
-            should_bounce = should_bounce || (dest_id == 17 && core_dead_1);
-            should_bounce = should_bounce || (dest_id == 18 && core_dead_2);
-            should_bounce = should_bounce || (dest_id == 19 && core_dead_3);
-            should_bounce = should_bounce || (dest_id == 20 && core_dead_4);
-            should_bounce = should_bounce || (dest_id == 21 && core_dead_5);
-            should_bounce = should_bounce || (dest_id == 22 && core_dead_6);
-            should_bounce = should_bounce || (dest_id == 23 && core_dead_7);
-            should_bounce = should_bounce || (dest_id == 24 && core_dead_8);
-            should_bounce = should_bounce || (dest_id == 25 && core_dead_9);
-            should_bounce = should_bounce || (dest_id == 26 && core_dead_10);
-            should_bounce = should_bounce || (dest_id == 27 && core_dead_11);
-            should_bounce = should_bounce || (dest_id == 28 && core_dead_12);
-            should_bounce = should_bounce || (dest_id == 29 && core_dead_13);
-            should_bounce = should_bounce || (dest_id == 30 && core_dead_14);
-            should_bounce = should_bounce || (dest_id == 31 && core_dead_15);
-        }
-    }
-
-    guard bounce_y { when (should_bounce) for 1 cycles; }
-    guard bounce_n { when (!should_bounce) for 1 cycles; }
-
-    reflex do_bounce_y { on bounce_y { bounce_valid = sv_16; bounce_data = sd_16 | 9223372036854775808; } }
-    reflex do_bounce_n { on bounce_n { bounce_valid = false; bounce_data = 0; } }
-
-    reflex out_ext { on ext { uplink_valid = sv_16 || bounce_valid; uplink_data = sd_16 | bounce_data; } }
+    reflex out_ext { on ext { uplink_valid = sv_16; uplink_data = sd_16; } }
 }
 
 module noc_l1_router_1 {}

@@ -25,11 +25,19 @@ pub fn emit_testbench(result: &PipelineResult) -> String {
     let registry = result.ecs_registry.as_ref().unwrap();
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
+    let mut main_clock = "clk".to_string();
+    for ty in registry.types.iter().flatten() {
+        if let Some(cd) = &ty.0.annotations.clock_domain {
+            main_clock = cd.clone();
+            break;
+        }
+    }
+
     emit_tb_header(&module_name, &mut out);
-    emit_tb_signals(registry, &mut out);
-    emit_tb_clock(&mut out);
-    emit_tb_dut_instance(&module_name, registry, &mut out);
-    emit_tb_stimulus(&module_name, registry, &mut out);
+    emit_tb_signals(registry, &main_clock, &mut out);
+    emit_tb_clock(&main_clock, &mut out);
+    emit_tb_dut_instance(&module_name, registry, &main_clock, &mut out);
+    emit_tb_stimulus(&module_name, registry, &main_clock, &mut out);
     emit_tb_footer(&mut out);
 
     out
@@ -46,9 +54,9 @@ fn emit_tb_header(module_name: &str, out: &mut String) {
     out.push_str(&format!("module {}_tb;\n\n", module_name));
 }
 
-fn emit_tb_signals(registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_tb_signals(registry: &crate::ecs::Registry, main_clock: &str, out: &mut String) {
     out.push_str("  // Clock and reset\n");
-    out.push_str("  logic clk;\n");
+    out.push_str(&format!("  logic {};\n", main_clock));
     out.push_str("  logic rst_n;\n\n");
 
     // Declare testbench signals for each port.
@@ -69,13 +77,13 @@ fn emit_tb_signals(registry: &crate::ecs::Registry, out: &mut String) {
     out.push('\n');
 }
 
-fn emit_tb_clock(out: &mut String) {
+fn emit_tb_clock(main_clock: &str, out: &mut String) {
     out.push_str("  // Clock generation: 100 MHz (10 ns period)\n");
-    out.push_str("  initial clk = 1'b0;\n");
-    out.push_str("  always #5 clk = ~clk;\n\n");
+    out.push_str(&format!("  initial {} = 1'b0;\n", main_clock));
+    out.push_str(&format!("  always #5 {} = ~{};\n\n", main_clock, main_clock));
 }
 
-fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, main_clock: &str, out: &mut String) {
     out.push_str("  // DUT instantiation\n");
     out.push_str(&format!("  {} dut (\n", module_name));
 
@@ -83,7 +91,7 @@ fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, out:
     let mut has_rst_n = false;
     for nc in registry.names.iter().flatten() {
         let name = registry.resolve_name(nc.0);
-        if name == "clk" {
+        if name == main_clock {
             has_clk = true;
         }
         if name == "rst_n" {
@@ -103,7 +111,7 @@ fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, out:
 
     // Connect clk and rst_n.
     if has_guards && !has_clk {
-        connections.push("    .clk(clk)".to_string());
+        connections.push(format!("    .{0}({0})", main_clock));
     }
     if has_guards && !has_rst_n {
         connections.push("    .rst_n(rst_n)".to_string());
@@ -134,7 +142,7 @@ fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, out:
     out.push_str("  );\n\n");
 }
 
-fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, main_clock: &str, out: &mut String) {
     let sim_cycles = DEFAULT_SIM_CYCLES.min(MAX_SIM_CYCLES);
 
     out.push_str("  // Stimulus sequence\n");
@@ -154,7 +162,7 @@ fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mu
         }
     }
 
-    out.push_str("    repeat(10) @(posedge clk);\n");
+    out.push_str(&format!("    repeat(10) @(posedge {});\n", main_clock));
     out.push_str("    rst_n = 1'b1;\n\n");
 
     out.push_str("    // Phase 2: Drive inputs to max range\n");
@@ -181,7 +189,7 @@ fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mu
         }
     }
 
-    out.push_str(&format!("    repeat({}) @(posedge clk);\n\n", sim_cycles));
+    out.push_str(&format!("    repeat({}) @(posedge {});\n\n", sim_cycles, main_clock));
 
     out.push_str("    // Phase 3: Return to zero\n");
     for i in 0..registry.names.len() {
@@ -194,7 +202,7 @@ fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, out: &mu
             }
         }
     }
-    out.push_str("    repeat(50) @(posedge clk);\n\n");
+    out.push_str(&format!("    repeat(50) @(posedge {});\n\n", main_clock));
 
     out.push_str(&format!("    $display(\"Testbench {} complete.\");\n", module_name));
     out.push_str("    $finish;\n");

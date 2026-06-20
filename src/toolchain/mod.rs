@@ -345,7 +345,7 @@ mod tests {
         assert_eq!(Tool::NextpnrNexus.binary_name(), "nextpnr-nexus");
         assert_eq!(Tool::Icetime.binary_name(), "icetime");
         assert_eq!(Tool::Eqy.binary_name(), "eqy");
-        assert_eq!(Tool::Openlane.binary_name(), "openlane");
+        assert_eq!(Tool::Openlane.binary_name(), "docker");
     }
 
     #[test]

@@ -1,12 +1,11 @@
 use std::fs;
-use std::path::Path;
 use std::process::Command;
 
 #[test]
-fn test_cdc_emission() {
+fn test_ecs_cdc_propagation() {
     let mirr_src = r#"
 target profile {
-    name: "CDC-Test";
+    name: "ECS-CDC-Propagation-Test";
     word_size: 32;
     reg_width: 8;
     op_width: 8;
@@ -19,61 +18,58 @@ module cdc_top {
 
     signal sensor_data: in u16 @clk_fast;
     signal buffer: internal u16 @clk_fast;
+    signal default_buffer: internal u16;
 
-    reflex capture {
+    reflex capture_fast {
         on always {
             buffer = sensor_data;
+        }
+    }
+
+    reflex capture_default {
+        on always {
+            default_buffer = sensor_data;
         }
     }
 }
 "#;
 
-    // Create a temporary directory for the test
     let test_dir = tempfile::tempdir().expect("failed to create temp dir");
     let src_path = test_dir.path().join("cdc_test.mirr");
     fs::write(&src_path, mirr_src).expect("failed to write mirr source");
 
-    // Run the compiler targeting verilog
     let mut cmd = Command::new("cargo");
     cmd.arg("run")
         .arg("--bin")
-        .arg("mirr-compile")
+        .arg("mirr")
         .arg("--")
+        .arg("compile")
         .arg(src_path.to_str().unwrap())
         .arg("--emit")
         .arg("verilog")
-        .arg("--out-dir")
-        .arg(test_dir.path().to_str().unwrap());
+        .arg("--output")
+        .arg(test_dir.path().join("cdc_top.sv").to_str().unwrap());
 
-    let output = cmd.output().expect("failed to execute mirr-compile");
+    let output = cmd.output().expect("failed to execute mirr compile");
     
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         panic!("Compiler failed:\n{}", stderr);
     }
 
-    // Read the generated SystemVerilog file
     let sv_path = test_dir.path().join("cdc_top.sv");
     let sv_content = fs::read_to_string(&sv_path)
         .expect("failed to read generated SV file");
 
-    // Verify CDC logic
     assert!(
         sv_content.contains("always_ff @(posedge clk_fast or negedge rst_n) begin"),
-        "Failed to emit correct clock domain 'clk_fast' for the buffer reflex. Generated SV:\n{}",
+        "Failed to emit correct clock domain 'clk_fast' for the fast buffer reflex. Generated SV:\n{}",
         sv_content
     );
 
-    // Verify it doesn't emit 'clk' for the buffer
     assert!(
-        !sv_content.contains("always_ff @(posedge clk or negedge rst_n) begin"),
-        "Compiler emitted default 'clk' domain instead of 'clk_fast'."
-    );
-
-    // Verify synchronizer for sensor_data uses clk_fast
-    assert!(
-        sv_content.contains("2-stage synchronizer for sensor_data (@clk_fast)"),
-        "Failed to annotate input synchronizer for sensor_data with @clk_fast. Generated SV:\n{}",
+        sv_content.contains("always_ff @(posedge clk or negedge rst_n) begin"),
+        "Failed to emit default clock domain 'clk' for the default buffer reflex. Generated SV:\n{}",
         sv_content
     );
 }

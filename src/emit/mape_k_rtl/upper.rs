@@ -12,7 +12,7 @@ use crate::mape_k::SimConfig;
 // ---------------------------------------------------------------------------
 
 /// Emit `mirr_plan`: action lookup table, priority-based selection.
-pub(super) fn emit_plan_block(config: &SimConfig) -> String {
+pub(super) fn emit_plan_block(config: &SimConfig, main_clock: &str) -> String {
     let n_prop = config.properties.len();
     let n_act = config.action_table.len();
     let act_w = bit_width(n_act);
@@ -23,7 +23,7 @@ pub(super) fn emit_plan_block(config: &SimConfig) -> String {
     sv.push_str(&format!("  parameter N_PROPERTIES = {n_prop},\n"));
     sv.push_str(&format!("  parameter N_ACTIONS    = {n_act}\n"));
     sv.push_str(") (\n");
-    sv.push_str("  input  logic clk,\n");
+    sv.push_str(&format!("  input  logic {},\n", main_clock));
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str(&format!(
         "  input  logic [{}:0] violation_vec,\n",
@@ -63,7 +63,7 @@ pub(super) fn emit_plan_block(config: &SimConfig) -> String {
     sv.push_str("  end\n\n");
 
     // Register the selection.
-    sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
     sv.push_str("    if (!rst_n) begin\n");
     sv.push_str(&format!("      selected_action_idx <= {}'d0;\n", act_w.max(1)));
     sv.push_str("      action_valid        <= 1'b0;\n");
@@ -81,7 +81,7 @@ pub(super) fn emit_plan_block(config: &SimConfig) -> String {
 // ---------------------------------------------------------------------------
 
 /// Emit `mirr_execute`: action dispatch, emergency latch.
-pub(super) fn emit_execute_block(config: &SimConfig) -> String {
+pub(super) fn emit_execute_block(config: &SimConfig, main_clock: &str) -> String {
     let n_act = config.action_table.len();
     let n_sig = config.sensors.len();
     let act_w = bit_width(n_act);
@@ -92,7 +92,7 @@ pub(super) fn emit_execute_block(config: &SimConfig) -> String {
     sv.push_str(&format!("  parameter N_SIGNALS = {n_sig},\n"));
     sv.push_str(&format!("  parameter N_ACTIONS = {n_act}\n"));
     sv.push_str(") (\n");
-    sv.push_str("  input  logic clk,\n");
+    sv.push_str(&format!("  input  logic {},\n", main_clock));
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str(&format!("  input  logic [{}:0] selected_action_idx,\n", act_w.saturating_sub(1)));
     sv.push_str("  input  logic        action_valid,\n");
@@ -103,7 +103,7 @@ pub(super) fn emit_execute_block(config: &SimConfig) -> String {
 
     // Emergency latch — sticky until reset.
     sv.push_str("  // Emergency latch (sticky)\n");
-    sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
     sv.push_str("    if (!rst_n)\n");
     sv.push_str("      emergency_active <= 1'b0;\n");
     sv.push_str("    else if (action_valid)\n");
@@ -121,7 +121,7 @@ pub(super) fn emit_execute_block(config: &SimConfig) -> String {
 
     // Action dispatch — signal overrides.
     sv.push_str("  // Action dispatch\n");
-    sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
     sv.push_str("    if (!rst_n) begin\n");
 
     for i in 0..n_sig.min(MAX_RTL_SIGNALS) {
@@ -181,7 +181,7 @@ pub(super) fn emit_execute_block(config: &SimConfig) -> String {
 // ---------------------------------------------------------------------------
 
 /// Emit `mirr_knowledge`: FIFO ring buffer for adaptation records.
-pub(super) fn emit_knowledge_block(config: &SimConfig) -> String {
+pub(super) fn emit_knowledge_block(config: &SimConfig, main_clock: &str) -> String {
     let depth = config.knowledge_capacity.min(MAX_RTL_KNOWLEDGE_DEPTH);
     let addr_w = bit_width(depth);
     let n_act = config.action_table.len();
@@ -192,7 +192,7 @@ pub(super) fn emit_knowledge_block(config: &SimConfig) -> String {
     sv.push_str("module mirr_knowledge #(\n");
     sv.push_str(&format!("  parameter DEPTH = {depth}\n"));
     sv.push_str(") (\n");
-    sv.push_str("  input  logic clk,\n");
+    sv.push_str(&format!("  input  logic {},\n", main_clock));
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str("  input  logic        wr_en,\n");
     sv.push_str(&format!("  input  logic [{}:0] wr_action_idx,\n", act_w.saturating_sub(1)));
@@ -207,7 +207,7 @@ pub(super) fn emit_knowledge_block(config: &SimConfig) -> String {
 
     sv.push_str("  assign full = (count == DEPTH);\n\n");
 
-    sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
     sv.push_str("    if (!rst_n) begin\n");
     sv.push_str(&format!("      wr_ptr <= {}'d0;\n", addr_w));
     sv.push_str(&format!("      count  <= {}'d0;\n", addr_w + 1));
@@ -229,7 +229,7 @@ pub(super) fn emit_knowledge_block(config: &SimConfig) -> String {
 // ---------------------------------------------------------------------------
 
 /// Emit `mirr_mape_k_top`: wires all five MAPE-K blocks together.
-pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
+pub(super) fn emit_mape_k_top(config: &SimConfig, main_clock: &str) -> String {
     let n_sig = config.sensors.len();
     let n_prop = config.properties.len();
     let n_act = config.action_table.len();
@@ -247,7 +247,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str(&format!("  parameter N_ACTIONS    = {n_act},\n"));
     sv.push_str(&format!("  parameter K_DEPTH      = {depth}\n"));
     sv.push_str(") (\n");
-    sv.push_str("  input  logic clk,\n");
+    sv.push_str(&format!("  input  logic {},\n", main_clock));
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] sensor_in,\n");
     sv.push_str("  output logic        emergency_active,\n");
@@ -272,7 +272,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str("  logic        k_full;\n");
     sv.push_str("  logic [31:0] tick_counter;\n\n");
 
-    sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
     sv.push_str("    if (!rst_n)\n");
     sv.push_str("      tick_counter <= 32'd0;\n");
     sv.push_str("    else\n");
@@ -283,7 +283,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str("    .N_SIGNALS   (N_SIGNALS),\n");
     sv.push_str(&format!("    .TRACE_DEPTH ({trace_depth})\n"));
     sv.push_str("  ) u_monitor (\n");
-    sv.push_str("    .clk          (clk),\n");
+    sv.push_str(&format!("    .{}          ({}),\n", main_clock, main_clock));
     sv.push_str("    .rst_n        (rst_n),\n");
     sv.push_str("    .sensor_in    (sensor_in),\n");
     sv.push_str("    .shadow       (shadow),\n");
@@ -294,7 +294,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str("    .N_SIGNALS    (N_SIGNALS),\n");
     sv.push_str("    .N_PROPERTIES (N_PROPERTIES)\n");
     sv.push_str("  ) u_analyze (\n");
-    sv.push_str("    .clk               (clk),\n");
+    sv.push_str(&format!("    .{}               ({}),\n", main_clock, main_clock));
     sv.push_str("    .rst_n             (rst_n),\n");
     sv.push_str("    .shadow            (shadow),\n");
     sv.push_str("    .sample_valid      (sample_valid),\n");
@@ -306,7 +306,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str("    .N_PROPERTIES (N_PROPERTIES),\n");
     sv.push_str("    .N_ACTIONS    (N_ACTIONS)\n");
     sv.push_str("  ) u_plan (\n");
-    sv.push_str("    .clk                (clk),\n");
+    sv.push_str(&format!("    .{}                ({}),\n", main_clock, main_clock));
     sv.push_str("    .rst_n              (rst_n),\n");
     sv.push_str("    .violation_vec      (violation_vec),\n");
     sv.push_str("    .selected_action_idx(selected_action_idx),\n");
@@ -317,7 +317,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str("    .N_SIGNALS (N_SIGNALS),\n");
     sv.push_str("    .N_ACTIONS (N_ACTIONS)\n");
     sv.push_str("  ) u_execute (\n");
-    sv.push_str("    .clk                (clk),\n");
+    sv.push_str(&format!("    .{}                ({}),\n", main_clock, main_clock));
     sv.push_str("    .rst_n              (rst_n),\n");
     sv.push_str("    .selected_action_idx(selected_action_idx),\n");
     sv.push_str("    .action_valid       (action_valid),\n");
@@ -329,7 +329,7 @@ pub(super) fn emit_mape_k_top(config: &SimConfig) -> String {
     sv.push_str("  mirr_knowledge #(\n");
     sv.push_str("    .DEPTH (K_DEPTH)\n");
     sv.push_str("  ) u_knowledge (\n");
-    sv.push_str("    .clk           (clk),\n");
+    sv.push_str(&format!("    .{}           ({}),\n", main_clock, main_clock));
     sv.push_str("    .rst_n         (rst_n),\n");
     sv.push_str("    .wr_en         (action_valid),\n");
     sv.push_str("    .wr_action_idx (selected_action_idx),\n");

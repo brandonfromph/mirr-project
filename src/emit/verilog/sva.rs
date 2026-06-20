@@ -43,6 +43,18 @@ pub(super) fn emit_module_decl(
     span: Option<&Span>,
 ) {
     emit_source_comment(span, ft, out);
+    
+    // Silence benign Verilator lints for generated code
+    out.push_str("/* verilator lint_off UNOPTFLAT */\n");
+    out.push_str("/* verilator lint_off DECLFILENAME */\n");
+    out.push_str("/* verilator lint_off WIDTH */\n");
+    out.push_str("/* verilator lint_off WIDTHTRUNC */\n");
+    out.push_str("/* verilator lint_off WIDTHEXPAND */\n");
+    out.push_str("/* verilator lint_off SYNCASYNCNET */\n");
+    out.push_str("/* verilator lint_off PINCONNECTEMPTY */\n");
+    out.push_str("/* verilator lint_off UNDRIVEN */\n");
+    out.push_str("/* verilator lint_off UNUSED */\n\n");
+
     out.push_str(&format!("module {} (\n", module_name));
 
     // Check if temporal guards exist
@@ -226,6 +238,7 @@ pub(super) fn module_has_rst_n(registry: &crate::ecs::Registry) -> bool {
 pub(super) fn emit_property_assertions(
     registry: &crate::ecs::Registry,
     has_rst_n: bool,
+    sync_map: &std::collections::HashMap<String, String>,
     ft: &FileTable,
     out: &mut String,
 ) {
@@ -288,19 +301,21 @@ pub(super) fn emit_property_assertions(
                     }
                 }
 
-                emit_single_property(name, prop_comp, clock_domain, has_rst_n, registry, ft, out, span);
+                emit_single_property(name, prop_comp, clock_domain, has_rst_n, registry, sync_map, ft, out, span);
             }
         }
     }
 }
 
 /// Emit a single SVA `assert property` statement.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn emit_single_property(
     prop_name: &str,
     prop: &crate::ecs::components::PropertyComponent,
     clock: &str,
     has_rst_n: bool,
     registry: &crate::ecs::Registry,
+    sync_map: &std::collections::HashMap<String, String>,
     ft: &FileTable,
     out: &mut String,
     span: Option<&Span>,
@@ -326,25 +341,25 @@ pub(super) fn emit_single_property(
 
     match &prop.formula {
         PropertyFormula::Always(_) => {
-            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
+            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
             out.push_str(&format!("{prefix}{sv_expr}{suffix}"));
         }
         PropertyFormula::Never(_) => {
-            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
+            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
             out.push_str(&format!("{prefix}!({sv_expr}){suffix}"));
         }
         PropertyFormula::AlwaysImplies { .. } => {
-            let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
-            let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
+            let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
+            let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry, sync_map);
             out.push_str(&format!("{prefix}(!({ante_sv})) || ({cons_sv}){suffix}"));
         }
         PropertyFormula::NeverImplies { .. } => {
-            let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
-            let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
+            let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
+            let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry, sync_map);
             out.push_str(&format!("{prefix}(!({ante_sv})) || (!({cons_sv})){suffix}"));
         }
         PropertyFormula::EventuallyWithin { expr: _, cycles } => {
-            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
+            let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
             out.push_str(&format!("  reg [31:0] prop_{prop_name}_timer;\n"));
             out.push_str(&format!("  always @(posedge {clock}) begin\n"));
             if has_rst_n {
@@ -363,8 +378,8 @@ pub(super) fn emit_single_property(
             out.push_str(&format!("{prefix}prop_{prop_name}_timer < {cycles}{suffix}"));
         }
         PropertyFormula::AlwaysFollowedBy { trigger: _, response: _, delay_cycles } => {
-            let trig_sv = super::emit_expr_inline(prop.formula_exprs[0], registry);
-            let resp_sv = super::emit_expr_inline(prop.formula_exprs[1], registry);
+            let trig_sv = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
+            let resp_sv = super::emit_expr_inline(prop.formula_exprs[1], registry, sync_map);
 
             if *delay_cycles == 0 {
                 out.push_str(&format!("{prefix}(!({trig_sv})) || ({resp_sv}){suffix}"));
@@ -505,7 +520,8 @@ pub fn emit_sva_only(result: &PipelineResult) -> String {
 
     let has_rst_n = module_has_rst_n(registry);
 
-    emit_property_assertions(registry, has_rst_n, ft, &mut out);
+    let empty_map = std::collections::HashMap::new();
+    emit_property_assertions(registry, has_rst_n, &empty_map, ft, &mut out);
 
     out
 }

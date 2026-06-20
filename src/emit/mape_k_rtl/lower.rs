@@ -14,7 +14,7 @@ use crate::mape_k::SimConfig;
 // ---------------------------------------------------------------------------
 
 /// Emit `mirr_monitor`: shadow registers, trace buffer, threshold storage.
-pub(super) fn emit_monitor_block(config: &SimConfig) -> String {
+pub(super) fn emit_monitor_block(config: &SimConfig, main_clock: &str) -> String {
     let n_sig = config.sensors.len();
     let depth = config.window_size.min(MAX_RTL_KNOWLEDGE_DEPTH);
     let addr_w = bit_width(depth);
@@ -25,7 +25,7 @@ pub(super) fn emit_monitor_block(config: &SimConfig) -> String {
     sv.push_str(&format!("  parameter N_SIGNALS = {n_sig},\n"));
     sv.push_str(&format!("  parameter TRACE_DEPTH = {depth}\n"));
     sv.push_str(") (\n");
-    sv.push_str("  input  logic clk,\n");
+    sv.push_str(&format!("  input  logic {},\n", main_clock));
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] sensor_in,\n");
     sv.push_str("  output logic [N_SIGNALS-1:0][31:0] shadow,\n");
@@ -37,7 +37,7 @@ pub(super) fn emit_monitor_block(config: &SimConfig) -> String {
     sv.push_str("  logic [31:0] trace_buf [0:TRACE_DEPTH-1][0:N_SIGNALS-1];\n\n");
 
     // Shadow registers + trace write.
-    sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
     sv.push_str("    if (!rst_n) begin\n");
     sv.push_str(&format!("      wr_ptr <= {addr_w}'d0;\n"));
     sv.push_str("      sample_valid <= 1'b0;\n");
@@ -68,7 +68,7 @@ pub(super) fn emit_monitor_block(config: &SimConfig) -> String {
 // ---------------------------------------------------------------------------
 
 /// Emit `mirr_analyze`: per-property LTL checkers, priority encoder.
-pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
+pub(super) fn emit_analyze_block(config: &SimConfig, main_clock: &str) -> String {
     let n_sig = config.sensors.len();
     let n_prop = config.properties.len();
 
@@ -78,7 +78,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
     sv.push_str(&format!("  parameter N_SIGNALS    = {n_sig},\n"));
     sv.push_str(&format!("  parameter N_PROPERTIES = {n_prop}\n"));
     sv.push_str(") (\n");
-    sv.push_str("  input  logic clk,\n");
+    sv.push_str(&format!("  input  logic {},\n", main_clock));
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] shadow,\n");
     sv.push_str("  input  logic        sample_valid,\n");
@@ -119,7 +119,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
                 let cw = bit_width(*cycles as usize);
                 sv.push_str(&format!("  // Property {pi}: EventuallyWithin({cycles})\n"));
                 sv.push_str(&format!("  logic [{cw}:0] ev_cnt_{pi};\n"));
-                sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
                 sv.push_str("    if (!rst_n)\n");
                 sv.push_str(&format!("      ev_cnt_{pi} <= {}'d0;\n", cw + 1));
                 sv.push_str(&format!("    else if ({cond})\n"));
@@ -141,7 +141,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
                 sv.push_str(&format!("  // Property {pi}: Persists({cycles})\n"));
                 sv.push_str(&format!("  logic [{cw}:0] ps_cnt_{pi};\n"));
                 sv.push_str(&format!("  logic        ps_ok_{pi};\n"));
-                sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
                 sv.push_str("    if (!rst_n) begin\n");
                 sv.push_str(&format!("      ps_cnt_{pi} <= {}'d0;\n", cw + 1));
                 sv.push_str(&format!("      ps_ok_{pi}  <= 1'b0;\n"));
@@ -181,7 +181,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
                 let cond_b = predicate_to_sv(b, &format!("shadow[{idx_b}]"));
                 sv.push_str(&format!("  // Property {pi}: NeverImplies\n"));
                 sv.push_str(&format!("  logic never_implies_seen_{pi};\n"));
-                sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
                 sv.push_str("    if (!rst_n)\n");
                 sv.push_str(&format!("      never_implies_seen_{pi} <= 1'b0;\n"));
                 sv.push_str(&format!("    else if ({cond_a} && !({cond_b}))\n"));
@@ -202,7 +202,7 @@ pub(super) fn emit_analyze_block(config: &SimConfig) -> String {
                 sv.push_str(&format!("  // Property {pi}: AlwaysFollowedBy({delay})\n"));
                 sv.push_str(&format!("  logic [{delay_w}:0] follow_cnt_{pi};\n"));
                 sv.push_str(&format!("  logic follow_ok_{pi};\n"));
-                sv.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
                 sv.push_str("    if (!rst_n) begin\n");
                 sv.push_str(&format!("      follow_cnt_{pi} <= {}'d0;\n", delay_w + 1));
                 sv.push_str(&format!("      follow_ok_{pi}  <= 1'b1;\n"));

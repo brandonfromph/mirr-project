@@ -78,29 +78,7 @@ for g in range(4):
         when (!is_local) for 1 cycles;
     }
     
-    // Bounce packets for dead local cores back to L2
-    signal bounce_valid: internal bool;
-    signal bounce_data: internal u64;
-
-    // Check if any local core is dead and is the destination
-    signal should_bounce: internal bool;
-    reflex eval_bounce_cond {
-        on always {
-            should_bounce = false;
-"""
-    for i in range(16):
-        l1_router += f"            should_bounce = should_bounce || (dest_id == {g*16 + i} && core_dead_{i});\n"
-        
-    l1_router += """        }
-    }
-
-    guard bounce_y { when (should_bounce) for 1 cycles; }
-    guard bounce_n { when (!should_bounce) for 1 cycles; }
-
-    reflex do_bounce_y { on bounce_y { bounce_valid = sv_16; bounce_data = sd_16 | 9223372036854775808; } }
-    reflex do_bounce_n { on bounce_n { bounce_valid = false; bounce_data = 0; } }
-
-    reflex out_ext { on ext { uplink_valid = sv_16 || bounce_valid; uplink_data = sd_16 | bounce_data; } }
+    reflex out_ext { on ext { uplink_valid = sv_16; uplink_data = sd_16; } }
 }
 
 """
@@ -122,80 +100,108 @@ for i in range(4):
     l2_router += f"    downlink_data_{i}: signal out u64" + (",\n" if i < 3 else "\n")
 l2_router += """) {
 """
-for i in range(6):
-    l2_router += f"    signal sv_{i}: internal bool;\n"
-    l2_router += f"    signal sd_{i}: internal u64;\n"
 
-l2_router += """
-    reflex r_base { on always { sv_0 = false; sd_0 = 0; } }
-"""
 for i in range(4):
-    l2_router += f"    // Adaptive Buffer for L1 Group {i}\n"
     l2_router += f"    signal buf_valid_{i}: internal bool;\n"
     l2_router += f"    signal buf_data_{i}: internal u64;\n"
-    l2_router += f"    signal is_bounce_{i}: internal bool;\n"
-    l2_router += f"    signal act_valid_{i}: internal bool;\n"
-    l2_router += f"    signal act_data_{i}: internal u64;\n"
-    
-    l2_router += f"    reflex parse_bounce_{i} {{\n"
-    l2_router += f"        on always {{\n"
-    l2_router += f"            is_bounce_{i} = uplink_valid_{i} && ((uplink_data_{i} >> 63) == 1);\n"
-    l2_router += f"        }}\n"
-    l2_router += f"    }}\n\n"
+    l2_router += f"    signal is_reflex_{i}: internal bool;\n"
+    l2_router += f"    signal is_normal_{i}: internal bool;\n"
+    l2_router += f"    signal req_valid_{i}: internal bool;\n"
+    l2_router += f"    signal req_data_{i}: internal u64;\n"
 
-    # Define native mutually exclusive guards to avoid compiler overlapping guard checks
-    l2_router += f"    guard g_bounce_{i} {{ when (is_bounce_{i}) for 1 cycles; }}\n"
-    l2_router += f"    guard g_norm_{i} {{ when (!is_bounce_{i} && uplink_valid_{i}) for 1 cycles; }}\n"
-    l2_router += f"    guard g_retry_{i} {{ when (!uplink_valid_{i} && buf_valid_{i}) for 1 cycles; }}\n"
-    l2_router += f"    guard g_idle_{i} {{ when (!uplink_valid_{i} && !buf_valid_{i}) for 1 cycles; }}\n\n"
-
-    l2_router += f"    reflex r_b_{i} {{\n"
-    l2_router += f"        on g_bounce_{i} {{\n"
-    l2_router += f"            buf_valid_{i} = true;\n"
-    l2_router += f"            buf_data_{i} = uplink_data_{i} & 9223372036854775807;\n"
-    l2_router += f"            act_valid_{i} = false;\n"
-    l2_router += f"            act_data_{i} = 0;\n"
-    l2_router += f"        }}\n"
-    l2_router += f"    }}\n"
-
-    l2_router += f"    reflex r_n_{i} {{\n"
-    l2_router += f"        on g_norm_{i} {{\n"
-    l2_router += f"            act_valid_{i} = true;\n"
-    l2_router += f"            act_data_{i} = uplink_data_{i};\n"
-    l2_router += f"        }}\n"
-    l2_router += f"    }}\n"
-
-    l2_router += f"    reflex r_r_{i} {{\n"
-    l2_router += f"        on g_retry_{i} {{\n"
-    l2_router += f"            act_valid_{i} = true;\n"
-    l2_router += f"            act_data_{i} = buf_data_{i};\n"
-    l2_router += f"            buf_valid_{i} = false;\n"
-    l2_router += f"        }}\n"
-    l2_router += f"    }}\n"
-
-    l2_router += f"    reflex r_i_{i} {{\n"
-    l2_router += f"        on g_idle_{i} {{\n"
-    l2_router += f"            act_valid_{i} = false;\n"
-    l2_router += f"            act_data_{i} = 0;\n"
-    l2_router += f"        }}\n"
-    l2_router += f"    }}\n\n"
-
-    l2_router += f"    guard n{i} {{\n        when (!act_valid_{i}) for 1 cycles;\n    }}\n"
-    l2_router += f"    guard y{i} {{\n        when (act_valid_{i}) for 1 cycles;\n    }}\n"
-    l2_router += f"    reflex r{i} {{ on y{i} {{ sv_{i+1} = true; sd_{i+1} = act_data_{i}; }} on n{i} {{ sv_{i+1} = sv_{i}; sd_{i+1} = sd_{i}; }} }}\n"
+for i in range(4):
+    l2_router += f"    signal w_r_{i}: internal bool;\n"
+    l2_router += f"    signal w_n_{i}: internal bool;\n"
 
 l2_router += """
-    signal dest_id: internal u64;
-    signal payload: internal u64;
-
-    reflex extract {
+    signal any_r: internal bool;
+    signal any_w: internal bool;
+    
+    reflex req_eval {
         on always {
-            dest_id = (sd_4 >> 48) & 4095;
-            payload = sd_4; // Keep full payload including destination for L1
+"""
+for i in range(4):
+    # Reflex check: bit 62 is 1
+    l2_router += f"            is_reflex_{i} = uplink_valid_{i} && ((uplink_data_{i} >> 62) == 1);\n"
+    l2_router += f"            is_normal_{i} = uplink_valid_{i} && !is_reflex_{i};\n"
+    # Current active request is either the new reflex, or the buffered packet if no new reflex
+    # Wait, if a normal packet arrives, we buffer it if it doesn't win.
+    l2_router += f"            req_valid_{i} = is_reflex_{i} || is_normal_{i} || buf_valid_{i};\n"
+    l2_router += f"            // We prioritize the incoming packet over the buffer for processing if both exist\n"
+    # Wait, we can't do conditional logic easily for data. Let's just process uplink directly if valid, else buffer.
+    # Actually, we can just process reflex > normal > buffer
+l2_router += """        }
+    }
+"""
+
+l2_router += """
+    reflex win_eval {
+        on always {
+"""
+# Priority preemption logic
+for i in range(4):
+    prefix_r = " && ".join([f"!w_r_{j}" for j in range(i)])
+    if prefix_r:
+        l2_router += f"            w_r_{i} = is_reflex_{i} && {prefix_r};\n"
+    else:
+        l2_router += f"            w_r_{i} = is_reflex_{i};\n"
+
+l2_router += "            any_r = w_r_0 || w_r_1 || w_r_2 || w_r_3;\n"
+
+for i in range(4):
+    prefix_n = " && ".join([f"!w_n_{j}" for j in range(i)])
+    if prefix_n:
+        l2_router += f"            w_n_{i} = (is_normal_{i} || buf_valid_{i}) && !any_r && {prefix_n};\n"
+    else:
+        l2_router += f"            w_n_{i} = (is_normal_{i} || buf_valid_{i}) && !any_r;\n"
+
+l2_router += """        }
+    }
+"""
+
+# Extract the winning payload
+l2_router += """
+    signal win_valid: internal bool;
+    signal win_data: internal u64;
+    signal win_dest: internal u64;
+
+"""
+
+for i in range(4):
+    # Guard for when this channel wins reflex
+    l2_router += f"    guard g_win_r_{i} {{ when (w_r_{i}) for 1 cycles; }}\n"
+    l2_router += f"    reflex do_win_r_{i} {{ on g_win_r_{i} {{ win_valid = true; win_data = uplink_data_{i}; }} }}\n"
+    
+    # Guard for when this channel wins normal
+    l2_router += f"    guard g_win_n_{i}_up {{ when (w_n_{i} && is_normal_{i}) for 1 cycles; }}\n"
+    l2_router += f"    reflex do_win_n_{i}_up {{ on g_win_n_{i}_up {{ win_valid = true; win_data = uplink_data_{i}; }} }}\n"
+
+    l2_router += f"    guard g_win_n_{i}_buf {{ when (w_n_{i} && !is_normal_{i} && buf_valid_{i}) for 1 cycles; }}\n"
+    l2_router += f"    reflex do_win_n_{i}_buf {{ on g_win_n_{i}_buf {{ win_valid = true; win_data = buf_data_{i}; }} }}\n"
+    
+    # Buffering logic: if a normal packet arrives but doesn't win, we store it in the buffer.
+    # If it wins, we clear the buffer (if it was from the buffer).
+    l2_router += f"    guard g_buf_store_{i} {{ when (is_normal_{i} && !w_n_{i}) for 1 cycles; }}\n"
+    l2_router += f"    reflex do_buf_store_{i} {{ on g_buf_store_{i} {{ buf_valid_{i} = true; buf_data_{i} = uplink_data_{i}; }} }}\n"
+    
+    l2_router += f"    guard g_buf_clear_{i} {{ when (w_n_{i} && !is_normal_{i}) for 1 cycles; }}\n"
+    l2_router += f"    reflex do_buf_clear_{i} {{ on g_buf_clear_{i} {{ buf_valid_{i} = false; buf_data_{i} = 0; }} }}\n"
+    
+    # Maintain buffer if no new arrival and didn't win
+    l2_router += f"    guard g_buf_keep_{i} {{ when (!is_normal_{i} && !w_n_{i}) for 1 cycles; }}\n"
+    l2_router += f"    reflex do_buf_keep_{i} {{ on g_buf_keep_{i} {{ buf_valid_{i} = buf_valid_{i}; buf_data_{i} = buf_data_{i}; }} }}\n"
+
+l2_router += """
+    guard g_no_win { when (!w_r_0 && !w_r_1 && !w_r_2 && !w_r_3 && !w_n_0 && !w_n_1 && !w_n_2 && !w_n_3) for 1 cycles; }
+    reflex do_no_win { on g_no_win { win_valid = false; win_data = 0; } }
+
+    reflex extract_dest {
+        on always {
+            win_dest = (win_data >> 48) & 4095;
         }
     }
 
-    reflex defaults {
+    reflex route_defaults {
         on always {
 """
 for i in range(4):
@@ -203,12 +209,11 @@ for i in range(4):
     l2_router += f"            downlink_data_{i} = 0;\n"
 l2_router += """        }
     }
-
 """
 
 for i in range(4):
-    l2_router += f"    guard p{i} {{\n        when ((dest_id >= {i*16}) && (dest_id < {(i+1)*16})) for 1 cycles;\n    }}\n"
-    l2_router += f"    reflex out{i} {{ on p{i} {{ downlink_valid_{i} = sv_4; downlink_data_{i} = payload; }} }}\n"
+    l2_router += f"    guard p_out_{i} {{\n        when (win_valid && (win_dest >= {i*16}) && (win_dest < {(i+1)*16})) for 1 cycles;\n    }}\n"
+    l2_router += f"    reflex do_out_{i} {{ on p_out_{i} {{ downlink_valid_{i} = win_valid; downlink_data_{i} = win_data; }} }}\n"
 
 l2_router += """}
 
@@ -219,4 +224,3 @@ with open("reflex_soc/interconnect/noc_l2_router.mirr", "w") as f:
     f.write(l2_router)
 
 print("Generated noc_l1_router.mirr and noc_l2_router.mirr")
-
