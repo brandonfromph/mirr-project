@@ -1,0 +1,25 @@
+[tasks]
+bmc
+prove
+
+[options]
+bmc: mode bmc
+bmc: depth 50
+prove: mode prove
+prove: depth 50
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -sv -formal ram.sv
+read_verilog -sv -formal regfile.sv
+read_verilog -sv -formal reflex_soc_synth.sv
+read_verilog -sv -formal reflex_soc_sva_bind.sv
+prep -top reflex_soc
+
+[files]
+/Users/brandonc.blay/projects/mirr-private/reflex_soc/core/ram.sv
+/Users/brandonc.blay/projects/mirr-private/reflex_soc/core/regfile.sv
+reflex_soc/reflex_soc_synth.sv
+reflex_soc/reflex_soc_sva_bind.sv
