@@ -301,9 +301,15 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
         {
             if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
                 let prop_name = registry.resolve_name(name_comp.0);
+                let mut clock_domain = "clk";
+                if let Some(tc) = &registry.types[i] {
+                    if let Some(cd) = tc.0.annotations.clock_domain.as_deref() {
+                        clock_domain = cd;
+                    }
+                }
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
                 sva::emit_single_property(
-                    prop_name, prop_comp, has_rst_n, registry, ft, &mut out, span,
+                    prop_name, prop_comp, clock_domain, has_rst_n, registry, ft, &mut out, span,
                 );
             }
         }

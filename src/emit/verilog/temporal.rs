@@ -20,10 +20,10 @@ pub(super) fn emit_temporal_logic_standalone(
     for guard in &netlist.guards {
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
-                emit_shift_register_guard(sr, out);
+                emit_shift_register_guard(sr, "clk", out);
             }
             CompiledGuard::Counter(cg) => {
-                emit_counter_guard(cg, out);
+                emit_counter_guard(cg, "clk", out);
             }
             CompiledGuard::Complex(cx) => {
                 out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
@@ -34,7 +34,7 @@ pub(super) fn emit_temporal_logic_standalone(
                 ));
             }
             CompiledGuard::DynamicCounter(dc) => {
-                emit_dynamic_counter_guard(dc, out);
+                emit_dynamic_counter_guard(dc, "clk", out);
             }
         }
     }
@@ -93,9 +93,10 @@ pub(super) fn emit_temporal_logic_ecs(
     out.push('\n');
 
     for guard in &netlist.guards {
-        // Find the guard entity to get its span
+        // Find the guard entity to get its span and clock domain
         let mut span = None;
         let mut guard_module_id = None;
+        let mut clock_domain = "clk";
         for i in 0..registry.names.len() {
             if let (Some(nc), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
                 if registry.resolve_name(nc.0) == guard.name()
@@ -104,6 +105,11 @@ pub(super) fn emit_temporal_logic_ecs(
                     span = registry.spans[i].as_ref().map(|s| &s.0);
                     if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
                         guard_module_id = Some(*parent_id);
+                    }
+                    if let Some(tc) = &registry.types[i] {
+                        if let Some(cd) = tc.0.annotations.clock_domain.as_deref() {
+                            clock_domain = cd;
+                        }
                     }
                     break;
                 }
@@ -119,11 +125,11 @@ pub(super) fn emit_temporal_logic_ecs(
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
                 emit_source_comment(span, ft, out);
-                emit_shift_register_guard(sr, out);
+                emit_shift_register_guard(sr, clock_domain, out);
             }
             CompiledGuard::Counter(cg) => {
                 emit_source_comment(span, ft, out);
-                emit_counter_guard(cg, out);
+                emit_counter_guard(cg, clock_domain, out);
             }
             CompiledGuard::Complex(cx) => {
                 emit_source_comment(span, ft, out);
@@ -136,7 +142,7 @@ pub(super) fn emit_temporal_logic_ecs(
             }
             CompiledGuard::DynamicCounter(dc) => {
                 emit_source_comment(span, ft, out);
-                emit_dynamic_counter_guard(dc, out);
+                emit_dynamic_counter_guard(dc, clock_domain, out);
             }
         }
     }
@@ -258,6 +264,21 @@ pub(super) fn emit_reflex_logic_ecs(
         for sig_name in signals {
             let reflex_indices = &signal_to_reflexes[&sig_name];
 
+            // Find the clock domain for this target signal.
+            let mut clock_domain = "clk";
+            for i in 0..registry.names.len() {
+                if let Some(nc) = &registry.names[i] {
+                    if registry.resolve_name(nc.0) == sig_name {
+                        if let Some(tc) = &registry.types[i] {
+                            if let Some(cd) = tc.0.annotations.clock_domain.as_deref() {
+                                clock_domain = cd;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
             // Emit DSP synthesis attribute if ANY reflex for this signal contains a multiply.
             if let Some(attr) = dsp_attr {
                 let mut has_dsp = false;
@@ -274,8 +295,8 @@ pub(super) fn emit_reflex_logic_ecs(
                 }
             }
 
-            out.push_str(&format!("  // Unified Reflex Block for: {sig_name}\n"));
-            out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+            out.push_str(&format!("  // Unified Reflex Block for: {sig_name} (@{clock_domain})\n"));
+            out.push_str(&format!("  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"));
             out.push_str("    if (!rst_n) begin\n");
             out.push_str(&format!("      {} <= '0;\n", sig_name));
             out.push_str("    end else begin\n");
@@ -321,7 +342,8 @@ pub(super) fn emit_reflex_logic_ecs(
 }
 
 fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mut String) {
-    out.push_str("  // ── HLS Finite State Machine & Shared Resources (MEGA-12) ──\n\n");
+    out.push_str("  // ── HLS Finite State Machine & Shared Resources (MEGA-12) ──\n");
+    out.push_str("  // Note: Multi-clock HLS synthesis is currently unsupported; defaulting to 'clk'.\n\n");
 
     // 1. Declare hls_state register.
     out.push_str("  logic [31:0] hls_state;\n\n");
@@ -555,6 +577,7 @@ fn emit_hls_logic_ecs(registry: &crate::ecs::Registry, _ft: &FileTable, out: &mu
 
 fn emit_shift_register_guard(
     sr: &crate::temporal::low_level_ir::ShiftRegisterGuard,
+    clock: &str,
     out: &mut String,
 ) {
     let cond_desc = sr.condition_kind.describe();
@@ -593,7 +616,7 @@ fn emit_shift_register_guard(
     ));
 
     // Shift register always_ff block.
-    out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    out.push_str(&format!("  always_ff @(posedge {clock} or negedge rst_n) begin\n"));
     out.push_str(&format!("    if (!rst_n)\n      {}_sr <= '0;\n", sr.name));
     out.push_str(&format!(
         "    else\n      {0}_sr <= {{{0}_cond, {0}_sr[{1}:1]}};\n",
@@ -606,7 +629,7 @@ fn emit_shift_register_guard(
     out.push_str(&format!("  assign {} = &{}_sr;\n\n", sr.output_signal, sr.name,));
 }
 
-fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mut String) {
+fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, clock: &str, out: &mut String) {
     let cond_desc = cg.condition_kind.describe();
     let width = cg.counter_width();
     out.push_str(&format!(
@@ -626,7 +649,7 @@ fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mu
     ));
 
     // Counter always_ff block.
-    out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    out.push_str(&format!("  always_ff @(posedge {clock} or negedge rst_n) begin\n"));
     out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", cg.counter_signal));
     out.push_str(&format!("    else if (!{}_cond)\n      {} <= '0;\n", cg.name, cg.counter_signal));
     out.push_str(&format!(
@@ -644,6 +667,7 @@ fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, out: &mu
 
 fn emit_dynamic_counter_guard(
     dc: &crate::temporal::low_level_ir::DynamicCounterGuard,
+    clock: &str,
     out: &mut String,
 ) {
     let cond_desc = dc.condition_kind.describe();
@@ -670,7 +694,7 @@ fn emit_dynamic_counter_guard(
     ));
 
     // Counter always_ff block.
-    out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+    out.push_str(&format!("  always_ff @(posedge {clock} or negedge rst_n) begin\n"));
     out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", dc.counter_signal));
     out.push_str(&format!("    else if (!{}_cond)\n      {} <= '0;\n", dc.name, dc.counter_signal));
     out.push_str(&format!(

@@ -280,7 +280,15 @@ pub(super) fn emit_property_assertions(
             if let crate::ecs::EntityKind::PROPERTY = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
-                emit_single_property(name, prop_comp, has_rst_n, registry, ft, out, span);
+
+                let mut clock_domain = "clk";
+                if let Some(tc) = &registry.types[i] {
+                    if let Some(cd) = tc.0.annotations.clock_domain.as_deref() {
+                        clock_domain = cd;
+                    }
+                }
+
+                emit_single_property(name, prop_comp, clock_domain, has_rst_n, registry, ft, out, span);
             }
         }
     }
@@ -290,6 +298,7 @@ pub(super) fn emit_property_assertions(
 pub(super) fn emit_single_property(
     prop_name: &str,
     prop: &crate::ecs::components::PropertyComponent,
+    clock: &str,
     has_rst_n: bool,
     registry: &crate::ecs::Registry,
     ft: &FileTable,
@@ -309,9 +318,9 @@ pub(super) fn emit_single_property(
     };
 
     let prefix = if has_rst_n {
-        format!("  always @(posedge clk) begin\n    if (rst_n) begin\n      {sva_keyword}(")
+        format!("  always @(posedge {clock}) begin\n    if (rst_n) begin\n      {sva_keyword}(")
     } else {
-        format!("  always @(posedge clk) begin\n    {sva_keyword}(")
+        format!("  always @(posedge {clock}) begin\n    {sva_keyword}(")
     };
     let suffix = if has_rst_n { ");\n    end\n  end\n\n" } else { ");\n  end\n\n" };
 
@@ -337,7 +346,7 @@ pub(super) fn emit_single_property(
         PropertyFormula::EventuallyWithin { expr: _, cycles } => {
             let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry);
             out.push_str(&format!("  reg [31:0] prop_{prop_name}_timer;\n"));
-            out.push_str("  always @(posedge clk) begin\n");
+            out.push_str(&format!("  always @(posedge {clock}) begin\n"));
             if has_rst_n {
                 out.push_str(&format!("    if (!rst_n) prop_{prop_name}_timer <= 0;\n"));
                 out.push_str(&format!("    else if ({sv_expr}) prop_{prop_name}_timer <= 0;\n"));
@@ -361,7 +370,7 @@ pub(super) fn emit_single_property(
                 out.push_str(&format!("{prefix}(!({trig_sv})) || ({resp_sv}){suffix}"));
             } else if *delay_cycles == 1 {
                 out.push_str(&format!("  reg prop_{prop_name}_trig_d1;\n"));
-                out.push_str("  always @(posedge clk) begin\n");
+                out.push_str(&format!("  always @(posedge {clock}) begin\n"));
                 if has_rst_n {
                     out.push_str(&format!("    if (!rst_n) prop_{prop_name}_trig_d1 <= 0;\n"));
                     out.push_str(&format!("    else prop_{prop_name}_trig_d1 <= {trig_sv};\n"));
@@ -375,7 +384,7 @@ pub(super) fn emit_single_property(
             } else {
                 let msb = delay_cycles - 1;
                 out.push_str(&format!("  reg [{msb}:0] prop_{prop_name}_trig_shift;\n"));
-                out.push_str("  always @(posedge clk) begin\n");
+                out.push_str(&format!("  always @(posedge {clock}) begin\n"));
                 let shift_expr = if *delay_cycles == 2 {
                     format!("{{prop_{prop_name}_trig_shift[0], {trig_sv}}}")
                 } else {
@@ -432,9 +441,14 @@ pub fn emit_synchronizer_chains(
                 let sync_name = format!("{}_s", name);
                 let sync_reg = format!("{}_sync", name);
 
+                let mut clock_domain = "clk";
+                if let Some(cd) = type_comp.0.annotations.clock_domain.as_deref() {
+                    clock_domain = cd;
+                }
+
                 // Declare synchronizer register chain.
                 let total_bits = width * stages;
-                out.push_str(&format!("  // {}-stage synchronizer for {}\n", stages, name));
+                out.push_str(&format!("  // {}-stage synchronizer for {} (@{clock_domain})\n", stages, name));
                 out.push_str(&format!(
                     "  logic [{}:0] {};\n",
                     total_bits.saturating_sub(1),
@@ -442,7 +456,7 @@ pub fn emit_synchronizer_chains(
                 ));
 
                 // Sequential synchronizer logic.
-                out.push_str("  always_ff @(posedge clk or negedge rst_n) begin\n");
+                out.push_str(&format!("  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"));
                 out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", sync_reg));
                 if stages == 1 {
                     out.push_str(&format!("    else\n      {} <= {};\n", sync_reg, name));
