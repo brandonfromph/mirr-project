@@ -31,18 +31,35 @@ def core_top(
         // Dynamic Instruction Latch (1-word I-Cache)
         signal current_instr: internal u64;
         
-        guard noc_rx_arrived {
-            when ${noc_rx_valid}
-            for 1 cycles;
-        }
+        // --- 0. Dark Silicon Wakeup Logic ---
+        signal wake_timer: internal u3;
+        signal core_awake: internal bool;
+        signal gated_clk: internal bool;
         
-        reflex update_instr {
-            on noc_rx_arrived {
+        guard rx_only { when (${noc_rx_valid}) for 1 cycles; }
+        guard dec_only { when (!${noc_rx_valid} && wake_timer > 0) for 1 cycles; }
+
+        reflex handle_rx {
+            on rx_only {
+                wake_timer = 5;
                 current_instr = ${noc_rx_data};
             }
         }
-        
-        pipe::rspu_pipeline(${clk}, ${rst_n}, current_instr, ${io_in_0}, ${io_out_0}, ${pc_out}, ${data_out}, trap_signal);
+
+        reflex handle_dec {
+            on dec_only {
+                wake_timer = wake_timer - 1;
+            }
+        }
+
+        reflex eval_awake {
+            on always {
+                core_awake = (wake_timer > 0) || ${noc_rx_valid};
+                gated_clk = ${clk} && core_awake;
+            }
+        }
+
+        pipe::rspu_pipeline(gated_clk, ${rst_n}, current_instr, ${io_in_0}, ${io_out_0}, ${pc_out}, ${data_out}, trap_signal);
 
         // --- 2. Exception Controller Logic ---
         // trap_active fires when the pipeline asserts a trap.

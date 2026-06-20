@@ -31,6 +31,8 @@ struct ExpansionCtx {
     bool_signals: HashSet<String>,
     /// Counter for synthesizing unique guard names for `if` and `match` constructs.
     auto_guard_counter: usize,
+    /// Prefix to apply to synthesized guard names to prevent collisions during pattern expansion.
+    origin_prefix: Option<String>,
 }
 
 type ModuleStackItem = (ModuleMacroStmt, HashMap<String, i32>, HashMap<String, String>);
@@ -82,10 +84,22 @@ pub fn expand_statements_inplace(
     signal_env: HashMap<String, String>,
     origin: Option<String>,
 ) -> Result<(), MirrError> {
+    let mut max_auto = 0;
+    for g in &module.guards {
+        if g.name.starts_with("auto_g_") {
+            if let Ok(num) = g.name["auto_g_".len()..].parse::<usize>() {
+                if num >= max_auto {
+                    max_auto = num + 1;
+                }
+            }
+        }
+    }
+
     let mut ctx = ExpansionCtx {
         declared_guards: HashSet::new(),
         bool_signals: HashSet::new(),
-        auto_guard_counter: 0,
+        auto_guard_counter: max_auto,
+        origin_prefix: origin.clone(),
     };
 
     // Pre-pass: Collect manually declared guards and bool signals
@@ -511,14 +525,20 @@ fn synthesize_guard(
         }
     }
 
+    let base_name = if let Some(prefix) = &ctx.origin_prefix {
+        format!("{}_auto_g_{}", prefix, ctx.auto_guard_counter)
+    } else {
+        format!("auto_g_{}", ctx.auto_guard_counter)
+    };
+
     // BUG-4: Deduplicate identical synthesized conditions to minimize token usage and RTL bloat.
     for g in global_guards.iter() {
-        if g.name.starts_with("auto_g_") && &g.condition == cond && g.cycles == 1 {
+        if g.name == base_name && &g.condition == cond && g.cycles == 1 {
             return Ok(g.name.clone());
         }
     }
 
-    let name = format!("auto_g_{}", ctx.auto_guard_counter);
+    let name = base_name;
     ctx.auto_guard_counter += 1;
     global_guards.push(Guard {
         name: name.clone(),
