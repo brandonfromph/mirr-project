@@ -2,7 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, show_stats: bool) {
+pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stats: bool) {
     let registry = result.ecs_registry.as_ref().expect("ECS registry required");
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
@@ -131,7 +131,7 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, show_stats
         eprintln!("    {:>9}   {}_{}", count, name, width);
     }
     eprintln!("    {:>9}   $dff ({} bits total)", dff_bits, dff_bits);
-    eprintln!("");
+    eprintln!();
 
     if let Some(ss) = &result.simplify_stats {
         eprintln!(
