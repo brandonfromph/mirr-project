@@ -163,7 +163,7 @@ pub fn check_effect_qualifiers_ecs(
             registry.names[reflex_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("unnamed");
 
         for &assign_ent in assignments {
-            let Some(AssignmentComponent { target, value }) =
+            let Some(AssignmentComponent { target, value, .. }) =
                 &registry.assignment_comps[assign_ent.0 as usize]
             else {
                 continue;
@@ -334,7 +334,7 @@ pub fn check_clock_domains_ecs(
             registry.names[reflex_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("unnamed");
 
         for &assign_ent in assignments {
-            let Some(AssignmentComponent { target, value }) =
+            let Some(AssignmentComponent { target, value, .. }) =
                 &registry.assignment_comps[assign_ent.0 as usize]
             else {
                 continue;
@@ -467,7 +467,7 @@ pub fn check_phantom_tags_ecs(
             registry.names[reflex_idx].map(|n| registry.resolve_name(n.0)).unwrap_or("unnamed");
 
         for &assign_ent in assignments {
-            let Some(AssignmentComponent { target, value }) =
+            let Some(AssignmentComponent { target, value, .. }) =
                 &registry.assignment_comps[assign_ent.0 as usize]
             else {
                 continue;

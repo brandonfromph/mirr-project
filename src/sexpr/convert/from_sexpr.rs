@@ -226,7 +226,14 @@ fn parse_reflexes(
                 _ => continue,
             };
             expect_head(a_list, "assign")?;
-            let target_name = a_list[1].as_str_val().unwrap_or("").to_string();
+            let (target_name, target_index) = match &a_list[1] {
+                SExpr::List(idx_list) if idx_list.len() == 3 && idx_list[0].as_symbol() == Some("index") => {
+                    let name = idx_list[1].as_str_val().unwrap_or("").to_string();
+                    let idx = idx_list[2].as_integer().map(|i| i as usize);
+                    (name, idx)
+                }
+                _ => (a_list[1].as_str_val().unwrap_or("").to_string(), None),
+            };
             let target_id =
                 registry.get_entity_by_name(&target_name).unwrap_or(crate::ecs::EntityId(0));
 
@@ -242,6 +249,7 @@ fn parse_reflexes(
                 Some(crate::ecs::components::AssignmentComponent {
                     target: target_id,
                     value: val_id,
+                    target_index,
                 });
             registry.set_parent(assign_id, reflex_id);
             assignment_ids.push(assign_id);

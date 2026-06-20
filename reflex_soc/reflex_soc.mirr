@@ -8,7 +8,7 @@ import "physics/pendulum.mirr" as physics;
 import "physics/controller.mirr" as ctrl;
 import "verification/pcc_verifier.mirr" as pcc;
 
-module rspu_top {
+module reflex_soc {
     signal clk: in bool;
     signal rst_n: in bool;
 

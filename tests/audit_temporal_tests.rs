@@ -59,7 +59,7 @@ fn test_26_emit_firrtl_bitwise_exhaustive() {
 fn test_27_28_emit_rspu_assembly_nop_pipeline() {
     // Placeholder for validating NOP pipeline emission
     // We can check if the pipeline.mirr file exists and is parseable
-    let pipeline_mirr = std::fs::read_to_string("rspu_chip/core/pipeline.mirr");
+    let pipeline_mirr = std::fs::read_to_string("reflex_soc/core/pipeline.mirr");
     if let Ok(content) = pipeline_mirr {
         assert!(
             content.contains("module pipeline"),
@@ -71,6 +71,6 @@ fn test_27_28_emit_rspu_assembly_nop_pipeline() {
 #[test]
 fn test_29_30_emit_ram_logic() {
     // Validates that ram.mirr exists and is a valid module
-    let ram_mirr = std::fs::read_to_string("rspu_chip/core/ram.mirr").expect("ram.mirr must exist");
+    let ram_mirr = std::fs::read_to_string("reflex_soc/core/ram.mirr").expect("ram.mirr must exist");
     assert!(ram_mirr.contains("module ram"), "ram.mirr should define module ram");
 }

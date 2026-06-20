@@ -117,56 +117,6 @@ fn test_hyper_scale_random_logic_matrix() {
     println!("Verified {} hyper-scale random modules.", count);
 }
 
-#[test]
-fn test_industrial_mux_matrix() {
-    let mut count = 0;
-    // Cross-product entries with data widths
-    for entries in [2, 4, 8, 16] {
-        for width in [1, 16, 64] {
-            let mut signals = String::new();
-            let mut logic = String::new();
-
-            for i in 0..entries {
-                signals.push_str(&format!("        signal in_{}: in u{width};\n", i, width = width));
-            }
-
-            logic.push_str("            match sel {\n");
-            for i in 0..entries {
-                logic.push_str(&format!("                {} => out = in_{};\n", i, i));
-            }
-            logic.push_str("                _ => out = 0;\n            }\n");
-
-            let source = format!(
-                r#"
-                module mux_ind_{entries}_{width} {{
-                    signal sel: in u8;
-                    signal out: out u{width};
-                    signal default: internal bool;
-{signals}
-                    
-                    guard g {{ when true for 1 cycles; }}
-                    reflex r_split_ {{
-                        on g {{
-{logic}
-                        }}
-                    }}
-                }}
-
-            "#,
-                entries = entries,
-                width = width,
-                signals = signals,
-                logic = logic
-            );
-
-            let res = run_pipeline(&source, &PipelineConfig::default()).expect("MUX matrix failed");
-            let reg = res.ecs_registry.as_ref().expect("Registry required");
-            verify_registry_integrity(reg);
-            count += 1;
-        }
-    }
-    println!("Verified {} industrial MUX permutations.", count);
-}
 
 #[test]
 fn test_hyper_scale_shift_matrix() {

@@ -93,7 +93,6 @@ fn emit_sv_full(
 
     temporal::emit_reflex_logic_ecs(registry, &dsp_reflexes, dsp_attr, ft, &mut out);
 
-
     if !registry.extern_instantiations.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
         for call_id in &registry.extern_instantiations {

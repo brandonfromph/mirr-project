@@ -596,7 +596,7 @@ pub fn analyze_module_ecs(
             if *m_id == mod_id {
                 if let Some(ReflexComponent { assignments, .. }) = &registry.reflex_comps[i] {
                     for &assign_ent in assignments {
-                        if let Some(AssignmentComponent { target, value }) =
+                        if let Some(AssignmentComponent { target, value, .. }) =
                             &registry.assignment_comps[assign_ent.0 as usize]
                         {
                             let val = sym_eval_ecs(registry, *value, &state);

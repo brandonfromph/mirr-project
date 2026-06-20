@@ -126,6 +126,6 @@ fn test_bit_assignment() {
     }
     ";
     let program_result = run_pipeline_with_file(source, "test.mirr", &PipelineConfig::default());
-    assert!(program_result.is_ok());
+    assert!(program_result.is_ok(), "Pipeline failed: {:?}", program_result.err().unwrap());
     println!("Bit assignment parses successfully");
 }

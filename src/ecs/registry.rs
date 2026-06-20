@@ -765,7 +765,7 @@ impl Registry {
                 self.names[assign_idx] = Some(NameComponent(self.interner.intern(&assign_name)));
                 self.kinds[assign_idx] = Some(KindComponent(EntityKind::ASSIGNMENT));
                 self.assignment_comps[assign_idx] =
-                    Some(AssignmentComponent { target: target_ent, value: val_ent });
+                    Some(AssignmentComponent { target: target_ent, value: val_ent, target_index: None });
                 if let Some(span) = assign.span {
                     self.spans[assign_idx] = Some(SpanComponent(span));
                 }

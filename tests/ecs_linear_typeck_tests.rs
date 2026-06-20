@@ -60,7 +60,7 @@ mod ecs_linear_typeck_tests {
         let id = reg.next_id();
         let idx = id.0 as usize;
         reg.assignment_comps[idx] =
-            Some(AssignmentComponent { target: lhs_signal, value: rhs_expr });
+            Some(AssignmentComponent { target: lhs_signal, value: rhs_expr, target_index: None });
         id
     }
 

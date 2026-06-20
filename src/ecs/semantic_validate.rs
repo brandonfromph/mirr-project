@@ -321,7 +321,7 @@ impl Registry {
                 }
 
                 for a_ent in assignments {
-                    if let Some(AssignmentComponent { target, value }) =
+                    if let Some(AssignmentComponent { target, value, .. }) =
                         self.assignment_comps[a_ent.0 as usize]
                     {
                         let target_name = self.names[target.0 as usize]

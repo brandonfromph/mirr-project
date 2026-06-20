@@ -1,0 +1,46 @@
+   Compiling mirrc v0.3.0 (/Users/brandonc.blay/projects/mirr-private)
+warning: unused variable: `show_stats`
+ --> src/bin/mirr-compile/summary.rs:5:71
+  |
+5 | pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, show_stats: bool) {
+  |                                                                       ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_show_stats`
+  |
+  = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mirrc` (bin "mirr") generated 1 warning (run `cargo fix --bin "mirr" -p mirrc` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.64s
+     Running `/Users/brandonc.blay/.cargo_target_cache/debug/mirr compile reflex_soc/reflex_soc.mirr --emit verilog`
+MIRR Compile: types
+  Signals: 5153  Guards: 1175  Reflexes: 2929
+
+  -- Pre-Synthesis Logic Primitives --
+         5153 explicit wires
+       191562 explicit wire bits
+          132   $add_64
+          461   $and_1
+          128   $and_32
+         1817   $and_64
+            4   $dff_64
+         1170   $dff_sr_1
+          321   $eq_1
+          520   $eq_64
+            8   $ge_64
+            1   $gt_64
+          192   $le_64
+            9   $lt_64
+           68   $mul_64
+          128   $ne_1
+          325   $ne_64
+           11   $neg_64
+          136   $not_1
+           69   $or_1
+           64   $or_32
+          314   $or_64
+          128   $shl_64
+          654   $shr_64
+           67   $sub_64
+         1426   $dff (1426 bits total)
+
+  Simplify: 192 rules applied, 0 -> 0 nodes
+  Width: 0 diagnostics, 15867 SCCs
+  Temporal: 1175 guards, 2361 signals

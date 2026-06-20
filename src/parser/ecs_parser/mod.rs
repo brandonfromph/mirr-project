@@ -706,16 +706,28 @@ fn parse_on_block_stmts(
             continue;
         }
 
-        if let Some((target_name, expr_str)) = inner_line.split_once('=') {
-            let target_name = target_name.trim();
+        if let Some((target_name_raw, expr_str)) = inner_line.split_once('=') {
+            let mut target_name = target_name_raw.trim();
+            let mut target_index = None;
+            
+            if let Some(bracket_idx) = target_name.find('[') {
+                if target_name.ends_with(']') {
+                    let index_str = &target_name[bracket_idx + 1..target_name.len() - 1];
+                    if let Ok(idx) = index_str.parse::<usize>() {
+                        target_index = Some(idx);
+                        target_name = target_name[..bracket_idx].trim();
+                    }
+                }
+            }
+
             let expr_str = expr_str.trim().trim_end_matches(';');
             let target_ent = if let Some(ent) = registry.get_entity_by_name(target_name) {
                 ent
             } else {
-                return Err(MirrError::parse_error(format!(
-                    "Target signal '{}' not found for assignment.",
-                    target_name
-                )));
+                return Err(MirrError::SemanticError {
+                    message: format!("{} Target signal '{}' not found for assignment.", crate::error_codes::ec(207), target_name),
+                    span: None,
+                });
             };
 
             let rvalue_ent = parse_expression_ecs(registry, expr_str)?;
@@ -725,7 +737,7 @@ fn parse_on_block_stmts(
             registry.set_kind(assign_id, KindComponent(EntityKind::ASSIGNMENT));
             registry.set_assignment(
                 assign_id,
-                AssignmentComponent { target: target_ent, value: rvalue_ent },
+                AssignmentComponent { target: target_ent, value: rvalue_ent, target_index },
             );
             assignment_ents.push(assign_id);
         }

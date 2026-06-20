@@ -340,13 +340,9 @@ fn drive_prog(
     drive_prog_from_src(COMPREHENSIVE_MODULE, input)
 }
 
-fn drive_prog_from_src(
-    source: &str,
-    input: &[u8],
-) -> Vec<mirrc::mirr_driver::ObservedPush> {
+fn drive_prog_from_src(source: &str, input: &[u8]) -> Vec<mirrc::mirr_driver::ObservedPush> {
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, source, None)
-        .unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, source, None).unwrap();
     drive_parsed_module_with_interpreter(&reg, input)
 }
 

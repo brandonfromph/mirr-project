@@ -155,7 +155,7 @@ fn inject_module(
             let val_ent = parse_expression_ecs(registry, &expr_to_string(&assign.value))?;
             registry.set_assignment(
                 assign_ent,
-                crate::ecs::components::AssignmentComponent { target: target_id, value: val_ent },
+                crate::ecs::components::AssignmentComponent { target: target_id, value: val_ent, target_index: None },
             );
             assign_ents.push(assign_ent);
         }

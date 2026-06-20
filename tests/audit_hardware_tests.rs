@@ -22,7 +22,7 @@ fn test_31_33_rspu_alu_cross_reflex_scope_leak() {
     // defined in other reflexes without internal signal declarations.
     // The pipeline should ideally flag this.
     // Currently, it might pass because the compiler might be too permissive.
-    let ok = run_pipeline_on_file("rspu_chip/core/alu.mirr");
+    let ok = run_pipeline_on_file("reflex_soc/core/alu.mirr");
     // If it's a "regression" test, we might expect it to FAIL once the fix is implemented.
     // But for now, we just verify it runs.
     // The plan says "assert the compiler catches non-internal signals leaking across guards."
@@ -34,20 +34,20 @@ fn test_31_33_rspu_alu_cross_reflex_scope_leak() {
 #[test]
 fn test_34_36_rspu_core_top_tag_collision() {
     // core_top.mirr handles exception handler tag boundaries.
-    let ok = run_pipeline_on_file("rspu_chip/core/core_top.mirr");
+    let ok = run_pipeline_on_file("reflex_soc/core/core_top.mirr");
     assert!(ok, "core_top.mirr should be valid");
 }
 
 #[test]
 fn test_37_38_rspu_noc_router_bit_overlap() {
     // NoC router bit overlap check.
-    let ok = run_pipeline_on_file("rspu_chip/interconnect/noc_router.mirr");
+    let ok = run_pipeline_on_file("reflex_soc/interconnect/noc_router.mirr");
     assert!(ok, "noc_router.mirr should be valid under current constraints");
 }
 
 #[test]
 fn test_39_40_rspu_tmr_voter_raw_hazard() {
     // TMR voter RAW hazard detection.
-    let ok = run_pipeline_on_file("rspu_chip/verification/tmr_voter.mirr");
+    let ok = run_pipeline_on_file("reflex_soc/verification/tmr_voter.mirr");
     assert!(ok, "tmr_voter.mirr should be valid");
 }

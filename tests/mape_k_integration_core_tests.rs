@@ -39,8 +39,7 @@ const MAX_TEST_PROPERTIES: usize = 128;
 /// Build a minimal `PipelineResult` with the given signals and properties.
 fn stub_pipeline(source: &str) -> PipelineResult {
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, source, None)
-        .unwrap();
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, source, None).unwrap();
 
     PipelineResult {
         hls_result: None,
@@ -72,7 +71,10 @@ fn bridge_generates_sim_config_from_safety_property() {
     let src = "module test { signal alarm: in bool; assert alarm_always_on: always alarm; }";
     let result = stub_pipeline(src);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
-    println!("PROPS: {:?}", result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>());
+    println!(
+        "PROPS: {:?}",
+        result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>()
+    );
 
     assert_eq!(config.properties.len(), 1, "expected exactly one temporal property");
     assert_eq!(
@@ -90,7 +92,10 @@ fn bridge_generates_sim_config_from_neonatal() {
     let src = "module test {\nsignal pressure: in u8;\nsignal flow_rate: in u16;\nsignal spo2: in u32;\nsignal heartbeat: in bool;\nsignal alarm: in bool;\nsignal valve_pos: in bool;\nassert pressure_safe: always pressure;\nassert spo2_recovery: eventually within 20 cycles spo2;\nassert heartbeat_present: always heartbeat;\n}";
     let result = stub_pipeline(src);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
-    println!("PROPS: {:?}", result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>());
+    println!(
+        "PROPS: {:?}",
+        result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>()
+    );
 
     assert_eq!(config.sensors.len(), 6, "all signals become sensors");
     assert_eq!(config.sensors[0].name, "pressure");
@@ -112,8 +117,13 @@ fn bridge_generates_sim_config_from_neonatal() {
 fn bridge_rejects_too_many_signals() {
     let count = (MAX_BRIDGE_SIGNALS + 1).min(MAX_TEST_SIGNALS);
     let mut src = String::from("module test { ");
-    for i in 0..count { src.push_str(&format!("signal s{}: in u8;
-", i)); }
+    for i in 0..count {
+        src.push_str(&format!(
+            "signal s{}: in u8;
+",
+            i
+        ));
+    }
     src.push_str("}");
     let result = stub_pipeline(&src);
     let err = bridge_from_pipeline(&result).expect_err("should fail with too many signals");
@@ -133,10 +143,16 @@ fn bridge_rejects_too_many_properties() {
     let count = MAX_TEST_PROPERTIES.min(MAX_BRIDGE_PROPERTIES + 1);
     let mut src = String::from("module test { ");
     for i in 0..count {
-        src.push_str(&format!("signal sig{}: in bool;
-", i));
-        src.push_str(&format!("assert p{}: always sig{};
-", i, i));
+        src.push_str(&format!(
+            "signal sig{}: in bool;
+",
+            i
+        ));
+        src.push_str(&format!(
+            "assert p{}: always sig{};
+",
+            i, i
+        ));
     }
     src.push_str("}");
     let result = stub_pipeline(&src);
@@ -154,10 +170,14 @@ fn bridge_rejects_too_many_properties() {
 
 #[test]
 fn bridge_extracts_always_property() {
-    let src = "module test { signal engine_running: in bool; assert p_always: always engine_running; }";
+    let src =
+        "module test { signal engine_running: in bool; assert p_always: always engine_running; }";
     let result = stub_pipeline(src);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
-    println!("PROPS: {:?}", result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>());
+    println!(
+        "PROPS: {:?}",
+        result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>()
+    );
 
     assert_eq!(config.properties.len(), 1);
     assert_eq!(
@@ -177,7 +197,10 @@ fn bridge_extracts_eventually_property() {
     let src = "module test { signal ready: in bool; assert p_eventually: eventually within 10 cycles ready; }";
     let result = stub_pipeline(src);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
-    println!("PROPS: {:?}", result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>());
+    println!(
+        "PROPS: {:?}",
+        result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>()
+    );
 
     assert_eq!(config.properties.len(), 1);
     assert_eq!(
@@ -209,7 +232,10 @@ assert p3: eventually within 5 cycles c;
 }";
     let result = stub_pipeline(src);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
-    println!("PROPS: {:?}", result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>());
+    println!(
+        "PROPS: {:?}",
+        result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>()
+    );
 
     assert_eq!(
         config.action_table.len(),
@@ -218,8 +244,17 @@ assert p3: eventually within 5 cycles c;
     );
 
     let priorities: Vec<u8> = config.action_table.iter().map(|e| e.priority).collect();
-    assert_eq!(priorities.iter().filter(|&&p| p == 200).count(), 2, "expected two 200 priority actions");
-    assert_eq!(priorities.iter().filter(|&&p| p == 128).count(), 1, "expected one 128 priority action");    for (i, entry) in config.action_table.iter().enumerate() {
+    assert_eq!(
+        priorities.iter().filter(|&&p| p == 200).count(),
+        2,
+        "expected two 200 priority actions"
+    );
+    assert_eq!(
+        priorities.iter().filter(|&&p| p == 128).count(),
+        1,
+        "expected one 128 priority action"
+    );
+    for (i, entry) in config.action_table.iter().enumerate() {
         assert_eq!(
             entry.trigger_on,
             TriggerCondition::OnViolation,
@@ -237,7 +272,10 @@ fn bridge_skips_cover_and_assume_properties() {
     let src = "module test { signal x: in bool; signal y: in bool; signal z: in bool; property cover_prop: cover always x;\nproperty assume_prop: assume always y;\nassert assert_prop: always z; }";
     let result = stub_pipeline(src);
     let config = bridge_from_pipeline(&result).expect("bridge should succeed");
-    println!("PROPS: {:?}", result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>());
+    println!(
+        "PROPS: {:?}",
+        result.ecs_registry.as_ref().unwrap().property_comps.iter().flatten().collect::<Vec<_>>()
+    );
 
     assert_eq!(config.properties.len(), 1, "only Assert properties should be lowered");
     assert_eq!(

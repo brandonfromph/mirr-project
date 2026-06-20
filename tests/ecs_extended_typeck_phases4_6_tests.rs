@@ -54,7 +54,7 @@ mod phase_4_6_ecs_tests {
         let reflex_idx = reflex_id.0 as usize;
 
         let assign_id = reg.next_id();
-        reg.assignment_comps[assign_id.0 as usize] = Some(AssignmentComponent { target, value });
+        reg.assignment_comps[assign_id.0 as usize] = Some(AssignmentComponent { target, value, target_index: None });
 
         reg.names[reflex_idx] = Some(NameComponent(reg.interner.intern(name)));
         reg.modules[reflex_idx] = Some(ModuleComponent(mod_id));

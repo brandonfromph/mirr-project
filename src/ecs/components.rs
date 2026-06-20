@@ -187,6 +187,7 @@ pub struct ReflexComponent {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AssignmentComponent {
     pub target: EntityId,
+    pub target_index: Option<usize>,
     pub value: EntityId,
 }
 

@@ -37,8 +37,10 @@ fn integer_literal_appears() {
         guard g { 
             when true 
         } 
-        reflex r on g { 
-            v = 99; 
+        reflex r { 
+            on g {
+                v = 99; 
+            }
         } 
     }",
     );

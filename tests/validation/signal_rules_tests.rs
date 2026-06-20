@@ -31,7 +31,7 @@ macro_rules! test_valid_sig {
     ($name:ident, $m:ident) => {
         #[test]
         fn $name() {
-            check_ok(&format!("module {} {{ signal s1: in bool; signal s2: out u8; reflex r1 {{ on always {{ s2 = s1; }} }} }}", stringify!($m)));
+            check_ok(&format!("module {} {{ signal s1: in bool; signal s2: out bool; reflex r1 {{ on always {{ s2 = s1; }} }} }}", stringify!($m)));
         }
     };
 }

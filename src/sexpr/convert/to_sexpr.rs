@@ -187,9 +187,18 @@ fn convert_reflexes(registry: &Registry, module_entity: EntityId) -> SExpr {
             for a in &reflex.assignments {
                 if let Some(assign) = registry.assignment_comps[a.0 as usize].as_ref() {
                     let target_name = registry.get_entity_name(assign.target).to_string();
+                    let target_sexpr = if let Some(idx) = assign.target_index {
+                        SExpr::list(vec![
+                            SExpr::sym("index"),
+                            SExpr::str_val(&target_name),
+                            SExpr::int(idx as u64),
+                        ])
+                    } else {
+                        SExpr::str_val(&target_name)
+                    };
                     reflex_items.push(SExpr::list(vec![
                         SExpr::sym("assign"),
-                        SExpr::str_val(&target_name),
+                        target_sexpr,
                         convert_expr_ecs(registry, assign.value),
                     ]));
                 }

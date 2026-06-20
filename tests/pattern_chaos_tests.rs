@@ -19,7 +19,8 @@ fn test_pattern_chaos_recursion_depth_limit() {
                 span: None,
             })],
         },
-        is_extern: false, span: None,
+        is_extern: false,
+        span: None,
     }];
 
     let mut program = MirrProgram {
@@ -87,7 +88,8 @@ fn test_pattern_chaos_exponential_expansion_stress() {
                     }),
                 ],
             },
-            is_extern: false, span: None,
+            is_extern: false,
+            span: None,
         });
     }
     patterns.push(PatternDef {
@@ -120,7 +122,8 @@ fn test_pattern_chaos_exponential_expansion_stress() {
                 }),
             ],
         },
-        is_extern: false, span: None,
+        is_extern: false,
+        span: None,
     });
 
     let mut program = MirrProgram {

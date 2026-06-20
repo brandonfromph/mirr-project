@@ -1,6 +1,6 @@
 #[test]
 fn test_print_expanded_source() {
-    let source = std::fs::read_to_string("rspu_chip/rspu_top.mirr").expect("failed to read");
+    let source = std::fs::read_to_string("reflex_soc/reflex_soc.mirr").expect("failed to read");
     let mut expanded = String::with_capacity(source.len() * 2);
     let mut in_quotes = false;
     let mut in_comment = false;
