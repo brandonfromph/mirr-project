@@ -127,7 +127,7 @@ fn test_industrial_mux_matrix() {
             let mut logic = String::new();
 
             for i in 0..entries {
-                signals.push_str(&format!("        in_{}: in u{width};\n", i, width = width));
+                signals.push_str(&format!("        signal in_{}: in u{width};\n", i, width = width));
             }
 
             logic.push_str("            match sel {\n");
@@ -139,12 +139,10 @@ fn test_industrial_mux_matrix() {
             let source = format!(
                 r#"
                 module mux_ind_{entries}_{width} {{
-                    signals {{
-                        sel: in u8;
-                        out: out u{width};
-                        default: internal bool;
+                    signal sel: in u8;
+                    signal out: out u{width};
+                    signal default: internal bool;
 {signals}
-                    }}
                     
                     guard g {{ when true for 1 cycles; }}
                     reflex r_split_ {{

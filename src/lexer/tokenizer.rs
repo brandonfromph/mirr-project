@@ -34,6 +34,8 @@ pub enum Token {
     Plus,
     /// `-` — subtraction or unary negation.
     Minus,
+    /// `->` — implication.
+    MinusGt,
     /// `*` — multiplication.
     Star,
     /// `<<` — left shift.
@@ -250,6 +252,7 @@ fn match_two_char_operator(pair: &str) -> Option<Token> {
         "==" => Some(Token::EqEq),
         "!=" => Some(Token::BangEq),
         "::" => Some(Token::ColonColon),
+        "->" => Some(Token::MinusGt),
         _ => None,
     }
 }

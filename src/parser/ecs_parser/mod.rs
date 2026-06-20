@@ -757,13 +757,7 @@ fn parse_property_ecs(
         return Err(MirrError::parse_error("Property name cannot be empty."));
     }
 
-    let directive = if header.contains("cover") {
-        crate::ast::property::PropertyDirective::Cover
-    } else if header.contains("assume") {
-        crate::ast::property::PropertyDirective::Assume
-    } else {
-        crate::ast::property::PropertyDirective::Assert
-    };
+    // directive will be extracted from formula_str later
 
     let mut formula_str = String::new();
     if header.ends_with('{') {
@@ -792,14 +786,19 @@ fn parse_property_ecs(
         *index += 1;
     }
 
-    let mut clean_formula_str = formula_str.as_str();
-    if clean_formula_str.starts_with("assert ") {
+    let mut clean_formula_str = formula_str.as_str().trim();
+    let directive = if clean_formula_str.starts_with("assert ") {
         clean_formula_str = clean_formula_str.strip_prefix("assert ").unwrap().trim();
+        crate::ast::property::PropertyDirective::Assert
     } else if clean_formula_str.starts_with("cover ") {
         clean_formula_str = clean_formula_str.strip_prefix("cover ").unwrap().trim();
+        crate::ast::property::PropertyDirective::Cover
     } else if clean_formula_str.starts_with("assume ") {
         clean_formula_str = clean_formula_str.strip_prefix("assume ").unwrap().trim();
-    }
+        crate::ast::property::PropertyDirective::Assume
+    } else {
+        crate::ast::property::PropertyDirective::Assert
+    };
 
     let fake_expr = crate::ast::expr::Expr::Literal(crate::ast::types::LiteralValue::Bool(true));
     let (formula, formula_exprs) = if let Some(body) =
@@ -807,8 +806,11 @@ fn parse_property_ecs(
     {
         // syntax: always implies a b or always implies (a) (b) or always a implies b (wait no, `always a implies b` doesn't start with `always implies `!)
         // Let's support both
-        let (left, right) =
-            body.split_once(" implies ").or_else(|| body.split_once(',')).unwrap_or((body, body));
+        let (left, right) = body
+            .split_once(" implies ")
+            .or_else(|| body.split_once(" -> "))
+            .or_else(|| body.split_once(','))
+            .unwrap_or((body, body));
         let left_ent = parse_expression_ecs(registry, left.trim())?;
         let right_ent = parse_expression_ecs(registry, right.trim())?;
         let f = crate::ast::property::PropertyFormula::AlwaysImplies {
@@ -867,7 +869,9 @@ fn parse_property_ecs(
                 delay_cycles: cycles,
             };
             (f, vec![left_ent, right_ent])
-        } else if let Some((left, right)) = body.split_once(" implies ") {
+        } else if let Some((left, right)) =
+            body.split_once(" implies ").or_else(|| body.split_once(" -> "))
+        {
             let left_ent = parse_expression_ecs(registry, left.trim())?;
             let right_ent = parse_expression_ecs(registry, right.trim())?;
             let f = crate::ast::property::PropertyFormula::AlwaysImplies {
@@ -885,19 +889,6 @@ fn parse_property_ecs(
         let f = crate::ast::property::PropertyFormula::Always(fake_expr.clone());
         (f, vec![ent])
     };
-
-    *index += 1;
-    while *index < lines.len() {
-        skip_empty_and_comments(lines, index);
-        let line = lines[*index].trim();
-        if line == "}" || line.ends_with(';') {
-            if line == "}" {
-                *index += 1;
-            }
-            break;
-        }
-        *index += 1;
-    }
 
     let prop_id = registry.create_entity(name, KindComponent(EntityKind::PROPERTY));
     registry.register_symbol(&format!("{}::{}", mod_name, name), prop_id);

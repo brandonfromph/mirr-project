@@ -16,7 +16,7 @@ fn test_pattern_chaos_recursion_depth_limit() {
             statements: vec![ModuleMacroStmt::PatternCall(mirrc::ast::pattern::PatternCall {
                 pattern_name: "A".to_string(),
                 arguments: vec![],
-                is_extern: false, span: None,
+                span: None,
             })],
         },
         is_extern: false, span: None,
@@ -35,10 +35,10 @@ fn test_pattern_chaos_recursion_depth_limit() {
             pattern_calls: vec![mirrc::ast::pattern::PatternCall {
                 pattern_name: "A".to_string(),
                 arguments: vec![],
-                is_extern: false, span: None,
+                span: None,
             }],
             pattern_origins: vec![],
-            is_extern: false, span: None,
+            span: None,
         },
     };
 
@@ -78,12 +78,12 @@ fn test_pattern_chaos_exponential_expansion_stress() {
                     ModuleMacroStmt::PatternCall(mirrc::ast::pattern::PatternCall {
                         pattern_name: pat_names[i + 1].to_string(),
                         arguments: vec![],
-                        is_extern: false, span: None,
+                        span: None,
                     }),
                     ModuleMacroStmt::PatternCall(mirrc::ast::pattern::PatternCall {
                         pattern_name: pat_names[i + 1].to_string(),
                         arguments: vec![],
-                        is_extern: false, span: None,
+                        span: None,
                     }),
                 ],
             },
@@ -102,7 +102,7 @@ fn test_pattern_chaos_exponential_expansion_stress() {
                         mirrc::ast::types::SignalType::Bool,
                     ),
                     origin: None,
-                    is_extern: false, span: None,
+                    span: None,
                 }),
                 ModuleMacroStmt::Reflex(mirrc::ast::macro_nodes::UnexpandedReflex {
                     name: "dummy".to_string(),
@@ -113,10 +113,10 @@ fn test_pattern_chaos_exponential_expansion_stress() {
                             value: mirrc::ast::expr::Expr::Literal(
                                 mirrc::ast::types::LiteralValue::Bool(true),
                             ),
-                            is_extern: false, span: None,
+                            span: None,
                         },
                     )],
-                    is_extern: false, span: None,
+                    span: None,
                 }),
             ],
         },
@@ -136,10 +136,10 @@ fn test_pattern_chaos_exponential_expansion_stress() {
             pattern_calls: vec![mirrc::ast::pattern::PatternCall {
                 pattern_name: "A".to_string(),
                 arguments: vec![],
-                is_extern: false, span: None,
+                span: None,
             }],
             pattern_origins: vec![],
-            is_extern: false, span: None,
+            span: None,
         },
     };
 

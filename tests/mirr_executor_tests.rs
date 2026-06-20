@@ -337,8 +337,15 @@ fn drive_prog(
     _prog: &mirrc::ast::MirrProgram,
     input: &[u8],
 ) -> Vec<mirrc::mirr_driver::ObservedPush> {
+    drive_prog_from_src(COMPREHENSIVE_MODULE, input)
+}
+
+fn drive_prog_from_src(
+    source: &str,
+    input: &[u8],
+) -> Vec<mirrc::mirr_driver::ObservedPush> {
     let mut reg = mirrc::ecs::Registry::new();
-    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, "ERROR_NO_SRC", None)
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut reg, source, None)
         .unwrap();
     drive_parsed_module_with_interpreter(&reg, input)
 }
@@ -749,7 +756,7 @@ module no_guard_mod {
 }
 "#;
     let prog = parse_ok(src);
-    let pushes = drive_prog(&prog, b"hello 123");
+    let pushes = drive_prog_from_src(src, b"hello 123");
 
     assert!(
         pushes.is_empty(),
