@@ -26,6 +26,8 @@ pub mod formal;
 pub mod icetime;
 pub mod optimize;
 pub mod sby;
+pub mod sdc;
+pub mod openlane;
 pub mod verilator;
 
 use std::collections::HashMap;
@@ -56,6 +58,7 @@ pub enum Tool {
     Icetime,
     Ecppack,
     Eqy,
+    Openlane,
 }
 
 impl Tool {
@@ -73,6 +76,7 @@ impl Tool {
             Self::Icetime => "icetime",
             Self::Ecppack => "ecppack",
             Self::Eqy => "eqy",
+            Self::Openlane => "docker",
         }
     }
 
@@ -176,6 +180,7 @@ impl ToolRegistry {
             Tool::Icetime,
             Tool::Ecppack,
             Tool::Eqy,
+            Tool::Openlane,
         ];
         for tool in tools {
             self.probe(tool);
@@ -339,6 +344,7 @@ mod tests {
         assert_eq!(Tool::NextpnrNexus.binary_name(), "nextpnr-nexus");
         assert_eq!(Tool::Icetime.binary_name(), "icetime");
         assert_eq!(Tool::Eqy.binary_name(), "eqy");
+        assert_eq!(Tool::Openlane.binary_name(), "openlane");
     }
 
     #[test]

@@ -46,11 +46,23 @@ pub fn run_openlane_flow(
         message: format!("Failed to write config.json: {}", e),
     })?;
 
-    // 2. Invoke openlane --flow synth_to_gds
+    let config_file_name = config_path.file_name().unwrap().to_str().unwrap();
+
     let output = invoke_tool(
         registry,
         Tool::Openlane,
-        &["--flow", "synth_to_gds", config_path.to_str().unwrap()],
+        &[
+            "run",
+            "--rm",
+            "-v",
+            &format!("{}:/work", working_dir.canonicalize().unwrap().to_str().unwrap()),
+            "-w",
+            "/work",
+            "efabless/openlane:current",
+            "--flow",
+            "synth_to_gds",
+            config_file_name,
+        ],
         working_dir,
     )?;
 
