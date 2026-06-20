@@ -226,3 +226,5 @@ verify_synth.ys
 *.yw
 
 gha-creds-*.json
+config.json
+constraints.sdc
