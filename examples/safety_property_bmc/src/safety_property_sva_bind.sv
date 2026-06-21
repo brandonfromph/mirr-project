@@ -10,24 +10,38 @@ module pressure_monitor_sva (
 );
 
   // property: pressure_bounded
-  assert property (@(posedge clk)
-    (airway_pressure > 10));
+  always @(posedge clk) begin
+    assert((airway_pressure > 10));
+  end
 
   // property: no_spurious_clamp
-  assert property (@(posedge clk)
-    !((clamp_valve & (airway_pressure > 200))));
+  always @(posedge clk) begin
+    assert(!((clamp_valve & (airway_pressure > 200))));
+  end
 
   // property: low_triggers_clamp
-  assert property (@(posedge clk)
-    (airway_pressure < 50) |-> clamp_valve);
+  always @(posedge clk) begin
+    assert((!((airway_pressure < 50))) || (clamp_valve));
+  end
 
   // property: clamp_reachable
-  cover property (@(posedge clk)
-    ##[1:100] clamp_valve);
+  reg [31:0] prop_clamp_reachable_timer;
+  always @(posedge clk) begin
+    if (clamp_valve) prop_clamp_reachable_timer <= 0;
+    else prop_clamp_reachable_timer <= prop_clamp_reachable_timer + 1;
+  end
+  always @(posedge clk) begin
+    cover(prop_clamp_reachable_timer < 100);
+  end
 
   // property: clamp_follows_drop
-  assert property (@(posedge clk)
-    (airway_pressure < 50) |-> ##5 clamp_valve);
+  reg [4:0] prop_clamp_follows_drop_trig_shift;
+  always @(posedge clk) begin
+    prop_clamp_follows_drop_trig_shift <= {prop_clamp_follows_drop_trig_shift[3:0], (airway_pressure < 50)};
+  end
+  always @(posedge clk) begin
+    assert((!(prop_clamp_follows_drop_trig_shift[4])) || (clamp_valve));
+  end
 
 endmodule
 

@@ -13,7 +13,6 @@
 //! 7. Emergency-stop action table generation (priority 255, OnViolation)
 //! 8. Cover and Assume properties are filtered out
 
-
 use mirrc::mape_k::bridge::{bridge_from_pipeline, MAX_BRIDGE_PROPERTIES, MAX_BRIDGE_SIGNALS};
 use mirrc::mape_k::error::MapeKError;
 use mirrc::mape_k::{AdaptationAction, SignalPredicate, TemporalProperty, TriggerCondition};

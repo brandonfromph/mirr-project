@@ -5,6 +5,7 @@
 // dt = 1/256 seconds per clock tick (approx 4ms)
 
 def pendulum(
+    rst_n: signal in bool,
     torque_in: signal in i64,
     angle_out: signal out i64
 ) {
@@ -12,22 +13,29 @@ def pendulum(
         signal angular_velocity: internal i64; // Internal state: omega
         signal angle_internal: internal i64;   // Internal state: theta
 
-        // Intermediate signals to handle 65-bit expansion during addition
         signal v_next: internal i64;
         signal p_next: internal i64;
 
         reflex step_physics {
             on always {
-                // Update velocity: subtract gravitational pull (g * theta) and add control torque
-                v_next = (prev(angular_velocity, 1) + ((${torque_in} >> 8) - ((prev(angle_internal, 1) >> 8) * (-10)))) & (-1);
-                angular_velocity = v_next;
-                
-                // Update position: use the new velocity
-                p_next = (prev(angle_internal, 1) + (angular_velocity >> 8)) & (-1);
-                angle_internal = p_next;
+                if rst_n {
+                    // Update velocity: subtract gravitational pull (g * theta) and add control torque
+                    v_next = (prev(angular_velocity, 1) + ((${torque_in} >> 8) - ((prev(angle_internal, 1) >> 8) * (-10)))) & (-1);
+                    angular_velocity = v_next;
+                    
+                    // Update position: use the new velocity
+                    p_next = (prev(angle_internal, 1) + (angular_velocity >> 8)) & (-1);
+                    angle_internal = p_next;
 
-                // Drive output
-                ${angle_out} = angle_internal;
+                    // Drive output with CURRENT state, not NEXT state
+                    ${angle_out} = prev(angle_internal, 1);
+                } else {
+                    angular_velocity = (torque_in ^ torque_in);
+                    angle_internal = (torque_in ^ torque_in);
+                    v_next = (torque_in ^ torque_in);
+                    p_next = (torque_in ^ torque_in);
+                    ${angle_out} = (torque_in ^ torque_in);
+                }
             }
         }
 

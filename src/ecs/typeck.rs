@@ -48,7 +48,9 @@ impl Registry {
 
         // T1: Assignment type compatibility.
         for i in 0..max_id {
-            if let Some(AssignmentComponent { target, value, target_index }) = self.assignment_comps[i] {
+            if let Some(AssignmentComponent { target, value, target_index }) =
+                self.assignment_comps[i]
+            {
                 let mut target_ty = match &self.types[target.0 as usize] {
                     Some(TypeComponent(et)) => et.signal_type(),
                     None => continue,

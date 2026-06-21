@@ -1,27 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-<testsuite timestamp="2026-06-09T04:27:31" hostname="BRANDONs-MacBook.local" package="safety_property" id="0" name="bmc" tests="1" errors="1" failures="0" time="0" skipped="0">
+<testsuite timestamp="2026-06-21T11:27:47" hostname="BRANDONs-MacBook.local" package="safety_property" id="0" name="bmc" tests="0" errors="0" failures="0" time="0" skipped="0">
 <properties>
 <property name="os" value="Darwin"/>
 <property name="expect" value="PASS"/>
-<property name="status" value="ERROR"/>
+<property name="status" value="PASS"/>
 </properties>
-<testcase classname="bmc" name="bmc" time="0">
-<error type="ERROR"/>
+<testcase classname="bmc" name="build execution" time="0">
 </testcase>
-<system-out>SBY  4:27:31 [examples/safety_property_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc'.
-SBY  4:27:31 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_synth.sv'.
-SBY  4:27:31 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_sva_bind.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_sva_bind.sv'.
-SBY  4:27:31 [examples/safety_property_bmc] engine_0: smtbmc z3
-SBY  4:27:31 [examples/safety_property_bmc] base: starting process &quot;cd examples/safety_property_bmc/src; yosys -ql ../model/design.log ../model/design.ys&quot;
-SBY  4:27:31 [examples/safety_property_bmc] base: safety_property_sva_bind.sv:13: ERROR: syntax error, unexpected '@'
-SBY  4:27:31 [examples/safety_property_bmc] base: finished (returncode=1)
-SBY  4:27:31 [examples/safety_property_bmc] base: task failed. ERROR.
-SBY  4:27:31 [examples/safety_property_bmc] summary: Elapsed clock time [H:MM:SS (secs)]: 0:00:00 (0)
-SBY  4:27:31 [examples/safety_property_bmc] summary: Elapsed process time [H:MM:SS (secs)]: 0:00:00 (0)
-SBY  4:27:31 [examples/safety_property_bmc] summary: engine_0 (smtbmc z3) did not return a status
-SBY  4:27:31 [examples/safety_property_bmc] summary: engine_0 did not produce any traces
-SBY  4:27:31 [examples/safety_property_bmc] DONE (ERROR, rc=16)
+<system-out>SBY 11:27:47 [examples/safety_property_bmc] Removing directory '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc'.
+SBY 11:27:47 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_synth.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_synth.sv'.
+SBY 11:27:47 [examples/safety_property_bmc] Copy '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_sva_bind.sv' to '/Users/brandonc.blay/projects/mirr-private/examples/safety_property_bmc/src/safety_property_sva_bind.sv'.
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: smtbmc z3
+SBY 11:27:47 [examples/safety_property_bmc] base: starting process &quot;cd examples/safety_property_bmc/src; yosys -ql ../model/design.log ../model/design.ys&quot;
+SBY 11:27:47 [examples/safety_property_bmc] base: finished (returncode=0)
+SBY 11:27:47 [examples/safety_property_bmc] prep: starting process &quot;cd examples/safety_property_bmc/model; yosys -ql design_prep.log design_prep.ys&quot;
+SBY 11:27:47 [examples/safety_property_bmc] prep: finished (returncode=0)
+SBY 11:27:47 [examples/safety_property_bmc] smt2: starting process &quot;cd examples/safety_property_bmc/model; yosys -ql design_smt2.log design_smt2.ys&quot;
+SBY 11:27:47 [examples/safety_property_bmc] smt2: finished (returncode=0)
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: starting process &quot;cd examples/safety_property_bmc; yosys-smtbmc -s z3 --presat --noprogress -t 20  --append 0 --dump-vcd engine_0/trace.vcd --dump-yw engine_0/trace.yw --dump-vlogtb engine_0/trace_tb.v --dump-smtc engine_0/trace.smtc model/design_smt2.smt2&quot;
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Solver: z3
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 0..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 0..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 1..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 1..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 2..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 2..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 3..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 3..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 4..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 4..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 5..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 5..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 6..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 6..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 7..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 7..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 8..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 8..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 9..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 9..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 10..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 10..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 11..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 11..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 12..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 12..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 13..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 13..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 14..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 14..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 15..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 15..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 16..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 16..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 17..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 17..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 18..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 18..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assumptions in step 19..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Checking assertions in step 19..
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: ##   0:00:00  Status: passed
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: finished (returncode=0)
+SBY 11:27:47 [examples/safety_property_bmc] engine_0: Status returned by engine: pass
+SBY 11:27:47 [examples/safety_property_bmc] summary: Elapsed clock time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY 11:27:47 [examples/safety_property_bmc] summary: Elapsed process time [H:MM:SS (secs)]: 0:00:00 (0)
+SBY 11:27:47 [examples/safety_property_bmc] summary: engine_0 (smtbmc z3) returned pass
+SBY 11:27:47 [examples/safety_property_bmc] summary: engine_0 did not produce any traces
+SBY 11:27:47 [examples/safety_property_bmc] DONE (PASS, rc=0)
 </system-out>
 <system-err>
 </system-err>

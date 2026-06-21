@@ -43,7 +43,7 @@ pub(super) fn emit_module_decl(
     span: Option<&Span>,
 ) {
     emit_source_comment(span, ft, out);
-    
+
     // Silence benign Verilator lints for generated code
     out.push_str("/* verilator lint_off UNOPTFLAT */\n");
     out.push_str("/* verilator lint_off DECLFILENAME */\n");
@@ -96,8 +96,12 @@ pub(super) fn emit_module_decl(
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
                 if sig_kind == SignalKind::Input || sig_kind == SignalKind::Output {
-                    if name == "clk" { has_clk = true; }
-                    if name == "rst_n" { has_rst_n = true; }
+                    if name == "clk" {
+                        has_clk = true;
+                    }
+                    if name == "rst_n" {
+                        has_rst_n = true;
+                    }
                     let dir = match sig_kind {
                         SignalKind::Input => "input ",
                         SignalKind::Output => "output",
@@ -301,7 +305,17 @@ pub(super) fn emit_property_assertions(
                     }
                 }
 
-                emit_single_property(name, prop_comp, clock_domain, has_rst_n, registry, sync_map, ft, out, span);
+                emit_single_property(
+                    name,
+                    prop_comp,
+                    clock_domain,
+                    has_rst_n,
+                    registry,
+                    sync_map,
+                    ft,
+                    out,
+                    span,
+                );
             }
         }
     }
@@ -333,9 +347,9 @@ pub(super) fn emit_single_property(
     };
 
     let prefix = if has_rst_n {
-        format!("  always @(posedge {clock}) begin\n    if (rst_n) begin\n      {sva_keyword}(")
+        format!("  always @(posedge {clock}) begin\n    if (rst_n) begin\n      {prop_name}: {sva_keyword}(")
     } else {
-        format!("  always @(posedge {clock}) begin\n    {sva_keyword}(")
+        format!("  always @(posedge {clock}) begin\n    {prop_name}: {sva_keyword}(")
     };
     let suffix = if has_rst_n { ");\n    end\n  end\n\n" } else { ");\n  end\n\n" };
 
@@ -463,7 +477,10 @@ pub fn emit_synchronizer_chains(
 
                 // Declare synchronizer register chain.
                 let total_bits = width * stages;
-                out.push_str(&format!("  // {}-stage synchronizer for {} (@{clock_domain})\n", stages, name));
+                out.push_str(&format!(
+                    "  // {}-stage synchronizer for {} (@{clock_domain})\n",
+                    stages, name
+                ));
                 out.push_str(&format!(
                     "  logic [{}:0] {};\n",
                     total_bits.saturating_sub(1),
@@ -471,7 +488,9 @@ pub fn emit_synchronizer_chains(
                 ));
 
                 // Sequential synchronizer logic.
-                out.push_str(&format!("  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"));
+                out.push_str(&format!(
+                    "  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"
+                ));
                 out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", sync_reg));
                 if stages == 1 {
                     out.push_str(&format!("    else\n      {} <= {};\n", sync_reg, name));

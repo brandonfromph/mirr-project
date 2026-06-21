@@ -66,17 +66,28 @@ fn emit_module(
     let mut has_rst_n = false;
     for i in 0..registry.names.len() {
         if let (Some(nc), Some(kc)) = (&registry.names[i], &registry.kinds[i]) {
-            if let crate::ecs::components::EntityKind::SIGNAL(crate::ast::types::SignalKind::Input) = kc.0 {
+            if let crate::ecs::components::EntityKind::SIGNAL(
+                crate::ast::types::SignalKind::Input,
+            ) = kc.0
+            {
                 let name = registry.resolve_name(nc.0);
-                if name == "clk" { has_clk = true; }
-                if name == "rst_n" { has_rst_n = true; }
+                if name == "clk" {
+                    has_clk = true;
+                }
+                if name == "rst_n" {
+                    has_rst_n = true;
+                }
             }
         }
     }
 
     if temporal_netlist.is_some() {
-        if !has_clk { out.push_str("    input clk : Clock\n"); }
-        if !has_rst_n { out.push_str("    input rst_n : UInt<1>\n"); }
+        if !has_clk {
+            out.push_str("    input clk : Clock\n");
+        }
+        if !has_rst_n {
+            out.push_str("    input rst_n : UInt<1>\n");
+        }
     }
 
     emit_ports(registry, out);
@@ -103,7 +114,7 @@ fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
                     SignalKind::Internal => continue, // handled as wires
                 };
                 let name = registry.resolve_name(nc.0);
-                
+
                 // If it's an explicit clock domain port, emit as Clock instead of UInt<1>
                 let mut is_clock = false;
                 if name == "clk" {
@@ -118,7 +129,7 @@ fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
                         }
                     }
                 }
-                
+
                 let ty = if is_clock { "Clock".to_string() } else { firrtl_type(&ty_comp.0.core) };
                 out.push_str(&format!("    {} {} : {}\n", dir, name, ty));
             }
@@ -144,7 +155,11 @@ fn emit_internal_wires(registry: &crate::ecs::Registry, out: &mut String) {
     }
 }
 
-fn emit_temporal_logic(registry: &crate::ecs::Registry, netlist: &TemporalNetlist, out: &mut String) {
+fn emit_temporal_logic(
+    registry: &crate::ecs::Registry,
+    netlist: &TemporalNetlist,
+    out: &mut String,
+) {
     out.push_str("\n    ; ── Temporal Guards ──\n");
 
     for guard in &netlist.guards {
@@ -187,7 +202,10 @@ fn emit_temporal_logic(registry: &crate::ecs::Registry, netlist: &TemporalNetlis
                     dc.name, dc.max_delay
                 ));
                 let width = dc.counter_width();
-                out.push_str(&format!("    reg {} : UInt<{}>, {}\n", dc.counter_signal, width, clock_domain));
+                out.push_str(&format!(
+                    "    reg {} : UInt<{}>, {}\n",
+                    dc.counter_signal, width, clock_domain
+                ));
                 out.push_str(&format!("    wire {} : UInt<1>\n", dc.output_signal));
             }
         }
@@ -227,7 +245,11 @@ fn emit_shift_register_firrtl(
     out.push_str(&format!("    connect {} , andr({}_sr)\n", sr.output_signal, sr.name,));
 }
 
-fn emit_counter_firrtl(cg: &crate::temporal::low_level_ir::CounterGuard, clock_domain: &str, out: &mut String) {
+fn emit_counter_firrtl(
+    cg: &crate::temporal::low_level_ir::CounterGuard,
+    clock_domain: &str,
+    out: &mut String,
+) {
     let width = cg.counter_width();
     let cond = emit_condition_firrtl(&cg.condition_kind);
 

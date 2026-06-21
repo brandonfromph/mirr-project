@@ -24,10 +24,10 @@
 pub mod eqy;
 pub mod formal;
 pub mod icetime;
+pub mod openlane;
 pub mod optimize;
 pub mod sby;
 pub mod sdc;
-pub mod openlane;
 pub mod verilator;
 
 use std::collections::HashMap;

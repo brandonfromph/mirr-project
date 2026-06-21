@@ -298,6 +298,11 @@ impl Registry {
     }
 
     fn get_reflex_base_name<'a>(&self, name: &'a str) -> &'a str {
+        if let Some(idx) = name.rfind("_c") {
+            if name[idx + 2..].chars().all(|c| c.is_ascii_digit()) {
+                return &name[..idx];
+            }
+        }
         if let Some(idx) = name.find("_split_") {
             &name[..idx]
         } else {

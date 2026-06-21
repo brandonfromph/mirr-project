@@ -227,7 +227,9 @@ fn parse_reflexes(
             };
             expect_head(a_list, "assign")?;
             let (target_name, target_index) = match &a_list[1] {
-                SExpr::List(idx_list) if idx_list.len() == 3 && idx_list[0].as_symbol() == Some("index") => {
+                SExpr::List(idx_list)
+                    if idx_list.len() == 3 && idx_list[0].as_symbol() == Some("index") =>
+                {
                     let name = idx_list[1].as_str_val().unwrap_or("").to_string();
                     let idx = idx_list[2].as_integer().map(|i| i as usize);
                     (name, idx)

@@ -1,0 +1,34 @@
+{
+  "nodes": {
+    "heartbeat": {
+      "signal": "heartbeat",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "watchdog_reset": {
+      "signal": "watchdog_reset",
+      "origin": {
+        "start_line": 5,
+        "start_col": 0,
+        "end_line": 5,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "system_alive": {
+      "signal": "system_alive",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    }
+  }
+}

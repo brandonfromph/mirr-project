@@ -99,16 +99,59 @@ pub(super) fn emit_temporal_logic_ecs(
     let mut sorted_prevs: Vec<_> = seen_prevs.into_iter().collect();
     sorted_prevs.sort();
 
-    for (sig_ent, delay) in sorted_prevs {
+    let mut prev_groups_by_clock: std::collections::HashMap<
+        String,
+        Vec<(crate::ecs::EntityId, u64)>,
+    > = std::collections::HashMap::new();
+
+    for &(sig_ent, delay) in &sorted_prevs {
         if let Some(nc) = &registry.names[sig_ent.0 as usize] {
             if let Some(type_comp) = &registry.types[sig_ent.0 as usize] {
                 let sig_name = registry.resolve_name(nc.0);
                 let type_str = crate::emit::sv_type(&type_comp.0.signal_type());
                 out.push_str(&format!("  {} {}_d{};\n", type_str, sig_name, delay));
+
+                let mut clock_domain = "clk";
+                if let Some(cd) = type_comp.0.annotations.clock_domain.as_deref() {
+                    clock_domain = cd;
+                }
+                prev_groups_by_clock
+                    .entry(clock_domain.to_string())
+                    .or_default()
+                    .push((sig_ent, delay));
             }
         }
     }
     out.push('\n');
+
+    for (clock, prevs) in prev_groups_by_clock {
+        out.push_str(&format!("  // Delay line updates for prev() references (@{})\n", clock));
+        out.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", clock));
+        out.push_str("    if (!rst_n) begin\n");
+        for &(sig_ent, delay) in &prevs {
+            let sig_name =
+                registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
+            out.push_str(&format!("      {}_d{} <= '0;\n", sig_name, delay));
+        }
+        out.push_str("    end else begin\n");
+        for &(sig_ent, delay) in &prevs {
+            let sig_name =
+                registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
+            if delay == 1 {
+                out.push_str(&format!("      {}_d1 <= {};\n", sig_name, sig_name));
+            } else {
+                out.push_str(&format!(
+                    "      {}_d{} <= {}_d{};\n",
+                    sig_name,
+                    delay,
+                    sig_name,
+                    delay - 1
+                ));
+            }
+        }
+        out.push_str("    end\n");
+        out.push_str("  end\n\n");
+    }
 
     for guard in &netlist.guards {
         // Find the guard entity to get its span and clock domain
@@ -121,7 +164,9 @@ pub(super) fn emit_temporal_logic_ecs(
                     && kind_comp.0 == crate::ecs::EntityKind::GUARD
                 {
                     span = registry.spans[i].as_ref().map(|s| &s.0);
-                    if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                    if let Some(crate::ecs::components::ModuleComponent(parent_id)) =
+                        &registry.modules[i]
+                    {
                         guard_module_id = Some(*parent_id);
                     }
                     if let Some(tc) = &registry.types[i] {
@@ -260,8 +305,6 @@ pub(super) fn emit_reflex_logic_ecs(
 
     out.push_str("  // ── Reflex Assignments ──\n\n");
 
-
-
     out.push_str("  // ── Reflex Signal Drivers ──\n\n");
 
     // Emit HLS Logic if any entities have HLS schedules
@@ -315,7 +358,9 @@ pub(super) fn emit_reflex_logic_ecs(
             }
 
             out.push_str(&format!("  // Unified Reflex Block for: {sig_name} (@{clock_domain})\n"));
-            out.push_str(&format!("  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"));
+            out.push_str(&format!(
+                "  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"
+            ));
             out.push_str("    if (!rst_n) begin\n");
             out.push_str(&format!("      {} <= '0;\n", sig_name));
             out.push_str("    end else begin\n");
@@ -389,11 +434,8 @@ fn emit_hls_logic_ecs(
 
     for cd in sorted_domains {
         let entities = &domain_entities[&cd];
-        let state_reg = if cd == "clk" {
-            "hls_state".to_string()
-        } else {
-            format!("hls_state_{}", cd)
-        };
+        let state_reg =
+            if cd == "clk" { "hls_state".to_string() } else { format!("hls_state_{}", cd) };
 
         out.push_str(&format!("  // Clock Domain: {}\n", cd));
         out.push_str(&format!("  logic [31:0] {};\n\n", state_reg));
@@ -422,7 +464,11 @@ fn emit_hls_logic_ecs(
             if registry.hls_dataflow[i].is_some() {
                 if let Some(tc) = &registry.types[i] {
                     let width = tc.0.core.width();
-                    out.push_str(&format!("  logic [{}:0] op_{}_res;\n", width.saturating_sub(1), i));
+                    out.push_str(&format!(
+                        "  logic [{}:0] op_{}_res;\n",
+                        width.saturating_sub(1),
+                        i
+                    ));
                 }
             }
         }
@@ -679,7 +725,11 @@ fn emit_shift_register_guard(
     out.push_str(&format!("  assign {} = &{}_sr;\n\n", sr.output_signal, sr.name,));
 }
 
-fn emit_counter_guard(cg: &crate::temporal::low_level_ir::CounterGuard, clock: &str, out: &mut String) {
+fn emit_counter_guard(
+    cg: &crate::temporal::low_level_ir::CounterGuard,
+    clock: &str,
+    out: &mut String,
+) {
     let cond_desc = cg.condition_kind.describe();
     let width = cg.counter_width();
     out.push_str(&format!(

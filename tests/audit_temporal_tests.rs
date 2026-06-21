@@ -71,6 +71,7 @@ fn test_27_28_emit_rspu_assembly_nop_pipeline() {
 #[test]
 fn test_29_30_emit_ram_logic() {
     // Validates that ram.mirr exists and is a valid module
-    let ram_mirr = std::fs::read_to_string("reflex_soc/core/ram.mirr").expect("ram.mirr must exist");
+    let ram_mirr =
+        std::fs::read_to_string("reflex_soc/core/ram.mirr").expect("ram.mirr must exist");
     assert!(ram_mirr.contains("module ram"), "ram.mirr should define module ram");
 }

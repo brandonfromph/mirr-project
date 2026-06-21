@@ -190,17 +190,24 @@ fn get_kb_bin_path(_name: &str) -> std::path::PathBuf {
 
 fn run_kb_cli_no_file(args: &[&str]) -> Output {
     let bin_path = get_kb_bin_path("mirr");
-    std::process::Command::new(bin_path)
-        .arg("kb")
-        .args(args)
-        .output()
-        .expect("Failed to execute mirr kb")
+    let mut cmd = std::process::Command::new(&bin_path);
+    if let Some(target_dir) = bin_path.parent() {
+        if let Ok(path) = std::env::var("PATH") {
+            cmd.env("PATH", format!("{}:{}", target_dir.display(), path));
+        }
+    }
+    cmd.arg("kb").args(args).output().expect("Failed to execute mirr kb")
 }
 
 fn run_kb_cli_with_env(args: &[&str], kb_root: &str) -> Output {
     let bin_path = get_kb_bin_path("mirr");
-    std::process::Command::new(bin_path)
-        .arg("kb")
+    let mut cmd = std::process::Command::new(&bin_path);
+    if let Some(target_dir) = bin_path.parent() {
+        if let Ok(path) = std::env::var("PATH") {
+            cmd.env("PATH", format!("{}:{}", target_dir.display(), path));
+        }
+    }
+    cmd.arg("kb")
         .args(args)
         .env("MIRR_KB_ROOT", kb_root)
         .output()
@@ -317,21 +324,26 @@ fn test_kb_api_048() {
 #[test]
 fn test_kb_api_049() {
     let bin_path = get_kb_bin_path("mirr");
-    let out = std::process::Command::new(bin_path)
-        .arg("kb-index")
-        .arg("--help")
-        .output()
-        .expect("Failed to execute mirr kb-index");
+    let mut cmd = std::process::Command::new(&bin_path);
+    if let Some(target_dir) = bin_path.parent() {
+        if let Ok(path) = std::env::var("PATH") {
+            cmd.env("PATH", format!("{}:{}", target_dir.display(), path));
+        }
+    }
+    let out = cmd.arg("kb-index").arg("--help").output().expect("Failed to execute mirr kb-index");
     assert!(out.status.success());
 }
 
 #[test]
 fn test_kb_api_050() {
     let bin_path = get_kb_bin_path("mirr");
-    let out = std::process::Command::new(bin_path)
-        .arg("kb-hydrate")
-        .arg("--help")
-        .output()
-        .expect("Failed to execute mirr kb-hydrate");
+    let mut cmd = std::process::Command::new(&bin_path);
+    if let Some(target_dir) = bin_path.parent() {
+        if let Ok(path) = std::env::var("PATH") {
+            cmd.env("PATH", format!("{}:{}", target_dir.display(), path));
+        }
+    }
+    let out =
+        cmd.arg("kb-hydrate").arg("--help").output().expect("Failed to execute mirr kb-hydrate");
     assert!(out.status.success());
 }

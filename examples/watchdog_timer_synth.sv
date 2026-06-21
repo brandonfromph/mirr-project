@@ -2,6 +2,16 @@
 // Do not edit — regenerate from .mirr source.
 // Target: SystemVerilog (.sv)
 
+/* verilator lint_off UNOPTFLAT */
+/* verilator lint_off DECLFILENAME */
+/* verilator lint_off WIDTH */
+/* verilator lint_off WIDTHTRUNC */
+/* verilator lint_off WIDTHEXPAND */
+/* verilator lint_off SYNCASYNCNET */
+/* verilator lint_off PINCONNECTEMPTY */
+/* verilator lint_off UNDRIVEN */
+/* verilator lint_off UNUSED */
+
 module watchdog_timer (
   input  logic        clk,
   input  logic        rst_n,
@@ -9,6 +19,18 @@ module watchdog_timer (
   output logic        watchdog_reset,
   output logic        system_alive
 );
+
+  // ── Input Synchronizer Chains ──
+
+  // 2-stage synchronizer for heartbeat (@clk)
+  logic [1:0] heartbeat_sync;
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
+      heartbeat_sync <= '0;
+    else
+      heartbeat_sync <= {heartbeat, heartbeat_sync[1:1]};
+  end
+  logic        heartbeat_s = heartbeat_sync[0:0];
 
   // Temporal signals
   logic [10:0] heartbeat_missing_counter;
@@ -19,6 +41,7 @@ module watchdog_timer (
   logic        heartbeat_slow_out;
 
   // ── Temporal Guards ──
+
 
   // Guard: heartbeat_missing — when !heartbeat (low) for 1000 cycles (counter)
   logic [10:0] heartbeat_missing_counter;
@@ -50,10 +73,9 @@ module watchdog_timer (
 
   // ── Reflex Assignments ──
 
-  logic heartbeat_missing_out;
-  logic heartbeat_slow_out;
+  // ── Reflex Signal Drivers ──
 
-  // Unified Reflex Block for: system_alive
+  // Unified Reflex Block for: system_alive (@clk)
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       system_alive <= '0;
@@ -62,7 +84,7 @@ module watchdog_timer (
     end
   end
 
-  // Unified Reflex Block for: watchdog_reset
+  // Unified Reflex Block for: watchdog_reset (@clk)
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       watchdog_reset <= '0;

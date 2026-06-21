@@ -48,7 +48,7 @@ pub fn emit_sv_synthesis(
     emit_sv_full(result, target, dsp_threshold, true)
 }
 
-fn emit_sv_full(
+pub fn emit_sv_full(
     result: &PipelineResult,
     target: Option<FpgaTarget>,
     dsp_threshold: u32,
@@ -111,7 +111,9 @@ fn emit_sv_full(
 
         for call_id in &registry.extern_instantiations {
             if let Some(top_id) = top_module_id {
-                if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[call_id.0 as usize] {
+                if let Some(crate::ecs::components::ModuleComponent(parent_id)) =
+                    &registry.modules[call_id.0 as usize]
+                {
                     if *parent_id != top_id {
                         continue;
                     }
@@ -319,7 +321,15 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
                 let empty_map = std::collections::HashMap::new();
                 sva::emit_single_property(
-                    prop_name, prop_comp, clock_domain, has_rst_n, registry, &empty_map, ft, &mut out, span,
+                    prop_name,
+                    prop_comp,
+                    clock_domain,
+                    has_rst_n,
+                    registry,
+                    &empty_map,
+                    ft,
+                    &mut out,
+                    span,
                 );
             }
         }

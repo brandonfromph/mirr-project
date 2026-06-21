@@ -1,0 +1,38 @@
+{
+  "nodes": {
+    "must_be_false": {
+      "signal": "must_be_false",
+      "origin": {
+        "start_line": 17,
+        "start_col": 0,
+        "end_line": 17,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "b"
+      ]
+    },
+    "a": {
+      "signal": "a",
+      "origin": {
+        "start_line": 8,
+        "start_col": 0,
+        "end_line": 8,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "b": {
+      "signal": "b",
+      "origin": {
+        "start_line": 9,
+        "start_col": 0,
+        "end_line": 9,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "a"
+      ]
+    }
+  }
+}

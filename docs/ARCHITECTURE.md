@@ -137,6 +137,15 @@ The following pathways describe the lifecycle of a MIRR specification:
    6.  ~~**Clock Domain Crossing (CDC)**~~ *(Completed)*: Implement native support for multiple clock domains to support industrial-grade SoC designs.
    7.  **Source-Level Debugger**: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
 
+   ### Engine MVP Graduation Milestones:
+   Currently, several core engines are functioning as Minimum Viable Products (MVPs) and require rigorous graduation to production readiness:
+   - **Source-Level Debugger (VCD Parser)**: Upgrade from static final-value extraction to interactive, cycle-accurate temporal scrubbing (fixing the 'off-by-one' evaluation bug).
+   - **ASIC OpenLane Integration**: Replace the simplified metrics MVP with deep physical GDSII parsing to feed exact silicon timing delays back into the ECS.
+   - **SAT Logic Simplification**: Evolve beyond basic redundant MUX checks to perform native high-level synthesis (HLS) logic minimization before Yosys emission.
+   - **S-Expression Frontend**: Extend the parser to retain advanced SVA properties (`always`, `eventually`) during the roundtrip serialization.
+   - **Multi-Clock Domain Crossing (CDC)**: Fully wire up the `ClockDomainsComponent` and `PhantomTagsComponent` within the ECS to guarantee safe cross-core synchronization for the MIMD R-SPU.
+   - **Rocq Proof Engine**: Complete the integration with the Rocq compiler to mathematically prove the MIRR compiler's own structural correctness instead of relying solely on downstream SMT solvers.
+
 ## 6. The 1-Billion Transistor Vision (Wafer-Scale AI Engine)
 
 Because the R-SPU is a spatial architecture, it scales "out" rather than "up." If the R-SPU ever hits 1 billion transistors, it won't be because we added bloated x86 legacy baggage, deep branch predictors, or out-of-order execution pipelines. It will be because we built a **massively parallel synthetic brain** for robotics.

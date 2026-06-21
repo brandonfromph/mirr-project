@@ -14,6 +14,7 @@ pub mod fpga_scaffold;
 pub mod fpga_target;
 pub mod json_netlist;
 pub mod mape_k_rtl;
+pub mod provenance;
 pub mod riscv;
 pub mod rspu;
 pub mod rspu_encoding;
@@ -27,7 +28,6 @@ pub mod rspu_tagged;
 pub mod sexpr;
 pub mod testbench;
 pub mod verilog;
-pub mod provenance;
 
 use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};

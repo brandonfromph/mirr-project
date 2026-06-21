@@ -11,12 +11,14 @@ module watchdog_timer_sva (
 );
 
   // property: reset_on_timeout
-  assert property (@(posedge clk)
-    (!heartbeat) |-> watchdog_reset);
+  always @(posedge clk) begin
+    assert((!((!heartbeat))) || (watchdog_reset));
+  end
 
   // property: no_hang
-  assert property (@(posedge clk)
-    !(((!heartbeat) & (!watchdog_reset))));
+  always @(posedge clk) begin
+    assert(!(((!heartbeat) & (!watchdog_reset))));
+  end
 
 endmodule
 

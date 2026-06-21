@@ -47,20 +47,33 @@ pub fn build_provenance_graph(result: &PipelineResult) -> Option<ProvenanceGraph
         }
     }
 
-    // Phase 2: Traverse all signals and build their dependency trees.
+    // Phase 2: Traverse all signals and properties and build their dependency trees.
     for i in 0..registry.names.len() {
-        if let (Some(name_comp), Some(KindComponent(EntityKind::SIGNAL(_)))) = (&registry.names[i], &registry.kinds[i]) {
+        if let (Some(name_comp), Some(KindComponent(kind))) =
+            (&registry.names[i], &registry.kinds[i])
+        {
+            if !matches!(kind, EntityKind::SIGNAL(_) | EntityKind::PROPERTY) {
+                continue;
+            }
+
             let signal_name = registry.resolve_name(name_comp.0).to_string();
 
             // Get origin span
             let origin = registry.spans[i].map(|s| s.0);
 
             let mut depends_on = HashSet::new();
-
-            // Find what drives this signal
             let entity_id = EntityId(i as u32);
-            if let Some(expr_root) = target_to_expr.get(&entity_id) {
-                collect_dependencies(*expr_root, registry, &mut depends_on);
+
+            if matches!(kind, EntityKind::SIGNAL(_)) {
+                // Find what drives this signal
+                if let Some(expr_root) = target_to_expr.get(&entity_id) {
+                    collect_dependencies(*expr_root, registry, &mut depends_on);
+                }
+            } else if let Some(prop_comp) = &registry.property_comps[i] {
+                // Find what this property observes
+                for expr_id in &prop_comp.formula_exprs {
+                    collect_dependencies(*expr_id, registry, &mut depends_on);
+                }
             }
 
             graph.nodes.insert(

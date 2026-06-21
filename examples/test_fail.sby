@@ -1,0 +1,16 @@
+[tasks]
+bmc
+
+[options]
+bmc: mode bmc
+bmc: depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -sv -formal test_fail_formal.sv
+prep -top test_fail
+
+[files]
+examples/test_fail_formal.sv

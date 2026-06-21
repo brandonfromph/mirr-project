@@ -13,7 +13,8 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stat
     let mut dff_bits = 0;
 
     // Detailed cell usage grouping: HashMap<(&'static str, width), count>
-    let mut cells: std::collections::HashMap<(&'static str, u32), usize> = std::collections::HashMap::new();
+    let mut cells: std::collections::HashMap<(&'static str, u32), usize> =
+        std::collections::HashMap::new();
 
     let max_entities = registry.active_entities();
 
@@ -42,7 +43,7 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stat
 
     for i in 0..max_entities {
         let idx = i;
-        
+
         if let Some(kind_comp) = registry.kinds.get(idx).and_then(|k| k.as_ref()) {
             match kind_comp.0 {
                 mirrc::ecs::EntityKind::SIGNAL(_) => {
@@ -76,7 +77,9 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stat
                 mirrc::ast::types::BinaryOp::Le => "$le",
                 mirrc::ast::types::BinaryOp::Gt => "$gt",
                 mirrc::ast::types::BinaryOp::Ge => "$ge",
-                mirrc::ast::types::BinaryOp::And | mirrc::ast::types::BinaryOp::BitwiseAnd => "$and",
+                mirrc::ast::types::BinaryOp::And | mirrc::ast::types::BinaryOp::BitwiseAnd => {
+                    "$and"
+                }
                 mirrc::ast::types::BinaryOp::Or | mirrc::ast::types::BinaryOp::BitwiseOr => "$or",
                 mirrc::ast::types::BinaryOp::Xor => "$xor",
                 mirrc::ast::types::BinaryOp::Shl => "$shl",
@@ -116,11 +119,11 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stat
 
     eprintln!("MIRR Compile: {}", module_name);
     eprintln!("  Signals: {}  Guards: {}  Reflexes: {}", signal_count, guard_count, reflex_count);
-    
+
     eprintln!("\n  -- Pre-Synthesis Logic Primitives --");
     eprintln!("    {:>9} explicit wires", signal_count);
     eprintln!("    {:>9} explicit wire bits", total_wire_bits);
-    
+
     let mut sorted_cells: Vec<_> = cells.into_iter().collect();
     // Sort by name alphabetically, then by width ascending
     sorted_cells.sort_by(|((name_a, width_a), _), ((name_b, width_b), _)| {
@@ -154,11 +157,7 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stat
         let status = if tr.is_total { "TOTAL" } else { "NOT TOTAL" };
         eprintln!(
             "  Totality: {} (bounds: {:?}, completeness: {:?}, coverage: {:?}, acyclicity: {:?})",
-            status,
-            tr.resource_bound,
-            tr.output_completeness,
-            tr.guard_coverage,
-            tr.acyclicity
+            status, tr.resource_bound, tr.output_completeness, tr.guard_coverage, tr.acyclicity
         );
     }
 }

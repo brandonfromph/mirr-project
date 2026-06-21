@@ -1,0 +1,21 @@
+target profile {
+    name: "Liquid-64";
+    word_size: 64;
+    reg_width: 10;
+    op_width: 6;
+}
+
+module test_fail {
+    signal a: in bool;
+    signal b: out bool;
+
+    reflex dummy {
+        on always {
+            b = a;
+        }
+    }
+
+    property must_be_false {
+        always (b == false);
+    }
+}

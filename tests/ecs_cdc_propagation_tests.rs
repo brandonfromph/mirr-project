@@ -51,15 +51,14 @@ module cdc_top {
         .arg(test_dir.path().join("cdc_top.sv").to_str().unwrap());
 
     let output = cmd.output().expect("failed to execute mirr compile");
-    
+
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         panic!("Compiler failed:\n{}", stderr);
     }
 
     let sv_path = test_dir.path().join("cdc_top.sv");
-    let sv_content = fs::read_to_string(&sv_path)
-        .expect("failed to read generated SV file");
+    let sv_content = fs::read_to_string(&sv_path).expect("failed to read generated SV file");
 
     assert!(
         sv_content.contains("always_ff @(posedge clk_fast or negedge rst_n) begin"),

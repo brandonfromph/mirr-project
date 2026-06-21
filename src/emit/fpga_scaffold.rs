@@ -163,7 +163,10 @@ fn emit_sdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
             SignalKind::Output => "set_output_delay",
             SignalKind::Internal => continue,
         };
-        out.push_str(&format!("{} -clock {} 2.000 [get_ports {}]\n", constraint, main_clock, s.name));
+        out.push_str(&format!(
+            "{} -clock {} 2.000 [get_ports {}]\n",
+            constraint, main_clock, s.name
+        ));
     }
 
     out
@@ -386,7 +389,10 @@ fn emit_pdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     out.push_str("# Fill in pin assignments for your board.\n\n");
 
     let main_clock = get_main_clock(registry);
-    out.push_str(&format!("create_clock -name {{{0}}} -period 10.000 [get_ports {0}]\n\n", main_clock));
+    out.push_str(&format!(
+        "create_clock -name {{{0}}} -period 10.000 [get_ports {0}]\n\n",
+        main_clock
+    ));
 
     for s in &get_ports(registry) {
         if s.kind == SignalKind::Internal {

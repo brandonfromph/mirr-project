@@ -174,14 +174,22 @@ pub(super) fn run_toolchain_operations(
                                     .join("engine_0")
                                     .join("trace.vcd");
 
-                                // Extract the exact property name from the SBY output.
+                                // Extract the exact property name and step from the SBY output.
                                 let mut failed_property = String::new();
+                                let mut failed_step: Option<usize> = None;
                                 for line in res.stdout.lines() {
                                     if line.contains("failed assertion ") {
                                         if let Some(pos) = line.find("failed assertion ") {
                                             let after = &line[pos + 17..];
                                             if let Some(space) = after.find(' ') {
                                                 failed_property = after[..space].to_string();
+
+                                                if let Some(step_pos) = line.find(" step ") {
+                                                    let step_str = line[step_pos + 6..].trim();
+                                                    if let Ok(step) = step_str.parse::<usize>() {
+                                                        failed_step = Some(step);
+                                                    }
+                                                }
                                                 break;
                                             }
                                         }
@@ -199,6 +207,7 @@ pub(super) fn run_toolchain_operations(
                                     &graph,
                                     &failed_property,
                                     Some(&trace_path),
+                                    failed_step,
                                     &result.file_table,
                                 );
 

@@ -1,0 +1,24 @@
+{
+  "nodes": {
+    "clamp_valve": {
+      "signal": "clamp_valve",
+      "origin": {
+        "start_line": 5,
+        "start_col": 0,
+        "end_line": 5,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "airway_pressure": {
+      "signal": "airway_pressure",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    }
+  }
+}

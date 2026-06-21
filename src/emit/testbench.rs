@@ -83,7 +83,12 @@ fn emit_tb_clock(main_clock: &str, out: &mut String) {
     out.push_str(&format!("  always #5 {} = ~{};\n\n", main_clock, main_clock));
 }
 
-fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, main_clock: &str, out: &mut String) {
+fn emit_tb_dut_instance(
+    module_name: &str,
+    registry: &crate::ecs::Registry,
+    main_clock: &str,
+    out: &mut String,
+) {
     out.push_str("  // DUT instantiation\n");
     out.push_str(&format!("  {} dut (\n", module_name));
 
@@ -142,7 +147,12 @@ fn emit_tb_dut_instance(module_name: &str, registry: &crate::ecs::Registry, main
     out.push_str("  );\n\n");
 }
 
-fn emit_tb_stimulus(module_name: &str, registry: &crate::ecs::Registry, main_clock: &str, out: &mut String) {
+fn emit_tb_stimulus(
+    module_name: &str,
+    registry: &crate::ecs::Registry,
+    main_clock: &str,
+    out: &mut String,
+) {
     let sim_cycles = DEFAULT_SIM_CYCLES.min(MAX_SIM_CYCLES);
 
     out.push_str("  // Stimulus sequence\n");

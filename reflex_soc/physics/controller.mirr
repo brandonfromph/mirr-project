@@ -4,6 +4,7 @@
 // torque = -Kp * angle - Kd * (angle - prev_angle) / dt
 
 def controller(
+    rst_n: signal in bool,
     angle_in: signal in i64,
     torque_out: signal out i64
 ) {
@@ -15,18 +16,24 @@ def controller(
 
         // Gains:
         // Kp = 1500, Kd = 200
-        
         reflex compute_torque {
             on always {
-                // Kp torque component
-                kp_torque = -((${angle_in} >> 8) * (- -1500)) >> 2;
+                if rst_n {
+                    // Kp torque component
+                    kp_torque = -((${angle_in} >> 8) * (- -1500)) >> 2;
 
-                // Kd torque component
-                kd_torque = ((${angle_in} - prev(${angle_in}, 1)) >> 2) * (-200);
+                    // Kd torque component
+                    kd_torque = ((${angle_in} - prev(${angle_in}, 1)) >> 2) * (-200);
 
-                // Final torque sum (explicitly masked to stay within i64)
-                t_next = (kp_torque + kd_torque) & (-1);
-                ${torque_out} = t_next;
+                    // Final torque sum (explicitly masked to stay within i64)
+                    t_next = (kp_torque + kd_torque) & (-1);
+                    ${torque_out} = t_next;
+                } else {
+                    kp_torque = (angle_in ^ angle_in);
+                    kd_torque = (angle_in ^ angle_in);
+                    t_next = (angle_in ^ angle_in);
+                    ${torque_out} = (angle_in ^ angle_in);
+                }
             }
         }
     }

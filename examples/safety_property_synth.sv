@@ -2,12 +2,34 @@
 // Do not edit — regenerate from .mirr source.
 // Target: SystemVerilog (.sv)
 
+/* verilator lint_off UNOPTFLAT */
+/* verilator lint_off DECLFILENAME */
+/* verilator lint_off WIDTH */
+/* verilator lint_off WIDTHTRUNC */
+/* verilator lint_off WIDTHEXPAND */
+/* verilator lint_off SYNCASYNCNET */
+/* verilator lint_off PINCONNECTEMPTY */
+/* verilator lint_off UNDRIVEN */
+/* verilator lint_off UNUSED */
+
 module pressure_monitor (
   input  logic        clk,
   input  logic        rst_n,
   input  logic [15:0] airway_pressure,
   output logic        clamp_valve
 );
+
+  // ── Input Synchronizer Chains ──
+
+  // 2-stage synchronizer for airway_pressure (@clk)
+  logic [31:0] airway_pressure_sync;
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
+      airway_pressure_sync <= '0;
+    else
+      airway_pressure_sync <= {airway_pressure, airway_pressure_sync[31:16]};
+  end
+  logic [15:0] airway_pressure_s = airway_pressure_sync[15:0];
 
   // Temporal signals
   logic        pressure_low_sr_0;
@@ -16,6 +38,7 @@ module pressure_monitor (
   logic        pressure_low_out;
 
   // ── Temporal Guards ──
+
 
   // Guard: pressure_low — when airway_pressure < 50 for 3 cycles
   logic [2:0] pressure_low_sr;
@@ -31,9 +54,9 @@ module pressure_monitor (
 
   // ── Reflex Assignments ──
 
-  logic pressure_low_out;
+  // ── Reflex Signal Drivers ──
 
-  // Unified Reflex Block for: clamp_valve
+  // Unified Reflex Block for: clamp_valve (@clk)
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       clamp_valve <= '0;

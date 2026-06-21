@@ -117,7 +117,6 @@ fn test_hyper_scale_random_logic_matrix() {
     println!("Verified {} hyper-scale random modules.", count);
 }
 
-
 #[test]
 fn test_hyper_scale_shift_matrix() {
     let mut count = 0;

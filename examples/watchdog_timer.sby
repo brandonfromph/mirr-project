@@ -14,5 +14,5 @@ read_verilog -sv -formal watchdog_timer_sva_bind.sv
 prep -top watchdog_timer
 
 [files]
-watchdog_timer_synth.sv
-watchdog_timer_sva_bind.sv
+examples/watchdog_timer_synth.sv
+examples/watchdog_timer_sva_bind.sv

@@ -58,6 +58,7 @@ pub fn analyze_failure(
     graph: &ProvenanceGraph,
     failed_prop: &str,
     trace_path: Option<&std::path::Path>,
+    target_step: Option<usize>,
     _file_table: &crate::span::FileTable,
 ) -> FormalTraceReport {
     let mut causal_chain = Vec::new();
@@ -66,7 +67,9 @@ pub fn analyze_failure(
 
     let mut final_state = None;
     if let Some(path) = trace_path {
-        if let Ok(state_map) = crate::diagnostic::vcd_parser::parse_vcd_final_state(path) {
+        if let Ok(state_map) =
+            crate::diagnostic::vcd_parser::parse_vcd_state_at_step(path, target_step)
+        {
             final_state = Some(state_map);
         }
     }
