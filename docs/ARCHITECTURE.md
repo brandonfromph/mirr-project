@@ -36,7 +36,7 @@ mirr-private/
 ├── proofs/                   # Formal verification (Coq/Rocq)
 ├── docs/                     # Documentation and Architecture definitions
 ├── proposals/                # Architectural proposals and RFCs
-├── rspu_chip/                # Primary hardware project (16-core R-SPU processor)
+├── reflex_soc/               # Primary hardware project (64-core R-SPU processor)
 ├── stdlib/                   # Standard library definitions
 └── compiler_mirr/            # Self-hosting bootstrap implementation
 ```
@@ -56,8 +56,7 @@ MIRR is a specialized tool optimized for designing and verifying the **R-SPU (Re
 ### Known Technical Flaws
 The following flaws have been identified in the current compiler implementation (Phase 6):
 
-1.  **Single-Clock Rigidity**: The compiler lacks native support for Multiple Clock Domains (CDC). All logic is currently tied to a single synchronous `clk`.
-2.  **Physical P&R Agnosticism**: The compiler has no awareness of physical geometry or floorplanning, which can lead to timing closure failures on large-scale chips (like the 16-core R-SPU).
+1.  **Physical P&R Agnosticism**: The compiler has no awareness of physical geometry or floorplanning, which can lead to timing closure failures on large-scale chips (like the 64-core R-SPU).
 
 **Inputs:**
 - MIRR specifications (Signals, Guards, Reflexes, Properties, Patterns)
@@ -79,7 +78,7 @@ The core of MIRR is partitioned into 14 high-assurance engines, each adhering to
 5.  **Symbolic Evaluation Engine** (`src/symbolic/mod.rs`): Implements interval-based abstract interpretation to prove signal value bounds and structural netlist equivalence.
 6.  **Totality Engine** (`src/totality/mod.rs`): Verifies the five Pillars of Totality: resource bounds, output completeness, guard coverage, temporal finiteness, and dependency acyclicity.
 7.  **S-Expression Transpiler** (`src/sexpr/convert/to_sexpr.rs`): Generates homoiconic IR for formal verification bridges (Z3, Rocq).
-8.  **R-SPU Silicon Simulator** (`src/emit/rspu_sim/mod.rs`): Provides cycle-accurate, bit-precise simulation for 16-core R-SPU programs.
+8.  **R-SPU Silicon Simulator** (`src/emit/rspu_sim/mod.rs`): Provides cycle-accurate, bit-precise simulation for 64-core R-SPU programs.
 
 ### Infrastructure & Orchestration
 8.5 **Unified CLI Router** (`src/bin/mirr.rs`): The single entrypoint for the hardware toolchain. Dispatches execution to compilation pipelines, LSP servers, specialized verification engines, and knowledge base tooling. It is broken into functional categories:
@@ -93,7 +92,7 @@ The core of MIRR is partitioned into 14 high-assurance engines, each adhering to
 11. **S-Expression "Code as Data" Engine** (`src/sexpr/mod.rs`): A homoiconic IR with a bounded, iterative eval/apply core. **Current Status**: Not wired to the main pipeline. Used exclusively for self-hosting bootstrap and formal verification bridges.
 12. **Semantic Type Checker** (`src/typeck/mod.rs`): Enforces signedness consistency. **Current Role**: Production-grade AST checker; ECS-native typechecking is currently a shadow gate.
 13. **MAPE-K Analyzer** (`src/mape_k/analyzer.rs`): Evaluates bounded LTL properties over rolling windows for autonomic safety.
-14. **MAPE-K Telemetry Bridge** (`src/mape_k/bridge/mod.rs`): Orchestrates the 16-core telemetry fabric (Proposal 045) for cross-core safety coordination.
+14. **MAPE-K Telemetry Bridge** (`src/mape_k/bridge/mod.rs`): Orchestrates the 64-core telemetry fabric (Proposal 045) for cross-core safety coordination.
 
 ## 4. Data Flow Pathways
 
@@ -130,13 +129,13 @@ The following pathways describe the lifecycle of a MIRR specification:
    The primary objective is to transition from a high-assurance prototype to a mass-scale logic generator, increasing the test suite from **4,000+** to **8,000+** individual test cases.
 
    ### Key Milestones:
-   1.  **ECS-Native Transition**: Complete the migration of the compiler pipeline from a tree-based AST to a high-performance ECS Registry.
+   1.  **ECS-Native Transition**: (Completed) the migration of the compiler pipeline from a tree-based AST to a high-performance ECS Registry.
    2.  **Homoiconicity Integration**: Implement a "Code as Data" core to enable autonomic self-healing and knowledge-backed synthesis.
-   3.  **Scale-Blocker Debugging**: Perform a rigorous audit to identify and resolve logic bottlenecks that prevent scaling beyond 16-core designs.
+   3.  **Scale-Blocker Debugging**: Perform a rigorous audit to identify and resolve logic bottlenecks that prevent scaling beyond 64-core designs.
    4.  **Engine Wiring**: Complete and wire the 14 identified sub-engines (Symbolic, SAT, MAPE-K, etc.) into a unified, high-assurance pipeline.
    5.  ~~**Compiler Ergonomics**~~ *(Completed)*: Migrated the entire toolchain into the unified `mirr` CLI router with `clap` interface categorization to prevent binary sprawl and streamline the hardware architect UX.
-   6.  **Clock Domain Crossing (CDC)**: Implement native support for multiple clock domains to support industrial-grade SoC designs.
-   7.  ~~**Source-Level Debugger**~~ *(Completed)*: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
+   6.  ~~**Clock Domain Crossing (CDC)**~~ *(Completed)*: Implement native support for multiple clock domains to support industrial-grade SoC designs.
+   7.  **Source-Level Debugger**: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
 
 ## 6. The 1-Billion Transistor Vision (Wafer-Scale AI Engine)
 

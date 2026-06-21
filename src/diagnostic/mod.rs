@@ -15,6 +15,9 @@
 use crate::span::Span;
 use std::fmt;
 
+pub mod formal_trace;
+pub mod vcd_parser;
+
 /// Maximum width of a source line in the rendered output.
 const MAX_DIAG_LINE_WIDTH: usize = 200;
 

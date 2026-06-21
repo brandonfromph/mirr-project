@@ -268,6 +268,7 @@ pub enum ErrorCode {
     SatNoResult = 916,
     SatBadModel = 917,
     SatInternalError = 918,
+    FormalInvariantViolated = 919,
 
     // ── E10xx — Symbolic Analysis ────────────────────────────────────────────
     SymbolicFallback = 1000,

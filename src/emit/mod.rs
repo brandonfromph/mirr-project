@@ -27,6 +27,7 @@ pub mod rspu_tagged;
 pub mod sexpr;
 pub mod testbench;
 pub mod verilog;
+pub mod provenance;
 
 use crate::ast::expr::Expr;
 use crate::ast::types::{BinaryOp, LiteralValue, UnaryOp};

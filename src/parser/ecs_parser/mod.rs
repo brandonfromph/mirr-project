@@ -516,6 +516,7 @@ fn parse_guard_ecs(
     lines: &[&str],
     index: &mut usize,
 ) -> Result<EntityId, MirrError> {
+    let start_line = *index as u32;
     let header = lines[*index].trim();
     let after_guard = header
         .strip_prefix("guard ")
@@ -572,6 +573,7 @@ fn parse_guard_ecs(
     registry.register_symbol(&format!("{}::{}", mod_name, name), guard_id);
     registry.set_condition(guard_id, ConditionComponent(cond_ent));
     registry.set_cycle(guard_id, CyclesComponent(cycles));
+    registry.set_span(guard_id, SpanComponent(Span::full_line(start_line)));
     registry.set_parent(guard_id, module_entity);
 
     Ok(guard_id)
@@ -584,6 +586,7 @@ fn parse_reflex_ecs(
     lines: &[&str],
     index: &mut usize,
 ) -> Result<EntityId, MirrError> {
+    let start_line = *index as u32;
     let header = lines[*index].trim();
     let after_reflex = header
         .strip_prefix("reflex ")
@@ -647,6 +650,7 @@ fn parse_reflex_ecs(
         reflex_id,
         ReflexComponent { guards: guard_ents, assignments: assignment_ents, origin: None },
     );
+    registry.set_span(reflex_id, SpanComponent(Span::full_line(start_line)));
     registry.set_parent(reflex_id, module_entity);
 
     Ok(reflex_id)
@@ -709,7 +713,7 @@ fn parse_on_block_stmts(
         if let Some((target_name_raw, expr_str)) = inner_line.split_once('=') {
             let mut target_name = target_name_raw.trim();
             let mut target_index = None;
-            
+
             if let Some(bracket_idx) = target_name.find('[') {
                 if target_name.ends_with(']') {
                     let index_str = &target_name[bracket_idx + 1..target_name.len() - 1];
@@ -725,7 +729,11 @@ fn parse_on_block_stmts(
                 ent
             } else {
                 return Err(MirrError::SemanticError {
-                    message: format!("{} Target signal '{}' not found for assignment.", crate::error_codes::ec(207), target_name),
+                    message: format!(
+                        "{} Target signal '{}' not found for assignment.",
+                        crate::error_codes::ec(207),
+                        target_name
+                    ),
                     span: None,
                 });
             };
@@ -753,6 +761,7 @@ fn parse_property_ecs(
     lines: &[&str],
     index: &mut usize,
 ) -> Result<EntityId, MirrError> {
+    let start_line = *index as u32;
     let header = lines[*index].trim();
     let is_assert = header.starts_with("assert ");
     let after_keyword = if is_assert {
@@ -908,6 +917,7 @@ fn parse_property_ecs(
         prop_id,
         PropertyComponent { directive, formula, formula_exprs, origin: None },
     );
+    registry.set_span(prop_id, SpanComponent(Span::full_line(start_line)));
     registry.set_parent(prop_id, module_entity);
 
     Ok(prop_id)

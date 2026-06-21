@@ -80,6 +80,16 @@ pub(super) fn run_toolchain_operations(
         return;
     }
 
+    let prov_content =
+        emit::provenance::emit_provenance_graph(result).unwrap_or_else(|_| "{}".to_string());
+    let prov_path = super::derive_path(input_path, "_provenance.json");
+    if let Err(e) = std::fs::write(&prov_path, &prov_content) {
+        eprintln!(
+            "  [toolchain] WARNING: failed to write provenance graph '{prov_path}'\n    help: {}",
+            e
+        );
+    }
+
     if optimize {
         if registry.is_available(Tool::Yosys) {
             eprintln!("  [optimize] Running logic optimization with ABC...");
@@ -105,20 +115,17 @@ pub(super) fn run_toolchain_operations(
         }
     }
 
-    // Write SVA bind file for formal verification
-    let bind_content = emit::verilog::emit_sva_bind_file(result).unwrap_or_else(|e| {
-        eprintln!("  [toolchain] WARNING: SVA bind generation failed: {e}");
-        String::new()
-    });
-    let bind_path = if !bind_content.is_empty() {
-        let p = super::derive_path(input_path, "_sva_bind.sv");
-        if let Err(e) = std::fs::write(&p, &bind_content) {
-            eprintln!("  [toolchain] failed to write SVA bind file '{p}'\n    help: {}", e);
+    let mut formal_sv_path = None;
+
+    if formal {
+        let formal_content = emit::verilog::emit_sv_full(result, t, dsp_threshold, false);
+        let path = super::derive_path(input_path, "_formal.sv");
+        if let Err(e) = std::fs::write(&path, &formal_content) {
+            eprintln!("  [toolchain] failed to write formal SV '{path}'\n    help: {}", e);
+        } else {
+            formal_sv_path = Some(path);
         }
-        Some(p)
-    } else {
-        None
-    };
+    }
 
     // Formal verification
     if formal {
@@ -134,8 +141,8 @@ pub(super) fn run_toolchain_operations(
             };
             let sby_content = mirrc::toolchain::sby::generate_sby_config(
                 &module_name,
-                std::path::Path::new(&sv_path),
-                bind_path.as_ref().map(|p| std::path::Path::new(p.as_str())),
+                std::path::Path::new(formal_sv_path.as_ref().unwrap_or(&sv_path)),
+                None,
                 &config,
             );
             let sby_path = super::derive_path(input_path, ".sby");
@@ -155,6 +162,71 @@ pub(super) fn run_toolchain_operations(
                             eprintln!("  [formal] PASSED");
                         } else {
                             eprintln!("  [formal] FAILED (exit code: {:?})", res.exit_code);
+
+                            // Invoke Automated Trace Analyzer
+                            if let Some(graph) =
+                                mirrc::emit::provenance::build_provenance_graph(result)
+                            {
+                                let task_name = if formal_prove { "prove" } else { "bmc" };
+                                let base_dir = std::path::Path::new(&sby_path).with_extension("");
+                                let trace_dir = format!("{}_{}", base_dir.display(), task_name);
+                                let trace_path = std::path::Path::new(&trace_dir)
+                                    .join("engine_0")
+                                    .join("trace.vcd");
+
+                                // Extract the exact property name from the SBY output.
+                                let mut failed_property = String::new();
+                                for line in res.stdout.lines() {
+                                    if line.contains("failed assertion ") {
+                                        if let Some(pos) = line.find("failed assertion ") {
+                                            let after = &line[pos + 17..];
+                                            if let Some(space) = after.find(' ') {
+                                                failed_property = after[..space].to_string();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if failed_property.is_empty() {
+                                    failed_property = format!("{}.unknown_property", module_name);
+                                } else if let Some(dot_idx) = failed_property.find('.') {
+                                    // Strip the module prefix because our provenance graph doesn't prepend it for properties yet.
+                                    failed_property = failed_property[dot_idx + 1..].to_string();
+                                }
+
+                                let report = mirrc::diagnostic::formal_trace::analyze_failure(
+                                    &graph,
+                                    &failed_property,
+                                    Some(&trace_path),
+                                    &result.file_table,
+                                );
+
+                                for diag in report.to_diagnostics() {
+                                    // Fetch source content if we have a span
+                                    let (source, path) = if let Some(s) = diag.span {
+                                        if let Some(file_id) = s.file_id {
+                                            if let Some(p_str) = result.file_table.get(file_id) {
+                                                let src = std::fs::read_to_string(p_str)
+                                                    .unwrap_or_default();
+                                                (src, p_str.to_string())
+                                            } else {
+                                                (String::new(), "unknown".to_string())
+                                            }
+                                        } else {
+                                            let src = std::fs::read_to_string(input_path)
+                                                .unwrap_or_default();
+                                            (src, input_path.to_string())
+                                        }
+                                    } else {
+                                        (String::new(), "unknown".to_string())
+                                    };
+
+                                    let rendered =
+                                        mirrc::diagnostic::render_diagnostic(&diag, &source, &path);
+                                    eprint!("{}", rendered);
+                                }
+                            }
                         }
                     }
                     Err(e) => eprintln!("  [formal] failed: {e}"),
@@ -308,7 +380,9 @@ pub(super) fn run_toolchain_operations(
         eprintln!("    - config.json");
 
         if registry.is_available(Tool::Openlane) {
-            eprintln!("  [tapeout] Docker detected. Running local OpenLANE physical design flow...");
+            eprintln!(
+                "  [tapeout] Docker detected. Running local OpenLANE physical design flow..."
+            );
             match mirrc::toolchain::openlane::run_openlane_flow(
                 &registry,
                 std::path::Path::new("."),
