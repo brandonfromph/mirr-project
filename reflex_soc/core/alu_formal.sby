@@ -1,0 +1,19 @@
+[tasks]
+bmc
+prove
+
+[options]
+bmc: mode bmc
+bmc: depth 15
+prove: mode prove
+prove: depth 15
+
+[engines]
+smtbmc yices
+
+[script]
+read_verilog -sv -formal alu_formal_formal.sv
+prep -top alu_formal
+
+[files]
+reflex_soc/core/alu_formal_formal.sv

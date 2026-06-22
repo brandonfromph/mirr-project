@@ -1,0 +1,85 @@
+import "interconnect/crossbar.mirr" as cross;
+
+module crossbar_formal {
+    signal clk: in bool;
+
+    signal addr_0: internal u16;
+    signal data_in_0: internal u64;
+    signal data_out_0: out u64;
+    signal addr_1: internal u16;
+    signal data_in_1: internal u64;
+    signal data_out_1: out u64;
+    signal addr_2: internal u16;
+    signal data_in_2: internal u64;
+    signal data_out_2: out u64;
+    signal addr_3: internal u16;
+    signal data_in_3: internal u64;
+    signal data_out_3: out u64;
+    signal addr_4: internal u16;
+    signal data_in_4: internal u64;
+    signal data_out_4: out u64;
+    signal addr_5: internal u16;
+    signal data_in_5: internal u64;
+    signal data_out_5: out u64;
+    signal addr_6: internal u16;
+    signal data_in_6: internal u64;
+    signal data_out_6: out u64;
+    signal addr_7: internal u16;
+    signal data_in_7: internal u64;
+    signal data_out_7: out u64;
+    signal addr_8: internal u16;
+    signal data_in_8: internal u64;
+    signal data_out_8: out u64;
+    signal addr_9: internal u16;
+    signal data_in_9: internal u64;
+    signal data_out_9: out u64;
+    signal addr_10: internal u16;
+    signal data_in_10: internal u64;
+    signal data_out_10: out u64;
+    signal addr_11: internal u16;
+    signal data_in_11: internal u64;
+    signal data_out_11: out u64;
+    signal addr_12: internal u16;
+    signal data_in_12: internal u64;
+    signal data_out_12: out u64;
+    signal addr_13: internal u16;
+    signal data_in_13: internal u64;
+    signal data_out_13: out u64;
+    signal addr_14: internal u16;
+    signal data_in_14: internal u64;
+    signal data_out_14: out u64;
+    signal addr_15: internal u16;
+    signal data_in_15: internal u64;
+    signal data_out_15: out u64;
+
+    cross::crossbar(
+        clk,
+        addr_0, data_in_0, data_out_0,
+        addr_1, data_in_1, data_out_1,
+        addr_2, data_in_2, data_out_2,
+        addr_3, data_in_3, data_out_3,
+        addr_4, data_in_4, data_out_4,
+        addr_5, data_in_5, data_out_5,
+        addr_6, data_in_6, data_out_6,
+        addr_7, data_in_7, data_out_7,
+        addr_8, data_in_8, data_out_8,
+        addr_9, data_in_9, data_out_9,
+        addr_10, data_in_10, data_out_10,
+        addr_11, data_in_11, data_out_11,
+        addr_12, data_in_12, data_out_12,
+        addr_13, data_in_13, data_out_13,
+        addr_14, data_in_14, data_out_14,
+        addr_15, data_in_15, data_out_15
+    );
+
+    signal data_in_0_d1: internal u64;
+    reflex delay {
+        on always {
+            data_in_0_d1 = data_in_0;
+        }
+    }
+
+    property crossbar_passthrough {
+        always (data_out_0 == data_in_0_d1);
+    }
+}

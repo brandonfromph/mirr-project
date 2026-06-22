@@ -12,12 +12,10 @@ prove: depth 10
 smtbmc yices
 
 [script]
-read_verilog -sv -formal ram.sv
 read_verilog -sv -formal regfile.sv
-read_verilog -sv -formal reflex_soc_formal.sv
-prep -top reflex_soc
+read_verilog -sv -formal regfile_formal_formal.sv
+prep -top regfile_formal
 
 [files]
-/Users/brandonc.blay/projects/mirr-private/reflex_soc/core/ram.sv
 /Users/brandonc.blay/projects/mirr-private/reflex_soc/core/regfile.sv
-reflex_soc/reflex_soc_formal.sv
+reflex_soc/core/regfile_formal_formal.sv

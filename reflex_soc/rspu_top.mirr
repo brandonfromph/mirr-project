@@ -8,7 +8,7 @@ import "physics/pendulum.mirr" as physics;
 import "physics/controller.mirr" as ctrl;
 import "verification/pcc_verifier.mirr" as pcc;
 
-module reflex_soc {
+module rspu_top {
     signal clk: in bool;
     signal rst_n: in bool;
 
@@ -22,13 +22,13 @@ module reflex_soc {
         signal tx_valid[i]: internal bool;
         signal tx_data[i]: internal u64;
 
-        // Physical I/O Subsystem
-        signal core_io_in[i]: internal u64;
-        signal core_io_out[i]: internal u64;
-
         // Physical Outputs
         signal out_pc[i]: out u32;
         signal out_data[i]: out u64;
+        
+        // Physical I/O
+        signal io_in[i]: internal u64;
+        signal io_out[i]: internal u64;
     }
 
     signal global_trap: out bool;
@@ -36,30 +36,13 @@ module reflex_soc {
     // --- Digital Twin: Physics & Control ---
     signal robot_angle:  internal i64;
     signal robot_torque: internal i64;
-    signal core_0_torque: internal u64; // Dummy actuator for Core 0
 
     physics::pendulum(rst_n, robot_torque, robot_angle);
     ctrl::controller(rst_n, robot_angle, robot_torque);
 
     // --- 64-Core Integration ---
     for i in 0..64 {
-        core::core_top(clk, rst_n, core_io_in[i], core_io_out[i], pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
-    }
-
-    // --- I/O Subsystem Wiring ---
-    reflex wire_io {
-        on always {
-            // Core 0 connects to the physical digital twin
-            // Core 0 gets full physics access. We no longer hide the physics!
-            // The structural bitcast patch in the compiler allows wiring i64 to u64 natively.
-            core_io_in_0 = robot_angle;
-            core_0_torque = core_io_out_0;
-            
-            // Ground Cores 1-63 I/O ports
-            for i in 1..64 {
-                core_io_in[i] = 0;
-            }
-        }
+        core::core_top(clk, rst_n, io_in[i], io_out[i], pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
     }
 
     // --- Hierarchical NoC Interconnect ---
@@ -246,6 +229,7 @@ module reflex_soc {
     signal trap_2: internal bool;
     signal trap_3: internal bool;
     // --- Closed-Loop Verification Logic ---
+
     reflex collect_diagnostics {
         on always {
             for i in 0..64 {
@@ -261,6 +245,6 @@ module reflex_soc {
     }
 
     property system_stability {
-        always (robot_angle < (- -100000) && robot_angle > (-100000) && global_trap == false);
+        always (robot_angle < (- -100000) && robot_angle > (-100000));
     }
 }

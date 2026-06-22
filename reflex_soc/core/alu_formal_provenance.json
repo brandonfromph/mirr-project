@@ -1,0 +1,310 @@
+{
+  "nodes": {
+    "alu_core_call_15_is_add": {
+      "signal": "alu_core_call_15_is_add",
+      "origin": null,
+      "depends_on": [
+        "op",
+        "t1",
+        "t2"
+      ]
+    },
+    "alu_core_call_15_is_invalid": {
+      "signal": "alu_core_call_15_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "op"
+      ]
+    },
+    "alu_core_call_15_is_relu_neg": {
+      "signal": "alu_core_call_15_is_relu_neg",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "op"
+      ]
+    },
+    "alu_core_call_15_is_relu_pos": {
+      "signal": "alu_core_call_15_is_relu_pos",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "op"
+      ]
+    },
+    "alu_core_call_15_is_sub": {
+      "signal": "alu_core_call_15_is_sub",
+      "origin": null,
+      "depends_on": [
+        "op",
+        "t1",
+        "t2"
+      ]
+    },
+    "alu_core_call_15_is_tag_gate": {
+      "signal": "alu_core_call_15_is_tag_gate",
+      "origin": null,
+      "depends_on": [
+        "op"
+      ]
+    },
+    "alu_core_call_15_is_trap": {
+      "signal": "alu_core_call_15_is_trap",
+      "origin": null,
+      "depends_on": []
+    },
+    "alu_core_call_15_res_data": {
+      "signal": "alu_core_call_15_res_data",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "p1"
+      ]
+    },
+    "alu_core_call_15_res_prov": {
+      "signal": "alu_core_call_15_res_prov",
+      "origin": null,
+      "depends_on": [
+        "p1"
+      ]
+    },
+    "alu_core_call_15_res_tag": {
+      "signal": "alu_core_call_15_res_tag",
+      "origin": null,
+      "depends_on": [
+        "t1"
+      ]
+    },
+    "alu_core_call_31_is_add": {
+      "signal": "alu_core_call_31_is_add",
+      "origin": null,
+      "depends_on": [
+        "op",
+        "t1",
+        "t2"
+      ]
+    },
+    "alu_core_call_31_is_invalid": {
+      "signal": "alu_core_call_31_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "op"
+      ]
+    },
+    "alu_core_call_31_is_relu_neg": {
+      "signal": "alu_core_call_31_is_relu_neg",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "op"
+      ]
+    },
+    "alu_core_call_31_is_relu_pos": {
+      "signal": "alu_core_call_31_is_relu_pos",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "op"
+      ]
+    },
+    "alu_core_call_31_is_sub": {
+      "signal": "alu_core_call_31_is_sub",
+      "origin": null,
+      "depends_on": [
+        "op",
+        "t1",
+        "t2"
+      ]
+    },
+    "alu_core_call_31_is_tag_gate": {
+      "signal": "alu_core_call_31_is_tag_gate",
+      "origin": null,
+      "depends_on": [
+        "op"
+      ]
+    },
+    "alu_core_call_31_is_trap": {
+      "signal": "alu_core_call_31_is_trap",
+      "origin": null,
+      "depends_on": []
+    },
+    "alu_core_call_31_res_data": {
+      "signal": "alu_core_call_31_res_data",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "p1"
+      ]
+    },
+    "alu_core_call_31_res_prov": {
+      "signal": "alu_core_call_31_res_prov",
+      "origin": null,
+      "depends_on": [
+        "p1"
+      ]
+    },
+    "alu_core_call_31_res_tag": {
+      "signal": "alu_core_call_31_res_tag",
+      "origin": null,
+      "depends_on": [
+        "t1"
+      ]
+    },
+    "clk": {
+      "signal": "clk",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "d1": {
+      "signal": "d1",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "d2": {
+      "signal": "d2",
+      "origin": {
+        "start_line": 10,
+        "start_col": 0,
+        "end_line": 10,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "invalid_op_traps": {
+      "signal": "invalid_op_traps",
+      "origin": {
+        "start_line": 22,
+        "start_col": 0,
+        "end_line": 22,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "op",
+        "trap"
+      ]
+    },
+    "op": {
+      "signal": "op",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "out_data": {
+      "signal": "out_data",
+      "origin": {
+        "start_line": 14,
+        "start_col": 0,
+        "end_line": 14,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "out_prov": {
+      "signal": "out_prov",
+      "origin": {
+        "start_line": 16,
+        "start_col": 0,
+        "end_line": 16,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "out_tag": {
+      "signal": "out_tag",
+      "origin": {
+        "start_line": 15,
+        "start_col": 0,
+        "end_line": 15,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "p1": {
+      "signal": "p1",
+      "origin": {
+        "start_line": 9,
+        "start_col": 0,
+        "end_line": 9,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "p2": {
+      "signal": "p2",
+      "origin": {
+        "start_line": 12,
+        "start_col": 0,
+        "end_line": 12,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "rst_n": {
+      "signal": "rst_n",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "t1": {
+      "signal": "t1",
+      "origin": {
+        "start_line": 8,
+        "start_col": 0,
+        "end_line": 8,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "t2": {
+      "signal": "t2",
+      "origin": {
+        "start_line": 11,
+        "start_col": 0,
+        "end_line": 11,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "trap": {
+      "signal": "trap",
+      "origin": {
+        "start_line": 17,
+        "start_col": 0,
+        "end_line": 17,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "valid_op_safe": {
+      "signal": "valid_op_safe",
+      "origin": {
+        "start_line": 27,
+        "start_col": 0,
+        "end_line": 27,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "op",
+        "trap"
+      ]
+    }
+  }
+}

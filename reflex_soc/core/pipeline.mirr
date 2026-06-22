@@ -51,21 +51,17 @@ def rspu_pipeline(
         signal cert_i: internal u16;
         signal cert_r: internal u16;
         signal cert_g: internal u16;
-        signal cert_h: internal bool;
-        signal cert_v: internal bool;
 
         reflex init_cert {
             on always {
                 cert_i = 0;
                 cert_r = 0;
                 cert_g = 0;
-                cert_h = true;
-                cert_v = true;
             }
         }
 
         pcc::pcc_verifier(${clk}, ${rst_n}, 
-            cert_i, cert_r, cert_g, cert_h, cert_v,
+            cert_i, cert_r, cert_g, true, true,
             pcc_valid, pcc_fault
         );
 

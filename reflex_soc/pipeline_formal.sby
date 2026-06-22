@@ -1,20 +1,23 @@
 [tasks]
 bmc
+prove
 
 [options]
 bmc: mode bmc
-bmc: depth 20
+bmc: depth 10
+prove: mode prove
+prove: depth 10
 
 [engines]
-smtbmc z3
+smtbmc yices
 
 [script]
 read_verilog -sv -formal ram.sv
 read_verilog -sv -formal regfile.sv
-read_verilog -sv -formal rspu_top_formal.sv
-prep -top rspu_top
+read_verilog -sv -formal pipeline_formal_formal.sv
+prep -top pipeline_formal
 
 [files]
 /Users/brandonc.blay/projects/mirr-private/reflex_soc/core/ram.sv
 /Users/brandonc.blay/projects/mirr-private/reflex_soc/core/regfile.sv
-reflex_soc/rspu_top_formal.sv
+reflex_soc/pipeline_formal_formal.sv

@@ -1,0 +1,162 @@
+{
+  "nodes": {
+    "clk": {
+      "signal": "clk",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "din": {
+      "signal": "din",
+      "origin": {
+        "start_line": 10,
+        "start_col": 0,
+        "end_line": 10,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "din_d1": {
+      "signal": "din_d1",
+      "origin": {
+        "start_line": 19,
+        "start_col": 0,
+        "end_line": 19,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "din"
+      ]
+    },
+    "dout1": {
+      "signal": "dout1",
+      "origin": {
+        "start_line": 12,
+        "start_col": 0,
+        "end_line": 12,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "dout2": {
+      "signal": "dout2",
+      "origin": {
+        "start_line": 13,
+        "start_col": 0,
+        "end_line": 13,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "rd": {
+      "signal": "rd",
+      "origin": {
+        "start_line": 8,
+        "start_col": 0,
+        "end_line": 8,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "rd_d1": {
+      "signal": "rd_d1",
+      "origin": {
+        "start_line": 18,
+        "start_col": 0,
+        "end_line": 18,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rd"
+      ]
+    },
+    "read_after_write_1": {
+      "signal": "read_after_write_1",
+      "origin": {
+        "start_line": 30,
+        "start_col": 0,
+        "end_line": 30,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "din_d1",
+        "dout1",
+        "rd_d1",
+        "rs1",
+        "we_d1"
+      ]
+    },
+    "read_after_write_2": {
+      "signal": "read_after_write_2",
+      "origin": {
+        "start_line": 34,
+        "start_col": 0,
+        "end_line": 34,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "din_d1",
+        "dout2",
+        "rd_d1",
+        "rs2",
+        "we_d1"
+      ]
+    },
+    "rs1": {
+      "signal": "rs1",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "rs2": {
+      "signal": "rs2",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "rst_n": {
+      "signal": "rst_n",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "we": {
+      "signal": "we",
+      "origin": {
+        "start_line": 9,
+        "start_col": 0,
+        "end_line": 9,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "we_d1": {
+      "signal": "we_d1",
+      "origin": {
+        "start_line": 17,
+        "start_col": 0,
+        "end_line": 17,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "we"
+      ]
+    }
+  }
+}

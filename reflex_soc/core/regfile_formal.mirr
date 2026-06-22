@@ -1,0 +1,38 @@
+import "regfile.mirr" as rf;
+
+module regfile_formal {
+    signal clk: in bool;
+    signal rst_n: in bool;
+
+    signal rs1: internal u10;
+    signal rs2: internal u10;
+    signal rd: internal u10;
+    signal we: internal bool;
+    signal din: internal u64;
+
+    signal dout1: out u64;
+    signal dout2: out u64;
+
+    rf::regfile(clk, rs1, rs2, rd, we, din, dout1, dout2);
+
+    signal we_d1: internal bool;
+    signal rd_d1: internal u10;
+    signal din_d1: internal u64;
+
+    reflex pipeline_delay {
+        on always {
+            we_d1 = we;
+            rd_d1 = rd;
+            din_d1 = din;
+        }
+    }
+
+    // Property: if we wrote to 'rd' on the previous cycle, and 'rs1' reads from it now, we should get 'din' from the previous cycle.
+    property read_after_write_1 {
+        always ((we_d1 && (rs1 == rd_d1)) -> (dout1 == din_d1));
+    }
+
+    property read_after_write_2 {
+        always ((we_d1 && (rs2 == rd_d1)) -> (dout2 == din_d1));
+    }
+}

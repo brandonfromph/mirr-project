@@ -1,0 +1,140 @@
+{
+  "nodes": {
+    "addr": {
+      "signal": "addr",
+      "origin": {
+        "start_line": 13,
+        "start_col": 0,
+        "end_line": 13,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_d1": {
+      "signal": "addr_d1",
+      "origin": {
+        "start_line": 20,
+        "start_col": 0,
+        "end_line": 20,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "addr"
+      ]
+    },
+    "addr_d2": {
+      "signal": "addr_d2",
+      "origin": {
+        "start_line": 22,
+        "start_col": 0,
+        "end_line": 22,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "addr_d1"
+      ]
+    },
+    "clk": {
+      "signal": "clk",
+      "origin": {
+        "start_line": 9,
+        "start_col": 0,
+        "end_line": 9,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "din": {
+      "signal": "din",
+      "origin": {
+        "start_line": 14,
+        "start_col": 0,
+        "end_line": 14,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "din_d1": {
+      "signal": "din_d1",
+      "origin": {
+        "start_line": 21,
+        "start_col": 0,
+        "end_line": 21,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "din"
+      ]
+    },
+    "din_d2": {
+      "signal": "din_d2",
+      "origin": {
+        "start_line": 23,
+        "start_col": 0,
+        "end_line": 23,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "din_d1"
+      ]
+    },
+    "dout": {
+      "signal": "dout",
+      "origin": {
+        "start_line": 16,
+        "start_col": 0,
+        "end_line": 16,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "read_after_write": {
+      "signal": "read_after_write",
+      "origin": {
+        "start_line": 40,
+        "start_col": 0,
+        "end_line": 40,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "addr_d1",
+        "addr_d2",
+        "din_d2",
+        "dout",
+        "valid_d2"
+      ]
+    },
+    "rst_n": {
+      "signal": "rst_n",
+      "origin": {
+        "start_line": 10,
+        "start_col": 0,
+        "end_line": 10,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "valid_d1": {
+      "signal": "valid_d1",
+      "origin": {
+        "start_line": 24,
+        "start_col": 0,
+        "end_line": 24,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "valid_d2": {
+      "signal": "valid_d2",
+      "origin": {
+        "start_line": 25,
+        "start_col": 0,
+        "end_line": 25,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "valid_d1"
+      ]
+    }
+  }
+}

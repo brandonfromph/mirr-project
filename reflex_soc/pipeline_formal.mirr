@@ -1,0 +1,32 @@
+import "core/pipeline.mirr" as pipe;
+
+module pipeline_formal {
+    signal clk: in bool;
+    signal rst_n: in bool;
+    
+    signal instr_in: internal u64;
+    signal io_in_0: internal u64;
+    
+    signal io_out_0: out u64;
+    signal pc_out: out u32;
+    signal data_out: out u64;
+    signal trap_out: out bool;
+
+    pipe::rspu_pipeline(clk, rst_n, instr_in, io_in_0, io_out_0, pc_out, data_out, trap_out);
+
+    signal pc_d1: internal u32;
+    signal trap_d1: internal bool;
+
+    reflex pipeline_delay {
+        on always {
+            pc_d1 = pc_out;
+            trap_d1 = trap_out;
+        }
+    }
+
+    // Property 1: If there is no trap, PC either initializes, increments, or stalls
+    // We check if pc_d1 == 0, increments, or stalls
+    property pc_increment_safety {
+        always ((!trap_out && rst_n) -> ((pc_out == pc_d1 + 1) || (pc_out == pc_d1) || (pc_out == 0) || (pc_out == 1)));
+    }
+}

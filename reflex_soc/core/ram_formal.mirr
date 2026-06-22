@@ -1,0 +1,46 @@
+extern module ram(
+    clk: signal in bool,
+    addr: signal in u14,
+    din: signal in u64,
+    dout: signal out u64
+) {}
+
+module ram_formal {
+    signal clk: in bool;
+    signal rst_n: in bool;
+
+    // Use internal signals to bypass auto-input synchronizers in formal wrapper
+    signal addr: internal u14;
+    signal din: internal u64;
+
+    signal dout: out u64;
+
+    ram(clk, addr, din, dout);
+
+    signal addr_d1: internal u14;
+    signal din_d1: internal u64;
+    signal addr_d2: internal u14;
+    signal din_d2: internal u64;
+    signal valid_d1: internal bool;
+    signal valid_d2: internal bool;
+
+    reflex pipeline_delay {
+        on always {
+            addr_d1 = addr;
+            din_d1 = din;
+            
+            addr_d2 = addr_d1;
+            din_d2 = din_d1;
+
+            valid_d1 = true;
+            valid_d2 = valid_d1;
+        }
+    }
+
+    property read_after_write {
+        // If we read from the same address on two consecutive cycles,
+        // the second read (available on dout at d2) will return the
+        // data written during the first cycle (d2).
+        always ((valid_d2 && (addr_d2 == addr_d1)) -> (dout == din_d2));
+    }
+}

@@ -1,0 +1,21 @@
+[tasks]
+bmc
+prove
+
+[options]
+bmc: mode bmc
+bmc: depth 10
+prove: mode prove
+prove: depth 10
+
+[engines]
+smtbmc yices
+
+[script]
+read_verilog -sv -formal crossbar.v
+read_verilog -sv -formal crossbar_formal_formal.sv
+prep -top crossbar_formal
+
+[files]
+/Users/brandonc.blay/projects/mirr-private/reflex_soc/interconnect/crossbar.v
+reflex_soc/crossbar_formal_formal.sv

@@ -1,0 +1,551 @@
+{
+  "nodes": {
+    "addr_0": {
+      "signal": "addr_0",
+      "origin": {
+        "start_line": 5,
+        "start_col": 0,
+        "end_line": 5,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_1": {
+      "signal": "addr_1",
+      "origin": {
+        "start_line": 8,
+        "start_col": 0,
+        "end_line": 8,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_10": {
+      "signal": "addr_10",
+      "origin": {
+        "start_line": 35,
+        "start_col": 0,
+        "end_line": 35,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_11": {
+      "signal": "addr_11",
+      "origin": {
+        "start_line": 38,
+        "start_col": 0,
+        "end_line": 38,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_12": {
+      "signal": "addr_12",
+      "origin": {
+        "start_line": 41,
+        "start_col": 0,
+        "end_line": 41,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_13": {
+      "signal": "addr_13",
+      "origin": {
+        "start_line": 44,
+        "start_col": 0,
+        "end_line": 44,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_14": {
+      "signal": "addr_14",
+      "origin": {
+        "start_line": 47,
+        "start_col": 0,
+        "end_line": 47,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_15": {
+      "signal": "addr_15",
+      "origin": {
+        "start_line": 50,
+        "start_col": 0,
+        "end_line": 50,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_2": {
+      "signal": "addr_2",
+      "origin": {
+        "start_line": 11,
+        "start_col": 0,
+        "end_line": 11,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_3": {
+      "signal": "addr_3",
+      "origin": {
+        "start_line": 14,
+        "start_col": 0,
+        "end_line": 14,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_4": {
+      "signal": "addr_4",
+      "origin": {
+        "start_line": 17,
+        "start_col": 0,
+        "end_line": 17,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_5": {
+      "signal": "addr_5",
+      "origin": {
+        "start_line": 20,
+        "start_col": 0,
+        "end_line": 20,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_6": {
+      "signal": "addr_6",
+      "origin": {
+        "start_line": 23,
+        "start_col": 0,
+        "end_line": 23,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_7": {
+      "signal": "addr_7",
+      "origin": {
+        "start_line": 26,
+        "start_col": 0,
+        "end_line": 26,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_8": {
+      "signal": "addr_8",
+      "origin": {
+        "start_line": 29,
+        "start_col": 0,
+        "end_line": 29,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "addr_9": {
+      "signal": "addr_9",
+      "origin": {
+        "start_line": 32,
+        "start_col": 0,
+        "end_line": 32,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "clk": {
+      "signal": "clk",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "crossbar_passthrough": {
+      "signal": "crossbar_passthrough",
+      "origin": {
+        "start_line": 81,
+        "start_col": 0,
+        "end_line": 81,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_0_d1",
+        "data_out_0"
+      ]
+    },
+    "data_in_0": {
+      "signal": "data_in_0",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_0_d1": {
+      "signal": "data_in_0_d1",
+      "origin": {
+        "start_line": 74,
+        "start_col": 0,
+        "end_line": 74,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_0"
+      ]
+    },
+    "data_in_1": {
+      "signal": "data_in_1",
+      "origin": {
+        "start_line": 9,
+        "start_col": 0,
+        "end_line": 9,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_10": {
+      "signal": "data_in_10",
+      "origin": {
+        "start_line": 36,
+        "start_col": 0,
+        "end_line": 36,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_11": {
+      "signal": "data_in_11",
+      "origin": {
+        "start_line": 39,
+        "start_col": 0,
+        "end_line": 39,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_12": {
+      "signal": "data_in_12",
+      "origin": {
+        "start_line": 42,
+        "start_col": 0,
+        "end_line": 42,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_13": {
+      "signal": "data_in_13",
+      "origin": {
+        "start_line": 45,
+        "start_col": 0,
+        "end_line": 45,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_14": {
+      "signal": "data_in_14",
+      "origin": {
+        "start_line": 48,
+        "start_col": 0,
+        "end_line": 48,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_15": {
+      "signal": "data_in_15",
+      "origin": {
+        "start_line": 51,
+        "start_col": 0,
+        "end_line": 51,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_2": {
+      "signal": "data_in_2",
+      "origin": {
+        "start_line": 12,
+        "start_col": 0,
+        "end_line": 12,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_3": {
+      "signal": "data_in_3",
+      "origin": {
+        "start_line": 15,
+        "start_col": 0,
+        "end_line": 15,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_4": {
+      "signal": "data_in_4",
+      "origin": {
+        "start_line": 18,
+        "start_col": 0,
+        "end_line": 18,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_5": {
+      "signal": "data_in_5",
+      "origin": {
+        "start_line": 21,
+        "start_col": 0,
+        "end_line": 21,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_6": {
+      "signal": "data_in_6",
+      "origin": {
+        "start_line": 24,
+        "start_col": 0,
+        "end_line": 24,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_7": {
+      "signal": "data_in_7",
+      "origin": {
+        "start_line": 27,
+        "start_col": 0,
+        "end_line": 27,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_8": {
+      "signal": "data_in_8",
+      "origin": {
+        "start_line": 30,
+        "start_col": 0,
+        "end_line": 30,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_in_9": {
+      "signal": "data_in_9",
+      "origin": {
+        "start_line": 33,
+        "start_col": 0,
+        "end_line": 33,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "data_out_0": {
+      "signal": "data_out_0",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_0"
+      ]
+    },
+    "data_out_1": {
+      "signal": "data_out_1",
+      "origin": {
+        "start_line": 10,
+        "start_col": 0,
+        "end_line": 10,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_1"
+      ]
+    },
+    "data_out_10": {
+      "signal": "data_out_10",
+      "origin": {
+        "start_line": 37,
+        "start_col": 0,
+        "end_line": 37,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_10"
+      ]
+    },
+    "data_out_11": {
+      "signal": "data_out_11",
+      "origin": {
+        "start_line": 40,
+        "start_col": 0,
+        "end_line": 40,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_11"
+      ]
+    },
+    "data_out_12": {
+      "signal": "data_out_12",
+      "origin": {
+        "start_line": 43,
+        "start_col": 0,
+        "end_line": 43,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_12"
+      ]
+    },
+    "data_out_13": {
+      "signal": "data_out_13",
+      "origin": {
+        "start_line": 46,
+        "start_col": 0,
+        "end_line": 46,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_13"
+      ]
+    },
+    "data_out_14": {
+      "signal": "data_out_14",
+      "origin": {
+        "start_line": 49,
+        "start_col": 0,
+        "end_line": 49,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_14"
+      ]
+    },
+    "data_out_15": {
+      "signal": "data_out_15",
+      "origin": {
+        "start_line": 52,
+        "start_col": 0,
+        "end_line": 52,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_15"
+      ]
+    },
+    "data_out_2": {
+      "signal": "data_out_2",
+      "origin": {
+        "start_line": 13,
+        "start_col": 0,
+        "end_line": 13,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_2"
+      ]
+    },
+    "data_out_3": {
+      "signal": "data_out_3",
+      "origin": {
+        "start_line": 16,
+        "start_col": 0,
+        "end_line": 16,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_3"
+      ]
+    },
+    "data_out_4": {
+      "signal": "data_out_4",
+      "origin": {
+        "start_line": 19,
+        "start_col": 0,
+        "end_line": 19,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_4"
+      ]
+    },
+    "data_out_5": {
+      "signal": "data_out_5",
+      "origin": {
+        "start_line": 22,
+        "start_col": 0,
+        "end_line": 22,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_5"
+      ]
+    },
+    "data_out_6": {
+      "signal": "data_out_6",
+      "origin": {
+        "start_line": 25,
+        "start_col": 0,
+        "end_line": 25,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_6"
+      ]
+    },
+    "data_out_7": {
+      "signal": "data_out_7",
+      "origin": {
+        "start_line": 28,
+        "start_col": 0,
+        "end_line": 28,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_7"
+      ]
+    },
+    "data_out_8": {
+      "signal": "data_out_8",
+      "origin": {
+        "start_line": 31,
+        "start_col": 0,
+        "end_line": 31,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_8"
+      ]
+    },
+    "data_out_9": {
+      "signal": "data_out_9",
+      "origin": {
+        "start_line": 34,
+        "start_col": 0,
+        "end_line": 34,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "data_in_9"
+      ]
+    }
+  }
+}

@@ -25,27 +25,12 @@ def pcc_verifier(
         signal MAX_GUARDS: internal u16;
 
         // Bounds checking
-        signal bounds_ok: internal bool;
-
-        reflex update_bounds {
-            on always {
-                MAX_INSTRUCTIONS = 1024;
-                MAX_REGISTERS = 256;
-                MAX_GUARDS = 32;
-
-                bounds_ok = (${cert_instr_count} <= MAX_INSTRUCTIONS) && (${cert_reg_count} <= MAX_REGISTERS) && (${cert_guard_count} <= MAX_GUARDS);
-            }
-        }
-
-        signal is_valid: internal bool;
-
-        // Main verification latch
-        // code_valid asserts only when all checks pass simultaneously.
+        signal is_invalid: internal bool;
         reflex update_verification {
             on always {
-                is_valid = bounds_ok && ${cert_hash_match} && ${cert_valid_sig};
-                ${code_valid} = is_valid;
-                ${verify_fault} = !is_valid;
+                is_invalid = !(${cert_instr_count} <= 1024) || !(${cert_reg_count} <= 256) || !(${cert_guard_count} <= 32) || !${cert_hash_match} || !${cert_valid_sig};
+                ${code_valid} = !is_invalid;
+                ${verify_fault} = is_invalid;
             }
         }
     }

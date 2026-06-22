@@ -1,0 +1,421 @@
+import "interconnect/noc_router.mirr" as noc;
+
+module noc_router_formal {
+    signal clk: in bool;
+    signal rst_n: in bool;
+
+    signal p0_tx_valid: internal bool;
+    signal p0_tx_data: internal u64;
+    signal p1_tx_valid: internal bool;
+    signal p1_tx_data: internal u64;
+    signal p2_tx_valid: internal bool;
+    signal p2_tx_data: internal u64;
+    signal p3_tx_valid: internal bool;
+    signal p3_tx_data: internal u64;
+    signal p4_tx_valid: internal bool;
+    signal p4_tx_data: internal u64;
+    signal p5_tx_valid: internal bool;
+    signal p5_tx_data: internal u64;
+    signal p6_tx_valid: internal bool;
+    signal p6_tx_data: internal u64;
+    signal p7_tx_valid: internal bool;
+    signal p7_tx_data: internal u64;
+    signal p8_tx_valid: internal bool;
+    signal p8_tx_data: internal u64;
+    signal p9_tx_valid: internal bool;
+    signal p9_tx_data: internal u64;
+    signal p10_tx_valid: internal bool;
+    signal p10_tx_data: internal u64;
+    signal p11_tx_valid: internal bool;
+    signal p11_tx_data: internal u64;
+    signal p12_tx_valid: internal bool;
+    signal p12_tx_data: internal u64;
+    signal p13_tx_valid: internal bool;
+    signal p13_tx_data: internal u64;
+    signal p14_tx_valid: internal bool;
+    signal p14_tx_data: internal u64;
+    signal p15_tx_valid: internal bool;
+    signal p15_tx_data: internal u64;
+    signal p16_tx_valid: internal bool;
+    signal p16_tx_data: internal u64;
+    signal p17_tx_valid: internal bool;
+    signal p17_tx_data: internal u64;
+    signal p18_tx_valid: internal bool;
+    signal p18_tx_data: internal u64;
+    signal p19_tx_valid: internal bool;
+    signal p19_tx_data: internal u64;
+    signal p20_tx_valid: internal bool;
+    signal p20_tx_data: internal u64;
+    signal p21_tx_valid: internal bool;
+    signal p21_tx_data: internal u64;
+    signal p22_tx_valid: internal bool;
+    signal p22_tx_data: internal u64;
+    signal p23_tx_valid: internal bool;
+    signal p23_tx_data: internal u64;
+    signal p24_tx_valid: internal bool;
+    signal p24_tx_data: internal u64;
+    signal p25_tx_valid: internal bool;
+    signal p25_tx_data: internal u64;
+    signal p26_tx_valid: internal bool;
+    signal p26_tx_data: internal u64;
+    signal p27_tx_valid: internal bool;
+    signal p27_tx_data: internal u64;
+    signal p28_tx_valid: internal bool;
+    signal p28_tx_data: internal u64;
+    signal p29_tx_valid: internal bool;
+    signal p29_tx_data: internal u64;
+    signal p30_tx_valid: internal bool;
+    signal p30_tx_data: internal u64;
+    signal p31_tx_valid: internal bool;
+    signal p31_tx_data: internal u64;
+    signal p32_tx_valid: internal bool;
+    signal p32_tx_data: internal u64;
+    signal p33_tx_valid: internal bool;
+    signal p33_tx_data: internal u64;
+    signal p34_tx_valid: internal bool;
+    signal p34_tx_data: internal u64;
+    signal p35_tx_valid: internal bool;
+    signal p35_tx_data: internal u64;
+    signal p36_tx_valid: internal bool;
+    signal p36_tx_data: internal u64;
+    signal p37_tx_valid: internal bool;
+    signal p37_tx_data: internal u64;
+    signal p38_tx_valid: internal bool;
+    signal p38_tx_data: internal u64;
+    signal p39_tx_valid: internal bool;
+    signal p39_tx_data: internal u64;
+    signal p40_tx_valid: internal bool;
+    signal p40_tx_data: internal u64;
+    signal p41_tx_valid: internal bool;
+    signal p41_tx_data: internal u64;
+    signal p42_tx_valid: internal bool;
+    signal p42_tx_data: internal u64;
+    signal p43_tx_valid: internal bool;
+    signal p43_tx_data: internal u64;
+    signal p44_tx_valid: internal bool;
+    signal p44_tx_data: internal u64;
+    signal p45_tx_valid: internal bool;
+    signal p45_tx_data: internal u64;
+    signal p46_tx_valid: internal bool;
+    signal p46_tx_data: internal u64;
+    signal p47_tx_valid: internal bool;
+    signal p47_tx_data: internal u64;
+    signal p48_tx_valid: internal bool;
+    signal p48_tx_data: internal u64;
+    signal p49_tx_valid: internal bool;
+    signal p49_tx_data: internal u64;
+    signal p50_tx_valid: internal bool;
+    signal p50_tx_data: internal u64;
+    signal p51_tx_valid: internal bool;
+    signal p51_tx_data: internal u64;
+    signal p52_tx_valid: internal bool;
+    signal p52_tx_data: internal u64;
+    signal p53_tx_valid: internal bool;
+    signal p53_tx_data: internal u64;
+    signal p54_tx_valid: internal bool;
+    signal p54_tx_data: internal u64;
+    signal p55_tx_valid: internal bool;
+    signal p55_tx_data: internal u64;
+    signal p56_tx_valid: internal bool;
+    signal p56_tx_data: internal u64;
+    signal p57_tx_valid: internal bool;
+    signal p57_tx_data: internal u64;
+    signal p58_tx_valid: internal bool;
+    signal p58_tx_data: internal u64;
+    signal p59_tx_valid: internal bool;
+    signal p59_tx_data: internal u64;
+    signal p60_tx_valid: internal bool;
+    signal p60_tx_data: internal u64;
+    signal p61_tx_valid: internal bool;
+    signal p61_tx_data: internal u64;
+    signal p62_tx_valid: internal bool;
+    signal p62_tx_data: internal u64;
+    signal p63_tx_valid: internal bool;
+    signal p63_tx_data: internal u64;
+
+    signal p0_rx_valid: out bool;
+    signal p0_rx_data: out u64;
+    signal p1_rx_valid: out bool;
+    signal p1_rx_data: out u64;
+    signal p2_rx_valid: out bool;
+    signal p2_rx_data: out u64;
+    signal p3_rx_valid: out bool;
+    signal p3_rx_data: out u64;
+    signal p4_rx_valid: out bool;
+    signal p4_rx_data: out u64;
+    signal p5_rx_valid: out bool;
+    signal p5_rx_data: out u64;
+    signal p6_rx_valid: out bool;
+    signal p6_rx_data: out u64;
+    signal p7_rx_valid: out bool;
+    signal p7_rx_data: out u64;
+    signal p8_rx_valid: out bool;
+    signal p8_rx_data: out u64;
+    signal p9_rx_valid: out bool;
+    signal p9_rx_data: out u64;
+    signal p10_rx_valid: out bool;
+    signal p10_rx_data: out u64;
+    signal p11_rx_valid: out bool;
+    signal p11_rx_data: out u64;
+    signal p12_rx_valid: out bool;
+    signal p12_rx_data: out u64;
+    signal p13_rx_valid: out bool;
+    signal p13_rx_data: out u64;
+    signal p14_rx_valid: out bool;
+    signal p14_rx_data: out u64;
+    signal p15_rx_valid: out bool;
+    signal p15_rx_data: out u64;
+    signal p16_rx_valid: out bool;
+    signal p16_rx_data: out u64;
+    signal p17_rx_valid: out bool;
+    signal p17_rx_data: out u64;
+    signal p18_rx_valid: out bool;
+    signal p18_rx_data: out u64;
+    signal p19_rx_valid: out bool;
+    signal p19_rx_data: out u64;
+    signal p20_rx_valid: out bool;
+    signal p20_rx_data: out u64;
+    signal p21_rx_valid: out bool;
+    signal p21_rx_data: out u64;
+    signal p22_rx_valid: out bool;
+    signal p22_rx_data: out u64;
+    signal p23_rx_valid: out bool;
+    signal p23_rx_data: out u64;
+    signal p24_rx_valid: out bool;
+    signal p24_rx_data: out u64;
+    signal p25_rx_valid: out bool;
+    signal p25_rx_data: out u64;
+    signal p26_rx_valid: out bool;
+    signal p26_rx_data: out u64;
+    signal p27_rx_valid: out bool;
+    signal p27_rx_data: out u64;
+    signal p28_rx_valid: out bool;
+    signal p28_rx_data: out u64;
+    signal p29_rx_valid: out bool;
+    signal p29_rx_data: out u64;
+    signal p30_rx_valid: out bool;
+    signal p30_rx_data: out u64;
+    signal p31_rx_valid: out bool;
+    signal p31_rx_data: out u64;
+    signal p32_rx_valid: out bool;
+    signal p32_rx_data: out u64;
+    signal p33_rx_valid: out bool;
+    signal p33_rx_data: out u64;
+    signal p34_rx_valid: out bool;
+    signal p34_rx_data: out u64;
+    signal p35_rx_valid: out bool;
+    signal p35_rx_data: out u64;
+    signal p36_rx_valid: out bool;
+    signal p36_rx_data: out u64;
+    signal p37_rx_valid: out bool;
+    signal p37_rx_data: out u64;
+    signal p38_rx_valid: out bool;
+    signal p38_rx_data: out u64;
+    signal p39_rx_valid: out bool;
+    signal p39_rx_data: out u64;
+    signal p40_rx_valid: out bool;
+    signal p40_rx_data: out u64;
+    signal p41_rx_valid: out bool;
+    signal p41_rx_data: out u64;
+    signal p42_rx_valid: out bool;
+    signal p42_rx_data: out u64;
+    signal p43_rx_valid: out bool;
+    signal p43_rx_data: out u64;
+    signal p44_rx_valid: out bool;
+    signal p44_rx_data: out u64;
+    signal p45_rx_valid: out bool;
+    signal p45_rx_data: out u64;
+    signal p46_rx_valid: out bool;
+    signal p46_rx_data: out u64;
+    signal p47_rx_valid: out bool;
+    signal p47_rx_data: out u64;
+    signal p48_rx_valid: out bool;
+    signal p48_rx_data: out u64;
+    signal p49_rx_valid: out bool;
+    signal p49_rx_data: out u64;
+    signal p50_rx_valid: out bool;
+    signal p50_rx_data: out u64;
+    signal p51_rx_valid: out bool;
+    signal p51_rx_data: out u64;
+    signal p52_rx_valid: out bool;
+    signal p52_rx_data: out u64;
+    signal p53_rx_valid: out bool;
+    signal p53_rx_data: out u64;
+    signal p54_rx_valid: out bool;
+    signal p54_rx_data: out u64;
+    signal p55_rx_valid: out bool;
+    signal p55_rx_data: out u64;
+    signal p56_rx_valid: out bool;
+    signal p56_rx_data: out u64;
+    signal p57_rx_valid: out bool;
+    signal p57_rx_data: out u64;
+    signal p58_rx_valid: out bool;
+    signal p58_rx_data: out u64;
+    signal p59_rx_valid: out bool;
+    signal p59_rx_data: out u64;
+    signal p60_rx_valid: out bool;
+    signal p60_rx_data: out u64;
+    signal p61_rx_valid: out bool;
+    signal p61_rx_data: out u64;
+    signal p62_rx_valid: out bool;
+    signal p62_rx_data: out u64;
+    signal p63_rx_valid: out bool;
+    signal p63_rx_data: out u64;
+
+    noc::noc_router(
+        clk, rst_n,
+        p0_tx_valid, p0_tx_data,
+        p1_tx_valid, p1_tx_data,
+        p2_tx_valid, p2_tx_data,
+        p3_tx_valid, p3_tx_data,
+        p4_tx_valid, p4_tx_data,
+        p5_tx_valid, p5_tx_data,
+        p6_tx_valid, p6_tx_data,
+        p7_tx_valid, p7_tx_data,
+        p8_tx_valid, p8_tx_data,
+        p9_tx_valid, p9_tx_data,
+        p10_tx_valid, p10_tx_data,
+        p11_tx_valid, p11_tx_data,
+        p12_tx_valid, p12_tx_data,
+        p13_tx_valid, p13_tx_data,
+        p14_tx_valid, p14_tx_data,
+        p15_tx_valid, p15_tx_data,
+        p16_tx_valid, p16_tx_data,
+        p17_tx_valid, p17_tx_data,
+        p18_tx_valid, p18_tx_data,
+        p19_tx_valid, p19_tx_data,
+        p20_tx_valid, p20_tx_data,
+        p21_tx_valid, p21_tx_data,
+        p22_tx_valid, p22_tx_data,
+        p23_tx_valid, p23_tx_data,
+        p24_tx_valid, p24_tx_data,
+        p25_tx_valid, p25_tx_data,
+        p26_tx_valid, p26_tx_data,
+        p27_tx_valid, p27_tx_data,
+        p28_tx_valid, p28_tx_data,
+        p29_tx_valid, p29_tx_data,
+        p30_tx_valid, p30_tx_data,
+        p31_tx_valid, p31_tx_data,
+        p32_tx_valid, p32_tx_data,
+        p33_tx_valid, p33_tx_data,
+        p34_tx_valid, p34_tx_data,
+        p35_tx_valid, p35_tx_data,
+        p36_tx_valid, p36_tx_data,
+        p37_tx_valid, p37_tx_data,
+        p38_tx_valid, p38_tx_data,
+        p39_tx_valid, p39_tx_data,
+        p40_tx_valid, p40_tx_data,
+        p41_tx_valid, p41_tx_data,
+        p42_tx_valid, p42_tx_data,
+        p43_tx_valid, p43_tx_data,
+        p44_tx_valid, p44_tx_data,
+        p45_tx_valid, p45_tx_data,
+        p46_tx_valid, p46_tx_data,
+        p47_tx_valid, p47_tx_data,
+        p48_tx_valid, p48_tx_data,
+        p49_tx_valid, p49_tx_data,
+        p50_tx_valid, p50_tx_data,
+        p51_tx_valid, p51_tx_data,
+        p52_tx_valid, p52_tx_data,
+        p53_tx_valid, p53_tx_data,
+        p54_tx_valid, p54_tx_data,
+        p55_tx_valid, p55_tx_data,
+        p56_tx_valid, p56_tx_data,
+        p57_tx_valid, p57_tx_data,
+        p58_tx_valid, p58_tx_data,
+        p59_tx_valid, p59_tx_data,
+        p60_tx_valid, p60_tx_data,
+        p61_tx_valid, p61_tx_data,
+        p62_tx_valid, p62_tx_data,
+        p63_tx_valid, p63_tx_data,
+        p0_rx_valid, p0_rx_data,
+        p1_rx_valid, p1_rx_data,
+        p2_rx_valid, p2_rx_data,
+        p3_rx_valid, p3_rx_data,
+        p4_rx_valid, p4_rx_data,
+        p5_rx_valid, p5_rx_data,
+        p6_rx_valid, p6_rx_data,
+        p7_rx_valid, p7_rx_data,
+        p8_rx_valid, p8_rx_data,
+        p9_rx_valid, p9_rx_data,
+        p10_rx_valid, p10_rx_data,
+        p11_rx_valid, p11_rx_data,
+        p12_rx_valid, p12_rx_data,
+        p13_rx_valid, p13_rx_data,
+        p14_rx_valid, p14_rx_data,
+        p15_rx_valid, p15_rx_data,
+        p16_rx_valid, p16_rx_data,
+        p17_rx_valid, p17_rx_data,
+        p18_rx_valid, p18_rx_data,
+        p19_rx_valid, p19_rx_data,
+        p20_rx_valid, p20_rx_data,
+        p21_rx_valid, p21_rx_data,
+        p22_rx_valid, p22_rx_data,
+        p23_rx_valid, p23_rx_data,
+        p24_rx_valid, p24_rx_data,
+        p25_rx_valid, p25_rx_data,
+        p26_rx_valid, p26_rx_data,
+        p27_rx_valid, p27_rx_data,
+        p28_rx_valid, p28_rx_data,
+        p29_rx_valid, p29_rx_data,
+        p30_rx_valid, p30_rx_data,
+        p31_rx_valid, p31_rx_data,
+        p32_rx_valid, p32_rx_data,
+        p33_rx_valid, p33_rx_data,
+        p34_rx_valid, p34_rx_data,
+        p35_rx_valid, p35_rx_data,
+        p36_rx_valid, p36_rx_data,
+        p37_rx_valid, p37_rx_data,
+        p38_rx_valid, p38_rx_data,
+        p39_rx_valid, p39_rx_data,
+        p40_rx_valid, p40_rx_data,
+        p41_rx_valid, p41_rx_data,
+        p42_rx_valid, p42_rx_data,
+        p43_rx_valid, p43_rx_data,
+        p44_rx_valid, p44_rx_data,
+        p45_rx_valid, p45_rx_data,
+        p46_rx_valid, p46_rx_data,
+        p47_rx_valid, p47_rx_data,
+        p48_rx_valid, p48_rx_data,
+        p49_rx_valid, p49_rx_data,
+        p50_rx_valid, p50_rx_data,
+        p51_rx_valid, p51_rx_data,
+        p52_rx_valid, p52_rx_data,
+        p53_rx_valid, p53_rx_data,
+        p54_rx_valid, p54_rx_data,
+        p55_rx_valid, p55_rx_data,
+        p56_rx_valid, p56_rx_data,
+        p57_rx_valid, p57_rx_data,
+        p58_rx_valid, p58_rx_data,
+        p59_rx_valid, p59_rx_data,
+        p60_rx_valid, p60_rx_data,
+        p61_rx_valid, p61_rx_data,
+        p62_rx_valid, p62_rx_data,
+        p63_rx_valid, p63_rx_data
+    );
+
+    // In noc_router.mirr, data injected at port i goes into ring_data[i].
+    // Every cycle, it shifts up by 1: ring_data[i+1] = ring_data[i].
+    // p0_rx_data constantly reads ring_data[0].
+    
+    // If we inject data at port 0, it takes 1 cycle to appear in ring_data[0].
+    // Then it should be visible at p0_rx_data on the next cycle.
+    
+    signal p0_tx_data_d1: internal u64;
+    signal p0_tx_valid_d1: internal bool;
+
+    reflex delay_tx {
+        on always {
+            p0_tx_data_d1 = p0_tx_data;
+            p0_tx_valid_d1 = p0_tx_valid;
+        }
+    }
+
+    // A simple property to ensure data injection latency
+    // The noc_router is a ring buffer. Injecting at port 0 goes into ring_data[0].
+    // Then p0_rx_data reads ring_data[0] always.
+    // So p0_rx_data should equal p0_tx_data_d1.
+    property port0_passthrough {
+        always (p0_tx_valid_d1 -> (p0_rx_data == p0_tx_data_d1));
+    }
+}
