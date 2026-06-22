@@ -1,0 +1,31 @@
+import "alu.mirr" as alu;
+
+module alu_formal {
+    signal clk: in bool;
+    signal rst_n: in bool;
+    
+    signal op: in u32;
+    signal d1: in u64;
+    signal t1: in u64;
+    signal p1: in u64;
+    signal d2: in u64;
+    signal t2: in u64;
+    signal p2: in u64;
+    
+    signal out_data: out u64;
+    signal out_tag: out u64;
+    signal out_prov: out u64;
+    signal trap: out bool;
+
+    alu::alu_core(clk, op, d1, t1, p1, d2, t2, p2, out_data, out_tag, out_prov, trap);
+
+    // Trap asserts exactly 3 cycles after an invalid op.
+    property invalid_op_traps {
+        always (!((op == 0) || (op == 1) || (op == 3) || (op == 5) || (op == 6)) followed_by 3 (trap == true));
+    }
+
+    // Trap NEVER asserts 3 cycles after a valid op.
+    property valid_op_safe {
+        always (((op == 0) || (op == 1) || (op == 3) || (op == 5) || (op == 6)) followed_by 3 (trap == false));
+    }
+}
