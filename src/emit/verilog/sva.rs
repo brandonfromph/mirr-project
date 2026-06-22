@@ -195,6 +195,28 @@ pub(super) fn emit_internal_signals(
         }
     }
     out.push('\n');
+
+    out.push_str("  // Physical Power-On Reset Initialization (Matches FPGA target reality)\n");
+    out.push_str("  initial begin\n");
+    for i in 0..registry.names.len() {
+        if let Some(top_id) = top_module_id {
+            if let Some(crate::ecs::components::ModuleComponent(parent_id)) = &registry.modules[i] {
+                if *parent_id != top_id {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+
+        if let (Some(nc), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::EntityKind::SIGNAL(SignalKind::Internal) = kind_comp.0 {
+                let name = registry.resolve_name(nc.0);
+                out.push_str(&format!("    {} = '0;\n", name));
+            }
+        }
+    }
+    out.push_str("  end\n\n");
 }
 
 pub(super) fn emit_module_end(out: &mut String) {
@@ -279,6 +301,17 @@ pub(super) fn emit_property_assertions(
     }
 
     out.push_str("  // ── Safety Properties (SVA) ──\n\n");
+    
+    if has_rst_n {
+        out.push_str("  // Enforce reset sequence for formal verification\n");
+        out.push_str("  reg f_past_valid = 0;\n");
+        out.push_str("  always_ff @(posedge clk) begin\n");
+        out.push_str("    f_past_valid <= 1;\n");
+        out.push_str("  end\n");
+        out.push_str("  always_comb begin\n");
+        out.push_str("    if (!f_past_valid) assume (!rst_n);\n");
+        out.push_str("  end\n\n");
+    }
 
     for i in 0..registry.names.len() {
         if let Some(top_id) = top_module_id {
@@ -445,6 +478,7 @@ pub(super) fn emit_single_property(
 /// to their synchronized versions (_s suffix).
 pub fn emit_synchronizer_chains(
     registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::EntityId>,
     sync_stages: u32,
     out: &mut String,
 ) -> Vec<(String, String)> {
@@ -461,6 +495,15 @@ pub fn emit_synchronizer_chains(
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
+                // Skip if not belonging to top_module_id
+                if let Some(top_id) = top_module_id {
+                    if let Some(crate::ecs::components::ModuleComponent(sig_mod_id)) = &registry.modules[i] {
+                        if *sig_mod_id != top_id {
+                            continue;
+                        }
+                    }
+                }
+
                 let name = registry.resolve_name(nc.0);
                 if name == "clk" || name == "rst_n" {
                     continue;
@@ -486,6 +529,9 @@ pub fn emit_synchronizer_chains(
                     total_bits.saturating_sub(1),
                     sync_reg,
                 ));
+                out.push_str("  initial begin\n");
+                out.push_str(&format!("    {} = '0;\n", sync_reg));
+                out.push_str("  end\n");
 
                 // Sequential synchronizer logic.
                 out.push_str(&format!(

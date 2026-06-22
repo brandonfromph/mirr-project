@@ -17,7 +17,6 @@ pub fn parse_vcd_state_at_step(
     let mut smt_step_id: Option<String> = None;
 
     let mut current_state: HashMap<String, String> = HashMap::new();
-    let mut last_timestamp_state: HashMap<String, String> = HashMap::new();
     let mut target_state: Option<HashMap<String, String>> = None;
 
     let mut current_smt_step: Option<usize> = None;
@@ -48,16 +47,11 @@ pub fn parse_vcd_state_at_step(
         } else {
             // Processing state changes
             if trimmed.starts_with('#') {
-                // Time step advances.
-                // For target_step == 0, the failure is prior to any clock edge. We can
-                // capture the state exactly after the initial `#0` step initializes.
                 if let Some(target) = target_step {
-                    if target == 0 && current_smt_step == Some(0) && target_state.is_none() {
+                    if current_smt_step == Some(target) && target_state.is_none() {
                         target_state = Some(current_state.clone());
                     }
                 }
-
-                last_timestamp_state = current_state.clone();
                 continue;
             }
 
@@ -86,15 +80,6 @@ pub fn parse_vcd_state_at_step(
             if Some(&id) == smt_step_id.as_ref() {
                 if let Ok(step_val) = usize::from_str_radix(&val, 2) {
                     current_smt_step = Some(step_val);
-
-                    if let Some(target) = target_step {
-                        // For target_step > 0, the failure happens on the clock edge where
-                        // smt_step transitions to target_step. We must capture the state
-                        // from the *previous* timestamp (the pre-edge state) that caused it.
-                        if step_val == target && target > 0 && target_state.is_none() {
-                            target_state = Some(last_timestamp_state.clone());
-                        }
-                    }
                 }
             }
         }

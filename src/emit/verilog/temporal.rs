@@ -124,6 +124,16 @@ pub(super) fn emit_temporal_logic_ecs(
     }
     out.push('\n');
 
+    for (_clock, prevs) in &prev_groups_by_clock {
+        out.push_str("  // Physical Power-On Reset Initialization\n");
+        out.push_str("  initial begin\n");
+        for &(sig_ent, delay) in prevs {
+            let sig_name = registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
+            out.push_str(&format!("    {}_d{} = '0;\n", sig_name, delay));
+        }
+        out.push_str("  end\n\n");
+    }
+
     for (clock, prevs) in prev_groups_by_clock {
         out.push_str(&format!("  // Delay line updates for prev() references (@{})\n", clock));
         out.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", clock));
@@ -152,6 +162,8 @@ pub(super) fn emit_temporal_logic_ecs(
         out.push_str("    end\n");
         out.push_str("  end\n\n");
     }
+
+    let mut emitted_shift_registers = std::collections::HashSet::new();
 
     for guard in &netlist.guards {
         // Find the guard entity to get its span and clock domain
@@ -187,21 +199,25 @@ pub(super) fn emit_temporal_logic_ecs(
 
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
-                emit_source_comment(span, ft, out);
-                emit_shift_register_guard(sr, clock_domain, out);
+                if emitted_shift_registers.insert(sr.name.clone()) {
+                    emit_source_comment(span, ft, out);
+                    emit_shift_register_guard(sr, clock_domain, out);
+                }
             }
             CompiledGuard::Counter(cg) => {
                 emit_source_comment(span, ft, out);
                 emit_counter_guard(cg, clock_domain, out);
             }
             CompiledGuard::Complex(cx) => {
-                emit_source_comment(span, ft, out);
-                out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
-                out.push_str(&format!(
-                    "  assign {} = {};\n\n",
-                    cx.output_signal,
-                    emit_logic_expr(&cx.combination_logic),
-                ));
+                if emitted_shift_registers.insert(cx.name.clone()) {
+                    emit_source_comment(span, ft, out);
+                    out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
+                    out.push_str(&format!(
+                        "  assign {} = {};\n\n",
+                        cx.output_signal,
+                        emit_logic_expr(&cx.combination_logic),
+                    ));
+                }
             }
             CompiledGuard::DynamicCounter(dc) => {
                 emit_source_comment(span, ft, out);
@@ -358,6 +374,9 @@ pub(super) fn emit_reflex_logic_ecs(
             }
 
             out.push_str(&format!("  // Unified Reflex Block for: {sig_name} (@{clock_domain})\n"));
+            out.push_str("  initial begin\n");
+            out.push_str(&format!("    {} = '0;\n", sig_name));
+            out.push_str("  end\n");
             out.push_str(&format!(
                 "  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"
             ));
@@ -680,8 +699,8 @@ fn emit_shift_register_guard(
     // Special case: 0 or 1-cycle guard is purely combinational.
     if sr.delay_cycles <= 1 {
         out.push_str(&format!(
-            "  // Guard: {} — {} for {} cycle (combinational)\n",
-            sr.name, cond_desc, sr.delay_cycles
+            "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycle (combinational)\n",
+            sr.name, sr.name.len(), sr.name.as_bytes(), cond_desc, sr.delay_cycles
         ));
         out.push_str(&format!("  logic {}_cond;\n", sr.name));
         out.push_str(&format!(
@@ -694,14 +713,17 @@ fn emit_shift_register_guard(
     }
 
     out.push_str(&format!(
-        "  // Guard: {} — {} for {} cycles\n",
-        sr.name, cond_desc, sr.delay_cycles
+        "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycles\n",
+        sr.name, sr.name.len(), sr.name.as_bytes(), cond_desc, sr.delay_cycles
     ));
 
     let stage_count = sr.delay_cycles.min(MAX_SR_STAGES_INLINE);
 
     // Declare the shift register.
     out.push_str(&format!("  logic [{}:0] {}_sr;\n", stage_count.saturating_sub(1), sr.name,));
+    out.push_str("  initial begin\n");
+    out.push_str(&format!("    {}_sr = '0;\n", sr.name));
+    out.push_str("  end\n");
 
     // Condition wire.
     out.push_str(&format!("  logic {}_cond;\n", sr.name));
@@ -739,6 +761,9 @@ fn emit_counter_guard(
 
     // Counter register.
     out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), cg.counter_signal,));
+    out.push_str("  initial begin\n");
+    out.push_str(&format!("    {} = '0;\n", cg.counter_signal));
+    out.push_str("  end\n");
 
     // Condition wire.
     out.push_str(&format!("  logic {}_cond;\n", cg.name));
@@ -779,6 +804,9 @@ fn emit_dynamic_counter_guard(
 
     // Counter register.
     out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), dc.counter_signal));
+    out.push_str("  initial begin\n");
+    out.push_str(&format!("    {} = '0;\n", dc.counter_signal));
+    out.push_str("  end\n");
 
     // Dynamic target wire.
     let target_signal = format!("{}_target", dc.name);
