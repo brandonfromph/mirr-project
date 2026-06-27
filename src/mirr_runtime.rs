@@ -244,9 +244,7 @@ impl RuntimePools {
                 self.signal_vals[idx] = Value::Bool(false);
             }
         }
-        for b in &mut self.guard_active {
-            *b = false;
-        }
+        self.guard_active.fill(false);
         // guard_counters are persistent across ticks; do not reset here.
         self.sr_pairs.clear();
         self.next_vals.clear();

@@ -124,7 +124,7 @@ pub(super) fn emit_temporal_logic_ecs(
     }
     out.push('\n');
 
-    for (_clock, prevs) in &prev_groups_by_clock {
+    for prevs in prev_groups_by_clock.values() {
         out.push_str("  // Physical Power-On Reset Initialization\n");
         out.push_str("  initial begin\n");
         for &(sig_ent, delay) in prevs {

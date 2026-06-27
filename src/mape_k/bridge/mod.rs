@@ -334,7 +334,7 @@ mod tests {
         for i in 0..MAX_BRIDGE_SIGNALS + 1 {
             src.push_str(&format!("signal s{}: in u8; ", i));
         }
-        src.push_str("}");
+        src.push('}');
         let result = compile_test_source(&src);
         let err = bridge_from_pipeline(&result).expect_err("should fail");
         assert!(err.iter().any(|e| matches!(e, MapeKError::BridgeConfigError(_))));
