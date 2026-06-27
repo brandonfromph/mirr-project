@@ -247,7 +247,7 @@ fn render_with_span_shows_location_line() {
         .with_span(Some(Span::single_line(1, 4, 10)));
     let rendered = render_diagnostic(&diag, source, "test.mirr");
     assert!(
-        rendered.contains("--> test.mirr:2:5"),
+        rendered.contains("@> test.mirr:2:5"),
         "location line should show 1-based line:col (line 2, col 5): {rendered}"
     );
 }
@@ -296,7 +296,7 @@ fn render_span_at_line_zero() {
     let diag = Diagnostic::error("first line error").with_span(Some(Span::single_line(0, 0, 6)));
     let rendered = render_diagnostic(&diag, source, "first.mirr");
     assert!(
-        rendered.contains("--> first.mirr:1:1"),
+        rendered.contains("@> first.mirr:1:1"),
         "line 0 col 0 should display as 1:1: {rendered}"
     );
     assert!(rendered.contains("module"), "should show the first source line: {rendered}");
@@ -342,7 +342,7 @@ fn render_note_label_with_span() {
         "note label with span should include 'note:' header: {rendered}"
     );
     assert!(
-        rendered.contains("--> dup.mirr:2:12"),
+        rendered.contains("@> dup.mirr:2:12"),
         "note span should point to the original definition location: {rendered}"
     );
 }
@@ -762,7 +762,7 @@ fn render_no_span_no_code() {
     );
     assert!(!rendered.contains("["), "error without code should not have brackets: {rendered}");
     assert!(
-        !rendered.contains("-->"),
+        !rendered.contains("@>"),
         "error without span should not have location arrow: {rendered}"
     );
 }
@@ -785,7 +785,7 @@ fn render_empty_source_with_span_skips_snippet() {
     assert!(rendered.contains("error: out of bounds"), "header should still render: {rendered}");
     // The location arrow should still appear
     assert!(
-        rendered.contains("--> empty.mirr:6:1"),
+        rendered.contains("@> empty.mirr:6:1"),
         "location line should still render even with empty source: {rendered}"
     );
 }
@@ -797,7 +797,7 @@ fn render_diagnostic_multiline_source() {
     let rendered = render_diagnostic(&diag, source, "multi.mirr");
     assert!(rendered.contains("line four"), "should display the correct source line: {rendered}");
     assert!(
-        rendered.contains("--> multi.mirr:4:1"),
+        rendered.contains("@> multi.mirr:4:1"),
         "should reference line 4 (1-based): {rendered}"
     );
 }
@@ -898,7 +898,7 @@ fn render_diagnostic_from_mirr_error_parse() {
         "rendered should include the message: {rendered}"
     );
     assert!(
-        rendered.contains("--> bad.mirr:2:12"),
+        rendered.contains("@> bad.mirr:2:12"),
         "rendered should include the location: {rendered}"
     );
 }
@@ -1006,8 +1006,8 @@ fn render_gutter_alignment_double_digit_lines() {
     }
     let diag = Diagnostic::error("issue on line 12").with_span(Some(Span::single_line(11, 0, 7)));
     let rendered = render_diagnostic(&diag, &source, "big.mirr");
-    assert!(rendered.contains("--> big.mirr:12:1"), "should reference line 12: {rendered}");
-    assert!(rendered.contains("12 |"), "gutter should show line number 12: {rendered}");
+    assert!(rendered.contains("@> big.mirr:12:1"), "should reference line 12: {rendered}");
+    assert!(rendered.contains("12 │"), "gutter should show line number 12: {rendered}");
 }
 
 // ===========================================================================
