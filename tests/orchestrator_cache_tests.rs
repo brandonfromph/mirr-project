@@ -100,7 +100,8 @@ fn orchestrator_cache_tests_load_manifest_returns_err_on_invalid_line_format() -
 
 #[test]
 fn write_manifest_creates_parent_directory_if_missing() -> io::Result<()> {
-    let root = std::env::temp_dir().join("mirr_cache_parent_create").join("deeply").join("nested");
+    let temp = tempdir()?;
+    let root = temp.path().join("mirr_cache_parent_create").join("deeply").join("nested");
     let path = root.join("cache.manifest");
     let mut manifest = CacheManifest::default();
     upsert_manifest_entry(&mut manifest, "workspace", "abc");

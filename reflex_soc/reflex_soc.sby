@@ -4,9 +4,9 @@ prove
 
 [options]
 bmc: mode bmc
-bmc: depth 10
+bmc: depth 5
 prove: mode prove
-prove: depth 10
+prove: depth 5
 
 [engines]
 smtbmc yices

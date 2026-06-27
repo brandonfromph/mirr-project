@@ -79,7 +79,15 @@ pub fn emit_sv_full(
     sva::emit_module_decl(&module_name, registry, ft, &mut out, module_span.as_ref());
     sva::emit_internal_signals(registry, ft, &mut out);
 
-    let sync_mappings = sva::emit_synchronizer_chains(registry, 2, &mut out);
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
+    let sync_mappings = sva::emit_synchronizer_chains(registry, top_module_id, 2, &mut out);
     let mut sync_map = std::collections::HashMap::new();
     for (orig, sync) in sync_mappings {
         sync_map.insert(orig, sync);
@@ -101,13 +109,6 @@ pub fn emit_sv_full(
 
     if !registry.extern_instantiations.is_empty() {
         out.push_str("  // ── Structural Module Instantiations ──\n\n");
-        let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
-            if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
-                Some(crate::ecs::EntityId(i as u32))
-            } else {
-                None
-            }
-        });
 
         for call_id in &registry.extern_instantiations {
             if let Some(top_id) = top_module_id {

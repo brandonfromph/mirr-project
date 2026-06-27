@@ -1,17 +1,5 @@
 {
   "nodes": {
-    "must_be_false": {
-      "signal": "must_be_false",
-      "origin": {
-        "start_line": 17,
-        "start_col": 0,
-        "end_line": 17,
-        "end_col": 4294967295
-      },
-      "depends_on": [
-        "b"
-      ]
-    },
     "a": {
       "signal": "a",
       "origin": {
@@ -32,6 +20,18 @@
       },
       "depends_on": [
         "a"
+      ]
+    },
+    "must_be_false": {
+      "signal": "must_be_false",
+      "origin": {
+        "start_line": 17,
+        "start_col": 0,
+        "end_line": 17,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "b"
       ]
     }
   }

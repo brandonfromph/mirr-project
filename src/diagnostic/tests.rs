@@ -11,9 +11,9 @@ fn test_render_error_with_span() {
     let rendered = render_diagnostic(&diag, source, "sensor.mirr");
 
     assert!(rendered.contains("error[E101]: unexpected token"), "header missing: {rendered}");
-    assert!(rendered.contains("--> sensor.mirr:2:12"), "location missing: {rendered}");
-    assert!(rendered.contains("signal temperature: in u16;"), "source line missing: {rendered}");
-    assert!(rendered.contains("^^^^^^^^^^^"), "carets missing: {rendered}");
+    assert!(rendered.contains("@> sensor.mirr:2:12"), "location missing: {rendered}");
+    assert!(rendered.contains("2 │     signal temperature: in u16;"), "source line missing: {rendered}");
+    assert!(rendered.contains("  │            ^^^^^^^^^^^"), "carets missing: {rendered}");
 }
 
 #[test]
@@ -26,7 +26,7 @@ fn test_render_error_no_span() {
         rendered.contains("error[E000]: compilation aborted due to previous errors"),
         "header missing: {rendered}"
     );
-    assert!(!rendered.contains("-->"), "unexpected location line: {rendered}");
+    assert!(!rendered.contains("@>"), "unexpected location line: {rendered}");
 }
 
 #[test]
@@ -45,9 +45,9 @@ fn test_render_with_note_and_help() {
         rendered.contains("error[E201]: duplicate signal name `x`"),
         "header missing: {rendered}"
     );
-    assert!(rendered.contains("--> dup.mirr:3:12"), "primary location missing: {rendered}");
+    assert!(rendered.contains("@> dup.mirr:3:12"), "primary location missing: {rendered}");
     assert!(rendered.contains("note: first defined here"), "note label missing: {rendered}");
-    assert!(rendered.contains("--> dup.mirr:2:12"), "note location missing: {rendered}");
+    assert!(rendered.contains("@> dup.mirr:2:12"), "note location missing: {rendered}");
     assert!(
         rendered.contains("= help: each signal name must be unique within a module"),
         "help label missing: {rendered}"

@@ -341,41 +341,6 @@ impl TemporalCompiler {
                         continue;
                     }
 
-                    // Bounded search for existing identical guards (NASA P10: bounded search).
-                    let mut matched = None;
-                    if let Ok(cond_kind) = ConditionKind::try_from_ecs(registry, entity_id) {
-                        for existing in self.cache.values() {
-                            match existing {
-                                CompiledGuard::ShiftRegister(sr) => {
-                                    if sr.condition_kind == cond_kind
-                                        && sr.delay_cycles == current_cycles
-                                    {
-                                        matched = Some(existing.clone());
-                                        break;
-                                    }
-                                }
-                                CompiledGuard::Counter(cg) => {
-                                    if cg.condition_kind == cond_kind
-                                        && cg.target_count == current_cycles
-                                    {
-                                        matched = Some(existing.clone());
-                                        break;
-                                    }
-                                }
-                                CompiledGuard::Complex(cx) if cx.name == current_name => {
-                                    // Match complex guards by name and cycle consistency
-                                    matched = Some(existing.clone());
-                                    break;
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                    if let Some(existing) = matched {
-                        self.cache.insert(current_name.clone(), existing.clone());
-                        result_stack.push(existing);
-                        continue;
-                    }
 
                     let ent_idx = entity_id.0 as usize;
 

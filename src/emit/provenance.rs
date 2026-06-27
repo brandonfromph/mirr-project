@@ -12,7 +12,7 @@ use crate::ecs::Registry;
 use crate::pipeline::PipelineResult;
 use crate::span::Span;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProvenanceNode {
@@ -27,18 +27,18 @@ pub struct ProvenanceNode {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProvenanceGraph {
     /// Map from flattened Verilog signal name to its provenance node.
-    pub nodes: HashMap<String, ProvenanceNode>,
+    pub nodes: BTreeMap<String, ProvenanceNode>,
 }
 
 /// Build the Source Provenance Graph from the ECS Registry in-memory.
 pub fn build_provenance_graph(result: &PipelineResult) -> Option<ProvenanceGraph> {
     let registry = result.ecs_registry.as_ref()?;
 
-    let mut graph = ProvenanceGraph { nodes: HashMap::new() };
+    let mut graph = ProvenanceGraph { nodes: BTreeMap::new() };
 
     // Phase 1: Build a reverse lookup from Assignment -> Target Entity
     // and Target Entity -> Expression Root Entity.
-    let mut target_to_expr = HashMap::new();
+    let mut target_to_expr = BTreeMap::new();
     for i in 0..registry.names.len() {
         if let Some(crate::ecs::components::AssignmentComponent { target, value, .. }) =
             &registry.assignment_comps[i]
@@ -61,7 +61,7 @@ pub fn build_provenance_graph(result: &PipelineResult) -> Option<ProvenanceGraph
             // Get origin span
             let origin = registry.spans[i].map(|s| s.0);
 
-            let mut depends_on = HashSet::new();
+            let mut depends_on = BTreeSet::new();
             let entity_id = EntityId(i as u32);
 
             if matches!(kind, EntityKind::SIGNAL(_)) {
@@ -101,7 +101,7 @@ pub fn emit_provenance_graph(result: &PipelineResult) -> Result<String, crate::e
 }
 
 /// Recursively walk the ECS expression graph to find signal dependencies.
-fn collect_dependencies(expr_id: EntityId, registry: &Registry, deps: &mut HashSet<String>) {
+fn collect_dependencies(expr_id: EntityId, registry: &Registry, deps: &mut BTreeSet<String>) {
     let idx = expr_id.0 as usize;
     if idx >= registry.names.len() {
         return;

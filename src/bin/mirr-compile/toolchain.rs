@@ -164,7 +164,7 @@ pub(super) fn run_toolchain_operations(
                             eprintln!("  [formal] FAILED (exit code: {:?})", res.exit_code);
 
                             // Invoke Automated Trace Analyzer
-                            if let Some(graph) =
+                            if let Some(_graph) =
                                 mirrc::emit::provenance::build_provenance_graph(result)
                             {
                                 let task_name = if formal_prove { "prove" } else { "bmc" };
@@ -204,7 +204,7 @@ pub(super) fn run_toolchain_operations(
                                 }
 
                                 let report = mirrc::diagnostic::formal_trace::analyze_failure(
-                                    &graph,
+                                    ecs,
                                     &failed_property,
                                     Some(&trace_path),
                                     failed_step,

@@ -218,7 +218,7 @@ fn render_snippet(
         p += 1;
     }
     out.push_str(&pad_str);
-    out.push_str("--> ");
+    out.push_str("@> ");
     out.push_str(file_path);
     out.push(':');
     out.push_str(&display_line.to_string());
@@ -238,7 +238,7 @@ fn render_snippet(
         blank_gutter.push(' ');
         p += 1;
     }
-    blank_gutter.push('|');
+    blank_gutter.push('│');
 
     out.push_str(&blank_gutter);
     out.push('\n');
@@ -251,7 +251,7 @@ fn render_snippet(
         p += 1;
     }
     out.push_str(&num_str);
-    out.push_str(" | ");
+    out.push_str(" │ ");
     out.push_str(line_text);
     out.push('\n');
 
@@ -332,7 +332,7 @@ pub fn render_diagnostic(diag: &Diagnostic, source: &str, file_path: &str) -> St
                 blank_gutter.push(' ');
                 p += 1;
             }
-            blank_gutter.push('|');
+            blank_gutter.push('│');
             out.push_str(&blank_gutter);
             out.push('\n');
 

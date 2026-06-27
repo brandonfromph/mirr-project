@@ -262,6 +262,9 @@ pub(super) fn rename_expr_signals(expr: &mut Expr, rename: &HashMap<String, Stri
         } else {
             match node {
                 Expr::Prev { signal, .. } => {
+                    if let Some(new_name) = rename.get(signal) {
+                        *signal = new_name.clone();
+                    }
                     apply_template_substitution(signal, rename);
                 }
                 Expr::Literal(_) => {}

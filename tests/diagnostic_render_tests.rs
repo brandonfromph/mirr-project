@@ -44,11 +44,10 @@ fn render_parse_error_with_span() {
     assert!(rendered.contains("error[E100]:"), "error code header missing:\n{rendered}");
     assert!(rendered.contains("unexpected token `u8`"), "error message missing:\n{rendered}");
 
-    // Location: "--> test.mirr:3:12"
-    assert!(rendered.contains("--> test.mirr:3:12"), "location line missing or wrong:\n{rendered}");
-
-    // Source line present
-    assert!(rendered.contains("signal pressure: in u8;"), "source line missing:\n{rendered}");
+    // Location: "@> test.mirr:3:12"
+    assert!(rendered.contains("@> test.mirr:3:12"), "location line missing or wrong:\n{rendered}");
+    assert!(rendered.contains("3 │     signal pressure: in u8;"));
+    assert!(rendered.contains("  │            ^^^^^^^^"));
 
     // Carets: 19 - 11 = 8 carets
     assert!(rendered.contains("^^^^^^^^"), "carets missing:\n{rendered}");
@@ -98,7 +97,7 @@ fn render_error_without_span() {
     );
 
     // No location arrow
-    assert!(!rendered.contains("-->"), "unexpected location line when span is None:\n{rendered}");
+    assert!(!rendered.contains("@>"), "unexpected location line when span is None:\n{rendered}");
 }
 
 // ---------------------------------------------------------------------------
@@ -134,14 +133,14 @@ fn render_with_note_span() {
     let rendered = render_diagnostic(&diag, DUP_SOURCE, "dup.mirr");
 
     // Note label text
-    assert!(rendered.contains("note: first defined here"), "note label missing:\n{rendered}");
-
-    // Note span should produce its own location line pointing to line 2
-    // (0-based line 1 => display line 2)
-    assert!(rendered.contains("--> dup.mirr:2:12"), "note span location missing:\n{rendered}");
-
-    // Primary span location (0-based line 2 => display line 3)
-    assert!(rendered.contains("--> dup.mirr:3:12"), "primary span location missing:\n{rendered}");
+    assert!(rendered.contains("@> dup.mirr:3:12"), "primary location missing:\n{rendered}");
+    assert!(rendered.contains("3 │     signal temperature: in u16;"));
+    assert!(rendered.contains("  │            ^^^^^^^^^^^"));
+    
+    assert!(rendered.contains("note: first defined here"), "note missing:\n{rendered}");
+    assert!(rendered.contains("@> dup.mirr:2:12"), "note span location missing:\n{rendered}");
+    assert!(rendered.contains("2 │     signal temperature: in u8;"));
+    assert!(rendered.contains("  │            ^^^^^^^^^^^"));
 }
 
 // ---------------------------------------------------------------------------

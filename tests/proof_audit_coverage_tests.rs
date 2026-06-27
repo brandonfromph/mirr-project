@@ -6,27 +6,28 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
-// Helper to construct a temporary directory with unique suffix per test.
-fn setup_temp_dir(suffix: &str) -> (PathBuf, PathBuf) {
-    let mut temp = std::env::temp_dir();
-    temp.push(format!("mirr_proof_audit_test_{}", suffix));
-    let _ = fs::remove_dir_all(&temp);
-    fs::create_dir_all(&temp).unwrap();
+use tempfile::TempDir;
 
-    let mut rust_dir = temp.clone();
+// Helper to construct a temporary directory with unique suffix per test.
+fn setup_temp_dir(suffix: &str) -> (TempDir, PathBuf, PathBuf) {
+    let temp = tempfile::Builder::new()
+        .prefix(&format!("mirr_proof_audit_test_{}_", suffix))
+        .tempdir()
+        .unwrap();
+
+    let mut rust_dir = temp.path().to_path_buf();
     rust_dir.push("src_mock");
     fs::create_dir_all(&rust_dir).unwrap();
 
-    let mut proofs_dir = temp.clone();
+    let mut proofs_dir = temp.path().to_path_buf();
     proofs_dir.push("proofs_mock");
     fs::create_dir_all(&proofs_dir).unwrap();
 
-    (rust_dir, proofs_dir)
+    (temp, rust_dir, proofs_dir)
 }
 
-fn cleanup_temp_dir(rust_dir: &std::path::Path) {
-    let temp = rust_dir.parent().unwrap();
-    let _ = fs::remove_dir_all(temp);
+fn cleanup_temp_dir(_temp: TempDir) {
+    // tempdir will be dropped and deleted automatically.
 }
 
 // Helper to invoke the compiled mirr-proof-audit binary.
@@ -58,7 +59,7 @@ macro_rules! generate_audit_tests {
         $(
             #[test]
             fn $name() {
-                let (rust_dir, proofs_dir) = setup_temp_dir($suffix);
+                let (temp, rust_dir, proofs_dir) = setup_temp_dir($suffix);
 
                 if let Some(rc) = $rust_content {
                     let mut file_path = rust_dir.clone();
@@ -81,7 +82,7 @@ macro_rules! generate_audit_tests {
                 let check = $assert_fn;
                 check(&parsed);
 
-                cleanup_temp_dir(&rust_dir);
+                cleanup_temp_dir(temp);
             }
         )*
     };

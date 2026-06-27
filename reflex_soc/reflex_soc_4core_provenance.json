@@ -1,0 +1,3644 @@
+{
+  "nodes": {
+    "alu_core_call_1393_is_add": {
+      "signal": "alu_core_call_1393_is_add",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_t1",
+        "rspu_pipeline_call_1175_ex_t2",
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "alu_core_call_1393_is_invalid": {
+      "signal": "alu_core_call_1393_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "alu_core_call_1393_is_relu_neg": {
+      "signal": "alu_core_call_1393_is_relu_neg",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_d1",
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "alu_core_call_1393_is_relu_pos": {
+      "signal": "alu_core_call_1393_is_relu_pos",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_d1",
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "alu_core_call_1393_is_sub": {
+      "signal": "alu_core_call_1393_is_sub",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_t1",
+        "rspu_pipeline_call_1175_ex_t2",
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "alu_core_call_1393_is_tag_gate": {
+      "signal": "alu_core_call_1393_is_tag_gate",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "alu_core_call_1393_is_trap": {
+      "signal": "alu_core_call_1393_is_trap",
+      "origin": null,
+      "depends_on": []
+    },
+    "alu_core_call_1393_res_data": {
+      "signal": "alu_core_call_1393_res_data",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_d1",
+        "rspu_pipeline_call_1175_ex_p1"
+      ]
+    },
+    "alu_core_call_1393_res_prov": {
+      "signal": "alu_core_call_1393_res_prov",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_p1"
+      ]
+    },
+    "alu_core_call_1393_res_tag": {
+      "signal": "alu_core_call_1393_res_tag",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_t1"
+      ]
+    },
+    "alu_core_call_1895_is_add": {
+      "signal": "alu_core_call_1895_is_add",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_t1",
+        "rspu_pipeline_call_1677_ex_t2",
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "alu_core_call_1895_is_invalid": {
+      "signal": "alu_core_call_1895_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "alu_core_call_1895_is_relu_neg": {
+      "signal": "alu_core_call_1895_is_relu_neg",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_d1",
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "alu_core_call_1895_is_relu_pos": {
+      "signal": "alu_core_call_1895_is_relu_pos",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_d1",
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "alu_core_call_1895_is_sub": {
+      "signal": "alu_core_call_1895_is_sub",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_t1",
+        "rspu_pipeline_call_1677_ex_t2",
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "alu_core_call_1895_is_tag_gate": {
+      "signal": "alu_core_call_1895_is_tag_gate",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "alu_core_call_1895_is_trap": {
+      "signal": "alu_core_call_1895_is_trap",
+      "origin": null,
+      "depends_on": []
+    },
+    "alu_core_call_1895_res_data": {
+      "signal": "alu_core_call_1895_res_data",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_d1",
+        "rspu_pipeline_call_1677_ex_p1"
+      ]
+    },
+    "alu_core_call_1895_res_prov": {
+      "signal": "alu_core_call_1895_res_prov",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_p1"
+      ]
+    },
+    "alu_core_call_1895_res_tag": {
+      "signal": "alu_core_call_1895_res_tag",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_t1"
+      ]
+    },
+    "alu_core_call_19_is_add": {
+      "signal": "alu_core_call_19_is_add",
+      "origin": null,
+      "depends_on": [
+        "op",
+        "t1",
+        "t2"
+      ]
+    },
+    "alu_core_call_19_is_invalid": {
+      "signal": "alu_core_call_19_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "op"
+      ]
+    },
+    "alu_core_call_19_is_relu_neg": {
+      "signal": "alu_core_call_19_is_relu_neg",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "op"
+      ]
+    },
+    "alu_core_call_19_is_relu_pos": {
+      "signal": "alu_core_call_19_is_relu_pos",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "op"
+      ]
+    },
+    "alu_core_call_19_is_sub": {
+      "signal": "alu_core_call_19_is_sub",
+      "origin": null,
+      "depends_on": [
+        "op",
+        "t1",
+        "t2"
+      ]
+    },
+    "alu_core_call_19_is_tag_gate": {
+      "signal": "alu_core_call_19_is_tag_gate",
+      "origin": null,
+      "depends_on": [
+        "op"
+      ]
+    },
+    "alu_core_call_19_is_trap": {
+      "signal": "alu_core_call_19_is_trap",
+      "origin": null,
+      "depends_on": []
+    },
+    "alu_core_call_19_res_data": {
+      "signal": "alu_core_call_19_res_data",
+      "origin": null,
+      "depends_on": [
+        "d1",
+        "p1"
+      ]
+    },
+    "alu_core_call_19_res_prov": {
+      "signal": "alu_core_call_19_res_prov",
+      "origin": null,
+      "depends_on": [
+        "p1"
+      ]
+    },
+    "alu_core_call_19_res_tag": {
+      "signal": "alu_core_call_19_res_tag",
+      "origin": null,
+      "depends_on": [
+        "t1"
+      ]
+    },
+    "alu_core_call_2397_is_add": {
+      "signal": "alu_core_call_2397_is_add",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_t1",
+        "rspu_pipeline_call_2179_ex_t2",
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "alu_core_call_2397_is_invalid": {
+      "signal": "alu_core_call_2397_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "alu_core_call_2397_is_relu_neg": {
+      "signal": "alu_core_call_2397_is_relu_neg",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_d1",
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "alu_core_call_2397_is_relu_pos": {
+      "signal": "alu_core_call_2397_is_relu_pos",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_d1",
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "alu_core_call_2397_is_sub": {
+      "signal": "alu_core_call_2397_is_sub",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_t1",
+        "rspu_pipeline_call_2179_ex_t2",
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "alu_core_call_2397_is_tag_gate": {
+      "signal": "alu_core_call_2397_is_tag_gate",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "alu_core_call_2397_is_trap": {
+      "signal": "alu_core_call_2397_is_trap",
+      "origin": null,
+      "depends_on": []
+    },
+    "alu_core_call_2397_res_data": {
+      "signal": "alu_core_call_2397_res_data",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_d1",
+        "rspu_pipeline_call_2179_ex_p1"
+      ]
+    },
+    "alu_core_call_2397_res_prov": {
+      "signal": "alu_core_call_2397_res_prov",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_p1"
+      ]
+    },
+    "alu_core_call_2397_res_tag": {
+      "signal": "alu_core_call_2397_res_tag",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_t1"
+      ]
+    },
+    "alu_core_call_2899_is_add": {
+      "signal": "alu_core_call_2899_is_add",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_t1",
+        "rspu_pipeline_call_2681_ex_t2",
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "alu_core_call_2899_is_invalid": {
+      "signal": "alu_core_call_2899_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "alu_core_call_2899_is_relu_neg": {
+      "signal": "alu_core_call_2899_is_relu_neg",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_d1",
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "alu_core_call_2899_is_relu_pos": {
+      "signal": "alu_core_call_2899_is_relu_pos",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_d1",
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "alu_core_call_2899_is_sub": {
+      "signal": "alu_core_call_2899_is_sub",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_t1",
+        "rspu_pipeline_call_2681_ex_t2",
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "alu_core_call_2899_is_tag_gate": {
+      "signal": "alu_core_call_2899_is_tag_gate",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "alu_core_call_2899_is_trap": {
+      "signal": "alu_core_call_2899_is_trap",
+      "origin": null,
+      "depends_on": []
+    },
+    "alu_core_call_2899_res_data": {
+      "signal": "alu_core_call_2899_res_data",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_d1",
+        "rspu_pipeline_call_2681_ex_p1"
+      ]
+    },
+    "alu_core_call_2899_res_prov": {
+      "signal": "alu_core_call_2899_res_prov",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_p1"
+      ]
+    },
+    "alu_core_call_2899_res_tag": {
+      "signal": "alu_core_call_2899_res_tag",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_t1"
+      ]
+    },
+    "clk": {
+      "signal": "clk",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "controller_call_133_kd_torque": {
+      "signal": "controller_call_133_kd_torque",
+      "origin": null,
+      "depends_on": [
+        "robot_angle"
+      ]
+    },
+    "controller_call_133_kp_torque": {
+      "signal": "controller_call_133_kp_torque",
+      "origin": null,
+      "depends_on": [
+        "robot_angle"
+      ]
+    },
+    "controller_call_133_t_next": {
+      "signal": "controller_call_133_t_next",
+      "origin": null,
+      "depends_on": [
+        "controller_call_133_kd_torque",
+        "controller_call_133_kp_torque"
+      ]
+    },
+    "core_0_torque": {
+      "signal": "core_0_torque",
+      "origin": {
+        "start_line": 34,
+        "start_col": 0,
+        "end_line": 34,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "core_io_out_0"
+      ]
+    },
+    "core_data_0": {
+      "signal": "core_data_0",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_2681_mem_wb_res"
+      ]
+    },
+    "core_data_1": {
+      "signal": "core_data_1",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_2179_mem_wb_res"
+      ]
+    },
+    "core_data_2": {
+      "signal": "core_data_2",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_1677_mem_wb_res"
+      ]
+    },
+    "core_data_3": {
+      "signal": "core_data_3",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_1175_mem_wb_res"
+      ]
+    },
+    "core_io_in_0": {
+      "signal": "core_io_in_0",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "robot_angle"
+      ]
+    },
+    "core_io_in_1": {
+      "signal": "core_io_in_1",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "core_io_in_2": {
+      "signal": "core_io_in_2",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "core_io_in_3": {
+      "signal": "core_io_in_3",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "core_io_out_0": {
+      "signal": "core_io_out_0",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_val1"
+      ]
+    },
+    "core_io_out_1": {
+      "signal": "core_io_out_1",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_val1"
+      ]
+    },
+    "core_io_out_2": {
+      "signal": "core_io_out_2",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_val1"
+      ]
+    },
+    "core_io_out_3": {
+      "signal": "core_io_out_3",
+      "origin": {
+        "start_line": 4,
+        "start_col": 0,
+        "end_line": 4,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_val1"
+      ]
+    },
+    "core_top_call_135_core_awake": {
+      "signal": "core_top_call_135_core_awake",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_135_wake_timer",
+        "rx_valid_0"
+      ]
+    },
+    "core_top_call_135_core_halted": {
+      "signal": "core_top_call_135_core_halted",
+      "origin": null,
+      "depends_on": []
+    },
+    "core_top_call_135_current_instr": {
+      "signal": "core_top_call_135_current_instr",
+      "origin": null,
+      "depends_on": [
+        "rx_data_0"
+      ]
+    },
+    "core_top_call_135_gated_clk": {
+      "signal": "core_top_call_135_gated_clk",
+      "origin": null,
+      "depends_on": [
+        "clk",
+        "core_top_call_135_core_awake"
+      ]
+    },
+    "core_top_call_135_trap_signal": {
+      "signal": "core_top_call_135_trap_signal",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_trap",
+        "rspu_pipeline_call_2681_pcc_fault"
+      ]
+    },
+    "core_top_call_135_wake_timer": {
+      "signal": "core_top_call_135_wake_timer",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_135_wake_timer"
+      ]
+    },
+    "core_top_call_137_core_awake": {
+      "signal": "core_top_call_137_core_awake",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_137_wake_timer",
+        "rx_valid_1"
+      ]
+    },
+    "core_top_call_137_core_halted": {
+      "signal": "core_top_call_137_core_halted",
+      "origin": null,
+      "depends_on": []
+    },
+    "core_top_call_137_current_instr": {
+      "signal": "core_top_call_137_current_instr",
+      "origin": null,
+      "depends_on": [
+        "rx_data_1"
+      ]
+    },
+    "core_top_call_137_gated_clk": {
+      "signal": "core_top_call_137_gated_clk",
+      "origin": null,
+      "depends_on": [
+        "clk",
+        "core_top_call_137_core_awake"
+      ]
+    },
+    "core_top_call_137_trap_signal": {
+      "signal": "core_top_call_137_trap_signal",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_trap",
+        "rspu_pipeline_call_2179_pcc_fault"
+      ]
+    },
+    "core_top_call_137_wake_timer": {
+      "signal": "core_top_call_137_wake_timer",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_137_wake_timer"
+      ]
+    },
+    "core_top_call_139_core_awake": {
+      "signal": "core_top_call_139_core_awake",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_139_wake_timer",
+        "rx_valid_2"
+      ]
+    },
+    "core_top_call_139_core_halted": {
+      "signal": "core_top_call_139_core_halted",
+      "origin": null,
+      "depends_on": []
+    },
+    "core_top_call_139_current_instr": {
+      "signal": "core_top_call_139_current_instr",
+      "origin": null,
+      "depends_on": [
+        "rx_data_2"
+      ]
+    },
+    "core_top_call_139_gated_clk": {
+      "signal": "core_top_call_139_gated_clk",
+      "origin": null,
+      "depends_on": [
+        "clk",
+        "core_top_call_139_core_awake"
+      ]
+    },
+    "core_top_call_139_trap_signal": {
+      "signal": "core_top_call_139_trap_signal",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_trap",
+        "rspu_pipeline_call_1677_pcc_fault"
+      ]
+    },
+    "core_top_call_139_wake_timer": {
+      "signal": "core_top_call_139_wake_timer",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_139_wake_timer"
+      ]
+    },
+    "core_top_call_141_core_awake": {
+      "signal": "core_top_call_141_core_awake",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_141_wake_timer",
+        "rx_valid_3"
+      ]
+    },
+    "core_top_call_141_core_halted": {
+      "signal": "core_top_call_141_core_halted",
+      "origin": null,
+      "depends_on": []
+    },
+    "core_top_call_141_current_instr": {
+      "signal": "core_top_call_141_current_instr",
+      "origin": null,
+      "depends_on": [
+        "rx_data_3"
+      ]
+    },
+    "core_top_call_141_gated_clk": {
+      "signal": "core_top_call_141_gated_clk",
+      "origin": null,
+      "depends_on": [
+        "clk",
+        "core_top_call_141_core_awake"
+      ]
+    },
+    "core_top_call_141_trap_signal": {
+      "signal": "core_top_call_141_trap_signal",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_trap",
+        "rspu_pipeline_call_1175_pcc_fault"
+      ]
+    },
+    "core_top_call_141_wake_timer": {
+      "signal": "core_top_call_141_wake_timer",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_141_wake_timer"
+      ]
+    },
+    "d1": {
+      "signal": "d1",
+      "origin": {
+        "start_line": 113,
+        "start_col": 0,
+        "end_line": 113,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "d2": {
+      "signal": "d2",
+      "origin": {
+        "start_line": 116,
+        "start_col": 0,
+        "end_line": 116,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "downlink_data": {
+      "signal": "downlink_data",
+      "origin": {
+        "start_line": 69,
+        "start_col": 0,
+        "end_line": 69,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "downlink_valid": {
+      "signal": "downlink_valid",
+      "origin": {
+        "start_line": 68,
+        "start_col": 0,
+        "end_line": 68,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "global_trap": {
+      "signal": "global_trap",
+      "origin": {
+        "start_line": 29,
+        "start_col": 0,
+        "end_line": 29,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "tx_valid_0",
+        "tx_valid_1",
+        "tx_valid_2",
+        "tx_valid_3"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_0": {
+      "signal": "noc_l1_router_0_call_212_core_dead_0",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_0"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_1": {
+      "signal": "noc_l1_router_0_call_212_core_dead_1",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_1"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_10": {
+      "signal": "noc_l1_router_0_call_212_core_dead_10",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_10"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_11": {
+      "signal": "noc_l1_router_0_call_212_core_dead_11",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_11"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_12": {
+      "signal": "noc_l1_router_0_call_212_core_dead_12",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_12"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_13": {
+      "signal": "noc_l1_router_0_call_212_core_dead_13",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_13"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_14": {
+      "signal": "noc_l1_router_0_call_212_core_dead_14",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_14"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_15": {
+      "signal": "noc_l1_router_0_call_212_core_dead_15",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_15"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_2": {
+      "signal": "noc_l1_router_0_call_212_core_dead_2",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_2"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_3": {
+      "signal": "noc_l1_router_0_call_212_core_dead_3",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_3"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_4": {
+      "signal": "noc_l1_router_0_call_212_core_dead_4",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_4"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_5": {
+      "signal": "noc_l1_router_0_call_212_core_dead_5",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_5"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_6": {
+      "signal": "noc_l1_router_0_call_212_core_dead_6",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_6"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_7": {
+      "signal": "noc_l1_router_0_call_212_core_dead_7",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_7"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_8": {
+      "signal": "noc_l1_router_0_call_212_core_dead_8",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_8"
+      ]
+    },
+    "noc_l1_router_0_call_212_core_dead_9": {
+      "signal": "noc_l1_router_0_call_212_core_dead_9",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_9"
+      ]
+    },
+    "noc_l1_router_0_call_212_dest_id": {
+      "signal": "noc_l1_router_0_call_212_dest_id",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_16"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_0": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_0",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_0"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_1": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_1",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_1"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_10": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_10",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_10"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_11": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_11",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_11"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_12": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_12",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_12"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_13": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_13",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_13"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_14": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_14",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_14"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_15": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_15",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_15"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_2": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_2",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_2"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_3": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_3",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_3"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_4": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_4",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_4"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_5": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_5",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_5"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_6": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_6",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_6"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_7": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_7",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_7"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_8": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_8",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_8"
+      ]
+    },
+    "noc_l1_router_0_call_212_heartbeat_9": {
+      "signal": "noc_l1_router_0_call_212_heartbeat_9",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_heartbeat_9"
+      ]
+    },
+    "noc_l1_router_0_call_212_is_local": {
+      "signal": "noc_l1_router_0_call_212_is_local",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_dest_id"
+      ]
+    },
+    "noc_l1_router_0_call_212_payload": {
+      "signal": "noc_l1_router_0_call_212_payload",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_16"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_0": {
+      "signal": "noc_l1_router_0_call_212_sd_0",
+      "origin": null,
+      "depends_on": [
+        "downlink_data"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_1": {
+      "signal": "noc_l1_router_0_call_212_sd_1",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_0"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_10": {
+      "signal": "noc_l1_router_0_call_212_sd_10",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_9"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_11": {
+      "signal": "noc_l1_router_0_call_212_sd_11",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_10"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_12": {
+      "signal": "noc_l1_router_0_call_212_sd_12",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_11"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_13": {
+      "signal": "noc_l1_router_0_call_212_sd_13",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_12"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_14": {
+      "signal": "noc_l1_router_0_call_212_sd_14",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_13"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_15": {
+      "signal": "noc_l1_router_0_call_212_sd_15",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_14"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_16": {
+      "signal": "noc_l1_router_0_call_212_sd_16",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_15"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_17": {
+      "signal": "noc_l1_router_0_call_212_sd_17",
+      "origin": null,
+      "depends_on": []
+    },
+    "noc_l1_router_0_call_212_sd_2": {
+      "signal": "noc_l1_router_0_call_212_sd_2",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_1"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_3": {
+      "signal": "noc_l1_router_0_call_212_sd_3",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_2"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_4": {
+      "signal": "noc_l1_router_0_call_212_sd_4",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_3"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_5": {
+      "signal": "noc_l1_router_0_call_212_sd_5",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_4"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_6": {
+      "signal": "noc_l1_router_0_call_212_sd_6",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_5"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_7": {
+      "signal": "noc_l1_router_0_call_212_sd_7",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_6"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_8": {
+      "signal": "noc_l1_router_0_call_212_sd_8",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_7"
+      ]
+    },
+    "noc_l1_router_0_call_212_sd_9": {
+      "signal": "noc_l1_router_0_call_212_sd_9",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_8"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_0": {
+      "signal": "noc_l1_router_0_call_212_sv_0",
+      "origin": null,
+      "depends_on": [
+        "downlink_valid"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_1": {
+      "signal": "noc_l1_router_0_call_212_sv_1",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_0"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_10": {
+      "signal": "noc_l1_router_0_call_212_sv_10",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_9"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_11": {
+      "signal": "noc_l1_router_0_call_212_sv_11",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_10"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_12": {
+      "signal": "noc_l1_router_0_call_212_sv_12",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_11"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_13": {
+      "signal": "noc_l1_router_0_call_212_sv_13",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_12"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_14": {
+      "signal": "noc_l1_router_0_call_212_sv_14",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_13"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_15": {
+      "signal": "noc_l1_router_0_call_212_sv_15",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_14"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_16": {
+      "signal": "noc_l1_router_0_call_212_sv_16",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_15"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_17": {
+      "signal": "noc_l1_router_0_call_212_sv_17",
+      "origin": null,
+      "depends_on": []
+    },
+    "noc_l1_router_0_call_212_sv_2": {
+      "signal": "noc_l1_router_0_call_212_sv_2",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_1"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_3": {
+      "signal": "noc_l1_router_0_call_212_sv_3",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_2"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_4": {
+      "signal": "noc_l1_router_0_call_212_sv_4",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_3"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_5": {
+      "signal": "noc_l1_router_0_call_212_sv_5",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_4"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_6": {
+      "signal": "noc_l1_router_0_call_212_sv_6",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_5"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_7": {
+      "signal": "noc_l1_router_0_call_212_sv_7",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_6"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_8": {
+      "signal": "noc_l1_router_0_call_212_sv_8",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_7"
+      ]
+    },
+    "noc_l1_router_0_call_212_sv_9": {
+      "signal": "noc_l1_router_0_call_212_sv_9",
+      "origin": null,
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_8"
+      ]
+    },
+    "op": {
+      "signal": "op",
+      "origin": {
+        "start_line": 112,
+        "start_col": 0,
+        "end_line": 112,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "out_data": {
+      "signal": "out_data",
+      "origin": {
+        "start_line": 119,
+        "start_col": 0,
+        "end_line": 119,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "alu_core_call_19_res_data"
+      ]
+    },
+    "out_data_0": {
+      "signal": "out_data_0",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "core_data_0"
+      ]
+    },
+    "out_data_1": {
+      "signal": "out_data_1",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "core_data_1"
+      ]
+    },
+    "out_data_2": {
+      "signal": "out_data_2",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "core_data_2"
+      ]
+    },
+    "out_data_3": {
+      "signal": "out_data_3",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "core_data_3"
+      ]
+    },
+    "out_pc_0": {
+      "signal": "out_pc_0",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_0"
+      ]
+    },
+    "out_pc_1": {
+      "signal": "out_pc_1",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_1"
+      ]
+    },
+    "out_pc_2": {
+      "signal": "out_pc_2",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_2"
+      ]
+    },
+    "out_pc_3": {
+      "signal": "out_pc_3",
+      "origin": {
+        "start_line": 6,
+        "start_col": 0,
+        "end_line": 6,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_3"
+      ]
+    },
+    "out_prov": {
+      "signal": "out_prov",
+      "origin": {
+        "start_line": 121,
+        "start_col": 0,
+        "end_line": 121,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "alu_core_call_19_res_prov"
+      ]
+    },
+    "out_tag": {
+      "signal": "out_tag",
+      "origin": {
+        "start_line": 120,
+        "start_col": 0,
+        "end_line": 120,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "alu_core_call_19_res_tag"
+      ]
+    },
+    "p1": {
+      "signal": "p1",
+      "origin": {
+        "start_line": 115,
+        "start_col": 0,
+        "end_line": 115,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "p2": {
+      "signal": "p2",
+      "origin": {
+        "start_line": 118,
+        "start_col": 0,
+        "end_line": 118,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "pc_0": {
+      "signal": "pc_0",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_2681_pipe_pc"
+      ]
+    },
+    "pc_1": {
+      "signal": "pc_1",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_2179_pipe_pc"
+      ]
+    },
+    "pc_2": {
+      "signal": "pc_2",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_1677_pipe_pc"
+      ]
+    },
+    "pc_3": {
+      "signal": "pc_3",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "rspu_pipeline_call_1175_pipe_pc"
+      ]
+    },
+    "pcc_verifier_call_1377_MAX_GUARDS": {
+      "signal": "pcc_verifier_call_1377_MAX_GUARDS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_1377_MAX_INSTRUCTIONS": {
+      "signal": "pcc_verifier_call_1377_MAX_INSTRUCTIONS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_1377_MAX_REGISTERS": {
+      "signal": "pcc_verifier_call_1377_MAX_REGISTERS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_1377_is_invalid": {
+      "signal": "pcc_verifier_call_1377_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_cert_g",
+        "rspu_pipeline_call_1175_cert_i",
+        "rspu_pipeline_call_1175_cert_r"
+      ]
+    },
+    "pcc_verifier_call_1879_MAX_GUARDS": {
+      "signal": "pcc_verifier_call_1879_MAX_GUARDS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_1879_MAX_INSTRUCTIONS": {
+      "signal": "pcc_verifier_call_1879_MAX_INSTRUCTIONS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_1879_MAX_REGISTERS": {
+      "signal": "pcc_verifier_call_1879_MAX_REGISTERS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_1879_is_invalid": {
+      "signal": "pcc_verifier_call_1879_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_cert_g",
+        "rspu_pipeline_call_1677_cert_i",
+        "rspu_pipeline_call_1677_cert_r"
+      ]
+    },
+    "pcc_verifier_call_2381_MAX_GUARDS": {
+      "signal": "pcc_verifier_call_2381_MAX_GUARDS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_2381_MAX_INSTRUCTIONS": {
+      "signal": "pcc_verifier_call_2381_MAX_INSTRUCTIONS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_2381_MAX_REGISTERS": {
+      "signal": "pcc_verifier_call_2381_MAX_REGISTERS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_2381_is_invalid": {
+      "signal": "pcc_verifier_call_2381_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_cert_g",
+        "rspu_pipeline_call_2179_cert_i",
+        "rspu_pipeline_call_2179_cert_r"
+      ]
+    },
+    "pcc_verifier_call_2883_MAX_GUARDS": {
+      "signal": "pcc_verifier_call_2883_MAX_GUARDS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_2883_MAX_INSTRUCTIONS": {
+      "signal": "pcc_verifier_call_2883_MAX_INSTRUCTIONS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_2883_MAX_REGISTERS": {
+      "signal": "pcc_verifier_call_2883_MAX_REGISTERS",
+      "origin": null,
+      "depends_on": []
+    },
+    "pcc_verifier_call_2883_is_invalid": {
+      "signal": "pcc_verifier_call_2883_is_invalid",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_cert_g",
+        "rspu_pipeline_call_2681_cert_i",
+        "rspu_pipeline_call_2681_cert_r"
+      ]
+    },
+    "pendulum_call_131_angle_internal": {
+      "signal": "pendulum_call_131_angle_internal",
+      "origin": null,
+      "depends_on": [
+        "pendulum_call_131_p_next"
+      ]
+    },
+    "pendulum_call_131_angular_velocity": {
+      "signal": "pendulum_call_131_angular_velocity",
+      "origin": null,
+      "depends_on": [
+        "pendulum_call_131_v_next"
+      ]
+    },
+    "pendulum_call_131_p_next": {
+      "signal": "pendulum_call_131_p_next",
+      "origin": null,
+      "depends_on": [
+        "pendulum_call_131_angle_internal",
+        "pendulum_call_131_angular_velocity"
+      ]
+    },
+    "pendulum_call_131_v_next": {
+      "signal": "pendulum_call_131_v_next",
+      "origin": null,
+      "depends_on": [
+        "pendulum_call_131_angle_internal",
+        "pendulum_call_131_angular_velocity",
+        "robot_torque"
+      ]
+    },
+    "ram_call_1395__interface_active": {
+      "signal": "ram_call_1395__interface_active",
+      "origin": null,
+      "depends_on": []
+    },
+    "ram_call_1897__interface_active": {
+      "signal": "ram_call_1897__interface_active",
+      "origin": null,
+      "depends_on": []
+    },
+    "ram_call_2399__interface_active": {
+      "signal": "ram_call_2399__interface_active",
+      "origin": null,
+      "depends_on": []
+    },
+    "ram_call_2901__interface_active": {
+      "signal": "ram_call_2901__interface_active",
+      "origin": null,
+      "depends_on": []
+    },
+    "robot_angle": {
+      "signal": "robot_angle",
+      "origin": {
+        "start_line": 32,
+        "start_col": 0,
+        "end_line": 32,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pendulum_call_131_angle_internal"
+      ]
+    },
+    "robot_torque": {
+      "signal": "robot_torque",
+      "origin": {
+        "start_line": 33,
+        "start_col": 0,
+        "end_line": 33,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "controller_call_133_t_next"
+      ]
+    },
+    "rspu_pipeline_call_1175_cert_g": {
+      "signal": "rspu_pipeline_call_1175_cert_g",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1175_cert_i": {
+      "signal": "rspu_pipeline_call_1175_cert_i",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1175_cert_r": {
+      "signal": "rspu_pipeline_call_1175_cert_r",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1175_dec_op": {
+      "signal": "rspu_pipeline_call_1175_dec_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1175_dec_rd": {
+      "signal": "rspu_pipeline_call_1175_dec_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1175_dec_rs1": {
+      "signal": "rspu_pipeline_call_1175_dec_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1175_dec_rs2": {
+      "signal": "rspu_pipeline_call_1175_dec_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_d1": {
+      "signal": "rspu_pipeline_call_1175_ex_d1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_d2": {
+      "signal": "rspu_pipeline_call_1175_ex_d2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_mem_op": {
+      "signal": "rspu_pipeline_call_1175_ex_mem_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_mem_rd": {
+      "signal": "rspu_pipeline_call_1175_ex_mem_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_rd"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_mem_res": {
+      "signal": "rspu_pipeline_call_1175_ex_mem_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_packed"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_out_d": {
+      "signal": "rspu_pipeline_call_1175_ex_out_d",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1393_res_data"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_out_p": {
+      "signal": "rspu_pipeline_call_1175_ex_out_p",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1393_res_prov"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_out_t": {
+      "signal": "rspu_pipeline_call_1175_ex_out_t",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1393_res_tag"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_p1": {
+      "signal": "rspu_pipeline_call_1175_ex_p1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_p2": {
+      "signal": "rspu_pipeline_call_1175_ex_p2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_packed": {
+      "signal": "rspu_pipeline_call_1175_ex_packed",
+      "origin": null,
+      "depends_on": [
+        "core_io_in_3"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_t1": {
+      "signal": "rspu_pipeline_call_1175_ex_t1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_t2": {
+      "signal": "rspu_pipeline_call_1175_ex_t2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_1175_ex_trap": {
+      "signal": "rspu_pipeline_call_1175_ex_trap",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1393_is_trap"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_ex_op": {
+      "signal": "rspu_pipeline_call_1175_id_ex_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_dec_op"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_ex_pc": {
+      "signal": "rspu_pipeline_call_1175_id_ex_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_if_id_pc"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_ex_rd": {
+      "signal": "rspu_pipeline_call_1175_id_ex_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_dec_rd"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_ex_rs1": {
+      "signal": "rspu_pipeline_call_1175_id_ex_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_dec_rs1"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_ex_rs2": {
+      "signal": "rspu_pipeline_call_1175_id_ex_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_dec_rs2"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_ex_val1": {
+      "signal": "rspu_pipeline_call_1175_id_ex_val1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_val1"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_ex_val2": {
+      "signal": "rspu_pipeline_call_1175_id_ex_val2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_val2"
+      ]
+    },
+    "rspu_pipeline_call_1175_id_val1": {
+      "signal": "rspu_pipeline_call_1175_id_val1",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1175_id_val2": {
+      "signal": "rspu_pipeline_call_1175_id_val2",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1175_if_id_instr": {
+      "signal": "rspu_pipeline_call_1175_if_id_instr",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_141_current_instr"
+      ]
+    },
+    "rspu_pipeline_call_1175_if_id_pc": {
+      "signal": "rspu_pipeline_call_1175_if_id_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_1175_is_load": {
+      "signal": "rspu_pipeline_call_1175_is_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_1175_is_load_in": {
+      "signal": "rspu_pipeline_call_1175_is_load_in",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1175_is_normal_ex": {
+      "signal": "rspu_pipeline_call_1175_is_normal_ex",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1175_is_not_load": {
+      "signal": "rspu_pipeline_call_1175_is_not_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_1175_is_store_out": {
+      "signal": "rspu_pipeline_call_1175_is_store_out",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1175_mem_out": {
+      "signal": "rspu_pipeline_call_1175_mem_out",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1175_mem_wb_rd": {
+      "signal": "rspu_pipeline_call_1175_mem_wb_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_mem_rd"
+      ]
+    },
+    "rspu_pipeline_call_1175_mem_wb_res": {
+      "signal": "rspu_pipeline_call_1175_mem_wb_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_ex_mem_res"
+      ]
+    },
+    "rspu_pipeline_call_1175_mem_wb_we": {
+      "signal": "rspu_pipeline_call_1175_mem_wb_we",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1175_pcc_fault": {
+      "signal": "rspu_pipeline_call_1175_pcc_fault",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_1377_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_1175_pcc_valid": {
+      "signal": "rspu_pipeline_call_1175_pcc_valid",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_1377_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_1175_pipe_pc": {
+      "signal": "rspu_pipeline_call_1175_pipe_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_1175_ram_addr": {
+      "signal": "rspu_pipeline_call_1175_ram_addr",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1175_id_ex_pc"
+      ]
+    },
+    "rspu_pipeline_call_1677_cert_g": {
+      "signal": "rspu_pipeline_call_1677_cert_g",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1677_cert_i": {
+      "signal": "rspu_pipeline_call_1677_cert_i",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1677_cert_r": {
+      "signal": "rspu_pipeline_call_1677_cert_r",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1677_dec_op": {
+      "signal": "rspu_pipeline_call_1677_dec_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1677_dec_rd": {
+      "signal": "rspu_pipeline_call_1677_dec_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1677_dec_rs1": {
+      "signal": "rspu_pipeline_call_1677_dec_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1677_dec_rs2": {
+      "signal": "rspu_pipeline_call_1677_dec_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_d1": {
+      "signal": "rspu_pipeline_call_1677_ex_d1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_d2": {
+      "signal": "rspu_pipeline_call_1677_ex_d2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_mem_op": {
+      "signal": "rspu_pipeline_call_1677_ex_mem_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_mem_rd": {
+      "signal": "rspu_pipeline_call_1677_ex_mem_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_rd"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_mem_res": {
+      "signal": "rspu_pipeline_call_1677_ex_mem_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_packed"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_out_d": {
+      "signal": "rspu_pipeline_call_1677_ex_out_d",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1895_res_data"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_out_p": {
+      "signal": "rspu_pipeline_call_1677_ex_out_p",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1895_res_prov"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_out_t": {
+      "signal": "rspu_pipeline_call_1677_ex_out_t",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1895_res_tag"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_p1": {
+      "signal": "rspu_pipeline_call_1677_ex_p1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_p2": {
+      "signal": "rspu_pipeline_call_1677_ex_p2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_packed": {
+      "signal": "rspu_pipeline_call_1677_ex_packed",
+      "origin": null,
+      "depends_on": [
+        "core_io_in_2"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_t1": {
+      "signal": "rspu_pipeline_call_1677_ex_t1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_t2": {
+      "signal": "rspu_pipeline_call_1677_ex_t2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_1677_ex_trap": {
+      "signal": "rspu_pipeline_call_1677_ex_trap",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_1895_is_trap"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_ex_op": {
+      "signal": "rspu_pipeline_call_1677_id_ex_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_dec_op"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_ex_pc": {
+      "signal": "rspu_pipeline_call_1677_id_ex_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_if_id_pc"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_ex_rd": {
+      "signal": "rspu_pipeline_call_1677_id_ex_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_dec_rd"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_ex_rs1": {
+      "signal": "rspu_pipeline_call_1677_id_ex_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_dec_rs1"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_ex_rs2": {
+      "signal": "rspu_pipeline_call_1677_id_ex_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_dec_rs2"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_ex_val1": {
+      "signal": "rspu_pipeline_call_1677_id_ex_val1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_val1"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_ex_val2": {
+      "signal": "rspu_pipeline_call_1677_id_ex_val2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_val2"
+      ]
+    },
+    "rspu_pipeline_call_1677_id_val1": {
+      "signal": "rspu_pipeline_call_1677_id_val1",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1677_id_val2": {
+      "signal": "rspu_pipeline_call_1677_id_val2",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1677_if_id_instr": {
+      "signal": "rspu_pipeline_call_1677_if_id_instr",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_139_current_instr"
+      ]
+    },
+    "rspu_pipeline_call_1677_if_id_pc": {
+      "signal": "rspu_pipeline_call_1677_if_id_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_1677_is_load": {
+      "signal": "rspu_pipeline_call_1677_is_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_1677_is_load_in": {
+      "signal": "rspu_pipeline_call_1677_is_load_in",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1677_is_normal_ex": {
+      "signal": "rspu_pipeline_call_1677_is_normal_ex",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1677_is_not_load": {
+      "signal": "rspu_pipeline_call_1677_is_not_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_1677_is_store_out": {
+      "signal": "rspu_pipeline_call_1677_is_store_out",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_1677_mem_out": {
+      "signal": "rspu_pipeline_call_1677_mem_out",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1677_mem_wb_rd": {
+      "signal": "rspu_pipeline_call_1677_mem_wb_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_mem_rd"
+      ]
+    },
+    "rspu_pipeline_call_1677_mem_wb_res": {
+      "signal": "rspu_pipeline_call_1677_mem_wb_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_ex_mem_res"
+      ]
+    },
+    "rspu_pipeline_call_1677_mem_wb_we": {
+      "signal": "rspu_pipeline_call_1677_mem_wb_we",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_1677_pcc_fault": {
+      "signal": "rspu_pipeline_call_1677_pcc_fault",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_1879_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_1677_pcc_valid": {
+      "signal": "rspu_pipeline_call_1677_pcc_valid",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_1879_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_1677_pipe_pc": {
+      "signal": "rspu_pipeline_call_1677_pipe_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_1677_ram_addr": {
+      "signal": "rspu_pipeline_call_1677_ram_addr",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_1677_id_ex_pc"
+      ]
+    },
+    "rspu_pipeline_call_2179_cert_g": {
+      "signal": "rspu_pipeline_call_2179_cert_g",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2179_cert_i": {
+      "signal": "rspu_pipeline_call_2179_cert_i",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2179_cert_r": {
+      "signal": "rspu_pipeline_call_2179_cert_r",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2179_dec_op": {
+      "signal": "rspu_pipeline_call_2179_dec_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2179_dec_rd": {
+      "signal": "rspu_pipeline_call_2179_dec_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2179_dec_rs1": {
+      "signal": "rspu_pipeline_call_2179_dec_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2179_dec_rs2": {
+      "signal": "rspu_pipeline_call_2179_dec_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_d1": {
+      "signal": "rspu_pipeline_call_2179_ex_d1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_d2": {
+      "signal": "rspu_pipeline_call_2179_ex_d2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_mem_op": {
+      "signal": "rspu_pipeline_call_2179_ex_mem_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_mem_rd": {
+      "signal": "rspu_pipeline_call_2179_ex_mem_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_rd"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_mem_res": {
+      "signal": "rspu_pipeline_call_2179_ex_mem_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_packed"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_out_d": {
+      "signal": "rspu_pipeline_call_2179_ex_out_d",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2397_res_data"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_out_p": {
+      "signal": "rspu_pipeline_call_2179_ex_out_p",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2397_res_prov"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_out_t": {
+      "signal": "rspu_pipeline_call_2179_ex_out_t",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2397_res_tag"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_p1": {
+      "signal": "rspu_pipeline_call_2179_ex_p1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_p2": {
+      "signal": "rspu_pipeline_call_2179_ex_p2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_packed": {
+      "signal": "rspu_pipeline_call_2179_ex_packed",
+      "origin": null,
+      "depends_on": [
+        "core_io_in_1"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_t1": {
+      "signal": "rspu_pipeline_call_2179_ex_t1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_t2": {
+      "signal": "rspu_pipeline_call_2179_ex_t2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_2179_ex_trap": {
+      "signal": "rspu_pipeline_call_2179_ex_trap",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2397_is_trap"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_ex_op": {
+      "signal": "rspu_pipeline_call_2179_id_ex_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_dec_op"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_ex_pc": {
+      "signal": "rspu_pipeline_call_2179_id_ex_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_if_id_pc"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_ex_rd": {
+      "signal": "rspu_pipeline_call_2179_id_ex_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_dec_rd"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_ex_rs1": {
+      "signal": "rspu_pipeline_call_2179_id_ex_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_dec_rs1"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_ex_rs2": {
+      "signal": "rspu_pipeline_call_2179_id_ex_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_dec_rs2"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_ex_val1": {
+      "signal": "rspu_pipeline_call_2179_id_ex_val1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_val1"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_ex_val2": {
+      "signal": "rspu_pipeline_call_2179_id_ex_val2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_val2"
+      ]
+    },
+    "rspu_pipeline_call_2179_id_val1": {
+      "signal": "rspu_pipeline_call_2179_id_val1",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2179_id_val2": {
+      "signal": "rspu_pipeline_call_2179_id_val2",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2179_if_id_instr": {
+      "signal": "rspu_pipeline_call_2179_if_id_instr",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_137_current_instr"
+      ]
+    },
+    "rspu_pipeline_call_2179_if_id_pc": {
+      "signal": "rspu_pipeline_call_2179_if_id_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_2179_is_load": {
+      "signal": "rspu_pipeline_call_2179_is_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_2179_is_load_in": {
+      "signal": "rspu_pipeline_call_2179_is_load_in",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2179_is_normal_ex": {
+      "signal": "rspu_pipeline_call_2179_is_normal_ex",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2179_is_not_load": {
+      "signal": "rspu_pipeline_call_2179_is_not_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_2179_is_store_out": {
+      "signal": "rspu_pipeline_call_2179_is_store_out",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2179_mem_out": {
+      "signal": "rspu_pipeline_call_2179_mem_out",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2179_mem_wb_rd": {
+      "signal": "rspu_pipeline_call_2179_mem_wb_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_mem_rd"
+      ]
+    },
+    "rspu_pipeline_call_2179_mem_wb_res": {
+      "signal": "rspu_pipeline_call_2179_mem_wb_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_ex_mem_res"
+      ]
+    },
+    "rspu_pipeline_call_2179_mem_wb_we": {
+      "signal": "rspu_pipeline_call_2179_mem_wb_we",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2179_pcc_fault": {
+      "signal": "rspu_pipeline_call_2179_pcc_fault",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_2381_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_2179_pcc_valid": {
+      "signal": "rspu_pipeline_call_2179_pcc_valid",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_2381_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_2179_pipe_pc": {
+      "signal": "rspu_pipeline_call_2179_pipe_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_2179_ram_addr": {
+      "signal": "rspu_pipeline_call_2179_ram_addr",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2179_id_ex_pc"
+      ]
+    },
+    "rspu_pipeline_call_2681_cert_g": {
+      "signal": "rspu_pipeline_call_2681_cert_g",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2681_cert_i": {
+      "signal": "rspu_pipeline_call_2681_cert_i",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2681_cert_r": {
+      "signal": "rspu_pipeline_call_2681_cert_r",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2681_dec_op": {
+      "signal": "rspu_pipeline_call_2681_dec_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2681_dec_rd": {
+      "signal": "rspu_pipeline_call_2681_dec_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2681_dec_rs1": {
+      "signal": "rspu_pipeline_call_2681_dec_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2681_dec_rs2": {
+      "signal": "rspu_pipeline_call_2681_dec_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_if_id_instr"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_d1": {
+      "signal": "rspu_pipeline_call_2681_ex_d1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_d2": {
+      "signal": "rspu_pipeline_call_2681_ex_d2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_mem_op": {
+      "signal": "rspu_pipeline_call_2681_ex_mem_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_mem_rd": {
+      "signal": "rspu_pipeline_call_2681_ex_mem_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_rd"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_mem_res": {
+      "signal": "rspu_pipeline_call_2681_ex_mem_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_packed"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_out_d": {
+      "signal": "rspu_pipeline_call_2681_ex_out_d",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2899_res_data"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_out_p": {
+      "signal": "rspu_pipeline_call_2681_ex_out_p",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2899_res_prov"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_out_t": {
+      "signal": "rspu_pipeline_call_2681_ex_out_t",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2899_res_tag"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_p1": {
+      "signal": "rspu_pipeline_call_2681_ex_p1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_p2": {
+      "signal": "rspu_pipeline_call_2681_ex_p2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_packed": {
+      "signal": "rspu_pipeline_call_2681_ex_packed",
+      "origin": null,
+      "depends_on": [
+        "core_io_in_0"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_t1": {
+      "signal": "rspu_pipeline_call_2681_ex_t1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_val1"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_t2": {
+      "signal": "rspu_pipeline_call_2681_ex_t2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_val2"
+      ]
+    },
+    "rspu_pipeline_call_2681_ex_trap": {
+      "signal": "rspu_pipeline_call_2681_ex_trap",
+      "origin": null,
+      "depends_on": [
+        "alu_core_call_2899_is_trap"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_ex_op": {
+      "signal": "rspu_pipeline_call_2681_id_ex_op",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_dec_op"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_ex_pc": {
+      "signal": "rspu_pipeline_call_2681_id_ex_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_if_id_pc"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_ex_rd": {
+      "signal": "rspu_pipeline_call_2681_id_ex_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_dec_rd"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_ex_rs1": {
+      "signal": "rspu_pipeline_call_2681_id_ex_rs1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_dec_rs1"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_ex_rs2": {
+      "signal": "rspu_pipeline_call_2681_id_ex_rs2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_dec_rs2"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_ex_val1": {
+      "signal": "rspu_pipeline_call_2681_id_ex_val1",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_val1"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_ex_val2": {
+      "signal": "rspu_pipeline_call_2681_id_ex_val2",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_val2"
+      ]
+    },
+    "rspu_pipeline_call_2681_id_val1": {
+      "signal": "rspu_pipeline_call_2681_id_val1",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2681_id_val2": {
+      "signal": "rspu_pipeline_call_2681_id_val2",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2681_if_id_instr": {
+      "signal": "rspu_pipeline_call_2681_if_id_instr",
+      "origin": null,
+      "depends_on": [
+        "core_top_call_135_current_instr"
+      ]
+    },
+    "rspu_pipeline_call_2681_if_id_pc": {
+      "signal": "rspu_pipeline_call_2681_if_id_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_2681_is_load": {
+      "signal": "rspu_pipeline_call_2681_is_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_2681_is_load_in": {
+      "signal": "rspu_pipeline_call_2681_is_load_in",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2681_is_normal_ex": {
+      "signal": "rspu_pipeline_call_2681_is_normal_ex",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2681_is_not_load": {
+      "signal": "rspu_pipeline_call_2681_is_not_load",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_mem_op"
+      ]
+    },
+    "rspu_pipeline_call_2681_is_store_out": {
+      "signal": "rspu_pipeline_call_2681_is_store_out",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_op"
+      ]
+    },
+    "rspu_pipeline_call_2681_mem_out": {
+      "signal": "rspu_pipeline_call_2681_mem_out",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2681_mem_wb_rd": {
+      "signal": "rspu_pipeline_call_2681_mem_wb_rd",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_mem_rd"
+      ]
+    },
+    "rspu_pipeline_call_2681_mem_wb_res": {
+      "signal": "rspu_pipeline_call_2681_mem_wb_res",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_ex_mem_res"
+      ]
+    },
+    "rspu_pipeline_call_2681_mem_wb_we": {
+      "signal": "rspu_pipeline_call_2681_mem_wb_we",
+      "origin": null,
+      "depends_on": []
+    },
+    "rspu_pipeline_call_2681_pcc_fault": {
+      "signal": "rspu_pipeline_call_2681_pcc_fault",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_2883_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_2681_pcc_valid": {
+      "signal": "rspu_pipeline_call_2681_pcc_valid",
+      "origin": null,
+      "depends_on": [
+        "pcc_verifier_call_2883_is_invalid"
+      ]
+    },
+    "rspu_pipeline_call_2681_pipe_pc": {
+      "signal": "rspu_pipeline_call_2681_pipe_pc",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_pipe_pc"
+      ]
+    },
+    "rspu_pipeline_call_2681_ram_addr": {
+      "signal": "rspu_pipeline_call_2681_ram_addr",
+      "origin": null,
+      "depends_on": [
+        "rspu_pipeline_call_2681_id_ex_pc"
+      ]
+    },
+    "rst_n": {
+      "signal": "rst_n",
+      "origin": {
+        "start_line": 7,
+        "start_col": 0,
+        "end_line": 7,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "rx_data_0": {
+      "signal": "rx_data_0",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_1": {
+      "signal": "rx_data_1",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_10": {
+      "signal": "rx_data_10",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_11": {
+      "signal": "rx_data_11",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_12": {
+      "signal": "rx_data_12",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_13": {
+      "signal": "rx_data_13",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_14": {
+      "signal": "rx_data_14",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_15": {
+      "signal": "rx_data_15",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_2": {
+      "signal": "rx_data_2",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_3": {
+      "signal": "rx_data_3",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_4": {
+      "signal": "rx_data_4",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_5": {
+      "signal": "rx_data_5",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_6": {
+      "signal": "rx_data_6",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_7": {
+      "signal": "rx_data_7",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_8": {
+      "signal": "rx_data_8",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_data_9": {
+      "signal": "rx_data_9",
+      "origin": {
+        "start_line": 1,
+        "start_col": 0,
+        "end_line": 1,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_payload"
+      ]
+    },
+    "rx_valid_0": {
+      "signal": "rx_valid_0",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_1": {
+      "signal": "rx_valid_1",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_10": {
+      "signal": "rx_valid_10",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_11": {
+      "signal": "rx_valid_11",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_12": {
+      "signal": "rx_valid_12",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_13": {
+      "signal": "rx_valid_13",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_14": {
+      "signal": "rx_valid_14",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_15": {
+      "signal": "rx_valid_15",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_2": {
+      "signal": "rx_valid_2",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_3": {
+      "signal": "rx_valid_3",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_4": {
+      "signal": "rx_valid_4",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_5": {
+      "signal": "rx_valid_5",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_6": {
+      "signal": "rx_valid_6",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_7": {
+      "signal": "rx_valid_7",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_8": {
+      "signal": "rx_valid_8",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "rx_valid_9": {
+      "signal": "rx_valid_9",
+      "origin": {
+        "start_line": 0,
+        "start_col": 0,
+        "end_line": 0,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    },
+    "t1": {
+      "signal": "t1",
+      "origin": {
+        "start_line": 114,
+        "start_col": 0,
+        "end_line": 114,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "t2": {
+      "signal": "t2",
+      "origin": {
+        "start_line": 117,
+        "start_col": 0,
+        "end_line": 117,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "trap": {
+      "signal": "trap",
+      "origin": {
+        "start_line": 122,
+        "start_col": 0,
+        "end_line": 122,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "alu_core_call_19_is_trap"
+      ]
+    },
+    "tx_data_0": {
+      "signal": "tx_data_0",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_0"
+      ]
+    },
+    "tx_data_1": {
+      "signal": "tx_data_1",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_1"
+      ]
+    },
+    "tx_data_10": {
+      "signal": "tx_data_10",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_11": {
+      "signal": "tx_data_11",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_12": {
+      "signal": "tx_data_12",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_13": {
+      "signal": "tx_data_13",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_14": {
+      "signal": "tx_data_14",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_15": {
+      "signal": "tx_data_15",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_2": {
+      "signal": "tx_data_2",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_2"
+      ]
+    },
+    "tx_data_3": {
+      "signal": "tx_data_3",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "pc_3"
+      ]
+    },
+    "tx_data_4": {
+      "signal": "tx_data_4",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_5": {
+      "signal": "tx_data_5",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_6": {
+      "signal": "tx_data_6",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_7": {
+      "signal": "tx_data_7",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_8": {
+      "signal": "tx_data_8",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_data_9": {
+      "signal": "tx_data_9",
+      "origin": {
+        "start_line": 3,
+        "start_col": 0,
+        "end_line": 3,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_0": {
+      "signal": "tx_valid_0",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_1": {
+      "signal": "tx_valid_1",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_10": {
+      "signal": "tx_valid_10",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_11": {
+      "signal": "tx_valid_11",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_12": {
+      "signal": "tx_valid_12",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_13": {
+      "signal": "tx_valid_13",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_14": {
+      "signal": "tx_valid_14",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_15": {
+      "signal": "tx_valid_15",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_2": {
+      "signal": "tx_valid_2",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_3": {
+      "signal": "tx_valid_3",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_4": {
+      "signal": "tx_valid_4",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_5": {
+      "signal": "tx_valid_5",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_6": {
+      "signal": "tx_valid_6",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_7": {
+      "signal": "tx_valid_7",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_8": {
+      "signal": "tx_valid_8",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "tx_valid_9": {
+      "signal": "tx_valid_9",
+      "origin": {
+        "start_line": 2,
+        "start_col": 0,
+        "end_line": 2,
+        "end_col": 4294967295
+      },
+      "depends_on": []
+    },
+    "uplink_data": {
+      "signal": "uplink_data",
+      "origin": {
+        "start_line": 66,
+        "start_col": 0,
+        "end_line": 66,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sd_16"
+      ]
+    },
+    "uplink_valid": {
+      "signal": "uplink_valid",
+      "origin": {
+        "start_line": 65,
+        "start_col": 0,
+        "end_line": 65,
+        "end_col": 4294967295
+      },
+      "depends_on": [
+        "noc_l1_router_0_call_212_sv_16"
+      ]
+    }
+  }
+}
