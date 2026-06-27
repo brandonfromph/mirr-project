@@ -412,3 +412,53 @@ pub(crate) fn emit_properties(
     regs.next_temp = temp_start;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ecs::components::{EntityKind, KindComponent, TypeComponent};
+    use crate::ecs::Registry;
+    use crate::ast::types::{ExtendedType, SignalType, SignalKind};
+
+    #[test]
+    fn test_get_signal_tag_byte() {
+        let mut registry = Registry::new();
+        let _mod_id = registry.create_entity("test_mod", KindComponent(EntityKind::MODULE));
+        
+        assert_eq!(get_signal_tag_byte("true", &registry), 1);
+        
+        let sig1 = registry.create_entity("sig_u8", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
+        registry.types[sig1.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(8))));
+        assert_eq!(get_signal_tag_byte("sig_u8", &registry), 8);
+        
+        let sig2 = registry.create_entity("sig_s16", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
+        registry.types[sig2.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Signed(16))));
+        assert_eq!(get_signal_tag_byte("sig_s16", &registry), 144);
+        
+        let sig3 = registry.create_entity("sig_bool", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
+        registry.types[sig3.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Bool)));
+        assert_eq!(get_signal_tag_byte("sig_bool", &registry), 1);
+        
+        assert_eq!(get_signal_tag_byte("unknown_sig", &registry), 16);
+    }
+
+    #[test]
+    fn test_binary_to_alu() {
+        assert_eq!(binary_to_alu(BinaryOp::Add), AluOp::Add);
+        assert_eq!(binary_to_alu(BinaryOp::Sub), AluOp::Sub);
+        assert_eq!(binary_to_alu(BinaryOp::Mul), AluOp::Mul);
+        assert_eq!(binary_to_alu(BinaryOp::BitwiseOr), AluOp::Or);
+        assert_eq!(binary_to_alu(BinaryOp::BitwiseAnd), AluOp::And);
+        assert_eq!(binary_to_alu(BinaryOp::And), AluOp::And);
+        assert_eq!(binary_to_alu(BinaryOp::Or), AluOp::Or);
+        assert_eq!(binary_to_alu(BinaryOp::Xor), AluOp::Xor);
+        assert_eq!(binary_to_alu(BinaryOp::Shl), AluOp::Shl);
+        assert_eq!(binary_to_alu(BinaryOp::Shr), AluOp::Shr);
+        assert_eq!(binary_to_alu(BinaryOp::Eq), AluOp::Eq);
+        assert_eq!(binary_to_alu(BinaryOp::Ne), AluOp::Ne);
+        assert_eq!(binary_to_alu(BinaryOp::Lt), AluOp::Lt);
+        assert_eq!(binary_to_alu(BinaryOp::Le), AluOp::Le);
+        assert_eq!(binary_to_alu(BinaryOp::Gt), AluOp::Gt);
+        assert_eq!(binary_to_alu(BinaryOp::Ge), AluOp::Ge);
+    }
+}
