@@ -1,0 +1,133 @@
+import "core/core_top.mirr" as core;
+import "interconnect/noc_l1_router_0.mirr" as l1_0;
+import "physics/pendulum.mirr" as physics;
+import "physics/controller.mirr" as ctrl;
+
+module reflex_soc_4core {
+    signal clk: in bool;
+    signal rst_n: in bool;
+
+    // --- Core Signals (4-Core Prototype) ---
+    for i in 0..4 {
+        signal pc[i]: internal u32;
+        signal core_data[i]: internal u64;
+        
+        signal core_io_in[i]: internal u64;
+        signal core_io_out[i]: internal u64;
+
+        signal out_pc[i]: out u32;
+        signal out_data[i]: out u64;
+    }
+    
+    // Arrays must match the router's 16 ports
+    for i in 0..16 {
+        signal rx_valid[i]: internal bool;
+        signal rx_data[i]: internal u64;
+        signal tx_valid[i]: internal bool;
+        signal tx_data[i]: internal u64;
+    }
+
+    signal global_trap: out bool;
+
+    // --- Digital Twin: Physics & Control ---
+    signal robot_angle:  internal i64;
+    signal robot_torque: internal i64;
+    signal core_0_torque: internal u64;
+
+    physics::pendulum(rst_n, robot_torque, robot_angle);
+    ctrl::controller(rst_n, robot_angle, robot_torque);
+
+    // Instantiate exactly 4 cores
+    for i in 0..4 {
+        core::core_top(clk, rst_n, core_io_in[i], core_io_out[i], pc[i], core_data[i], rx_valid[i], rx_data[i], tx_valid[i], tx_data[i]);
+    }
+
+    // Wiring digital twin and grounding the rest
+    reflex wire_io {
+        on always {
+            // Core 0 connects to the physical digital twin
+            core_io_in_0 = robot_angle;
+            core_0_torque = core_io_out_0;
+            
+            // Ground Cores 1-3 I/O ports
+            for i in 1..4 {
+                core_io_in[i] = 0;
+            }
+            
+            // Ground the unused router TX ports (4-15) to tell the optimizer to dead-code eliminate them
+            for i in 4..16 {
+                tx_valid[i] = false;
+                tx_data[i] = 0;
+            }
+        }
+    }
+
+    // Dummy router uplink signals
+    signal uplink_valid: internal bool;
+    signal uplink_data: internal u64;
+
+    signal downlink_valid: internal bool;
+    signal downlink_data: internal u64;
+
+    reflex ground_downlink {
+        on always {
+            downlink_valid = false;
+            downlink_data = 0;
+        }
+    }
+
+    // L1 Router 0 (16-port router natively, but heavily pruned by ABC)
+    l1_0::noc_l1_router_0(
+        clk, rst_n,
+        tx_valid_0, tx_data_0,
+        tx_valid_1, tx_data_1,
+        tx_valid_2, tx_data_2,
+        tx_valid_3, tx_data_3,
+        tx_valid_4, tx_data_4,
+        tx_valid_5, tx_data_5,
+        tx_valid_6, tx_data_6,
+        tx_valid_7, tx_data_7,
+        tx_valid_8, tx_data_8,
+        tx_valid_9, tx_data_9,
+        tx_valid_10, tx_data_10,
+        tx_valid_11, tx_data_11,
+        tx_valid_12, tx_data_12,
+        tx_valid_13, tx_data_13,
+        tx_valid_14, tx_data_14,
+        tx_valid_15, tx_data_15,
+        downlink_valid, downlink_data,
+        rx_valid_0, rx_data_0,
+        rx_valid_1, rx_data_1,
+        rx_valid_2, rx_data_2,
+        rx_valid_3, rx_data_3,
+        rx_valid_4, rx_data_4,
+        rx_valid_5, rx_data_5,
+        rx_valid_6, rx_data_6,
+        rx_valid_7, rx_data_7,
+        rx_valid_8, rx_data_8,
+        rx_valid_9, rx_data_9,
+        rx_valid_10, rx_data_10,
+        rx_valid_11, rx_data_11,
+        rx_valid_12, rx_data_12,
+        rx_valid_13, rx_data_13,
+        rx_valid_14, rx_data_14,
+        rx_valid_15, rx_data_15,
+        uplink_valid, uplink_data
+    );
+
+    // Diagnostic/Trap logic (for 4 active cores)
+    reflex collect_diagnostics {
+        on always {
+            out_pc_0 = pc_0;
+            out_data_0 = core_data_0;
+            out_pc_1 = pc_1;
+            out_data_1 = core_data_1;
+            out_pc_2 = pc_2;
+            out_data_2 = core_data_2;
+            out_pc_3 = pc_3;
+            out_data_3 = core_data_3;
+            
+            global_trap = tx_valid_0 || tx_valid_1 || tx_valid_2 || tx_valid_3;
+        }
+    }
+}
