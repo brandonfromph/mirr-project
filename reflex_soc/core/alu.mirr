@@ -35,17 +35,19 @@ def alu_core(
         // Logic guards
         let is_add: bool = (${op} == 0) && (t1 == t2);
         let is_sub: bool = (${op} == 1) && (t1 == t2);
+        let is_mul: bool = (${op} == 2) && (t1 == t2);
         let is_relu_pos: bool = (${op} == 3) && ((d1 >> 31) == 0);
         let is_relu_neg: bool = (${op} == 3) && ((d1 >> 31) == 1);
         let is_tag_gate: bool = (${op} == 5);
 
         guard is_add_g { when is_add for 1 cycles; }
         guard is_sub_g { when is_sub for 1 cycles; }
+        guard is_mul_g { when is_mul for 1 cycles; }
         guard is_relu_pos_g { when is_relu_pos for 1 cycles; }
         guard is_relu_neg_g { when is_relu_neg for 1 cycles; }
         guard is_tag_gate_g { when is_tag_gate for 1 cycles; }
 
-        let is_invalid: bool = (${op} != 0) && (${op} != 1) && (${op} != 3) && (${op} != 5) && (${op} != 6);
+        let is_invalid: bool = (${op} != 0) && (${op} != 1) && (${op} != 2) && (${op} != 3) && (${op} != 5) && (${op} != 6);
         guard is_invalid_g { when is_invalid for 1 cycles; }
 
         reflex do_trap {
@@ -63,6 +65,12 @@ def alu_core(
         reflex do_sub {
             on is_sub_g {
                 res_data = (d1 & 0xFFFFFFFF) - (d2 & 0xFFFFFFFF);
+            }
+        }
+
+        reflex do_mul {
+            on is_mul_g {
+                res_data = ((d1 & 0xFFFFFFFF) * (d2 & 0xFFFFFFFF)) & 0xFFFFFFFF;
             }
         }
 

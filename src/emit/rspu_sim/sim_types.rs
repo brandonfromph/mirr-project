@@ -148,7 +148,7 @@ impl PropertyState {
         Self { statuses: std::collections::HashMap::new(), violations: Vec::new() }
     }
 
-    pub(crate) fn record_violation(&mut self, id: PropertyId) {
+    pub fn record_violation(&mut self, id: PropertyId) {
         if self.statuses.len() < MAX_PROPERTY_VIOLATIONS {
             self.statuses.insert(id, PropertyStatus::Violated);
             if !self.violations.contains(&id) {
@@ -157,7 +157,7 @@ impl PropertyState {
         }
     }
 
-    pub(crate) fn record_satisfaction(&mut self, id: PropertyId) {
+    pub fn record_satisfaction(&mut self, id: PropertyId) {
         if self.statuses.len() < MAX_PROPERTY_VIOLATIONS {
             // Only upgrade to Satisfied if not already Violated.
             let entry = self.statuses.entry(id).or_insert(PropertyStatus::Satisfied);

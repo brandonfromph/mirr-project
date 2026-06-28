@@ -12,7 +12,7 @@ use crate::emit::rspu_isa::{AluOp, AluUnaryOp, RegId, RspuInstruction};
 const LOAD_IMM_ENCODE_MAX: u64 = 0x3FF;
 const ALU_IMM_ENCODE_MAX: u64 = 127;
 
-pub(crate) fn peephole_optimize(instrs: &[RspuInstruction]) -> Vec<RspuInstruction> {
+pub fn peephole_optimize(instrs: &[RspuInstruction]) -> Vec<RspuInstruction> {
     let mut out = Vec::with_capacity(instrs.len());
     let mut i = 0usize;
 
@@ -248,8 +248,8 @@ fn eval_binary(op: AluOp, lhs: u64, rhs: u64) -> u64 {
         AluOp::And => lhs & rhs,
         AluOp::Or => lhs | rhs,
         AluOp::Xor => lhs ^ rhs,
-        AluOp::Shl => lhs.wrapping_shl(rhs as u32),
-        AluOp::Shr => lhs.wrapping_shr(rhs as u32),
+        AluOp::Shl => lhs.wrapping_shl(rhs as u32 & 63),
+        AluOp::Shr => lhs.wrapping_shr(rhs as u32 & 63),
         AluOp::Eq => u64::from(lhs == rhs),
         AluOp::Ne => u64::from(lhs != rhs),
         AluOp::Lt => u64::from(lhs < rhs),

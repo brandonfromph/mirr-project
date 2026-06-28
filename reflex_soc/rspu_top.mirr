@@ -3,10 +3,6 @@ import "interconnect/noc_l1_router_0.mirr" as l1_0;
 import "interconnect/noc_l1_router_1.mirr" as l1_1;
 import "interconnect/noc_l1_router_2.mirr" as l1_2;
 import "interconnect/noc_l1_router_3.mirr" as l1_3;
-import "interconnect/noc_l2_router.mirr" as l2;
-import "physics/pendulum.mirr" as physics;
-import "physics/controller.mirr" as ctrl;
-import "verification/pcc_verifier.mirr" as pcc;
 
 module rspu_top {
     signal clk: in bool;
@@ -27,18 +23,13 @@ module rspu_top {
         signal out_data[i]: out u64;
         
         // Physical I/O
-        signal io_in[i]: internal u64;
-        signal io_out[i]: internal u64;
+        signal io_in[i]: in u64;
+        signal io_out[i]: out u64;
     }
 
     signal global_trap: out bool;
 
-    // --- Digital Twin: Physics & Control ---
-    signal robot_angle:  internal i64;
-    signal robot_torque: internal i64;
 
-    physics::pendulum(rst_n, robot_torque, robot_angle);
-    ctrl::controller(rst_n, robot_angle, robot_torque);
 
     // --- 64-Core Integration ---
     for i in 0..64 {
@@ -47,26 +38,14 @@ module rspu_top {
 
     // --- Hierarchical NoC Interconnect ---
     
-    // L1 to L2 Signals
+    // --- DMA Interface (C++ Replaces L2 Router) ---
     for i in 0..4 {
-        signal uplink_valid[i]: internal bool;
-        signal uplink_data[i]: internal u64;
-        signal downlink_valid[i]: internal bool;
-        signal downlink_data[i]: internal u64;
+        signal uplink_valid[i]: out bool;
+        signal uplink_data[i]: out u64;
+        signal downlink_valid[i]: in bool;
+        signal downlink_data[i]: in u64;
     }
 
-    // L2 Global Router
-    l2::noc_l2_router(
-        clk, rst_n,
-        uplink_valid_0, uplink_data_0,
-        uplink_valid_1, uplink_data_1,
-        uplink_valid_2, uplink_data_2,
-        uplink_valid_3, uplink_data_3,
-        downlink_valid_0, downlink_data_0,
-        downlink_valid_1, downlink_data_1,
-        downlink_valid_2, downlink_data_2,
-        downlink_valid_3, downlink_data_3
-    );
 
     // L1 Router 0 (Cores 0-15)
     l1_0::noc_l1_router_0(
@@ -244,7 +223,4 @@ module rspu_top {
         }
     }
 
-    property system_stability {
-        always (robot_angle < (- -100000) && robot_angle > (-100000));
-    }
 }

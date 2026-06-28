@@ -36,19 +36,19 @@ def core_top(
         signal core_awake: internal bool;
         signal gated_clk: internal bool;
         
-        guard rx_only { when (${noc_rx_valid}) for 1 cycles; }
-        guard dec_only { when (!${noc_rx_valid} && wake_timer > 0) for 1 cycles; }
+        guard tick { when (true) for 1 cycles; }
 
-        reflex handle_rx {
-            on rx_only {
-                wake_timer = 5;
-                current_instr = ${noc_rx_data};
-            }
-        }
-
-        reflex handle_dec {
-            on dec_only {
-                wake_timer = wake_timer - 1;
+        reflex handle_tick {
+            on tick {
+                if (${noc_rx_valid}) {
+                    wake_timer = 6;
+                    current_instr = ${noc_rx_data};
+                } else {
+                    if (wake_timer > 0) {
+                        wake_timer = wake_timer - 1;
+                        current_instr = 255;
+                    }
+                }
             }
         }
 

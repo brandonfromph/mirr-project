@@ -148,20 +148,15 @@ def rspu_pipeline(
         let is_store_out: bool = (id_ex_op == 1);
         let is_normal_ex: bool = (id_ex_op != 0);
 
-        guard is_load_in_g { when is_load_in for 1 cycles; }
         guard is_store_out_g { when is_store_out for 1 cycles; }
-        guard is_normal_ex_g { when is_normal_ex for 1 cycles; }
 
-        reflex do_ex_packed_normal {
-            on is_normal_ex_g {
-                ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
-            }
-        }
-
-        reflex do_ex_packed_load {
-            on is_load_in_g {
-                // TAG_UNSIGNED = 1
-                ex_packed = (1 << 32) | (${io_in_0} & 4294967295);
+        reflex do_ex_packed {
+            on always {
+                if (is_load_in) {
+                    ex_packed = (1 << 32) | (${io_in_0} & 4294967295);
+                } else {
+                    ex_packed = ((ex_out_p & 15) << 36) | ((ex_out_t & 15) << 32) | (ex_out_d & 4294967295);
+                }
             }
         }
 
@@ -185,20 +180,14 @@ def rspu_pipeline(
         signal ram_addr: internal u32;
         
         let is_load: bool = (ex_mem_op == 6);
-        let is_not_load: bool = (ex_mem_op != 6);
 
-        guard is_load_g { when is_load for 1 cycles; }
-        guard is_not_load_g { when is_not_load for 1 cycles; }
-
-        reflex advance_mem_wb_load {
-            on is_load_g {
-                mem_wb_res = mem_out;
-            }
-        }
-
-        reflex advance_mem_wb_other {
-            on is_not_load_g {
-                mem_wb_res = ex_mem_res;
+        reflex advance_mem_wb_res {
+            on always {
+                if (is_load) {
+                    mem_wb_res = mem_out;
+                } else {
+                    mem_wb_res = ex_mem_res;
+                }
             }
         }
 
@@ -209,7 +198,8 @@ def rspu_pipeline(
                 
                 // Advance MEM/WB structural metadata
                 mem_wb_rd = ex_mem_rd;
-                mem_wb_we = true; 
+                // Only write back if it's not a NOP (255) and not a STORE_OUT (1)
+                mem_wb_we = (ex_mem_op != 255) && (ex_mem_op != 1); 
             }
         }
 

@@ -272,175 +272,42 @@ pattern noc_l1_router_1(
     reflex r15 { on y15 { sv_16 = true; sd_16 = tx_data_15; heartbeat_15 = 0; } on n15 { sv_16 = sv_15; sd_16 = sd_15; heartbeat_15 = heartbeat_15 + 1; } }
     reflex analyze_15 { on always { core_dead_15 = heartbeat_15 > 1024; } }
 
-    signal dest_id: internal u64;
-    signal payload: internal u64;
-    signal is_local: internal bool;
-
-    reflex extract {
+    reflex route_out {
         on always {
-            dest_id = (sd_16 >> 48) & 4095;
-            payload = sd_16 & 281474976710655; // (1<<48)-1
-            is_local = (dest_id >= 16) && (dest_id < 32);
+            uplink_valid = sv_16 && !((((sd_16 >> 48) & 4095) >= 16) && (((sd_16 >> 48) & 4095) < 32));
+            uplink_data = sd_16;
+            rx_valid_0 = sv_16 && (((sd_16 >> 48) & 4095) == 16) && !core_dead_0;
+            rx_data_0 = sd_16 & 281474976710655;
+            rx_valid_1 = sv_16 && (((sd_16 >> 48) & 4095) == 17) && !core_dead_1;
+            rx_data_1 = sd_16 & 281474976710655;
+            rx_valid_2 = sv_16 && (((sd_16 >> 48) & 4095) == 18) && !core_dead_2;
+            rx_data_2 = sd_16 & 281474976710655;
+            rx_valid_3 = sv_16 && (((sd_16 >> 48) & 4095) == 19) && !core_dead_3;
+            rx_data_3 = sd_16 & 281474976710655;
+            rx_valid_4 = sv_16 && (((sd_16 >> 48) & 4095) == 20) && !core_dead_4;
+            rx_data_4 = sd_16 & 281474976710655;
+            rx_valid_5 = sv_16 && (((sd_16 >> 48) & 4095) == 21) && !core_dead_5;
+            rx_data_5 = sd_16 & 281474976710655;
+            rx_valid_6 = sv_16 && (((sd_16 >> 48) & 4095) == 22) && !core_dead_6;
+            rx_data_6 = sd_16 & 281474976710655;
+            rx_valid_7 = sv_16 && (((sd_16 >> 48) & 4095) == 23) && !core_dead_7;
+            rx_data_7 = sd_16 & 281474976710655;
+            rx_valid_8 = sv_16 && (((sd_16 >> 48) & 4095) == 24) && !core_dead_8;
+            rx_data_8 = sd_16 & 281474976710655;
+            rx_valid_9 = sv_16 && (((sd_16 >> 48) & 4095) == 25) && !core_dead_9;
+            rx_data_9 = sd_16 & 281474976710655;
+            rx_valid_10 = sv_16 && (((sd_16 >> 48) & 4095) == 26) && !core_dead_10;
+            rx_data_10 = sd_16 & 281474976710655;
+            rx_valid_11 = sv_16 && (((sd_16 >> 48) & 4095) == 27) && !core_dead_11;
+            rx_data_11 = sd_16 & 281474976710655;
+            rx_valid_12 = sv_16 && (((sd_16 >> 48) & 4095) == 28) && !core_dead_12;
+            rx_data_12 = sd_16 & 281474976710655;
+            rx_valid_13 = sv_16 && (((sd_16 >> 48) & 4095) == 29) && !core_dead_13;
+            rx_data_13 = sd_16 & 281474976710655;
+            rx_valid_14 = sv_16 && (((sd_16 >> 48) & 4095) == 30) && !core_dead_14;
+            rx_data_14 = sd_16 & 281474976710655;
+            rx_valid_15 = sv_16 && (((sd_16 >> 48) & 4095) == 31) && !core_dead_15;
+            rx_data_15 = sd_16 & 281474976710655;
         }
     }
-
-    // Default outputs
-    reflex defaults {
-        on always {
-            uplink_valid = false;
-            uplink_data = 0;
-            rx_valid_0 = false;
-            rx_data_0 = 0;
-            rx_valid_1 = false;
-            rx_data_1 = 0;
-            rx_valid_2 = false;
-            rx_data_2 = 0;
-            rx_valid_3 = false;
-            rx_data_3 = 0;
-            rx_valid_4 = false;
-            rx_data_4 = 0;
-            rx_valid_5 = false;
-            rx_data_5 = 0;
-            rx_valid_6 = false;
-            rx_data_6 = 0;
-            rx_valid_7 = false;
-            rx_data_7 = 0;
-            rx_valid_8 = false;
-            rx_data_8 = 0;
-            rx_valid_9 = false;
-            rx_data_9 = 0;
-            rx_valid_10 = false;
-            rx_data_10 = 0;
-            rx_valid_11 = false;
-            rx_data_11 = 0;
-            rx_valid_12 = false;
-            rx_data_12 = 0;
-            rx_valid_13 = false;
-            rx_data_13 = 0;
-            rx_valid_14 = false;
-            rx_data_14 = 0;
-            rx_valid_15 = false;
-            rx_data_15 = 0;
-        }
-    }
-    guard p0_alive {
-        when ((dest_id == 16) && !core_dead_0) for 1 cycles;
-    }
-    guard p0_dead {
-        when ((dest_id == 16) && core_dead_0) for 1 cycles;
-    }
-    reflex out0_alive { on p0_alive { rx_valid_0 = sv_16; rx_data_0 = payload; } }
-    guard p1_alive {
-        when ((dest_id == 17) && !core_dead_1) for 1 cycles;
-    }
-    guard p1_dead {
-        when ((dest_id == 17) && core_dead_1) for 1 cycles;
-    }
-    reflex out1_alive { on p1_alive { rx_valid_1 = sv_16; rx_data_1 = payload; } }
-    guard p2_alive {
-        when ((dest_id == 18) && !core_dead_2) for 1 cycles;
-    }
-    guard p2_dead {
-        when ((dest_id == 18) && core_dead_2) for 1 cycles;
-    }
-    reflex out2_alive { on p2_alive { rx_valid_2 = sv_16; rx_data_2 = payload; } }
-    guard p3_alive {
-        when ((dest_id == 19) && !core_dead_3) for 1 cycles;
-    }
-    guard p3_dead {
-        when ((dest_id == 19) && core_dead_3) for 1 cycles;
-    }
-    reflex out3_alive { on p3_alive { rx_valid_3 = sv_16; rx_data_3 = payload; } }
-    guard p4_alive {
-        when ((dest_id == 20) && !core_dead_4) for 1 cycles;
-    }
-    guard p4_dead {
-        when ((dest_id == 20) && core_dead_4) for 1 cycles;
-    }
-    reflex out4_alive { on p4_alive { rx_valid_4 = sv_16; rx_data_4 = payload; } }
-    guard p5_alive {
-        when ((dest_id == 21) && !core_dead_5) for 1 cycles;
-    }
-    guard p5_dead {
-        when ((dest_id == 21) && core_dead_5) for 1 cycles;
-    }
-    reflex out5_alive { on p5_alive { rx_valid_5 = sv_16; rx_data_5 = payload; } }
-    guard p6_alive {
-        when ((dest_id == 22) && !core_dead_6) for 1 cycles;
-    }
-    guard p6_dead {
-        when ((dest_id == 22) && core_dead_6) for 1 cycles;
-    }
-    reflex out6_alive { on p6_alive { rx_valid_6 = sv_16; rx_data_6 = payload; } }
-    guard p7_alive {
-        when ((dest_id == 23) && !core_dead_7) for 1 cycles;
-    }
-    guard p7_dead {
-        when ((dest_id == 23) && core_dead_7) for 1 cycles;
-    }
-    reflex out7_alive { on p7_alive { rx_valid_7 = sv_16; rx_data_7 = payload; } }
-    guard p8_alive {
-        when ((dest_id == 24) && !core_dead_8) for 1 cycles;
-    }
-    guard p8_dead {
-        when ((dest_id == 24) && core_dead_8) for 1 cycles;
-    }
-    reflex out8_alive { on p8_alive { rx_valid_8 = sv_16; rx_data_8 = payload; } }
-    guard p9_alive {
-        when ((dest_id == 25) && !core_dead_9) for 1 cycles;
-    }
-    guard p9_dead {
-        when ((dest_id == 25) && core_dead_9) for 1 cycles;
-    }
-    reflex out9_alive { on p9_alive { rx_valid_9 = sv_16; rx_data_9 = payload; } }
-    guard p10_alive {
-        when ((dest_id == 26) && !core_dead_10) for 1 cycles;
-    }
-    guard p10_dead {
-        when ((dest_id == 26) && core_dead_10) for 1 cycles;
-    }
-    reflex out10_alive { on p10_alive { rx_valid_10 = sv_16; rx_data_10 = payload; } }
-    guard p11_alive {
-        when ((dest_id == 27) && !core_dead_11) for 1 cycles;
-    }
-    guard p11_dead {
-        when ((dest_id == 27) && core_dead_11) for 1 cycles;
-    }
-    reflex out11_alive { on p11_alive { rx_valid_11 = sv_16; rx_data_11 = payload; } }
-    guard p12_alive {
-        when ((dest_id == 28) && !core_dead_12) for 1 cycles;
-    }
-    guard p12_dead {
-        when ((dest_id == 28) && core_dead_12) for 1 cycles;
-    }
-    reflex out12_alive { on p12_alive { rx_valid_12 = sv_16; rx_data_12 = payload; } }
-    guard p13_alive {
-        when ((dest_id == 29) && !core_dead_13) for 1 cycles;
-    }
-    guard p13_dead {
-        when ((dest_id == 29) && core_dead_13) for 1 cycles;
-    }
-    reflex out13_alive { on p13_alive { rx_valid_13 = sv_16; rx_data_13 = payload; } }
-    guard p14_alive {
-        when ((dest_id == 30) && !core_dead_14) for 1 cycles;
-    }
-    guard p14_dead {
-        when ((dest_id == 30) && core_dead_14) for 1 cycles;
-    }
-    reflex out14_alive { on p14_alive { rx_valid_14 = sv_16; rx_data_14 = payload; } }
-    guard p15_alive {
-        when ((dest_id == 31) && !core_dead_15) for 1 cycles;
-    }
-    guard p15_dead {
-        when ((dest_id == 31) && core_dead_15) for 1 cycles;
-    }
-    reflex out15_alive { on p15_alive { rx_valid_15 = sv_16; rx_data_15 = payload; } }
-
-    guard ext {
-        when (!is_local) for 1 cycles;
-    }
-    
-    reflex out_ext { on ext { uplink_valid = sv_16; uplink_data = sd_16; } }
 }
-
-module noc_l1_router_1 {}
