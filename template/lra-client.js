@@ -5,7 +5,7 @@
 //   paper.runTool({ input: '...', format: 'json' }).then(console.log);
 //   paper.close();
 //
-// Apache-2.0 — see LICENSE for terms.
+// GPL-3.0-or-later — see LICENSE for terms.
 
 /* exported LRAClient */
 

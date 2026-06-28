@@ -8,7 +8,7 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/brandonfromph/mirr-project/ci.yml?branch=main&style=flat-square)](https://github.com/brandonfromph/mirr-project/actions)
 [![Tests](https://img.shields.io/badge/tests-3%2C469%2B%20passing-brightgreen?style=flat-square)](#testing)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.85.0-orange?style=flat-square)](https://www.rust-lang.org/)
 [![unsafe: forbidden](https://img.shields.io/badge/unsafe-forbidden-red?style=flat-square)](#design-philosophy)
 
@@ -187,9 +187,9 @@ MIRR is published as a Living Research Artifact (LRA) — an interactive paper w
 
 **[Read the interactive paper →](https://brandonfromph.github.io/mirr-project/paper/)**
 
-The paper, the compiler, the Rocq proofs, and the browser demos are one Apache-2.0 licensed artifact. To cite MIRR, use [`paper/CITATION.cff`](paper/CITATION.cff) or cite the commit hash of the version you used.
+The paper, the compiler, the Rocq proofs, and the browser demos are one GPL-3.0-or-later licensed artifact. To cite MIRR, use [`paper/CITATION.cff`](paper/CITATION.cff) or cite the commit hash of the version you used.
 
-**Want this format for your own research?** Fork the [LRA Template](https://github.com/brandonfromph/lra-template) — a reusable Apache-2.0 scaffold for interactive papers. See the [LRA-1.0 Specification](template/spec/LRA-1.0.md) for the formal standard.
+**Want this format for your own research?** Fork the [LRA Template](https://github.com/brandonfromph/lra-template) — a reusable GPL-3.0-or-later scaffold for interactive papers. See the [LRA-1.0 Specification](template/spec/LRA-1.0.md) for the formal standard.
 
 ---
 
@@ -308,9 +308,9 @@ cargo fmt --check               # formatting
 
 ## License
 
-Distributed under the Apache-2.0 License. See [`LICENSE`](LICENSE) for the full terms.
+Distributed under the GPL-3.0-or-later License. See [`LICENSE`](LICENSE) for the full terms.
 
-The interactive paper, compiler, proofs, and WASM demos are one unified Apache-2.0 artifact and cannot be separated for journal submission under a copyright transfer agreement.
+The interactive paper, compiler, proofs, and WASM demos are one unified GPL-3.0-or-later artifact and cannot be separated for journal submission under a copyright transfer agreement.
 
 ---
 

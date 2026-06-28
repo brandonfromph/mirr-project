@@ -16,13 +16,13 @@ const TEMPLATE_GITIGNORE: &str = include_str!("../template/.gitignore");
 const TEMPLATE_LRA_CARD: &str = include_str!("../template/lra-card.svg");
 const TEMPLATE_LRA_CLIENT: &str = include_str!("../template/lra-client.js");
 
-// Apache-2.0 license header — embedded directly so the crate is self-contained
+// GPL-3.0-or-later license header — embedded directly so the crate is self-contained
 const TEMPLATE_LICENSE: &str = "\
-                                 Apache License\n\
+                                 GNU General Public License\n\
                            Version 2.0, January 2004\n\
-                        http://www.apache.org/licenses/\n\n\
+                        https://www.gnu.org/licenses/\n\n\
    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n\
-   See https://www.apache.org/licenses/LICENSE-2.0.txt for the full license text.\n";
+   See https://www.gnu.org/licenses/gpl-3.0.txt for the full license text.\n";
 
 fn validate_project_name(name: &str) -> Result<(), &'static str> {
     if name.is_empty() {
@@ -72,7 +72,7 @@ pub fn run(name: &str) -> i32 {
     println!("  paper.js       — interactive layer");
     println!("  sw.js          — service worker");
     println!("  CITATION.cff   — citation metadata");
-    println!("  LICENSE        — Apache-2.0");
+    println!("  LICENSE        — GPL-3.0-or-later");
     println!();
     println!("Next steps:");
     println!("  cd {}", name);

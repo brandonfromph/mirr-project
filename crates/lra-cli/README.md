@@ -29,4 +29,4 @@ lra build paper.md       # Compile Markdown to LRA-compliant HTML
 
 ## License
 
-Apache-2.0 — see [LICENSE](../../LICENSE) for terms.
+GPL-3.0-or-later — see [LICENSE](../../LICENSE) for terms.

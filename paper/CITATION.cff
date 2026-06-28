@@ -6,7 +6,7 @@ authors:
   - given-names: Brandon
     alias: brandonfromph
 repository-code: "https://github.com/brandonfromph/mirr-project"
-license: Apache-2.0
+license: GPL-3.0-or-later
 version: "0.3.0"
 date-released: "2026-03-12"
 keywords:

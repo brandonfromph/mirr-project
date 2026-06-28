@@ -4,7 +4,7 @@
   "description": "Syntax highlighting, icon, and theme for MIRR (no LSP or compiler service in this package).",
   "version": "0.2.0",
   "publisher": "mirr-project",
-  "license": "Apache-2.0",
+  "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "https://github.com/brandonfromph/mirr-project",

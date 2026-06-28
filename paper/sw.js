@@ -7,7 +7,7 @@
 // Phase 8: Self-healing knowledge graph (dep_versions, notify, notifications)
 // Phase 9: Peer-to-peer research protocol (identity, reputation, peers)
 //
-// Apache-2.0 — see LICENSE for terms.
+// GPL-3.0-or-later — see LICENSE for terms.
 
 var CACHE_NAME = 'mirr-v10';
 var ASSETS = [
@@ -64,7 +64,7 @@ var LRA_META = {
   title: 'MIRR: A Safety-Critical HDL Compiler with Formal Width Inference',
   authors: ['Brandon'],
   date: '2026-03',
-  license: 'Apache-2.0',
+  license: 'GPL-3.0-or-later',
   version: '0.3.0',
   abstract: 'MIRR is an open-source Rust compiler for safety-critical hardware-software co-design. It compiles temporal guards, guarded reflexes, and LTL safety properties through a 9-stage deterministic pipeline into 9 emission backends. Width inference is backed by 1,833 lines of Rocq proofs with 55 theorems (52 mechanized, 94.5% mechanization rate).',
   keywords: ['HDL', 'compiler', 'safety-critical', 'formal verification',
@@ -82,7 +82,7 @@ var LRA_CLAIMS = [
   { id: 'claim-4', text: 'The compiler is safe: #![forbid(unsafe_code)] on every source file.', evidence_href: null }
 ];
 
-var LRA_CITATION_BIBTEX = '@software{mirr2026,\n  title  = {MIRR: A Safety-Critical HDL Compiler},\n  author = {Brandon},\n  year   = {2026},\n  url    = {https://github.com/brandonfromph/mirr-project},\n  license = {Apache-2.0}\n}';
+var LRA_CITATION_BIBTEX = '@software{mirr2026,\n  title  = {MIRR: A Safety-Critical HDL Compiler},\n  author = {Brandon},\n  year   = {2026},\n  url    = {https://github.com/brandonfromph/mirr-project},\n  license = {GPL-3.0-or-later}\n}';
 
 var LRA_CITATION_APA = 'Brandon. (2026). MIRR: A Safety-Critical HDL Compiler [Computer software]. https://github.com/brandonfromph/mirr-project';
 

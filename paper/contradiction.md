@@ -1,7 +1,7 @@
 # Contradiction — A Specification for the Living Research Artifact
 
 **Version:** 0.1.0
-**License:** Apache-2.0 (same as the artifact it describes)
+**License:** GPL-3.0-or-later (same as the artifact it describes)
 **Status:** Active
 
 ---
@@ -39,7 +39,7 @@ specific commit.
 
 ### 2.4 Openness
 
-The artifact is Apache-2.0. Anyone can fork it, reproduce results, and extend the work.
+The artifact is GPL-3.0-or-later. Anyone can fork it, reproduce results, and extend the work.
 The license applies to all components: code, proofs, paper, and demos.
 
 ### 2.5 Liveness
@@ -138,4 +138,4 @@ The Living Research Artifact succeeds when:
 3. The repository compiles, tests pass, proofs check, and the paper renders —
    all from one `git clone`.
 4. The artifact is citable by commit hash via `CITATION.cff`.
-5. The Apache-2.0 license protects both the code and the paper.
+5. The GPL-3.0-or-later license protects both the code and the paper.

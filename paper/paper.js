@@ -1,6 +1,6 @@
 // paper.js — Interactive demo layer for MIRR Living Research Artifact
 // No external dependencies. No npm. No CDN.
-// Apache-2.0 — same license as the compiler.
+// GPL-3.0-or-later — same license as the compiler.
 
 // Must match MAX_SOURCE_BYTES in crates/mirr-wasm/src/lib.rs
 const MAX_SOURCE_BYTES = 65_536;

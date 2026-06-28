@@ -99,7 +99,7 @@ fn parse_frontmatter(fm: &str) -> Result<Meta, String> {
         date: String::new(),
         description: String::new(),
         url: String::new(),
-        license: "Apache-2.0".to_string(),
+        license: "GPL-3.0-or-later".to_string(),
         keywords: Vec::new(),
         capability: String::new(),
         claims: Vec::new(),
@@ -455,7 +455,7 @@ fn assemble(meta: &Meta, body_html: &str) -> String {
     "author": {{ "@type": "Person", "name": "{author}" }},
     "datePublished": "{date}",
     "description": "{description}",
-    "license": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.txt",
     "url": "{url}",
     "keywords": [{keywords_json}]
   }}

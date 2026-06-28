@@ -1,0 +1,11 @@
+Vrspu_top___024root__0.o: \
+  /Users/brandonc.blay/projects/mirr-private/obj_dir/Vrspu_top__pch.h \
+  /opt/homebrew/Cellar/verilator/5.048/share/verilator/include/verilated.h \
+  /opt/homebrew/Cellar/verilator/5.048/share/verilator/include/verilated_config.h \
+  /opt/homebrew/Cellar/verilator/5.048/share/verilator/include/verilatedos.h \
+  /opt/homebrew/Cellar/verilator/5.048/share/verilator/include/verilated_types.h \
+  /opt/homebrew/Cellar/verilator/5.048/share/verilator/include/verilated_funcs.h \
+  /Users/brandonc.blay/projects/mirr-private/obj_dir/Vrspu_top__Syms.h \
+  /Users/brandonc.blay/projects/mirr-private/obj_dir/Vrspu_top.h \
+  /Users/brandonc.blay/projects/mirr-private/obj_dir/Vrspu_top___024root.h \
+  Vrspu_top___024root__0.cpp Vrspu_top__pch.h

@@ -1,0 +1,281 @@
+import "core/core_top.mirr" as core;
+import "interconnect/noc_l1_router_0.mirr" as l1_0;
+import "interconnect/noc_l1_router_1.mirr" as l1_1;
+import "interconnect/noc_l1_router_2.mirr" as l1_2;
+import "interconnect/noc_l1_router_3.mirr" as l1_3;
+import "interconnect/noc_l2_router.mirr" as l2;
+import "physics/pendulum.mirr" as physics;
+import "physics/controller.mirr" as ctrl;
+import "verification/pcc_verifier.mirr" as pcc;
+
+module rspu_top {
+    signal clk: in bool;
+    signal rst_n: in bool;
+
+    for i in 0..64 {
+        signal pc[i]: internal u32;
+        signal core_data[i]: internal u64;
+        signal out_pc[i]: out u32;
+        signal out_data[i]: out u64;
+        signal io_in[i]: internal u64;
+        signal io_out[i]: internal u64;
+    }
+
+    signal global_trap: out bool;
+
+    signal robot_angle: internal i64;
+    signal robot_torque: internal i64;
+
+    physics::pendulum(rst_n, robot_torque, robot_angle);
+    ctrl::controller(rst_n, robot_angle, robot_torque);
+
+    for i in 0..4 {
+        signal uplink_v[i]: internal bool;
+        signal uplink_d[i]: internal u64;
+        signal downlink_v[i]: internal bool;
+        signal downlink_d[i]: internal u64;
+    }
+
+    // Group 0
+    for i in 0..16 {
+        signal rx_valid_g0[i]: internal bool;
+        signal rx_data_g0[i]: internal u64;
+        signal tx_valid_g0[i]: internal bool;
+        signal tx_data_g0[i]: internal u64;
+    }
+    core::core_top(clk, rst_n, io_in_0, io_out_0, pc_0, core_data_0, rx_valid_g0_0, rx_data_g0_0, tx_valid_g0_0, tx_data_g0_0);
+    core::core_top(clk, rst_n, io_in_1, io_out_1, pc_1, core_data_1, rx_valid_g0_1, rx_data_g0_1, tx_valid_g0_1, tx_data_g0_1);
+    core::core_top(clk, rst_n, io_in_2, io_out_2, pc_2, core_data_2, rx_valid_g0_2, rx_data_g0_2, tx_valid_g0_2, tx_data_g0_2);
+    core::core_top(clk, rst_n, io_in_3, io_out_3, pc_3, core_data_3, rx_valid_g0_3, rx_data_g0_3, tx_valid_g0_3, tx_data_g0_3);
+    core::core_top(clk, rst_n, io_in_4, io_out_4, pc_4, core_data_4, rx_valid_g0_4, rx_data_g0_4, tx_valid_g0_4, tx_data_g0_4);
+    core::core_top(clk, rst_n, io_in_5, io_out_5, pc_5, core_data_5, rx_valid_g0_5, rx_data_g0_5, tx_valid_g0_5, tx_data_g0_5);
+    core::core_top(clk, rst_n, io_in_6, io_out_6, pc_6, core_data_6, rx_valid_g0_6, rx_data_g0_6, tx_valid_g0_6, tx_data_g0_6);
+    core::core_top(clk, rst_n, io_in_7, io_out_7, pc_7, core_data_7, rx_valid_g0_7, rx_data_g0_7, tx_valid_g0_7, tx_data_g0_7);
+    core::core_top(clk, rst_n, io_in_8, io_out_8, pc_8, core_data_8, rx_valid_g0_8, rx_data_g0_8, tx_valid_g0_8, tx_data_g0_8);
+    core::core_top(clk, rst_n, io_in_9, io_out_9, pc_9, core_data_9, rx_valid_g0_9, rx_data_g0_9, tx_valid_g0_9, tx_data_g0_9);
+    core::core_top(clk, rst_n, io_in_10, io_out_10, pc_10, core_data_10, rx_valid_g0_10, rx_data_g0_10, tx_valid_g0_10, tx_data_g0_10);
+    core::core_top(clk, rst_n, io_in_11, io_out_11, pc_11, core_data_11, rx_valid_g0_11, rx_data_g0_11, tx_valid_g0_11, tx_data_g0_11);
+    core::core_top(clk, rst_n, io_in_12, io_out_12, pc_12, core_data_12, rx_valid_g0_12, rx_data_g0_12, tx_valid_g0_12, tx_data_g0_12);
+    core::core_top(clk, rst_n, io_in_13, io_out_13, pc_13, core_data_13, rx_valid_g0_13, rx_data_g0_13, tx_valid_g0_13, tx_data_g0_13);
+    core::core_top(clk, rst_n, io_in_14, io_out_14, pc_14, core_data_14, rx_valid_g0_14, rx_data_g0_14, tx_valid_g0_14, tx_data_g0_14);
+    core::core_top(clk, rst_n, io_in_15, io_out_15, pc_15, core_data_15, rx_valid_g0_15, rx_data_g0_15, tx_valid_g0_15, tx_data_g0_15);
+    l1_0::noc_l1_router_0(clk, rst_n, tx_valid_g0_0, tx_data_g0_0, tx_valid_g0_1, tx_data_g0_1, tx_valid_g0_2, tx_data_g0_2, tx_valid_g0_3, tx_data_g0_3, tx_valid_g0_4, tx_data_g0_4, tx_valid_g0_5, tx_data_g0_5, tx_valid_g0_6, tx_data_g0_6, tx_valid_g0_7, tx_data_g0_7, tx_valid_g0_8, tx_data_g0_8, tx_valid_g0_9, tx_data_g0_9, tx_valid_g0_10, tx_data_g0_10, tx_valid_g0_11, tx_data_g0_11, tx_valid_g0_12, tx_data_g0_12, tx_valid_g0_13, tx_data_g0_13, tx_valid_g0_14, tx_data_g0_14, tx_valid_g0_15, tx_data_g0_15, downlink_v_0, downlink_d_0, rx_valid_g0_0, rx_data_g0_0, rx_valid_g0_1, rx_data_g0_1, rx_valid_g0_2, rx_data_g0_2, rx_valid_g0_3, rx_data_g0_3, rx_valid_g0_4, rx_data_g0_4, rx_valid_g0_5, rx_data_g0_5, rx_valid_g0_6, rx_data_g0_6, rx_valid_g0_7, rx_data_g0_7, rx_valid_g0_8, rx_data_g0_8, rx_valid_g0_9, rx_data_g0_9, rx_valid_g0_10, rx_data_g0_10, rx_valid_g0_11, rx_data_g0_11, rx_valid_g0_12, rx_data_g0_12, rx_valid_g0_13, rx_data_g0_13, rx_valid_g0_14, rx_data_g0_14, rx_valid_g0_15, rx_data_g0_15, uplink_v_0, uplink_d_0);
+
+    // Group 1
+    for i in 0..16 {
+        signal rx_valid_g1[i]: internal bool;
+        signal rx_data_g1[i]: internal u64;
+        signal tx_valid_g1[i]: internal bool;
+        signal tx_data_g1[i]: internal u64;
+    }
+    core::core_top(clk, rst_n, io_in_16, io_out_16, pc_16, core_data_16, rx_valid_g1_0, rx_data_g1_0, tx_valid_g1_0, tx_data_g1_0);
+    core::core_top(clk, rst_n, io_in_17, io_out_17, pc_17, core_data_17, rx_valid_g1_1, rx_data_g1_1, tx_valid_g1_1, tx_data_g1_1);
+    core::core_top(clk, rst_n, io_in_18, io_out_18, pc_18, core_data_18, rx_valid_g1_2, rx_data_g1_2, tx_valid_g1_2, tx_data_g1_2);
+    core::core_top(clk, rst_n, io_in_19, io_out_19, pc_19, core_data_19, rx_valid_g1_3, rx_data_g1_3, tx_valid_g1_3, tx_data_g1_3);
+    core::core_top(clk, rst_n, io_in_20, io_out_20, pc_20, core_data_20, rx_valid_g1_4, rx_data_g1_4, tx_valid_g1_4, tx_data_g1_4);
+    core::core_top(clk, rst_n, io_in_21, io_out_21, pc_21, core_data_21, rx_valid_g1_5, rx_data_g1_5, tx_valid_g1_5, tx_data_g1_5);
+    core::core_top(clk, rst_n, io_in_22, io_out_22, pc_22, core_data_22, rx_valid_g1_6, rx_data_g1_6, tx_valid_g1_6, tx_data_g1_6);
+    core::core_top(clk, rst_n, io_in_23, io_out_23, pc_23, core_data_23, rx_valid_g1_7, rx_data_g1_7, tx_valid_g1_7, tx_data_g1_7);
+    core::core_top(clk, rst_n, io_in_24, io_out_24, pc_24, core_data_24, rx_valid_g1_8, rx_data_g1_8, tx_valid_g1_8, tx_data_g1_8);
+    core::core_top(clk, rst_n, io_in_25, io_out_25, pc_25, core_data_25, rx_valid_g1_9, rx_data_g1_9, tx_valid_g1_9, tx_data_g1_9);
+    core::core_top(clk, rst_n, io_in_26, io_out_26, pc_26, core_data_26, rx_valid_g1_10, rx_data_g1_10, tx_valid_g1_10, tx_data_g1_10);
+    core::core_top(clk, rst_n, io_in_27, io_out_27, pc_27, core_data_27, rx_valid_g1_11, rx_data_g1_11, tx_valid_g1_11, tx_data_g1_11);
+    core::core_top(clk, rst_n, io_in_28, io_out_28, pc_28, core_data_28, rx_valid_g1_12, rx_data_g1_12, tx_valid_g1_12, tx_data_g1_12);
+    core::core_top(clk, rst_n, io_in_29, io_out_29, pc_29, core_data_29, rx_valid_g1_13, rx_data_g1_13, tx_valid_g1_13, tx_data_g1_13);
+    core::core_top(clk, rst_n, io_in_30, io_out_30, pc_30, core_data_30, rx_valid_g1_14, rx_data_g1_14, tx_valid_g1_14, tx_data_g1_14);
+    core::core_top(clk, rst_n, io_in_31, io_out_31, pc_31, core_data_31, rx_valid_g1_15, rx_data_g1_15, tx_valid_g1_15, tx_data_g1_15);
+    l1_1::noc_l1_router_1(clk, rst_n, tx_valid_g1_0, tx_data_g1_0, tx_valid_g1_1, tx_data_g1_1, tx_valid_g1_2, tx_data_g1_2, tx_valid_g1_3, tx_data_g1_3, tx_valid_g1_4, tx_data_g1_4, tx_valid_g1_5, tx_data_g1_5, tx_valid_g1_6, tx_data_g1_6, tx_valid_g1_7, tx_data_g1_7, tx_valid_g1_8, tx_data_g1_8, tx_valid_g1_9, tx_data_g1_9, tx_valid_g1_10, tx_data_g1_10, tx_valid_g1_11, tx_data_g1_11, tx_valid_g1_12, tx_data_g1_12, tx_valid_g1_13, tx_data_g1_13, tx_valid_g1_14, tx_data_g1_14, tx_valid_g1_15, tx_data_g1_15, downlink_v_1, downlink_d_1, rx_valid_g1_0, rx_data_g1_0, rx_valid_g1_1, rx_data_g1_1, rx_valid_g1_2, rx_data_g1_2, rx_valid_g1_3, rx_data_g1_3, rx_valid_g1_4, rx_data_g1_4, rx_valid_g1_5, rx_data_g1_5, rx_valid_g1_6, rx_data_g1_6, rx_valid_g1_7, rx_data_g1_7, rx_valid_g1_8, rx_data_g1_8, rx_valid_g1_9, rx_data_g1_9, rx_valid_g1_10, rx_data_g1_10, rx_valid_g1_11, rx_data_g1_11, rx_valid_g1_12, rx_data_g1_12, rx_valid_g1_13, rx_data_g1_13, rx_valid_g1_14, rx_data_g1_14, rx_valid_g1_15, rx_data_g1_15, uplink_v_1, uplink_d_1);
+
+    // Group 2
+    for i in 0..16 {
+        signal rx_valid_g2[i]: internal bool;
+        signal rx_data_g2[i]: internal u64;
+        signal tx_valid_g2[i]: internal bool;
+        signal tx_data_g2[i]: internal u64;
+    }
+    core::core_top(clk, rst_n, io_in_32, io_out_32, pc_32, core_data_32, rx_valid_g2_0, rx_data_g2_0, tx_valid_g2_0, tx_data_g2_0);
+    core::core_top(clk, rst_n, io_in_33, io_out_33, pc_33, core_data_33, rx_valid_g2_1, rx_data_g2_1, tx_valid_g2_1, tx_data_g2_1);
+    core::core_top(clk, rst_n, io_in_34, io_out_34, pc_34, core_data_34, rx_valid_g2_2, rx_data_g2_2, tx_valid_g2_2, tx_data_g2_2);
+    core::core_top(clk, rst_n, io_in_35, io_out_35, pc_35, core_data_35, rx_valid_g2_3, rx_data_g2_3, tx_valid_g2_3, tx_data_g2_3);
+    core::core_top(clk, rst_n, io_in_36, io_out_36, pc_36, core_data_36, rx_valid_g2_4, rx_data_g2_4, tx_valid_g2_4, tx_data_g2_4);
+    core::core_top(clk, rst_n, io_in_37, io_out_37, pc_37, core_data_37, rx_valid_g2_5, rx_data_g2_5, tx_valid_g2_5, tx_data_g2_5);
+    core::core_top(clk, rst_n, io_in_38, io_out_38, pc_38, core_data_38, rx_valid_g2_6, rx_data_g2_6, tx_valid_g2_6, tx_data_g2_6);
+    core::core_top(clk, rst_n, io_in_39, io_out_39, pc_39, core_data_39, rx_valid_g2_7, rx_data_g2_7, tx_valid_g2_7, tx_data_g2_7);
+    core::core_top(clk, rst_n, io_in_40, io_out_40, pc_40, core_data_40, rx_valid_g2_8, rx_data_g2_8, tx_valid_g2_8, tx_data_g2_8);
+    core::core_top(clk, rst_n, io_in_41, io_out_41, pc_41, core_data_41, rx_valid_g2_9, rx_data_g2_9, tx_valid_g2_9, tx_data_g2_9);
+    core::core_top(clk, rst_n, io_in_42, io_out_42, pc_42, core_data_42, rx_valid_g2_10, rx_data_g2_10, tx_valid_g2_10, tx_data_g2_10);
+    core::core_top(clk, rst_n, io_in_43, io_out_43, pc_43, core_data_43, rx_valid_g2_11, rx_data_g2_11, tx_valid_g2_11, tx_data_g2_11);
+    core::core_top(clk, rst_n, io_in_44, io_out_44, pc_44, core_data_44, rx_valid_g2_12, rx_data_g2_12, tx_valid_g2_12, tx_data_g2_12);
+    core::core_top(clk, rst_n, io_in_45, io_out_45, pc_45, core_data_45, rx_valid_g2_13, rx_data_g2_13, tx_valid_g2_13, tx_data_g2_13);
+    core::core_top(clk, rst_n, io_in_46, io_out_46, pc_46, core_data_46, rx_valid_g2_14, rx_data_g2_14, tx_valid_g2_14, tx_data_g2_14);
+    core::core_top(clk, rst_n, io_in_47, io_out_47, pc_47, core_data_47, rx_valid_g2_15, rx_data_g2_15, tx_valid_g2_15, tx_data_g2_15);
+    l1_2::noc_l1_router_2(clk, rst_n, tx_valid_g2_0, tx_data_g2_0, tx_valid_g2_1, tx_data_g2_1, tx_valid_g2_2, tx_data_g2_2, tx_valid_g2_3, tx_data_g2_3, tx_valid_g2_4, tx_data_g2_4, tx_valid_g2_5, tx_data_g2_5, tx_valid_g2_6, tx_data_g2_6, tx_valid_g2_7, tx_data_g2_7, tx_valid_g2_8, tx_data_g2_8, tx_valid_g2_9, tx_data_g2_9, tx_valid_g2_10, tx_data_g2_10, tx_valid_g2_11, tx_data_g2_11, tx_valid_g2_12, tx_data_g2_12, tx_valid_g2_13, tx_data_g2_13, tx_valid_g2_14, tx_data_g2_14, tx_valid_g2_15, tx_data_g2_15, downlink_v_2, downlink_d_2, rx_valid_g2_0, rx_data_g2_0, rx_valid_g2_1, rx_data_g2_1, rx_valid_g2_2, rx_data_g2_2, rx_valid_g2_3, rx_data_g2_3, rx_valid_g2_4, rx_data_g2_4, rx_valid_g2_5, rx_data_g2_5, rx_valid_g2_6, rx_data_g2_6, rx_valid_g2_7, rx_data_g2_7, rx_valid_g2_8, rx_data_g2_8, rx_valid_g2_9, rx_data_g2_9, rx_valid_g2_10, rx_data_g2_10, rx_valid_g2_11, rx_data_g2_11, rx_valid_g2_12, rx_data_g2_12, rx_valid_g2_13, rx_data_g2_13, rx_valid_g2_14, rx_data_g2_14, rx_valid_g2_15, rx_data_g2_15, uplink_v_2, uplink_d_2);
+
+    // Group 3
+    for i in 0..16 {
+        signal rx_valid_g3[i]: internal bool;
+        signal rx_data_g3[i]: internal u64;
+        signal tx_valid_g3[i]: internal bool;
+        signal tx_data_g3[i]: internal u64;
+    }
+    core::core_top(clk, rst_n, io_in_48, io_out_48, pc_48, core_data_48, rx_valid_g3_0, rx_data_g3_0, tx_valid_g3_0, tx_data_g3_0);
+    core::core_top(clk, rst_n, io_in_49, io_out_49, pc_49, core_data_49, rx_valid_g3_1, rx_data_g3_1, tx_valid_g3_1, tx_data_g3_1);
+    core::core_top(clk, rst_n, io_in_50, io_out_50, pc_50, core_data_50, rx_valid_g3_2, rx_data_g3_2, tx_valid_g3_2, tx_data_g3_2);
+    core::core_top(clk, rst_n, io_in_51, io_out_51, pc_51, core_data_51, rx_valid_g3_3, rx_data_g3_3, tx_valid_g3_3, tx_data_g3_3);
+    core::core_top(clk, rst_n, io_in_52, io_out_52, pc_52, core_data_52, rx_valid_g3_4, rx_data_g3_4, tx_valid_g3_4, tx_data_g3_4);
+    core::core_top(clk, rst_n, io_in_53, io_out_53, pc_53, core_data_53, rx_valid_g3_5, rx_data_g3_5, tx_valid_g3_5, tx_data_g3_5);
+    core::core_top(clk, rst_n, io_in_54, io_out_54, pc_54, core_data_54, rx_valid_g3_6, rx_data_g3_6, tx_valid_g3_6, tx_data_g3_6);
+    core::core_top(clk, rst_n, io_in_55, io_out_55, pc_55, core_data_55, rx_valid_g3_7, rx_data_g3_7, tx_valid_g3_7, tx_data_g3_7);
+    core::core_top(clk, rst_n, io_in_56, io_out_56, pc_56, core_data_56, rx_valid_g3_8, rx_data_g3_8, tx_valid_g3_8, tx_data_g3_8);
+    core::core_top(clk, rst_n, io_in_57, io_out_57, pc_57, core_data_57, rx_valid_g3_9, rx_data_g3_9, tx_valid_g3_9, tx_data_g3_9);
+    core::core_top(clk, rst_n, io_in_58, io_out_58, pc_58, core_data_58, rx_valid_g3_10, rx_data_g3_10, tx_valid_g3_10, tx_data_g3_10);
+    core::core_top(clk, rst_n, io_in_59, io_out_59, pc_59, core_data_59, rx_valid_g3_11, rx_data_g3_11, tx_valid_g3_11, tx_data_g3_11);
+    core::core_top(clk, rst_n, io_in_60, io_out_60, pc_60, core_data_60, rx_valid_g3_12, rx_data_g3_12, tx_valid_g3_12, tx_data_g3_12);
+    core::core_top(clk, rst_n, io_in_61, io_out_61, pc_61, core_data_61, rx_valid_g3_13, rx_data_g3_13, tx_valid_g3_13, tx_data_g3_13);
+    core::core_top(clk, rst_n, io_in_62, io_out_62, pc_62, core_data_62, rx_valid_g3_14, rx_data_g3_14, tx_valid_g3_14, tx_data_g3_14);
+    core::core_top(clk, rst_n, io_in_63, io_out_63, pc_63, core_data_63, rx_valid_g3_15, rx_data_g3_15, tx_valid_g3_15, tx_data_g3_15);
+    l1_3::noc_l1_router_3(clk, rst_n, tx_valid_g3_0, tx_data_g3_0, tx_valid_g3_1, tx_data_g3_1, tx_valid_g3_2, tx_data_g3_2, tx_valid_g3_3, tx_data_g3_3, tx_valid_g3_4, tx_data_g3_4, tx_valid_g3_5, tx_data_g3_5, tx_valid_g3_6, tx_data_g3_6, tx_valid_g3_7, tx_data_g3_7, tx_valid_g3_8, tx_data_g3_8, tx_valid_g3_9, tx_data_g3_9, tx_valid_g3_10, tx_data_g3_10, tx_valid_g3_11, tx_data_g3_11, tx_valid_g3_12, tx_data_g3_12, tx_valid_g3_13, tx_data_g3_13, tx_valid_g3_14, tx_data_g3_14, tx_valid_g3_15, tx_data_g3_15, downlink_v_3, downlink_d_3, rx_valid_g3_0, rx_data_g3_0, rx_valid_g3_1, rx_data_g3_1, rx_valid_g3_2, rx_data_g3_2, rx_valid_g3_3, rx_data_g3_3, rx_valid_g3_4, rx_data_g3_4, rx_valid_g3_5, rx_data_g3_5, rx_valid_g3_6, rx_data_g3_6, rx_valid_g3_7, rx_data_g3_7, rx_valid_g3_8, rx_data_g3_8, rx_valid_g3_9, rx_data_g3_9, rx_valid_g3_10, rx_data_g3_10, rx_valid_g3_11, rx_data_g3_11, rx_valid_g3_12, rx_data_g3_12, rx_valid_g3_13, rx_data_g3_13, rx_valid_g3_14, rx_data_g3_14, rx_valid_g3_15, rx_data_g3_15, uplink_v_3, uplink_d_3);
+
+    l2::noc_l2_router(clk, rst_n, uplink_v_0, uplink_d_0, uplink_v_1, uplink_d_1, uplink_v_2, uplink_d_2, uplink_v_3, uplink_d_3, downlink_v_0, downlink_d_0, downlink_v_1, downlink_d_1, downlink_v_2, downlink_d_2, downlink_v_3, downlink_d_3);
+
+
+
+
+    reflex collect_diagnostics {
+        on always {
+            out_pc_0 = pc_0;
+            out_data_0 = core_data_0;
+            out_pc_1 = pc_1;
+            out_data_1 = core_data_1;
+            out_pc_2 = pc_2;
+            out_data_2 = core_data_2;
+            out_pc_3 = pc_3;
+            out_data_3 = core_data_3;
+            out_pc_4 = pc_4;
+            out_data_4 = core_data_4;
+            out_pc_5 = pc_5;
+            out_data_5 = core_data_5;
+            out_pc_6 = pc_6;
+            out_data_6 = core_data_6;
+            out_pc_7 = pc_7;
+            out_data_7 = core_data_7;
+            out_pc_8 = pc_8;
+            out_data_8 = core_data_8;
+            out_pc_9 = pc_9;
+            out_data_9 = core_data_9;
+            out_pc_10 = pc_10;
+            out_data_10 = core_data_10;
+            out_pc_11 = pc_11;
+            out_data_11 = core_data_11;
+            out_pc_12 = pc_12;
+            out_data_12 = core_data_12;
+            out_pc_13 = pc_13;
+            out_data_13 = core_data_13;
+            out_pc_14 = pc_14;
+            out_data_14 = core_data_14;
+            out_pc_15 = pc_15;
+            out_data_15 = core_data_15;
+            out_pc_16 = pc_16;
+            out_data_16 = core_data_16;
+            out_pc_17 = pc_17;
+            out_data_17 = core_data_17;
+            out_pc_18 = pc_18;
+            out_data_18 = core_data_18;
+            out_pc_19 = pc_19;
+            out_data_19 = core_data_19;
+            out_pc_20 = pc_20;
+            out_data_20 = core_data_20;
+            out_pc_21 = pc_21;
+            out_data_21 = core_data_21;
+            out_pc_22 = pc_22;
+            out_data_22 = core_data_22;
+            out_pc_23 = pc_23;
+            out_data_23 = core_data_23;
+            out_pc_24 = pc_24;
+            out_data_24 = core_data_24;
+            out_pc_25 = pc_25;
+            out_data_25 = core_data_25;
+            out_pc_26 = pc_26;
+            out_data_26 = core_data_26;
+            out_pc_27 = pc_27;
+            out_data_27 = core_data_27;
+            out_pc_28 = pc_28;
+            out_data_28 = core_data_28;
+            out_pc_29 = pc_29;
+            out_data_29 = core_data_29;
+            out_pc_30 = pc_30;
+            out_data_30 = core_data_30;
+            out_pc_31 = pc_31;
+            out_data_31 = core_data_31;
+            out_pc_32 = pc_32;
+            out_data_32 = core_data_32;
+            out_pc_33 = pc_33;
+            out_data_33 = core_data_33;
+            out_pc_34 = pc_34;
+            out_data_34 = core_data_34;
+            out_pc_35 = pc_35;
+            out_data_35 = core_data_35;
+            out_pc_36 = pc_36;
+            out_data_36 = core_data_36;
+            out_pc_37 = pc_37;
+            out_data_37 = core_data_37;
+            out_pc_38 = pc_38;
+            out_data_38 = core_data_38;
+            out_pc_39 = pc_39;
+            out_data_39 = core_data_39;
+            out_pc_40 = pc_40;
+            out_data_40 = core_data_40;
+            out_pc_41 = pc_41;
+            out_data_41 = core_data_41;
+            out_pc_42 = pc_42;
+            out_data_42 = core_data_42;
+            out_pc_43 = pc_43;
+            out_data_43 = core_data_43;
+            out_pc_44 = pc_44;
+            out_data_44 = core_data_44;
+            out_pc_45 = pc_45;
+            out_data_45 = core_data_45;
+            out_pc_46 = pc_46;
+            out_data_46 = core_data_46;
+            out_pc_47 = pc_47;
+            out_data_47 = core_data_47;
+            out_pc_48 = pc_48;
+            out_data_48 = core_data_48;
+            out_pc_49 = pc_49;
+            out_data_49 = core_data_49;
+            out_pc_50 = pc_50;
+            out_data_50 = core_data_50;
+            out_pc_51 = pc_51;
+            out_data_51 = core_data_51;
+            out_pc_52 = pc_52;
+            out_data_52 = core_data_52;
+            out_pc_53 = pc_53;
+            out_data_53 = core_data_53;
+            out_pc_54 = pc_54;
+            out_data_54 = core_data_54;
+            out_pc_55 = pc_55;
+            out_data_55 = core_data_55;
+            out_pc_56 = pc_56;
+            out_data_56 = core_data_56;
+            out_pc_57 = pc_57;
+            out_data_57 = core_data_57;
+            out_pc_58 = pc_58;
+            out_data_58 = core_data_58;
+            out_pc_59 = pc_59;
+            out_data_59 = core_data_59;
+            out_pc_60 = pc_60;
+            out_data_60 = core_data_60;
+            out_pc_61 = pc_61;
+            out_data_61 = core_data_61;
+            out_pc_62 = pc_62;
+            out_data_62 = core_data_62;
+            out_pc_63 = pc_63;
+            out_data_63 = core_data_63;
+            global_trap = (tx_valid_g0_0 || tx_valid_g0_1 || tx_valid_g0_2 || tx_valid_g0_3 || tx_valid_g0_4 || tx_valid_g0_5 || tx_valid_g0_6 || tx_valid_g0_7 || tx_valid_g0_8 || tx_valid_g0_9 || tx_valid_g0_10 || tx_valid_g0_11 || tx_valid_g0_12 || tx_valid_g0_13 || tx_valid_g0_14 || tx_valid_g0_15) || (tx_valid_g1_0 || tx_valid_g1_1 || tx_valid_g1_2 || tx_valid_g1_3 || tx_valid_g1_4 || tx_valid_g1_5 || tx_valid_g1_6 || tx_valid_g1_7 || tx_valid_g1_8 || tx_valid_g1_9 || tx_valid_g1_10 || tx_valid_g1_11 || tx_valid_g1_12 || tx_valid_g1_13 || tx_valid_g1_14 || tx_valid_g1_15) || (tx_valid_g2_0 || tx_valid_g2_1 || tx_valid_g2_2 || tx_valid_g2_3 || tx_valid_g2_4 || tx_valid_g2_5 || tx_valid_g2_6 || tx_valid_g2_7 || tx_valid_g2_8 || tx_valid_g2_9 || tx_valid_g2_10 || tx_valid_g2_11 || tx_valid_g2_12 || tx_valid_g2_13 || tx_valid_g2_14 || tx_valid_g2_15) || (tx_valid_g3_0 || tx_valid_g3_1 || tx_valid_g3_2 || tx_valid_g3_3 || tx_valid_g3_4 || tx_valid_g3_5 || tx_valid_g3_6 || tx_valid_g3_7 || tx_valid_g3_8 || tx_valid_g3_9 || tx_valid_g3_10 || tx_valid_g3_11 || tx_valid_g3_12 || tx_valid_g3_13 || tx_valid_g3_14 || tx_valid_g3_15);
+        }
+    }
+
+    property system_stability {
+        always (robot_angle < (- -100000) && robot_angle > (-100000));
+    }
+}
