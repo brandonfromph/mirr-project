@@ -4,7 +4,7 @@
 > Every fork carries GPL-3.0-or-later. The format spreads.
 
 [![LRA-1.0](https://img.shields.io/badge/standard-LRA--1.0-gold)](spec/LRA-1.0.md)
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 
 ## 30-Second Demo
 
@@ -241,7 +241,7 @@ This means:
 - **You MUST** share your modifications to the template under the same terms
 
 Your paper content (the research text you write, your figures, your data)
-is yours. The Apache applies to the template code — the HTML structure, CSS, JS,
+is yours. The GPL applies to the template code — the HTML structure, CSS, JS,
 and build workflow — not to the intellectual content you put inside it.
 
 That distinction matters: you own your research. The template ensures

@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(any())]
 //! Integration tests for the emitters (dot, sexpr).
 //! Compiles various complex examples through the pipeline and runs the emitters

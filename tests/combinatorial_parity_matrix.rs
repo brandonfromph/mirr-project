@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 //! Phase 3: Combinatorial Parity Matrix.
 //!
 //! Generates thousands of hardware variations to verify compiler

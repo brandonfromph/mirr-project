@@ -341,7 +341,6 @@ impl TemporalCompiler {
                         continue;
                     }
 
-
                     let ent_idx = entity_id.0 as usize;
 
                     // Check for Compound Guard (AND/OR) in ECS

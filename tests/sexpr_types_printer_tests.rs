@@ -7,8 +7,8 @@
 
 #![forbid(unsafe_code)]
 
-use mirrc::sexpr::types::SExpr;
 use mirrc::sexpr::printer::print_sexpr;
+use mirrc::sexpr::types::SExpr;
 
 // -----------------------------------------------------------------------
 // SExpr accessor coverage

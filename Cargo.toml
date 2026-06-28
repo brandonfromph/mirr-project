@@ -12,6 +12,14 @@ categories = ["compilers", "embedded", "hardware-support"]
 rust-version = "1.70"
 autobins = false
 
+# legacy_ast: intentionally never enabled — used to gate tests that require
+# the old AST-centric pipeline which has been superseded by the ECS backend.
+# Declaring it here silences the `unexpected_cfg` warning emitted by clippy
+# when `--all-features` is passed on CI.
+[features]
+legacy_ast = []
+
+
 [[bin]]
 name = "mirr"
 path = "src/bin/mirr.rs"

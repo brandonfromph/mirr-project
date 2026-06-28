@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 // //! TYPE-003: Signed-aware width inference tests.
 // //!
 // //! Verifies:

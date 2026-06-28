@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 
 //! Integration tests for the MEGA-5 symbolic evaluation engine.

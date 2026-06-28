@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 //! Phase 6: Structural Trace & Internal Consistency.
 //!
 //! Deep-state verification of the Registry to ensure no dangling

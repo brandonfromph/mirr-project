@@ -416,29 +416,35 @@ pub(crate) fn emit_properties(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::types::{ExtendedType, SignalKind, SignalType};
     use crate::ecs::components::{EntityKind, KindComponent, TypeComponent};
     use crate::ecs::Registry;
-    use crate::ast::types::{ExtendedType, SignalType, SignalKind};
 
     #[test]
     fn test_get_signal_tag_byte() {
         let mut registry = Registry::new();
         let _mod_id = registry.create_entity("test_mod", KindComponent(EntityKind::MODULE));
-        
+
         assert_eq!(get_signal_tag_byte("true", &registry), 1);
-        
-        let sig1 = registry.create_entity("sig_u8", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
-        registry.types[sig1.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(8))));
+
+        let sig1 = registry
+            .create_entity("sig_u8", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
+        registry.types[sig1.0 as usize] =
+            Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(8))));
         assert_eq!(get_signal_tag_byte("sig_u8", &registry), 8);
-        
-        let sig2 = registry.create_entity("sig_s16", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
-        registry.types[sig2.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Signed(16))));
+
+        let sig2 = registry
+            .create_entity("sig_s16", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
+        registry.types[sig2.0 as usize] =
+            Some(TypeComponent(ExtendedType::from_core(SignalType::Signed(16))));
         assert_eq!(get_signal_tag_byte("sig_s16", &registry), 144);
-        
-        let sig3 = registry.create_entity("sig_bool", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
-        registry.types[sig3.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Bool)));
+
+        let sig3 = registry
+            .create_entity("sig_bool", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
+        registry.types[sig3.0 as usize] =
+            Some(TypeComponent(ExtendedType::from_core(SignalType::Bool)));
         assert_eq!(get_signal_tag_byte("sig_bool", &registry), 1);
-        
+
         assert_eq!(get_signal_tag_byte("unknown_sig", &registry), 16);
     }
 

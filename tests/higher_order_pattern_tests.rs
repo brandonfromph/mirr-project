@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(feature = "legacy_ast")]
 #![cfg(any())]
 //! TYPE-005: Higher-Order Patterns tests.

@@ -6,7 +6,6 @@
 //! pipeline at increasing scale. All generators use bounded iteration.
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use mirrc::parse_mirr;
 use mirrc::sexpr::{
     eval, parse_sexpr, print_sexpr, registry_to_sexpr, sexpr_to_registry, EvalState,
 };

@@ -54,7 +54,8 @@ pub fn run_lint(
 ) -> Result<VerilatorResult, ToolchainError> {
     let sv_normalized = normalize_path_for_mingw(sv_path);
 
-    let mut args: Vec<&str> = vec!["--lint-only", "-Wall", "--sv", "-Wno-MULTITOP", "-Wno-UNSIGNED", &sv_normalized];
+    let mut args: Vec<&str> =
+        vec!["--lint-only", "-Wall", "--sv", "-Wno-MULTITOP", "-Wno-UNSIGNED", &sv_normalized];
     for l in link {
         args.push(l);
     }
@@ -101,10 +102,14 @@ pub fn run_simulation(
 
     // Step 1: Compile to C++ and build
     let mut args: Vec<&str> = vec![
-        "--sv", "--cc", "--exe", "--build",
-        "--top-module", module_name,
+        "--sv",
+        "--cc",
+        "--exe",
+        "--build",
+        "--top-module",
+        module_name,
         "-Wno-UNSIGNED",
-        &sv_normalized
+        &sv_normalized,
     ];
     if !has_cpp {
         args.push("--main");

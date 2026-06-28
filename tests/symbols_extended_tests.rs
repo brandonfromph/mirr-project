@@ -6,8 +6,7 @@ use mirrc::ast::program::{ImportDecl, Module};
 use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 use mirrc::error::MirrError;
 use mirrc::symbols::table::{
-    ModuleSymbols, SymbolInfo, SymbolTable, MAX_IMPORT_ALIASES, MAX_MODULES,
-    MAX_SYMBOLS_PER_MODULE,
+    ModuleSymbols, SymbolInfo, SymbolTable, MAX_IMPORT_ALIASES, MAX_MODULES, MAX_SYMBOLS_PER_MODULE,
 };
 
 fn create_symbol_info(name: &str, module: &str) -> SymbolInfo {
@@ -56,11 +55,13 @@ fn add_symbol_exceeds_max_e901() {
 fn add_import_exceeds_max_e903() {
     let mut ms_imports = ModuleSymbols::new("max_imp".to_string(), PathBuf::from("max_imp.mirr"));
     for i in 0..MAX_IMPORT_ALIASES {
-        ms_imports.add_import(ImportDecl {
-            alias: format!("a{}", i),
-            path: format!("path{}.mirr", i),
-            span: None,
-        }).unwrap();
+        ms_imports
+            .add_import(ImportDecl {
+                alias: format!("a{}", i),
+                path: format!("path{}.mirr", i),
+                span: None,
+            })
+            .unwrap();
     }
     let res = ms_imports.add_import(ImportDecl {
         alias: "overflow".to_string(),
@@ -73,11 +74,13 @@ fn add_import_exceeds_max_e903() {
 #[test]
 fn add_import_duplicate_alias_e904() {
     let mut ms_dup_imp = ModuleSymbols::new("dup_imp".to_string(), PathBuf::from("dup_imp.mirr"));
-    ms_dup_imp.add_import(ImportDecl {
-        alias: "dup".to_string(),
-        path: "dup1.mirr".to_string(),
-        span: None,
-    }).unwrap();
+    ms_dup_imp
+        .add_import(ImportDecl {
+            alias: "dup".to_string(),
+            path: "dup1.mirr".to_string(),
+            span: None,
+        })
+        .unwrap();
     let res = ms_dup_imp.add_import(ImportDecl {
         alias: "dup".to_string(),
         path: "dup2.mirr".to_string(),
@@ -89,11 +92,13 @@ fn add_import_duplicate_alias_e904() {
 #[test]
 fn import_scope_has_alias() {
     let mut ms_dup_imp = ModuleSymbols::new("dup_imp".to_string(), PathBuf::from("dup_imp.mirr"));
-    ms_dup_imp.add_import(ImportDecl {
-        alias: "dup".to_string(),
-        path: "dup1.mirr".to_string(),
-        span: None,
-    }).unwrap();
+    ms_dup_imp
+        .add_import(ImportDecl {
+            alias: "dup".to_string(),
+            path: "dup1.mirr".to_string(),
+            span: None,
+        })
+        .unwrap();
     let scope = ms_dup_imp.import_scope();
     assert!(scope.has_alias("dup"));
     assert!(!scope.has_alias("none"));
@@ -130,11 +135,13 @@ fn resolve_qualified_unknown_alias_e907() {
 fn resolve_qualified_imported_module_not_in_table_e908() {
     let mut table = SymbolTable::default();
     let mut ms_with_import = ModuleSymbols::new("main2".to_string(), PathBuf::from("main2.mirr"));
-    ms_with_import.add_import(ImportDecl {
-        alias: "target".to_string(),
-        path: "target.mirr".to_string(),
-        span: None,
-    }).unwrap();
+    ms_with_import
+        .add_import(ImportDecl {
+            alias: "target".to_string(),
+            path: "target.mirr".to_string(),
+            span: None,
+        })
+        .unwrap();
     table.add_module(ms_with_import).unwrap();
     table.set_current_module(PathBuf::from("main2.mirr"));
     let res = table.resolve_qualified("target", "sig1");
@@ -145,16 +152,18 @@ fn resolve_qualified_imported_module_not_in_table_e908() {
 fn resolve_qualified_symbol_not_found_e909() {
     let mut table = SymbolTable::default();
     let mut ms_with_import = ModuleSymbols::new("main2".to_string(), PathBuf::from("main2.mirr"));
-    ms_with_import.add_import(ImportDecl {
-        alias: "target".to_string(),
-        path: "target.mirr".to_string(),
-        span: None,
-    }).unwrap();
+    ms_with_import
+        .add_import(ImportDecl {
+            alias: "target".to_string(),
+            path: "target.mirr".to_string(),
+            span: None,
+        })
+        .unwrap();
     table.add_module(ms_with_import).unwrap();
-    
+
     let target_ms = ModuleSymbols::new("target".to_string(), PathBuf::from("target.mirr"));
     table.add_module(target_ms).unwrap();
-    
+
     table.set_current_module(PathBuf::from("main2.mirr"));
     let res = table.resolve_qualified("target", "unknown_sig");
     assert!(matches!(res, Err(MirrError::SymbolError { .. })));
@@ -174,9 +183,15 @@ fn resolve_local_symbol_not_found_e910() {
 fn add_module_exceeds_max_e905() {
     let mut table_max = SymbolTable::new();
     for i in 0..MAX_MODULES {
-        table_max.add_module(ModuleSymbols::new(format!("m{}", i), PathBuf::from(format!("m{}.mirr", i)))).unwrap();
+        table_max
+            .add_module(ModuleSymbols::new(
+                format!("m{}", i),
+                PathBuf::from(format!("m{}.mirr", i)),
+            ))
+            .unwrap();
     }
-    let res = table_max.add_module(ModuleSymbols::new("overflow".to_string(), PathBuf::from("overflow.mirr")));
+    let res = table_max
+        .add_module(ModuleSymbols::new("overflow".to_string(), PathBuf::from("overflow.mirr")));
     assert!(matches!(res, Err(MirrError::SymbolError { .. })));
 }
 

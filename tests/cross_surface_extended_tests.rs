@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
 use mirrc::cross_surface_stress::{
-    BackpressurePolicy, FailureClass, FuzzHarnessBuilder, LeakBudget, LeakBudgetReport,
-    LeakBudgetStatus, MalformedInput, MemoryTrend, StressRunConfig, Surface,
+    FailureClass, FuzzHarnessBuilder, LeakBudget, LeakBudgetReport, LeakBudgetStatus, MemoryTrend,
+    StressRunConfig, Surface,
 };
 
 #[test]
@@ -34,7 +34,8 @@ fn default_stress_run_config() {
 #[test]
 fn leak_budget_exceeded_per_surface() {
     let budget = LeakBudget::per_surface_bytes([(Surface::Daemon, 100)]);
-    let budget_report = LeakBudgetReport::from_surface_deltas(budget.clone(), [(Surface::Daemon, 150)]);
+    let budget_report =
+        LeakBudgetReport::from_surface_deltas(budget.clone(), [(Surface::Daemon, 150)]);
     assert_eq!(budget_report.status(), LeakBudgetStatus::Exceeded);
     assert_eq!(budget_report.primary_failure_class(), FailureClass::LeakBudgetExceeded);
 }
@@ -42,7 +43,8 @@ fn leak_budget_exceeded_per_surface() {
 #[test]
 fn leak_budget_exceeded_global() {
     let budget_global = LeakBudget::global_bytes(200);
-    let budget_report = LeakBudgetReport::from_surface_deltas(budget_global.clone(), [(Surface::Daemon, 250)]);
+    let budget_report =
+        LeakBudgetReport::from_surface_deltas(budget_global.clone(), [(Surface::Daemon, 250)]);
     assert_eq!(budget_report.status(), LeakBudgetStatus::Exceeded);
     assert_eq!(budget_report.primary_failure_class(), FailureClass::LeakBudgetExceeded);
 }
@@ -74,7 +76,8 @@ fn leak_budget_from_time_window_exceeded_per_surface() {
 #[test]
 fn leak_budget_within_budget_resource_exhaustion() {
     let budget_global = LeakBudget::global_bytes(200);
-    let budget_safe = LeakBudgetReport::from_surface_deltas(budget_global.clone(), [(Surface::Daemon, 50)]);
+    let budget_safe =
+        LeakBudgetReport::from_surface_deltas(budget_global.clone(), [(Surface::Daemon, 50)]);
     assert_eq!(budget_safe.status(), LeakBudgetStatus::WithinBudget);
     assert_eq!(budget_safe.primary_failure_class(), FailureClass::ResourceExhaustion);
 }

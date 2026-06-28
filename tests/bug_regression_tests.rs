@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(any())]
 //! TDD Bug Regression Test Suite
 //!

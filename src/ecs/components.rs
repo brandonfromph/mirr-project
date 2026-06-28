@@ -11,7 +11,7 @@ pub struct EntityId(pub u32);
 
 /// Component: Signal Name (interned).
 ///
-/// Holds an [`InternId`] into the owning Registry's [`StringInterner`].
+/// Holds an [`InternId`] into the owning Registry's [`crate::ecs::intern::StringInterner`].
 /// Name comparisons are `u32 == u32` — no heap allocation at compare time.
 /// Resolve the string with `registry.interner.resolve(name_component.0)`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

@@ -136,7 +136,7 @@ fn render_with_note_span() {
     assert!(rendered.contains("@> dup.mirr:3:12"), "primary location missing:\n{rendered}");
     assert!(rendered.contains("3 │     signal temperature: in u16;"));
     assert!(rendered.contains("  │            ^^^^^^^^^^^"));
-    
+
     assert!(rendered.contains("note: first defined here"), "note missing:\n{rendered}");
     assert!(rendered.contains("@> dup.mirr:2:12"), "note span location missing:\n{rendered}");
     assert!(rendered.contains("2 │     signal temperature: in u8;"));

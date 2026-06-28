@@ -12,7 +12,7 @@ An academic paper is a PDF. It describes software but cannot run it. It makes cl
 but cannot verify them. It freezes knowledge at submission time and watches it rot.
 
 A Living Research Artifact is different. The paper, the code, the proofs, and the demos
-are one Apache-licensed Git repository, citable by commit hash.
+are one GPL-licensed Git repository, citable by commit hash.
 
 This specification defines what a Living Research Artifact must be.
 

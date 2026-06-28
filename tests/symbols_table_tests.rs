@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use mirrc::ast::program::{ImportDecl, Module, SignalDecl};
 use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 use mirrc::error::MirrError;

@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 //! MEGA-1 type-check tests — criteria C4, C5, C6.
 //!

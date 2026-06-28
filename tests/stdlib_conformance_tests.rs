@@ -3,11 +3,13 @@
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 
 fn run_src(src: &str) -> Result<(), mirrc::error::PipelineErrors> {
-    let mut config = PipelineConfig::default();
-    config.simplify = false;
-    config.width = false;
-    config.temporal = false;
-    config.mape_k = false;
+    let config = PipelineConfig {
+        simplify: false,
+        width: false,
+        temporal: false,
+        mape_k: false,
+        ..Default::default()
+    };
     let full_src = format!("target profile {{ name: \"t\"; word_size: 64; }} {}", src);
     run_pipeline(&full_src, &config).map(|_| ())
 }

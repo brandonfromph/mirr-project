@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 use mirrc::pipeline::{run_pipeline_with_file, PipelineConfig};
 
 fn run_test(source: &str) -> Result<(), String> {

@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
 
 use mirrc::ast::types::SignalKind;
+use mirrc::ast::types::{ExtendedType, SignalType};
 use mirrc::ecs::components::{EntityKind, KindComponent, TypeComponent};
 use mirrc::ecs::Registry;
+use mirrc::emit::fpga_scaffold::{emit_build_script, emit_constraints};
 use mirrc::emit::fpga_target::FpgaTarget;
-use mirrc::emit::fpga_scaffold::{emit_constraints, emit_build_script};
 use mirrc::pipeline::PipelineResult;
-use mirrc::ast::types::{ExtendedType, SignalType};
 use mirrc::span::FileTable;
 
 fn all_fpga_targets() -> Vec<FpgaTarget> {
@@ -26,28 +26,28 @@ fn fpga_target_properties_are_valid() {
     for target in all_fpga_targets() {
         assert!(!target.display_name().is_empty());
         assert!(!target.constraint_extension().is_empty());
-        
+
         let build_tool = target.build_tool();
         assert!(!build_tool.is_empty());
-        
+
         if let Some(pack_tool) = target.pack_tool() {
             assert!(!pack_tool.is_empty());
         }
-        
+
         assert!(!target.default_part().is_empty());
         assert!(!target.clock_primitive().is_empty());
         assert!(!target.dsp_primitive().is_empty());
         assert!(!target.dsp_attribute().is_empty());
         assert!(target.dsp_max_input_width() > 0);
-        
+
         if let Some(bin) = target.nextpnr_binary() {
             assert!(!bin.is_empty());
         }
-        
+
         if let Some(dev) = target.icetime_device() {
             assert!(!dev.is_empty());
         }
-        
+
         assert!(!target.yosys_synth_command().is_empty());
     }
 }
@@ -55,23 +55,31 @@ fn fpga_target_properties_are_valid() {
 #[test]
 fn fpga_target_from_str_name() {
     assert_eq!(FpgaTarget::from_str_name("xilinx-7").unwrap(), FpgaTarget::Xilinx7);
-    assert_eq!(FpgaTarget::from_str_name("unknown").is_none(), true);
+    assert!(FpgaTarget::from_str_name("unknown").is_none());
 }
 
 fn create_mock_pipeline_result(with_registry: bool) -> PipelineResult {
     let ecs_registry = if with_registry {
         let mut reg = Registry::new();
         let _mod_id = reg.create_entity("test_mod", KindComponent(EntityKind::MODULE));
-        
-        let sig_in = reg.create_entity("sig_in", KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
-        let sig_out = reg.create_entity("sig_out", KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
-        let sig_int = reg.create_entity("sig_int", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
-        let sig_out_wide = reg.create_entity("sig_out_wide", KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
-        
-        reg.types[sig_in.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(1))));
-        reg.types[sig_out.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(1))));
-        reg.types[sig_int.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(1))));
-        reg.types[sig_out_wide.0 as usize] = Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(4))));
+
+        let sig_in =
+            reg.create_entity("sig_in", KindComponent(EntityKind::SIGNAL(SignalKind::Input)));
+        let sig_out =
+            reg.create_entity("sig_out", KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
+        let sig_int =
+            reg.create_entity("sig_int", KindComponent(EntityKind::SIGNAL(SignalKind::Internal)));
+        let sig_out_wide = reg
+            .create_entity("sig_out_wide", KindComponent(EntityKind::SIGNAL(SignalKind::Output)));
+
+        reg.types[sig_in.0 as usize] =
+            Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(1))));
+        reg.types[sig_out.0 as usize] =
+            Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(1))));
+        reg.types[sig_int.0 as usize] =
+            Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(1))));
+        reg.types[sig_out_wide.0 as usize] =
+            Some(TypeComponent(ExtendedType::from_core(SignalType::Unsigned(4))));
         Some(reg)
     } else {
         None

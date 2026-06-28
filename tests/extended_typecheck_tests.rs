@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(any())]
 //! Integration tests for MEGA-1 extended type checking through the pipeline.
 

@@ -6,17 +6,47 @@ use mirrc::lexer::tokenizer::{tokenize_expr, Token};
 fn tokenize_valid_expression_tokens() {
     let input = "! & | ^ < > = ( ) { } [ ] , : . ; && || << >> <= >= == != :: -> true false and or not + - * 0x1A 123";
     let tokens = tokenize_expr(input).unwrap();
-    
+
     let expected = vec![
-        Token::Bang, Token::Amp, Token::Pipe, Token::Caret, Token::Lt, Token::Gt, Token::Eq,
-        Token::LParen, Token::RParen, Token::LBrace, Token::RBrace, Token::LBracket, Token::RBracket,
-        Token::Comma, Token::Colon, Token::Dot, Token::Semicolon,
-        Token::AmpAmp, Token::PipePipe, Token::LtLt, Token::GtGt, Token::Le, Token::Ge, Token::EqEq,
-        Token::BangEq, Token::ColonColon, Token::MinusGt,
-        Token::True, Token::False, Token::AmpAmp, Token::PipePipe, Token::Bang,
-        Token::Plus, Token::Minus, Token::Star, Token::Integer(26), Token::Integer(123)
+        Token::Bang,
+        Token::Amp,
+        Token::Pipe,
+        Token::Caret,
+        Token::Lt,
+        Token::Gt,
+        Token::Eq,
+        Token::LParen,
+        Token::RParen,
+        Token::LBrace,
+        Token::RBrace,
+        Token::LBracket,
+        Token::RBracket,
+        Token::Comma,
+        Token::Colon,
+        Token::Dot,
+        Token::Semicolon,
+        Token::AmpAmp,
+        Token::PipePipe,
+        Token::LtLt,
+        Token::GtGt,
+        Token::Le,
+        Token::Ge,
+        Token::EqEq,
+        Token::BangEq,
+        Token::ColonColon,
+        Token::MinusGt,
+        Token::True,
+        Token::False,
+        Token::AmpAmp,
+        Token::PipePipe,
+        Token::Bang,
+        Token::Plus,
+        Token::Minus,
+        Token::Star,
+        Token::Integer(26),
+        Token::Integer(123),
     ];
-    
+
     assert_eq!(tokens, expected);
 }
 

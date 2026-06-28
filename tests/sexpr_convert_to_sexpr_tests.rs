@@ -10,7 +10,7 @@ use mirrc::sexpr::print_sexpr;
 
 fn get_sexpr(src: &str) -> mirrc::sexpr::types::SExpr {
     let mut registry = Registry::new();
-    let _ = mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, src, None)
+    mirrc::parser::ecs_parser::parse_mirr_ecs_with_base_dir(&mut registry, src, None)
         .expect("failed to parse");
 
     let mut mod_id = EntityId(0);

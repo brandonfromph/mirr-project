@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 //! MEGA-10 composite type integration tests.
 //!

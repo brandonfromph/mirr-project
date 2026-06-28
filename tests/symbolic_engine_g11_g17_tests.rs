@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 //! MEGA-5 symbolic engine tests — G11 through G17.
 //! Pipeline integration, stress tests, widening stability.

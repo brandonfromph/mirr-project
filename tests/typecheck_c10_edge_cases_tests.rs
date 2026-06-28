@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 //! MEGA-1 type-check tests — criterion C10 and edge cases.
 //!

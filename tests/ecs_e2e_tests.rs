@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(any())]
 #[cfg(test)]
 mod e2e_tests {

@@ -89,7 +89,7 @@ fn extended_signal_decl_from_ecs_fails_on_module() {
     let kind_misc = KindComponent(EntityKind::MODULE);
     let id1 = reg.create_entity("test_module", kind_misc);
     reg.names[id1.0 as usize] = Some(NameComponent(mirrc::ecs::intern::InternId(0)));
-    
+
     assert!(ExtendedSignalDecl::from_ecs(&reg, id1).is_none());
 }
 

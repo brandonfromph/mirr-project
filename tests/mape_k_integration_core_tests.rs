@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_range_loop)]
+#![allow(clippy::single_char_add_str)]
 
 //! Core integration tests for the MAPE-K bridge module.
 //!

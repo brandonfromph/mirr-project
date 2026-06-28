@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(any())]
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 

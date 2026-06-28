@@ -12,7 +12,10 @@ fn test_render_error_with_span() {
 
     assert!(rendered.contains("error[E101]: unexpected token"), "header missing: {rendered}");
     assert!(rendered.contains("@> sensor.mirr:2:12"), "location missing: {rendered}");
-    assert!(rendered.contains("2 │     signal temperature: in u16;"), "source line missing: {rendered}");
+    assert!(
+        rendered.contains("2 │     signal temperature: in u16;"),
+        "source line missing: {rendered}"
+    );
     assert!(rendered.contains("  │            ^^^^^^^^^^^"), "carets missing: {rendered}");
 }
 

@@ -7,9 +7,7 @@
 
 #![forbid(unsafe_code)]
 
-use mirrc::emit::rspu_exceptions::{
-    ExceptionState, ExceptionCode, ExceptionAction, ExecMode,
-};
+use mirrc::emit::rspu_exceptions::{ExceptionAction, ExceptionCode, ExceptionState, ExecMode};
 
 // -----------------------------------------------------------------------
 // Display coverage

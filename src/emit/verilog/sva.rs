@@ -301,7 +301,7 @@ pub(super) fn emit_property_assertions(
     }
 
     out.push_str("  // ── Safety Properties (SVA) ──\n\n");
-    
+
     if has_rst_n {
         out.push_str("  // Enforce reset sequence for formal verification\n");
         out.push_str("  reg f_past_valid = 0;\n");
@@ -497,7 +497,9 @@ pub fn emit_synchronizer_chains(
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
                 // Skip if not belonging to top_module_id
                 if let Some(top_id) = top_module_id {
-                    if let Some(crate::ecs::components::ModuleComponent(sig_mod_id)) = &registry.modules[i] {
+                    if let Some(crate::ecs::components::ModuleComponent(sig_mod_id)) =
+                        &registry.modules[i]
+                    {
                         if *sig_mod_id != top_id {
                             continue;
                         }

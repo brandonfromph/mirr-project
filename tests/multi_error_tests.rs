@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(any())]
 #![forbid(unsafe_code)]
 //! ERR-002: Multi-error accumulation tests.

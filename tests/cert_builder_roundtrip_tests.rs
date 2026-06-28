@@ -7,19 +7,19 @@
 //!   - cert/serialize.rs: overflow guard for MAX_CERT_SIZE
 
 #![forbid(unsafe_code)]
+#![allow(unused_imports)]
 
+use mirrc::ast::types::{ExtendedType, SignalKind, SignalType};
 use mirrc::cert::{
-    build_certificate, serialize_certificate, deserialize_certificate,
-    ProofCertificate, TerminationStrategy, TypeWitness, PropertyVerdict,
+    build_certificate, deserialize_certificate, serialize_certificate, ProofCertificate,
+    PropertyVerdict, TerminationStrategy, TypeWitness,
 };
-use mirrc::totality::{
-    TotalityResult, ResourceBound, OutputCompletenessResult,
-    GuardCoverageResult, TemporalBoundResult, AcyclicityResult,
-    PropertySummary,
-};
-use mirrc::ecs::Registry;
-use mirrc::ast::types::{SignalKind, SignalType, ExtendedType};
 use mirrc::ecs::components::{EntityKind, KindComponent, NameComponent, TypeComponent};
+use mirrc::ecs::Registry;
+use mirrc::totality::{
+    AcyclicityResult, GuardCoverageResult, OutputCompletenessResult, PropertySummary,
+    ResourceBound, TemporalBoundResult, TotalityResult,
+};
 
 fn make_totality(max_guard_cycles: u64, properties: Vec<PropertySummary>) -> TotalityResult {
     TotalityResult {
@@ -30,25 +30,15 @@ fn make_totality(max_guard_cycles: u64, properties: Vec<PropertySummary>) -> Tot
             max_cycles: 100,
             pass: true,
         },
-        output_completeness: OutputCompletenessResult {
-            undriven_outputs: vec![],
-            pass: true,
-        },
-        guard_coverage: GuardCoverageResult {
-            covered_outputs: 2,
-            total_outputs: 2,
-            pass: true,
-        },
+        output_completeness: OutputCompletenessResult { undriven_outputs: vec![], pass: true },
+        guard_coverage: GuardCoverageResult { covered_outputs: 2, total_outputs: 2, pass: true },
         temporal_bound: TemporalBoundResult {
             max_guard_cycles,
             max_prev_delay: 3,
             worst_case_latency: max_guard_cycles + 3,
             pass: true,
         },
-        acyclicity: AcyclicityResult {
-            pass: true,
-            cycle_witness: None,
-        },
+        acyclicity: AcyclicityResult { pass: true, cycle_witness: None },
         property_summary: properties,
         is_total: true,
     }
@@ -78,9 +68,10 @@ fn registry_with_signals() -> Registry {
 #[test]
 fn build_certificate_with_guard_cycles_uses_static_guard_bound() {
     let reg = registry_with_signals();
-    let totality = make_totality(50, vec![
-        PropertySummary { name: "stability".to_string(), kind: "always".to_string() },
-    ]);
+    let totality = make_totality(
+        50,
+        vec![PropertySummary { name: "stability".to_string(), kind: "always".to_string() }],
+    );
     let binary: Vec<u64> = vec![0xDEAD, 0xBEEF, 0xCAFE];
 
     let cert = build_certificate(&totality, &binary, &reg);
@@ -135,10 +126,13 @@ fn build_certificate_zero_guard_cycles_uses_primitive_recursive() {
 #[test]
 fn build_certificate_roundtrip_through_serialization() {
     let reg = registry_with_signals();
-    let totality = make_totality(100, vec![
-        PropertySummary { name: "p1".to_string(), kind: "always".to_string() },
-        PropertySummary { name: "p2".to_string(), kind: "never".to_string() },
-    ]);
+    let totality = make_totality(
+        100,
+        vec![
+            PropertySummary { name: "p1".to_string(), kind: "always".to_string() },
+            PropertySummary { name: "p2".to_string(), kind: "never".to_string() },
+        ],
+    );
     let binary: Vec<u64> = vec![1, 2, 3, 4, 5];
 
     let cert = build_certificate(&totality, &binary, &reg);

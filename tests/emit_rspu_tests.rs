@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![cfg(any())]
 #![forbid(unsafe_code)]
 //! Tests for R-SPU instruction emission backend.

@@ -128,7 +128,8 @@ pub(super) fn emit_temporal_logic_ecs(
         out.push_str("  // Physical Power-On Reset Initialization\n");
         out.push_str("  initial begin\n");
         for &(sig_ent, delay) in prevs {
-            let sig_name = registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
+            let sig_name =
+                registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
             out.push_str(&format!("    {}_d{} = '0;\n", sig_name, delay));
         }
         out.push_str("  end\n\n");
@@ -211,7 +212,10 @@ pub(super) fn emit_temporal_logic_ecs(
             CompiledGuard::Complex(cx) => {
                 if emitted_shift_registers.insert(cx.name.clone()) {
                     emit_source_comment(span, ft, out);
-                    out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
+                    out.push_str(&format!(
+                        "  // Complex guard: {} (sub-guards combined)\n",
+                        cx.name
+                    ));
                     out.push_str(&format!(
                         "  assign {} = {};\n\n",
                         cx.output_signal,
@@ -700,7 +704,11 @@ fn emit_shift_register_guard(
     if sr.delay_cycles <= 1 {
         out.push_str(&format!(
             "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycle (combinational)\n",
-            sr.name, sr.name.len(), sr.name.as_bytes(), cond_desc, sr.delay_cycles
+            sr.name,
+            sr.name.len(),
+            sr.name.as_bytes(),
+            cond_desc,
+            sr.delay_cycles
         ));
         out.push_str(&format!("  logic {}_cond;\n", sr.name));
         out.push_str(&format!(
@@ -714,7 +722,11 @@ fn emit_shift_register_guard(
 
     out.push_str(&format!(
         "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycles\n",
-        sr.name, sr.name.len(), sr.name.as_bytes(), cond_desc, sr.delay_cycles
+        sr.name,
+        sr.name.len(),
+        sr.name.as_bytes(),
+        cond_desc,
+        sr.delay_cycles
     ));
 
     let stage_count = sr.delay_cycles.min(MAX_SR_STAGES_INLINE);

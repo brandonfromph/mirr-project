@@ -22,10 +22,7 @@ fn commutative_rewrite_swaps_lhs_immediate_to_alu_imm() {
         RspuInstruction::Alu { op: AluOp::Add, dst: 201, a: 200, b: 12 },
     ];
     let output = peephole_optimize(&input);
-    assert_eq!(
-        output,
-        vec![RspuInstruction::AluImm { op: AluOp::Add, dst: 201, a: 12, imm: 5 }]
-    );
+    assert_eq!(output, vec![RspuInstruction::AluImm { op: AluOp::Add, dst: 201, a: 12, imm: 5 }]);
 }
 
 #[test]
@@ -35,10 +32,7 @@ fn commutative_rewrite_works_for_mul() {
         RspuInstruction::Alu { op: AluOp::Mul, dst: 201, a: 200, b: 10 },
     ];
     let output = peephole_optimize(&input);
-    assert_eq!(
-        output,
-        vec![RspuInstruction::AluImm { op: AluOp::Mul, dst: 201, a: 10, imm: 3 }]
-    );
+    assert_eq!(output, vec![RspuInstruction::AluImm { op: AluOp::Mul, dst: 201, a: 10, imm: 3 }]);
 }
 
 #[test]
@@ -154,10 +148,7 @@ fn mixed_binary_fold_then_self_move_removal() {
     let output = peephole_optimize(&input);
     assert_eq!(
         output,
-        vec![
-            RspuInstruction::LoadImm { dst: 194, value: 7, width: 8 },
-            RspuInstruction::Halt,
-        ]
+        vec![RspuInstruction::LoadImm { dst: 194, value: 7, width: 8 }, RspuInstruction::Halt,]
     );
 }
 
@@ -198,7 +189,7 @@ fn binary_fold_blocked_when_temp_register_reused_later() {
 }
 
 // -----------------------------------------------------------------------
-// Binary fold blocked by same src/dst registers  
+// Binary fold blocked by same src/dst registers
 // -----------------------------------------------------------------------
 #[test]
 fn binary_fold_blocked_when_src_regs_match() {
@@ -227,14 +218,12 @@ fn alu_imm_rewrite_blocked_for_comparison_ops() {
 }
 
 // -----------------------------------------------------------------------
-// RefexIf self-move removal  
+// RefexIf self-move removal
 // -----------------------------------------------------------------------
 #[test]
 fn removes_redundant_reflex_if_self_assignment() {
-    let input = vec![
-        RspuInstruction::ReflexIf { guard: 1, dst: 42, src: 42 },
-        RspuInstruction::Nop,
-    ];
+    let input =
+        vec![RspuInstruction::ReflexIf { guard: 1, dst: 42, src: 42 }, RspuInstruction::Nop];
     let output = peephole_optimize(&input);
     assert_eq!(output, vec![RspuInstruction::Nop]);
 }
@@ -505,7 +494,7 @@ fn reg_mention_blocks_fold_via_interval_check() {
 }
 
 // -----------------------------------------------------------------------
-// Empty input  
+// Empty input
 // -----------------------------------------------------------------------
 #[test]
 fn empty_input_produces_empty_output() {

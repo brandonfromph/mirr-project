@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 //! MEGA-5 Subsystem Verification Test Suite — Symbolic Reasoning Engine.
 //!
 //! NASA-style verification tests for the MIRR symbolic evaluation engine:

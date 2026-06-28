@@ -6,19 +6,17 @@ use mirrc::error_codes::{mirrcode, ErrorCode};
 
 #[test]
 fn diagnostic_with_entity_and_component() {
-    let diag = MirrDiagnostic::error(ErrorCode::GuardNameEmpty)
-        .with_entity(42)
-        .with_component("Guard");
-    
+    let diag =
+        MirrDiagnostic::error(ErrorCode::GuardNameEmpty).with_entity(42).with_component("Guard");
+
     assert_eq!(diag.entity_id, Some(42));
     assert_eq!(diag.component, Some("Guard"));
 }
 
 #[test]
 fn diagnostic_build_empty_label() {
-    let diag = MirrDiagnostic::error(ErrorCode::GuardNameEmpty)
-        .with_entity(42)
-        .with_component("Guard");
+    let diag =
+        MirrDiagnostic::error(ErrorCode::GuardNameEmpty).with_entity(42).with_component("Guard");
     let err = diag.build();
     assert!(err.message().contains("[E121] (no label set)"));
 }

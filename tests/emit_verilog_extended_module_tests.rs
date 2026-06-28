@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 //! Extended SystemVerilog emitter tests - module-level emission.
 //!

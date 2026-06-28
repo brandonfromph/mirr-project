@@ -1,15 +1,18 @@
+#![allow(clippy::field_reassign_with_default)]
 #![forbid(unsafe_code)]
 
 use mirrc::pipeline::{run_pipeline, PipelineConfig};
 use std::fs;
 
 fn parse_mirr_ecs(src: &str) -> Result<(), mirrc::error::PipelineErrors> {
-    let mut config = PipelineConfig::default();
-    config.typecheck = false;
-    config.simplify = false;
-    config.width = false;
-    config.temporal = false;
-    config.mape_k = false;
+    let config = PipelineConfig {
+        typecheck: false,
+        simplify: false,
+        width: false,
+        temporal: false,
+        mape_k: false,
+        ..Default::default()
+    };
     run_pipeline(src, &config).map(|_| ())
 }
 

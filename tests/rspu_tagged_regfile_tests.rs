@@ -221,10 +221,7 @@ fn register_file_get_all_values() {
 // -----------------------------------------------------------------------
 #[test]
 fn tag_from_array_type_is_unsigned_0() {
-    let ty = SignalType::Array {
-        element: Box::new(SignalType::Unsigned(8)),
-        length: 4,
-    };
+    let ty = SignalType::Array { element: Box::new(SignalType::Unsigned(8)), length: 4 };
     let tag = tag_from_signal_type(&ty);
     assert_eq!(tag, TypeTag::Unsigned { width: 0 });
 }
@@ -255,10 +252,7 @@ fn tag_from_bundle_is_unsigned_0() {
 
 #[test]
 fn tag_from_fifo_is_unsigned_0() {
-    let ty = SignalType::Fifo {
-        element: Box::new(SignalType::Unsigned(8)),
-        depth: 16,
-    };
+    let ty = SignalType::Fifo { element: Box::new(SignalType::Unsigned(8)), depth: 16 };
     let tag = tag_from_signal_type(&ty);
     assert_eq!(tag, TypeTag::Unsigned { width: 0 });
 }

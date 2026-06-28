@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 //! Phase 3.5: Industrial-Scale Combinatorial Matrix.
 //!
 //! Generates 10,000+ hardware permutations to ensure 100% operator/width coverage.

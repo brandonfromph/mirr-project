@@ -8,7 +8,7 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/brandonfromph/mirr-project/ci.yml?branch=main&style=flat-square)](https://github.com/brandonfromph/mirr-project/actions)
 [![Tests](https://img.shields.io/badge/tests-3%2C469%2B%20passing-brightgreen?style=flat-square)](#testing)
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue?style=flat-square)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.85.0-orange?style=flat-square)](https://www.rust-lang.org/)
 [![unsafe: forbidden](https://img.shields.io/badge/unsafe-forbidden-red?style=flat-square)](#design-philosophy)
 

@@ -7,12 +7,12 @@
 //!   - StepResult variants
 
 #![forbid(unsafe_code)]
+#![allow(clippy::bool_assert_comparison)]
 
-use mirrc::emit::rspu_sim::{
-    DoubleBufferedGuard, GuardUnit, PropertyState, PropertyStatus,
-    SimResult, StepResult,
-};
 use mirrc::emit::rspu_exceptions::ExceptionCode;
+use mirrc::emit::rspu_sim::{
+    DoubleBufferedGuard, GuardUnit, PropertyState, PropertyStatus, SimResult, StepResult,
+};
 use mirrc::emit::rspu_tagged::TaggedWord;
 
 // -----------------------------------------------------------------------
@@ -49,10 +49,8 @@ fn double_buffered_guard_commit_propagates_next_to_current() {
 // -----------------------------------------------------------------------
 #[test]
 fn not_uninitialized_guard_is_true() {
-    let guard = DoubleBufferedGuard {
-        current: GuardUnit::Uninitialized,
-        next: GuardUnit::Uninitialized,
-    };
+    let guard =
+        DoubleBufferedGuard { current: GuardUnit::Uninitialized, next: GuardUnit::Uninitialized };
     assert_eq!(!guard, true);
 }
 
@@ -193,8 +191,8 @@ fn get_violations_returns_only_violated_properties() {
 // -----------------------------------------------------------------------
 #[test]
 fn sim_result_can_be_constructed_and_serialized() {
-    use std::collections::HashMap;
     use mirrc::emit::rspu_tagged::TypeTag;
+    use std::collections::HashMap;
 
     let mut outputs = HashMap::new();
     outputs.insert(0u16, TaggedWord::from_literal(42, TypeTag::Unsigned { width: 8 }));
