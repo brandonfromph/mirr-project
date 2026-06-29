@@ -22,7 +22,9 @@ const DEFAULT_SIM_CYCLES: u32 = 200;
 /// Emit a self-checking SystemVerilog testbench for the given module.
 pub fn emit_testbench(result: &PipelineResult) -> String {
     let mut out = String::with_capacity(2048);
-    let registry = result.ecs_registry.as_ref().unwrap();
+    let Some(registry) = result.ecs_registry.as_ref() else {
+        return "// [MIRR COMPILER ERROR] ECS registry is missing. Cannot generate testbench.".to_string();
+    };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     let mut main_clock = "clk".to_string();

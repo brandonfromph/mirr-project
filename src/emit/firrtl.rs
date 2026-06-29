@@ -313,19 +313,26 @@ fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
                 out.push_str(&format!("\n    ; Reflex: {}\n", registry.resolve_name(nc.0)));
 
                 let guard_cond = if r.guards.len() == 1 {
-                    let g_nc = registry.names[r.guards[0].0 as usize].unwrap();
-                    format!("{}_out", registry.resolve_name(g_nc.0))
+                    let g_nc_name = registry.names[r.guards[0].0 as usize]
+                        .as_ref()
+                        .map(|nc| registry.resolve_name(nc.0))
+                        .unwrap_or("ERR_MISSING_NAME");
+                    format!("{}_out", g_nc_name)
                 } else if r.guards.is_empty() {
                     "UInt<1>(1)".to_string()
                 } else {
-                    let mut expr = format!(
-                        "{}_out",
-                        registry.resolve_name(registry.names[r.guards[0].0 as usize].unwrap().0)
-                    );
+                    let g_nc_name = registry.names[r.guards[0].0 as usize]
+                        .as_ref()
+                        .map(|nc| registry.resolve_name(nc.0))
+                        .unwrap_or("ERR_MISSING_NAME");
+                    let mut expr = format!("{}_out", g_nc_name);
                     let mut j = 1;
                     while j < r.guards.len() {
-                        let g_nc = registry.names[r.guards[j].0 as usize].unwrap();
-                        expr = format!("and({}, {}_out)", expr, registry.resolve_name(g_nc.0));
+                        let g_nc_name = registry.names[r.guards[j].0 as usize]
+                            .as_ref()
+                            .map(|nc| registry.resolve_name(nc.0))
+                            .unwrap_or("ERR_MISSING_NAME");
+                        expr = format!("and({}, {}_out)", expr, g_nc_name);
                         j += 1;
                     }
                     expr
@@ -333,8 +340,10 @@ fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
 
                 for a_id in &r.assignments {
                     if let Some(assign) = &registry.assignment_comps[a_id.0 as usize] {
-                        let target_nc = registry.names[assign.target.0 as usize].unwrap();
-                        let target_name = registry.resolve_name(target_nc.0);
+                        let target_name = registry.names[assign.target.0 as usize]
+                            .as_ref()
+                            .map(|nc| registry.resolve_name(nc.0))
+                            .unwrap_or("ERR_MISSING_NAME");
                         let val = emit_expr_inline_ecs(assign.value, registry);
                         out.push_str(&format!(
                             "    when {} :\n      connect {} , {}\n    else :\n      connect {} , UInt(0)\n",
