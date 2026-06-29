@@ -161,7 +161,9 @@ fn parse_import_line(line: &str, line_index: usize) -> Result<(String, String), 
         MirrError::parse_error(format!("Import at line {} must end with ';'.", line_index + 1))
     })?;
 
-    let after_import = without_semicolon.strip_prefix("import ").unwrap();
+    let after_import = without_semicolon.strip_prefix("import ").ok_or_else(|| {
+        MirrError::parse_error(format!("Expected 'import' at line {}", line_index + 1))
+    })?;
     let trimmed_after = after_import.trim();
 
     if let Some((path_part, alias_part)) = trimmed_after.split_once(" as ") {
@@ -233,7 +235,9 @@ fn parse_top_level_struct_ecs(
     index: &mut usize,
 ) -> Result<(String, Vec<(String, SignalType)>), MirrError> {
     let header = lines[*index].trim();
-    let after_struct = header.strip_prefix("struct ").unwrap();
+    let after_struct = header.strip_prefix("struct ").ok_or_else(|| {
+        MirrError::parse_error(format!("Expected 'struct' at line {}", *index + 1))
+    })?;
     let (name, mut has_brace) = if let Some((n, _)) = after_struct.split_once('{') {
         (n.trim().to_string(), true)
     } else {
@@ -334,7 +338,9 @@ fn parse_module_ecs_stmts(
         }
 
         if line.starts_with("for ") {
-            let after_for = line.strip_prefix("for ").unwrap();
+            let after_for = line.strip_prefix("for ").ok_or_else(|| {
+                MirrError::parse_error(format!("Expected 'for' at line {}", *index + 1))
+            })?;
             let (var, rest) = after_for
                 .split_once(" in ")
                 .ok_or_else(|| MirrError::parse_error("Missing 'in' in for loop"))?;
@@ -674,7 +680,9 @@ fn parse_on_block_stmts(
         }
 
         if inner_line.starts_with("for ") {
-            let after_for = inner_line.strip_prefix("for ").unwrap();
+            let after_for = inner_line.strip_prefix("for ").ok_or_else(|| {
+                MirrError::parse_error(format!("Expected 'for' inside reflex at line {}", *index + 1))
+            })?;
             let (var, rest) = after_for
                 .split_once(" in ")
                 .ok_or_else(|| MirrError::parse_error("Missing 'in' in for loop"))?;
@@ -763,11 +771,12 @@ fn parse_property_ecs(
 ) -> Result<EntityId, MirrError> {
     let start_line = *index as u32;
     let header = lines[*index].trim();
-    let is_assert = header.starts_with("assert ");
-    let after_keyword = if is_assert {
-        header.strip_prefix("assert ").unwrap()
+    let after_keyword = if let Some(stripped) = header.strip_prefix("assert ") {
+        stripped
+    } else if let Some(stripped) = header.strip_prefix("property ") {
+        stripped
     } else {
-        header.strip_prefix("property ").unwrap()
+        return Err(MirrError::parse_error(format!("Expected 'assert' or 'property' keyword at line {}", start_line + 1)));
     };
 
     let name = after_keyword
@@ -808,14 +817,14 @@ fn parse_property_ecs(
     }
 
     let mut clean_formula_str = formula_str.as_str().trim();
-    let directive = if clean_formula_str.starts_with("assert ") {
-        clean_formula_str = clean_formula_str.strip_prefix("assert ").unwrap().trim();
+    let directive = if let Some(stripped) = clean_formula_str.strip_prefix("assert ") {
+        clean_formula_str = stripped.trim();
         crate::ast::property::PropertyDirective::Assert
-    } else if clean_formula_str.starts_with("cover ") {
-        clean_formula_str = clean_formula_str.strip_prefix("cover ").unwrap().trim();
+    } else if let Some(stripped) = clean_formula_str.strip_prefix("cover ") {
+        clean_formula_str = stripped.trim();
         crate::ast::property::PropertyDirective::Cover
-    } else if clean_formula_str.starts_with("assume ") {
-        clean_formula_str = clean_formula_str.strip_prefix("assume ").unwrap().trim();
+    } else if let Some(stripped) = clean_formula_str.strip_prefix("assume ") {
+        clean_formula_str = stripped.trim();
         crate::ast::property::PropertyDirective::Assume
     } else {
         crate::ast::property::PropertyDirective::Assert
