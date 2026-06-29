@@ -48,9 +48,12 @@ impl RegAllocResult {
     }
 
     /// Lookup a register ID by signal name.
-    pub fn reg(&self, name: &str) -> RegId {
-        *self.map.get(name).unwrap_or_else(|| {
-            panic!("RegAllocResult::reg: signal '{}' not found in allocation map", name)
+    pub fn reg(&self, name: &str) -> Result<RegId, crate::error::MirrError> {
+        self.map.get(name).copied().ok_or_else(|| {
+            crate::error::MirrError::SemanticError {
+                message: format!("RegAllocResult::reg: signal '{}' not found in allocation map", name),
+                span: None,
+            }
         })
     }
 }

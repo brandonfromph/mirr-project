@@ -297,7 +297,7 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
         }
     }
 
-    summary::print_summary(result, args.stats);
+    summary::print_summary(result, args.stats)?;
 
     // Check for width errors — render through the diagnostic engine.
     if result.has_width_errors() {
@@ -364,13 +364,13 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
             eprintln!("Error generating S-expression: {e}");
             process::exit(1);
         }),
-        "mape-k-rtl" => result.mape_k_rtl.clone().expect("MAPE-K RTL skipped"),
+        "mape-k-rtl" => result.mape_k_rtl.clone().ok_or_else(|| anyhow::anyhow!("MAPE-K RTL skipped"))?,
         "cert" => {
             let cert_bytes = result
                 .rspu_program
                 .as_ref()
                 .and_then(|p| p.certificate.as_ref())
-                .expect("Certificate missing");
+                .ok_or_else(|| anyhow::anyhow!("Certificate missing"))?;
             if let Some(path) = &args.output {
                 std::fs::write(path, cert_bytes)?;
                 return Ok(());
@@ -384,7 +384,7 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
     };
 
     if let Some(path) = &args.output {
-        std::fs::write(path, &output).expect("Error writing output");
+        std::fs::write(path, &output).map_err(|e| anyhow::anyhow!("Error writing output: {}", e))?;
         eprintln!("Output written to {path}");
     } else {
         print!("{output}");
@@ -480,7 +480,7 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
             args.tapeout,
             args.toolchain_path.as_deref(),
             &all_links,
-        );
+        )?;
     }
     Ok(())
 }

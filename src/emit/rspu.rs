@@ -78,12 +78,12 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
                     _ => 1,
                 };
                 if size == 1 {
-                    let r = regs.reg(name);
+                    let r = regs.reg(name)?;
                     instrs.push(RspuInstruction::LoadInput { dst: r, port: port_idx });
                     port_idx += 1;
                 } else {
                     for idx in 0..size {
-                        let r = regs.reg(&format!("{}[{}]", name, idx));
+                        let r = regs.reg(&format!("{}[{}]", name, idx))?;
                         instrs.push(RspuInstruction::LoadInput { dst: r, port: port_idx });
                         port_idx += 1;
                     }
@@ -126,11 +126,11 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
                 };
 
                 if size == 1 {
-                    let r = regs.reg(name);
+                    let r = regs.reg(name)?;
                     instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
                 } else {
                     for idx in 0..size {
-                        let r = regs.reg(&format!("{}[{}]", name, idx));
+                        let r = regs.reg(&format!("{}[{}]", name, idx))?;
                         instrs.push(RspuInstruction::TagLoad { dst: r, tag: tag_byte });
                     }
                 }
@@ -191,12 +191,12 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
                     _ => 1,
                 };
                 if size == 1 {
-                    let r = regs.reg(name);
+                    let r = regs.reg(name)?;
                     instrs.push(RspuInstruction::StoreOutput { src: r, port: out_port_idx });
                     out_port_idx += 1;
                 } else {
                     for idx in 0..size {
-                        let r = regs.reg(&format!("{}[{}]", name, idx));
+                        let r = regs.reg(&format!("{}[{}]", name, idx))?;
                         instrs.push(RspuInstruction::StoreOutput { src: r, port: out_port_idx });
                         out_port_idx += 1;
                     }

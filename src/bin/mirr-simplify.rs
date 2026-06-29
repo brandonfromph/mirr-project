@@ -72,7 +72,15 @@ fn run_json_mode(content: &str, show_stats: bool) {
 
     let (simplified, stats) = simplify_expr_with_stats(expr);
 
-    let output = serde_json::to_string_pretty(&simplified).expect("Failed to serialize output");
+    let output = match serde_json::to_string_pretty(&simplified) {
+        Ok(s) => s,
+        Err(e) => {
+            fatal_diagnostic(
+                Diagnostic::error("Failed to serialize output")
+                    .with_note(e.to_string())
+            );
+        }
+    };
     println!("{}", output);
 
     if show_stats {

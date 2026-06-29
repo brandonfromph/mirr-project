@@ -29,7 +29,7 @@ pub(super) fn run_toolchain_operations(
     tapeout: bool,
     _toolchain_path: Option<&str>,
     link: &[String],
-) {
+) -> anyhow::Result<()> {
     use mirrc::toolchain::{Tool, ToolRegistry};
 
     eprintln!();
@@ -68,7 +68,7 @@ pub(super) fn run_toolchain_operations(
         }
     }
 
-    let ecs = result.ecs_registry.as_ref().expect("ECS registry required");
+    let ecs = result.ecs_registry.as_ref().ok_or_else(|| anyhow::anyhow!("ECS registry required"))?;
     let module_name = ecs.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     // Generate synthesis-clean SV for toolchain operations
@@ -77,7 +77,7 @@ pub(super) fn run_toolchain_operations(
     let sv_path = super::derive_path(input_path, "_synth.sv");
     if let Err(e) = std::fs::write(&sv_path, &sv_content) {
         eprintln!("  [toolchain] failed to write synthesis SV '{sv_path}'\n    help: {}", e);
-        return;
+        return Ok(());
     }
 
     let prov_content =
@@ -355,7 +355,7 @@ pub(super) fn run_toolchain_operations(
         let sdc_path = "constraints.sdc";
         if let Err(e) = std::fs::write(sdc_path, &sdc_content) {
             eprintln!("  [tapeout] FAILED — unable to write SDC constraints: {}", e);
-            return;
+            return Ok(());
         }
 
         // 2. Generate config.json
@@ -379,7 +379,7 @@ pub(super) fn run_toolchain_operations(
         let config_json = serde_json::to_string_pretty(&config).unwrap_or_default();
         if let Err(e) = std::fs::write("config.json", &config_json) {
             eprintln!("  [tapeout] FAILED — unable to write config.json: {}", e);
-            return;
+            return Ok(());
         }
 
         eprintln!("  [tapeout] PASSED — Tape-out package generated successfully.");
@@ -424,4 +424,6 @@ pub(super) fn run_toolchain_operations(
             eprintln!("  [tapeout] (ASIC Place & Route of 64 cores requires 16GB+ RAM. Drop the generated files into a CI runner to produce the .gds file.)");
         }
     }
+    
+    Ok(())
 }

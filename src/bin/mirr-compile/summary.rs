@@ -2,8 +2,8 @@
 
 #![forbid(unsafe_code)]
 
-pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stats: bool) {
-    let registry = result.ecs_registry.as_ref().expect("ECS registry required");
+pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stats: bool) -> anyhow::Result<()> {
+    let registry = result.ecs_registry.as_ref().ok_or_else(|| anyhow::anyhow!("ECS registry required"))?;
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     let mut signal_count = 0;
@@ -160,4 +160,6 @@ pub(super) fn print_summary(result: &mirrc::pipeline::PipelineResult, _show_stat
             status, tr.resource_bound, tr.output_completeness, tr.guard_coverage, tr.acyclicity
         );
     }
+    
+    Ok(())
 }
