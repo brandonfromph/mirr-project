@@ -128,8 +128,10 @@ pub(super) fn emit_temporal_logic_ecs(
         out.push_str("  // Physical Power-On Reset Initialization\n");
         out.push_str("  initial begin\n");
         for &(sig_ent, delay) in prevs {
-            let sig_name =
-                registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
+            let sig_name = registry.names[sig_ent.0 as usize]
+                .as_ref()
+                .map(|nc| registry.resolve_name(nc.0))
+                .unwrap_or("ERR_MISSING_NAME");
             out.push_str(&format!("    {}_d{} = '0;\n", sig_name, delay));
         }
         out.push_str("  end\n\n");
@@ -140,14 +142,18 @@ pub(super) fn emit_temporal_logic_ecs(
         out.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", clock));
         out.push_str("    if (!rst_n) begin\n");
         for &(sig_ent, delay) in &prevs {
-            let sig_name =
-                registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
+            let sig_name = registry.names[sig_ent.0 as usize]
+                .as_ref()
+                .map(|nc| registry.resolve_name(nc.0))
+                .unwrap_or("ERR_MISSING_NAME");
             out.push_str(&format!("      {}_d{} <= '0;\n", sig_name, delay));
         }
         out.push_str("    end else begin\n");
         for &(sig_ent, delay) in &prevs {
-            let sig_name =
-                registry.resolve_name(registry.names[sig_ent.0 as usize].as_ref().unwrap().0);
+            let sig_name = registry.names[sig_ent.0 as usize]
+                .as_ref()
+                .map(|nc| registry.resolve_name(nc.0))
+                .unwrap_or("ERR_MISSING_NAME");
             if delay == 1 {
                 out.push_str(&format!("      {}_d1 <= {};\n", sig_name, sig_name));
             } else {
@@ -508,8 +514,10 @@ fn emit_hls_logic_ecs(
             }
 
             let first_op_idx = ops[0];
-            let sched = registry.hls_schedules[first_op_idx].as_ref().unwrap();
-            let kind = sched.resource;
+            let kind = registry.hls_schedules[first_op_idx]
+                .as_ref()
+                .map(|s| s.resource)
+                .unwrap_or(crate::hls::ResourceKind::Add); // Fallback to avoid panic
 
             // Find max width among all operations sharing this resource
             let mut max_width = 1;
@@ -572,13 +580,12 @@ fn emit_hls_logic_ecs(
                     kind, binding_id, kind, binding_id, op_str, kind, binding_id
                 ));
             }
-
             // Emit MUXes
             out.push_str("  always_comb begin\n");
             out.push_str(&format!("    case ({})\n", state_reg));
 
             for &idx in ops {
-                let cycle = registry.hls_schedules[idx].as_ref().unwrap().earliest;
+                let cycle = registry.hls_schedules[idx].as_ref().map(|s| s.earliest).unwrap_or(0);
                 out.push_str(&format!("      {}: begin\n", cycle));
 
                 let get_operand_str = |op_entity_id: u32| -> String {
@@ -653,7 +660,7 @@ fn emit_hls_logic_ecs(
             for &idx in op_indices {
                 // Check if this operation has a binding
                 if let Some(binding) = &registry.hls_bindings[idx] {
-                    let kind = registry.hls_schedules[idx].as_ref().unwrap().resource;
+                    let kind = registry.hls_schedules[idx].as_ref().map(|s| s.resource).unwrap_or(crate::hls::ResourceKind::Add);
                     out.push_str(&format!(
                         "          op_{}_res <= shared_{}_{}_out;\n",
                         idx, kind, binding.physical_resource_id
