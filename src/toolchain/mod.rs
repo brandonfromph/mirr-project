@@ -229,8 +229,14 @@ pub fn invoke_tool(
             message: e.to_string(),
         })?;
 
-    let mut stdout = child.stdout.take().expect("Failed to open stdout");
-    let mut stderr = child.stderr.take().expect("Failed to open stderr");
+    let mut stdout = child.stdout.take().ok_or_else(|| ToolchainError::Invocation {
+        tool: tool.binary_name().to_string(),
+        message: "Failed to open stdout pipe".to_string(),
+    })?;
+    let mut stderr = child.stderr.take().ok_or_else(|| ToolchainError::Invocation {
+        tool: tool.binary_name().to_string(),
+        message: "Failed to open stderr pipe".to_string(),
+    })?;
 
     // Use threads to stream stdout and stderr concurrently without blocking.
     let t_stdout = std::thread::spawn(move || {

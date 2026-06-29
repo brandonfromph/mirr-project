@@ -174,16 +174,13 @@ fn identify_operations(
 ) {
     let idx = root_id.0 as usize;
 
-    if registry.binary_ops[idx].is_some() {
+    if let Some(binary) = &registry.binary_ops[idx] {
         op_entities.insert(root_id);
-        let left = registry.binary_ops[idx].as_ref().unwrap().left;
-        let right = registry.binary_ops[idx].as_ref().unwrap().right;
-        identify_operations(registry, left, op_entities);
-        identify_operations(registry, right, op_entities);
-    } else if registry.unary_ops[idx].is_some() {
+        identify_operations(registry, binary.left, op_entities);
+        identify_operations(registry, binary.right, op_entities);
+    } else if let Some(unary) = &registry.unary_ops[idx] {
         op_entities.insert(root_id);
-        let operand = registry.unary_ops[idx].as_ref().unwrap().operand;
-        identify_operations(registry, operand, op_entities);
+        identify_operations(registry, unary.operand, op_entities);
     }
 }
 // End of src/hls/mod.rs
