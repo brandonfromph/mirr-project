@@ -578,7 +578,8 @@ pub fn emit_synchronizer_chains(
 /// Used by `--emit sva` standalone mode.
 pub fn emit_sva_only(result: &PipelineResult) -> String {
     let Some(registry) = result.ecs_registry.as_ref() else {
-        return "// [MIRR COMPILER ERROR] ECS registry is missing. Cannot generate SVA assertions.".to_string();
+        return "// [MIRR COMPILER ERROR] ECS registry is missing. Cannot generate SVA assertions."
+            .to_string();
     };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unnamed".to_string());
     let ft = &result.file_table;

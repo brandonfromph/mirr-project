@@ -16,8 +16,9 @@ use crate::ast::program::Module;
 use crate::ast::types::SignalKind;
 use crate::ast::MAX_EXPR_NODES;
 use crate::ecs::components::{
-    AssignmentComponent, BinaryComponent, EntityId, EntityKind, KindComponent, LiteralComponent,
-    ModuleComponent, PrevComponent, ReflexComponent, SignalRefComponent, UnaryComponent,
+    ArrayIndexComponent, AssignmentComponent, BinaryComponent, EntityId, EntityKind,
+    FieldAccessComponent, KindComponent, LiteralComponent, ModuleComponent, PrevComponent,
+    ReflexComponent, SignalRefComponent, UnaryComponent,
 };
 use crate::ecs::Registry;
 use crate::error::MirrError;
@@ -725,8 +726,12 @@ pub fn collect_signal_refs_ecs(registry: &Registry, entity: EntityId) -> Vec<Str
             stack.push(*right);
         } else if let Some(LiteralComponent(_)) = &registry.literals[idx] {
             // No signal refs in literals
+        } else if let Some(ArrayIndexComponent { array, index }) = &registry.array_indices[idx] {
+            stack.push(*array);
+            stack.push(*index);
+        } else if let Some(FieldAccessComponent { object, .. }) = &registry.field_accesses[idx] {
+            stack.push(*object);
         }
-        // TODO: ArrayIndex, FieldAccess, etc. when they are fully ECS-ified
     }
 
     refs

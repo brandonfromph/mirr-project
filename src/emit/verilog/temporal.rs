@@ -660,7 +660,10 @@ fn emit_hls_logic_ecs(
             for &idx in op_indices {
                 // Check if this operation has a binding
                 if let Some(binding) = &registry.hls_bindings[idx] {
-                    let kind = registry.hls_schedules[idx].as_ref().map(|s| s.resource).unwrap_or(crate::hls::ResourceKind::Add);
+                    let kind = registry.hls_schedules[idx]
+                        .as_ref()
+                        .map(|s| s.resource)
+                        .unwrap_or(crate::hls::ResourceKind::Add);
                     out.push_str(&format!(
                         "          op_{}_res <= shared_{}_{}_out;\n",
                         idx, kind, binding.physical_resource_id

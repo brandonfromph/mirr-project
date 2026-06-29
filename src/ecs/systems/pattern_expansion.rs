@@ -212,9 +212,15 @@ pub fn expand_patterns(registry: &mut Registry) -> Result<(), MirrError> {
         }
 
         // Must pop component so we can borrow registry
-        let call_comp = registry.pattern_calls[call_entity.0 as usize]
-            .clone()
-            .expect("PatternCall component missing");
+        let Some(call_comp) = registry.pattern_calls[call_entity.0 as usize].clone() else {
+            return Err(MirrError::SemanticError {
+                message: format!(
+                    "Internal Compiler Error (ERR-999): PatternCall component missing for entity {}",
+                    call_entity.0
+                ),
+                span: None,
+            });
+        };
 
         let parent_module =
             registry.modules[call_entity.0 as usize].map(|m| m.0).unwrap_or(EntityId(0));

@@ -23,7 +23,8 @@ const DEFAULT_SIM_CYCLES: u32 = 200;
 pub fn emit_testbench(result: &PipelineResult) -> String {
     let mut out = String::with_capacity(2048);
     let Some(registry) = result.ecs_registry.as_ref() else {
-        return "// [MIRR COMPILER ERROR] ECS registry is missing. Cannot generate testbench.".to_string();
+        return "// [MIRR COMPILER ERROR] ECS registry is missing. Cannot generate testbench."
+            .to_string();
     };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 

@@ -46,21 +46,23 @@ pub fn run_openlane_flow(
         message: format!("Failed to write config.json: {}", e),
     })?;
 
-    let config_file_name = config_path.file_name()
-        .and_then(|n| n.to_str())
-        .ok_or_else(|| ToolchainError::Invocation {
+    let config_file_name = config_path.file_name().and_then(|n| n.to_str()).ok_or_else(|| {
+        ToolchainError::Invocation {
             tool: "openlane".to_string(),
             message: "Invalid config path or file name.".to_string(),
-        })?;
+        }
+    })?;
 
-    let canonical_working_dir = working_dir.canonicalize().map_err(|e| ToolchainError::Invocation {
-        tool: "openlane".to_string(),
-        message: format!("Failed to canonicalize working dir: {}", e),
-    })?;
-    let canonical_str = canonical_working_dir.to_str().ok_or_else(|| ToolchainError::Invocation {
-        tool: "openlane".to_string(),
-        message: "Working directory contains invalid characters.".to_string(),
-    })?;
+    let canonical_working_dir =
+        working_dir.canonicalize().map_err(|e| ToolchainError::Invocation {
+            tool: "openlane".to_string(),
+            message: format!("Failed to canonicalize working dir: {}", e),
+        })?;
+    let canonical_str =
+        canonical_working_dir.to_str().ok_or_else(|| ToolchainError::Invocation {
+            tool: "openlane".to_string(),
+            message: "Working directory contains invalid characters.".to_string(),
+        })?;
 
     let output = invoke_tool(
         registry,

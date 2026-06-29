@@ -681,7 +681,10 @@ fn parse_on_block_stmts(
 
         if inner_line.starts_with("for ") {
             let after_for = inner_line.strip_prefix("for ").ok_or_else(|| {
-                MirrError::parse_error(format!("Expected 'for' inside reflex at line {}", *index + 1))
+                MirrError::parse_error(format!(
+                    "Expected 'for' inside reflex at line {}",
+                    *index + 1
+                ))
             })?;
             let (var, rest) = after_for
                 .split_once(" in ")
@@ -776,7 +779,10 @@ fn parse_property_ecs(
     } else if let Some(stripped) = header.strip_prefix("property ") {
         stripped
     } else {
-        return Err(MirrError::parse_error(format!("Expected 'assert' or 'property' keyword at line {}", start_line + 1)));
+        return Err(MirrError::parse_error(format!(
+            "Expected 'assert' or 'property' keyword at line {}",
+            start_line + 1
+        )));
     };
 
     let name = after_keyword
