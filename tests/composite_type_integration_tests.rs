@@ -35,6 +35,7 @@ fn make_signal(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
 fn module_with_single_assignment(signals: Vec<SignalDecl>, target: &str, value: Expr) -> Module {
     Module {
         name: "typeck_composite".to_string(),
+        clock_domains: vec![],
         signals,
         guards: Vec::new(),
         reflexes: vec![Reflex {
@@ -84,6 +85,7 @@ fn array_type_is_composite() {
 fn array_signal_in_module() {
     let m = Module {
         name: "arr_m".to_string(),
+        clock_domains: vec![],
         signals: vec![make_signal(
             "arr",
             SignalKind::Input,
@@ -312,7 +314,8 @@ fn composite_signal_in_ast_module_no_crash() {
     // Build a module with a composite-typed signal at the AST level
     // (pipeline may not fully process it but must not panic)
     let m = Module {
-        name: "comp_m".to_string(),
+        name: "test".to_string(),
+        clock_domains: vec![],
         signals: vec![
             make_signal(
                 "arr_sig",

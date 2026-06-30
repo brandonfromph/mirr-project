@@ -44,6 +44,7 @@ module cdc_top {
         .arg("mirr")
         .arg("--")
         .arg("compile")
+        .arg("--dev")
         .arg(src_path.to_str().unwrap())
         .arg("--emit")
         .arg("verilog")

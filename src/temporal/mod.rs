@@ -92,6 +92,7 @@ mod tests {
         };
         let module = Module {
             name: "test".to_string(),
+            clock_domains: vec![],
             signals: vec![],
             guards: vec![guard],
             reflexes: vec![],

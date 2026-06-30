@@ -37,7 +37,8 @@ fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
 
 fn minimal_module(signals: Vec<SignalDecl>) -> Module {
     Module {
-        name: "typeck_test".to_string(),
+        name: "test_m".to_string(),
+        clock_domains: vec![],
         signals,
         guards: Vec::new(),
         reflexes: Vec::new(),

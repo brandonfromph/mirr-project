@@ -164,6 +164,10 @@ pub struct Cli {
     /// Dump the post-expansion generative macro AST to a file
     #[arg(long, help_heading = "Output & Format")]
     pub dump_macro_ast: bool,
+
+    /// Developer fast-path: disable rigorous formal verification pipelines (totality, symbolic, sat-simplify)
+    #[arg(long, help_heading = "Compilation Options")]
+    pub dev: bool,
 }
 
 pub fn run(args: Cli) -> anyhow::Result<()> {
@@ -248,6 +252,14 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
     }
     if args.dump_macro_ast {
         config.dump_macro_ast = true;
+    }
+
+    if args.dev {
+        config.sat_simplify = false;
+        config.extended_typecheck = false;
+        config.retiming = false;
+        config.totality = false;
+        config.symbolic = false;
     }
 
     let root_path = Path::new(&root_file);

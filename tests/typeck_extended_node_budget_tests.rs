@@ -31,6 +31,7 @@ fn deep_add_expression(depth: usize) -> Expr {
 fn budget_module_with_guard(condition: Expr) -> Module {
     Module {
         name: "typeck_budget".to_string(),
+        clock_domains: vec![],
         signals: vec![
             SignalDecl {
                 name: "n".to_string(),

@@ -212,6 +212,10 @@ pub struct SourcePathComponent(pub String);
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct LineRangeComponent(pub (usize, usize));
 
+/// Component: Clock Domains declared in a Module
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClockDomainsComponent(pub Vec<String>);
+
 // --- Instruction & Dispatch Components (Phase 1 RS-16) ---
 
 /// Component: Numeric opcode for an instruction (e.g. ADD=0).

@@ -147,6 +147,18 @@ pub fn parse_module_macro_stmts(
             continue;
         }
 
+        if line.starts_with("domain ") {
+            let abs_start_line = *index + line_offset;
+            let stripped = line.strip_prefix("domain ").unwrap().trim();
+            let name = stripped.trim_end_matches(';').trim().to_string();
+            stmts.push(ModuleMacroStmt::ClockDomain(crate::ast::program::ClockDomainDecl {
+                name,
+                span: Some(Span::full_line(abs_start_line as u32)),
+            }));
+            *index += 1;
+            continue;
+        }
+
         if line.contains(':') && !line.ends_with('{') {
             let sig = parse_signal(line, abs_index)?;
             stmts.push(ModuleMacroStmt::Signal(sig));

@@ -18,6 +18,7 @@ use mirrc::typeck::extended::{typecheck_extended, ClockDomain, ExtendedSignalDec
 fn module_from_exts(exts: &[ExtendedSignalDecl]) -> Module {
     Module {
         name: "typeck_test".to_string(),
+        clock_domains: vec![],
         signals: exts
             .iter()
             .map(|e| SignalDecl {

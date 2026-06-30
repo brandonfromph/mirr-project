@@ -267,7 +267,8 @@ pub fn expand_patterns(registry: &mut Registry) -> Result<(), MirrError> {
 
         // Expand using the robust ast_expand
         let mut temp_module = Module {
-            name: def_comp.0.name.clone(),
+            name: "temp_pattern_expansion".to_string(),
+            clock_domains: Vec::new(),
             signals: vec![],
             guards: vec![],
             reflexes: vec![],

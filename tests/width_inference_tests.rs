@@ -779,6 +779,7 @@ fn program_width_inference_basic() {
         imports: Vec::new(),
         module: Module {
             name: "test_mod".to_string(),
+            clock_domains: vec![],
             signals: vec![
                 sig("in_a", SignalType::Unsigned(8)),
                 sig("out_b", SignalType::Unsigned(16)),

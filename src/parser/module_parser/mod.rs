@@ -680,6 +680,7 @@ fn parse_module(lines: &[&str], index: &mut usize) -> Result<Module, MirrError> 
 
     let mut unexpanded = crate::ast::macro_nodes::UnexpandedModule {
         name: name.to_string(),
+        clock_domains: Vec::new(),
         statements: Vec::new(),
         properties: Vec::new(),
         pattern_calls: Vec::new(),

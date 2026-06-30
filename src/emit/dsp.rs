@@ -181,6 +181,7 @@ mod tests {
     fn make_module(reflexes: Vec<Reflex>) -> Module {
         Module {
             name: "test_dsp".to_string(),
+            clock_domains: vec![],
             signals: vec![],
             guards: vec![],
             reflexes,

@@ -25,6 +25,7 @@ fn mock_module(name: &str, num_signals: usize) -> Module {
     }
     Module {
         name: name.to_string(),
+        clock_domains: vec![],
         signals,
         guards: vec![],
         reflexes: vec![],

@@ -42,7 +42,8 @@ fn with_phantom(name: &str, kind: SignalKind, ty: SignalType, tag: &str) -> Exte
 
 fn module_from_exts(exts: &[ExtendedSignalDecl]) -> Module {
     Module {
-        name: "typeck_test".to_string(),
+        name: "test_m".to_string(),
+        clock_domains: vec![],
         signals: exts
             .iter()
             .map(|e| SignalDecl {

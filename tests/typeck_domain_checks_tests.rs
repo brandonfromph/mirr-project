@@ -81,7 +81,8 @@ fn reflex(name: &str, assignments: Vec<Assignment>) -> Reflex {
 
 fn module_from_exts(exts: &[ExtendedSignalDecl], reflexes: Vec<Reflex>) -> Module {
     Module {
-        name: "test".to_string(),
+        name: "test_domain_checks".to_string(),
+        clock_domains: vec![],
         signals: exts
             .iter()
             .map(|e| SignalDecl {

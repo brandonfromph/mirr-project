@@ -46,6 +46,7 @@ mod tests {
             imports: vec![],
             module: Module {
                 name: "empty".to_string(),
+                clock_domains: vec![],
                 signals: vec![],
                 guards: vec![],
                 reflexes: vec![],

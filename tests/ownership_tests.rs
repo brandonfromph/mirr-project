@@ -109,6 +109,7 @@ fn base_module(
 ) -> Module {
     Module {
         name: name.to_string(),
+        clock_domains: vec![],
         signals,
         guards,
         reflexes,

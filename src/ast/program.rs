@@ -82,11 +82,24 @@ pub struct Reflex {
     pub span: Option<Span>,
 }
 
+/// A clock domain declaration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClockDomainDecl {
+    /// Name of the clock domain.
+    pub name: String,
+    /// Source span for LSP diagnostics (`None` when unavailable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span: Option<Span>,
+}
+
 /// A MIRR module: the top-level container for signals, guards, reflexes, and properties.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Module {
     /// Module name (appears after `module` keyword).
     pub name: String,
+    /// Clock domain declarations.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub clock_domains: Vec<ClockDomainDecl>,
     /// Signal declarations (inputs, outputs, internals).
     pub signals: Vec<SignalDecl>,
     /// Temporal guard definitions.
@@ -169,6 +182,9 @@ impl MirrAstJson {
     pub fn from_program(program: &MirrProgram) -> Self {
         let mut module = program.module.clone();
         module.span = None;
+        for cd in &mut module.clock_domains {
+            cd.span = None;
+        }
         for sig in &mut module.signals {
             sig.span = None;
         }

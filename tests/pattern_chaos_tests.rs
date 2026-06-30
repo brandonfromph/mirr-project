@@ -29,6 +29,7 @@ fn test_pattern_chaos_recursion_depth_limit() {
         patterns: patterns.clone(),
         module: Module {
             name: "top".to_string(),
+            clock_domains: vec![],
             signals: vec![],
             guards: vec![],
             reflexes: vec![],
@@ -132,6 +133,7 @@ fn test_pattern_chaos_exponential_expansion_stress() {
         patterns: patterns.clone(),
         module: Module {
             name: "top".to_string(),
+            clock_domains: vec![],
             signals: vec![],
             guards: vec![],
             reflexes: vec![],

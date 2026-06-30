@@ -35,6 +35,7 @@ fn result_with_many_temporal_guards() -> PipelineResult {
             imports: Vec::new(),
             module: mirrc::ast::program::Module {
                 name: "emit_capacity".to_string(),
+                clock_domains: vec![],
                 signals: vec![mirrc::ast::program::SignalDecl {
                     name: "in_sig".to_string(),
                     kind: SignalKind::Input,

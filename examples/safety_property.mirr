@@ -1,6 +1,13 @@
 // Safety property example — demonstrates all property forms and directives.
 // Compile: cargo run --bin mirr-compile -- --emit sva examples/safety_property.mirr
 
+target profile {
+    name: "Liquid-256";
+    word_size: 64;
+    reg_bits: 8;
+    op_width: 6;
+}
+
 module pressure_monitor {
     signal airway_pressure: in  u16;
     signal clamp_valve:     out bool;

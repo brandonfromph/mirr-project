@@ -210,7 +210,8 @@ mod tests {
 
     fn empty_module() -> Module {
         Module {
-            name: "test".to_string(),
+            name: "test_module".to_string(),
+            clock_domains: vec![],
             signals: Vec::new(),
             guards: Vec::new(),
             reflexes: Vec::new(),

@@ -75,7 +75,8 @@ fn g11_result_field_exists() {
 #[test]
 fn g12_analyze_grows_with_signals() {
     let mut m = Module {
-        name: "big".to_string(),
+        name: "test_m".to_string(),
+        clock_domains: vec![],
         signals: Vec::new(),
         guards: Vec::new(),
         reflexes: Vec::new(),

@@ -58,6 +58,7 @@ pub const COMP_HLS_SCHEDULE: u64 = 1 << 32;
 pub const COMP_HLS_BINDING: u64 = 1 << 33;
 pub const COMP_PATTERN_CALL: u64 = 1 << 34;
 pub const COMP_PATTERN_INSTANCE: u64 = 1 << 35;
+pub const COMP_CLOCK_DOMAINS: u64 = 1 << 36;
 
 /// The Registry: The Data-Oriented "World" of the MIRR Compiler.
 /// Refactored to Vec-based storage for O(1) access and cache locality.
@@ -82,6 +83,7 @@ pub struct Registry {
     pub pattern_defs: Vec<Option<PatternDefComponent>>,
     pub pattern_calls: Vec<Option<PatternCallComponent>>,
     pub pattern_instances: Vec<Option<PatternInstanceComponent>>,
+    pub clock_domains: Vec<Option<ClockDomainsComponent>>,
     pub cycles: Vec<Option<CyclesComponent>>,
     pub conditions: Vec<Option<ConditionComponent>>,
 
@@ -167,6 +169,7 @@ impl Registry {
             pattern_defs: vec![None; cap],
             pattern_calls: vec![None; cap],
             pattern_instances: vec![None; cap],
+            clock_domains: vec![None; cap],
             cycles: vec![None; cap],
             conditions: vec![None; cap],
             literals: vec![None; cap],
@@ -224,6 +227,7 @@ impl Registry {
             self.pattern_defs.resize(new_cap, None);
             self.pattern_calls.resize(new_cap, None);
             self.pattern_instances.resize(new_cap, None);
+            self.clock_domains.resize(new_cap, None);
             self.cycles.resize(new_cap, None);
             self.conditions.resize(new_cap, None);
             self.literals.resize(new_cap, None);
@@ -628,6 +632,11 @@ impl Registry {
         self.ingest_guards(mod_id, &module.name, &module.guards)?;
         self.ingest_reflexes(mod_id, &module.name, &module.reflexes)?;
         self.ingest_properties(mod_id, &module.name, &module.properties)?;
+
+        let domains = module.clock_domains.iter().map(|d| d.name.clone()).collect::<Vec<_>>();
+        if !domains.is_empty() {
+            self.clock_domains[idx] = Some(ClockDomainsComponent(domains));
+        }
 
         self.pattern_origins = module.pattern_origins.clone();
 

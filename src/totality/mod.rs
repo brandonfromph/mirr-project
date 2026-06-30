@@ -425,7 +425,8 @@ mod tests {
 
     fn make_module(signals: Vec<SignalDecl>, guards: Vec<Guard>, reflexes: Vec<Reflex>) -> Module {
         Module {
-            name: "test".to_string(),
+            name: "test_module".to_string(),
+            clock_domains: vec![],
             signals,
             guards,
             reflexes,

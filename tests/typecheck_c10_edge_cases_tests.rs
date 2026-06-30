@@ -28,6 +28,7 @@ fn run_src(src: &str) -> Result<mirrc::pipeline::PipelineResult, mirrc::error::P
 fn simple_module_with_prop(props: Vec<PropertyDecl>) -> Module {
     Module {
         name: "prop_test".to_string(),
+        clock_domains: vec![],
         signals: vec![
             SignalDecl {
                 name: "x".to_string(),

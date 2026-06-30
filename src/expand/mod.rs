@@ -181,6 +181,7 @@ pub fn expand_patterns(
         // This ensures the validator can resolve signals passed as arguments.
         let mut temp_module = crate::ast::program::Module {
             name: format!("{}_temp", call.pattern_name),
+            clock_domains: Vec::new(),
             signals: Vec::new(),
             guards: Vec::new(),
             reflexes: Vec::new(),

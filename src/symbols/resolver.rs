@@ -753,6 +753,7 @@ mod tests {
 
         Module {
             name: name.to_string(),
+            clock_domains: vec![],
             signals: signal_decls,
             guards: Vec::new(),
             reflexes: Vec::new(),

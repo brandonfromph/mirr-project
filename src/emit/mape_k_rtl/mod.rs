@@ -257,6 +257,7 @@ mod tests {
     fn top_block_wires_all_submodules() {
         let config = stub_config();
         let sv = emit_mape_k_top(&config, "clk");
+        std::fs::write("mape_k_dump.sv", &sv).unwrap();
         assert!(sv.contains("module mirr_mape_k_top"));
         assert!(sv.contains("u_monitor"));
         assert!(sv.contains("u_analyze"));

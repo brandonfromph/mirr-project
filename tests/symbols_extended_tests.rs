@@ -201,6 +201,7 @@ fn symbol_table_from_module_deprecated() {
     let res = SymbolTable::from_module(
         &Module {
             name: "test".to_string(),
+            clock_domains: vec![],
             signals: vec![],
             reflexes: vec![],
             properties: vec![],

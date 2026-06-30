@@ -20,6 +20,7 @@ pub enum ModuleMacroStmt {
     PatternCall(super::pattern::PatternCall),
     ForLoop { var: String, start: i32, end: i32, body: Vec<ModuleMacroStmt> },
     LetBinding { name: String, ty: String, value: Expr },
+    ClockDomain(super::program::ClockDomainDecl),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,6 +71,7 @@ pub struct MatchArm {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnexpandedModule {
     pub name: String,
+    pub clock_domains: Vec<super::program::ClockDomainDecl>,
     pub statements: Vec<ModuleMacroStmt>,
     pub properties: Vec<super::property::PropertyDecl>,
     pub pattern_calls: Vec<super::pattern::PatternCall>,

@@ -77,6 +77,7 @@ fn test_hydration_7() {
     let mut reg = Registry::new();
     let module = Module {
         name: "M1".to_string(),
+        clock_domains: vec![],
         signals: vec![],
         guards: vec![],
         reflexes: vec![],

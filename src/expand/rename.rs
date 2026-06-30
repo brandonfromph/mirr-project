@@ -45,6 +45,7 @@ fn collect_stmt_names(stmt: &ModuleMacroStmt, names: &mut HashSet<String>) {
         ModuleMacroStmt::LetBinding { name, .. } => {
             names.insert(name.clone());
         }
+        ModuleMacroStmt::ClockDomain(_) => {}
     }
 }
 
@@ -182,6 +183,7 @@ fn rename_stmt(stmt: &mut ModuleMacroStmt, rename: &HashMap<String, String>) {
             }
             rename_expr_signals(value, rename);
         }
+        ModuleMacroStmt::ClockDomain(_) => {}
     }
 }
 
@@ -357,6 +359,7 @@ fn set_stmt_origin(stmt: &mut ModuleMacroStmt, origin: &str) {
             }
         }
         ModuleMacroStmt::LetBinding { .. } => {}
+        ModuleMacroStmt::ClockDomain(_) => {}
     }
 }
 
@@ -452,6 +455,9 @@ fn substitute_stmt(stmt: &mut ModuleMacroStmt, rename: &HashMap<String, String>)
         ModuleMacroStmt::LetBinding { name, value, .. } => {
             apply_template_substitution(name, rename);
             rename_expr_signals(value, rename);
+        }
+        ModuleMacroStmt::ClockDomain(cd) => {
+            apply_template_substitution(&mut cd.name, rename);
         }
     }
 }

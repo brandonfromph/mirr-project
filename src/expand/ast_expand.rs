@@ -42,6 +42,7 @@ type ReflexStackItem =
 pub fn expand_module(unexpanded: UnexpandedModule) -> Result<Module, MirrError> {
     let mut module = Module {
         name: unexpanded.name,
+        clock_domains: unexpanded.clock_domains,
         signals: Vec::new(),
         guards: Vec::new(),
         reflexes: Vec::new(),
@@ -135,6 +136,13 @@ pub fn expand_statements_inplace(
                     sig.origin = origin.clone();
                 }
                 module.signals.push(sig);
+            }
+            ModuleMacroStmt::ClockDomain(mut cd) => {
+                cd.name = expand_string(&cd.name, &cur_env, &cur_signal_env);
+                if origin.is_some() {
+                    cd.span = None; // Can optionally mark origin if needed
+                }
+                module.clock_domains.push(cd);
             }
             ModuleMacroStmt::Guard(mut guard) => {
                 expand_guard_template(&mut guard, &cur_env, &cur_signal_env);

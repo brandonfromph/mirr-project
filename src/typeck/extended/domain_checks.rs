@@ -268,8 +268,12 @@ pub fn check_clock_domains_ecs(
     let max_id = registry.active_entities();
 
     // Fetch declared domains from the module entity
-    // TODO(MEGA-1): Implement ClockDomainsComponent when AST supports clock domains.
-    let declared_names: std::collections::HashSet<&str> = std::collections::HashSet::new();
+    let mut declared_names: std::collections::HashSet<&str> = std::collections::HashSet::new();
+    if let Some(comp) = &registry.clock_domains[mod_id.0 as usize] {
+        for domain in &comp.0 {
+            declared_names.insert(domain.as_str());
+        }
+    }
 
     // Pass 1: Verify all signals refer to a declared clock domain (E619)
     let mut entity_idx = 0usize;

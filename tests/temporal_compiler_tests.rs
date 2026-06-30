@@ -73,6 +73,7 @@ fn test_temporal_compiler_module_and_expressions() {
         let mut registry = Registry::new();
         let module = Module {
             name: "test".to_string(),
+            clock_domains: vec![],
             signals: vec![
                 mirrc::ast::program::SignalDecl {
                     name: "sig".to_string(),
@@ -140,6 +141,7 @@ fn test_temporal_compiler_ecs_integration() {
     let mut registry = Registry::new();
     let module = Module {
         name: "test_module".to_string(),
+        clock_domains: vec![],
         signals: vec![
             SignalDecl {
                 name: "sig_a".to_string(),

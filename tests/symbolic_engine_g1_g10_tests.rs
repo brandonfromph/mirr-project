@@ -24,7 +24,8 @@ fn sig(name: &str, kind: SignalKind, ty: SignalType) -> SignalDecl {
 }
 fn empty_module() -> Module {
     Module {
-        name: "sym".to_string(),
+        name: "test_m".to_string(),
+        clock_domains: vec![],
         signals: Vec::new(),
         guards: Vec::new(),
         reflexes: Vec::new(),

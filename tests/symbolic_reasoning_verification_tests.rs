@@ -83,6 +83,7 @@ fn make_module_for_analysis(
 ) -> Module {
     Module {
         name: "test".to_string(),
+        clock_domains: vec![],
         signals,
         guards,
         reflexes,

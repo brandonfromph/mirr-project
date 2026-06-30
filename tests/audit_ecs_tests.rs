@@ -119,6 +119,7 @@ fn test_8_9_typeck_domain_check_deferred_session_fail() {
 
     let module = Module {
         name: "test_mod".to_string(),
+        clock_domains: vec![],
         signals: vec![],
         guards: vec![],
         properties: vec![],

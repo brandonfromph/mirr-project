@@ -638,6 +638,7 @@ mod tests {
         let guard = signal_guard("short_delay", "input_signal", 4);
         let module = Module {
             name: "test".to_string(),
+            clock_domains: vec![],
             signals: vec![crate::ast::program::SignalDecl {
                 name: "input_signal".to_string(),
                 kind: crate::ast::types::SignalKind::Input,
@@ -675,6 +676,7 @@ mod tests {
         let guard = signal_guard("long_delay", "input_signal", 100);
         let module = Module {
             name: "test".to_string(),
+            clock_domains: vec![],
             signals: vec![crate::ast::program::SignalDecl {
                 name: "input_signal".to_string(),
                 kind: crate::ast::types::SignalKind::Input,
@@ -712,6 +714,7 @@ mod tests {
         let guard = signal_guard("my_guard", "clk_en", 4);
         let module = Module {
             name: "test".to_string(),
+            clock_domains: vec![],
             signals: vec![crate::ast::program::SignalDecl {
                 name: "clk_en".to_string(),
                 kind: crate::ast::types::SignalKind::Input,
