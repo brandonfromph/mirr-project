@@ -1,0 +1,37 @@
+target profile {
+    name: "Liquid-256";
+    word_size: 64;
+    reg_bits: 8;
+    op_width: 6;
+}
+
+module watchdog {
+    signal heartbeat: in bool;
+    signal timeout: out bool;
+
+    guard missing_pulse {
+        when !heartbeat
+        for 1000 cycles;
+    }
+
+    guard alive_pulse {
+        when heartbeat
+        for 1 cycles;
+    }
+
+    reflex trigger_timeout {
+        on missing_pulse {
+            timeout = true;
+        }
+    }
+
+    reflex clear_timeout {
+        on alive_pulse {
+            timeout = false;
+        }
+    }
+
+    property timeout_contract {
+        always (!heartbeat followed_by 1000 timeout);
+    }
+}

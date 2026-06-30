@@ -68,7 +68,8 @@ pub(super) fn run_toolchain_operations(
         }
     }
 
-    let ecs = result.ecs_registry.as_ref().ok_or_else(|| anyhow::anyhow!("ECS registry required"))?;
+    let ecs =
+        result.ecs_registry.as_ref().ok_or_else(|| anyhow::anyhow!("ECS registry required"))?;
     let module_name = ecs.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
     // Generate synthesis-clean SV for toolchain operations
@@ -424,6 +425,6 @@ pub(super) fn run_toolchain_operations(
             eprintln!("  [tapeout] (ASIC Place & Route of 64 cores requires 16GB+ RAM. Drop the generated files into a CI runner to produce the .gds file.)");
         }
     }
-    
+
     Ok(())
 }

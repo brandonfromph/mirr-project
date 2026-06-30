@@ -31,14 +31,22 @@ pub fn emit_module_dot(result: &PipelineResult) -> String {
     out.push_str("  rankdir=LR;\n");
     out.push_str("  node [fontname=\"monospace\"];\n\n");
 
-    emit_pattern_origin_comments(registry, &mut out);
-    emit_signal_nodes(registry, &mut out);
-    emit_guard_nodes(registry, &mut out);
-    emit_guard_edges(registry, &mut out);
-    emit_reflex_edges(registry, &mut out);
-    emit_property_nodes(registry, &mut out);
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::components::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
 
-    emit_pattern_origins_ecs(registry, &mut out);
+    emit_pattern_origin_comments(registry, top_module_id, &mut out);
+    emit_signal_nodes(registry, top_module_id, &mut out);
+    emit_guard_nodes(registry, top_module_id, &mut out);
+    emit_guard_edges(registry, top_module_id, &mut out);
+    emit_reflex_edges(registry, top_module_id, &mut out);
+    emit_property_nodes(registry, top_module_id, &mut out);
+
+    emit_pattern_origins_ecs(registry, top_module_id, &mut out);
 
     if let Some(netlist) = &result.temporal_netlist {
         emit_temporal_subgraph(netlist, &mut out);
@@ -57,6 +65,14 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
     };
     let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
 
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::components::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     out.push_str("digraph ");
     out.push_str(&sanitize_id(&module_name));
     out.push_str("_expr {\n");
@@ -65,8 +81,21 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
 
     let mut node_id = 0usize;
 
+    // Pattern definitions
+    for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
+        if let (Some(nc), Some(_pat)) = (registry.names[i], &registry.pattern_defs[i]) {
+            out.push_str(&format!("  // Pattern: {}\n", registry.resolve_name(nc.0)));
+        }
+    }
+
     // Guard condition trees.
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(cond_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.conditions[i])
         {
@@ -82,6 +111,9 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
 
     // Reflex assignment RHS trees.
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(r)) =
             (registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
         {
@@ -119,10 +151,17 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
 // -----------------------------------------------------------------------
 
 /// Emit DOT comments listing pattern definitions available in the registry.
-fn emit_pattern_origin_comments(registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_pattern_origin_comments(
+    registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
+    out: &mut String,
+) {
     let mut has_patterns = false;
-    for def in &registry.pattern_defs {
-        if def.is_some() {
+    for i in 0..registry.pattern_defs.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
+        if registry.pattern_defs[i].is_some() {
             has_patterns = true;
             break;
         }
@@ -133,6 +172,9 @@ fn emit_pattern_origin_comments(registry: &crate::ecs::Registry, out: &mut Strin
 
     out.push_str("  // ── Pattern Definitions ──\n");
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(_)) = (registry.names[i], &registry.pattern_defs[i]) {
             out.push_str(&format!("  // Pattern: {}\n", registry.resolve_name(nc.0)));
         }
@@ -140,9 +182,16 @@ fn emit_pattern_origin_comments(registry: &crate::ecs::Registry, out: &mut Strin
     out.push('\n');
 }
 
-fn emit_signal_nodes(registry: &crate::ecs::Registry, out: &mut String) {
-    out.push_str("  // Signals\n");
+fn emit_signal_nodes(
+    registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
+    out: &mut String,
+) {
+    out.push_str("  // ── Signals ──\n");
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -171,9 +220,16 @@ fn emit_signal_nodes(registry: &crate::ecs::Registry, out: &mut String) {
     out.push('\n');
 }
 
-fn emit_guard_nodes(registry: &crate::ecs::Registry, out: &mut String) {
-    out.push_str("  // Guards\n");
+fn emit_guard_nodes(
+    registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
+    out: &mut String,
+) {
+    out.push_str("\n  // ── Guards ──\n");
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(cycles_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.cycles[i])
         {
@@ -325,9 +381,16 @@ fn collect_prev_refs_ecs(
 }
 
 /// Edges from signals referenced in guard conditions to guard nodes.
-fn emit_guard_edges(registry: &crate::ecs::Registry, out: &mut String) {
-    out.push_str("  // Guard inputs\n");
+fn emit_guard_edges(
+    registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
+    out: &mut String,
+) {
+    out.push_str("\n  // ── Guard Trigger Edges ──\n");
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(cond_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.conditions[i])
         {
@@ -357,9 +420,16 @@ fn emit_guard_edges(registry: &crate::ecs::Registry, out: &mut String) {
 }
 
 /// Edges from guard nodes to output signals via reflex assignments.
-fn emit_reflex_edges(registry: &crate::ecs::Registry, out: &mut String) {
-    out.push_str("  // Reflex assignments\n");
+fn emit_reflex_edges(
+    registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
+    out: &mut String,
+) {
+    out.push_str("\n  // ── Reflex Assignments ──\n");
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(r)) =
             (registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
         {
@@ -576,7 +646,11 @@ fn emit_expr_nodes_ecs(
 }
 
 /// Emit comments describing which signals/guards originated from which patterns.
-fn emit_pattern_origins_ecs(registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_pattern_origins_ecs(
+    registry: &crate::ecs::Registry,
+    _top_module_id: Option<crate::ecs::components::EntityId>,
+    out: &mut String,
+) {
     if registry.pattern_origins.is_empty() {
         return;
     }
@@ -626,10 +700,19 @@ fn guard_node_id(name: &str) -> String {
 }
 
 /// Emit property nodes and edges to referenced signals.
-fn emit_property_nodes(registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_property_nodes(
+    registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
+    out: &mut String,
+) {
     let mut has_props = false;
-    for k in &registry.kinds {
-        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::PROPERTY)) = k {
+    for i in 0..registry.kinds.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::PROPERTY)) =
+            &registry.kinds[i]
+        {
             has_props = true;
             break;
         }
@@ -638,8 +721,11 @@ fn emit_property_nodes(registry: &crate::ecs::Registry, out: &mut String) {
         return;
     }
 
-    out.push_str("  // ── Safety Properties ──\n");
+    out.push_str("\n  // ── Properties ──\n");
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(prop)) =
             (registry.names[i], &registry.kinds[i], &registry.property_comps[i])
         {

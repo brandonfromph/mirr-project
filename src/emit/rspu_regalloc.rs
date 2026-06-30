@@ -49,11 +49,9 @@ impl RegAllocResult {
 
     /// Lookup a register ID by signal name.
     pub fn reg(&self, name: &str) -> Result<RegId, crate::error::MirrError> {
-        self.map.get(name).copied().ok_or_else(|| {
-            crate::error::MirrError::SemanticError {
-                message: format!("RegAllocResult::reg: signal '{}' not found in allocation map", name),
-                span: None,
-            }
+        self.map.get(name).copied().ok_or_else(|| crate::error::MirrError::SemanticError {
+            message: format!("RegAllocResult::reg: signal '{}' not found in allocation map", name),
+            span: None,
         })
     }
 }
@@ -65,6 +63,7 @@ impl RegAllocResult {
 pub fn allocate_registers(
     registry: &Registry,
     target: &TargetSpec,
+    top_module_id: Option<crate::ecs::components::EntityId>,
 ) -> Result<RegAllocResult, MirrError> {
     let mut map = HashMap::with_capacity(registry.names.len());
     let mut entries = Vec::with_capacity(registry.names.len());
@@ -80,6 +79,9 @@ pub fn allocate_registers(
     let mut internals = Vec::new();
 
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(type_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {

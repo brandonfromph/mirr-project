@@ -21,7 +21,8 @@ pub use pattern::{
     ReflectBlock,
 };
 pub use program::{
-    Assignment, ClockDomainDecl, Guard, ImportDecl, MirrAstJson, MirrProgram, Module, Reflex, SignalDecl,
+    Assignment, ClockDomainDecl, Guard, ImportDecl, MirrAstJson, MirrProgram, Module, Reflex,
+    SignalDecl,
 };
 pub use property::{PropertyDecl, PropertyDirective, PropertyFormula};
 pub use types::{

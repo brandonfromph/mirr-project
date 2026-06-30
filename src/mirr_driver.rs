@@ -2,12 +2,6 @@
 //!
 //! Provides byte-level and push-based interfaces for driving the lexer,
 //! collecting tokens, and observing tokenization events.
-//!
-//! TODO: Re-run massive TDD stress-test suite
-//! TODO: Re-verify RSPU core synthesis tests
-//! TODO: Stabilize CI pipelines after structural changes
-//! TODO: FIX: Resolve remaining test binary path resolution issues
-//! TODO: FIX: Clean up target lock contention in nextest CI
 
 #![forbid(unsafe_code)]
 

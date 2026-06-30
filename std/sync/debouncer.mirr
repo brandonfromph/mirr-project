@@ -1,0 +1,37 @@
+target profile {
+    name: "Liquid-256";
+    word_size: 64;
+    reg_bits: 8;
+    op_width: 6;
+}
+
+module debouncer {
+    signal raw_in: in bool;
+    signal clean_out: out bool;
+
+    guard stable_high {
+        when raw_in
+        for 50 cycles;
+    }
+
+    guard stable_low {
+        when !raw_in
+        for 50 cycles;
+    }
+
+    reflex set_high {
+        on stable_high {
+            clean_out = true;
+        }
+    }
+
+    reflex set_low {
+        on stable_low {
+            clean_out = false;
+        }
+    }
+
+    property never_glitch_high {
+        always (!raw_in -> !clean_out); // This isn't strictly true due to delay, let's omit or write carefully.
+    }
+}

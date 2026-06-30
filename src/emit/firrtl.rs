@@ -29,14 +29,27 @@ pub fn emit_firrtl(result: &PipelineResult) -> Result<String, MirrError> {
     let registry = result.ecs_registry.as_ref().ok_or_else(|| {
         mirrcode(ErrorCode::RspuFallback, "ECS registry must be populated for FIRRTL emission")
     })?;
-    let module_name = registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string());
+    let circuit_name = registry.get_module_name().unwrap_or_else(|| "unknown_circuit".to_string());
 
     emit_header(&mut out);
     out.push_str("circuit ");
-    out.push_str(&module_name);
+    out.push_str(&circuit_name);
     out.push_str(" :\n");
 
-    emit_module(&module_name, registry, result.temporal_netlist.as_ref(), &mut out);
+    for i in 0..registry.names.len() {
+        if let (Some(nc), Some(kc)) = (&registry.names[i], &registry.kinds[i]) {
+            if let crate::ecs::components::EntityKind::MODULE = kc.0 {
+                let mod_name = registry.resolve_name(nc.0);
+                emit_module(
+                    mod_name,
+                    crate::ecs::components::EntityId(i as u32),
+                    registry,
+                    result.temporal_netlist.as_ref(),
+                    &mut out,
+                );
+            }
+        }
+    }
 
     Ok(out)
 }
@@ -54,6 +67,7 @@ fn emit_header(out: &mut String) {
 
 fn emit_module(
     module_name: &str,
+    mod_id: crate::ecs::components::EntityId,
     registry: &crate::ecs::Registry,
     temporal_netlist: Option<&TemporalNetlist>,
     out: &mut String,
@@ -65,6 +79,9 @@ fn emit_module(
     let mut has_clk = false;
     let mut has_rst_n = false;
     for i in 0..registry.names.len() {
+        if registry.modules[i].map(|m| m.0) != Some(mod_id) {
+            continue;
+        }
         if let (Some(nc), Some(kc)) = (&registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::components::EntityKind::SIGNAL(
                 crate::ast::types::SignalKind::Input,
@@ -90,20 +107,27 @@ fn emit_module(
         }
     }
 
-    emit_ports(registry, out);
-    emit_internal_wires(registry, out);
+    emit_ports(mod_id, registry, out);
+    emit_internal_wires(mod_id, registry, out);
     out.push('\n');
 
     if let Some(netlist) = temporal_netlist {
-        emit_temporal_logic(registry, netlist, out);
+        emit_temporal_logic(mod_id, registry, netlist, out);
     }
 
-    emit_reflex_logic(registry, out);
-    emit_property_comments(registry, out);
+    emit_reflex_logic(mod_id, registry, out);
+    emit_property_comments(mod_id, registry, out);
 }
 
-fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_ports(
+    mod_id: crate::ecs::components::EntityId,
+    registry: &crate::ecs::Registry,
+    out: &mut String,
+) {
     for i in 0..registry.names.len() {
+        if registry.modules[i].map(|m| m.0) != Some(mod_id) {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -121,6 +145,9 @@ fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
                     is_clock = true;
                 } else {
                     for j in 0..registry.types.len() {
+                        if registry.modules[j].map(|m| m.0) != Some(mod_id) {
+                            continue;
+                        }
                         if let Some(t) = &registry.types[j] {
                             if t.0.annotations.clock_domain.as_deref() == Some(name) {
                                 is_clock = true;
@@ -137,9 +164,16 @@ fn emit_ports(registry: &crate::ecs::Registry, out: &mut String) {
     }
 }
 
-fn emit_internal_wires(registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_internal_wires(
+    mod_id: crate::ecs::components::EntityId,
+    registry: &crate::ecs::Registry,
+    out: &mut String,
+) {
     let mut has_internals = false;
     for i in 0..registry.names.len() {
+        if registry.modules[i].map(|m| m.0) != Some(mod_id) {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -156,6 +190,7 @@ fn emit_internal_wires(registry: &crate::ecs::Registry, out: &mut String) {
 }
 
 fn emit_temporal_logic(
+    mod_id: crate::ecs::components::EntityId,
     registry: &crate::ecs::Registry,
     netlist: &TemporalNetlist,
     out: &mut String,
@@ -171,7 +206,12 @@ fn emit_temporal_logic(
         };
 
         let mut clock_domain = "clk";
-        if let Some(id) = registry.get_entity_by_name(output_signal) {
+        let mod_name = registry.resolve_name(registry.names[mod_id.0 as usize].unwrap().0);
+        let scoped_name = format!("{}::{}", mod_name, output_signal);
+        let resolved_id = registry
+            .get_entity_by_name(&scoped_name)
+            .or_else(|| registry.get_entity_by_name(output_signal));
+        if let Some(id) = resolved_id {
             if let Some(tc) = &registry.types[id.0 as usize] {
                 if let Some(cd) = tc.0.annotations.clock_domain.as_deref() {
                     clock_domain = cd;
@@ -288,11 +328,18 @@ fn emit_counter_firrtl(
     ));
 }
 
-fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
+fn emit_reflex_logic(
+    mod_id: crate::ecs::components::EntityId,
+    registry: &crate::ecs::Registry,
+    out: &mut String,
+) {
     let mut has_reflex = false;
-    for kind_comp in &registry.kinds {
+    for i in 0..registry.kinds.len() {
+        if registry.modules[i].map(|m| m.0) != Some(mod_id) {
+            continue;
+        }
         if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::REFLEX)) =
-            kind_comp
+            &registry.kinds[i]
         {
             has_reflex = true;
             break;
@@ -306,6 +353,9 @@ fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
     out.push_str("\n    ; ── Reflex Assignments ──\n");
 
     for i in 0..registry.names.len() {
+        if registry.modules[i].map(|m| m.0) != Some(mod_id) {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(r)) =
             (registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
         {
@@ -356,26 +406,33 @@ fn emit_reflex_logic(registry: &crate::ecs::Registry, out: &mut String) {
     }
 }
 
-fn emit_property_comments(registry: &crate::ecs::Registry, out: &mut String) {
-    let mut has_properties = false;
-    for kind_comp in &registry.kinds {
+fn emit_property_comments(
+    mod_id: crate::ecs::components::EntityId,
+    registry: &crate::ecs::Registry,
+    out: &mut String,
+) {
+    let mut has_props = false;
+    for i in 0..registry.kinds.len() {
+        if registry.modules[i].map(|m| m.0) != Some(mod_id) {
+            continue;
+        }
         if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::PROPERTY)) =
-            kind_comp
+            &registry.kinds[i]
         {
-            has_properties = true;
+            has_props = true;
             break;
         }
     }
 
-    if !has_properties {
+    if !has_props {
         return;
     }
 
-    out.push_str(
-        "\n    ; ── Safety Properties (verification only — no FIRRTL equivalent to SVA) ──\n",
-    );
-
+    out.push_str("\n    ; ── Verification Properties ──\n");
     for i in 0..registry.names.len() {
+        if registry.modules[i].map(|m| m.0) != Some(mod_id) {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(prop)) =
             (registry.names[i], &registry.kinds[i], &registry.property_comps[i])
         {

@@ -376,7 +376,9 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
             eprintln!("Error generating S-expression: {e}");
             process::exit(1);
         }),
-        "mape-k-rtl" => result.mape_k_rtl.clone().ok_or_else(|| anyhow::anyhow!("MAPE-K RTL skipped"))?,
+        "mape-k-rtl" => {
+            result.mape_k_rtl.clone().ok_or_else(|| anyhow::anyhow!("MAPE-K RTL skipped"))?
+        }
         "cert" => {
             let cert_bytes = result
                 .rspu_program
@@ -396,7 +398,8 @@ pub fn run(args: Cli) -> anyhow::Result<()> {
     };
 
     if let Some(path) = &args.output {
-        std::fs::write(path, &output).map_err(|e| anyhow::anyhow!("Error writing output: {}", e))?;
+        std::fs::write(path, &output)
+            .map_err(|e| anyhow::anyhow!("Error writing output: {}", e))?;
         eprintln!("Output written to {path}");
     } else {
         print!("{output}");

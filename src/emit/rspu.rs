@@ -38,8 +38,16 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     let netlist = result.temporal_netlist.as_ref();
     let target_spec = TargetSpec::from_config(&registry.target_config);
 
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::components::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     // Step 1: Register allocation.
-    let mut regs = allocate_registers(registry, &target_spec)?;
+    let mut regs = allocate_registers(registry, &target_spec, top_module_id)?;
 
     // Step 2: Guard allocation.
     let (guard_map_vec, guard_map) = allocate_guards(netlist, registry, &target_spec)?;
@@ -68,6 +76,9 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     // Step 3: Load inputs (tick preamble).
     let mut port_idx: PortId = 0;
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(type_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -94,6 +105,9 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
 
     // Step 3.5: Emit TAG_LOAD for each signal (type tag metadata).
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(type_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -162,25 +176,40 @@ pub fn emit_rspu(result: &PipelineResult) -> Result<RspuProgram, MirrError> {
     }
 
     // Step 5: Reflex emission (conditional assignments).
-    for reflex_comp in registry.reflex_comps.iter().flatten() {
-        emit_reflex(
-            reflex_comp,
-            &guard_map,
-            &compiled_guard_map,
-            &mut regs,
-            &mut instrs,
-            registry,
-        )?;
+    for (i, reflex_comp) in registry.reflex_comps.iter().enumerate() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
+        if let Some(reflex_comp) = reflex_comp {
+            emit_reflex(
+                reflex_comp,
+                &guard_map,
+                &compiled_guard_map,
+                &mut regs,
+                &mut instrs,
+                registry,
+            )?;
+        }
     }
 
     // Step 6: Property assertion emission.
-    for (logical_prop_idx, prop_comp) in registry.property_comps.iter().flatten().enumerate() {
-        emit_properties(logical_prop_idx, prop_comp, &mut regs, &mut instrs, registry)?;
+    let mut logical_prop_idx = 0;
+    for (i, prop_comp) in registry.property_comps.iter().enumerate() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
+        if let Some(prop_comp) = prop_comp {
+            emit_properties(logical_prop_idx, prop_comp, &mut regs, &mut instrs, registry)?;
+            logical_prop_idx += 1;
+        }
     }
 
     // Step 7: Store outputs (tick postamble).
     let mut out_port_idx: PortId = 0;
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(type_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {

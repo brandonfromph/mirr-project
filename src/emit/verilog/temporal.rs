@@ -18,9 +18,29 @@ pub(super) fn emit_temporal_logic_standalone(
 ) {
     out.push_str("  // ── Temporal Guards ──\n\n");
 
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     for guard in &netlist.guards {
         let mut clock_domain = "clk";
         for i in 0..registry.names.len() {
+            if let Some(top_id) = top_module_id {
+                if let Some(crate::ecs::components::ModuleComponent(parent_id)) =
+                    &registry.modules[i]
+                {
+                    if *parent_id != top_id {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+            }
+
             if let (Some(nc), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
                 if registry.resolve_name(nc.0) == guard.name()
                     && kind_comp.0 == crate::ecs::EntityKind::GUARD
@@ -178,6 +198,18 @@ pub(super) fn emit_temporal_logic_ecs(
         let mut guard_module_id = None;
         let mut clock_domain = "clk";
         for i in 0..registry.names.len() {
+            if let Some(top_id) = top_module_id {
+                if let Some(crate::ecs::components::ModuleComponent(parent_id)) =
+                    &registry.modules[i]
+                {
+                    if *parent_id != top_id {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+            }
+
             if let (Some(nc), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
                 if registry.resolve_name(nc.0) == guard.name()
                     && kind_comp.0 == crate::ecs::EntityKind::GUARD
@@ -355,6 +387,18 @@ pub(super) fn emit_reflex_logic_ecs(
             // Find the clock domain for this target signal.
             let mut clock_domain = "clk";
             for i in 0..registry.names.len() {
+                if let Some(top_id) = top_module_id {
+                    if let Some(crate::ecs::components::ModuleComponent(parent_id)) =
+                        &registry.modules[i]
+                    {
+                        if *parent_id != top_id {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                }
+
                 if let Some(nc) = &registry.names[i] {
                     if registry.resolve_name(nc.0) == sig_name {
                         if let Some(tc) = &registry.types[i] {

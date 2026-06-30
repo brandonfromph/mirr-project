@@ -36,10 +36,21 @@ pub fn build_provenance_graph(result: &PipelineResult) -> Option<ProvenanceGraph
 
     let mut graph = ProvenanceGraph { nodes: BTreeMap::new() };
 
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::components::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     // Phase 1: Build a reverse lookup from Assignment -> Target Entity
     // and Target Entity -> Expression Root Entity.
     let mut target_to_expr = BTreeMap::new();
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let Some(crate::ecs::components::AssignmentComponent { target, value, .. }) =
             &registry.assignment_comps[i]
         {
@@ -49,6 +60,9 @@ pub fn build_provenance_graph(result: &PipelineResult) -> Option<ProvenanceGraph
 
     // Phase 2: Traverse all signals and properties and build their dependency trees.
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(name_comp), Some(KindComponent(kind))) =
             (&registry.names[i], &registry.kinds[i])
         {

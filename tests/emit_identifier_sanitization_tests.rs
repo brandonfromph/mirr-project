@@ -21,6 +21,8 @@ fn result_with_module_name(module_name: &str) -> PipelineResult {
     reg.types[s_id.0 as usize] = Some(mirrc::ecs::components::TypeComponent(
         mirrc::ast::types::ExtendedType::from_core(mirrc::ast::types::SignalType::Unsigned(8)),
     ));
+    reg.modules.resize(reg.names.len(), None);
+    reg.modules[s_id.0 as usize] = Some(mirrc::ecs::components::ModuleComponent(_m_id));
 
     PipelineResult {
         hls_result: None,

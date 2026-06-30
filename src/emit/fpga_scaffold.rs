@@ -23,8 +23,19 @@ struct Port {
 }
 
 fn get_ports(registry: &crate::ecs::Registry) -> Vec<Port> {
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::components::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     let mut ports = Vec::new();
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(name), Some(kind), Some(ty)) =
             (&registry.names[i], &registry.kinds[i], &registry.types[i])
         {

@@ -147,9 +147,9 @@ pub fn parse_module_macro_stmts(
             continue;
         }
 
-        if line.starts_with("domain ") {
+        if line.trim_start().starts_with("domain ") {
             let abs_start_line = *index + line_offset;
-            let stripped = line.strip_prefix("domain ").unwrap().trim();
+            let stripped = line.trim_start().strip_prefix("domain ").unwrap().trim();
             let name = stripped.trim_end_matches(';').trim().to_string();
             stmts.push(ModuleMacroStmt::ClockDomain(crate::ast::program::ClockDomainDecl {
                 name,

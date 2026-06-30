@@ -36,11 +36,19 @@ pub fn emit_testbench(result: &PipelineResult) -> String {
         }
     }
 
+    let top_module_id = registry.kinds.iter().enumerate().rev().find_map(|(i, k)| {
+        if let Some(crate::ecs::components::KindComponent(crate::ecs::EntityKind::MODULE)) = k {
+            Some(crate::ecs::components::EntityId(i as u32))
+        } else {
+            None
+        }
+    });
+
     emit_tb_header(&module_name, &mut out);
-    emit_tb_signals(registry, &main_clock, &mut out);
+    emit_tb_signals(registry, top_module_id, &main_clock, &mut out);
     emit_tb_clock(&main_clock, &mut out);
-    emit_tb_dut_instance(&module_name, registry, &main_clock, &mut out);
-    emit_tb_stimulus(&module_name, registry, &main_clock, &mut out);
+    emit_tb_dut_instance(&module_name, registry, top_module_id, &main_clock, &mut out);
+    emit_tb_stimulus(&module_name, registry, top_module_id, &main_clock, &mut out);
     emit_tb_footer(&mut out);
 
     out
@@ -57,7 +65,12 @@ fn emit_tb_header(module_name: &str, out: &mut String) {
     out.push_str(&format!("module {}_tb;\n\n", module_name));
 }
 
-fn emit_tb_signals(registry: &crate::ecs::Registry, main_clock: &str, out: &mut String) {
+fn emit_tb_signals(
+    registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
+    main_clock: &str,
+    out: &mut String,
+) {
     out.push_str("  // Clock and reset\n");
     out.push_str(&format!("  logic {};\n", main_clock));
     out.push_str("  logic rst_n;\n\n");
@@ -65,6 +78,9 @@ fn emit_tb_signals(registry: &crate::ecs::Registry, main_clock: &str, out: &mut 
     // Declare testbench signals for each port.
     out.push_str("  // DUT port signals\n");
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp), Some(ty_comp)) =
             (registry.names[i], &registry.kinds[i], &registry.types[i])
         {
@@ -89,6 +105,7 @@ fn emit_tb_clock(main_clock: &str, out: &mut String) {
 fn emit_tb_dut_instance(
     module_name: &str,
     registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
     main_clock: &str,
     out: &mut String,
 ) {
@@ -97,13 +114,18 @@ fn emit_tb_dut_instance(
 
     let mut has_clk = false;
     let mut has_rst_n = false;
-    for nc in registry.names.iter().flatten() {
-        let name = registry.resolve_name(nc.0);
-        if name == main_clock {
-            has_clk = true;
+    for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
         }
-        if name == "rst_n" {
-            has_rst_n = true;
+        if let Some(nc) = registry.names[i] {
+            let name = registry.resolve_name(nc.0);
+            if name == main_clock {
+                has_clk = true;
+            }
+            if name == "rst_n" {
+                has_rst_n = true;
+            }
         }
     }
 
@@ -126,6 +148,9 @@ fn emit_tb_dut_instance(
     }
 
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp)) = (registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(sig_kind) = kind_comp.0 {
                 if sig_kind == SignalKind::Internal {
@@ -153,6 +178,7 @@ fn emit_tb_dut_instance(
 fn emit_tb_stimulus(
     module_name: &str,
     registry: &crate::ecs::Registry,
+    top_module_id: Option<crate::ecs::components::EntityId>,
     main_clock: &str,
     out: &mut String,
 ) {
@@ -165,6 +191,9 @@ fn emit_tb_stimulus(
 
     // Drive all inputs to zero during reset.
     for i in 0..registry.names.len() {
+        if top_module_id.is_some() && registry.modules[i].map(|m| m.0) != top_module_id {
+            continue;
+        }
         if let (Some(nc), Some(kind_comp)) = (registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);

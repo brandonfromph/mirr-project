@@ -200,26 +200,32 @@ pub fn check_effect_qualifiers_ecs(
                 // Find signal entity by name in this module (linear scan, P10 Rule #2)
                 let mut s_idx = 0usize;
                 while s_idx < max_id {
-                    if let Some(nc) = registry.names[s_idx] {
-                        if registry.resolve_name(nc.0) == sig_ref {
-                            if let Some(TypeComponent(ty)) = &registry.types[s_idx] {
-                                if matches!(
-                                    ty.annotations.effect,
-                                    crate::ast::types::EffectQualifier::Stateful
-                                ) {
-                                    let msg = format!(
-                                        "[{}] Pure signal '{}' cannot depend on stateful signal '{}' in reflex '{}'.",
-                                        error_codes::E617_EFF_MIX,
-                                        target_name,
-                                        sig_ref,
-                                        reflex_name
-                                    );
-                                    if push_session_error(errors, msg, None) {
-                                        return;
+                    if let Some(crate::ecs::components::ModuleComponent(m_id)) =
+                        registry.modules[s_idx]
+                    {
+                        if m_id == mod_id {
+                            if let Some(nc) = registry.names[s_idx] {
+                                if registry.resolve_name(nc.0) == sig_ref {
+                                    if let Some(TypeComponent(ty)) = &registry.types[s_idx] {
+                                        if matches!(
+                                            ty.annotations.effect,
+                                            crate::ast::types::EffectQualifier::Stateful
+                                        ) {
+                                            let msg = format!(
+                                                "[{}] Pure signal '{}' cannot depend on stateful signal '{}' in reflex '{}'.",
+                                                error_codes::E617_EFF_MIX,
+                                                target_name,
+                                                sig_ref,
+                                                reflex_name
+                                            );
+                                            if push_session_error(errors, msg, None) {
+                                                return;
+                                            }
+                                        }
                                     }
+                                    break;
                                 }
                             }
-                            break;
                         }
                     }
                     s_idx += 1;
@@ -358,13 +364,19 @@ pub fn check_clock_domains_ecs(
                 let mut source_dom: Option<&str> = None;
                 let mut s_idx = 0usize;
                 while s_idx < max_id {
-                    if let Some(nc) = registry.names[s_idx] {
-                        if registry.resolve_name(nc.0) == sig_ref {
-                            source_dom = registry.types[s_idx]
-                                .as_ref()
-                                .and_then(|t| t.0.annotations.clock_domain.as_ref())
-                                .map(|cd| cd.as_str());
-                            break;
+                    if let Some(crate::ecs::components::ModuleComponent(m_id)) =
+                        registry.modules[s_idx]
+                    {
+                        if m_id == mod_id {
+                            if let Some(nc) = registry.names[s_idx] {
+                                if registry.resolve_name(nc.0) == sig_ref {
+                                    source_dom = registry.types[s_idx]
+                                        .as_ref()
+                                        .and_then(|t| t.0.annotations.clock_domain.as_ref())
+                                        .map(|cd| cd.as_str());
+                                    break;
+                                }
+                            }
                         }
                     }
                     s_idx += 1;
@@ -491,13 +503,19 @@ pub fn check_phantom_tags_ecs(
                 let mut source_tag: Option<&str> = None;
                 let mut s_idx = 0usize;
                 while s_idx < max_id {
-                    if let Some(nc) = registry.names[s_idx] {
-                        if registry.resolve_name(nc.0) == sig_ref {
-                            source_tag = registry.types[s_idx]
-                                .as_ref()
-                                .and_then(|t| t.0.annotations.phantom_tag.as_ref())
-                                .map(|pt| pt.as_str());
-                            break;
+                    if let Some(crate::ecs::components::ModuleComponent(m_id)) =
+                        registry.modules[s_idx]
+                    {
+                        if m_id == mod_id {
+                            if let Some(nc) = registry.names[s_idx] {
+                                if registry.resolve_name(nc.0) == sig_ref {
+                                    source_tag = registry.types[s_idx]
+                                        .as_ref()
+                                        .and_then(|t| t.0.annotations.phantom_tag.as_ref())
+                                        .map(|pt| pt.as_str());
+                                    break;
+                                }
+                            }
                         }
                     }
                     s_idx += 1;
