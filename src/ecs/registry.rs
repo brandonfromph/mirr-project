@@ -236,7 +236,7 @@ impl Registry {
             self.prev_ops.resize(new_cap, None);
             self.signal_refs.resize(new_cap, None);
             self.pending_signal_refs.resize(new_cap, None);
-            self.assignment_comps.resize(new_cap, None);
+            self.types.resize(new_cap, None);
 
             self.vectors.resize(new_cap, None);
             self.chunk_texts.resize(new_cap, None);

@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod mirr_general;
+use mirrc::error::MirrError;
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
@@ -452,16 +453,16 @@ fn parse_as_json(flags: &[String]) -> bool {
     false
 }
 
-fn parse_ci_profile(flags: &[String]) -> Result<Option<CiProfile>, String> {
+fn parse_ci_profile(flags: &[String]) -> Result<Option<CiProfile>, MirrError> {
     let mut idx = 0usize;
     let mut parsed: Option<CiProfile> = None;
 
-    fn decode_profile(value: &str) -> Result<CiProfile, String> {
+    fn decode_profile(value: &str) -> Result<CiProfile, MirrError> {
         match value {
             "full" | "ci" => Ok(CiProfile::Full),
             "compile" | "feedback" => Ok(CiProfile::Compile),
             "fast" => Ok(CiProfile::Fast),
-            _ => Err(format!("invalid profile '{}'; expected one of: full, compile, fast", value)),
+            _ => Err(MirrError::ToolingError { message: format!("invalid profile '{}'; expected one of: full, compile, fast", value), span: None }),
         }
     }
 
@@ -476,7 +477,7 @@ fn parse_ci_profile(flags: &[String]) -> Result<Option<CiProfile>, String> {
 
         if flag == "--profile" {
             if idx + 1 >= flags.len() {
-                return Err("missing value after --profile".to_string());
+                return Err(MirrError::ToolingError { message: "missing value after --profile".to_string(), span: None });
             }
             parsed = Some(decode_profile(&flags[idx + 1])?);
             idx += 2;
@@ -485,7 +486,7 @@ fn parse_ci_profile(flags: &[String]) -> Result<Option<CiProfile>, String> {
 
         if flag == "-p" {
             if idx + 1 >= flags.len() {
-                return Err("missing value after -p".to_string());
+                return Err(MirrError::ToolingError { message: "missing value after -p".to_string(), span: None });
             }
             parsed = Some(decode_profile(&flags[idx + 1])?);
             idx += 2;
@@ -536,7 +537,7 @@ enum CommandRoute {
     Help,
 }
 
-fn route_command(args: &[String]) -> Result<CommandRoute, String> {
+fn route_command(args: &[String]) -> Result<CommandRoute, MirrError> {
     if args.is_empty() {
         return Ok(CommandRoute::RunCi { flags: Vec::new(), default_profile: None });
     }
@@ -547,7 +548,7 @@ fn route_command(args: &[String]) -> Result<CommandRoute, String> {
 
     if args[0] == "run" {
         if args.len() == 1 {
-            return Err("missing subcommand after 'run'".to_string());
+            return Err(MirrError::ToolingError { message: "missing subcommand after 'run'".to_string(), span: None });
         }
 
         match args[1].as_str() {
@@ -564,7 +565,7 @@ fn route_command(args: &[String]) -> Result<CommandRoute, String> {
                 if args.len() == 3 && args[2] == "--all" {
                     return Ok(CommandRoute::ParityAll);
                 }
-                return Err("usage: mirr-general run parity --all".to_string());
+                return Err(MirrError::ToolingError { message: "usage: mirr-general run parity --all".to_string(), span: None });
             }
             "migrate" => {
                 if args.len() == 3 && args[2] == "--dry-run" {
@@ -573,7 +574,7 @@ fn route_command(args: &[String]) -> Result<CommandRoute, String> {
                 if args.len() == 2 {
                     return Ok(CommandRoute::Migrate { dry_run: false });
                 }
-                return Err("usage: mirr-general run migrate [--dry-run]".to_string());
+                return Err(MirrError::ToolingError { message: "usage: mirr-general run migrate [--dry-run]".to_string(), span: None });
             }
             run_subcommand => {
                 if let Some(profile) = parse_profile_alias(run_subcommand) {
@@ -582,7 +583,7 @@ fn route_command(args: &[String]) -> Result<CommandRoute, String> {
                         default_profile: Some(profile),
                     });
                 }
-                return Err(format!("unrecognized 'run' subcommand: '{}'", run_subcommand));
+                return Err(MirrError::ToolingError { message: format!("unrecognized 'run' subcommand: '{}'", run_subcommand), span: None });
             }
         }
     }
@@ -602,7 +603,7 @@ fn route_command(args: &[String]) -> Result<CommandRoute, String> {
         });
     }
 
-    Err(format!("unrecognized subcommand: '{}'", args[0]))
+    Err(MirrError::ToolingError { message: format!("unrecognized subcommand: '{}'", args[0]), span: None })
 }
 
 fn dispatch(args: &[String]) -> io::Result<i32> {
@@ -1437,7 +1438,7 @@ mod tests {
     fn route_command_rejects_invalid_parity_invocation() {
         let args = vec!["run".to_string(), "parity".to_string()];
         let error = route_command(&args).expect_err("run parity without --all must fail");
-        assert!(error.contains("usage: mirr-general run parity --all"));
+        assert!(error.message().contains("usage: mirr-general run parity --all"));
     }
 
     #[test]

@@ -15,6 +15,7 @@
 
 use super::executor::ExecutionRecord;
 use super::planner::AdaptationAction;
+use crate::error::MirrError;
 use serde::{Deserialize, Serialize};
 
 /// Maximum number of adaptation records the knowledge base retains.
@@ -118,9 +119,9 @@ impl KnowledgeBase {
     }
 
     /// Serialize the entire knowledge base to pretty-printed JSON.
-    pub fn to_json(&self) -> Result<String, String> {
+    pub fn to_json(&self) -> Result<String, MirrError> {
         serde_json::to_string_pretty(&self.records)
-            .map_err(|e| format!("JSON serialization failed: {e}"))
+            .map_err(|e| MirrError::InternalError(format!("JSON serialization failed: {e}")))
     }
 
     /// Clear all records.

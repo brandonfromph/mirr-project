@@ -59,6 +59,7 @@ pub mod types {
 }
 
 pub mod handshake {
+    use crate::error::MirrError;
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct ProtocolVersion(u16);
 
@@ -362,22 +363,22 @@ pub mod handshake {
             matches!(&self.decision, HandshakeDecision::Accepted(_))
         }
 
-        pub fn expect_accepted(&self) -> AcceptedHandshake {
+        pub fn expect_accepted(&self) -> Result<AcceptedHandshake, MirrError> {
             match &self.decision {
-                HandshakeDecision::Accepted(accepted) => accepted.clone(),
+                HandshakeDecision::Accepted(accepted) => Ok(accepted.clone()),
                 HandshakeDecision::Rejected(reason) => {
-                    panic!("expected accepted handshake, got rejection: {reason:?}")
+                    Err(MirrError::InternalError(format!("expected accepted handshake, got rejection: {reason:?}")))
                 }
             }
         }
 
-        pub fn expect_rejected(&self) -> RejectedHandshake {
+        pub fn expect_rejected(&self) -> Result<RejectedHandshake, MirrError> {
             match &self.decision {
                 HandshakeDecision::Rejected(reason) => {
-                    RejectedHandshake::new(self.client_id.clone(), *reason)
+                    Ok(RejectedHandshake::new(self.client_id.clone(), *reason))
                 }
                 HandshakeDecision::Accepted(_) => {
-                    panic!("expected rejected handshake, got accepted decision")
+                    Err(MirrError::InternalError("expected rejected handshake, got accepted decision".to_string()))
                 }
             }
         }
@@ -441,6 +442,7 @@ pub mod handshake {
 }
 
 pub mod routing {
+    use crate::error::MirrError;
     use super::compiler::CompilerLspRoute;
     use super::types::{DocumentId, DocumentRevision, Position};
 
@@ -548,11 +550,11 @@ pub mod routing {
     }
 
     impl RoutedUiRequest {
-        pub fn expect_routed(self) -> RoutedCompilerRequest {
+        pub fn expect_routed(self) -> Result<RoutedCompilerRequest, MirrError> {
             match self {
-                RoutedUiRequest::Routed(routed) => routed,
+                RoutedUiRequest::Routed(routed) => Ok(routed),
                 RoutedUiRequest::Rejected(rejection) => {
-                    panic!("expected routed request, got rejection: {rejection:?}")
+                    Err(MirrError::InternalError(format!("expected routed request, got rejection: {rejection:?}")))
                 }
             }
         }

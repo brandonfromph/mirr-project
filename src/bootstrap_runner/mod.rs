@@ -22,6 +22,7 @@
 mod types;
 
 pub use types::{BootstrapOpts, BootstrapResult, StageResult};
+use crate::error::MirrError;
 
 use std::path::{Path, PathBuf};
 
@@ -338,7 +339,7 @@ impl BootstrapRunner {
                     stages.push(StageResult {
                         name: "FixtureParity".to_string(),
                         ok: false,
-                        message: msg,
+                        message: msg.message().to_string(),
                     });
                     let all_ok = stages.iter().all(|s| s.ok);
                     return self.finish(source_path, stages, all_ok, netlist_json, netlist_verilog);
@@ -390,48 +391,48 @@ impl BootstrapRunner {
     // -----------------------------------------------------------------------
 
     /// Compare the serialized netlist JSON against a golden fixture file.
-    fn check_netlist_parity(&self, actual_json: &str, fixture_path: &Path) -> Result<(), String> {
+    fn check_netlist_parity(&self, actual_json: &str, fixture_path: &Path) -> Result<(), MirrError> {
         let fixture_str = std::fs::read_to_string(fixture_path)
-            .map_err(|e| format!("cannot read fixture '{}': {e}", fixture_path.display()))?;
+            .map_err(|e| MirrError::ToolingError { message: format!("cannot read fixture '{}': {e}", fixture_path.display()), span: None })?;
 
         let actual: serde_json::Value =
-            serde_json::from_str(actual_json).map_err(|e| format!("actual JSON invalid: {e}"))?;
+            serde_json::from_str(actual_json).map_err(|e| MirrError::ToolingError { message: format!("actual JSON invalid: {e}"), span: None })?;
         let expected: serde_json::Value =
-            serde_json::from_str(&fixture_str).map_err(|e| format!("fixture JSON invalid: {e}"))?;
+            serde_json::from_str(&fixture_str).map_err(|e| MirrError::ToolingError { message: format!("fixture JSON invalid: {e}"), span: None })?;
 
         if actual["ir_version"] != expected["ir_version"] {
-            return Err(format!(
+            return Err(MirrError::ToolingError { message: format!(
                 "ir_version mismatch: actual={} expected={}",
                 actual["ir_version"], expected["ir_version"]
-            ));
+            ), span: None });
         }
 
-        let ag = actual["guards"].as_array().ok_or("actual.guards is not array")?;
-        let eg = expected["guards"].as_array().ok_or("expected.guards is not array")?;
+        let ag = actual["guards"].as_array().ok_or_else(|| MirrError::ToolingError { message: "actual.guards is not array".to_string(), span: None })?;
+        let eg = expected["guards"].as_array().ok_or_else(|| MirrError::ToolingError { message: "expected.guards is not array".to_string(), span: None })?;
         if ag.len() != eg.len() {
-            return Err(format!("guard count: actual={} expected={}", ag.len(), eg.len()));
+            return Err(MirrError::ToolingError { message: format!("guard count: actual={} expected={}", ag.len(), eg.len()), span: None });
         }
 
-        let as_ = actual["signals"].as_array().ok_or("actual.signals is not array")?;
-        let es_ = expected["signals"].as_array().ok_or("expected.signals is not array")?;
+        let as_ = actual["signals"].as_array().ok_or_else(|| MirrError::ToolingError { message: "actual.signals is not array".to_string(), span: None })?;
+        let es_ = expected["signals"].as_array().ok_or_else(|| MirrError::ToolingError { message: "expected.signals is not array".to_string(), span: None })?;
         if as_.len() != es_.len() {
-            return Err(format!("signal count: actual={} expected={}", as_.len(), es_.len()));
+            return Err(MirrError::ToolingError { message: format!("signal count: actual={} expected={}", as_.len(), es_.len()), span: None });
         }
         for (i, (a, e)) in as_.iter().zip(es_.iter()).enumerate() {
             if a["name"] != e["name"] {
-                return Err(format!(
+                return Err(MirrError::ToolingError { message: format!(
                     "signals[{i}].name: actual={} expected={}",
                     a["name"], e["name"]
-                ));
+                ), span: None });
             }
             if a["ty"] != e["ty"] {
-                return Err(format!("signals[{i}].ty: actual={} expected={}", a["ty"], e["ty"]));
+                return Err(MirrError::ToolingError { message: format!("signals[{i}].ty: actual={} expected={}", a["ty"], e["ty"]), span: None });
             }
             if a["kind"] != e["kind"] {
-                return Err(format!(
+                return Err(MirrError::ToolingError { message: format!(
                     "signals[{i}].kind: actual={} expected={}",
                     a["kind"], e["kind"]
-                ));
+                ), span: None });
             }
         }
 
@@ -445,7 +446,7 @@ impl BootstrapRunner {
             let av = &actual["statistics"][field];
             let ev = &expected["statistics"][field];
             if av != ev {
-                return Err(format!("statistics.{field}: actual={av} expected={ev}"));
+                return Err(MirrError::ToolingError { message: format!("statistics.{field}: actual={av} expected={ev}"), span: None });
             }
         }
 

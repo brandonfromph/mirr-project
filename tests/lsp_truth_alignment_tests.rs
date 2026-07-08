@@ -116,7 +116,7 @@ fn handshake_returns_stable_session_id_for_same_nonce() {
 #[test]
 fn handshake_accepts_and_returns_negotiated_capability_intersection() {
     let response = negotiate_handshake(client_request(), server_hello());
-    let accepted = response.expect_accepted();
+    let accepted = response.expect_accepted().unwrap();
 
     assert_eq!(
         accepted.negotiated_capabilities(),
@@ -134,7 +134,7 @@ fn handshake_rejection_exposes_structured_reason_code() {
     let mut request = client_request();
     request.set_capabilities(CapabilityAgreement::from_iter(vec![Capability::Hover]));
     let response = negotiate_handshake(request, server_hello());
-    let rejected = response.expect_rejected();
+    let rejected = response.expect_rejected().unwrap();
 
     assert_eq!(rejected.reason_code(), CapabilityRejectionReason::MissingRequiredCapability);
 }
@@ -167,7 +167,7 @@ fn handshake_rejection_preserves_client_identity_for_ui_reporting() {
     let mut request = client_request();
     request.set_protocol_version(ProtocolVersion::new(255));
     let response = negotiate_handshake(request.clone(), server_hello());
-    let rejected = response.expect_rejected();
+    let rejected = response.expect_rejected().unwrap();
 
     assert_eq!(rejected.client_id(), request.client_hello().client_id());
 }
@@ -176,7 +176,7 @@ fn handshake_rejection_preserves_client_identity_for_ui_reporting() {
 fn routing_hover_request_targets_compiler_hover_route() {
     let routed =
         route_ui_request(ui_request(UiRequestKind::Hover { position: Position::new(3, 8) }))
-            .expect_routed();
+            .expect_routed().unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::Hover);
 }
@@ -185,7 +185,7 @@ fn routing_hover_request_targets_compiler_hover_route() {
 fn routing_completion_request_targets_compiler_completion_route() {
     let routed =
         route_ui_request(ui_request(UiRequestKind::Completion { position: Position::new(4, 2) }))
-            .expect_routed();
+            .expect_routed().unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::Completion);
 }
@@ -194,14 +194,14 @@ fn routing_completion_request_targets_compiler_completion_route() {
 fn routing_definition_request_targets_compiler_definition_route() {
     let routed =
         route_ui_request(ui_request(UiRequestKind::Definition { position: Position::new(6, 1) }))
-            .expect_routed();
+            .expect_routed().unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::Definition);
 }
 
 #[test]
 fn routing_document_symbols_request_targets_symbol_index_route() {
-    let routed = route_ui_request(ui_request(UiRequestKind::DocumentSymbols)).expect_routed();
+    let routed = route_ui_request(ui_request(UiRequestKind::DocumentSymbols)).expect_routed().unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::DocumentSymbols);
 }
@@ -219,7 +219,7 @@ fn routing_rejects_unknown_request_kind_without_compiler_route() {
 #[test]
 fn routing_preserves_request_id_document_id_and_revision() {
     let request = ui_request(UiRequestKind::Hover { position: Position::new(8, 13) });
-    let routed = route_ui_request(request.clone()).expect_routed();
+    let routed = route_ui_request(request.clone()).expect_routed().unwrap();
 
     assert_eq!(routed.request_id(), request.id());
     assert_eq!(routed.document_id(), request.document_id());
@@ -236,7 +236,7 @@ fn routing_emits_internal_route_type_for_each_supported_ui_kind() {
     ];
 
     for kind in supported {
-        let routed = route_ui_request(ui_request(kind)).expect_routed();
+        let routed = route_ui_request(ui_request(kind)).expect_routed().unwrap();
         assert!(matches!(
             routed.compiler_route(),
             CompilerLspRoute::Hover

@@ -442,7 +442,7 @@ fn run_pipeline_internal(
     if config.emit_mape_k_rtl {
         result.mape_k_rtl =
             Some(crate::emit::mape_k_rtl::emit_mape_k_rtl(&result).map_err(|e| {
-                PipelineErrors { errors: vec![crate::error::MirrError::parse_error(e)] }
+                PipelineErrors { errors: vec![e] }
             })?);
     }
 

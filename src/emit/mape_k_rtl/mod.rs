@@ -21,6 +21,7 @@ mod upper;
 
 use crate::mape_k::bridge::bridge_from_pipeline;
 use crate::pipeline::PipelineResult;
+use crate::error::MirrError;
 
 // ---------------------------------------------------------------------------
 // Constants — bounded resource limits (NASA P10)
@@ -48,32 +49,43 @@ pub const MAX_RTL_KNOWLEDGE_DEPTH: usize = 256;
 /// 1. Bridges the pipeline AST into a `SimConfig`.
 /// 2. Validates that the config fits within RTL resource limits.
 /// 3. Concatenates all six module outputs into a single SV string.
-pub fn emit_mape_k_rtl(result: &PipelineResult) -> Result<String, String> {
+pub fn emit_mape_k_rtl(result: &PipelineResult) -> Result<String, MirrError> {
     let config = bridge_from_pipeline(result).map_err(|errs| {
         let mut msg = String::from("MAPE-K bridge errors:\n");
         for (i, e) in errs.iter().enumerate().take(MAX_RTL_PROPERTIES) {
             msg.push_str(&format!("  [{i}] {e}\n"));
         }
-        msg
+        MirrError::RspuError { message: msg, span: None }
     })?;
 
     if config.sensors.len() > MAX_RTL_SIGNALS {
-        return Err(format!(
-            "too many signals for RTL: {} > {MAX_RTL_SIGNALS}",
-            config.sensors.len()
-        ));
+        return Err(MirrError::RspuError {
+            message: format!(
+                "Too many sensors ({}). Maximum supported in RTL is {}",
+                config.sensors.len(),
+                MAX_RTL_SIGNALS
+            ),
+            span: None,
+        });
     }
     if config.properties.len() > MAX_RTL_PROPERTIES {
-        return Err(format!(
-            "too many properties for RTL: {} > {MAX_RTL_PROPERTIES}",
-            config.properties.len()
-        ));
+        return Err(MirrError::RspuError {
+            message: format!(
+                "too many properties for RTL: {} > {MAX_RTL_PROPERTIES}",
+                config.properties.len()
+            ),
+            span: None,
+        });
     }
     if config.action_table.len() > MAX_RTL_ACTIONS {
-        return Err(format!(
-            "too many actions for RTL: {} > {MAX_RTL_ACTIONS}",
-            config.action_table.len()
-        ));
+        return Err(MirrError::RspuError {
+            message: format!(
+                "Too many actions ({}). Maximum supported in RTL is {}",
+                config.action_table.len(),
+                MAX_RTL_ACTIONS
+            ),
+            span: None,
+        });
     }
 
     let mut main_clock = "clk".to_string();
