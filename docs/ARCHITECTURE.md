@@ -420,13 +420,7 @@ Instead, MIRR integrates **Scientific Computing directly into the EDA toolchain*
 - Implement genetic algorithms and gradient descent within the compilation pipeline to find the optimal trade-off between power, area, and speed (PPA).
 - Allows researchers to say: "Give me the most power-efficient flight controller," and the compiler uses scientific computing to generate and test 10,000 variations mathematically.
 
-### SC-6: The Native Rust EDA API
-**Objective**: Provide a native Rust crate (`mirr-eda`) that lets researchers analyze MIRR's hardware outputs directly within the safe, type-checked Rust ecosystem, avoiding the performance penalties and unsafe FFI bindings of Python.
-**Deliverables**:
-- A pure Rust API (`mirr-eda`) that allows developers to programmatically query the MIRR compiler's internal ECS state.
-- Researchers can write Rust scripts to extract formal proofs, thermal maps, and logic density, leveraging native Rust data science tools like `polars` (for dataframes) and `plotters` (for visualization).
 
----
 
 ## 7. Scientific Computing Milestone Summary
 
@@ -437,9 +431,8 @@ Instead, MIRR integrates **Scientific Computing directly into the EDA toolchain*
 | **SC-3** | Thermodynamic PDEs | Heat mapping and RC delay simulation | 8–10 wk |
 | **SC-4** | Automated Retiming | Linear programming for critical path optimization | 4–6 wk |
 | **SC-5** | AI Architecture Search | Genetic algorithms for PPA optimization | 10–12 wk |
-| **SC-6** | Native Rust EDA API | Rust crate (`mirr-eda`) for data analysis (`polars`, `plotters`) | 8–10 wk |
 
-**Total estimated effort**: 40–52 weeks (8–12 months).
+**Total estimated effort**: 32–42 weeks (8–10 months).
 
 ---
 
