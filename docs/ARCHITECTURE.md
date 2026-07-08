@@ -1,179 +1,634 @@
 # MIRR Project Architecture & Directory Topology
 
-Date: 2026-05-17
+Date: 2026-07-08
 
-This document provides a comprehensive map of the repository, detailing the structural layout, data flow pathways, and architectural components of the MIRR compiler platform.
+This document provides a comprehensive map of the repository, detailing the structural layout, data flow pathways, architectural components, and strategic roadmap of the MIRR compiler platform.
 
 > [!IMPORTANT]
 > **MAINTENANCE MANDATE**: This file is the single source of truth for the repository's topology. Under the project's zero-debt policy, whenever a new module, crate, or major architectural flow is added, moved, or removed, **you must immediately update this document** to reflect the new state. Outdated architecture mapping is strictly forbidden.
 
+---
+
 ## 1. Directory Map
 
-A clear tree breakdown explaining the directory structure of the repository:
+A comprehensive tree breakdown of the repository's structural layout:
 
 ```text
 mirr-private/
-├── src/                      # Core Compiler Pipeline
-│   ├── ast/                  # Abstract Syntax Tree definitions
-│   ├── parser/               # Front-end parsing (Lexer & Parser)
-│   ├── ecs/                  # Entity Component System (ECS) architecture (Registry)
-│   ├── cert/                 # MEGA-4 Proof certificate format & MEGA-16 PCC verifier
-│   ├── typeck/               # Type checking & constraint validation
-│   ├── width/                # Width constraint solving (SCC paths)
-│   ├── temporal/             # Temporal lowering of hardware guards
-│   ├── symbolic/             # Hardware-preparatory symbolic evaluation engine
-│   ├── emit/                 # Emission backends (SystemVerilog, FIRRTL, R-SPU, etc.)
-│   ├── bin/                  # Executable entrypoint (mirr.rs unified CLI router)
-│   └── lib.rs                # Public module exports
-├── crates/                   # Consumer & Control Plane Surfaces
-│   ├── mirr-wasm/            # WASM compilation API (browser/JS consumers)
-│   ├── mirr-arsenal-wasm/    # Validation and compile-contract wrapper
-│   ├── lra-cli/              # Living Research Artifact CLI tooling
-│   ├── mirrc-kb/       # Knowledge Base native engine (RAG / Vector search)
-│   └── mirr-mcp-control-plane/ # Model Context Protocol bridge & governance
-├── tests/                    # Integration & Parity Test Matrix
-├── fuzz/                     # Fuzzing harnesses for robustness
-├── proofs/                   # Formal verification (Coq/Rocq)
-├── docs/                     # Documentation and Architecture definitions
-├── proposals/                # Architectural proposals and RFCs
-├── reflex_soc/               # Primary hardware project (64-core R-SPU processor)
-├── stdlib/                   # Standard library definitions
-└── compiler_mirr/            # Self-hosting bootstrap implementation
+├── src/                          # Core Compiler Pipeline (~69k LOC)
+│   ├── ast/                      # Abstract Syntax Tree definitions (types, expr, program, property, pattern)
+│   ├── lexer/                    # Tokenizer and lexical analysis
+│   ├── parser/                   # Front-end parsing (module parser, expr parser, pattern parser)
+│   ├── ecs/                      # Entity Component System architecture (Registry, components, systems, typeck, semantic validation)
+│   ├── cert/                     # MEGA-4 Proof certificate format & MEGA-16 PCC verifier
+│   ├── typeck/                   # Type checking & constraint validation (core + MEGA-1 extended type checker)
+│   ├── width/                    # FIRWINE width constraint solving (SCC paths, graph, Tarjan, verify)
+│   ├── temporal/                 # Temporal lowering of hardware guards (compiler, retiming, clock domain, allocator)
+│   ├── symbolic/                 # Symbolic evaluation engine (interval, fingerprint, rewrite, diff, integration, pattern, statistics)
+│   ├── sat/                      # Bounded DPLL SAT solver (CNF encoding, simplification, solver)
+│   ├── hls/                      # High-Level Synthesis optimizer (ASAP/ALAP scheduling, FIFO streaming)
+│   ├── totality/                 # Totality engine (resource bounds, guard coverage, acyclicity checks)
+│   ├── sexpr/                    # S-Expression "Code as Data" engine (parser, eval, reader, printer, macro expansion, convert/)
+│   ├── expand/                   # Pattern expansion engine (hygienic macros, name prefixing, scoping)
+│   ├── validation/               # Semantic validation passes
+│   ├── symbols/                  # Cross-module symbol resolution and namespace management
+│   ├── mape_k/                   # MAPE-K autonomic control loop (monitor, analyzer, planner, executor, LTL, knowledge, bridge/)
+│   ├── lsp/                      # Language Server Protocol implementation (server, transport, diagnostics)
+│   ├── diagnostic/               # Rich diagnostic engine (formal trace, VCD parser, error formatting)
+│   ├── toolchain/                # EDA toolchain orchestration (Yosys, Verilator, SBY, EQY, IceTime, OpenLane, ABC)
+│   ├── emit/                     # Emission backends (11 targets)
+│   │   ├── verilog/              # SystemVerilog RTL + SVA assertions
+│   │   ├── mape_k_rtl/          # Synthesizable MAPE-K hardware
+│   │   ├── rspu_sim/            # Cycle-accurate R-SPU silicon simulator
+│   │   ├── rspu_encoding/       # R-SPU instruction encoding
+│   │   ├── firrtl.rs            # FIRRTL intermediate representation
+│   │   ├── rspu.rs              # R-SPU native code emission
+│   │   ├── rspu_isa.rs          # R-SPU ISA definitions (30 instructions)
+│   │   ├── rspu_tagged.rs       # Tagged-word architecture emission
+│   │   ├── rspu_regalloc.rs     # Register allocation
+│   │   ├── rspu_opt.rs          # R-SPU peephole optimization
+│   │   ├── rspu_exceptions.rs   # Exception model emission
+│   │   ├── rspu_helpers.rs      # R-SPU emission utilities
+│   │   ├── arm.rs               # ARM backend
+│   │   ├── riscv.rs             # RISC-V backend
+│   │   ├── dot.rs               # Graphviz DOT visualization
+│   │   ├── json_netlist.rs      # JSON netlist export
+│   │   ├── sexpr.rs             # S-Expression output
+│   │   ├── cert.rs              # PCC certificate emission
+│   │   ├── fpga_scaffold.rs     # FPGA scaffold generation
+│   │   ├── fpga_target.rs       # FPGA target definitions (6 families)
+│   │   ├── dsp.rs               # DSP block emission
+│   │   ├── testbench.rs         # Testbench generation
+│   │   └── provenance.rs        # Source provenance tracking
+│   ├── bootstrap_runner/         # Self-hosting bootstrap pipeline
+│   ├── mirr_executor/            # Signal evaluator for MAPE-K harness
+│   ├── util/                     # Shared utilities
+│   ├── bin/                      # Executable entrypoints
+│   │   ├── mirr.rs              # Unified CLI router (compile, lsp, kb, brain, audit, proof-audit, general)
+│   │   ├── mirr-compile/        # Compilation pipeline CLI
+│   │   ├── mirr-diff/           # Structural diff tool
+│   │   ├── mirr-explain/        # Error explanation tool
+│   │   ├── mirr-general.rs      # General-purpose orchestration CLI
+│   │   ├── mirr-audit.rs        # Code quality audit tool
+│   │   ├── mirr-brain.rs        # Knowledge base CLI
+│   │   ├── mirr-hydrate.rs      # Yosys JSON → MIRR roundtrip hydrator
+│   │   ├── mirr-lsp.rs          # LSP server entrypoint
+│   │   ├── mirr-proof-audit.rs  # Rocq proof coverage tracker
+│   │   ├── mirr-simplify.rs     # Standalone logic simplifier CLI
+│   │   ├── mirr-simulate.rs     # MAPE-K simulation harness CLI
+│   │   ├── mirr-wave.rs         # VCD waveform viewer / source-level debugger
+│   │   └── mirr-width.rs        # Bit-width inference CLI
+│   ├── pipeline.rs               # Unified compilation pipeline orchestrator
+│   ├── simplify.rs               # Logic simplifier — 33 algebraic rules
+│   ├── lsp_bridge.rs             # LSP ↔ compiler bridge
+│   ├── lsp_incremental.rs        # Incremental recompilation for LSP
+│   ├── mirr_daemon.rs            # Background compilation daemon
+│   ├── mirr_daemon_security.rs   # Daemon security model
+│   ├── mirr_driver.rs            # Compilation driver
+│   ├── mirr_runtime.rs           # Runtime execution model
+│   ├── mrt_host.rs               # MRT host interface
+│   ├── mrt_auth.rs               # MRT authentication
+│   ├── mrt_schema.rs             # MRT schema definitions
+│   ├── workspace.rs              # Multi-file workspace management
+│   ├── error.rs                  # Shared error types (162 error codes, E100–E902)
+│   ├── error_codes.rs            # Error code registry
+│   ├── span.rs                   # Source span tracking
+│   ├── suggest.rs                # Did-you-mean suggestions
+│   ├── diagnostic_builder.rs     # Diagnostic message builder
+│   └── lib.rs                    # Public module exports
+├── crates/                       # Consumer & Control Plane Surfaces
+│   ├── mirr-wasm/                # WASM compilation API (browser/JS consumers)
+│   ├── mirr-arsenal-wasm/        # Validation and compile-contract wrapper
+│   ├── lra-cli/                  # Living Research Artifact CLI tooling
+│   ├── mirr-kb-native/           # Knowledge Base native engine (RAG / Vector search)
+│   └── mirr-mcp-control-plane/   # Model Context Protocol bridge & governance
+├── tests/                        # Integration & Parity Test Matrix (5,200+ tests)
+├── fuzz/                         # Fuzzing harnesses for robustness
+├── proofs/                       # Formal verification (Rocq/Coq)
+│   ├── width/                    # FIRWINE width inference proofs (incl. SCC/)
+│   ├── cert/                     # PCC verifier proofs
+│   ├── compiler/                 # Compiler pass correctness proofs
+│   ├── language/                 # Language semantics proofs
+│   ├── mape_k/                   # MAPE-K behavioral equivalence proofs
+│   └── rspu/                     # R-SPU ISA proofs
+├── docs/                         # Documentation and Architecture definitions
+├── proposals/                    # Architectural proposals and RFCs
+├── reflex_soc/                   # Primary hardware project (64-core R-SPU, NoC, crossbar, pipeline formal verification)
+├── rspu_chip/                    # R-SPU chip-level design (top-level MIRR)
+├── science_hls/                  # Scientific computing HLS experiments
+├── stdlib/                       # Standard library definitions (mirr_core/)
+├── compiler_mirr/                # Self-hosting bootstrap implementation
+├── examples/                     # Example MIRR programs
+├── scripts/                      # Build and generation scripts
+├── vscode-mirr/                  # VS Code language extension
+├── _wasm/                        # WASM build artifacts
+├── demos/                        # Interactive demonstrations
+├── benches/                      # Performance benchmarks
+└── paper/                        # Academic paper source
 ```
+
+---
 
 ## 2. One-Screen Mental Model
 
-MIRR is a safety-critical compiler platform (61k+ LOC) with three distinct layers:
+MIRR is a safety-critical compiler platform (**155k+ LOC** across 293+ Rust source files) with **5,200+** passing tests, zero `unsafe` code, and zero clippy warnings. It is organized into five distinct architectural layers:
 
-1. **Core Compiler Sub-Engines**: 14 specialized modules (Temporal, Symbolic, SAT, HLS, etc.) that perform rigorous behavioral-to-physical translation.
-2. **Control Planes**: MRT / Presidential Arsenal and KB-native (RAG) for autonomic governance and knowledge-backed synthesis.
-3. **Unified Interface**: The `mirr` CLI router integrates all toolchain functions (`compile`, `lsp`, `kb`) into a single cohesive UX surface.
-4. **Consumer Bridges**: WASM, LRA-CLI, and MCP-Control-Plane providing multi-surface accessibility.
+1. **Core Compiler Sub-Engines**: 17 specialized modules (Temporal, Symbolic, SAT, HLS, Totality, MAPE-K, etc.) that perform rigorous behavioral-to-physical translation. Each engine adheres to NASA's Power-of-10 rules for ultra-reliable execution.
+2. **Control Planes**: MRT / Presidential Arsenal and KB-native (RAG) for autonomic governance and knowledge-backed synthesis. The MCP Semantic Bridge routes cross-subsystem tool calls.
+3. **Unified Interface**: The `mirr` CLI router integrates all toolchain functions (`compile`, `lsp`, `kb`, `brain`, `audit`, `proof-audit`, `general`, `wave`) into a single cohesive UX surface via `clap` categorization.
+4. **Consumer Bridges**: WASM, LRA-CLI, and MCP-Control-Plane providing multi-surface accessibility for browser-based IDEs, CI/CD pipelines, and AI-assisted design.
+5. **Language Server**: A production LSP implementation (`src/lsp/`) providing real-time diagnostics, incremental recompilation (`lsp_incremental.rs`), and IDE integration via `mirr-lsp`.
 
 ### Project Specialization: The R-SPU Architecture
-MIRR is a specialized tool optimized for designing and verifying the **R-SPU (Reflexive Signal Processing Unit)**. It is intended for the high-assurance "brains" of robotic systems and autonomous medical/aerospace hardware.
+
+MIRR is a specialized tool optimized for designing and verifying the **R-SPU (Reflexive Signal Processing Unit)**. The R-SPU is a multi-core, MIMD architecture designed for zero-jitter, hard real-time spatial processing. It is intended for the high-assurance "brains" of robotic systems, autonomous medical devices, and aerospace hardware. We do not build bloated, general-purpose CPUs — we map logic directly to dedicated physical hardware via asynchronous reflex triggers.
+
+### Current Completion Status (Phase 8a+)
+
+The compiler has reached operational maturity through Phases 0–7h (all complete), with Phase 7i (Verified Compilation) and Phase 8a (R-SPU Core Architecture) in active progress. The 64-core R-SPU SoC has been synthesized through Yosys, formally verified via SymbiYosys BMC and K-Induction, and optimized via ABC logic minimization. The `reflex_soc/` directory contains fully synthesized SystemVerilog exceeding 3.2M lines for the 64-core design.
 
 ### Known Technical Flaws
-The following flaws have been identified in the current compiler implementation (Phase 6):
 
-1.  **Physical P&R Agnosticism**: The compiler has no awareness of physical geometry or floorplanning, which can lead to timing closure failures on large-scale chips (like the 64-core R-SPU).
+The following flaws have been identified in the current compiler implementation:
+
+1. **Physical P&R Agnosticism**: The compiler has no awareness of physical geometry or floorplanning, which can lead to timing closure failures on large-scale chips (like the 64-core R-SPU). NextPNR integration exists (`src/toolchain/`) but is not yet feeding placement data back into the ECS.
+2. **ECS-AST Duality**: Several subsystems still maintain parallel AST and ECS code paths. The ECS is the canonical source of truth, but legacy AST paths remain in some emission backends.
+3. **S-Expression Engine Disconnection**: The `src/sexpr/` homoiconic IR is not wired into the main compilation pipeline. It is used exclusively for self-hosting bootstrap and formal verification bridges.
+4. **Incremental Compilation Immaturity**: The LSP incremental recompilation (`lsp_incremental.rs`) performs full re-analysis on each edit. True incremental compilation with dependency tracking is not yet implemented.
 
 **Inputs:**
-- MIRR specifications (Signals, Guards, Reflexes, Properties, Patterns)
+- MIRR specifications (Signals, Guards, Reflexes, Properties, Patterns, Temporal Guards, For-Generate Loops, Module Imports)
 
 **Outputs:**
-- Verilog RTL (always_ff synchronous), FIRRTL, R-SPU Assembly, JSON Netlists, Formal S-Expressions.
+- SystemVerilog RTL (always_ff synchronous), FIRRTL, R-SPU Assembly, ARM Assembly, RISC-V Assembly, JSON Netlists, Graphviz DOT, Formal S-Expressions, PCC Certificates, SVA Assertions, Testbenches, DSP Block Configurations, FPGA Scaffolds (Xilinx 7-Series, Xilinx UltraScale+, Intel Cyclone, Lattice iCE40, Lattice ECP5, Lattice Nexus)
 
-## 3. The 14 Architectural Sub-Engines
+---
 
-The core of MIRR is partitioned into 14 high-assurance engines, each adhering to NASA's Power-of-10 rules for ultra-reliable execution.
+## 3. The 17 Architectural Sub-Engines
+
+The core of MIRR is partitioned into 17 high-assurance engines, each adhering to NASA's Power-of-10 rules for ultra-reliable execution (bounded loops, no recursion, no dynamic allocation after initialization).
 
 ### Logic & Optimization
-1.  **Temporal Guard Compiler** (`src/temporal/compiler.rs`): Translates high-level temporal guards into deterministic shift-register and counter primitives.
-2.  **SAT Logic Solver** (`src/sat/mod.rs`): A bounded iterative DPLL solver for proving expression equivalences and verifying simplification candidates.
-3.  **High-Level Synthesis (HLS) Optimizer** (`src/hls/mod.rs`): Performs ASAP/ALAP scheduling, resource sharing, and FIFO streaming synthesis for hardware realization.
-4.  **Register Retiming Optimizer** (`src/temporal/retiming.rs`): Employs Leiserson-Saxe retiming to minimize critical path delay by moving registers across combinational logic.
+
+1. **Temporal Guard Compiler** (`src/temporal/compiler.rs`): Translates high-level temporal guards (Cement2-inspired `delay(k)`) into deterministic shift-register and counter primitives. Reduces gate count from O(N × 64) to O(N × k). Includes clock domain support (`clock_domain.rs`) and a resource allocator (`allocator.rs`). **Status: Production.**
+
+2. **SAT Logic Solver** (`src/sat/`): A bounded iterative DPLL solver (MAX_SAT_VARIABLES = 256, MAX_SAT_CLAUSES = 1024) for proving expression equivalences and verifying simplification candidates. Includes CNF encoding (`cnf.rs`), core solver (`solver.rs`), and guard simplification (`simplify_sat.rs`). Error codes E900–E902. **Status: Production.**
+
+3. **High-Level Synthesis (HLS) Optimizer** (`src/hls/mod.rs`): Performs ASAP/ALAP scheduling, resource sharing, and FIFO streaming synthesis (`fifo.rs`) for hardware realization. Maps behavioral descriptions to scheduled, resource-shared datapaths. **Status: Production.**
+
+4. **Register Retiming Optimizer** (`src/temporal/retiming.rs`): Employs Leiserson-Saxe retiming to minimize critical path delay by moving registers across combinational logic. Integrated with the temporal compiler for post-lowering optimization. **Status: Production.**
+
+5. **Logic Simplifier** (`src/simplify.rs`): SmaRTLy-inspired algebraic simplification with 33 rules covering boolean identity/annihilation, arithmetic folding, comparison folding, and fixpoint iteration. Bounded by MAX_PASSES. Wired as a pre-lowering pass in the temporal pipeline. **Status: Production (58+ tests).**
 
 ### Verification & Assurance
-5.  **Symbolic Evaluation Engine** (`src/symbolic/mod.rs`): Implements interval-based abstract interpretation to prove signal value bounds and structural netlist equivalence.
-6.  **Totality Engine** (`src/totality/mod.rs`): Verifies the five Pillars of Totality: resource bounds, output completeness, guard coverage, temporal finiteness, and dependency acyclicity.
-7.  **S-Expression Transpiler** (`src/sexpr/convert/to_sexpr.rs`): Generates homoiconic IR for formal verification bridges (Z3, Rocq).
-8.  **R-SPU Silicon Simulator** (`src/emit/rspu_sim/mod.rs`): Provides cycle-accurate, bit-precise simulation for 64-core R-SPU programs.
+
+6. **Symbolic Evaluation Engine** (`src/symbolic/`): Implements interval-based abstract interpretation (`interval.rs`), discrete calculus approximations (`diff.rs`, `integration.rs`), anomaly signature fingerprinting (`fingerprint.rs`), pattern matching (`pattern.rs`), moving-window statistics (`statistics.rs`), and a term rewriting engine (`rewrite.rs`) for runtime logic optimization. 8 files, fully tested. **Status: Production.**
+
+7. **Totality Engine** (`src/totality/`): Verifies the five Pillars of Totality: resource bounds, output completeness, guard coverage, temporal finiteness, and dependency acyclicity. Core checks in `checks.rs`, type definitions in `types.rs`. **Status: Production.**
+
+8. **S-Expression Transpiler** (`src/sexpr/convert/`): Generates homoiconic IR for formal verification bridges (Z3, Rocq). Bidirectional AST ↔ S-expression conversion with round-trip invariant. Error codes E800–E815. **Status: Production (not wired to main pipeline).**
+
+9. **R-SPU Silicon Simulator** (`src/emit/rspu_sim/`): Provides cycle-accurate, bit-precise simulation for R-SPU programs. Supports the full 30-instruction ISA with tagged-word architecture, dual-mode execution, and exception handling. Bounded by MAX_SIM_CYCLES. **Status: Production.**
+
+10. **MAPE-K Analyzer** (`src/mape_k/analyzer.rs`): Evaluates bounded LTL properties (`ltl.rs`) over rolling windows for autonomic safety. Includes hardware-accelerated LTL checking, knowledge base integration (`knowledge.rs`), sensor modeling (`sensor.rs`), and partition-aware analysis (`partition.rs`). 10 files + bridge subdirectory. **Status: Production.**
+
+11. **MAPE-K Telemetry Bridge** (`src/mape_k/bridge/`): Orchestrates the 64-core telemetry fabric for cross-core safety coordination. Manages monitor → analyze → plan → execute data flow across the NoC. **Status: Production.**
 
 ### Infrastructure & Orchestration
-8.5 **Unified CLI Router** (`src/bin/mirr.rs`): The single entrypoint for the hardware toolchain. Dispatches execution to compilation pipelines, LSP servers, specialized verification engines, and knowledge base tooling. It is broken into functional categories:
+
+12. **Unified CLI Router** (`src/bin/mirr.rs`): The single entrypoint for the hardware toolchain. Dispatches execution to compilation pipelines, LSP servers, specialized verification engines, and knowledge base tooling. Functional categories:
     - **Core Systems**: `mirr compile` and `mirr lsp`
     - **Verification & Assurance**: `mirr proof-audit` and `mirr audit`
+    - **Debugging**: `mirr wave` (VCD waveform viewer) and `mirr explain`
     - **Stress Testing**: `mirr generate-stress`
     - **Orchestration**: `mirr general`
-    - **Knowledge Base**: `mirr brain`, `mirr kb`, `mirr kb-index`, `mirr kb-hydrate`
-9.  **ECS Registry** (`src/ecs/registry.rs`): A high-performance SoA (Structure of Arrays) registry managing up to 1M hardware entities. Currently serves as the final synthesis IR.
-10. **Cross-Module Symbol Resolver** (`src/symbols/resolver.rs`): Manages cross-crate namespace resolution and visibility.
-11. **S-Expression "Code as Data" Engine** (`src/sexpr/mod.rs`): A homoiconic IR with a bounded, iterative eval/apply core. **Current Status**: Not wired to the main pipeline. Used exclusively for self-hosting bootstrap and formal verification bridges.
-12. **Semantic Type Checker** (`src/typeck/mod.rs`): Enforces signedness consistency. **Current Role**: Production-grade AST checker; ECS-native typechecking is currently a shadow gate.
-13. **MAPE-K Analyzer** (`src/mape_k/analyzer.rs`): Evaluates bounded LTL properties over rolling windows for autonomic safety.
-14. **MAPE-K Telemetry Bridge** (`src/mape_k/bridge/mod.rs`): Orchestrates the 64-core telemetry fabric (Proposal 045) for cross-core safety coordination.
+    - **Knowledge Base**: `mirr brain`, `mirr kb`
+    - **Status: Production.**
+
+13. **ECS Registry** (`src/ecs/registry.rs`): A high-performance SoA (Structure of Arrays) registry managing up to 1M hardware entities. 53k+ lines in `registry.rs` alone. Includes component definitions (`components.rs`), ECS systems (`systems.rs`, `systems/`), type checking (`typeck.rs`), semantic validation (`semantic_validate.rs`), registry validation (`registry_validate.rs`), string interning (`intern.rs`), and AST adapter (`adapter.rs`). The ECS is the sole source of truth and is strictly as capable as the legacy AST. **Status: Production.**
+
+14. **Cross-Module Symbol Resolver** (`src/symbols/`): Manages cross-crate namespace resolution and visibility for multi-module MIRR designs. **Status: Production.**
+
+15. **EDA Toolchain Orchestrator** (`src/toolchain/`): Integrates the full open-source EDA toolchain into the MIRR compilation pipeline. 9 files orchestrating:
+    - **Yosys** (`optimize.rs`): ABC logic minimization and technology mapping
+    - **Verilator** (`verilator.rs`): Compiled C++ simulation and lint checking
+    - **SymbiYosys** (`sby.rs`, `formal.rs`): Bounded Model Checking (BMC), K-Induction proving, multi-engine solver selection (Z3, Yices, Btor, Bitwuzla)
+    - **EQY** (`eqy.rs`): Equivalence checking between MIRR revisions
+    - **IceTime** (`icetime.rs`): Static timing analysis for iCE40 targets
+    - **OpenLane** (`openlane.rs`): ASIC flow integration (GDSII generation)
+    - **SDC** (`sdc.rs`): Synopsys Design Constraints for timing
+    - **Status: Production.**
+
+16. **LSP Server** (`src/lsp/`): A Language Server Protocol implementation providing real-time diagnostics (`diagnostics.rs`), JSON-RPC transport (`transport.rs`), and incremental recompilation support. Bridges to the compiler via `lsp_bridge.rs` and `lsp_incremental.rs`. **Status: Production (incremental mode maturing).**
+
+17. **Diagnostic Engine** (`src/diagnostic/`): Rich error formatting and source-level debugging. Includes formal trace analysis (`formal_trace.rs`), VCD waveform parsing (`vcd_parser.rs`), and integrated test coverage (`tests.rs`). The `mirr-wave` CLI provides source-level waveform viewing. Error codes span E100–E902 across 162 unique codes. **Status: Production.**
+
+---
 
 ## 4. Data Flow Pathways
 
-The following pathways describe the lifecycle of a MIRR specification:
+The following pathways describe the complete lifecycle of a MIRR specification through the compiler and its supporting tools:
 
-1. **Compiler Pipeline Flow:** 
-   - Source code is ingested by the [Lexer/Parser](../src/parser/module_parser/mod.rs), generating contiguous entities and flat-data arrays directly.
-   - The raw entity data is populated into the [ECS Registry](../src/ecs/registry.rs), where all hardware declarations become entities.
-   - [Semantic Validation](../src/ecs/semantic_validate.rs) ensures entity integrity (Name and Kind constraints).
-   - [Width Solver](../src/width/solver.rs) infers missing signal widths using SCC propagation. The ECS-native width inference system is the primary fully-functional engine.
-   - [Temporal Lowering](../src/temporal/mod.rs) translates hardware guards into deterministic netlist primitives. This pass is fully ECS-native (Phase 3 transition complete), using the ECS Registry as the primary source of truth. It synthesizes `TemporalNodeComponent` metadata for each guard entity, closing the "Temporal Seam".
-   - [Macro Engine Expansion](../src/sexpr/mod.rs) executes generative hardware directives (`%for-generate`, `%let-bind`). To support 64-core and massive MIMD unrolling, the semantic AST engine capacity has been massively expanded, supporting bounds up to **262,144 hardware nodes** seamlessly without stack exhaustion.
-   - [Symbolic Evaluation Engine](../src/symbolic/mod.rs) provides abstract interpretation, discrete calculus approximations, anomaly signature fingerprinting, and a term rewriting engine for runtime logic optimization.
-   - Finally, [Emission Backends](../src/emit/mod.rs) generate the target artifacts.
+### Pathway 1: Core Compiler Pipeline
 
-2. **Control Plane & RAG Integration:**
-   - The [MCP Semantic Bridge](../crates/mirr-mcp-control-plane/) routes cross-subsystem tool calls.
-   - The [Knowledge Base Engine](../crates/mirrc-kb/) serves as a RAG vector store. The compiler queries `mirrc-kb` for synthesis precedents and formal proofs before resolving complex guard patterns.
+Source code enters the compiler and flows through a deterministic sequence of transformation passes:
 
-3. **Consumer Facades:**
-   - The [mirr-wasm](../crates/mirr-wasm/) crate provides a JS-compatible binding over the core compiler, enabling browser-based IDEs and demonstrations.
-   - The [lra-cli](../crates/lra-cli/) interacts with the Arsenal tooling for markdown/HTML validation and receipt signing.
+```
+Source (.mirr) → Lexer/Tokenizer → Parser → Raw AST
+    → Pattern Expansion (expand/) → Validated AST
+    → ECS Registry Population (ecs/adapter.rs)
+    → Semantic Validation (ecs/semantic_validate.rs)
+    → Type Checking (typeck/ + ecs/typeck.rs)
+    → Width Inference (width/solver.rs, SCC paths)
+    → Logic Simplification (simplify.rs, 33 algebraic rules)
+    → Temporal Lowering (temporal/compiler.rs → shift registers, counters)
+    → HLS Scheduling (hls/, optional)
+    → Symbolic Evaluation (symbolic/, optional)
+    → Totality Verification (totality/)
+    → Emission Backend (emit/ → Verilog, FIRRTL, R-SPU, ARM, RISC-V, DOT, JSON, S-Expr, Cert, Testbench)
+```
 
-4. **Yosys-to-MIRR Roundtrip Parity Validation Pipeline:**
-   - Arbitrary input Verilog/RTL is synthesized using Yosys into a technology-mapped JSON netlist.
-   - The [MIRR Hydrator](../src/bin/mirr-hydrate.rs) ingests this JSON and maps the cells directly back into MIRR signals and reflexes.
-   - The compiled MIRR output is then lower-synthesized again via Yosys and formally verified using SAT Equivalence Checking (`equiv`) to guarantee absolute codegen parity and correct optimization.
+Each pass is bounded and iterative (no recursion). The ECS Registry (`src/ecs/registry.rs`) is the canonical intermediate representation from which all emission backends read.
 
-   ## 5. 12-Month R&D Roadmap
+### Pathway 2: Formal Verification Pipeline
 
-   This section outlines the strategic development plan for the next 12 months, aimed at maturing MIRR into a production-grade EDA platform for the R-SPU architecture.
+Compiled MIRR specifications can be formally verified through the integrated EDA toolchain:
 
-   ### Goal: Scaling and Robustness
-   The primary objective is to transition from a high-assurance prototype to a mass-scale logic generator, increasing the test suite from **4,000+** to **8,000+** individual test cases.
+```
+MIRR Source → Compiler → SystemVerilog + SVA Assertions
+    → SymbiYosys BMC (--formal, bounded model checking)
+    → SymbiYosys K-Induction (--formal-prove --formal-depth N)
+    → EQY Equivalence Checking (--eqy, revision-to-revision parity)
+    → ABC Logic Minimization (--optimize, gate reduction)
+```
 
-   ### Key Milestones:
-   1.  **ECS-Native Transition**: (Completed) the migration of the compiler pipeline from a tree-based AST to a high-performance ECS Registry.
-   2.  **Homoiconicity Integration**: Implement a "Code as Data" core to enable autonomic self-healing and knowledge-backed synthesis.
-   3.  **Scale-Blocker Debugging**: Perform a rigorous audit to identify and resolve logic bottlenecks that prevent scaling beyond 64-core designs.
-   4.  **Engine Wiring**: Complete and wire the 14 identified sub-engines (Symbolic, SAT, MAPE-K, etc.) into a unified, high-assurance pipeline.
-   5.  ~~**Compiler Ergonomics**~~ *(Completed)*: Migrated the entire toolchain into the unified `mirr` CLI router with `clap` interface categorization to prevent binary sprawl and streamline the hardware architect UX.
-   6.  ~~**Clock Domain Crossing (CDC)**~~ *(Completed)*: Implement native support for multiple clock domains to support industrial-grade SoC designs.
-   7.  **Source-Level Debugger**: Implement a bit-precise hardware debugger that maps generated Verilog waveforms back to the original MIRR source lines.
+Solver engines are selectable: Z3, Yices, Btor, Bitwuzla. All formal verification results are bounded by configurable depth limits.
 
-   ### Engine MVP Graduation Milestones:
-   Currently, several core engines are functioning as Minimum Viable Products (MVPs) and require rigorous graduation to production readiness:
-   - **Source-Level Debugger (VCD Parser)**: Upgrade from static final-value extraction to interactive, cycle-accurate temporal scrubbing (fixing the 'off-by-one' evaluation bug).
-   - **ASIC OpenLane Integration**: Replace the simplified metrics MVP with deep physical GDSII parsing to feed exact silicon timing delays back into the ECS.
-   - **SAT Logic Simplification**: Evolve beyond basic redundant MUX checks to perform native high-level synthesis (HLS) logic minimization before Yosys emission.
-   - **S-Expression Frontend**: Extend the parser to retain advanced SVA properties (`always`, `eventually`) during the roundtrip serialization.
-   - **Multi-Clock Domain Crossing (CDC)**: Fully wire up the `ClockDomainsComponent` and `PhantomTagsComponent` within the ECS to guarantee safe cross-core synchronization for the MIMD R-SPU.
-   - **Rocq Proof Engine**: Complete the integration with the Rocq compiler to mathematically prove the MIRR compiler's own structural correctness instead of relying solely on downstream SMT solvers.
+### Pathway 3: FPGA Implementation Pipeline
 
-## 6. The 1-Billion Transistor Vision (Wafer-Scale AI Engine)
+MIRR designs can be taken from specification to physical FPGA implementation:
+
+```
+MIRR Source → Compiler → SystemVerilog RTL
+    → Yosys Synthesis (technology mapping for target FPGA)
+    → NextPNR Place & Route (--pnr)
+    → IceTime Static Timing Analysis (--timing)
+    → Bitstream Generation (target-specific)
+```
+
+Supported FPGA targets: `generic`, `xilinx-7`, `xilinx-us`, `intel-cyclone`, `lattice-ice40`, `lattice-ecp5`, `lattice-nexus`.
+
+### Pathway 4: Yosys-to-MIRR Roundtrip Parity Validation
+
+This pipeline guarantees codegen correctness through roundtrip equivalence:
+
+```
+Input Verilog → Yosys Synthesis → JSON Netlist
+    → MIRR Hydrator (mirr-hydrate) → MIRR Signals + Reflexes
+    → MIRR Compiler → SystemVerilog
+    → Yosys Re-synthesis → SAT Equivalence Checking (equiv)
+```
+
+This pipeline proves that the MIRR compiler's output is functionally identical to the original Verilog input.
+
+### Pathway 5: Control Plane & RAG Integration
+
+The MCP Semantic Bridge and Knowledge Base provide AI-assisted design capabilities:
+
+```
+User Query → MCP Control Plane (crates/mirr-mcp-control-plane/)
+    → Tool Dispatch (compile, verify, optimize, explain)
+    → Knowledge Base (crates/mirr-kb-native/) RAG Vector Search
+    → Synthesis Precedents & Formal Proofs
+    → Compiler Pipeline (guided by retrieved knowledge)
+```
+
+### Pathway 6: Consumer Facades
+
+Multiple consumer surfaces provide access to the compiler:
+
+- **mirr-wasm** (`crates/mirr-wasm/`): JS-compatible WASM binding for browser-based IDEs and demonstrations
+- **lra-cli** (`crates/lra-cli/`): Living Research Artifact tooling for markdown/HTML validation and receipt signing
+- **mirr-arsenal-wasm** (`crates/mirr-arsenal-wasm/`): Validation and compile-contract wrapper for the Presidential Arsenal
+
+### Pathway 7: LSP Incremental Recompilation
+
+The LSP server provides a continuous feedback loop for IDE integration:
+
+```
+Editor Edit Event → LSP Transport (JSON-RPC)
+    → Incremental Re-parse (lsp_incremental.rs)
+    → Full Pipeline Re-analysis
+    → Diagnostics Generation (diagnostic/)
+    → LSP Response (errors, warnings, completions)
+```
+
+---
+
+## 5. Development Roadmap & Strategic Milestones
+
+This section tracks the project's completed development phases and the forward-looking milestones for open-source EDA tooling and scientific computing.
+
+### Completed Phases (Phases 0–7h)
+
+All of the following phases have been completed and validated:
+
+| Phase | Name | Status | Key Deliverable |
+|-------|------|--------|-----------------|
+| 0 | Foundation | ✅ Complete | NASA/JPL-compliant Rust toolchain, `#![forbid(unsafe_code)]` |
+| 1 | Mini MIRR DSL | ✅ Complete | Hand-written lexer/parser, strongly-typed AST |
+| 2 | Temporal Guard Compiler | ✅ Complete | Cement2-inspired shift-register synthesis |
+| 3 | Logic Simplifier | ✅ Complete | SmaRTLy-inspired 33-rule algebraic engine |
+| 4 | Bit-Width Inference | ✅ Complete | FIRWINE SCC solver, Unique Least Solution |
+| 5 | MAPE-K Simulation | ✅ Complete | Autonomic control loop with LTL checking |
+| 6 | Integration & Visualization | ✅ Complete | Unified `mirr-compile` pipeline, DOT/JSON/Verilog emission |
+| 7a | Safety Properties & SVA | ✅ Complete | `property` keyword → SystemVerilog Assertions |
+| 7b | Homoiconic Pattern System | ✅ Complete | `def`/`reflect` macros with DO-178C traceability |
+| 7c | Advanced Type System | ✅ Complete | Dependent, linear, refinement types (E610–E625) |
+| 7d | S-Expression IR | ✅ Complete | Bidirectional AST ↔ S-expr with round-trip invariant |
+| 7e | R-SPU ISA | ✅ Complete | 30-instruction ISA, tagged-word architecture, cycle-accurate simulator |
+| 7f | Proof-Carrying Code | ✅ Complete | PCC certificates, hardware proof verification unit |
+| 7g | Symbolic Evaluation | ✅ Complete | Interval analysis, fingerprinting, term rewriting |
+| 7h | MAPE-K Hardware RTL | ✅ Complete | Synthesizable autonomic hardware, Yosys-validated |
+
+### In-Progress Phases
+
+| Phase | Name | Status | Key Activity |
+|-------|------|--------|--------------|
+| 7i | Verified Compilation | 🔄 In Progress | Rocq-verified compiler passes, CompCert-inspired simulation relations |
+| 8a | R-SPU Core Architecture | 🔄 In Progress | 64-bit tagged pipeline, 5-stage core with PCC interlock |
+
+### Key Milestones (Updated)
+
+1. ~~**ECS-Native Transition**~~ *(Completed)*: Migrated the compiler pipeline from a tree-based AST to a high-performance ECS Registry. The ECS is the sole source of truth.
+2. ~~**Compiler Ergonomics**~~ *(Completed)*: Migrated the entire toolchain into the unified `mirr` CLI router with `clap` interface categorization.
+3. ~~**Clock Domain Crossing (CDC)**~~ *(Completed)*: Native support for multiple clock domains via `ClockDomainsComponent` and `PhantomTagsComponent` within the ECS. `src/temporal/clock_domain.rs` handles cross-domain synchronization.
+4. ~~**Source-Level Debugger**~~ *(MVP Complete)*: The `mirr-wave` CLI (`src/bin/mirr-wave.rs`) provides VCD waveform viewing with source mapping. The `src/diagnostic/vcd_parser.rs` handles waveform ingestion. Graduation to interactive temporal scrubbing remains future work.
+5. ~~**SAT Logic Simplification**~~ *(Completed)*: The `src/sat/` module provides bounded DPLL solving with CNF encoding for guard redundancy elimination. Error codes E900–E902.
+6. ~~**MAPE-K Hardware Realization**~~ *(Completed)*: `src/emit/mape_k_rtl/` provides synthesizable autonomic control hardware with Yosys validation and Rocq behavioral equivalence proofs.
+7. **Homoiconicity Integration** *(In Progress)*: The `src/sexpr/` engine exists but is not yet wired to the main pipeline. Full "Code as Data" autonomic self-healing is future work.
+8. **Scale-Blocker Debugging** *(Ongoing)*: The 64-core R-SPU synthesizes successfully (3.2M+ lines of SystemVerilog). Scaling to 1,024+ cores requires addressing NoC routing congestion and synthesis runtime.
+9. **Rocq Proof Engine** *(In Progress)*: 90+ Rocq proofs across 6 proof directories (`proofs/width/`, `proofs/cert/`, `proofs/compiler/`, `proofs/language/`, `proofs/mape_k/`, `proofs/rspu/`). 13.54% symbol coverage. Full pipeline coverage is the Phase 7i target.
+
+### Engine MVP Graduation Status
+
+| Engine | Status | Remaining Work |
+|--------|--------|----------------|
+| Source-Level Debugger (VCD Parser) | MVP ✅ | Upgrade to interactive cycle-accurate temporal scrubbing |
+| ASIC OpenLane Integration | MVP ✅ | Deep GDSII parsing for silicon timing feedback into ECS |
+| SAT Logic Simplification | ✅ Graduated | Production-grade with E900–E902 error codes |
+| S-Expression Frontend | ✅ Graduated | Full round-trip serialization with macro expansion |
+| Multi-Clock Domain Crossing | ✅ Graduated | `clock_domain.rs` with ECS `ClockDomainsComponent` |
+| Rocq Proof Engine | 🔄 In Progress | Expand from 13.54% to full pipeline coverage |
+
+---
+
+## 6. Scientific Computing DSL Milestones
+
+These milestones define the MVP plan for extending MIRR into a dual-use language: a production HDL *and* a research-grade scientific computing DSL. This direction is grounded in MIRR's original heritage as a Wolfram-like software programming language (see Section 11).
+
+### SC-1: Symbolic Computation Kernel
+
+**Objective**: Expose MIRR's existing symbolic evaluation engine (`src/symbolic/`) as a standalone scientific computing tool, independent of hardware synthesis.
+
+**Deliverables**:
+- `mirr eval` CLI command for interactive symbolic expression evaluation
+- Pure mathematical expression mode: arbitrary-precision arithmetic, symbolic differentiation, polynomial manipulation
+- Wolfram-like notebook-style REPL with expression history and variable binding
+- Reuse of existing infrastructure: interval analysis (`interval.rs`), term rewriting (`rewrite.rs`), fingerprinting (`fingerprint.rs`), discrete calculus (`diff.rs`, `integration.rs`)
+- `--mode research` flag on the compiler to suppress hardware synthesis passes and enable extended numeric types (f64, BigInt)
+
+**Dependencies**: None (builds on existing `src/symbolic/`).
+
+**Estimated Effort**: 4–6 weeks.
+
+### SC-2: Tensor & Matrix Primitives
+
+**Objective**: Add native N-dimensional array types and linear algebra operations to the MIRR type system, usable in both hardware synthesis and research modes.
+
+**Deliverables**:
+- `tensor<N, M>` and `matrix<N, M>` types in MIRR syntax with compile-time dimension checking
+- Matrix multiplication, transpose, inverse, determinant, and decomposition (LU, QR, SVD) as first-class operations
+- Hardware-mappable implementations: when targeting R-SPU or FPGA, tensor ops synthesize to systolic arrays or DSP block chains
+- Software-mode implementations: when targeting `--mode research`, tensor ops execute as pure Rust computations
+- Integration with Phase 7c's type-level natural numbers for dimension safety
+- `stdlib/science/linalg.mirr` standard library module
+
+**Dependencies**: SC-1 (research mode infrastructure).
+
+**Estimated Effort**: 6–8 weeks.
+
+### SC-3: Differential Equation Solver Framework
+
+**Objective**: Reinterpret MIRR's temporal guard system as a discrete-time ODE solver framework, enabling the same language to express both hardware timing constraints and continuous-time scientific simulations.
+
+**Deliverables**:
+- Semantic bridge: MIRR `delay(k)` ↔ discrete timestep ↔ ODE integration step
+- Adaptive step-size Runge-Kutta (RK4, RK45) and implicit methods (backward Euler) for stiff systems
+- State-space representation using MIRR `signal` declarations as state variables and `reflex` blocks as update equations
+- `--emit trajectory` backend generating CSV/JSON time-series output
+- Example programs: Lorenz attractor, double pendulum, reaction-diffusion (Gray-Scott), and Hodgkin-Huxley neuron model
+- Formal properties on solver stability: MIRR `property` blocks asserting energy conservation, Lyapunov stability
+
+**Dependencies**: SC-1, SC-2 (matrix types for state-space).
+
+**Estimated Effort**: 8–10 weeks.
+
+### SC-4: Scientific Visualization Pipeline
+
+**Objective**: Provide publication-quality visualization of simulation results directly from the MIRR toolchain.
+
+**Deliverables**:
+- `--emit plot` backend generating SVG/PNG from simulation time-series data
+- Supported plot types: time-series, phase portraits, spectrograms, surface plots, vector fields
+- Integration with the existing VCD waveform viewer (`mirr-wave`) for hardware-science dual-use: same tool visualizes both circuit waveforms and ODE trajectories
+- Color-mapped signal confidence intervals from the symbolic evaluation engine's interval analysis
+- LaTeX-compatible figure export for direct inclusion in research papers
+- `mirr plot` CLI subcommand with configurable axes, legends, and annotations
+
+**Dependencies**: SC-3 (trajectory data to visualize).
+
+**Estimated Effort**: 4–6 weeks.
+
+### SC-5: Domain-Specific Libraries (BioMed & Physics)
+
+**Objective**: Provide standard library modules for common scientific computing patterns, each with formal properties and optional hardware synthesis targets.
+
+**Deliverables**:
+- `stdlib/science/signal_processing.mirr` — FFT, FIR/IIR filter design, windowing functions, spectral analysis. Hardware mode synthesizes to DSP block chains. Research mode executes as pure computation.
+- `stdlib/science/control_theory.mirr` — PID controllers, state-space models, Kalman filters, observer design. Bridges directly to the MAPE-K control loop for hardware-in-the-loop simulation.
+- `stdlib/science/neural.mirr` — Basic neural network primitives (dense layers, convolution, activation functions). Hardware mode maps to the R-SPU's matrix math units. Research mode provides training loops.
+- `stdlib/science/biomed.mirr` — Physiological signal processing: QRS complex detection, respiratory rate estimation, SpO2 computation. Directly reuses the MAPE-K epilepsy monitor and neonatal respirator case studies.
+- Each library module includes `property` blocks asserting numerical stability, convergence bounds, and safety invariants
+
+**Dependencies**: SC-1, SC-2, SC-3.
+
+**Estimated Effort**: 10–12 weeks.
+
+### SC-6: Open Research Platform
+
+**Objective**: Make MIRR accessible to the research community as a browser-based, reproducible computing environment.
+
+**Deliverables**:
+- WASM playground for browser-based MIRR scientific computing (extends existing `crates/mirr-wasm/`)
+- Notebook-style web interface: code cells, output cells, inline visualization
+- Integration with Jupyter ecosystem via a MIRR kernel (JSON-RPC bridge to the WASM compiler)
+- Reproducible research artifacts: MIRR programs as executable papers — a `.mirr` file contains both the model specification and the visualization directives
+- Public web playground hosted on GitHub Pages (extends existing `_site/` infrastructure)
+- 3 example research notebooks: (1) Digital signal processing for ECG analysis, (2) PID controller design with hardware synthesis, (3) Neural network inference on R-SPU vs. software comparison
+
+**Dependencies**: SC-1 through SC-5.
+
+**Estimated Effort**: 8–10 weeks.
+
+---
+
+## 7. Scientific Computing Milestone Summary
+
+| Milestone | Title | Deliverable | Dependencies | Effort |
+|-----------|-------|-------------|--------------|--------|
+| **SC-1** | Symbolic Computation Kernel | `mirr eval` REPL, `--mode research` | None | 4–6 wk |
+| **SC-2** | Tensor & Matrix Primitives | `tensor<N,M>` types, `stdlib/science/linalg.mirr` | SC-1 | 6–8 wk |
+| **SC-3** | Differential Equation Solver | `--emit trajectory`, ODE solvers, example models | SC-1, SC-2 | 8–10 wk |
+| **SC-4** | Scientific Visualization | `--emit plot`, `mirr plot` CLI, LaTeX export | SC-3 | 4–6 wk |
+| **SC-5** | Domain-Specific Libraries | Signal processing, control theory, neural, biomed | SC-1–3 | 10–12 wk |
+| **SC-6** | Open Research Platform | WASM playground, Jupyter kernel, 3 notebooks | SC-1–5 | 8–10 wk |
+
+**Total estimated effort**: 40–52 weeks (8–12 months, parallelizable across SC-1/SC-2 and SC-4/SC-5).
+
+---
+
+## 8. The 1-Billion Transistor Vision (Wafer-Scale AI Engine)
 
 Because the R-SPU is a spatial architecture, it scales "out" rather than "up." If the R-SPU ever hits 1 billion transistors, it won't be because we added bloated x86 legacy baggage, deep branch predictors, or out-of-order execution pipelines. It will be because we built a **massively parallel synthetic brain** for robotics.
 
-A 1-Billion Transistor R-SPU would likely consist of:
+A 1-Billion Transistor R-SPU would consist of:
 
-1. **Massive Core Count (1,024+ Cores):**
-   Scaling the NoC to thousands of independent cores allows massively parallel, hard real-time spatial processing. For example, assigning 2,000 cores just to process incoming lidar/camera arrays deterministically (a synthetic visual cortex), or thousands of cores independently controlling micro-actuators without OS scheduling overhead.
+1. **Massive Core Count (1,024+ Cores)**:
+   Scaling the NoC to thousands of independent cores allows massively parallel, hard real-time spatial processing. The existing 64-core R-SPU (`reflex_soc/`) has been validated through Yosys synthesis and SymbiYosys formal verification. Scaling to 1,024 cores requires solving the NoC routing congestion problem — the current mesh topology does not scale linearly. Hierarchical NoC with local clusters (16 cores per cluster, 64 clusters) is the proposed solution, with each cluster sharing a local crossbar (`reflex_soc/crossbar_formal.mirr`) and inter-cluster communication via a hierarchical router (`reflex_soc/noc_router_formal.mirr`).
 
-2. **Massive "Local" Memory (SRAM):**
-   True deterministic AI and robotics cannot afford to wait hundreds of clock cycles for external DRAM. By embedding massive amounts of ultra-fast SRAM directly inside the R-SPU silicon (e.g., 1MB per core across 1,024 cores), the chip could store entire neural network models locally.
+2. **Massive "Local" Memory (SRAM)**:
+   True deterministic AI and robotics cannot afford to wait hundreds of clock cycles for external DRAM. By embedding massive amounts of ultra-fast SRAM directly inside the R-SPU silicon (e.g., 1MB per core across 1,024 cores = 1GB total on-chip), the chip could store entire neural network models locally. The MIRR compiler already supports memory subsystem modeling through the ECS `MemoryComponent`, but physical SRAM macro instantiation requires ASIC-specific backend support (OpenLane integration, SC-5 target).
 
-3. **Matrix Math Units (Tensor Cores):**
-   Augmenting the simple 64-bit ALUs with dedicated Matrix Multiplication units on every single core. This allows the deterministic execution of advanced AI models (like localized Vision Transformers or LLMs) in a single clock cycle across the spatial grid.
+3. **Matrix Math Units (Tensor Cores)**:
+   Augmenting the 64-bit ALUs with dedicated Matrix Multiplication units on every core. The R-SPU ISA already includes tagged-word support for different numeric types (Phase 7e), and SC-2's tensor primitives provide the language-level abstraction. Hardware realization maps tensor operations to systolic arrays synthesized through the HLS optimizer (`src/hls/`). This allows the deterministic execution of advanced AI models (Vision Transformers, localized LLMs) across the spatial grid without non-deterministic memory access patterns.
+
+4. **Dedicated Safety Fabric**:
+   A physically separate network connecting all MAPE-K monitor units across every core, independent of the data NoC. This safety fabric ensures that autonomic health monitoring is never starved by data traffic. Each core's LTL checker reports to a hierarchical aggregator that can trigger chip-wide emergency responses within a single clock cycle.
 
 **The Ultimate Goal:**
-A sprawling grid of thousands of tiny, hyper-efficient, jitter-free cores swimming in a sea of local memory, communicating over a massive NoC router, and processing thousands of physical reflexes simultaneously without dropping a single frame.
+A sprawling grid of thousands of tiny, hyper-efficient, jitter-free cores swimming in a sea of local memory, communicating over a massive hierarchical NoC, and processing thousands of physical reflexes simultaneously without dropping a single frame. Every core carries its own PCC certificate. Every signal path is formally verified. Every safety invariant is checked in hardware at wire speed.
 
-## 7. The Cube Architecture (3D Spatial Silicon)
+---
 
-Moving beyond planar 2D scaling, the architecture roadmap includes exploratory support for **3D Spatial Silicon** (internally referred to as "The Cube"). 
+## 9. The Cube Architecture (3D Spatial Silicon)
 
-Drawing inspiration from techniques like Huawei's LogicFolding and Tau (τ) Scaling, this methodology allows the MIRR compiler to synthesize logic that spans both horizontal and vertical silicon layers simultaneously. By utilizing ultra-efficient cores (similar to Apple Silicon's performance-per-watt optimization) and internal micro-fluidic liquid cooling (data-center grade two-phase immersion), the R-SPU can achieve staggering logic density without thermal throttling, paving the way for the ultimate cubic processor.
+Moving beyond planar 2D scaling, the architecture roadmap includes exploratory support for **3D Spatial Silicon** (internally referred to as "The Cube").
 
-## 8. The Minecraft Redstone Paradigm
+Drawing inspiration from techniques like Huawei's LogicFolding and Tau (τ) Scaling, this methodology allows the MIRR compiler to synthesize logic that spans both horizontal and vertical silicon layers simultaneously. The key technical challenges and proposed solutions:
+
+1. **Vertical Signal Routing**: Through-Silicon Vias (TSVs) provide the z-axis connections, but their pitch is orders of magnitude larger than planar metal routing. The MIRR compiler must be aware of TSV placement constraints during synthesis, adding a new dimension to the physical P&R problem identified in the Known Technical Flaws section.
+
+2. **Thermal Management**: By utilizing ultra-efficient cores (similar to Apple Silicon's performance-per-watt optimization) and internal micro-fluidic liquid cooling (data-center grade two-phase immersion), the R-SPU can achieve staggering logic density without thermal throttling. The MAPE-K monitor stage already includes die temperature sensors — in a 3D architecture, each layer would have independent thermal monitoring feeding into the Analyze stage.
+
+3. **Layer Assignment**: The compiler must decide which logic blocks occupy which silicon layer. Timing-critical paths should be placed on the same layer to avoid TSV latency. The R-SPU's natural cluster hierarchy (from Section 8) maps well: each cluster occupies a single layer, with inter-cluster communication routed vertically.
+
+4. **Yield and Redundancy**: 3D fabrication has lower yield per layer. The R-SPU's spatial architecture is naturally fault-tolerant — a failed core in a 1,024-core grid can be disabled and its workload redistributed without redesigning the chip. MAPE-K's Plan stage selects alternative routing around failed cores.
+
+---
+
+## 10. The Minecraft Redstone Paradigm
 
 To conceptualize the R-SPU and the future 3D Spatial Silicon architectures, it is highly accurate to draw a direct architectural parallel to **Minecraft Redstone** computers.
 
-Standard von Neumann CPUs process instructions sequentially, utilizing software loops and threading overhead to emulate parallelism. In contrast, both the R-SPU and Minecraft Redstone computers embody true **Spatial Computing**. Logic is laid out as physical gates in space, and data flows through them continuously and asynchronously. 
+Standard von Neumann CPUs process instructions sequentially, utilizing software loops and threading overhead to emulate parallelism. In contrast, both the R-SPU and Minecraft Redstone computers embody true **Spatial Computing**. Logic is laid out as physical gates in space, and data flows through them continuously and asynchronously.
+
+The parallels are precise:
+
+| Minecraft Redstone | R-SPU Architecture |
+|--------------------|--------------------|
+| Redstone dust (wire) | Signal declarations (`signal x: u8`) |
+| Repeater (delay) | Temporal guard (`delay(k)` → shift register) |
+| Comparator (logic) | Reflex block (`reflex compute { ... }`) |
+| Piston (output) | Output signal (`signal out: out bool`) |
+| Observer (event) | Guard trigger (`when signal_x for 3 cycles`) |
+| 3D vertical stacking | Cube Architecture (TSV-connected layers) |
+| Chunk loading distance | RC delay / routing congestion |
 
 Furthermore, Redstone architectures naturally evolve into vertical stacking (3D structures) to minimize signal delay and bypass horizontal rendering distances. This 3D spatial logic routing is precisely the goal of MIRR's future Cube Architecture, mirroring the real-world engineering challenge of minimizing resistive-capacitive (RC) delay by stacking logic blocks vertically.
+
+The MIRR compiler is, in a very real sense, a **Redstone compiler** — it takes a behavioral description of what the machine should do and maps it to a spatial arrangement of gates, wires, and delays in physical space.
+
+---
+
+## 11. MIRR as a DSL for Scientific Computing
+
+### Heritage: From Software Language to HDL
+
+MIRR was not born as a Hardware Description Language. It was originally conceived as a **software programming language** — a Domain-Specific Language (DSL) conceptually similar to the **Wolfram Language (Mathematica)**. In its earliest incarnation, MIRR was designed for symbolic evaluation, mathematical modeling, and functional transformations of complex state systems.
+
+The Wolfram Language parallels are deep:
+
+| Wolfram Language | Original MIRR (Software DSL) | Current MIRR (HDL) |
+|------------------|------------------------------|---------------------|
+| Symbolic expressions | Homoiconic S-expressions | `src/sexpr/` engine |
+| Pattern matching (`_`, `__`) | `def`/`reflect` pattern system | `src/expand/` |
+| `Solve[]`, `DSolve[]` | Constraint resolution | `src/width/` (FIRWINE) |
+| `NDSolve[]` | Temporal simulation | `src/temporal/` |
+| `Simplify[]`, `FullSimplify[]` | Algebraic simplification | `src/simplify.rs` (33 rules) |
+| `Reduce[]` | SAT solving | `src/sat/` (DPLL) |
+| Notebooks | — | SC-6 target |
+| `Manipulate[]` (interactive) | — | SC-4 target |
+
+This heritage is not accidental — it is the reason MIRR has capabilities that no other HDL possesses. Traditional HDLs (Verilog, VHDL, Chisel) are purely descriptive: they describe hardware structure. MIRR's software-language DNA gives it the ability to **reason about** hardware, not just describe it. The symbolic evaluation engine (`src/symbolic/`) doesn't just pass signals through — it performs interval analysis, computes discrete derivatives, fingerprints waveform signatures, and rewrites expressions algebraically. These are capabilities inherited from MIRR's Wolfram-like origins.
+
+### The Philosophical Bridge
+
+Every scientific model is, at its core, a state machine. A system of ODEs is a state machine with continuous transitions. A neural network is a state machine with matrix-valued transitions. A PID controller is a state machine with feedback.
+
+MIRR already describes state machines — that's what hardware is. The insight of the scientific computing extension is that **the same language that describes a hardware state machine can describe a mathematical state machine**. The only difference is the backend:
+
+- **Hardware mode** (`--emit verilog`): State transitions become flip-flops and combinational logic
+- **Research mode** (`--mode research`): State transitions become numerical integration steps
+
+This duality means that a researcher can prototype a control algorithm in MIRR's research mode, verify its formal properties using MIRR's `property` system, and then synthesize it directly to R-SPU hardware — all in the same language, with the same formal guarantees, and zero translation errors.
+
+### Why This Matters for Open Science
+
+The current scientific computing landscape is fragmented:
+- **MATLAB/Wolfram**: Proprietary, expensive, closed-source
+- **Python/NumPy/SciPy**: Open-source but dynamically typed, no formal verification, no hardware synthesis path
+- **Julia**: Excellent numerics but no hardware target
+- **HDLs** (Verilog/VHDL): Hardware-only, no scientific computing capability
+
+MIRR, with the scientific computing milestones (SC-1 through SC-6), occupies a unique position: an **open-source, formally verified, dual-use language** that bridges scientific computing and hardware design. A researcher publishes a MIRR program as an executable paper. A hardware engineer takes that same program and synthesizes it to an FPGA. The formal properties travel with the code, ensuring that the hardware implementation preserves the mathematical guarantees of the research model.
+
+This is what makes the scientific computing extension transformative: it isn't just another numerical tool. It is the **bridge between mathematical models and physical hardware**, with formal verification as the structural guarantee.
+
+---
+
+## 12. Research Foundation & Key Benchmarks
+
+### Target Benchmarks
+
+| Technology | Metric | Source |
+|---|---|---|
+| Cement2 | 377 MHz timing closure on RISC-V soft-core | Xiao et al. 2025 |
+| SmaRTLy | 8.95% AIG reduction on RISC-V (early milestone) | Li et al. 2025 |
+| SmaRTLy | 47.2% AIG reduction vs Yosys (industrial, full milestone) | Li et al. 2025 |
+| FIRWINE | Unique Least Solution — formally proven optimal | Wang et al. 2026 |
+| R-SPU LTL | Sub-cycle fault detection (nanosecond response) | Architecture goal |
+| R-SPU DPR | Millisecond reconfiguration + static clamp in 1 cycle | Architecture goal |
+| MIRR Compiler | 155k+ LOC, 5,200+ tests, 0 unsafe, 0 clippy warnings | Current state |
+| R-SPU 64-core | 3.2M+ lines synthesized SystemVerilog | Current state |
+| Formal Proofs | 90+ Rocq proofs, 13.54% symbol coverage | Current state |
+
+### Core Technology References
+
+- Xiao, Y. et al. (2025). Cement2: Temporal hardware transactions for FPGA programming. arXiv:2511.15073
+- Li, C. et al. (2025). SmaRTLy: RTL optimization with logic inferencing and structural rebuilding. arXiv:2510.17251
+- Wang, K. et al. (2026). FIRWINE: A formally verified procedure for width inference in FIRRTL. arXiv:2601.12813
+- Arcaini, P. et al. (2015). Modeling and analyzing MAPE-K feedback loops for self-adaptation. SEAMS 2015.
+- Pnueli, A. (1977). The temporal logic of programs. 18th Annual Symposium on Foundations of Computer Science. IEEE.
+- Cong, J., & Zhang, Z. (2006). An efficient and versatile scheduling algorithm based on SDC formulation. DAC 2006.
+- Lin, I.-C. et al. (2016). Aging-aware reliable multiplier design with adaptive hold logic. IEEE Trans. VLSI Systems, 24(3), 844–853.
