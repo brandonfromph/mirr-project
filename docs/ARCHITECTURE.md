@@ -383,118 +383,63 @@ All of the following phases have been completed and validated:
 
 ---
 
-## 6. Scientific Computing DSL Milestones
+## 6. Advanced Scientific Computing for Hardware Synthesis (NLnet Milestones)
 
-These milestones define the MVP plan for extending MIRR into a dual-use language: a production HDL *and* a research-grade scientific computing DSL. This direction is grounded in MIRR's original heritage as a Wolfram-like software programming language (see Section 11).
+Your original vision was correct: attempting to build a general-purpose scientific DSL to compete with Python (NumPy/PyTorch) is a losing battle. Python has already won that space. 
 
-### SC-1: Symbolic Computation Kernel
+Instead, MIRR integrates **Scientific Computing directly into the EDA toolchain**. The goal is not to have physicists write simulations in MIRR, but to give researchers and hardware engineers a compiler that uses advanced mathematics (Wolfram-style symbolic evaluation, PDEs, and tensor optimizations) to generate superhuman chip designs.
 
-**Objective**: Expose MIRR's existing symbolic evaluation engine (`src/symbolic/`) as a standalone scientific computing tool, independent of hardware synthesis.
-
+### SC-1: Symbolic Circuit Equivalence Prover
+**Objective**: Enhance the compiler's ability to use deep mathematical logic to prove that two hardware designs are mathematically identical without running a single simulation cycle.
 **Deliverables**:
-- `mirr eval` CLI command for interactive symbolic expression evaluation
-- Pure mathematical expression mode: arbitrary-precision arithmetic, symbolic differentiation, polynomial manipulation
-- Wolfram-like notebook-style REPL with expression history and variable binding
-- Reuse of existing infrastructure: interval analysis (`interval.rs`), term rewriting (`rewrite.rs`), fingerprinting (`fingerprint.rs`), discrete calculus (`diff.rs`, `integration.rs`)
-- `--mode research` flag on the compiler to suppress hardware synthesis passes and enable extended numeric types (f64, BigInt)
+- Upgrade the `src/symbolic/` engine to support algebraic ring theory and Galois fields.
+- Integrate automated theorem proving (similar to Wolfram's `FullSimplify[]`) to mathematically reduce millions of logic gates down to their minimal theoretical form.
+- Provide a cryptographic "proof receipt" that researchers can verify independently.
 
-**Dependencies**: None (builds on existing `src/symbolic/`).
-
-**Estimated Effort**: 4–6 weeks.
-
-### SC-2: Tensor & Matrix Primitives
-
-**Objective**: Add native N-dimensional array types and linear algebra operations to the MIRR type system, usable in both hardware synthesis and research modes.
-
+### SC-2: Topological & Spatial Routing (Tensor Math)
+**Objective**: Solve MIRR's current "Physical Agnosticism" flaw by using multidimensional tensor mathematics to optimally route the 1,024-core R-SPU.
 **Deliverables**:
-- `tensor<N, M>` and `matrix<N, M>` types in MIRR syntax with compile-time dimension checking
-- Matrix multiplication, transpose, inverse, determinant, and decomposition (LU, QR, SVD) as first-class operations
-- Hardware-mappable implementations: when targeting R-SPU or FPGA, tensor ops synthesize to systolic arrays or DSP block chains
-- Software-mode implementations: when targeting `--mode research`, tensor ops execute as pure Rust computations
-- Integration with Phase 7c's type-level natural numbers for dimension safety
-- `stdlib/science/linalg.mirr` standard library module
+- Implement force-directed graph drawing and simulated annealing algorithms inside the compiler to calculate the optimal spatial layout of logic blocks.
+- Use native tensor operations to model the NoC routing congestion as a network-flow problem, ensuring zero-jitter pathways before handing off to NextPNR.
 
-**Dependencies**: SC-1 (research mode infrastructure).
-
-**Estimated Effort**: 6–8 weeks.
-
-### SC-3: Differential Equation Solver Framework
-
-**Objective**: Reinterpret MIRR's temporal guard system as a discrete-time ODE solver framework, enabling the same language to express both hardware timing constraints and continuous-time scientific simulations.
-
+### SC-3: Thermodynamic & RC Delay PDEs
+**Objective**: Use continuous-time mathematical models (Differential Equations) inside the compiler to simulate the physical reality of the chip.
 **Deliverables**:
-- Semantic bridge: MIRR `delay(k)` ↔ discrete timestep ↔ ODE integration step
-- Adaptive step-size Runge-Kutta (RK4, RK45) and implicit methods (backward Euler) for stiff systems
-- State-space representation using MIRR `signal` declarations as state variables and `reflex` blocks as update equations
-- `--emit trajectory` backend generating CSV/JSON time-series output
-- Example programs: Lorenz attractor, double pendulum, reaction-diffusion (Gray-Scott), and Hodgkin-Huxley neuron model
-- Formal properties on solver stability: MIRR `property` blocks asserting energy conservation, Lyapunov stability
+- A compiler phase that calculates the resistor-capacitor (RC) delay of every wire using discrete calculus.
+- Thermal dissipation modeling: Using partial differential equations (PDEs) to map heat density across the 3D Cube architecture, allowing the compiler to automatically spread out hot-running logic blocks to prevent thermal throttling.
 
-**Dependencies**: SC-1, SC-2 (matrix types for state-space).
-
-**Estimated Effort**: 8–10 weeks.
-
-### SC-4: Scientific Visualization Pipeline
-
-**Objective**: Provide publication-quality visualization of simulation results directly from the MIRR toolchain.
-
+### SC-4: Automated Algorithmic Retiming
+**Objective**: Use linear programming and optimization math to automatically pipeline and retime the generated hardware.
 **Deliverables**:
-- `--emit plot` backend generating SVG/PNG from simulation time-series data
-- Supported plot types: time-series, phase portraits, spectrograms, surface plots, vector fields
-- Integration with the existing VCD waveform viewer (`mirr-wave`) for hardware-science dual-use: same tool visualizes both circuit waveforms and ODE trajectories
-- Color-mapped signal confidence intervals from the symbolic evaluation engine's interval analysis
-- LaTeX-compatible figure export for direct inclusion in research papers
-- `mirr plot` CLI subcommand with configurable axes, legends, and annotations
+- The compiler mathematically calculates the critical path of the spatial architecture and automatically inserts pipeline registers to maximize the clock frequency (Fmax).
+- Guarantees mathematical equivalence using the SC-1 Symbolic Prover after retiming.
 
-**Dependencies**: SC-3 (trajectory data to visualize).
-
-**Estimated Effort**: 4–6 weeks.
-
-### SC-5: Domain-Specific Libraries (BioMed & Physics)
-
-**Objective**: Provide standard library modules for common scientific computing patterns, each with formal properties and optional hardware synthesis targets.
-
+### SC-5: AI-Driven Architecture Exploration
+**Objective**: Instead of researchers writing AI models *in* MIRR, the MIRR compiler uses AI search algorithms to explore the hardware design space.
 **Deliverables**:
-- `stdlib/science/signal_processing.mirr` — FFT, FIR/IIR filter design, windowing functions, spectral analysis. Hardware mode synthesizes to DSP block chains. Research mode executes as pure computation.
-- `stdlib/science/control_theory.mirr` — PID controllers, state-space models, Kalman filters, observer design. Bridges directly to the MAPE-K control loop for hardware-in-the-loop simulation.
-- `stdlib/science/neural.mirr` — Basic neural network primitives (dense layers, convolution, activation functions). Hardware mode maps to the R-SPU's matrix math units. Research mode provides training loops.
-- `stdlib/science/biomed.mirr` — Physiological signal processing: QRS complex detection, respiratory rate estimation, SpO2 computation. Directly reuses the MAPE-K epilepsy monitor and neonatal respirator case studies.
-- Each library module includes `property` blocks asserting numerical stability, convergence bounds, and safety invariants
+- Implement genetic algorithms and gradient descent within the compilation pipeline to find the optimal trade-off between power, area, and speed (PPA).
+- Allows researchers to say: "Give me the most power-efficient flight controller," and the compiler uses scientific computing to generate and test 10,000 variations mathematically.
 
-**Dependencies**: SC-1, SC-2, SC-3.
-
-**Estimated Effort**: 10–12 weeks.
-
-### SC-6: Open Research Platform
-
-**Objective**: Make MIRR accessible to the research community as a browser-based, reproducible computing environment.
-
+### SC-6: The Researcher's Analysis API
+**Objective**: Provide a bridge that lets researchers use Python to analyze MIRR's hardware outputs, rather than forcing them to leave Python.
 **Deliverables**:
-- WASM playground for browser-based MIRR scientific computing (extends existing `crates/mirr-wasm/`)
-- Notebook-style web interface: code cells, output cells, inline visualization
-- Integration with Jupyter ecosystem via a MIRR kernel (JSON-RPC bridge to the WASM compiler)
-- Reproducible research artifacts: MIRR programs as executable papers — a `.mirr` file contains both the model specification and the visualization directives
-- Public web playground hosted on GitHub Pages (extends existing `_site/` infrastructure)
-- 3 example research notebooks: (1) Digital signal processing for ECG analysis, (2) PID controller design with hardware synthesis, (3) Neural network inference on R-SPU vs. software comparison
-
-**Dependencies**: SC-1 through SC-5.
-
-**Estimated Effort**: 8–10 weeks.
+- A Python/Jupyter binding (`mirr-py`) that allows scientists to query the MIRR compiler via RPC.
+- Researchers can write Python scripts to extract the formal proofs, thermal maps, and logic density of their compiled MIRR hardware directly into Pandas or Matplotlib for analysis.
 
 ---
 
 ## 7. Scientific Computing Milestone Summary
 
-| Milestone | Title | Deliverable | Dependencies | Effort |
-|-----------|-------|-------------|--------------|--------|
-| **SC-1** | Symbolic Computation Kernel | `mirr eval` REPL, `--mode research` | None | 4–6 wk |
-| **SC-2** | Tensor & Matrix Primitives | `tensor<N,M>` types, `stdlib/science/linalg.mirr` | SC-1 | 6–8 wk |
-| **SC-3** | Differential Equation Solver | `--emit trajectory`, ODE solvers, example models | SC-1, SC-2 | 8–10 wk |
-| **SC-4** | Scientific Visualization | `--emit plot`, `mirr plot` CLI, LaTeX export | SC-3 | 4–6 wk |
-| **SC-5** | Domain-Specific Libraries | Signal processing, control theory, neural, biomed | SC-1–3 | 10–12 wk |
-| **SC-6** | Open Research Platform | WASM playground, Jupyter kernel, 3 notebooks | SC-1–5 | 8–10 wk |
+| Milestone | Title | Deliverable | Effort |
+|-----------|-------|-------------|--------|
+| **SC-1** | Symbolic Prover | Algebraic gate minimization, Proof receipts | 4–6 wk |
+| **SC-2** | Topological Routing | Tensor-based NoC congestion optimization | 6–8 wk |
+| **SC-3** | Thermodynamic PDEs | Heat mapping and RC delay simulation | 8–10 wk |
+| **SC-4** | Automated Retiming | Linear programming for critical path optimization | 4–6 wk |
+| **SC-5** | AI Architecture Search | Genetic algorithms for PPA optimization | 10–12 wk |
+| **SC-6** | Researcher API | Python/Jupyter bridge (`mirr-py`) for EDA analysis | 8–10 wk |
 
-**Total estimated effort**: 40–52 weeks (8–12 months, parallelizable across SC-1/SC-2 and SC-4/SC-5).
+**Total estimated effort**: 40–52 weeks (8–12 months).
 
 ---
 
@@ -561,37 +506,20 @@ The MIRR compiler is, in a very real sense, a **Redstone compiler** — it takes
 
 ---
 
-## 11. MIRR as a DSL for Scientific Computing
+## 11. MIRR's Scientific Heritage
 
 ### Heritage: From Software Language to HDL
 
 MIRR was not born as a Hardware Description Language. It was originally conceived as a **software programming language** — a Domain-Specific Language (DSL) conceptually similar to the **Wolfram Language (Mathematica)**. In its earliest incarnation, MIRR was designed for symbolic evaluation, mathematical modeling, and functional transformations of complex state systems.
 
-The Wolfram Language parallels are deep:
+This heritage is not accidental — it is the reason MIRR has capabilities that no other HDL possesses. Traditional HDLs (Verilog, VHDL, Chisel) are purely descriptive: they describe hardware structure. MIRR's software-language DNA gives it the ability to **reason about** hardware, not just describe it. The symbolic evaluation engine (`src/symbolic/`) doesn't just pass signals through — it performs interval analysis, computes discrete derivatives, fingerprints waveform signatures, and rewrites expressions algebraically. 
 
-| Wolfram Language | Original MIRR (Software DSL) | Current MIRR (HDL) |
-|------------------|------------------------------|---------------------|
-| Symbolic expressions | Homoiconic S-expressions | `src/sexpr/` engine |
-| Pattern matching (`_`, `__`) | `def`/`reflect` pattern system | `src/expand/` |
-| `Solve[]`, `DSolve[]` | Constraint resolution | `src/width/` (FIRWINE) |
-| `NDSolve[]` | Temporal simulation | `src/temporal/` |
-| `Simplify[]`, `FullSimplify[]` | Algebraic simplification | `src/simplify.rs` (33 rules) |
-| `Reduce[]` | SAT solving | `src/sat/` (DPLL) |
-| Notebooks | — | SC-6 target |
-| `Manipulate[]` (interactive) | — | SC-4 target |
+### Why This Matters for Open Source EDA
 
-This heritage is not accidental — it is the reason MIRR has capabilities that no other HDL possesses. Traditional HDLs (Verilog, VHDL, Chisel) are purely descriptive: they describe hardware structure. MIRR's software-language DNA gives it the ability to **reason about** hardware, not just describe it. The symbolic evaluation engine (`src/symbolic/`) doesn't just pass signals through — it performs interval analysis, computes discrete derivatives, fingerprints waveform signatures, and rewrites expressions algebraically. These are capabilities inherited from MIRR's Wolfram-like origins.
+The current open-source EDA landscape (Yosys, OpenROAD, NextPNR) is incredible, but the tools are highly disjointed and rely on decades-old C++ algorithms that were not built for massive parallelism or modern AI-driven architectural searches.
 
-### The Philosophical Bridge
+By embedding heavy scientific computation **directly into the compiler**, researchers don't have to abandon Python to use MIRR. Instead, they use Python (via `mirr-py`) to instruct the MIRR compiler to perform hyper-advanced mathematical synthesis on their designs.
 
-Every scientific model is, at its core, a state machine. A system of ODEs is a state machine with continuous transitions. A neural network is a state machine with matrix-valued transitions. A PID controller is a state machine with feedback.
-
-MIRR already describes state machines — that's what hardware is. The insight of the scientific computing extension is that **the same language that describes a hardware state machine can describe a mathematical state machine**. The only difference is the backend:
-
-- **Hardware mode** (`--emit verilog`): State transitions become flip-flops and combinational logic
-- **Research mode** (`--mode research`): State transitions become numerical integration steps
-
-This duality means that a researcher can prototype a control algorithm in MIRR's research mode, verify its formal properties using MIRR's `property` system, and then synthesize it directly to R-SPU hardware — all in the same language, with the same formal guarantees, and zero translation errors.
 
 ### Why This Matters for Open Science
 
