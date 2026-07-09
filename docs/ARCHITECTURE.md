@@ -355,6 +355,7 @@ All of the following phases have been completed and validated:
 
 | Phase | Name | Status | Key Activity |
 |-------|------|--------|--------------|
+| 7i | Verified Compilation | ❌ Canceled | Rocq-verified compiler passes (requires VE, unsupported on macOS) |
 | 8a | R-SPU Core Architecture | 🔄 In Progress | 64-bit tagged pipeline, 5-stage core with PCC interlock |
 
 ### Key Milestones (Updated)
@@ -367,13 +368,14 @@ All of the following phases have been completed and validated:
 6. ~~**MAPE-K Hardware Realization**~~ *(Completed)*: `src/emit/mape_k_rtl/` provides synthesizable autonomic control hardware with Yosys validation and SymbiYosys formal verification.
 7. **Homoiconicity Integration** *(In Progress)*: The `src/sexpr/` engine exists but is not yet wired to the main pipeline. Full "Code as Data" autonomic self-healing is future work.
 8. **Scale-Blocker Debugging** *(Ongoing)*: The 64-core R-SPU synthesizes successfully (3.2M+ lines of SystemVerilog). Scaling to 1,024+ cores requires addressing NoC routing congestion and synthesis runtime.
-9. **Scientific Computing Enhancements (NLnet Proposals)** *(Proposed)*: Formal integration of advanced EDA mathematics directly into the compiler pipeline.
+9. **Scientific Computing Enhancements** *(Proposed)*: Formal integration of advanced EDA mathematics directly into the compiler pipeline.
     - **SC-1**: Industry-Grade Symbolic Circuit Equivalence Prover
     - **SC-2**: Topological & Spatial Routing via Tensor Math
     - **SC-3**: Thermodynamic & RC Delay Modeling via PDEs
     - **SC-4**: Automated Algorithmic Retiming
     - **SC-5**: AI-Driven Architecture Exploration
     - **SC-6**: Industry-Grade Diagnostic & Error Engine
+10. ~~**Rocq Proof Engine**~~ *(Canceled)*: The Rocq compiler requires a Virtual Environment (VE) which prevents native execution on macOS. This project ended before it began and cannot be used.
 
 ### Engine MVP Graduation Status
 
@@ -384,6 +386,7 @@ All of the following phases have been completed and validated:
 | SAT Logic Simplification | ✅ Graduated | Production-grade with E900–E902 error codes |
 | S-Expression Frontend | ✅ Graduated | Full round-trip serialization with macro expansion |
 | Multi-Clock Domain Crossing | ✅ Graduated | `clock_domain.rs` with ECS `ClockDomainsComponent` |
+| Rocq Proof Engine | ❌ Canceled | Requires VE; incompatible with native macOS toolchain |
 
 ---
 
