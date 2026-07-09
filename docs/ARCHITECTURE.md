@@ -383,11 +383,9 @@ All of the following phases have been completed and validated:
 
 ---
 
-## 6. Advanced Scientific Computing for Hardware Synthesis (NLnet Milestones)
+## 6. Advanced Scientific Computing for Hardware Synthesis
 
-Your original vision was correct: attempting to build a general-purpose scientific DSL to compete with Python (NumPy/PyTorch) is a losing battle. Python has already won that space. 
-
-Instead, MIRR integrates **Scientific Computing directly into the EDA toolchain**. The goal is not to have physicists write simulations in MIRR, but to give researchers and hardware engineers a compiler that uses advanced mathematics (Wolfram-style symbolic evaluation, PDEs, and tensor optimizations) to generate superhuman chip designs.
+MIRR integrates scientific computing directly into the EDA toolchain. Rather than exposing a general-purpose scientific DSL, MIRR embeds advanced mathematics (symbolic evaluation, PDEs, and tensor optimizations) into the compiler's internal passes. The goal is to give hardware engineers a compiler that uses these techniques to produce optimized, formally verified chip designs that would be impractical to achieve through manual iteration.
 
 ### SC-1: Symbolic Circuit Equivalence Prover
 **Objective**: Enhance the compiler's ability to use deep mathematical logic to prove that two hardware designs are mathematically identical without running a single simulation cycle.
