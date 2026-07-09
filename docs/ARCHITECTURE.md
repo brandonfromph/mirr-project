@@ -355,7 +355,6 @@ All of the following phases have been completed and validated:
 
 | Phase | Name | Status | Key Activity |
 |-------|------|--------|--------------|
-| 7i | Verified Compilation | 🔄 In Progress | Rocq-verified compiler passes, CompCert-inspired simulation relations |
 | 8a | R-SPU Core Architecture | 🔄 In Progress | 64-bit tagged pipeline, 5-stage core with PCC interlock |
 
 ### Key Milestones (Updated)
@@ -365,10 +364,16 @@ All of the following phases have been completed and validated:
 3. ~~**Clock Domain Crossing (CDC)**~~ *(Completed)*: Native support for multiple clock domains via `ClockDomainsComponent` and `PhantomTagsComponent` within the ECS. `src/temporal/clock_domain.rs` handles cross-domain synchronization.
 4. ~~**Source-Level Debugger**~~ *(MVP Complete)*: The `mirr-wave` CLI (`src/bin/mirr-wave.rs`) provides VCD waveform viewing with source mapping. The `src/diagnostic/vcd_parser.rs` handles waveform ingestion. Graduation to interactive temporal scrubbing remains future work.
 5. ~~**SAT Logic Simplification**~~ *(Completed)*: The `src/sat/` module provides bounded DPLL solving with CNF encoding for guard redundancy elimination. Error codes E900–E902.
-6. ~~**MAPE-K Hardware Realization**~~ *(Completed)*: `src/emit/mape_k_rtl/` provides synthesizable autonomic control hardware with Yosys validation and Rocq behavioral equivalence proofs.
+6. ~~**MAPE-K Hardware Realization**~~ *(Completed)*: `src/emit/mape_k_rtl/` provides synthesizable autonomic control hardware with Yosys validation and SymbiYosys formal verification.
 7. **Homoiconicity Integration** *(In Progress)*: The `src/sexpr/` engine exists but is not yet wired to the main pipeline. Full "Code as Data" autonomic self-healing is future work.
 8. **Scale-Blocker Debugging** *(Ongoing)*: The 64-core R-SPU synthesizes successfully (3.2M+ lines of SystemVerilog). Scaling to 1,024+ cores requires addressing NoC routing congestion and synthesis runtime.
-9. **Rocq Proof Engine** *(In Progress)*: 90+ Rocq proofs across 6 proof directories (`proofs/width/`, `proofs/cert/`, `proofs/compiler/`, `proofs/language/`, `proofs/mape_k/`, `proofs/rspu/`). 13.54% symbol coverage. Full pipeline coverage is the Phase 7i target.
+9. **Scientific Computing Enhancements (NLnet Proposals)** *(Proposed)*: Formal integration of advanced EDA mathematics directly into the compiler pipeline.
+    - **SC-1**: Industry-Grade Symbolic Circuit Equivalence Prover
+    - **SC-2**: Topological & Spatial Routing via Tensor Math
+    - **SC-3**: Thermodynamic & RC Delay Modeling via PDEs
+    - **SC-4**: Automated Algorithmic Retiming
+    - **SC-5**: AI-Driven Architecture Exploration
+    - **SC-6**: Industry-Grade Diagnostic & Error Engine
 
 ### Engine MVP Graduation Status
 
@@ -379,7 +384,6 @@ All of the following phases have been completed and validated:
 | SAT Logic Simplification | ✅ Graduated | Production-grade with E900–E902 error codes |
 | S-Expression Frontend | ✅ Graduated | Full round-trip serialization with macro expansion |
 | Multi-Clock Domain Crossing | ✅ Graduated | `clock_domain.rs` with ECS `ClockDomainsComponent` |
-| Rocq Proof Engine | 🔄 In Progress | Expand from 13.54% to full pipeline coverage |
 
 ---
 
