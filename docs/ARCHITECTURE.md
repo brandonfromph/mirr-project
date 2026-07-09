@@ -539,6 +539,37 @@ Hardware architecture decisions (core count, NoC topology, memory hierarchy, pip
 
 ---
 
+### Proposal SC-6: Industry-Grade Diagnostic & Error Engine
+
+**Proposal #:** SC-6 | **Status:** PROPOSED — AWAITING APPROVAL | **Scope:** `src/error.rs`, `src/diagnostic/`
+
+#### Problem Statement
+
+The compiler's current error system (`MirrError` and `Diagnostic`) is functional but MVP-grade. While it successfully handles bounded accumulation (stopping at `MAX_ACCUMULATED_ERRORS`) and produces basic terminal output, it relies on stringly-typed messages with embedded `[Ennn]` error codes parsed at runtime. `MirrError::to_diagnostic()` currently does not support secondary source spans, contextual hints, or structured help labels (e.g., pointing out both the previous definition and the new conflicting definition). 
+
+For an industry-grade EDA tool expected to guide hardware engineers through complex synthesis and verification failures, errors must explicitly explain *why* a failure occurred (with rich contextual labels) rather than just stating *that* it occurred.
+
+#### Proposed Changes
+
+1. **Strongly-Typed Error Contexts**: Refactor the `MirrError` enum variants from generic `String` wrappers into strongly-typed structs (e.g., `DuplicateSignal { name: String, original_span: Span, duplicate_span: Span }`).
+2. **Diagnostic Builder Pattern**: Expand `MirrError::to_diagnostic()` to automatically construct multi-label diagnostics (e.g., `LabelKind::Note`, `LabelKind::Help`) leveraging the new strongly-typed context.
+3. **Static Error Code Registry**: Replace the runtime string parsing of `[Ennn]` codes with a static trait-based registry, ensuring error codes are evaluated at compile time and preventing invalid or missing codes.
+4. **Rich Terminal Rendering**: Upgrade the `render_diagnostic` engine to display overlapping source spans and multiple file contexts simultaneously, similar to modern compilers like `rustc` and `ariadne`.
+
+#### Philosophy Gate
+
+1. **NASA Power-of-10**: Preserved. The `Diagnostic` structure and renderer retain bounded iteration (`MAX_LABELS`, `MAX_DIAG_LINE_WIDTH`) without deep recursion.
+2. **Zero `unsafe`**: Preserved. No reliance on external FFI rendering libraries.
+3. **Traceability**: Hardcoded static error codes guarantee strict JPL-style traceability for every compiler failure mode.
+
+#### Risks
+
+- Migrating every existing error call site in the compiler to strongly-typed structs requires significant refactoring across the codebase (parser, semantic, temporal, and RSPU emission passes).
+
+#### Estimated Effort: 3–4 weeks
+
+---
+
 ## 7. Scientific Computing Proposal Summary
 
 | Proposal | Title | Status | Key Deliverable | Estimated Effort |
@@ -548,9 +579,10 @@ Hardware architecture decisions (core count, NoC topology, memory hierarchy, pip
 | **SC-3** | Thermodynamic PDEs | PROPOSED | RC delay estimation and thermal hotspot detection | 8–10 wk |
 | **SC-4** | Automated Retiming | PROPOSED | Physical-aware pipeline insertion with equivalence proof | 4–6 wk |
 | **SC-5** | AI Architecture Search | PROPOSED | Genetic algorithm design space exploration | 10–12 wk |
+| **SC-6** | Industry-Grade Diagnostic Engine | PROPOSED | Strongly-typed context, multi-span labels, static code registry | 3–4 wk |
 
-**Total estimated effort (if all approved)**: 32–42 weeks (8–10 months).
-**Dependency chain**: SC-1 is independent. SC-2 is independent. SC-3 depends on SC-2. SC-4 depends on SC-1 and SC-3. SC-5 depends on all prior proposals.
+**Total estimated effort (if all approved)**: 35–46 weeks.
+**Dependency chain**: SC-1, SC-2, and SC-6 are independent. SC-3 depends on SC-2. SC-4 depends on SC-1 and SC-3. SC-5 depends on all prior proposals.
 
 ---
 
