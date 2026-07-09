@@ -383,54 +383,174 @@ All of the following phases have been completed and validated:
 
 ---
 
-## 6. Advanced Scientific Computing for Hardware Synthesis
+## 6. Proposed Scientific Computing Extensions for Hardware Synthesis
 
 MIRR integrates scientific computing directly into the EDA toolchain. Rather than exposing a general-purpose scientific DSL, MIRR embeds advanced mathematics (symbolic evaluation, PDEs, and tensor optimizations) into the compiler's internal passes. The goal is to give hardware engineers a compiler that uses these techniques to produce optimized, formally verified chip designs that would be impractical to achieve through manual iteration.
 
-### SC-1: Symbolic Circuit Equivalence Prover
-**Objective**: Enhance the compiler's ability to use deep mathematical logic to prove that two hardware designs are mathematically identical without running a single simulation cycle.
-**Deliverables**:
-- Upgrade the `src/symbolic/` engine to support algebraic ring theory and Galois fields.
-- Integrate automated theorem proving (similar to Wolfram's `FullSimplify[]`) to mathematically reduce millions of logic gates down to their minimal theoretical form.
-- Provide a cryptographic "proof receipt" that researchers can verify independently.
+The following milestones are **proposals** under review. They are not committed to the roadmap until individually approved.
 
-### SC-2: Topological & Spatial Routing (Tensor Math)
-**Objective**: Solve MIRR's current "Physical Agnosticism" flaw by using multidimensional tensor mathematics to optimally route the 1,024-core R-SPU.
-**Deliverables**:
-- Implement force-directed graph drawing and simulated annealing algorithms inside the compiler to calculate the optimal spatial layout of logic blocks.
-- Use native tensor operations to model the NoC routing congestion as a network-flow problem, ensuring zero-jitter pathways before handing off to NextPNR.
+---
 
-### SC-3: Thermodynamic & RC Delay PDEs
-**Objective**: Use continuous-time mathematical models (Differential Equations) inside the compiler to simulate the physical reality of the chip.
-**Deliverables**:
-- A compiler phase that calculates the resistor-capacitor (RC) delay of every wire using discrete calculus.
-- Thermal dissipation modeling: Using partial differential equations (PDEs) to map heat density across the 3D Cube architecture, allowing the compiler to automatically spread out hot-running logic blocks to prevent thermal throttling.
+### Proposal SC-1: Industry-Grade Symbolic Circuit Equivalence Prover
 
-### SC-4: Automated Algorithmic Retiming
-**Objective**: Use linear programming and optimization math to automatically pipeline and retime the generated hardware.
-**Deliverables**:
-- The compiler mathematically calculates the critical path of the spatial architecture and automatically inserts pipeline registers to maximize the clock frequency (Fmax).
-- Guarantees mathematical equivalence using the SC-1 Symbolic Prover after retiming.
+**Proposal #:** SC-1 | **Status:** PROPOSED — AWAITING APPROVAL | **Scope:** `src/symbolic/`, `src/sat/`
 
-### SC-5: AI-Driven Architecture Exploration
-**Objective**: Instead of researchers writing AI models *in* MIRR, the MIRR compiler uses AI search algorithms to explore the hardware design space.
-**Deliverables**:
-- Implement genetic algorithms and gradient descent within the compilation pipeline to find the optimal trade-off between power, area, and speed (PPA).
-- Allows researchers to say: "Give me the most power-efficient flight controller," and the compiler uses scientific computing to generate and test 10,000 variations mathematically.
+#### Problem Statement
 
+The existing symbolic prover is MVP-grade. The internal DPLL SAT solver (`src/sat/solver.rs`) is bounded to 2,048 CNF variables and 8,192 clauses. The equivalence checker (`src/symbolic/mod.rs::verify_equivalence`) performs only structural comparison (guard count, shift-register count, counter count, logic gate count) — a necessary but not sufficient condition for logical equivalence. The doc comment on `verify_equivalence` explicitly states: *"This is a necessary (not sufficient) condition for full logical equivalence."*
 
+At the current scale (single modules, <100 signals), this is acceptable. At the R-SPU's target scale (64–1,024 cores, millions of gates), structural comparison alone cannot guarantee correctness.
 
-## 7. Scientific Computing Milestone Summary
+#### Proposed Changes
 
-| Milestone | Title | Deliverable | Effort |
-|-----------|-------|-------------|--------|
-| **SC-1** | Symbolic Prover | Algebraic gate minimization, Proof receipts | 4–6 wk |
-| **SC-2** | Topological Routing | Tensor-based NoC congestion optimization | 6–8 wk |
-| **SC-3** | Thermodynamic PDEs | Heat mapping and RC delay simulation | 8–10 wk |
-| **SC-4** | Automated Retiming | Linear programming for critical path optimization | 4–6 wk |
-| **SC-5** | AI Architecture Search | Genetic algorithms for PPA optimization | 10–12 wk |
+1. **Scalable SAT Backend**: Replace or augment the bounded DPLL solver with a CDCL (Conflict-Driven Clause Learning) solver capable of handling 100k+ variables. Maintain NASA Power-of-10 compliance by imposing configurable upper bounds on clause count and conflict budget.
+2. **Miter-Circuit Equivalence**: Implement miter construction — given two netlists A and B, construct `A XOR B` and prove unsatisfiability. This is the industry-standard technique for full Boolean equivalence checking (used by Synopsys Formality and Cadence Conformal).
+3. **Counterexample Generation**: When a proof fails, extract a satisfying assignment from the SAT solver and map it back to concrete input signal values. This produces a minimal failing test case that the engineer can inspect.
+4. **Algebraic Datapath Verification**: Extend the symbolic engine with algebraic ring theory and Galois field (GF(2^n)) arithmetic for verifying arithmetic datapaths (multipliers, ALUs) where bit-blasting to SAT is exponentially expensive.
+5. **Cryptographic Proof Receipts**: Generate a verifiable proof artifact (hash-chained proof trace) that an independent tool can check without re-running the solver.
 
-**Total estimated effort**: 32–42 weeks (8–10 months).
+#### Philosophy Gate
+
+1. **NASA Power-of-10**: Preserved. CDCL solver uses bounded conflict budget (`MAX_CONFLICTS`), not unbounded recursion.
+2. **Zero `unsafe`**: Preserved. All solver internals remain `#![forbid(unsafe_code)]`.
+3. **ECS-First**: Preserved. Miter construction reads from the ECS Registry, not the legacy AST.
+
+#### Risks
+
+- CDCL solvers are complex. A from-scratch implementation is substantial; alternatively, integrating an external solver (e.g., CaDiCaL via FFI) would violate `#![forbid(unsafe_code)]`. A pure-Rust CDCL implementation (e.g., `varisat` crate) is the proposed middle ground, pending license review.
+
+#### Estimated Effort: 4–6 weeks
+
+---
+
+### Proposal SC-2: Topological & Spatial Routing via Tensor Math
+
+**Proposal #:** SC-2 | **Status:** PROPOSED — AWAITING APPROVAL | **Scope:** `src/toolchain/`, `src/ecs/`
+
+#### Problem Statement
+
+The compiler has no awareness of physical geometry or floorplanning (documented as Known Technical Flaw #1 in Section 2). NextPNR integration exists (`src/toolchain/`) but placement data does not feed back into the ECS. At the 1,024-core R-SPU scale, the current mesh NoC topology does not scale linearly — routing congestion in the center of the grid creates data traffic jams and increases wire delay unpredictably.
+
+#### Proposed Changes
+
+1. **Force-Directed Placement**: Implement a force-directed graph drawing algorithm that models each R-SPU core as a charged particle and each NoC link as a spring. Iteratively solve for the equilibrium layout that minimizes total wire length while respecting physical constraints.
+2. **Simulated Annealing Refinement**: Apply simulated annealing as a post-processing pass to escape local minima in the force-directed solution, swapping core positions probabilistically.
+3. **Network-Flow Congestion Model**: Model the NoC routing as a multi-commodity flow problem using tensor operations. Each data stream is a commodity; the network capacity is the constraint. Solve for the flow assignment that minimizes maximum link utilization.
+4. **ECS Feedback Loop**: Store placement coordinates as a new `PlacementComponent` in the ECS Registry, making physical position a first-class entity property that downstream passes (timing, thermal) can query.
+
+#### Philosophy Gate
+
+1. **NASA Power-of-10**: Simulated annealing and force-directed iterations bounded by `MAX_PLACEMENT_ITERATIONS`.
+2. **ECS-First**: Placement data stored as ECS components, not sidecar data structures.
+
+#### Risks
+
+- Force-directed placement is a well-understood algorithm but has O(N²) complexity per iteration. At 1,024 cores this is manageable; at 10,000+ it may require Barnes-Hut approximation.
+- Quality of results is unproven until benchmarked against NextPNR's native placer.
+
+#### Estimated Effort: 6–8 weeks
+
+---
+
+### Proposal SC-3: Thermodynamic & RC Delay Modeling via PDEs
+
+**Proposal #:** SC-3 | **Status:** PROPOSED — AWAITING APPROVAL | **Scope:** New module `src/thermal/`
+
+#### Problem Statement
+
+The compiler currently has zero visibility into the thermal behavior of the generated silicon. For the 3D Cube architecture (Section 9), where logic is stacked vertically across multiple silicon layers, thermal hotspots can cause clock skew, accelerated electromigration, and silicon degradation. Additionally, resistor-capacitor (RC) wire delay is a function of wire length and layer, but the compiler currently treats all wires as zero-delay.
+
+#### Proposed Changes
+
+1. **RC Delay Calculator**: Implement Elmore delay estimation for each signal path. Uses the wire length from SC-2's placement data and technology-specific resistance/capacitance tables (per FPGA target) to compute propagation delay in picoseconds.
+2. **Thermal Grid Solver**: Discretize the chip floorplan into a 2D (or 3D for Cube) grid. Apply the steady-state heat equation (Laplace's equation: ∇²T = -Q/k) using finite difference methods to compute temperature at each grid cell, given power density estimates per logic block.
+3. **Automatic Logic Redistribution**: When the thermal solver detects a hotspot exceeding a configurable threshold (e.g., 85°C junction temperature), flag the offending logic blocks and feed constraints back to SC-2's placement engine to force redistribution.
+4. **Timing Margin Derating**: Adjust timing margins based on temperature — silicon delay increases ~0.1% per °C above nominal. Apply per-path derating so the retiming pass (SC-4) accounts for thermal-induced slowdown.
+
+#### Philosophy Gate
+
+1. **NASA Power-of-10**: Grid resolution bounded by `MAX_THERMAL_GRID_CELLS`. Finite difference solver iterations bounded by `MAX_THERMAL_ITERATIONS`.
+2. **No External Dependencies**: Solver implemented in pure Rust using standard numerical methods (Gauss-Seidel or Jacobi iteration), no external PDE libraries.
+
+#### Risks
+
+- Accuracy depends heavily on technology-specific thermal conductivity and resistance data. Without foundry PDKs, the model will be approximate (suitable for relative comparison and hotspot detection, not absolute temperature prediction).
+- Requires SC-2 placement data as input; cannot be developed fully independently.
+
+#### Estimated Effort: 8–10 weeks
+
+---
+
+### Proposal SC-4: Automated Algorithmic Retiming
+
+**Proposal #:** SC-4 | **Status:** PROPOSED — AWAITING APPROVAL | **Scope:** `src/temporal/retiming.rs`
+
+#### Problem Statement
+
+The existing Leiserson-Saxe retiming engine (`src/temporal/retiming.rs`) performs register retiming to minimize critical path delay. However, it operates on the temporal netlist in isolation and does not account for physical wire delay (RC delay from SC-3) or placement-induced path length changes (from SC-2). It also does not perform pipeline register insertion — it can only move existing registers, not add new ones.
+
+#### Proposed Changes
+
+1. **Physical-Aware Retiming**: Extend the retiming graph to incorporate RC delay weights from SC-3, so retiming decisions reflect actual physical propagation delay rather than purely logical depth.
+2. **Automatic Pipeline Insertion**: When the critical path exceeds the target clock period, automatically insert pipeline registers at mathematically optimal positions (determined via integer linear programming on the retiming graph) to split the path.
+3. **Equivalence Guarantee**: After retiming, invoke SC-1's miter-circuit equivalence checker to formally prove that the retimed design is functionally identical to the original. If the proof fails, reject the retiming and report the counterexample.
+4. **Latency Reporting**: Report the pipeline latency (in clock cycles) introduced by automatic register insertion, so the engineer can verify that the added latency is acceptable for the application's real-time constraints.
+
+#### Philosophy Gate
+
+1. **NASA Power-of-10**: ILP solver bounded by `MAX_RETIMING_VARIABLES`. Pipeline insertion depth bounded by `MAX_PIPELINE_STAGES`.
+2. **ECS-First**: New pipeline registers are inserted as ECS entities with full traceability to the retiming pass that created them.
+
+#### Risks
+
+- Integer linear programming is NP-hard in general, but retiming ILPs are typically small and well-structured. A bounded simplex or branch-and-bound solver should suffice.
+- Depends on SC-1 (equivalence checking) and SC-3 (delay data). Partial value is achievable with logical-only retiming (no physical delay awareness).
+
+#### Estimated Effort: 4–6 weeks
+
+---
+
+### Proposal SC-5: AI-Driven Architecture Exploration
+
+**Proposal #:** SC-5 | **Status:** PROPOSED — AWAITING APPROVAL | **Scope:** New module `src/dse/`
+
+#### Problem Statement
+
+Hardware architecture decisions (core count, NoC topology, memory hierarchy, pipeline depth) are currently made manually by the engineer. For the R-SPU, these decisions have exponential impact on power, area, and speed (PPA). A 64-core design with a mesh NoC may be optimal for one workload but catastrophic for another. There is no systematic way to explore the design space within the current compiler.
+
+#### Proposed Changes
+
+1. **Design Space Definition**: Allow engineers to specify parameterized architecture templates in MIRR (e.g., `core_count: 16..128 step 16`, `noc_topology: mesh | torus | tree`). The compiler treats these as a search space.
+2. **Genetic Algorithm Engine**: Implement a genetic algorithm that evolves architecture configurations over bounded generations. Each candidate is compiled through the full MIRR pipeline (synthesis + SC-2 placement + SC-3 thermal + SC-4 retiming) and scored on PPA metrics.
+3. **Pareto Front Extraction**: After the search completes, report the Pareto-optimal set of configurations — the designs where no metric can be improved without degrading another.
+4. **Deterministic Replay**: Each evaluated configuration is fully reproducible. The search logs the parameter vector and the resulting PPA metrics for every candidate, enabling post-hoc analysis.
+
+#### Philosophy Gate
+
+1. **NASA Power-of-10**: Generations bounded by `MAX_DSE_GENERATIONS`. Population size bounded by `MAX_DSE_POPULATION`. No unbounded evolution.
+2. **No Machine Learning Frameworks**: Pure algorithmic search (genetic algorithm, simulated annealing). No TensorFlow, PyTorch, or external ML dependencies.
+
+#### Risks
+
+- Each candidate evaluation requires a full compilation pass. At 100 candidates × 50 generations = 5,000 compilations, this is computationally expensive. Approximate evaluation (skipping formal verification, using estimated PPA) may be necessary for the search phase, with full verification reserved for the final Pareto set.
+- This is the most speculative proposal. Its value depends heavily on SC-1 through SC-4 being operational. It should be the last milestone attempted.
+
+#### Estimated Effort: 10–12 weeks
+
+---
+
+## 7. Scientific Computing Proposal Summary
+
+| Proposal | Title | Status | Key Deliverable | Estimated Effort |
+|----------|-------|--------|-----------------|------------------|
+| **SC-1** | Symbolic Prover Graduation | PROPOSED | Full Boolean equivalence, counterexamples, proof receipts | 4–6 wk |
+| **SC-2** | Topological Routing | PROPOSED | Tensor-based NoC placement and congestion optimization | 6–8 wk |
+| **SC-3** | Thermodynamic PDEs | PROPOSED | RC delay estimation and thermal hotspot detection | 8–10 wk |
+| **SC-4** | Automated Retiming | PROPOSED | Physical-aware pipeline insertion with equivalence proof | 4–6 wk |
+| **SC-5** | AI Architecture Search | PROPOSED | Genetic algorithm design space exploration | 10–12 wk |
+
+**Total estimated effort (if all approved)**: 32–42 weeks (8–10 months).
+**Dependency chain**: SC-1 is independent. SC-2 is independent. SC-3 depends on SC-2. SC-4 depends on SC-1 and SC-3. SC-5 depends on all prior proposals.
 
 ---
 
