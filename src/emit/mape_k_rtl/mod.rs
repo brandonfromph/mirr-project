@@ -19,10 +19,10 @@
 mod lower;
 mod upper;
 
-use std::fmt::Write;
+use crate::error::MirrError;
 use crate::mape_k::bridge::bridge_from_pipeline;
 use crate::pipeline::PipelineResult;
-use crate::error::MirrError;
+use std::fmt::Write;
 
 // ---------------------------------------------------------------------------
 // Constants — bounded resource limits (NASA P10)

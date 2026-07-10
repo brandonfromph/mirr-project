@@ -181,11 +181,7 @@ async fn test_kb_api_035() {
 
 // --- Helper Functions for Category 4 (CLI binary execution) ---
 fn get_kb_bin_path(_name: &str) -> std::path::PathBuf {
-    let mut exe = std::env::current_exe().expect("Failed to get current executable path");
-    exe.pop(); // remove test binary name
-    exe.pop(); // remove 'deps' directory
-    let bin_name = if cfg!(windows) { "mirr.exe".to_string() } else { "mirr".to_string() };
-    exe.join(bin_name)
+    std::path::PathBuf::from(env!("CARGO_BIN_EXE_mirr"))
 }
 
 fn run_kb_cli_no_file(args: &[&str]) -> Output {

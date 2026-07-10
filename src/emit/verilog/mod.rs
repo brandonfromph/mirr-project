@@ -11,8 +11,8 @@
 mod sva;
 mod temporal;
 
-pub use sva::{emit_sva_only, emit_synchronizer_chains};
 use std::fmt::Write;
+pub use sva::{emit_sva_only, emit_synchronizer_chains};
 
 use crate::ast::types::{BinaryOp, UnaryOp};
 use crate::emit::fpga_target::FpgaTarget;

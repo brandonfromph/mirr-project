@@ -366,9 +366,9 @@ pub mod handshake {
         pub fn expect_accepted(&self) -> Result<AcceptedHandshake, MirrError> {
             match &self.decision {
                 HandshakeDecision::Accepted(accepted) => Ok(accepted.clone()),
-                HandshakeDecision::Rejected(reason) => {
-                    Err(MirrError::InternalError(format!("expected accepted handshake, got rejection: {reason:?}")))
-                }
+                HandshakeDecision::Rejected(reason) => Err(MirrError::InternalError(format!(
+                    "expected accepted handshake, got rejection: {reason:?}"
+                ))),
             }
         }
 
@@ -377,9 +377,9 @@ pub mod handshake {
                 HandshakeDecision::Rejected(reason) => {
                     Ok(RejectedHandshake::new(self.client_id.clone(), *reason))
                 }
-                HandshakeDecision::Accepted(_) => {
-                    Err(MirrError::InternalError("expected rejected handshake, got accepted decision".to_string()))
-                }
+                HandshakeDecision::Accepted(_) => Err(MirrError::InternalError(
+                    "expected rejected handshake, got accepted decision".to_string(),
+                )),
             }
         }
     }
@@ -442,9 +442,9 @@ pub mod handshake {
 }
 
 pub mod routing {
-    use crate::error::MirrError;
     use super::compiler::CompilerLspRoute;
     use super::types::{DocumentId, DocumentRevision, Position};
+    use crate::error::MirrError;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct UiRequestId(u64);
@@ -553,9 +553,9 @@ pub mod routing {
         pub fn expect_routed(self) -> Result<RoutedCompilerRequest, MirrError> {
             match self {
                 RoutedUiRequest::Routed(routed) => Ok(routed),
-                RoutedUiRequest::Rejected(rejection) => {
-                    Err(MirrError::InternalError(format!("expected routed request, got rejection: {rejection:?}")))
-                }
+                RoutedUiRequest::Rejected(rejection) => Err(MirrError::InternalError(format!(
+                    "expected routed request, got rejection: {rejection:?}"
+                ))),
             }
         }
     }

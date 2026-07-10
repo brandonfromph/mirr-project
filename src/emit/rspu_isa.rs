@@ -15,8 +15,8 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use serde::{Deserialize, Serialize};
+use std::fmt::Write;
 
 use crate::ast::program::TargetConfig;
 

@@ -3,11 +3,11 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use crate::ast::types::BinaryOp;
 use crate::emit::verilog::emit_source_comment;
 use crate::span::FileTable;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
+use std::fmt::Write;
 
 use super::MAX_SR_STAGES_INLINE;
 
@@ -176,13 +176,8 @@ pub(super) fn emit_temporal_logic_ecs(
             if delay == 1 {
                 writeln!(out, "      {}_d1 <= {};", sig_name, sig_name).unwrap();
             } else {
-                writeln!(out, 
-                    "      {}_d{} <= {}_d{};",
-                    sig_name,
-                    delay,
-                    sig_name,
-                    delay - 1
-                ).unwrap();
+                writeln!(out, "      {}_d{} <= {}_d{};", sig_name, delay, sig_name, delay - 1)
+                    .unwrap();
             }
         }
         out.push_str("    end\n");
@@ -249,9 +244,7 @@ pub(super) fn emit_temporal_logic_ecs(
             CompiledGuard::Complex(cx) => {
                 if emitted_shift_registers.insert(cx.name.clone()) {
                     emit_source_comment(span, ft, out);
-                    writeln!(out, "  // Complex guard: {} (sub-guards combined)",
-                        cx.name
-                    ).unwrap();
+                    writeln!(out, "  // Complex guard: {} (sub-guards combined)", cx.name).unwrap();
                     write!(out, "  assign {} = ", cx.output_signal).unwrap();
                     emit_logic_expr(&cx.combination_logic, out);
                     writeln!(out, ";\n").unwrap();
@@ -430,9 +423,7 @@ pub(super) fn emit_reflex_logic_ecs(
             out.push_str("  initial begin\n");
             writeln!(out, "    {} = '0;", sig_name).unwrap();
             out.push_str("  end\n");
-            writeln!(out, 
-                "  always_ff @(posedge {clock_domain} or negedge rst_n) begin"
-            ).unwrap();
+            writeln!(out, "  always_ff @(posedge {clock_domain} or negedge rst_n) begin").unwrap();
             out.push_str("    if (!rst_n) begin\n");
             writeln!(out, "      {} <= '0;", sig_name).unwrap();
             out.push_str("    end else begin\n");
@@ -459,12 +450,14 @@ pub(super) fn emit_reflex_logic_ecs(
                                 if target_name == sig_name {
                                     let span = registry.spans[ri].as_ref().map(|s| &s.0);
                                     emit_source_comment(span, ft, out);
-                                    writeln!(out, 
+                                    writeln!(
+                                        out,
                                         "      if ({}) {} <= {};",
                                         guard_cond,
                                         sig_name,
                                         super::emit_expr_inline(asgn.value, registry, sync_map),
-                                    ).unwrap();
+                                    )
+                                    .unwrap();
                                 }
                             }
                         }
@@ -536,11 +529,7 @@ fn emit_hls_logic_ecs(
             if registry.hls_dataflow[i].is_some() {
                 if let Some(tc) = &registry.types[i] {
                     let width = tc.0.core.width();
-                    writeln!(out, 
-                        "  logic [{}:0] op_{}_res;",
-                        width.saturating_sub(1),
-                        i
-                    ).unwrap();
+                    writeln!(out, "  logic [{}:0] op_{}_res;", width.saturating_sub(1), i).unwrap();
                 }
             }
         }
@@ -571,26 +560,32 @@ fn emit_hls_logic_ecs(
             }
 
             writeln!(out, "  // Shared Resource: {:?} (ID: {})", kind, binding_id).unwrap();
-            writeln!(out, 
+            writeln!(
+                out,
                 "  logic [{}:0] shared_{}_{}_in_A;",
                 max_width.saturating_sub(1),
                 kind,
                 binding_id
-            ).unwrap();
+            )
+            .unwrap();
             if !matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
-                writeln!(out, 
+                writeln!(
+                    out,
                     "  logic [{}:0] shared_{}_{}_in_B;",
                     max_width.saturating_sub(1),
                     kind,
                     binding_id
-                ).unwrap();
+                )
+                .unwrap();
             }
-            writeln!(out, 
+            writeln!(
+                out,
                 "  logic [{}:0] shared_{}_{}_out;",
                 max_width.saturating_sub(1),
                 kind,
                 binding_id
-            ).unwrap();
+            )
+            .unwrap();
 
             // Emit the actual hardware block
             let op_str = match kind {
@@ -613,15 +608,19 @@ fn emit_hls_logic_ecs(
             };
 
             if matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
-                writeln!(out, 
+                writeln!(
+                    out,
                     "  assign shared_{}_{}_out = {}(shared_{}_{}_in_A);",
                     kind, binding_id, op_str, kind, binding_id
-                ).unwrap();
+                )
+                .unwrap();
             } else {
-                writeln!(out, 
+                writeln!(
+                    out,
                     "  assign shared_{}_{}_out = shared_{}_{}_in_A {} shared_{}_{}_in_B;",
                     kind, binding_id, kind, binding_id, op_str, kind, binding_id
-                ).unwrap();
+                )
+                .unwrap();
             }
             // Emit MUXes
             out.push_str("  always_comb begin\n");
@@ -655,25 +654,31 @@ fn emit_hls_logic_ecs(
                 };
 
                 if let Some(binary) = &registry.binary_ops[idx] {
-                    writeln!(out, 
+                    writeln!(
+                        out,
                         "        shared_{}_{}_in_A = {};",
                         kind,
                         binding_id,
                         get_operand_str(binary.left.0)
-                    ).unwrap();
-                    writeln!(out, 
+                    )
+                    .unwrap();
+                    writeln!(
+                        out,
                         "        shared_{}_{}_in_B = {};",
                         kind,
                         binding_id,
                         get_operand_str(binary.right.0)
-                    ).unwrap();
+                    )
+                    .unwrap();
                 } else if let Some(unary) = &registry.unary_ops[idx] {
-                    writeln!(out, 
+                    writeln!(
+                        out,
                         "        shared_{}_{}_in_A = {};",
                         kind,
                         binding_id,
                         get_operand_str(unary.operand.0)
-                    ).unwrap();
+                    )
+                    .unwrap();
                 }
                 out.push_str("      end\n");
             }
@@ -707,10 +712,12 @@ fn emit_hls_logic_ecs(
                         .as_ref()
                         .map(|s| s.resource)
                         .unwrap_or(crate::hls::ResourceKind::Add);
-                    writeln!(out, 
+                    writeln!(
+                        out,
                         "          op_{}_res <= shared_{}_{}_out;",
                         idx, kind, binding.physical_resource_id
-                    ).unwrap();
+                    )
+                    .unwrap();
                 } else {
                     writeln!(out, "          // Error: Operation {} unbound", idx).unwrap();
                 }
@@ -720,11 +727,13 @@ fn emit_hls_logic_ecs(
                     if let Some(asgn) = &registry.assignment_comps[asgn_idx] {
                         if asgn.value.0 == idx as u32 {
                             if let Some(nc) = &registry.names[asgn.target.0 as usize] {
-                                writeln!(out, 
+                                writeln!(
+                                    out,
                                     "          {} <= op_{}_res;",
                                     registry.resolve_name(nc.0),
                                     idx
-                                ).unwrap();
+                                )
+                                .unwrap();
                             }
                         }
                     }
@@ -755,8 +764,16 @@ fn emit_shift_register_guard(
     let cond_desc = sr.condition_kind.describe();
     // Special case: 0 or 1-cycle guard is purely combinational.
     if sr.delay_cycles <= 1 {
-        writeln!(out, "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycle (combinational)",
-            sr.name, sr.name.len(), sr.name.as_bytes(), cond_desc, sr.delay_cycles).unwrap();
+        writeln!(
+            out,
+            "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycle (combinational)",
+            sr.name,
+            sr.name.len(),
+            sr.name.as_bytes(),
+            cond_desc,
+            sr.delay_cycles
+        )
+        .unwrap();
         writeln!(out, "  logic {}_cond;", sr.name).unwrap();
         write!(out, "  assign {}_cond = ", sr.name).unwrap();
         emit_condition_expr(&sr.condition_kind, out);
@@ -765,14 +782,16 @@ fn emit_shift_register_guard(
         return;
     }
 
-    writeln!(out, 
+    writeln!(
+        out,
         "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycles",
         sr.name,
         sr.name.len(),
         sr.name.as_bytes(),
         cond_desc,
         sr.delay_cycles
-    ).unwrap();
+    )
+    .unwrap();
 
     let stage_count = sr.delay_cycles.min(MAX_SR_STAGES_INLINE);
 
@@ -791,11 +810,13 @@ fn emit_shift_register_guard(
     // Shift register always_ff block.
     writeln!(out, "  always_ff @(posedge {clock} or negedge rst_n) begin").unwrap();
     write!(out, "    if (!rst_n)\n      {}_sr <= '0;\n", sr.name).unwrap();
-    write!(out, 
+    write!(
+        out,
         "    else\n      {0}_sr <= {{{0}_cond, {0}_sr[{1}:1]}};\n",
         sr.name,
         stage_count.saturating_sub(1),
-    ).unwrap();
+    )
+    .unwrap();
     out.push_str("  end\n");
 
     // Output: guard fires when all stages are 1.
@@ -809,10 +830,12 @@ fn emit_counter_guard(
 ) {
     let cond_desc = cg.condition_kind.describe();
     let width = cg.counter_width();
-    writeln!(out, 
+    writeln!(
+        out,
         "  // Guard: {} — {} for {} cycles (counter)",
         cg.name, cond_desc, cg.target_count
-    ).unwrap();
+    )
+    .unwrap();
 
     // Counter register.
     writeln!(out, "  logic [{}:0] {};", width.saturating_sub(1), cg.counter_signal,).unwrap();
@@ -830,17 +853,21 @@ fn emit_counter_guard(
     writeln!(out, "  always_ff @(posedge {clock} or negedge rst_n) begin").unwrap();
     write!(out, "    if (!rst_n)\n      {} <= '0;\n", cg.counter_signal).unwrap();
     write!(out, "    else if (!{}_cond)\n      {} <= '0;\n", cg.name, cg.counter_signal).unwrap();
-    write!(out, 
+    write!(
+        out,
         "    else if ({0} < {1})\n      {0} <= {0} + 1;\n",
         cg.counter_signal, cg.target_count,
-    ).unwrap();
+    )
+    .unwrap();
     out.push_str("  end\n");
 
     // Output: guard fires when counter reaches target.
-    write!(out, 
+    write!(
+        out,
         "  assign {} = ({} >= {});\n\n",
         cg.output_signal, cg.counter_signal, cg.target_count,
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 fn emit_dynamic_counter_guard(
@@ -850,10 +877,12 @@ fn emit_dynamic_counter_guard(
 ) {
     let cond_desc = dc.condition_kind.describe();
     let width = dc.counter_width();
-    writeln!(out, 
+    writeln!(
+        out,
         "  // Guard: {} — {} for dynamic delay (max {} cycles)",
         dc.name, cond_desc, dc.max_delay
-    ).unwrap();
+    )
+    .unwrap();
 
     // Counter register.
     writeln!(out, "  logic [{}:0] {};", width.saturating_sub(1), dc.counter_signal).unwrap();
@@ -876,17 +905,21 @@ fn emit_dynamic_counter_guard(
     writeln!(out, "  always_ff @(posedge {clock} or negedge rst_n) begin").unwrap();
     write!(out, "    if (!rst_n)\n      {} <= '0;\n", dc.counter_signal).unwrap();
     write!(out, "    else if (!{}_cond)\n      {} <= '0;\n", dc.name, dc.counter_signal).unwrap();
-    write!(out, 
+    write!(
+        out,
         "    else if ({0} < {1})\n      {0} <= {0} + 1;\n",
         dc.counter_signal, target_signal
-    ).unwrap();
+    )
+    .unwrap();
     out.push_str("  end\n");
 
     // Output: guard fires when counter reaches dynamic target.
-    write!(out, 
+    write!(
+        out,
         "  assign {} = ({} >= {});\n\n",
         dc.output_signal, dc.counter_signal, target_signal
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 /// Emit a ConditionKind as an inline SystemVerilog expression.

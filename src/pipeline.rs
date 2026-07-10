@@ -440,10 +440,10 @@ fn run_pipeline_internal(
 
     // Stage 9: MAPE-K RTL emission (optional, requires mape_k result).
     if config.emit_mape_k_rtl {
-        result.mape_k_rtl =
-            Some(crate::emit::mape_k_rtl::emit_mape_k_rtl(&result).map_err(|e| {
-                PipelineErrors { errors: vec![e] }
-            })?);
+        result.mape_k_rtl = Some(
+            crate::emit::mape_k_rtl::emit_mape_k_rtl(&result)
+                .map_err(|e| PipelineErrors { errors: vec![e] })?,
+        );
     }
 
     Ok(result)

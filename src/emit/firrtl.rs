@@ -15,11 +15,11 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use crate::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
 use crate::ast::MAX_EXPR_NODES;
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
+use std::fmt::Write;
 
 use crate::error::MirrError;
 use crate::error_codes::{mirrcode, ErrorCode};
@@ -228,25 +228,22 @@ fn emit_temporal_logic(
                 emit_counter_firrtl(cg, clock_domain, out);
             }
             CompiledGuard::Complex(cx) => {
-                write!(out, 
-                    "\n    ; Complex guard: {} (sub-guards combined)\n",
-                    cx.name
-                ).unwrap();
+                write!(out, "\n    ; Complex guard: {} (sub-guards combined)\n", cx.name).unwrap();
                 let ty = "UInt<1>";
                 writeln!(out, "    wire {} : {}", cx.output_signal, ty).unwrap();
                 let expr = emit_logic_expr_firrtl(&cx.combination_logic);
                 writeln!(out, "    connect {} , {}", cx.output_signal, expr).unwrap();
             }
             CompiledGuard::DynamicCounter(dc) => {
-                write!(out, 
+                write!(
+                    out,
                     "\n    ; Dynamic counter guard: {} (max {} cycles)\n",
                     dc.name, dc.max_delay
-                ).unwrap();
+                )
+                .unwrap();
                 let width = dc.counter_width();
-                writeln!(out, 
-                    "    reg {} : UInt<{}>, {}",
-                    dc.counter_signal, width, clock_domain
-                ).unwrap();
+                writeln!(out, "    reg {} : UInt<{}>, {}", dc.counter_signal, width, clock_domain)
+                    .unwrap();
                 writeln!(out, "    wire {} : UInt<1>", dc.output_signal).unwrap();
             }
         }
@@ -261,18 +258,22 @@ fn emit_shift_register_firrtl(
     let stage_count = sr.delay_cycles.min(super::verilog::MAX_SR_STAGES_INLINE);
     let cond = emit_condition_firrtl(&sr.condition_kind);
 
-    write!(out, 
+    write!(
+        out,
         "\n    ; Guard: {} — {} for {} cycles\n",
         sr.name,
         sr.condition_kind.describe(),
         sr.delay_cycles,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Shift register as a vector of 1-bit registers.
-    writeln!(out, 
+    writeln!(
+        out,
         "    reg {}_sr : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))",
         sr.name, stage_count, clock_domain,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Condition wire.
     writeln!(out, "    wire {}_cond : UInt<1>", sr.name).unwrap();
@@ -294,39 +295,49 @@ fn emit_counter_firrtl(
     let width = cg.counter_width();
     let cond = emit_condition_firrtl(&cg.condition_kind);
 
-    write!(out, 
+    write!(
+        out,
         "\n    ; Guard: {} — {} for {} cycles (counter)\n",
         cg.name,
         cg.condition_kind.describe(),
         cg.target_count,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Counter register.
-    writeln!(out, 
+    writeln!(
+        out,
         "    reg {} : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))",
         cg.counter_signal, width, clock_domain,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Condition wire.
     writeln!(out, "    wire {}_cond : UInt<1>", cg.name).unwrap();
     writeln!(out, "    connect {}_cond , {}", cg.name, cond).unwrap();
 
     // Counter logic.
-    write!(out, 
+    write!(
+        out,
         "    when not({0}_cond) :\n      connect {1} , UInt(0)\n",
         cg.name, cg.counter_signal,
-    ).unwrap();
-    write!(out, 
+    )
+    .unwrap();
+    write!(
+        out,
         "    else when lt({0}, UInt({1})) :\n      connect {0} , add({0}, UInt(1))\n",
         cg.counter_signal, cg.target_count,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Output: guard fires when counter >= target.
     writeln!(out, "    wire {} : UInt<1>", cg.output_signal).unwrap();
-    writeln!(out, 
+    writeln!(
+        out,
         "    connect {} , geq({}, UInt({}))",
         cg.output_signal, cg.counter_signal, cg.target_count,
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 fn emit_reflex_logic(
@@ -396,7 +407,7 @@ fn emit_reflex_logic(
                             .map(|nc| registry.resolve_name(nc.0))
                             .unwrap_or("ERR_MISSING_NAME");
                         let val = emit_expr_inline_ecs(assign.value, registry);
-                        write!(out, 
+                        write!(out,
                             "    when {} :\n      connect {} , {}\n    else :\n      connect {} , UInt(0)\n",
                             guard_cond, target_name, val, target_name,
                         ).unwrap();
@@ -480,10 +491,12 @@ fn emit_property_comments(
                     crate::ast::property::PropertyDirective::Assume => "assume ",
                 };
 
-                writeln!(out, 
+                writeln!(
+                    out,
                     "    ; {directive_prefix}property {}: {desc}",
                     registry.resolve_name(nc.0)
-                ).unwrap();
+                )
+                .unwrap();
             }
         }
     }

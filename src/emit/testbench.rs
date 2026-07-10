@@ -10,9 +10,9 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use crate::ast::types::{SignalKind, SignalType};
 use crate::pipeline::PipelineResult;
+use std::fmt::Write;
 
 /// Maximum simulation cycles (bounded iteration, NASA P10 Rule #1).
 const MAX_SIM_CYCLES: u32 = 10_000;

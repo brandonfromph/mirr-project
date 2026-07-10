@@ -462,7 +462,13 @@ fn parse_ci_profile(flags: &[String]) -> Result<Option<CiProfile>, MirrError> {
             "full" | "ci" => Ok(CiProfile::Full),
             "compile" | "feedback" => Ok(CiProfile::Compile),
             "fast" => Ok(CiProfile::Fast),
-            _ => Err(MirrError::ToolingError { message: format!("invalid profile '{}'; expected one of: full, compile, fast", value), span: None }),
+            _ => Err(MirrError::ToolingError {
+                message: format!(
+                    "invalid profile '{}'; expected one of: full, compile, fast",
+                    value
+                ),
+                span: None,
+            }),
         }
     }
 
@@ -477,7 +483,10 @@ fn parse_ci_profile(flags: &[String]) -> Result<Option<CiProfile>, MirrError> {
 
         if flag == "--profile" {
             if idx + 1 >= flags.len() {
-                return Err(MirrError::ToolingError { message: "missing value after --profile".to_string(), span: None });
+                return Err(MirrError::ToolingError {
+                    message: "missing value after --profile".to_string(),
+                    span: None,
+                });
             }
             parsed = Some(decode_profile(&flags[idx + 1])?);
             idx += 2;
@@ -486,7 +495,10 @@ fn parse_ci_profile(flags: &[String]) -> Result<Option<CiProfile>, MirrError> {
 
         if flag == "-p" {
             if idx + 1 >= flags.len() {
-                return Err(MirrError::ToolingError { message: "missing value after -p".to_string(), span: None });
+                return Err(MirrError::ToolingError {
+                    message: "missing value after -p".to_string(),
+                    span: None,
+                });
             }
             parsed = Some(decode_profile(&flags[idx + 1])?);
             idx += 2;
@@ -548,7 +560,10 @@ fn route_command(args: &[String]) -> Result<CommandRoute, MirrError> {
 
     if args[0] == "run" {
         if args.len() == 1 {
-            return Err(MirrError::ToolingError { message: "missing subcommand after 'run'".to_string(), span: None });
+            return Err(MirrError::ToolingError {
+                message: "missing subcommand after 'run'".to_string(),
+                span: None,
+            });
         }
 
         match args[1].as_str() {
@@ -565,7 +580,10 @@ fn route_command(args: &[String]) -> Result<CommandRoute, MirrError> {
                 if args.len() == 3 && args[2] == "--all" {
                     return Ok(CommandRoute::ParityAll);
                 }
-                return Err(MirrError::ToolingError { message: "usage: mirr-general run parity --all".to_string(), span: None });
+                return Err(MirrError::ToolingError {
+                    message: "usage: mirr-general run parity --all".to_string(),
+                    span: None,
+                });
             }
             "migrate" => {
                 if args.len() == 3 && args[2] == "--dry-run" {
@@ -574,7 +592,10 @@ fn route_command(args: &[String]) -> Result<CommandRoute, MirrError> {
                 if args.len() == 2 {
                     return Ok(CommandRoute::Migrate { dry_run: false });
                 }
-                return Err(MirrError::ToolingError { message: "usage: mirr-general run migrate [--dry-run]".to_string(), span: None });
+                return Err(MirrError::ToolingError {
+                    message: "usage: mirr-general run migrate [--dry-run]".to_string(),
+                    span: None,
+                });
             }
             run_subcommand => {
                 if let Some(profile) = parse_profile_alias(run_subcommand) {
@@ -583,7 +604,10 @@ fn route_command(args: &[String]) -> Result<CommandRoute, MirrError> {
                         default_profile: Some(profile),
                     });
                 }
-                return Err(MirrError::ToolingError { message: format!("unrecognized 'run' subcommand: '{}'", run_subcommand), span: None });
+                return Err(MirrError::ToolingError {
+                    message: format!("unrecognized 'run' subcommand: '{}'", run_subcommand),
+                    span: None,
+                });
             }
         }
     }
@@ -603,7 +627,10 @@ fn route_command(args: &[String]) -> Result<CommandRoute, MirrError> {
         });
     }
 
-    Err(MirrError::ToolingError { message: format!("unrecognized subcommand: '{}'", args[0]), span: None })
+    Err(MirrError::ToolingError {
+        message: format!("unrecognized subcommand: '{}'", args[0]),
+        span: None,
+    })
 }
 
 fn dispatch(args: &[String]) -> io::Result<i32> {

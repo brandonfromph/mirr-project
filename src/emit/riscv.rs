@@ -6,10 +6,10 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use super::rspu::rspu_err;
 use super::rspu_isa::*;
 use crate::error::MirrError;
+use std::fmt::Write;
 
 /// Memory-mapped I/O base address for RISC-V soft cores.
 const MMIO_BASE: u32 = 0x1000_0000;
@@ -215,10 +215,12 @@ fn emit_riscv_instruction(
         }
         RspuInstruction::Prev { dst, signal, delay } => {
             // Read from shift register at offset
-            writeln!(out, 
+            writeln!(
+                out,
                 "    # PREV x{}, x{}, delay={} (shift register read)",
                 dst, signal, delay
-            ).unwrap();
+            )
+            .unwrap();
             writeln!(out, "    addi x{}, x{}, 0", dst, signal).unwrap();
         }
 

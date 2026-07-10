@@ -176,7 +176,8 @@ fn handshake_rejection_preserves_client_identity_for_ui_reporting() {
 fn routing_hover_request_targets_compiler_hover_route() {
     let routed =
         route_ui_request(ui_request(UiRequestKind::Hover { position: Position::new(3, 8) }))
-            .expect_routed().unwrap();
+            .expect_routed()
+            .unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::Hover);
 }
@@ -185,7 +186,8 @@ fn routing_hover_request_targets_compiler_hover_route() {
 fn routing_completion_request_targets_compiler_completion_route() {
     let routed =
         route_ui_request(ui_request(UiRequestKind::Completion { position: Position::new(4, 2) }))
-            .expect_routed().unwrap();
+            .expect_routed()
+            .unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::Completion);
 }
@@ -194,14 +196,16 @@ fn routing_completion_request_targets_compiler_completion_route() {
 fn routing_definition_request_targets_compiler_definition_route() {
     let routed =
         route_ui_request(ui_request(UiRequestKind::Definition { position: Position::new(6, 1) }))
-            .expect_routed().unwrap();
+            .expect_routed()
+            .unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::Definition);
 }
 
 #[test]
 fn routing_document_symbols_request_targets_symbol_index_route() {
-    let routed = route_ui_request(ui_request(UiRequestKind::DocumentSymbols)).expect_routed().unwrap();
+    let routed =
+        route_ui_request(ui_request(UiRequestKind::DocumentSymbols)).expect_routed().unwrap();
 
     assert_eq!(routed.compiler_route(), CompilerLspRoute::DocumentSymbols);
 }

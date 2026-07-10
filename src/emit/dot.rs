@@ -9,10 +9,10 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use crate::ast::types::{SignalKind, SignalType};
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
+use std::fmt::Write;
 
 /// Maximum nodes to emit before truncating (prevents runaway on huge IR).
 const MAX_DOT_NODES: usize = 4096;
@@ -125,15 +125,15 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
                         let target_name_opt = registry.names[assign.target.0 as usize]
                             .map(|n| registry.resolve_name(n.0));
                         if let Some(target_name) = target_name_opt {
-                            writeln!(out, 
+                            writeln!(
+                                out,
                                 "  subgraph cluster_{}_{} {{",
                                 sanitize_id(reflex_name),
                                 sanitize_id(target_name)
-                            ).unwrap();
-                            writeln!(out, 
-                                "    label=\"{}.{}\";",
-                                reflex_name, target_name
-                            ).unwrap();
+                            )
+                            .unwrap();
+                            writeln!(out, "    label=\"{}.{}\";", reflex_name, target_name)
+                                .unwrap();
                             emit_expr_nodes_ecs(registry, assign.value, &mut node_id, &mut out);
                             out.push_str("  }\n");
                         }
@@ -209,12 +209,14 @@ fn emit_signal_nodes(
                     SignalType::Signed(w) => format!("i{w}"),
                     other => other.to_string(),
                 };
-                writeln!(out, 
+                writeln!(
+                    out,
                     "  {} [label=\"{}: {}\" shape={shape}];",
                     sanitize_id(name),
                     name,
                     width_label,
-                ).unwrap();
+                )
+                .unwrap();
             }
         }
     }
@@ -236,12 +238,14 @@ fn emit_guard_nodes(
         {
             if let crate::ecs::EntityKind::GUARD = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
-                writeln!(out, 
+                writeln!(
+                    out,
                     "  {} [label=\"{} ({}c)\" shape=diamond style=filled fillcolor=lightyellow];",
                     guard_node_id(name),
                     name,
                     cycles_comp.0,
-                ).unwrap();
+                )
+                .unwrap();
             }
         }
     }
@@ -399,20 +403,19 @@ fn emit_guard_edges(
                 let guard_name = registry.resolve_name(nc.0);
                 let refs = collect_signal_refs_ecs(registry, cond_comp.0);
                 for sig in &refs {
-                    writeln!(out, 
-                        "  {} -> {};",
-                        sanitize_id(sig),
-                        guard_node_id(guard_name)
-                    ).unwrap();
+                    writeln!(out, "  {} -> {};", sanitize_id(sig), guard_node_id(guard_name))
+                        .unwrap();
                 }
                 // Prev back-edges rendered as dashed red.
                 let prev_refs = collect_prev_refs_ecs(registry, cond_comp.0);
                 for (sig, _delay) in &prev_refs {
-                    writeln!(out, 
+                    writeln!(
+                        out,
                         "  {} -> {} [style=dashed color=red label=\"prev\"];",
                         sanitize_id(sig),
                         guard_node_id(guard_name),
-                    ).unwrap();
+                    )
+                    .unwrap();
                 }
             }
         }
@@ -445,12 +448,14 @@ fn emit_reflex_edges(
                                 let target_name_opt = registry.names[assign.target.0 as usize]
                                     .map(|n| registry.resolve_name(n.0));
                                 if let Some(target_name) = target_name_opt {
-                                    writeln!(out, 
+                                    writeln!(
+                                        out,
                                         "  {} -> {} [label=\"{}\"];",
                                         guard_node_id(g_name),
                                         sanitize_id(target_name),
                                         reflex_name,
-                                    ).unwrap();
+                                    )
+                                    .unwrap();
                                 }
                             }
                         }
@@ -476,38 +481,46 @@ fn emit_temporal_subgraph(netlist: &TemporalNetlist, out: &mut String) {
         }
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
-                writeln!(out, 
+                writeln!(
+                    out,
                     "    {} [label=\"SR: {} ({}c)\" shape=record];",
                     sanitize_id(&sr.output_signal),
                     sr.name,
                     sr.delay_cycles,
-                ).unwrap();
+                )
+                .unwrap();
                 nodes_emitted += 1;
             }
             CompiledGuard::Counter(c) => {
-                writeln!(out, 
+                writeln!(
+                    out,
                     "    {} [label=\"CTR: {} ({}c)\" shape=record];",
                     sanitize_id(&c.output_signal),
                     c.name,
                     c.target_count,
-                ).unwrap();
+                )
+                .unwrap();
                 nodes_emitted += 1;
             }
             CompiledGuard::Complex(cx) => {
-                writeln!(out, 
+                writeln!(
+                    out,
                     "    {} [label=\"COMPLEX: {}\" shape=record];",
                     sanitize_id(&cx.output_signal),
                     cx.name,
-                ).unwrap();
+                )
+                .unwrap();
                 nodes_emitted += 1;
             }
             CompiledGuard::DynamicCounter(dc) => {
-                writeln!(out, 
+                writeln!(
+                    out,
                     "    {} [label=\"DYN: {} (max {}c)\" shape=record];",
                     sanitize_id(&dc.output_signal),
                     dc.name,
                     dc.max_delay,
-                ).unwrap();
+                )
+                .unwrap();
                 nodes_emitted += 1;
             }
         }
@@ -658,10 +671,12 @@ fn emit_pattern_origins_ecs(
 
     out.push_str("  // ── Pattern Origins ──\n");
     for origin in &registry.pattern_origins {
-        writeln!(out, 
+        writeln!(
+            out,
             "  // Pattern expanded: {} with args ({})",
             origin.pattern_name, origin.call_args_summary
-        ).unwrap();
+        )
+        .unwrap();
     }
     out.push('\n');
 }
@@ -738,18 +753,22 @@ fn emit_property_nodes(
                     crate::ast::property::PropertyDirective::Cover => "lightyellow",
                     crate::ast::property::PropertyDirective::Assume => "lightgreen",
                 };
-                writeln!(out, 
+                writeln!(
+                    out,
                     "  {prop_id} [shape=note style=filled fillcolor={fillcolor} label=\"{}\"];",
                     name,
-                ).unwrap();
+                )
+                .unwrap();
 
                 for expr_id in &prop.formula_exprs {
                     let refs = collect_signal_refs_ecs(registry, *expr_id);
                     for sig in &refs {
-                        writeln!(out, 
+                        writeln!(
+                            out,
                             "  {} -> {prop_id} [style=dotted color=blue];",
                             sanitize_id(sig),
-                        ).unwrap();
+                        )
+                        .unwrap();
                     }
                 }
             }

@@ -3,13 +3,13 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use crate::ast::property::{PropertyDirective, PropertyFormula};
 use crate::ast::types::SignalKind;
 use crate::emit::fpga_target::MAX_SYNC_STAGES;
 use crate::emit::verilog::emit_source_comment;
 use crate::pipeline::PipelineResult;
 use crate::span::{FileTable, Span};
+use std::fmt::Write;
 
 // -----------------------------------------------------------------------
 // Module structure helpers
@@ -28,10 +28,7 @@ pub(super) fn emit_pattern_annotations_ecs(registry: &crate::ecs::Registry, out:
     }
     out.push_str("// ── Pattern Expansions ──\n");
     for origin in &registry.pattern_origins {
-        writeln!(out, 
-            "// Pattern: {}({})",
-            origin.pattern_name, origin.call_args_summary
-        ).unwrap();
+        writeln!(out, "// Pattern: {}({})", origin.pattern_name, origin.call_args_summary).unwrap();
     }
     out.push('\n');
 }
@@ -413,14 +410,12 @@ pub(super) fn emit_single_property(
             if has_rst_n {
                 writeln!(out, "    if (!rst_n) prop_{prop_name}_timer <= 0;").unwrap();
                 writeln!(out, "    else if ({sv_expr}) prop_{prop_name}_timer <= 0;").unwrap();
-                writeln!(out, 
-                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;"
-                ).unwrap();
+                writeln!(out, "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;")
+                    .unwrap();
             } else {
                 writeln!(out, "    if ({sv_expr}) prop_{prop_name}_timer <= 0;").unwrap();
-                writeln!(out, 
-                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;"
-                ).unwrap();
+                writeln!(out, "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;")
+                    .unwrap();
             }
             out.push_str("  end\n");
             write!(out, "{prefix}prop_{prop_name}_timer < {cycles}{suffix}").unwrap();
@@ -441,9 +436,8 @@ pub(super) fn emit_single_property(
                     writeln!(out, "    prop_{prop_name}_trig_d1 <= {trig_sv};").unwrap();
                 }
                 out.push_str("  end\n");
-                write!(out, 
-                    "{prefix}(!(prop_{prop_name}_trig_d1)) || ({resp_sv}){suffix}"
-                ).unwrap();
+                write!(out, "{prefix}(!(prop_{prop_name}_trig_d1)) || ({resp_sv}){suffix}")
+                    .unwrap();
             } else {
                 let msb = delay_cycles - 1;
                 writeln!(out, "  reg [{msb}:0] prop_{prop_name}_trig_shift;").unwrap();
@@ -455,16 +449,16 @@ pub(super) fn emit_single_property(
                 };
                 if has_rst_n {
                     writeln!(out, "    if (!rst_n) prop_{prop_name}_trig_shift <= 0;").unwrap();
-                    writeln!(out, 
-                        "    else prop_{prop_name}_trig_shift <= {shift_expr};"
-                    ).unwrap();
+                    writeln!(out, "    else prop_{prop_name}_trig_shift <= {shift_expr};").unwrap();
                 } else {
                     writeln!(out, "    prop_{prop_name}_trig_shift <= {shift_expr};").unwrap();
                 }
                 out.push_str("  end\n");
-                write!(out, 
+                write!(
+                    out,
                     "{prefix}(!(prop_{prop_name}_trig_shift[{msb}])) || ({resp_sv}){suffix}"
-                ).unwrap();
+                )
+                .unwrap();
             }
         }
     }
@@ -523,48 +517,46 @@ pub fn emit_synchronizer_chains(
 
                 // Declare synchronizer register chain.
                 let total_bits = width * stages;
-                writeln!(out, 
-                    "  // {}-stage synchronizer for {} (@{clock_domain})",
-                    stages, name
-                ).unwrap();
-                writeln!(out, 
-                    "  logic [{}:0] {};",
-                    total_bits.saturating_sub(1),
-                    sync_reg,
-                ).unwrap();
+                writeln!(out, "  // {}-stage synchronizer for {} (@{clock_domain})", stages, name)
+                    .unwrap();
+                writeln!(out, "  logic [{}:0] {};", total_bits.saturating_sub(1), sync_reg,)
+                    .unwrap();
                 out.push_str("  initial begin\n");
                 writeln!(out, "    {} = '0;", sync_reg).unwrap();
                 out.push_str("  end\n");
 
                 // Sequential synchronizer logic.
-                writeln!(out, 
-                    "  always_ff @(posedge {clock_domain} or negedge rst_n) begin"
-                ).unwrap();
+                writeln!(out, "  always_ff @(posedge {clock_domain} or negedge rst_n) begin")
+                    .unwrap();
                 write!(out, "    if (!rst_n)\n      {} <= '0;\n", sync_reg).unwrap();
                 if stages == 1 {
                     write!(out, "    else\n      {} <= {};\n", sync_reg, name).unwrap();
                 } else {
                     // Shift chain: {input, sync[high:width]}
-                    write!(out, 
+                    write!(
+                        out,
                         "    else\n      {} <= {{{}, {}[{}:{}]}};\n",
                         sync_reg,
                         name,
                         sync_reg,
                         total_bits.saturating_sub(1),
                         width,
-                    ).unwrap();
+                    )
+                    .unwrap();
                 }
                 out.push_str("  end\n");
 
                 // Output: synchronized signal is the last stage.
                 let type_str = super::super::sv_type(&type_comp.0.signal_type());
-                write!(out, 
+                write!(
+                    out,
                     "  {} {} = {}[{}:0];\n\n",
                     type_str,
                     sync_name,
                     sync_reg,
                     width.saturating_sub(1),
-                ).unwrap();
+                )
+                .unwrap();
 
                 mappings.push((name.to_string(), sync_name));
             }

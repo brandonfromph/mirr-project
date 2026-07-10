@@ -2,11 +2,11 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use super::{MAX_RTL_ACTIONS, MAX_RTL_KNOWLEDGE_DEPTH, MAX_RTL_SIGNALS};
 use crate::emit::mape_k_rtl::lower::bit_width;
 use crate::mape_k::planner::{AdaptationAction, TriggerCondition};
 use crate::mape_k::SimConfig;
+use std::fmt::Write;
 
 // ---------------------------------------------------------------------------
 // Plan block
@@ -26,10 +26,7 @@ pub(super) fn emit_plan_block(config: &SimConfig, main_clock: &str) -> String {
     sv.push_str(") (\n");
     writeln!(sv, "  input  logic {},", main_clock).unwrap();
     sv.push_str("  input  logic rst_n,\n");
-    writeln!(sv, 
-        "  input  logic [{}:0] violation_vec,",
-        n_prop.max(1).saturating_sub(1)
-    ).unwrap();
+    writeln!(sv, "  input  logic [{}:0] violation_vec,", n_prop.max(1).saturating_sub(1)).unwrap();
     writeln!(sv, "  output logic [{}:0] selected_action_idx,", act_w.saturating_sub(1)).unwrap();
     sv.push_str("  output logic        action_valid\n");
     sv.push_str(");\n\n");
@@ -52,9 +49,8 @@ pub(super) fn emit_plan_block(config: &SimConfig, main_clock: &str) -> String {
             TriggerCondition::OnSatisfaction => format!("!violation_vec[{ti}]"),
         };
         writeln!(sv, "    // action[{ai}]: prop={ti} pri={pri}").unwrap();
-        writeln!(sv, 
-            "    if ({trigger_cond} && (8'd{pri} > best_priority || !found)) begin"
-        ).unwrap();
+        writeln!(sv, "    if ({trigger_cond} && (8'd{pri} > best_priority || !found)) begin")
+            .unwrap();
         writeln!(sv, "      best_priority = 8'd{pri};").unwrap();
         writeln!(sv, "      best_idx      = {}'d{ai};", act_w.max(1)).unwrap();
         sv.push_str("      found         = 1'b1;\n");
@@ -214,10 +210,7 @@ pub(super) fn emit_knowledge_block(config: &SimConfig, main_clock: &str) -> Stri
     writeln!(sv, "      count  <= {}'d0;", addr_w + 1).unwrap();
     sv.push_str("    end else if (wr_en && !full) begin\n");
     sv.push_str("      fifo[wr_ptr] <= {wr_tick, wr_action_idx};\n");
-    writeln!(sv, 
-        "      wr_ptr <= (32'(wr_ptr) == DEPTH-1) ? {}'d0 : wr_ptr + 1;",
-        addr_w
-    ).unwrap();
+    writeln!(sv, "      wr_ptr <= (32'(wr_ptr) == DEPTH-1) ? {}'d0 : wr_ptr + 1;", addr_w).unwrap();
     sv.push_str("      count  <= count + 1;\n");
     sv.push_str("    end\n");
     sv.push_str("  end\n\n");

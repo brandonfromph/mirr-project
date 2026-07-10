@@ -6,10 +6,10 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write;
 use super::rspu::rspu_err;
 use super::rspu_isa::*;
 use crate::error::MirrError;
+use std::fmt::Write;
 
 /// Memory-mapped I/O base address for ARM Cortex-M.
 const MMIO_BASE: u32 = 0x4000_0000;
