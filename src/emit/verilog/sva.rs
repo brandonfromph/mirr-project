@@ -3,6 +3,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write;
 use crate::ast::property::{PropertyDirective, PropertyFormula};
 use crate::ast::types::SignalKind;
 use crate::emit::fpga_target::MAX_SYNC_STAGES;
@@ -27,10 +28,10 @@ pub(super) fn emit_pattern_annotations_ecs(registry: &crate::ecs::Registry, out:
     }
     out.push_str("// ── Pattern Expansions ──\n");
     for origin in &registry.pattern_origins {
-        out.push_str(&format!(
-            "// Pattern: {}({})\n",
+        writeln!(out, 
+            "// Pattern: {}({})",
             origin.pattern_name, origin.call_args_summary
-        ));
+        ).unwrap();
     }
     out.push('\n');
 }
@@ -55,7 +56,7 @@ pub(super) fn emit_module_decl(
     out.push_str("/* verilator lint_off UNDRIVEN */\n");
     out.push_str("/* verilator lint_off UNUSED */\n\n");
 
-    out.push_str(&format!("module {} (\n", module_name));
+    writeln!(out, "module {} (", module_name).unwrap();
 
     // Check if temporal guards exist
     let mut needs_temporal = false;
@@ -126,7 +127,7 @@ pub(super) fn emit_module_decl(
     let port_count = ports.len();
     for (i, port) in ports.iter().enumerate() {
         let comma = if i + 1 < port_count { "," } else { "" };
-        out.push_str(&format!("{port}{comma}\n"));
+        writeln!(out, "{port}{comma}").unwrap();
     }
 
     out.push_str(");\n\n");
@@ -190,7 +191,7 @@ pub(super) fn emit_internal_signals(
                 let span = registry.spans[i].as_ref().map(|s| &s.0);
                 emit_source_comment(span, ft, out);
                 let type_str = super::super::sv_type(&type_comp.0.signal_type());
-                out.push_str(&format!("  {type_str} {};\n", name));
+                writeln!(out, "  {type_str} {};", name).unwrap();
             }
         }
     }
@@ -212,7 +213,7 @@ pub(super) fn emit_internal_signals(
         if let (Some(nc), Some(kind_comp)) = (&registry.names[i], &registry.kinds[i]) {
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Internal) = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
-                out.push_str(&format!("    {} = '0;\n", name));
+                writeln!(out, "    {} = '0;", name).unwrap();
             }
         }
     }
@@ -369,9 +370,9 @@ pub(super) fn emit_single_property(
 ) {
     emit_source_comment(span, ft, out);
     if let Some(ref origin) = prop.origin {
-        out.push_str(&format!("  // Pattern: {origin}\n"));
+        writeln!(out, "  // Pattern: {origin}").unwrap();
     }
-    out.push_str(&format!("  // property: {}\n", prop_name));
+    writeln!(out, "  // property: {}", prop_name).unwrap();
 
     let sva_keyword = match prop.directive {
         PropertyDirective::Assert => "assert",
@@ -389,81 +390,81 @@ pub(super) fn emit_single_property(
     match &prop.formula {
         PropertyFormula::Always(_) => {
             let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
-            out.push_str(&format!("{prefix}{sv_expr}{suffix}"));
+            write!(out, "{prefix}{sv_expr}{suffix}").unwrap();
         }
         PropertyFormula::Never(_) => {
             let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
-            out.push_str(&format!("{prefix}!({sv_expr}){suffix}"));
+            write!(out, "{prefix}!({sv_expr}){suffix}").unwrap();
         }
         PropertyFormula::AlwaysImplies { .. } => {
             let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
             let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry, sync_map);
-            out.push_str(&format!("{prefix}(!({ante_sv})) || ({cons_sv}){suffix}"));
+            write!(out, "{prefix}(!({ante_sv})) || ({cons_sv}){suffix}").unwrap();
         }
         PropertyFormula::NeverImplies { .. } => {
             let ante_sv = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
             let cons_sv = super::emit_expr_inline(prop.formula_exprs[1], registry, sync_map);
-            out.push_str(&format!("{prefix}(!({ante_sv})) || (!({cons_sv})){suffix}"));
+            write!(out, "{prefix}(!({ante_sv})) || (!({cons_sv})){suffix}").unwrap();
         }
         PropertyFormula::EventuallyWithin { expr: _, cycles } => {
             let sv_expr = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
-            out.push_str(&format!("  reg [31:0] prop_{prop_name}_timer;\n"));
-            out.push_str(&format!("  always @(posedge {clock}) begin\n"));
+            writeln!(out, "  reg [31:0] prop_{prop_name}_timer;").unwrap();
+            writeln!(out, "  always @(posedge {clock}) begin").unwrap();
             if has_rst_n {
-                out.push_str(&format!("    if (!rst_n) prop_{prop_name}_timer <= 0;\n"));
-                out.push_str(&format!("    else if ({sv_expr}) prop_{prop_name}_timer <= 0;\n"));
-                out.push_str(&format!(
-                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"
-                ));
+                writeln!(out, "    if (!rst_n) prop_{prop_name}_timer <= 0;").unwrap();
+                writeln!(out, "    else if ({sv_expr}) prop_{prop_name}_timer <= 0;").unwrap();
+                writeln!(out, 
+                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;"
+                ).unwrap();
             } else {
-                out.push_str(&format!("    if ({sv_expr}) prop_{prop_name}_timer <= 0;\n"));
-                out.push_str(&format!(
-                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;\n"
-                ));
+                writeln!(out, "    if ({sv_expr}) prop_{prop_name}_timer <= 0;").unwrap();
+                writeln!(out, 
+                    "    else prop_{prop_name}_timer <= prop_{prop_name}_timer + 1;"
+                ).unwrap();
             }
             out.push_str("  end\n");
-            out.push_str(&format!("{prefix}prop_{prop_name}_timer < {cycles}{suffix}"));
+            write!(out, "{prefix}prop_{prop_name}_timer < {cycles}{suffix}").unwrap();
         }
         PropertyFormula::AlwaysFollowedBy { trigger: _, response: _, delay_cycles } => {
             let trig_sv = super::emit_expr_inline(prop.formula_exprs[0], registry, sync_map);
             let resp_sv = super::emit_expr_inline(prop.formula_exprs[1], registry, sync_map);
 
             if *delay_cycles == 0 {
-                out.push_str(&format!("{prefix}(!({trig_sv})) || ({resp_sv}){suffix}"));
+                write!(out, "{prefix}(!({trig_sv})) || ({resp_sv}){suffix}").unwrap();
             } else if *delay_cycles == 1 {
-                out.push_str(&format!("  reg prop_{prop_name}_trig_d1;\n"));
-                out.push_str(&format!("  always @(posedge {clock}) begin\n"));
+                writeln!(out, "  reg prop_{prop_name}_trig_d1;").unwrap();
+                writeln!(out, "  always @(posedge {clock}) begin").unwrap();
                 if has_rst_n {
-                    out.push_str(&format!("    if (!rst_n) prop_{prop_name}_trig_d1 <= 0;\n"));
-                    out.push_str(&format!("    else prop_{prop_name}_trig_d1 <= {trig_sv};\n"));
+                    writeln!(out, "    if (!rst_n) prop_{prop_name}_trig_d1 <= 0;").unwrap();
+                    writeln!(out, "    else prop_{prop_name}_trig_d1 <= {trig_sv};").unwrap();
                 } else {
-                    out.push_str(&format!("    prop_{prop_name}_trig_d1 <= {trig_sv};\n"));
+                    writeln!(out, "    prop_{prop_name}_trig_d1 <= {trig_sv};").unwrap();
                 }
                 out.push_str("  end\n");
-                out.push_str(&format!(
+                write!(out, 
                     "{prefix}(!(prop_{prop_name}_trig_d1)) || ({resp_sv}){suffix}"
-                ));
+                ).unwrap();
             } else {
                 let msb = delay_cycles - 1;
-                out.push_str(&format!("  reg [{msb}:0] prop_{prop_name}_trig_shift;\n"));
-                out.push_str(&format!("  always @(posedge {clock}) begin\n"));
+                writeln!(out, "  reg [{msb}:0] prop_{prop_name}_trig_shift;").unwrap();
+                writeln!(out, "  always @(posedge {clock}) begin").unwrap();
                 let shift_expr = if *delay_cycles == 2 {
                     format!("{{prop_{prop_name}_trig_shift[0], {trig_sv}}}")
                 } else {
                     format!("{{prop_{prop_name}_trig_shift[{}:0], {trig_sv}}}", msb - 1)
                 };
                 if has_rst_n {
-                    out.push_str(&format!("    if (!rst_n) prop_{prop_name}_trig_shift <= 0;\n"));
-                    out.push_str(&format!(
-                        "    else prop_{prop_name}_trig_shift <= {shift_expr};\n"
-                    ));
+                    writeln!(out, "    if (!rst_n) prop_{prop_name}_trig_shift <= 0;").unwrap();
+                    writeln!(out, 
+                        "    else prop_{prop_name}_trig_shift <= {shift_expr};"
+                    ).unwrap();
                 } else {
-                    out.push_str(&format!("    prop_{prop_name}_trig_shift <= {shift_expr};\n"));
+                    writeln!(out, "    prop_{prop_name}_trig_shift <= {shift_expr};").unwrap();
                 }
                 out.push_str("  end\n");
-                out.push_str(&format!(
+                write!(out, 
                     "{prefix}(!(prop_{prop_name}_trig_shift[{msb}])) || ({resp_sv}){suffix}"
-                ));
+                ).unwrap();
             }
         }
     }
@@ -522,48 +523,48 @@ pub fn emit_synchronizer_chains(
 
                 // Declare synchronizer register chain.
                 let total_bits = width * stages;
-                out.push_str(&format!(
-                    "  // {}-stage synchronizer for {} (@{clock_domain})\n",
+                writeln!(out, 
+                    "  // {}-stage synchronizer for {} (@{clock_domain})",
                     stages, name
-                ));
-                out.push_str(&format!(
-                    "  logic [{}:0] {};\n",
+                ).unwrap();
+                writeln!(out, 
+                    "  logic [{}:0] {};",
                     total_bits.saturating_sub(1),
                     sync_reg,
-                ));
+                ).unwrap();
                 out.push_str("  initial begin\n");
-                out.push_str(&format!("    {} = '0;\n", sync_reg));
+                writeln!(out, "    {} = '0;", sync_reg).unwrap();
                 out.push_str("  end\n");
 
                 // Sequential synchronizer logic.
-                out.push_str(&format!(
-                    "  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"
-                ));
-                out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", sync_reg));
+                writeln!(out, 
+                    "  always_ff @(posedge {clock_domain} or negedge rst_n) begin"
+                ).unwrap();
+                write!(out, "    if (!rst_n)\n      {} <= '0;\n", sync_reg).unwrap();
                 if stages == 1 {
-                    out.push_str(&format!("    else\n      {} <= {};\n", sync_reg, name));
+                    write!(out, "    else\n      {} <= {};\n", sync_reg, name).unwrap();
                 } else {
                     // Shift chain: {input, sync[high:width]}
-                    out.push_str(&format!(
+                    write!(out, 
                         "    else\n      {} <= {{{}, {}[{}:{}]}};\n",
                         sync_reg,
                         name,
                         sync_reg,
                         total_bits.saturating_sub(1),
                         width,
-                    ));
+                    ).unwrap();
                 }
                 out.push_str("  end\n");
 
                 // Output: synchronized signal is the last stage.
                 let type_str = super::super::sv_type(&type_comp.0.signal_type());
-                out.push_str(&format!(
+                write!(out, 
                     "  {} {} = {}[{}:0];\n\n",
                     type_str,
                     sync_name,
                     sync_reg,
                     width.saturating_sub(1),
-                ));
+                ).unwrap();
 
                 mappings.push((name.to_string(), sync_name));
             }
@@ -586,7 +587,7 @@ pub fn emit_sva_only(result: &PipelineResult) -> String {
     let mut out = String::with_capacity(1024);
 
     out.push_str("// Auto-generated SVA assertions from MIRR compiler\n");
-    out.push_str(&format!("// Module: {}\n\n", module_name));
+    write!(out, "// Module: {}\n\n", module_name).unwrap();
 
     let has_rst_n = module_has_rst_n(registry);
 

@@ -12,6 +12,7 @@ mod sva;
 mod temporal;
 
 pub use sva::{emit_sva_only, emit_synchronizer_chains};
+use std::fmt::Write;
 
 use crate::ast::types::{BinaryOp, UnaryOp};
 use crate::emit::fpga_target::FpgaTarget;
@@ -98,7 +99,7 @@ pub fn emit_sv_full(
             out.push_str("  // Temporal signals\n");
             for s in &netlist.signals {
                 let type_str = super::sv_type(&s.ty);
-                out.push_str(&format!("  {type_str} {};\n", s.name));
+                writeln!(out, "  {type_str} {};", s.name).unwrap();
             }
             out.push('\n');
         }
@@ -143,7 +144,7 @@ pub fn emit_sv_full(
                     pattern_name
                 };
 
-                out.push_str(&format!("  {} {} (\n", module_name, instance_name));
+                writeln!(out, "  {} {} (", module_name, instance_name).unwrap();
 
                 for (i, arg) in call.arguments.iter().enumerate() {
                     let port_name =
@@ -163,7 +164,7 @@ pub fn emit_sv_full(
                     };
 
                     let comma = if i == call.arguments.len() - 1 { "" } else { "," };
-                    out.push_str(&format!("    .{}({}){}\n", port_name, arg_str, comma));
+                    writeln!(out, "    .{}({}){}", port_name, arg_str, comma).unwrap();
                 }
                 out.push_str("  );\n\n");
             }
@@ -237,12 +238,12 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
 
     let mut out = String::with_capacity(2048);
     out.push_str("// Auto-generated SVA bind file from MIRR compiler\n");
-    out.push_str(&format!("// Bind target: {}\n", module_name));
+    writeln!(out, "// Bind target: {}", module_name).unwrap();
     out.push_str("// Use with: read_verilog -sv <this_file> (formal verification only)\n\n");
 
     // Emit the SVA wrapper module with the same ports.
     let sva_mod_name = format!("{}_sva", module_name);
-    out.push_str(&format!("module {sva_mod_name} (\n"));
+    writeln!(out, "module {sva_mod_name} (").unwrap();
 
     let needs_temporal =
         registry.kinds.iter().flatten().any(|k| k.0 == crate::ecs::EntityKind::GUARD)
@@ -301,7 +302,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
     let port_count = ports.len();
     for (i, port) in ports.iter().enumerate() {
         let comma = if i + 1 < port_count { "," } else { "" };
-        out.push_str(&format!("{port}{comma}\n"));
+        writeln!(out, "{port}{comma}").unwrap();
     }
     out.push_str(");\n\n");
 
@@ -339,7 +340,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
     out.push_str("endmodule\n\n");
 
     // Emit the bind statement.
-    out.push_str(&format!("bind {} {sva_mod_name} u_sva (.*);\n", module_name));
+    writeln!(out, "bind {} {sva_mod_name} u_sva (.*);", module_name).unwrap();
 
     Ok(out)
 }
@@ -352,7 +353,7 @@ pub fn emit_sva_bind_file(result: &PipelineResult) -> Result<String, MirrError> 
 pub(crate) fn emit_source_comment(span: Option<&Span>, table: &FileTable, out: &mut String) {
     if let Some(s) = span {
         let loc = s.display_location(table);
-        out.push_str(&format!("  // source: {loc}\n"));
+        writeln!(out, "  // source: {loc}").unwrap();
     }
 }
 

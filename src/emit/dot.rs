@@ -9,6 +9,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write;
 use crate::ast::types::{SignalKind, SignalType};
 use crate::pipeline::PipelineResult;
 use crate::temporal::low_level_ir::{CompiledGuard, TemporalNetlist};
@@ -87,7 +88,7 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
             continue;
         }
         if let (Some(nc), Some(_pat)) = (registry.names[i], &registry.pattern_defs[i]) {
-            out.push_str(&format!("  // Pattern: {}\n", registry.resolve_name(nc.0)));
+            writeln!(out, "  // Pattern: {}", registry.resolve_name(nc.0)).unwrap();
         }
     }
 
@@ -101,8 +102,8 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
         {
             if let crate::ecs::EntityKind::GUARD = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
-                out.push_str(&format!("  subgraph cluster_guard_{} {{\n", sanitize_id(name)));
-                out.push_str(&format!("    label=\"guard: {}\";\n", name));
+                writeln!(out, "  subgraph cluster_guard_{} {{", sanitize_id(name)).unwrap();
+                writeln!(out, "    label=\"guard: {}\";", name).unwrap();
                 emit_expr_nodes_ecs(registry, cond_comp.0, &mut node_id, &mut out);
                 out.push_str("  }\n");
             }
@@ -124,15 +125,15 @@ pub fn emit_expr_dot(result: &PipelineResult) -> String {
                         let target_name_opt = registry.names[assign.target.0 as usize]
                             .map(|n| registry.resolve_name(n.0));
                         if let Some(target_name) = target_name_opt {
-                            out.push_str(&format!(
-                                "  subgraph cluster_{}_{} {{\n",
+                            writeln!(out, 
+                                "  subgraph cluster_{}_{} {{",
                                 sanitize_id(reflex_name),
                                 sanitize_id(target_name)
-                            ));
-                            out.push_str(&format!(
-                                "    label=\"{}.{}\";\n",
+                            ).unwrap();
+                            writeln!(out, 
+                                "    label=\"{}.{}\";",
                                 reflex_name, target_name
-                            ));
+                            ).unwrap();
                             emit_expr_nodes_ecs(registry, assign.value, &mut node_id, &mut out);
                             out.push_str("  }\n");
                         }
@@ -176,7 +177,7 @@ fn emit_pattern_origin_comments(
             continue;
         }
         if let (Some(nc), Some(_)) = (registry.names[i], &registry.pattern_defs[i]) {
-            out.push_str(&format!("  // Pattern: {}\n", registry.resolve_name(nc.0)));
+            writeln!(out, "  // Pattern: {}", registry.resolve_name(nc.0)).unwrap();
         }
     }
     out.push('\n');
@@ -208,12 +209,12 @@ fn emit_signal_nodes(
                     SignalType::Signed(w) => format!("i{w}"),
                     other => other.to_string(),
                 };
-                out.push_str(&format!(
-                    "  {} [label=\"{}: {}\" shape={shape}];\n",
+                writeln!(out, 
+                    "  {} [label=\"{}: {}\" shape={shape}];",
                     sanitize_id(name),
                     name,
                     width_label,
-                ));
+                ).unwrap();
             }
         }
     }
@@ -235,12 +236,12 @@ fn emit_guard_nodes(
         {
             if let crate::ecs::EntityKind::GUARD = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
-                out.push_str(&format!(
-                    "  {} [label=\"{} ({}c)\" shape=diamond style=filled fillcolor=lightyellow];\n",
+                writeln!(out, 
+                    "  {} [label=\"{} ({}c)\" shape=diamond style=filled fillcolor=lightyellow];",
                     guard_node_id(name),
                     name,
                     cycles_comp.0,
-                ));
+                ).unwrap();
             }
         }
     }
@@ -398,20 +399,20 @@ fn emit_guard_edges(
                 let guard_name = registry.resolve_name(nc.0);
                 let refs = collect_signal_refs_ecs(registry, cond_comp.0);
                 for sig in &refs {
-                    out.push_str(&format!(
-                        "  {} -> {};\n",
+                    writeln!(out, 
+                        "  {} -> {};",
                         sanitize_id(sig),
                         guard_node_id(guard_name)
-                    ));
+                    ).unwrap();
                 }
                 // Prev back-edges rendered as dashed red.
                 let prev_refs = collect_prev_refs_ecs(registry, cond_comp.0);
                 for (sig, _delay) in &prev_refs {
-                    out.push_str(&format!(
-                        "  {} -> {} [style=dashed color=red label=\"prev\"];\n",
+                    writeln!(out, 
+                        "  {} -> {} [style=dashed color=red label=\"prev\"];",
                         sanitize_id(sig),
                         guard_node_id(guard_name),
-                    ));
+                    ).unwrap();
                 }
             }
         }
@@ -444,12 +445,12 @@ fn emit_reflex_edges(
                                 let target_name_opt = registry.names[assign.target.0 as usize]
                                     .map(|n| registry.resolve_name(n.0));
                                 if let Some(target_name) = target_name_opt {
-                                    out.push_str(&format!(
-                                        "  {} -> {} [label=\"{}\"];\n",
+                                    writeln!(out, 
+                                        "  {} -> {} [label=\"{}\"];",
                                         guard_node_id(g_name),
                                         sanitize_id(target_name),
                                         reflex_name,
-                                    ));
+                                    ).unwrap();
                                 }
                             }
                         }
@@ -475,38 +476,38 @@ fn emit_temporal_subgraph(netlist: &TemporalNetlist, out: &mut String) {
         }
         match guard {
             CompiledGuard::ShiftRegister(sr) => {
-                out.push_str(&format!(
-                    "    {} [label=\"SR: {} ({}c)\" shape=record];\n",
+                writeln!(out, 
+                    "    {} [label=\"SR: {} ({}c)\" shape=record];",
                     sanitize_id(&sr.output_signal),
                     sr.name,
                     sr.delay_cycles,
-                ));
+                ).unwrap();
                 nodes_emitted += 1;
             }
             CompiledGuard::Counter(c) => {
-                out.push_str(&format!(
-                    "    {} [label=\"CTR: {} ({}c)\" shape=record];\n",
+                writeln!(out, 
+                    "    {} [label=\"CTR: {} ({}c)\" shape=record];",
                     sanitize_id(&c.output_signal),
                     c.name,
                     c.target_count,
-                ));
+                ).unwrap();
                 nodes_emitted += 1;
             }
             CompiledGuard::Complex(cx) => {
-                out.push_str(&format!(
-                    "    {} [label=\"COMPLEX: {}\" shape=record];\n",
+                writeln!(out, 
+                    "    {} [label=\"COMPLEX: {}\" shape=record];",
                     sanitize_id(&cx.output_signal),
                     cx.name,
-                ));
+                ).unwrap();
                 nodes_emitted += 1;
             }
             CompiledGuard::DynamicCounter(dc) => {
-                out.push_str(&format!(
-                    "    {} [label=\"DYN: {} (max {}c)\" shape=record];\n",
+                writeln!(out, 
+                    "    {} [label=\"DYN: {} (max {}c)\" shape=record];",
                     sanitize_id(&dc.output_signal),
                     dc.name,
                     dc.max_delay,
-                ));
+                ).unwrap();
                 nodes_emitted += 1;
             }
         }
@@ -536,18 +537,18 @@ fn emit_expr_nodes_ecs(
 
         if let Some(crate::ecs::components::LiteralComponent(lit)) = &registry.literals[idx] {
             let label = format!("{:?}", lit);
-            out.push_str(&format!("    n{my_id} [label=\"{label}\" shape=box];\n"));
+            writeln!(out, "    n{my_id} [label=\"{label}\" shape=box];").unwrap();
         } else if let Some(crate::ecs::components::SignalRefComponent(sig_ent)) =
             registry.signal_refs[idx]
         {
             let name = registry.names[sig_ent.0 as usize]
                 .map(|n| registry.resolve_name(n.0))
                 .unwrap_or("unknown_sig");
-            out.push_str(&format!("    n{my_id} [label=\"{name}\" shape=ellipse];\n"));
+            writeln!(out, "    n{my_id} [label=\"{name}\" shape=ellipse];").unwrap();
         } else if let Some(crate::ecs::components::PendingSignalRef(name)) =
             &registry.pending_signal_refs[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\"{name}\" shape=ellipse];\n"));
+            writeln!(out, "    n{my_id} [label=\"{name}\" shape=ellipse];").unwrap();
         } else if let Some(crate::ecs::components::PrevComponent { signal, delay }) =
             &registry.prev_ops[idx]
         {
@@ -564,80 +565,80 @@ fn emit_expr_nodes_ecs(
             } else {
                 String::new()
             };
-            out.push_str(&format!("    n{my_id} [label=\"prev({name},{delay})\" shape=ellipse style=dashed color=red];\n"));
+            writeln!(out, "    n{my_id} [label=\"prev({name},{delay})\" shape=ellipse style=dashed color=red];").unwrap();
         } else if let Some(crate::ecs::components::UnaryComponent { op, operand }) =
             &registry.unary_ops[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\"{:?}\" shape=circle];\n", op));
+            writeln!(out, "    n{my_id} [label=\"{:?}\" shape=circle];", op).unwrap();
             let child_id = *node_id;
             *node_id += 1;
-            out.push_str(&format!("    n{my_id} -> n{child_id};\n"));
+            writeln!(out, "    n{my_id} -> n{child_id};").unwrap();
             stack.push((*operand, child_id));
         } else if let Some(crate::ecs::components::BinaryComponent { op, left, right }) =
             &registry.binary_ops[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\"{:?}\" shape=circle];\n", op));
+            writeln!(out, "    n{my_id} [label=\"{:?}\" shape=circle];", op).unwrap();
             let left_id = *node_id;
             *node_id += 1;
             let right_id = *node_id;
             *node_id += 1;
-            out.push_str(&format!("    n{my_id} -> n{left_id};\n"));
-            out.push_str(&format!("    n{my_id} -> n{right_id};\n"));
+            writeln!(out, "    n{my_id} -> n{left_id};").unwrap();
+            writeln!(out, "    n{my_id} -> n{right_id};").unwrap();
             stack.push((*right, right_id));
             stack.push((*left, left_id));
         } else if let Some(crate::ecs::components::ArrayIndexComponent { array, index }) =
             &registry.array_indices[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\"[]\" shape=circle];\n"));
+            writeln!(out, "    n{my_id} [label=\"[]\" shape=circle];").unwrap();
             let arr_id = *node_id;
             *node_id += 1;
             let idx_id = *node_id;
             *node_id += 1;
-            out.push_str(&format!("    n{my_id} -> n{arr_id};\n"));
-            out.push_str(&format!("    n{my_id} -> n{idx_id};\n"));
+            writeln!(out, "    n{my_id} -> n{arr_id};").unwrap();
+            writeln!(out, "    n{my_id} -> n{idx_id};").unwrap();
             stack.push((*index, idx_id));
             stack.push((*array, arr_id));
         } else if let Some(crate::ecs::components::FieldAccessComponent { object, field }) =
             &registry.field_accesses[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\".{field}\" shape=circle];\n"));
+            writeln!(out, "    n{my_id} [label=\".{field}\" shape=circle];").unwrap();
             let obj_id = *node_id;
             *node_id += 1;
-            out.push_str(&format!("    n{my_id} -> n{obj_id};\n"));
+            writeln!(out, "    n{my_id} -> n{obj_id};").unwrap();
             stack.push((*object, obj_id));
         } else if let Some(crate::ecs::components::ArrayLiteralComponent(elems)) =
             &registry.array_literals[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\"[...]\" shape=circle];\n"));
+            writeln!(out, "    n{my_id} [label=\"[...]\" shape=circle];").unwrap();
             for elem in elems.iter().take(MAX_DOT_NODES) {
                 let elem_id = *node_id;
                 *node_id += 1;
-                out.push_str(&format!("    n{my_id} -> n{elem_id};\n"));
+                writeln!(out, "    n{my_id} -> n{elem_id};").unwrap();
                 stack.push((*elem, elem_id));
             }
         } else if let Some(crate::ecs::components::StructLiteralComponent { name: _, fields }) =
             &registry.struct_literals[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\"{{...}}\" shape=circle];\n"));
+            writeln!(out, "    n{my_id} [label=\"{{...}}\" shape=circle];").unwrap();
             for (_, fval) in fields.iter().take(MAX_DOT_NODES) {
                 let fval_id = *node_id;
                 *node_id += 1;
-                out.push_str(&format!("    n{my_id} -> n{fval_id};\n"));
+                writeln!(out, "    n{my_id} -> n{fval_id};").unwrap();
                 stack.push((*fval, fval_id));
             }
         } else if let Some(crate::ecs::components::MuxComponent { select, true_val, false_val }) =
             &registry.muxes[idx]
         {
-            out.push_str(&format!("    n{my_id} [label=\"mux\" shape=circle];\n"));
+            writeln!(out, "    n{my_id} [label=\"mux\" shape=circle];").unwrap();
             let c_id = *node_id;
             *node_id += 1;
             let t_id = *node_id;
             *node_id += 1;
             let f_id = *node_id;
             *node_id += 1;
-            out.push_str(&format!("    n{my_id} -> n{c_id};\n"));
-            out.push_str(&format!("    n{my_id} -> n{t_id};\n"));
-            out.push_str(&format!("    n{my_id} -> n{f_id};\n"));
+            writeln!(out, "    n{my_id} -> n{c_id};").unwrap();
+            writeln!(out, "    n{my_id} -> n{t_id};").unwrap();
+            writeln!(out, "    n{my_id} -> n{f_id};").unwrap();
             stack.push((*false_val, f_id));
             stack.push((*true_val, t_id));
             stack.push((*select, c_id));
@@ -657,10 +658,10 @@ fn emit_pattern_origins_ecs(
 
     out.push_str("  // ── Pattern Origins ──\n");
     for origin in &registry.pattern_origins {
-        out.push_str(&format!(
-            "  // Pattern expanded: {} with args ({})\n",
+        writeln!(out, 
+            "  // Pattern expanded: {} with args ({})",
             origin.pattern_name, origin.call_args_summary
-        ));
+        ).unwrap();
     }
     out.push('\n');
 }
@@ -737,18 +738,18 @@ fn emit_property_nodes(
                     crate::ast::property::PropertyDirective::Cover => "lightyellow",
                     crate::ast::property::PropertyDirective::Assume => "lightgreen",
                 };
-                out.push_str(&format!(
-                    "  {prop_id} [shape=note style=filled fillcolor={fillcolor} label=\"{}\"];\n",
+                writeln!(out, 
+                    "  {prop_id} [shape=note style=filled fillcolor={fillcolor} label=\"{}\"];",
                     name,
-                ));
+                ).unwrap();
 
                 for expr_id in &prop.formula_exprs {
                     let refs = collect_signal_refs_ecs(registry, *expr_id);
                     for sig in &refs {
-                        out.push_str(&format!(
-                            "  {} -> {prop_id} [style=dotted color=blue];\n",
+                        writeln!(out, 
+                            "  {} -> {prop_id} [style=dotted color=blue];",
                             sanitize_id(sig),
-                        ));
+                        ).unwrap();
                     }
                 }
             }

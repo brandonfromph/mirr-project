@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write;
 use super::{MAX_RTL_KNOWLEDGE_DEPTH, MAX_RTL_PROPERTIES, MAX_RTL_SIGNALS};
 use crate::mape_k::ltl::{SignalPredicate, TemporalProperty};
 use crate::mape_k::SimConfig;
@@ -22,10 +23,10 @@ pub(super) fn emit_monitor_block(config: &SimConfig, main_clock: &str) -> String
     let mut sv = String::with_capacity(1024);
     sv.push_str("// --- Monitor (M) -------------------------------------------\n");
     sv.push_str("module mirr_monitor #(\n");
-    sv.push_str(&format!("  parameter N_SIGNALS = {n_sig},\n"));
-    sv.push_str(&format!("  parameter TRACE_DEPTH = {depth}\n"));
+    writeln!(sv, "  parameter N_SIGNALS = {n_sig},").unwrap();
+    writeln!(sv, "  parameter TRACE_DEPTH = {depth}").unwrap();
     sv.push_str(") (\n");
-    sv.push_str(&format!("  input  logic {},\n", main_clock));
+    writeln!(sv, "  input  logic {},", main_clock).unwrap();
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] sensor_in,\n");
     sv.push_str("  output logic [N_SIGNALS-1:0][31:0] shadow,\n");
@@ -33,30 +34,30 @@ pub(super) fn emit_monitor_block(config: &SimConfig, main_clock: &str) -> String
     sv.push_str(");\n\n");
 
     // Trace buffer (ring).
-    sv.push_str(&format!("  logic [{}:0] wr_ptr;\n", addr_w.saturating_sub(1)));
+    writeln!(sv, "  logic [{}:0] wr_ptr;", addr_w.saturating_sub(1)).unwrap();
     sv.push_str("  logic [31:0] trace_buf [0:TRACE_DEPTH-1][0:N_SIGNALS-1];\n\n");
 
     // Shadow registers + trace write.
-    sv.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", main_clock));
+    writeln!(sv, "  always_ff @(posedge {} or negedge rst_n) begin", main_clock).unwrap();
     sv.push_str("    if (!rst_n) begin\n");
-    sv.push_str(&format!("      wr_ptr <= {addr_w}'d0;\n"));
+    writeln!(sv, "      wr_ptr <= {addr_w}'d0;").unwrap();
     sv.push_str("      sample_valid <= 1'b0;\n");
 
     for i in 0..n_sig.min(MAX_RTL_SIGNALS) {
-        sv.push_str(&format!("      shadow[{i}] <= 32'd0;\n"));
+        writeln!(sv, "      shadow[{i}] <= 32'd0;").unwrap();
     }
 
     sv.push_str("    end else begin\n");
     sv.push_str("      sample_valid <= 1'b1;\n");
 
     for i in 0..n_sig.min(MAX_RTL_SIGNALS) {
-        sv.push_str(&format!("      shadow[{i}] <= sensor_in[{i}];\n"));
-        sv.push_str(&format!("      trace_buf[wr_ptr][{i}] <= sensor_in[{i}];\n"));
+        writeln!(sv, "      shadow[{i}] <= sensor_in[{i}];").unwrap();
+        writeln!(sv, "      trace_buf[wr_ptr][{i}] <= sensor_in[{i}];").unwrap();
     }
 
-    sv.push_str(&format!(
-        "      wr_ptr <= (32'(wr_ptr) == TRACE_DEPTH-1) ? {addr_w}'d0 : wr_ptr + 1;\n"
-    ));
+    writeln!(sv, 
+        "      wr_ptr <= (32'(wr_ptr) == TRACE_DEPTH-1) ? {addr_w}'d0 : wr_ptr + 1;"
+    ).unwrap();
     sv.push_str("    end\n");
     sv.push_str("  end\n\n");
     sv.push_str("endmodule\n\n");
@@ -75,21 +76,21 @@ pub(super) fn emit_analyze_block(config: &SimConfig, main_clock: &str) -> String
     let mut sv = String::with_capacity(2048);
     sv.push_str("// --- Analyze (A) -------------------------------------------\n");
     sv.push_str("module mirr_analyze #(\n");
-    sv.push_str(&format!("  parameter N_SIGNALS    = {n_sig},\n"));
-    sv.push_str(&format!("  parameter N_PROPERTIES = {n_prop}\n"));
+    writeln!(sv, "  parameter N_SIGNALS    = {n_sig},").unwrap();
+    writeln!(sv, "  parameter N_PROPERTIES = {n_prop}").unwrap();
     sv.push_str(") (\n");
-    sv.push_str(&format!("  input  logic {},\n", main_clock));
+    writeln!(sv, "  input  logic {},", main_clock).unwrap();
     sv.push_str("  input  logic rst_n,\n");
     sv.push_str("  input  logic [N_SIGNALS-1:0][31:0] shadow,\n");
     sv.push_str("  input  logic        sample_valid,\n");
-    sv.push_str(&format!(
-        "  output logic [{}:0] violation_vec,\n",
+    writeln!(sv, 
+        "  output logic [{}:0] violation_vec,",
         n_prop.max(1).saturating_sub(1)
-    ));
-    sv.push_str(&format!(
-        "  output logic [{}:0] top_violation_idx\n",
+    ).unwrap();
+    writeln!(sv, 
+        "  output logic [{}:0] top_violation_idx",
         bit_width(n_prop).saturating_sub(1)
-    ));
+    ).unwrap();
     sv.push_str(");\n\n");
 
     // Build a signal-name-to-index map for this config.
@@ -108,64 +109,64 @@ pub(super) fn emit_analyze_block(config: &SimConfig, main_clock: &str) -> String
             TemporalProperty::Always(pred) => {
                 let idx = sig_idx(pred.signal_name());
                 let cond = predicate_to_sv(pred, &format!("shadow[{idx}]"));
-                sv.push_str(&format!("  // Property {pi}: Always\n"));
+                writeln!(sv, "  // Property {pi}: Always").unwrap();
                 sv.push_str("  always_comb begin\n");
-                sv.push_str(&format!("    violation_vec[{pi}] = sample_valid && !({cond});\n"));
+                writeln!(sv, "    violation_vec[{pi}] = sample_valid && !({cond});").unwrap();
                 sv.push_str("  end\n\n");
             }
             TemporalProperty::EventuallyWithin(pred, cycles) => {
                 let idx = sig_idx(pred.signal_name());
                 let cond = predicate_to_sv(pred, &format!("shadow[{idx}]"));
                 let cw = bit_width(*cycles as usize);
-                sv.push_str(&format!("  // Property {pi}: EventuallyWithin({cycles})\n"));
-                sv.push_str(&format!("  logic [{cw}:0] ev_cnt_{pi};\n"));
-                sv.push_str(&format!(
-                    "  always_ff @(posedge {} or negedge rst_n) begin\n",
+                writeln!(sv, "  // Property {pi}: EventuallyWithin({cycles})").unwrap();
+                writeln!(sv, "  logic [{cw}:0] ev_cnt_{pi};").unwrap();
+                writeln!(sv, 
+                    "  always_ff @(posedge {} or negedge rst_n) begin",
                     main_clock
-                ));
+                ).unwrap();
                 sv.push_str("    if (!rst_n)\n");
-                sv.push_str(&format!("      ev_cnt_{pi} <= {}'d0;\n", cw + 1));
-                sv.push_str(&format!("    else if ({cond})\n"));
-                sv.push_str(&format!("      ev_cnt_{pi} <= {}'d0;\n", cw + 1));
-                sv.push_str(&format!("    else if (ev_cnt_{pi} < {}'d{cycles})\n", cw + 1));
-                sv.push_str(&format!("      ev_cnt_{pi} <= ev_cnt_{pi} + 1;\n"));
+                writeln!(sv, "      ev_cnt_{pi} <= {}'d0;", cw + 1).unwrap();
+                writeln!(sv, "    else if ({cond})").unwrap();
+                writeln!(sv, "      ev_cnt_{pi} <= {}'d0;", cw + 1).unwrap();
+                writeln!(sv, "    else if (ev_cnt_{pi} < {}'d{cycles})", cw + 1).unwrap();
+                writeln!(sv, "      ev_cnt_{pi} <= ev_cnt_{pi} + 1;").unwrap();
                 sv.push_str("  end\n");
                 sv.push_str("  always_comb begin\n");
-                sv.push_str(&format!(
-                    "    violation_vec[{pi}] = (ev_cnt_{pi} >= {}'d{cycles});\n",
+                writeln!(sv, 
+                    "    violation_vec[{pi}] = (ev_cnt_{pi} >= {}'d{cycles});",
                     cw + 1
-                ));
+                ).unwrap();
                 sv.push_str("  end\n\n");
             }
             TemporalProperty::Persists(pred, cycles) => {
                 let idx = sig_idx(pred.signal_name());
                 let cond = predicate_to_sv(pred, &format!("shadow[{idx}]"));
                 let cw = bit_width(*cycles as usize);
-                sv.push_str(&format!("  // Property {pi}: Persists({cycles})\n"));
-                sv.push_str(&format!("  logic [{cw}:0] ps_cnt_{pi};\n"));
-                sv.push_str(&format!("  logic        ps_ok_{pi};\n"));
-                sv.push_str(&format!(
-                    "  always_ff @(posedge {} or negedge rst_n) begin\n",
+                writeln!(sv, "  // Property {pi}: Persists({cycles})").unwrap();
+                writeln!(sv, "  logic [{cw}:0] ps_cnt_{pi};").unwrap();
+                writeln!(sv, "  logic        ps_ok_{pi};").unwrap();
+                writeln!(sv, 
+                    "  always_ff @(posedge {} or negedge rst_n) begin",
                     main_clock
-                ));
+                ).unwrap();
                 sv.push_str("    if (!rst_n) begin\n");
-                sv.push_str(&format!("      ps_cnt_{pi} <= {}'d0;\n", cw + 1));
-                sv.push_str(&format!("      ps_ok_{pi}  <= 1'b0;\n"));
-                sv.push_str(&format!("    end else if ({cond}) begin\n"));
-                sv.push_str(&format!("      if (ps_cnt_{pi} < {}'d{cycles})\n", cw + 1));
-                sv.push_str(&format!("        ps_cnt_{pi} <= ps_cnt_{pi} + 1;\n"));
-                sv.push_str(&format!(
-                    "      if (ps_cnt_{pi} >= {}'d{}) \n",
+                writeln!(sv, "      ps_cnt_{pi} <= {}'d0;", cw + 1).unwrap();
+                writeln!(sv, "      ps_ok_{pi}  <= 1'b0;").unwrap();
+                writeln!(sv, "    end else if ({cond}) begin").unwrap();
+                writeln!(sv, "      if (ps_cnt_{pi} < {}'d{cycles})", cw + 1).unwrap();
+                writeln!(sv, "        ps_cnt_{pi} <= ps_cnt_{pi} + 1;").unwrap();
+                writeln!(sv, 
+                    "      if (ps_cnt_{pi} >= {}'d{}) ",
                     cw + 1,
                     cycles.saturating_sub(1)
-                ));
-                sv.push_str(&format!("        ps_ok_{pi} <= 1'b1;\n"));
+                ).unwrap();
+                writeln!(sv, "        ps_ok_{pi} <= 1'b1;").unwrap();
                 sv.push_str("    end else begin\n");
-                sv.push_str(&format!("      ps_cnt_{pi} <= {}'d0;\n", cw + 1));
+                writeln!(sv, "      ps_cnt_{pi} <= {}'d0;", cw + 1).unwrap();
                 sv.push_str("    end\n");
                 sv.push_str("  end\n");
                 sv.push_str("  always_comb begin\n");
-                sv.push_str(&format!("    violation_vec[{pi}] = sample_valid && !ps_ok_{pi};\n"));
+                writeln!(sv, "    violation_vec[{pi}] = sample_valid && !ps_ok_{pi};").unwrap();
                 sv.push_str("  end\n\n");
             }
             TemporalProperty::AlwaysImplies(a, b) => {
@@ -173,11 +174,11 @@ pub(super) fn emit_analyze_block(config: &SimConfig, main_clock: &str) -> String
                 let idx_b = sig_idx(b.signal_name());
                 let cond_a = predicate_to_sv(a, &format!("shadow[{idx_a}]"));
                 let cond_b = predicate_to_sv(b, &format!("shadow[{idx_b}]"));
-                sv.push_str(&format!("  // Property {pi}: AlwaysImplies\n"));
+                writeln!(sv, "  // Property {pi}: AlwaysImplies").unwrap();
                 sv.push_str("  always_comb begin\n");
-                sv.push_str(&format!(
-                    "    violation_vec[{pi}] = sample_valid && ({cond_a} && !({cond_b}));\n"
-                ));
+                writeln!(sv, 
+                    "    violation_vec[{pi}] = sample_valid && ({cond_a} && !({cond_b}));"
+                ).unwrap();
                 sv.push_str("  end\n\n");
             }
             TemporalProperty::NeverImplies(a, b) => {
@@ -185,21 +186,21 @@ pub(super) fn emit_analyze_block(config: &SimConfig, main_clock: &str) -> String
                 let idx_b = sig_idx(b.signal_name());
                 let cond_a = predicate_to_sv(a, &format!("shadow[{idx_a}]"));
                 let cond_b = predicate_to_sv(b, &format!("shadow[{idx_b}]"));
-                sv.push_str(&format!("  // Property {pi}: NeverImplies\n"));
-                sv.push_str(&format!("  logic never_implies_seen_{pi};\n"));
-                sv.push_str(&format!(
-                    "  always_ff @(posedge {} or negedge rst_n) begin\n",
+                writeln!(sv, "  // Property {pi}: NeverImplies").unwrap();
+                writeln!(sv, "  logic never_implies_seen_{pi};").unwrap();
+                writeln!(sv, 
+                    "  always_ff @(posedge {} or negedge rst_n) begin",
                     main_clock
-                ));
+                ).unwrap();
                 sv.push_str("    if (!rst_n)\n");
-                sv.push_str(&format!("      never_implies_seen_{pi} <= 1'b0;\n"));
-                sv.push_str(&format!("    else if ({cond_a} && !({cond_b}))\n"));
-                sv.push_str(&format!("      never_implies_seen_{pi} <= 1'b1;\n"));
+                writeln!(sv, "      never_implies_seen_{pi} <= 1'b0;").unwrap();
+                writeln!(sv, "    else if ({cond_a} && !({cond_b}))").unwrap();
+                writeln!(sv, "      never_implies_seen_{pi} <= 1'b1;").unwrap();
                 sv.push_str("  end\n");
                 sv.push_str("  always_comb begin\n");
-                sv.push_str(&format!(
-                    "    violation_vec[{pi}] = sample_valid && !never_implies_seen_{pi};\n"
-                ));
+                writeln!(sv, 
+                    "    violation_vec[{pi}] = sample_valid && !never_implies_seen_{pi};"
+                ).unwrap();
                 sv.push_str("  end\n\n");
             }
             TemporalProperty::AlwaysFollowedBy(trigger, delay, response) => {
@@ -208,33 +209,33 @@ pub(super) fn emit_analyze_block(config: &SimConfig, main_clock: &str) -> String
                 let cond_t = predicate_to_sv(trigger, &format!("shadow[{idx_t}]"));
                 let cond_r = predicate_to_sv(response, &format!("shadow[{idx_r}]"));
                 let delay_w = bit_width(*delay as usize);
-                sv.push_str(&format!("  // Property {pi}: AlwaysFollowedBy({delay})\n"));
-                sv.push_str(&format!("  logic [{delay_w}:0] follow_cnt_{pi};\n"));
-                sv.push_str(&format!("  logic follow_ok_{pi};\n"));
-                sv.push_str(&format!(
-                    "  always_ff @(posedge {} or negedge rst_n) begin\n",
+                writeln!(sv, "  // Property {pi}: AlwaysFollowedBy({delay})").unwrap();
+                writeln!(sv, "  logic [{delay_w}:0] follow_cnt_{pi};").unwrap();
+                writeln!(sv, "  logic follow_ok_{pi};").unwrap();
+                writeln!(sv, 
+                    "  always_ff @(posedge {} or negedge rst_n) begin",
                     main_clock
-                ));
+                ).unwrap();
                 sv.push_str("    if (!rst_n) begin\n");
-                sv.push_str(&format!("      follow_cnt_{pi} <= {}'d0;\n", delay_w + 1));
-                sv.push_str(&format!("      follow_ok_{pi}  <= 1'b1;\n"));
+                writeln!(sv, "      follow_cnt_{pi} <= {}'d0;", delay_w + 1).unwrap();
+                writeln!(sv, "      follow_ok_{pi}  <= 1'b1;").unwrap();
                 sv.push_str("    end else begin\n");
-                sv.push_str(&format!("      if ({cond_t}) begin\n"));
-                sv.push_str(&format!("        follow_cnt_{pi} <= {}'d{delay};\n", delay_w + 1));
+                writeln!(sv, "      if ({cond_t}) begin").unwrap();
+                writeln!(sv, "        follow_cnt_{pi} <= {}'d{delay};", delay_w + 1).unwrap();
                 sv.push_str("        follow_ok_{pi} <= 1'b0;\n");
                 sv.push_str("      end else if (follow_cnt_{pi} > 0) begin\n");
-                sv.push_str(&format!("        follow_cnt_{pi} <= follow_cnt_{pi} - 1;\n"));
-                sv.push_str(&format!(
-                    "        if (follow_cnt_{pi} == 1 && !({cond_r})) follow_ok_{pi} <= 1'b0;\n"
-                ));
+                writeln!(sv, "        follow_cnt_{pi} <= follow_cnt_{pi} - 1;").unwrap();
+                writeln!(sv, 
+                    "        if (follow_cnt_{pi} == 1 && !({cond_r})) follow_ok_{pi} <= 1'b0;"
+                ).unwrap();
                 sv.push_str("        else if (follow_cnt_{pi} == 1) follow_ok_{pi} <= 1'b1;\n");
                 sv.push_str("      end\n");
                 sv.push_str("    end\n");
                 sv.push_str("  end\n");
                 sv.push_str("  always_comb begin\n");
-                sv.push_str(&format!(
-                    "    violation_vec[{pi}] = sample_valid && !follow_ok_{pi};\n"
-                ));
+                writeln!(sv, 
+                    "    violation_vec[{pi}] = sample_valid && !follow_ok_{pi};"
+                ).unwrap();
                 sv.push_str("  end\n\n");
             }
         }
@@ -243,12 +244,12 @@ pub(super) fn emit_analyze_block(config: &SimConfig, main_clock: &str) -> String
     // Priority encoder: find lowest-index violation.
     sv.push_str("  // Priority encoder — lowest index wins\n");
     sv.push_str("  always_comb begin\n");
-    sv.push_str(&format!("    top_violation_idx = {}'d0;\n", bit_width(n_prop)));
+    writeln!(sv, "    top_violation_idx = {}'d0;", bit_width(n_prop)).unwrap();
     for pi in (0..n_prop.min(MAX_RTL_PROPERTIES)).rev() {
-        sv.push_str(&format!(
-            "    if (violation_vec[{pi}]) top_violation_idx = {}'d{pi};\n",
+        writeln!(sv, 
+            "    if (violation_vec[{pi}]) top_violation_idx = {}'d{pi};",
             bit_width(n_prop)
-        ));
+        ).unwrap();
     }
     sv.push_str("  end\n\n");
     sv.push_str("endmodule\n\n");

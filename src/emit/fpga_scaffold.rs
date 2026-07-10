@@ -11,6 +11,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write;
 use crate::ast::types::SignalKind;
 use crate::emit::fpga_target::FpgaTarget;
 use crate::emit::fpga_target::MAX_CONSTRAINT_LINES;
@@ -102,15 +103,15 @@ fn emit_xdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     let mut out = String::with_capacity(1024);
     let mut lines = 0usize;
 
-    out.push_str(&format!(
-        "## Auto-generated XDC constraints for {} ({})\n",
+    writeln!(out, 
+        "## Auto-generated XDC constraints for {} ({})",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.display_name()
-    ));
+    ).unwrap();
     out.push_str("## Fill in PACKAGE_PIN values for your board.\n\n");
 
     let main_clock = get_main_clock(registry);
-    out.push_str(&format!("create_clock -period 10.000 -name {0} [get_ports {0}]\n", main_clock));
+    writeln!(out, "create_clock -period 10.000 -name {0} [get_ports {0}]", main_clock).unwrap();
     lines += 1;
 
     // Port constraints.
@@ -123,19 +124,19 @@ fn emit_xdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
         }
         let width = s.width;
         if width == 1 {
-            out.push_str(&format!(
-                "# set_property PACKAGE_PIN {{PLACEHOLDER}} [get_ports {}]\n",
+            writeln!(out, 
+                "# set_property PACKAGE_PIN {{PLACEHOLDER}} [get_ports {}]",
                 s.name
-            ));
-            out.push_str(&format!("# set_property IOSTANDARD LVCMOS33 [get_ports {}]\n", s.name));
+            ).unwrap();
+            writeln!(out, "# set_property IOSTANDARD LVCMOS33 [get_ports {}]", s.name).unwrap();
             lines += 2;
         } else {
             let mut bit = 0u32;
             while bit < width && lines < MAX_CONSTRAINT_LINES {
-                out.push_str(&format!(
-                    "# set_property PACKAGE_PIN {{PLACEHOLDER}} [get_ports {{{}[{}]}}]\n",
+                writeln!(out, 
+                    "# set_property PACKAGE_PIN {{PLACEHOLDER}} [get_ports {{{}[{}]}}]",
                     s.name, bit
-                ));
+                ).unwrap();
                 lines += 1;
                 bit += 1;
             }
@@ -152,15 +153,15 @@ fn emit_xdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
 fn emit_sdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     let mut out = String::with_capacity(1024);
 
-    out.push_str(&format!(
-        "## Auto-generated SDC constraints for {} ({})\n",
+    writeln!(out, 
+        "## Auto-generated SDC constraints for {} ({})",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.display_name()
-    ));
+    ).unwrap();
     out.push_str("## Fill in pin assignments for your board.\n\n");
 
     let main_clock = get_main_clock(registry);
-    out.push_str(&format!("create_clock -period 10.000 -name {0} [get_ports {0}]\n", main_clock));
+    writeln!(out, "create_clock -period 10.000 -name {0} [get_ports {0}]", main_clock).unwrap();
     out.push_str("derive_pll_clocks\n");
     out.push_str("derive_clock_uncertainty\n\n");
 
@@ -174,10 +175,10 @@ fn emit_sdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
             SignalKind::Output => "set_output_delay",
             SignalKind::Internal => continue,
         };
-        out.push_str(&format!(
-            "{} -clock {} 2.000 [get_ports {}]\n",
+        writeln!(out, 
+            "{} -clock {} 2.000 [get_ports {}]",
             constraint, main_clock, s.name
-        ));
+        ).unwrap();
     }
 
     out
@@ -190,10 +191,10 @@ fn emit_sdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
 fn emit_pcf(registry: &crate::ecs::Registry) -> String {
     let mut out = String::with_capacity(512);
 
-    out.push_str(&format!(
-        "# Auto-generated PCF constraints for {}\n",
+    writeln!(out, 
+        "# Auto-generated PCF constraints for {}",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
     out.push_str("# Fill in pin numbers for your board.\n\n");
 
     for s in &get_ports(registry) {
@@ -202,11 +203,11 @@ fn emit_pcf(registry: &crate::ecs::Registry) -> String {
         }
         let width = s.width;
         if width == 1 {
-            out.push_str(&format!("set_io {} PLACEHOLDER\n", s.name));
+            writeln!(out, "set_io {} PLACEHOLDER", s.name).unwrap();
         } else {
             let mut bit = 0u32;
             while bit < width {
-                out.push_str(&format!("set_io {}[{}] PLACEHOLDER\n", s.name, bit));
+                writeln!(out, "set_io {}[{}] PLACEHOLDER", s.name, bit).unwrap();
                 bit += 1;
             }
         }
@@ -222,23 +223,23 @@ fn emit_pcf(registry: &crate::ecs::Registry) -> String {
 fn emit_vivado_tcl(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     let mut out = String::with_capacity(512);
 
-    out.push_str(&format!(
-        "# Auto-generated Vivado build script for {}\n",
+    writeln!(out, 
+        "# Auto-generated Vivado build script for {}",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "create_project {} ./build -part {} -force\n",
+    ).unwrap();
+    writeln!(out, 
+        "create_project {} ./build -part {} -force",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.default_part()
-    ));
-    out.push_str(&format!(
-        "add_files {}.sv\n",
+    ).unwrap();
+    writeln!(out, 
+        "add_files {}.sv",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "add_files -fileset constrs_1 {}.xdc\n",
+    ).unwrap();
+    writeln!(out, 
+        "add_files -fileset constrs_1 {}.xdc",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
     out.push_str("launch_runs synth_1 -jobs 4\n");
     out.push_str("wait_on_run synth_1\n");
     out.push_str("launch_runs impl_1 -to_step write_bitstream -jobs 4\n");
@@ -254,24 +255,24 @@ fn emit_vivado_tcl(registry: &crate::ecs::Registry, target: &FpgaTarget) -> Stri
 fn emit_quartus_tcl(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     let mut out = String::with_capacity(512);
 
-    out.push_str(&format!(
-        "# Auto-generated Quartus build script for {}\n",
+    writeln!(out, 
+        "# Auto-generated Quartus build script for {}",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "project_new {} -overwrite\n",
+    ).unwrap();
+    writeln!(out, 
+        "project_new {} -overwrite",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
     out.push_str("set_global_assignment -name FAMILY \"Cyclone V\"\n");
-    out.push_str(&format!("set_global_assignment -name DEVICE {}\n", target.default_part()));
-    out.push_str(&format!(
-        "set_global_assignment -name SYSTEMVERILOG_FILE {}.sv\n",
+    writeln!(out, "set_global_assignment -name DEVICE {}", target.default_part()).unwrap();
+    writeln!(out, 
+        "set_global_assignment -name SYSTEMVERILOG_FILE {}.sv",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "set_global_assignment -name SDC_FILE {}.sdc\n",
+    ).unwrap();
+    writeln!(out, 
+        "set_global_assignment -name SDC_FILE {}.sdc",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
     out.push_str("execute_flow -compile\n");
     out.push_str("project_close\n");
 
@@ -286,32 +287,32 @@ fn emit_lattice_sh(registry: &crate::ecs::Registry, target: &FpgaTarget) -> Stri
     let mut out = String::with_capacity(512);
 
     out.push_str("#!/usr/bin/env bash\n");
-    out.push_str(&format!(
-        "# Auto-generated build script for {} ({})\n",
+    writeln!(out, 
+        "# Auto-generated build script for {} ({})",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.display_name()
-    ));
+    ).unwrap();
     out.push_str("set -euo pipefail\n\n");
-    out.push_str(&format!(
-        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+    writeln!(out, 
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "yosys -p \"read_verilog -sv {0}.sv; synth_ice40 -top {0} -json {0}.json\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "yosys -p \"read_verilog -sv {0}.sv; synth_ice40 -top {0} -json {0}.json\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "nextpnr-ice40 --hx8k --package ct256 --json {0}.json --pcf {0}.pcf --asc {0}.asc\n",
+    ).unwrap();
+    writeln!(out, 
+        "nextpnr-ice40 --hx8k --package ct256 --json {0}.json --pcf {0}.pcf --asc {0}.asc",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "icepack {0}.asc {0}.bin\n",
+    ).unwrap();
+    writeln!(out, 
+        "icepack {0}.asc {0}.bin",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "echo \"Bitstream ready: {}.bin\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "echo \"Bitstream ready: {}.bin\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
 
     out
 }
@@ -324,23 +325,23 @@ fn emit_yosys_sh(registry: &crate::ecs::Registry) -> String {
     let mut out = String::with_capacity(256);
 
     out.push_str("#!/usr/bin/env bash\n");
-    out.push_str(&format!(
-        "# Auto-generated Yosys synthesis script for {}\n",
+    writeln!(out, 
+        "# Auto-generated Yosys synthesis script for {}",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
     out.push_str("set -euo pipefail\n\n");
-    out.push_str(&format!(
-        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+    writeln!(out, 
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "yosys -p \"read_verilog -sv {0}.sv; synth -top {0}; write_json {0}.json\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "yosys -p \"read_verilog -sv {0}.sv; synth -top {0}; write_json {0}.json\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "echo \"Netlist ready: {}.json\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "echo \"Netlist ready: {}.json\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
 
     out
 }
@@ -352,15 +353,15 @@ fn emit_yosys_sh(registry: &crate::ecs::Registry) -> String {
 fn emit_lpf(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     let mut out = String::with_capacity(1024);
 
-    out.push_str(&format!(
-        "# Auto-generated LPF constraints for {} ({})\n",
+    writeln!(out, 
+        "# Auto-generated LPF constraints for {} ({})",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.display_name()
-    ));
+    ).unwrap();
     out.push_str("# Fill in LOC values for your board.\n\n");
 
     let main_clock = get_main_clock(registry);
-    out.push_str(&format!("FREQUENCY NET \"{}\" 100.000000 MHz;\n\n", main_clock));
+    write!(out, "FREQUENCY NET \"{}\" 100.000000 MHz;\n\n", main_clock).unwrap();
 
     for s in &get_ports(registry) {
         if s.kind == SignalKind::Internal {
@@ -368,15 +369,15 @@ fn emit_lpf(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
         }
         let width = s.width;
         if width == 1 {
-            out.push_str(&format!("LOCATE COMP \"{}\" SITE \"PLACEHOLDER\";\n", s.name));
-            out.push_str(&format!("IOBUF PORT \"{}\" IO_TYPE=LVCMOS33;\n", s.name));
+            writeln!(out, "LOCATE COMP \"{}\" SITE \"PLACEHOLDER\";", s.name).unwrap();
+            writeln!(out, "IOBUF PORT \"{}\" IO_TYPE=LVCMOS33;", s.name).unwrap();
         } else {
             let mut bit = 0u32;
             while bit < width {
-                out.push_str(&format!(
-                    "LOCATE COMP \"{}[{}]\" SITE \"PLACEHOLDER\";\n",
+                writeln!(out, 
+                    "LOCATE COMP \"{}[{}]\" SITE \"PLACEHOLDER\";",
                     s.name, bit
-                ));
+                ).unwrap();
                 bit += 1;
             }
         }
@@ -392,18 +393,18 @@ fn emit_lpf(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
 fn emit_pdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
     let mut out = String::with_capacity(1024);
 
-    out.push_str(&format!(
-        "# Auto-generated PDC constraints for {} ({})\n",
+    writeln!(out, 
+        "# Auto-generated PDC constraints for {} ({})",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.display_name()
-    ));
+    ).unwrap();
     out.push_str("# Fill in pin assignments for your board.\n\n");
 
     let main_clock = get_main_clock(registry);
-    out.push_str(&format!(
+    write!(out, 
         "create_clock -name {{{0}}} -period 10.000 [get_ports {0}]\n\n",
         main_clock
-    ));
+    ).unwrap();
 
     for s in &get_ports(registry) {
         if s.kind == SignalKind::Internal {
@@ -411,17 +412,17 @@ fn emit_pdc(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String {
         }
         let width = s.width;
         if width == 1 {
-            out.push_str(&format!(
-                "ldc_set_location -site {{PLACEHOLDER}} [get_ports {{{}}}]\n",
+            writeln!(out, 
+                "ldc_set_location -site {{PLACEHOLDER}} [get_ports {{{}}}]",
                 s.name
-            ));
+            ).unwrap();
         } else {
             let mut bit = 0u32;
             while bit < width {
-                out.push_str(&format!(
-                    "ldc_set_location -site {{PLACEHOLDER}} [get_ports {{{}[{}]}}]\n",
+                writeln!(out, 
+                    "ldc_set_location -site {{PLACEHOLDER}} [get_ports {{{}[{}]}}]",
                     s.name, bit
-                ));
+                ).unwrap();
                 bit += 1;
             }
         }
@@ -438,32 +439,32 @@ fn emit_ecp5_sh(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String 
     let mut out = String::with_capacity(512);
 
     out.push_str("#!/usr/bin/env bash\n");
-    out.push_str(&format!(
-        "# Auto-generated build script for {} ({})\n",
+    writeln!(out, 
+        "# Auto-generated build script for {} ({})",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.display_name()
-    ));
+    ).unwrap();
     out.push_str("set -euo pipefail\n\n");
-    out.push_str(&format!(
-        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+    writeln!(out, 
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "yosys -p \"read_verilog -sv {0}.sv; synth_ecp5 -top {0} -json {0}.json\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "yosys -p \"read_verilog -sv {0}.sv; synth_ecp5 -top {0} -json {0}.json\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "nextpnr-ecp5 --85k --package CABGA381 --json {0}.json --lpf {0}.lpf --textcfg {0}.config\n",
+    ).unwrap();
+    writeln!(out, 
+        "nextpnr-ecp5 --85k --package CABGA381 --json {0}.json --lpf {0}.lpf --textcfg {0}.config",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "ecppack {0}.config {0}.bit\n",
+    ).unwrap();
+    writeln!(out, 
+        "ecppack {0}.config {0}.bit",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "echo \"Bitstream ready: {}.bit\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "echo \"Bitstream ready: {}.bit\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
 
     out
 }
@@ -476,33 +477,33 @@ fn emit_nexus_sh(registry: &crate::ecs::Registry, target: &FpgaTarget) -> String
     let mut out = String::with_capacity(512);
 
     out.push_str("#!/usr/bin/env bash\n");
-    out.push_str(&format!(
-        "# Auto-generated build script for {} ({})\n",
+    writeln!(out, 
+        "# Auto-generated build script for {} ({})",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string()),
         target.display_name()
-    ));
+    ).unwrap();
     out.push_str("set -euo pipefail\n\n");
-    out.push_str(&format!(
-        "# NOTE: Use --strip-sva when generating {}.sv for synthesis\n",
+    writeln!(out, 
+        "# NOTE: Use --strip-sva when generating {}.sv for synthesis",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "yosys -p \"read_verilog -sv {0}.sv; synth_nexus -top {0} -json {0}.json\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "yosys -p \"read_verilog -sv {0}.sv; synth_nexus -top {0} -json {0}.json\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "nextpnr-nexus --device {} --json {1}.json --pdc {1}.pdc --fasm {1}.fasm\n",
+    ).unwrap();
+    writeln!(out, 
+        "nextpnr-nexus --device {} --json {1}.json --pdc {1}.pdc --fasm {1}.fasm",
         target.default_part(),
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "prjoxide pack {0}.fasm {0}.bit\n",
+    ).unwrap();
+    writeln!(out, 
+        "prjoxide pack {0}.fasm {0}.bit",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
-    out.push_str(&format!(
-        "echo \"Bitstream ready: {}.bit\"\n",
+    ).unwrap();
+    writeln!(out, 
+        "echo \"Bitstream ready: {}.bit\"",
         registry.get_module_name().unwrap_or_else(|| "unknown_module".to_string())
-    ));
+    ).unwrap();
 
     out
 }

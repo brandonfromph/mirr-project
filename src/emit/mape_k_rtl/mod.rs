@@ -19,6 +19,7 @@
 mod lower;
 mod upper;
 
+use std::fmt::Write;
 use crate::mape_k::bridge::bridge_from_pipeline;
 use crate::pipeline::PipelineResult;
 use crate::error::MirrError;
@@ -53,7 +54,7 @@ pub fn emit_mape_k_rtl(result: &PipelineResult) -> Result<String, MirrError> {
     let config = bridge_from_pipeline(result).map_err(|errs| {
         let mut msg = String::from("MAPE-K bridge errors:\n");
         for (i, e) in errs.iter().enumerate().take(MAX_RTL_PROPERTIES) {
-            msg.push_str(&format!("  [{i}] {e}\n"));
+            writeln!(msg, "  [{i}] {e}").unwrap();
         }
         MirrError::RspuError { message: msg, span: None }
     })?;

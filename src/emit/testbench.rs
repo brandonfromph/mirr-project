@@ -10,6 +10,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write;
 use crate::ast::types::{SignalKind, SignalType};
 use crate::pipeline::PipelineResult;
 
@@ -62,7 +63,7 @@ fn emit_tb_header(module_name: &str, out: &mut String) {
     out.push_str("// Auto-generated testbench by MIRR compiler (FPGA-001)\n");
     out.push_str("// Do not edit — regenerate from .mirr source.\n");
     out.push_str("`timescale 1ns / 1ps\n\n");
-    out.push_str(&format!("module {}_tb;\n\n", module_name));
+    write!(out, "module {}_tb;\n\n", module_name).unwrap();
 }
 
 fn emit_tb_signals(
@@ -72,7 +73,7 @@ fn emit_tb_signals(
     out: &mut String,
 ) {
     out.push_str("  // Clock and reset\n");
-    out.push_str(&format!("  logic {};\n", main_clock));
+    writeln!(out, "  logic {};", main_clock).unwrap();
     out.push_str("  logic rst_n;\n\n");
 
     // Declare testbench signals for each port.
@@ -89,7 +90,7 @@ fn emit_tb_signals(
                     continue;
                 }
                 let type_str = tb_type(&ty_comp.0.core);
-                out.push_str(&format!("  {} tb_{};\n", type_str, registry.resolve_name(nc.0)));
+                writeln!(out, "  {} tb_{};", type_str, registry.resolve_name(nc.0)).unwrap();
             }
         }
     }
@@ -98,8 +99,8 @@ fn emit_tb_signals(
 
 fn emit_tb_clock(main_clock: &str, out: &mut String) {
     out.push_str("  // Clock generation: 100 MHz (10 ns period)\n");
-    out.push_str(&format!("  initial {} = 1'b0;\n", main_clock));
-    out.push_str(&format!("  always #5 {} = ~{};\n\n", main_clock, main_clock));
+    writeln!(out, "  initial {} = 1'b0;", main_clock).unwrap();
+    write!(out, "  always #5 {} = ~{};\n\n", main_clock, main_clock).unwrap();
 }
 
 fn emit_tb_dut_instance(
@@ -110,7 +111,7 @@ fn emit_tb_dut_instance(
     out: &mut String,
 ) {
     out.push_str("  // DUT instantiation\n");
-    out.push_str(&format!("  {} dut (\n", module_name));
+    writeln!(out, "  {} dut (", module_name).unwrap();
 
     let mut has_clk = false;
     let mut has_rst_n = false;
@@ -169,7 +170,7 @@ fn emit_tb_dut_instance(
     let conn_count = connections.len();
     for (i, conn) in connections.iter().enumerate() {
         let comma = if i + 1 < conn_count { "," } else { "" };
-        out.push_str(&format!("{conn}{comma}\n"));
+        writeln!(out, "{conn}{comma}").unwrap();
     }
 
     out.push_str("  );\n\n");
@@ -198,13 +199,13 @@ fn emit_tb_stimulus(
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
                 if name != "rst_n" {
-                    out.push_str(&format!("    tb_{} = '0;\n", name));
+                    writeln!(out, "    tb_{} = '0;", name).unwrap();
                 }
             }
         }
     }
 
-    out.push_str(&format!("    repeat(10) @(posedge {});\n", main_clock));
+    writeln!(out, "    repeat(10) @(posedge {});", main_clock).unwrap();
     out.push_str("    rst_n = 1'b1;\n\n");
 
     out.push_str("    // Phase 2: Drive inputs to max range\n");
@@ -225,13 +226,13 @@ fn emit_tb_stimulus(
                         | SignalType::Bundle(_)
                         | SignalType::Fifo { .. } => "'0".to_string(),
                     };
-                    out.push_str(&format!("    tb_{} = {};\n", name, max_val));
+                    writeln!(out, "    tb_{} = {};", name, max_val).unwrap();
                 }
             }
         }
     }
 
-    out.push_str(&format!("    repeat({}) @(posedge {});\n\n", sim_cycles, main_clock));
+    write!(out, "    repeat({}) @(posedge {});\n\n", sim_cycles, main_clock).unwrap();
 
     out.push_str("    // Phase 3: Return to zero\n");
     for i in 0..registry.names.len() {
@@ -239,14 +240,14 @@ fn emit_tb_stimulus(
             if let crate::ecs::EntityKind::SIGNAL(SignalKind::Input) = kind_comp.0 {
                 let name = registry.resolve_name(nc.0);
                 if name != "rst_n" {
-                    out.push_str(&format!("    tb_{} = '0;\n", name));
+                    writeln!(out, "    tb_{} = '0;", name).unwrap();
                 }
             }
         }
     }
-    out.push_str(&format!("    repeat(50) @(posedge {});\n\n", main_clock));
+    write!(out, "    repeat(50) @(posedge {});\n\n", main_clock).unwrap();
 
-    out.push_str(&format!("    $display(\"Testbench {} complete.\");\n", module_name));
+    writeln!(out, "    $display(\"Testbench {} complete.\");", module_name).unwrap();
     out.push_str("    $finish;\n");
     out.push_str("  end\n\n");
 }

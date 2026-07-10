@@ -3,6 +3,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write;
 use crate::ast::types::BinaryOp;
 use crate::emit::verilog::emit_source_comment;
 use crate::span::FileTable;
@@ -63,12 +64,10 @@ pub(super) fn emit_temporal_logic_standalone(
                 emit_counter_guard(cg, clock_domain, out);
             }
             CompiledGuard::Complex(cx) => {
-                out.push_str(&format!("  // Complex guard: {} (sub-guards combined)\n", cx.name));
-                out.push_str(&format!(
-                    "  assign {} = {};\n\n",
-                    cx.output_signal,
-                    emit_logic_expr(&cx.combination_logic),
-                ));
+                writeln!(out, "  // Complex guard: {} (sub-guards combined)", cx.name).unwrap();
+                write!(out, "  assign {} = ", cx.output_signal).unwrap();
+                emit_logic_expr(&cx.combination_logic, out);
+                writeln!(out, ";\n").unwrap();
             }
             CompiledGuard::DynamicCounter(dc) => {
                 emit_dynamic_counter_guard(dc, clock_domain, out);
@@ -129,7 +128,7 @@ pub(super) fn emit_temporal_logic_ecs(
             if let Some(type_comp) = &registry.types[sig_ent.0 as usize] {
                 let sig_name = registry.resolve_name(nc.0);
                 let type_str = crate::emit::sv_type(&type_comp.0.signal_type());
-                out.push_str(&format!("  {} {}_d{};\n", type_str, sig_name, delay));
+                writeln!(out, "  {} {}_d{};", type_str, sig_name, delay).unwrap();
 
                 let mut clock_domain = "clk";
                 if let Some(cd) = type_comp.0.annotations.clock_domain.as_deref() {
@@ -152,21 +151,21 @@ pub(super) fn emit_temporal_logic_ecs(
                 .as_ref()
                 .map(|nc| registry.resolve_name(nc.0))
                 .unwrap_or("ERR_MISSING_NAME");
-            out.push_str(&format!("    {}_d{} = '0;\n", sig_name, delay));
+            writeln!(out, "    {}_d{} = '0;", sig_name, delay).unwrap();
         }
         out.push_str("  end\n\n");
     }
 
     for (clock, prevs) in prev_groups_by_clock {
-        out.push_str(&format!("  // Delay line updates for prev() references (@{})\n", clock));
-        out.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", clock));
+        writeln!(out, "  // Delay line updates for prev() references (@{})", clock).unwrap();
+        writeln!(out, "  always_ff @(posedge {} or negedge rst_n) begin", clock).unwrap();
         out.push_str("    if (!rst_n) begin\n");
         for &(sig_ent, delay) in &prevs {
             let sig_name = registry.names[sig_ent.0 as usize]
                 .as_ref()
                 .map(|nc| registry.resolve_name(nc.0))
                 .unwrap_or("ERR_MISSING_NAME");
-            out.push_str(&format!("      {}_d{} <= '0;\n", sig_name, delay));
+            writeln!(out, "      {}_d{} <= '0;", sig_name, delay).unwrap();
         }
         out.push_str("    end else begin\n");
         for &(sig_ent, delay) in &prevs {
@@ -175,15 +174,15 @@ pub(super) fn emit_temporal_logic_ecs(
                 .map(|nc| registry.resolve_name(nc.0))
                 .unwrap_or("ERR_MISSING_NAME");
             if delay == 1 {
-                out.push_str(&format!("      {}_d1 <= {};\n", sig_name, sig_name));
+                writeln!(out, "      {}_d1 <= {};", sig_name, sig_name).unwrap();
             } else {
-                out.push_str(&format!(
-                    "      {}_d{} <= {}_d{};\n",
+                writeln!(out, 
+                    "      {}_d{} <= {}_d{};",
                     sig_name,
                     delay,
                     sig_name,
                     delay - 1
-                ));
+                ).unwrap();
             }
         }
         out.push_str("    end\n");
@@ -250,15 +249,12 @@ pub(super) fn emit_temporal_logic_ecs(
             CompiledGuard::Complex(cx) => {
                 if emitted_shift_registers.insert(cx.name.clone()) {
                     emit_source_comment(span, ft, out);
-                    out.push_str(&format!(
-                        "  // Complex guard: {} (sub-guards combined)\n",
+                    writeln!(out, "  // Complex guard: {} (sub-guards combined)",
                         cx.name
-                    ));
-                    out.push_str(&format!(
-                        "  assign {} = {};\n\n",
-                        cx.output_signal,
-                        emit_logic_expr(&cx.combination_logic),
-                    ));
+                    ).unwrap();
+                    write!(out, "  assign {} = ", cx.output_signal).unwrap();
+                    emit_logic_expr(&cx.combination_logic, out);
+                    writeln!(out, ";\n").unwrap();
                 }
             }
             CompiledGuard::DynamicCounter(dc) => {
@@ -350,7 +346,10 @@ pub(super) fn emit_reflex_logic_ecs(
                 if let Some(asgn) = &registry.assignment_comps[asgn_ent.0 as usize] {
                     if let Some(target_nc) = &registry.names[asgn.target.0 as usize] {
                         let target_name = registry.resolve_name(target_nc.0);
-                        signal_to_reflexes.entry(target_name.to_string()).or_default().push(i);
+                        let refs = signal_to_reflexes.entry(target_name.to_string()).or_default();
+                        if !refs.contains(&i) {
+                            refs.push(i);
+                        }
                     }
                 }
             }
@@ -423,19 +422,19 @@ pub(super) fn emit_reflex_logic_ecs(
                     }
                 }
                 if has_dsp {
-                    out.push_str(&format!("  {attr}\n"));
+                    writeln!(out, "  {attr}").unwrap();
                 }
             }
 
-            out.push_str(&format!("  // Unified Reflex Block for: {sig_name} (@{clock_domain})\n"));
+            writeln!(out, "  // Unified Reflex Block for: {sig_name} (@{clock_domain})").unwrap();
             out.push_str("  initial begin\n");
-            out.push_str(&format!("    {} = '0;\n", sig_name));
+            writeln!(out, "    {} = '0;", sig_name).unwrap();
             out.push_str("  end\n");
-            out.push_str(&format!(
-                "  always_ff @(posedge {clock_domain} or negedge rst_n) begin\n"
-            ));
+            writeln!(out, 
+                "  always_ff @(posedge {clock_domain} or negedge rst_n) begin"
+            ).unwrap();
             out.push_str("    if (!rst_n) begin\n");
-            out.push_str(&format!("      {} <= '0;\n", sig_name));
+            writeln!(out, "      {} <= '0;", sig_name).unwrap();
             out.push_str("    end else begin\n");
 
             // Priority-ordered assignments
@@ -460,12 +459,12 @@ pub(super) fn emit_reflex_logic_ecs(
                                 if target_name == sig_name {
                                     let span = registry.spans[ri].as_ref().map(|s| &s.0);
                                     emit_source_comment(span, ft, out);
-                                    out.push_str(&format!(
-                                        "      if ({}) {} <= {};\n",
+                                    writeln!(out, 
+                                        "      if ({}) {} <= {};",
                                         guard_cond,
                                         sig_name,
                                         super::emit_expr_inline(asgn.value, registry, sync_map),
-                                    ));
+                                    ).unwrap();
                                 }
                             }
                         }
@@ -510,8 +509,8 @@ fn emit_hls_logic_ecs(
         let state_reg =
             if cd == "clk" { "hls_state".to_string() } else { format!("hls_state_{}", cd) };
 
-        out.push_str(&format!("  // Clock Domain: {}\n", cd));
-        out.push_str(&format!("  logic [31:0] {};\n\n", state_reg));
+        writeln!(out, "  // Clock Domain: {}", cd).unwrap();
+        write!(out, "  logic [31:0] {};\n\n", state_reg).unwrap();
 
         // 2. Group operations by cycle and collect bindings.
         let mut cycle_to_ops: std::collections::HashMap<u32, Vec<usize>> =
@@ -537,11 +536,11 @@ fn emit_hls_logic_ecs(
             if registry.hls_dataflow[i].is_some() {
                 if let Some(tc) = &registry.types[i] {
                     let width = tc.0.core.width();
-                    out.push_str(&format!(
-                        "  logic [{}:0] op_{}_res;\n",
+                    writeln!(out, 
+                        "  logic [{}:0] op_{}_res;",
                         width.saturating_sub(1),
                         i
-                    ));
+                    ).unwrap();
                 }
             }
         }
@@ -571,27 +570,27 @@ fn emit_hls_logic_ecs(
                 }
             }
 
-            out.push_str(&format!("  // Shared Resource: {:?} (ID: {})\n", kind, binding_id));
-            out.push_str(&format!(
-                "  logic [{}:0] shared_{}_{}_in_A;\n",
+            writeln!(out, "  // Shared Resource: {:?} (ID: {})", kind, binding_id).unwrap();
+            writeln!(out, 
+                "  logic [{}:0] shared_{}_{}_in_A;",
                 max_width.saturating_sub(1),
                 kind,
                 binding_id
-            ));
+            ).unwrap();
             if !matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
-                out.push_str(&format!(
-                    "  logic [{}:0] shared_{}_{}_in_B;\n",
+                writeln!(out, 
+                    "  logic [{}:0] shared_{}_{}_in_B;",
                     max_width.saturating_sub(1),
                     kind,
                     binding_id
-                ));
+                ).unwrap();
             }
-            out.push_str(&format!(
-                "  logic [{}:0] shared_{}_{}_out;\n",
+            writeln!(out, 
+                "  logic [{}:0] shared_{}_{}_out;",
                 max_width.saturating_sub(1),
                 kind,
                 binding_id
-            ));
+            ).unwrap();
 
             // Emit the actual hardware block
             let op_str = match kind {
@@ -614,23 +613,23 @@ fn emit_hls_logic_ecs(
             };
 
             if matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
-                out.push_str(&format!(
-                    "  assign shared_{}_{}_out = {}(shared_{}_{}_in_A);\n",
+                writeln!(out, 
+                    "  assign shared_{}_{}_out = {}(shared_{}_{}_in_A);",
                     kind, binding_id, op_str, kind, binding_id
-                ));
+                ).unwrap();
             } else {
-                out.push_str(&format!(
-                    "  assign shared_{}_{}_out = shared_{}_{}_in_A {} shared_{}_{}_in_B;\n",
+                writeln!(out, 
+                    "  assign shared_{}_{}_out = shared_{}_{}_in_A {} shared_{}_{}_in_B;",
                     kind, binding_id, kind, binding_id, op_str, kind, binding_id
-                ));
+                ).unwrap();
             }
             // Emit MUXes
             out.push_str("  always_comb begin\n");
-            out.push_str(&format!("    case ({})\n", state_reg));
+            writeln!(out, "    case ({})", state_reg).unwrap();
 
             for &idx in ops {
                 let cycle = registry.hls_schedules[idx].as_ref().map(|s| s.earliest).unwrap_or(0);
-                out.push_str(&format!("      {}: begin\n", cycle));
+                writeln!(out, "      {}: begin", cycle).unwrap();
 
                 let get_operand_str = |op_entity_id: u32| -> String {
                     let op_idx = op_entity_id as usize;
@@ -656,32 +655,32 @@ fn emit_hls_logic_ecs(
                 };
 
                 if let Some(binary) = &registry.binary_ops[idx] {
-                    out.push_str(&format!(
-                        "        shared_{}_{}_in_A = {};\n",
+                    writeln!(out, 
+                        "        shared_{}_{}_in_A = {};",
                         kind,
                         binding_id,
                         get_operand_str(binary.left.0)
-                    ));
-                    out.push_str(&format!(
-                        "        shared_{}_{}_in_B = {};\n",
+                    ).unwrap();
+                    writeln!(out, 
+                        "        shared_{}_{}_in_B = {};",
                         kind,
                         binding_id,
                         get_operand_str(binary.right.0)
-                    ));
+                    ).unwrap();
                 } else if let Some(unary) = &registry.unary_ops[idx] {
-                    out.push_str(&format!(
-                        "        shared_{}_{}_in_A = {};\n",
+                    writeln!(out, 
+                        "        shared_{}_{}_in_A = {};",
                         kind,
                         binding_id,
                         get_operand_str(unary.operand.0)
-                    ));
+                    ).unwrap();
                 }
                 out.push_str("      end\n");
             }
             out.push_str("      default: begin\n");
-            out.push_str(&format!("        shared_{}_{}_in_A = '0;\n", kind, binding_id));
+            writeln!(out, "        shared_{}_{}_in_A = '0;", kind, binding_id).unwrap();
             if !matches!(kind, crate::hls::ResourceKind::Not | crate::hls::ResourceKind::Negate) {
-                out.push_str(&format!("        shared_{}_{}_in_B = '0;\n", kind, binding_id));
+                writeln!(out, "        shared_{}_{}_in_B = '0;", kind, binding_id).unwrap();
             }
             out.push_str("      end\n");
             out.push_str("    endcase\n");
@@ -692,14 +691,14 @@ fn emit_hls_logic_ecs(
         let mut sorted_cycles: Vec<u32> = cycle_to_ops.keys().cloned().collect();
         sorted_cycles.sort();
 
-        out.push_str(&format!("  always_ff @(posedge {} or negedge rst_n) begin\n", cd));
+        writeln!(out, "  always_ff @(posedge {} or negedge rst_n) begin", cd).unwrap();
         out.push_str("    if (!rst_n) begin\n");
-        out.push_str(&format!("      {} <= 0;\n", state_reg));
+        writeln!(out, "      {} <= 0;", state_reg).unwrap();
         out.push_str("    end else begin\n");
-        out.push_str(&format!("      case ({})\n", state_reg));
+        writeln!(out, "      case ({})", state_reg).unwrap();
 
         for cycle in sorted_cycles {
-            out.push_str(&format!("        {}: begin\n", cycle));
+            writeln!(out, "        {}: begin", cycle).unwrap();
             let op_indices = &cycle_to_ops[&cycle];
             for &idx in op_indices {
                 // Check if this operation has a binding
@@ -708,12 +707,12 @@ fn emit_hls_logic_ecs(
                         .as_ref()
                         .map(|s| s.resource)
                         .unwrap_or(crate::hls::ResourceKind::Add);
-                    out.push_str(&format!(
-                        "          op_{}_res <= shared_{}_{}_out;\n",
+                    writeln!(out, 
+                        "          op_{}_res <= shared_{}_{}_out;",
                         idx, kind, binding.physical_resource_id
-                    ));
+                    ).unwrap();
                 } else {
-                    out.push_str(&format!("          // Error: Operation {} unbound\n", idx));
+                    writeln!(out, "          // Error: Operation {} unbound", idx).unwrap();
                 }
 
                 // Assign target signal if this entity is assigned to one
@@ -721,11 +720,11 @@ fn emit_hls_logic_ecs(
                     if let Some(asgn) = &registry.assignment_comps[asgn_idx] {
                         if asgn.value.0 == idx as u32 {
                             if let Some(nc) = &registry.names[asgn.target.0 as usize] {
-                                out.push_str(&format!(
-                                    "          {} <= op_{}_res;\n",
+                                writeln!(out, 
+                                    "          {} <= op_{}_res;",
                                     registry.resolve_name(nc.0),
                                     idx
-                                ));
+                                ).unwrap();
                             }
                         }
                     }
@@ -734,14 +733,14 @@ fn emit_hls_logic_ecs(
 
             // State transition.
             if cycle < max_cycle {
-                out.push_str(&format!("          {} <= {};\n", state_reg, cycle + 1));
+                writeln!(out, "          {} <= {};", state_reg, cycle + 1).unwrap();
             } else {
-                out.push_str(&format!("          {} <= 0;\n", state_reg));
+                writeln!(out, "          {} <= 0;", state_reg).unwrap();
             }
             out.push_str("        end\n");
         }
 
-        out.push_str(&format!("        default: {} <= 0;\n", state_reg));
+        writeln!(out, "        default: {} <= 0;", state_reg).unwrap();
         out.push_str("      endcase\n");
         out.push_str("    end\n");
         out.push_str("  end\n\n");
@@ -756,61 +755,51 @@ fn emit_shift_register_guard(
     let cond_desc = sr.condition_kind.describe();
     // Special case: 0 or 1-cycle guard is purely combinational.
     if sr.delay_cycles <= 1 {
-        out.push_str(&format!(
-            "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycle (combinational)\n",
-            sr.name,
-            sr.name.len(),
-            sr.name.as_bytes(),
-            cond_desc,
-            sr.delay_cycles
-        ));
-        out.push_str(&format!("  logic {}_cond;\n", sr.name));
-        out.push_str(&format!(
-            "  assign {}_cond = {};\n",
-            sr.name,
-            emit_condition_expr(&sr.condition_kind),
-        ));
-        out.push_str(&format!("  assign {} = {}_cond;\n\n", sr.output_signal, sr.name));
+        writeln!(out, "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycle (combinational)",
+            sr.name, sr.name.len(), sr.name.as_bytes(), cond_desc, sr.delay_cycles).unwrap();
+        writeln!(out, "  logic {}_cond;", sr.name).unwrap();
+        write!(out, "  assign {}_cond = ", sr.name).unwrap();
+        emit_condition_expr(&sr.condition_kind, out);
+        writeln!(out, ";").unwrap();
+        writeln!(out, "  assign {} = {}_cond;\n", sr.output_signal, sr.name).unwrap();
         return;
     }
 
-    out.push_str(&format!(
-        "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycles\n",
+    writeln!(out, 
+        "  // Guard: {} (len {}, bytes {:?}) — {} for {} cycles",
         sr.name,
         sr.name.len(),
         sr.name.as_bytes(),
         cond_desc,
         sr.delay_cycles
-    ));
+    ).unwrap();
 
     let stage_count = sr.delay_cycles.min(MAX_SR_STAGES_INLINE);
 
     // Declare the shift register.
-    out.push_str(&format!("  logic [{}:0] {}_sr;\n", stage_count.saturating_sub(1), sr.name,));
+    writeln!(out, "  logic [{}:0] {}_sr;", stage_count.saturating_sub(1), sr.name,).unwrap();
     out.push_str("  initial begin\n");
-    out.push_str(&format!("    {}_sr = '0;\n", sr.name));
+    writeln!(out, "    {}_sr = '0;", sr.name).unwrap();
     out.push_str("  end\n");
 
     // Condition wire.
-    out.push_str(&format!("  logic {}_cond;\n", sr.name));
-    out.push_str(&format!(
-        "  assign {}_cond = {};\n",
-        sr.name,
-        emit_condition_expr(&sr.condition_kind),
-    ));
+    writeln!(out, "  logic {}_cond;", sr.name).unwrap();
+    write!(out, "  assign {}_cond = ", sr.name).unwrap();
+    emit_condition_expr(&sr.condition_kind, out);
+    writeln!(out, ";").unwrap();
 
     // Shift register always_ff block.
-    out.push_str(&format!("  always_ff @(posedge {clock} or negedge rst_n) begin\n"));
-    out.push_str(&format!("    if (!rst_n)\n      {}_sr <= '0;\n", sr.name));
-    out.push_str(&format!(
+    writeln!(out, "  always_ff @(posedge {clock} or negedge rst_n) begin").unwrap();
+    write!(out, "    if (!rst_n)\n      {}_sr <= '0;\n", sr.name).unwrap();
+    write!(out, 
         "    else\n      {0}_sr <= {{{0}_cond, {0}_sr[{1}:1]}};\n",
         sr.name,
         stage_count.saturating_sub(1),
-    ));
+    ).unwrap();
     out.push_str("  end\n");
 
     // Output: guard fires when all stages are 1.
-    out.push_str(&format!("  assign {} = &{}_sr;\n\n", sr.output_signal, sr.name,));
+    write!(out, "  assign {} = &{}_sr;\n\n", sr.output_signal, sr.name,).unwrap();
 }
 
 fn emit_counter_guard(
@@ -820,40 +809,38 @@ fn emit_counter_guard(
 ) {
     let cond_desc = cg.condition_kind.describe();
     let width = cg.counter_width();
-    out.push_str(&format!(
-        "  // Guard: {} — {} for {} cycles (counter)\n",
+    writeln!(out, 
+        "  // Guard: {} — {} for {} cycles (counter)",
         cg.name, cond_desc, cg.target_count
-    ));
+    ).unwrap();
 
     // Counter register.
-    out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), cg.counter_signal,));
+    writeln!(out, "  logic [{}:0] {};", width.saturating_sub(1), cg.counter_signal,).unwrap();
     out.push_str("  initial begin\n");
-    out.push_str(&format!("    {} = '0;\n", cg.counter_signal));
+    writeln!(out, "    {} = '0;", cg.counter_signal).unwrap();
     out.push_str("  end\n");
 
     // Condition wire.
-    out.push_str(&format!("  logic {}_cond;\n", cg.name));
-    out.push_str(&format!(
-        "  assign {}_cond = {};\n",
-        cg.name,
-        emit_condition_expr(&cg.condition_kind),
-    ));
+    writeln!(out, "  logic {}_cond;", cg.name).unwrap();
+    write!(out, "  assign {}_cond = ", cg.name).unwrap();
+    emit_condition_expr(&cg.condition_kind, out);
+    writeln!(out, ";").unwrap();
 
     // Counter always_ff block.
-    out.push_str(&format!("  always_ff @(posedge {clock} or negedge rst_n) begin\n"));
-    out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", cg.counter_signal));
-    out.push_str(&format!("    else if (!{}_cond)\n      {} <= '0;\n", cg.name, cg.counter_signal));
-    out.push_str(&format!(
+    writeln!(out, "  always_ff @(posedge {clock} or negedge rst_n) begin").unwrap();
+    write!(out, "    if (!rst_n)\n      {} <= '0;\n", cg.counter_signal).unwrap();
+    write!(out, "    else if (!{}_cond)\n      {} <= '0;\n", cg.name, cg.counter_signal).unwrap();
+    write!(out, 
         "    else if ({0} < {1})\n      {0} <= {0} + 1;\n",
         cg.counter_signal, cg.target_count,
-    ));
+    ).unwrap();
     out.push_str("  end\n");
 
     // Output: guard fires when counter reaches target.
-    out.push_str(&format!(
+    write!(out, 
         "  assign {} = ({} >= {});\n\n",
         cg.output_signal, cg.counter_signal, cg.target_count,
-    ));
+    ).unwrap();
 }
 
 fn emit_dynamic_counter_guard(
@@ -863,57 +850,53 @@ fn emit_dynamic_counter_guard(
 ) {
     let cond_desc = dc.condition_kind.describe();
     let width = dc.counter_width();
-    out.push_str(&format!(
-        "  // Guard: {} — {} for dynamic delay (max {} cycles)\n",
+    writeln!(out, 
+        "  // Guard: {} — {} for dynamic delay (max {} cycles)",
         dc.name, cond_desc, dc.max_delay
-    ));
+    ).unwrap();
 
     // Counter register.
-    out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), dc.counter_signal));
+    writeln!(out, "  logic [{}:0] {};", width.saturating_sub(1), dc.counter_signal).unwrap();
     out.push_str("  initial begin\n");
-    out.push_str(&format!("    {} = '0;\n", dc.counter_signal));
+    writeln!(out, "    {} = '0;", dc.counter_signal).unwrap();
     out.push_str("  end\n");
 
     // Dynamic target wire.
     let target_signal = format!("{}_target", dc.name);
-    out.push_str(&format!("  logic [{}:0] {};\n", width.saturating_sub(1), target_signal));
-    out.push_str(&format!("  assign {} = {};\n", target_signal, dc.delay_expr,));
+    writeln!(out, "  logic [{}:0] {};", width.saturating_sub(1), target_signal).unwrap();
+    writeln!(out, "  assign {} = {};", target_signal, dc.delay_expr,).unwrap();
 
     // Condition wire.
-    out.push_str(&format!("  logic {}_cond;\n", dc.name));
-    out.push_str(&format!(
-        "  assign {}_cond = {};\n",
-        dc.name,
-        emit_condition_expr(&dc.condition_kind),
-    ));
+    writeln!(out, "  logic {}_cond;", dc.name).unwrap();
+    write!(out, "  assign {}_cond = ", dc.name).unwrap();
+    emit_condition_expr(&dc.condition_kind, out);
+    writeln!(out, ";").unwrap();
 
     // Counter always_ff block.
-    out.push_str(&format!("  always_ff @(posedge {clock} or negedge rst_n) begin\n"));
-    out.push_str(&format!("    if (!rst_n)\n      {} <= '0;\n", dc.counter_signal));
-    out.push_str(&format!("    else if (!{}_cond)\n      {} <= '0;\n", dc.name, dc.counter_signal));
-    out.push_str(&format!(
+    writeln!(out, "  always_ff @(posedge {clock} or negedge rst_n) begin").unwrap();
+    write!(out, "    if (!rst_n)\n      {} <= '0;\n", dc.counter_signal).unwrap();
+    write!(out, "    else if (!{}_cond)\n      {} <= '0;\n", dc.name, dc.counter_signal).unwrap();
+    write!(out, 
         "    else if ({0} < {1})\n      {0} <= {0} + 1;\n",
         dc.counter_signal, target_signal
-    ));
+    ).unwrap();
     out.push_str("  end\n");
 
     // Output: guard fires when counter reaches dynamic target.
-    out.push_str(&format!(
+    write!(out, 
         "  assign {} = ({} >= {});\n\n",
         dc.output_signal, dc.counter_signal, target_signal
-    ));
+    ).unwrap();
 }
 
 /// Emit a ConditionKind as an inline SystemVerilog expression.
-fn emit_condition_expr(ck: &crate::temporal::low_level_ir::ConditionKind) -> String {
+fn emit_condition_expr(ck: &crate::temporal::low_level_ir::ConditionKind, out: &mut String) {
     use crate::temporal::low_level_ir::ConditionKind;
     match ck {
-        ConditionKind::SimpleSignal(s) => s.clone(),
-        ConditionKind::NegatedSignal(s) => format!("!{s}"),
+        ConditionKind::SimpleSignal(s) => write!(out, "{s}").unwrap(),
+        ConditionKind::NegatedSignal(s) => write!(out, "!{s}").unwrap(),
         ConditionKind::PrevSignal { signal, .. } => {
-            // For now, we return the base signal; the temporal compiler
-            // handles the extra delay by increasing the SR/Counter depth.
-            signal.clone()
+            write!(out, "{signal}").unwrap();
         }
         ConditionKind::Comparison { signal, op, value } => {
             let op_str = match op {
@@ -935,18 +918,30 @@ fn emit_condition_expr(ck: &crate::temporal::low_level_ir::ConditionKind) -> Str
                     }
                 }
             };
-            format!("({signal} {op_str} {val_str})")
+            write!(out, "({signal} {op_str} {val_str})").unwrap();
         }
-        ConditionKind::AlwaysTrue => "1'b1".to_string(),
+        ConditionKind::AlwaysTrue => write!(out, "1'b1").unwrap(),
     }
 }
 
 /// Emit a LogicExpr as an inline SystemVerilog expression.
-fn emit_logic_expr(le: &crate::temporal::low_level_ir::LogicExpr) -> String {
+fn emit_logic_expr(le: &crate::temporal::low_level_ir::LogicExpr, out: &mut String) {
     use crate::temporal::low_level_ir::LogicExpr;
     match le {
-        LogicExpr::Signal(s) => s.clone(),
-        LogicExpr::And(l, r) => format!("({} && {})", emit_logic_expr(l), emit_logic_expr(r)),
-        LogicExpr::Or(l, r) => format!("({} || {})", emit_logic_expr(l), emit_logic_expr(r)),
+        LogicExpr::Signal(s) => write!(out, "{s}").unwrap(),
+        LogicExpr::And(l, r) => {
+            write!(out, "(").unwrap();
+            emit_logic_expr(l, out);
+            write!(out, " && ").unwrap();
+            emit_logic_expr(r, out);
+            write!(out, ")").unwrap();
+        }
+        LogicExpr::Or(l, r) => {
+            write!(out, "(").unwrap();
+            emit_logic_expr(l, out);
+            write!(out, " || ").unwrap();
+            emit_logic_expr(r, out);
+            write!(out, ")").unwrap();
+        }
     }
 }

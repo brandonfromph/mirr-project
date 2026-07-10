@@ -15,6 +15,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write;
 use crate::ast::types::{BinaryOp, LiteralValue, SignalKind, SignalType, UnaryOp};
 use crate::ast::MAX_EXPR_NODES;
 use crate::pipeline::PipelineResult;
@@ -158,7 +159,7 @@ fn emit_ports(
                 }
 
                 let ty = if is_clock { "Clock".to_string() } else { firrtl_type(&ty_comp.0.core) };
-                out.push_str(&format!("    {} {} : {}\n", dir, name, ty));
+                writeln!(out, "    {} {} : {}", dir, name, ty).unwrap();
             }
         }
     }
@@ -183,7 +184,7 @@ fn emit_internal_wires(
                     has_internals = true;
                 }
                 let ty = firrtl_type(&ty_comp.0.core);
-                out.push_str(&format!("    wire {} : {}\n", registry.resolve_name(nc.0), ty));
+                writeln!(out, "    wire {} : {}", registry.resolve_name(nc.0), ty).unwrap();
             }
         }
     }
@@ -227,26 +228,26 @@ fn emit_temporal_logic(
                 emit_counter_firrtl(cg, clock_domain, out);
             }
             CompiledGuard::Complex(cx) => {
-                out.push_str(&format!(
+                write!(out, 
                     "\n    ; Complex guard: {} (sub-guards combined)\n",
                     cx.name
-                ));
+                ).unwrap();
                 let ty = "UInt<1>";
-                out.push_str(&format!("    wire {} : {}\n", cx.output_signal, ty));
+                writeln!(out, "    wire {} : {}", cx.output_signal, ty).unwrap();
                 let expr = emit_logic_expr_firrtl(&cx.combination_logic);
-                out.push_str(&format!("    connect {} , {}\n", cx.output_signal, expr));
+                writeln!(out, "    connect {} , {}", cx.output_signal, expr).unwrap();
             }
             CompiledGuard::DynamicCounter(dc) => {
-                out.push_str(&format!(
+                write!(out, 
                     "\n    ; Dynamic counter guard: {} (max {} cycles)\n",
                     dc.name, dc.max_delay
-                ));
+                ).unwrap();
                 let width = dc.counter_width();
-                out.push_str(&format!(
-                    "    reg {} : UInt<{}>, {}\n",
+                writeln!(out, 
+                    "    reg {} : UInt<{}>, {}",
                     dc.counter_signal, width, clock_domain
-                ));
-                out.push_str(&format!("    wire {} : UInt<1>\n", dc.output_signal));
+                ).unwrap();
+                writeln!(out, "    wire {} : UInt<1>", dc.output_signal).unwrap();
             }
         }
     }
@@ -260,29 +261,29 @@ fn emit_shift_register_firrtl(
     let stage_count = sr.delay_cycles.min(super::verilog::MAX_SR_STAGES_INLINE);
     let cond = emit_condition_firrtl(&sr.condition_kind);
 
-    out.push_str(&format!(
+    write!(out, 
         "\n    ; Guard: {} — {} for {} cycles\n",
         sr.name,
         sr.condition_kind.describe(),
         sr.delay_cycles,
-    ));
+    ).unwrap();
 
     // Shift register as a vector of 1-bit registers.
-    out.push_str(&format!(
-        "    reg {}_sr : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))\n",
+    writeln!(out, 
+        "    reg {}_sr : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))",
         sr.name, stage_count, clock_domain,
-    ));
+    ).unwrap();
 
     // Condition wire.
-    out.push_str(&format!("    wire {}_cond : UInt<1>\n", sr.name));
-    out.push_str(&format!("    connect {}_cond , {}\n", sr.name, cond));
+    writeln!(out, "    wire {}_cond : UInt<1>", sr.name).unwrap();
+    writeln!(out, "    connect {}_cond , {}", sr.name, cond).unwrap();
 
     // Shift operation: sr <= cat(cond, sr[high:1]).
-    out.push_str(&format!("    connect {0}_sr , cat({0}_cond, shr({0}_sr, 1))\n", sr.name,));
+    writeln!(out, "    connect {0}_sr , cat({0}_cond, shr({0}_sr, 1))", sr.name,).unwrap();
 
     // Output: guard fires when all bits are 1.
-    out.push_str(&format!("    wire {} : UInt<1>\n", sr.output_signal));
-    out.push_str(&format!("    connect {} , andr({}_sr)\n", sr.output_signal, sr.name,));
+    writeln!(out, "    wire {} : UInt<1>", sr.output_signal).unwrap();
+    writeln!(out, "    connect {} , andr({}_sr)", sr.output_signal, sr.name,).unwrap();
 }
 
 fn emit_counter_firrtl(
@@ -293,39 +294,39 @@ fn emit_counter_firrtl(
     let width = cg.counter_width();
     let cond = emit_condition_firrtl(&cg.condition_kind);
 
-    out.push_str(&format!(
+    write!(out, 
         "\n    ; Guard: {} — {} for {} cycles (counter)\n",
         cg.name,
         cg.condition_kind.describe(),
         cg.target_count,
-    ));
+    ).unwrap();
 
     // Counter register.
-    out.push_str(&format!(
-        "    reg {} : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))\n",
+    writeln!(out, 
+        "    reg {} : UInt<{}> , {} with : (reset => (not(rst_n), UInt(0)))",
         cg.counter_signal, width, clock_domain,
-    ));
+    ).unwrap();
 
     // Condition wire.
-    out.push_str(&format!("    wire {}_cond : UInt<1>\n", cg.name));
-    out.push_str(&format!("    connect {}_cond , {}\n", cg.name, cond));
+    writeln!(out, "    wire {}_cond : UInt<1>", cg.name).unwrap();
+    writeln!(out, "    connect {}_cond , {}", cg.name, cond).unwrap();
 
     // Counter logic.
-    out.push_str(&format!(
+    write!(out, 
         "    when not({0}_cond) :\n      connect {1} , UInt(0)\n",
         cg.name, cg.counter_signal,
-    ));
-    out.push_str(&format!(
+    ).unwrap();
+    write!(out, 
         "    else when lt({0}, UInt({1})) :\n      connect {0} , add({0}, UInt(1))\n",
         cg.counter_signal, cg.target_count,
-    ));
+    ).unwrap();
 
     // Output: guard fires when counter >= target.
-    out.push_str(&format!("    wire {} : UInt<1>\n", cg.output_signal));
-    out.push_str(&format!(
-        "    connect {} , geq({}, UInt({}))\n",
+    writeln!(out, "    wire {} : UInt<1>", cg.output_signal).unwrap();
+    writeln!(out, 
+        "    connect {} , geq({}, UInt({}))",
         cg.output_signal, cg.counter_signal, cg.target_count,
-    ));
+    ).unwrap();
 }
 
 fn emit_reflex_logic(
@@ -360,7 +361,7 @@ fn emit_reflex_logic(
             (registry.names[i], &registry.kinds[i], &registry.reflex_comps[i])
         {
             if let crate::ecs::EntityKind::REFLEX = kind_comp.0 {
-                out.push_str(&format!("\n    ; Reflex: {}\n", registry.resolve_name(nc.0)));
+                write!(out, "\n    ; Reflex: {}\n", registry.resolve_name(nc.0)).unwrap();
 
                 let guard_cond = if r.guards.len() == 1 {
                     let g_nc_name = registry.names[r.guards[0].0 as usize]
@@ -395,10 +396,10 @@ fn emit_reflex_logic(
                             .map(|nc| registry.resolve_name(nc.0))
                             .unwrap_or("ERR_MISSING_NAME");
                         let val = emit_expr_inline_ecs(assign.value, registry);
-                        out.push_str(&format!(
+                        write!(out, 
                             "    when {} :\n      connect {} , {}\n    else :\n      connect {} , UInt(0)\n",
                             guard_cond, target_name, val, target_name,
-                        ));
+                        ).unwrap();
                     }
                 }
             }
@@ -479,10 +480,10 @@ fn emit_property_comments(
                     crate::ast::property::PropertyDirective::Assume => "assume ",
                 };
 
-                out.push_str(&format!(
-                    "    ; {directive_prefix}property {}: {desc}\n",
+                writeln!(out, 
+                    "    ; {directive_prefix}property {}: {desc}",
                     registry.resolve_name(nc.0)
-                ));
+                ).unwrap();
             }
         }
     }
@@ -511,8 +512,8 @@ fn firrtl_type(ty: &SignalType) -> String {
         match w {
             Work::Emit(t) => match t {
                 SignalType::Bool => result.push_str("UInt<1>"),
-                SignalType::Unsigned(w) => result.push_str(&format!("UInt<{}>", w)),
-                SignalType::Signed(w) => result.push_str(&format!("SInt<{}>", w)),
+                SignalType::Unsigned(w) => write!(result, "UInt<{}>", w).unwrap(),
+                SignalType::Signed(w) => write!(result, "SInt<{}>", w).unwrap(),
                 SignalType::Array { element, length } => {
                     stack.push(Work::SuffixOwned(format!("[{}]", length)));
                     stack.push(Work::Emit(element));
@@ -524,17 +525,17 @@ fn firrtl_type(ty: &SignalType) -> String {
                         parts.push(format!("{}: {}", fields[i].0, firrtl_type_flat(&fields[i].1)));
                         i += 1;
                     }
-                    result.push_str(&format!("{{ {} }}", parts.join(", ")));
+                    write!(result, "{{ {} }}", parts.join(", ")).unwrap();
                 }
                 SignalType::FixedPoint { total_bits, frac_bits } => {
-                    result.push_str(&format!("FixedPoint<{},{}>", total_bits, frac_bits));
+                    write!(result, "FixedPoint<{},{}>", total_bits, frac_bits).unwrap();
                 }
                 SignalType::Bundle(name) => {
-                    result.push_str(&format!("{{ /* interface {} */ }}", name));
+                    write!(result, "{{ /* interface {} */ }}", name).unwrap();
                 }
                 SignalType::Fifo { element, depth } => {
                     let elem_ty = firrtl_type_flat(element);
-                    result.push_str(&format!("{}[{}]", elem_ty, depth));
+                    write!(result, "{}[{}]", elem_ty, depth).unwrap();
                 }
             },
             Work::SuffixOwned(s) => result.push_str(&s),
